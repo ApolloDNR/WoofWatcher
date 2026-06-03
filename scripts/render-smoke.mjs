@@ -156,6 +156,11 @@ try {
   );
   await expectEval(client, "document.body.innerText.includes('QA breakfast')", true, "timeline updates");
 
+  await evaluate(client, `document.querySelector('[data-tab="calendar"]').click();`);
+  await delay(250);
+  await expectEval(client, "Boolean(document.querySelector('.care-calendar-grid'))", true, "calendar grid visible");
+  await expectEval(client, "document.body.innerText.includes('QA breakfast')", true, "calendar includes current-day entry");
+
   await evaluate(client, `document.querySelector('[data-tab="report"]').click();`);
   await delay(250);
   await expectEval(client, "document.body.innerText.includes('WoofWatcher Monthly Report')", true, "report renders");
@@ -199,6 +204,7 @@ async function runDumpDomSmoke() {
     { route: "/", label: "home", text: ["WoofWatcher", "Phoenix care command", "Import", "Next handoff", "Caregiver handoff"] },
     { route: "/?tab=schedule", label: "schedule", text: ["Schedule", "Editable daily routine", "Add routine", "Save routine"] },
     { route: "/?tab=goals", label: "goals", text: ["Goals", "Goal review", "Phoenix goals", "Save goal"] },
+    { route: "/?tab=calendar", label: "calendar", text: ["Calendar", "Care calendar", "Selected day", "Vomit days"] },
     { route: "/?tab=log", label: "log", text: ["Quick Log", "Capture what happened", "Save care log"] },
     { route: "/?tab=report", label: "report", text: ["WoofWatcher Monthly Report", "Download", "Print/PDF"] },
     { route: "/?tab=assistant", label: "assistant", text: ["Care Helper", "Ask with Phoenix context", "veterinarian"] }

@@ -4,6 +4,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     case today
     case schedule
     case goals
+    case calendar
     case log
     case health
     case records
@@ -17,6 +18,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .today: return "Today"
         case .schedule: return "Schedule"
         case .goals: return "Goals"
+        case .calendar: return "Calendar"
         case .log: return "Log"
         case .health: return "Health"
         case .records: return "Records"
@@ -30,6 +32,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .today: return "calendar"
         case .schedule: return "clock.badge.checkmark"
         case .goals: return "target"
+        case .calendar: return "calendar.badge.exclamationmark"
         case .log: return "plus.circle"
         case .health: return "heart.text.square"
         case .records: return "folder"
@@ -71,6 +74,8 @@ struct ContentView: View {
             ScheduleView(store: store)
         case .goals:
             GoalsView(store: store)
+        case .calendar:
+            CalendarView(store: store)
         case .log:
             LogView(store: store)
         case .health:
@@ -82,6 +87,199 @@ struct ContentView: View {
         case .helper:
             HelperView(store: store)
         }
+    }
+}
+
+struct CalendarView: View {
+    @Bindable var store: CareStore
+    @State private var selectedDateKey = ""
+
+    var body: some View {
+        let calendar = store.careCalendar
+        let selectedDay = selectedDay(in: calendar)
+
+        List {
+            Section("Month Signals") {
+                Text(calendar.monthLabel)
+                    .font(.title2.bold())
+                HStack {
+                    metric("Logged days", "\(calendar.activeDays)")
+                    metric("Total logs", "\(calendar.totalLogs)")
+                    metric("Vomit days", "\(calendar.vomitDays)")
+                }
+                Text("\(calendar.reviewDays) day\(calendar.reviewDays == 1 ? "" : "s") need caregiver review.")
+                    .foregroundStyle(calendar.reviewDays > 0 ? .orange : .secondary)
+            }
+
+            Section("Care Calendar") {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 6) {
+                    ForEach(calendar.weekdays, id: \.self) { weekday in
+                        Text(weekday)
+                            .font(.caption2.bold())
+                            .foregroundStyle(.secondary)
+                    }
+
+                    ForEach(0..<calendar.firstWeekday, id: \.self) { _ in
+                        Color.clear.frame(height: 56)
+                    }
+
+                    ForEach(calendar.days) { day in
+                        Button {
+                            selectedDateKey = day.dateKey
+                        } label: {
+                            CalendarDayTile(day: day, selected: selectedDay?.dateKey == day.dateKey)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+
+            Section("Selected Day") {
+                if let selectedDay {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(dateLabel(for: selectedDay.dateKey))
+                            .font(.headline)
+                        Text(selectedDay.summary)
+                            .font(.subheadline)
+                            .foregroundStyle(statusColor(selectedDay.status))
+                        HStack {
+                            metric("Meals", "\(selectedDay.counts.meals)")
+                            metric("Walks", "\(selectedDay.counts.walks)")
+                            metric("Follow-ups", "\(selectedDay.counts.followUps)")
+                        }
+                    }
+
+                    TimelineList(entries: selectedDay.entries.sorted { $0.occurredAt > $1.occurredAt })
+                } else {
+                    Text("Choose a day to review Phoenix's care evidence.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .onAppear {
+            if selectedDateKey.isEmpty {
+                selectedDateKey = calendar.days.first(where: { $0.isToday })?.dateKey ?? calendar.days.first?.dateKey ?? ""
+            }
+        }
+    }
+
+    private func selectedDay(in calendar: CareCalendar) -> CalendarDaySummary? {
+        if let selected = calendar.days.first(where: { $0.dateKey == selectedDateKey }) {
+            return selected
+        }
+        return calendar.days.first(where: { $0.isToday })
+            ?? calendar.days.first(where: { $0.status == "review" })
+            ?? calendar.days.first(where: { $0.status == "active" })
+            ?? calendar.days.first
+    }
+
+    private func metric(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.headline)
+                .monospacedDigit()
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func statusColor(_ status: String) -> Color {
+        switch status {
+        case "review": return .orange
+        case "active": return .green
+        default: return .secondary
+        }
+    }
+
+    private func dateLabel(for dateKey: String) -> String {
+        let parts = dateKey.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return dateKey }
+        var components = DateComponents()
+        components.year = parts[0]
+        components.month = parts[1]
+        components.day = parts[2]
+        guard let date = Calendar.current.date(from: components) else { return dateKey }
+        return date.formatted(.dateTime.weekday(.wide).month(.wide).day())
+    }
+}
+
+struct CalendarDayTile: View {
+    var day: CalendarDaySummary
+    var selected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("\(day.day)")
+                    .font(.caption.bold())
+                Spacer()
+                if day.isToday {
+                    Circle()
+                        .fill(Color.copper)
+                        .frame(width: 6, height: 6)
+                }
+            }
+
+            Text(day.entries.isEmpty ? "" : "\(day.entries.count)")
+                .font(.headline)
+                .monospacedDigit()
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            CalendarMarkerStrip(counts: day.counts)
+        }
+        .frame(minHeight: 56, alignment: .topLeading)
+        .padding(6)
+        .background(backgroundColor, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(selected ? Color.copper : borderColor, lineWidth: selected ? 2 : 1)
+        )
+        .accessibilityLabel("\(day.dateKey), \(day.summary)")
+    }
+
+    private var backgroundColor: Color {
+        switch day.status {
+        case "review": return Color.orange.opacity(0.16)
+        case "active": return Color.green.opacity(0.12)
+        default: return Color.secondary.opacity(0.08)
+        }
+    }
+
+    private var borderColor: Color {
+        switch day.status {
+        case "review": return Color.orange.opacity(0.7)
+        case "active": return Color.green.opacity(0.5)
+        default: return Color.secondary.opacity(0.18)
+        }
+    }
+}
+
+struct CalendarMarkerStrip: View {
+    var counts: CalendarDayCounts
+
+    var body: some View {
+        HStack(spacing: 2) {
+            if counts.meals > 0 { marker("M", .copper) }
+            if counts.walks > 0 { marker("W", .green) }
+            if counts.training > 0 { marker("T", .blue) }
+            if counts.parkVisits + counts.social > 0 { marker("S", .mint) }
+            if counts.vomit > 0 { marker("V", .red) }
+            if counts.health + counts.vet + counts.medication + counts.weight > 0 { marker("H", .orange) }
+            if counts.meals + counts.walks + counts.training + counts.parkVisits + counts.social + counts.vomit + counts.health + counts.vet + counts.medication + counts.weight == 0 {
+                Spacer(minLength: 12)
+            }
+        }
+    }
+
+    private func marker(_ label: String, _ color: Color) -> some View {
+        Text(label)
+            .font(.system(size: 8, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 14, height: 14)
+            .background(color, in: Circle())
     }
 }
 

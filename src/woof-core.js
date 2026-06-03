@@ -334,6 +334,51 @@ export function getMonthlySummary(state, now = new Date().toISOString()) {
   };
 }
 
+export function getCareCalendar(state, now = new Date().toISOString()) {
+  const target = new Date(now);
+  const year = target.getFullYear();
+  const month = target.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const monthEntries = entriesForCalendarMonth(state.entries || [], year, month);
+  const todayKey = formatDateKey(target);
+  const days = Array.from({ length: daysInMonth }, (_, index) => {
+    const date = new Date(year, month, index + 1);
+    const dateKey = formatDateKey(date);
+    const entries = monthEntries
+      .filter((entry) => formatDateKey(new Date(entry.occurredAt)) === dateKey)
+      .sort((a, b) => new Date(a.occurredAt) - new Date(b.occurredAt));
+    const counts = getDayCounts(entries);
+    const needsReview = entries.some((entry) => entry.requiresFollowUp || entry.severity === "urgent");
+    return {
+      day: index + 1,
+      dateKey,
+      isToday: dateKey === todayKey,
+      totalEntries: entries.length,
+      counts,
+      status: needsReview ? "review" : entries.length ? "active" : "empty",
+      summary: buildDaySummary(counts),
+      entries
+    };
+  });
+
+  return {
+    monthLabel: firstDay.toLocaleString("en-US", { month: "long", year: "numeric" }),
+    year,
+    month,
+    firstWeekday: firstDay.getDay(),
+    weekdays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    monthTotals: {
+      ...getMonthlySummary({ ...state, entries: monthEntries }, now),
+      totalEntries: monthEntries.length
+    },
+    reviewDays: days.filter((day) => day.status === "review").length,
+    vomitDays: days.filter((day) => day.counts.vomit > 0).length,
+    activeDays: days.filter((day) => day.totalEntries > 0).length,
+    days
+  };
+}
+
 export function getTodayPlan(state, now = new Date().toISOString()) {
   const todayEntries = entriesForLocalDay(state.entries || [], now);
   const completedLabels = (state.routines || [])
@@ -687,6 +732,39 @@ function sumAll(entries, field) {
   return entries.reduce((total, entry) => total + (Number(entry[field]) || 0), 0);
 }
 
+function getDayCounts(entries) {
+  return {
+    meals: countType(entries, "meal"),
+    treats: countType(entries, "treat"),
+    walks: countType(entries, "walk"),
+    walkMinutes: sumNumber(entries, "walk", "durationMinutes"),
+    parkVisits: countType(entries, "park"),
+    training: countType(entries, "training"),
+    trainingMinutes: sumNumber(entries, "training", "durationMinutes"),
+    social: countType(entries, "social"),
+    dogInteractions: sumAll(entries, "dogInteractions"),
+    vomit: countType(entries, "vomit"),
+    health: countType(entries, "health"),
+    vet: countType(entries, "vet"),
+    weight: countType(entries, "weight"),
+    medication: countType(entries, "medication"),
+    followUps: entries.filter((entry) => entry.requiresFollowUp).length
+  };
+}
+
+function buildDaySummary(counts) {
+  const parts = [];
+  if (counts.meals) parts.push(`${counts.meals} meal${counts.meals === 1 ? "" : "s"}`);
+  if (counts.walks) parts.push(`${counts.walks} walk${counts.walks === 1 ? "" : "s"}`);
+  if (counts.training) parts.push(`${counts.training} training`);
+  if (counts.parkVisits || counts.social) parts.push(`${counts.parkVisits + counts.social} social`);
+  if (counts.vomit) parts.push(`${counts.vomit} vomit`);
+  if (counts.weight) parts.push(`${counts.weight} weight`);
+  if (counts.medication) parts.push(`${counts.medication} medication`);
+  if (counts.health || counts.vet) parts.push(`${counts.health + counts.vet} health`);
+  return parts.length ? parts.join(" | ") : "No logs";
+}
+
 function entriesForLocalDay(entries, now) {
   const target = new Date(now);
   return entries.filter((entry) => {
@@ -699,12 +777,26 @@ function entriesForLocalDay(entries, now) {
   });
 }
 
+function entriesForCalendarMonth(entries, year, month) {
+  return entries.filter((entry) => {
+    const occurred = new Date(entry.occurredAt);
+    return occurred.getFullYear() === year && occurred.getMonth() === month;
+  });
+}
+
 function entriesForCurrentMonth(entries, now) {
   const date = new Date(now);
   return entries.filter((entry) => {
     const occurred = new Date(entry.occurredAt);
     return occurred.getFullYear() === date.getFullYear() && occurred.getMonth() === date.getMonth();
   });
+}
+
+function formatDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function entriesWithinDays(entries, now, days) {

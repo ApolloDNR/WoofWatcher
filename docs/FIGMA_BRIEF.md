@@ -11,6 +11,7 @@ WoofWatcher is a calm care command center for Phoenix, an anxious rescued shephe
 - Today dashboard: Phoenix profile, health status, routines, next handoff, quick log, recent timeline.
 - Schedule: editable care routine list plus add-routine form for meals, walks, snacks, medication, training, and ownership.
 - Goals: progress review plus editable milestones for weight, training, anxiety, social exposure, health, and custom targets.
+- Calendar: monthly day grid with logged-day density, vomit/review days, care markers, and selected-day evidence.
 - Quick Log: event form plus recent entries.
 - Health Watch: signals, red flags, health timeline.
 - Records: stored vet/vaccine/weight/instruction records plus add form.
@@ -30,4 +31,7 @@ WoofWatcher is a calm care command center for Phoenix, an anxious rescued shephe
 
 Use `docs/woofwatcher-v1-concept.png` as the initial concept reference, but the implementation corrects detail drift from the generated image: Phoenix is referred to as a female rescued shepherd mix by context, and the app avoids fake medical certainty.
 
-The existing Figma file `165jvlaygkksRtXW1bA1MA` now includes a `WoofWatcher v1 - Goals & Milestones` direction frame at node `8:2`.
+The existing Figma file `165jvlaygkksRtXW1bA1MA` includes:
+
+- `WoofWatcher v1 - Goals & Milestones` at node `8:2`.
+- `WoofWatcher v1 - Care Calendar` at node `9:2`.

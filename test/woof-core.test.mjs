@@ -5,6 +5,7 @@ import {
   buildReportText,
   createEntry,
   getAssistantContext,
+  getCareCalendar,
   getCaregiverHandoff,
   getDefaultState,
   getGoalReview,
@@ -88,6 +89,39 @@ test("summarizes the current month across meals, walks, social, training, and vo
   assert.equal(summary.trainingMinutes, 12);
   assert.equal(summary.vomitIncidents, 1);
   assert.equal(summary.followUps, 1);
+});
+
+test("builds a monthly care calendar with day-level vomit, walk, training, and social signals", () => {
+  const state = getDefaultState("2026-06-03T12:00:00.000Z");
+  const entries = [
+    createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: "2026-06-03T14:00:00.000Z" }),
+    createEntry({ type: "walk", title: "Morning walk", durationMinutes: 24, caregiver: "Apollo", occurredAt: "2026-06-03T15:00:00.000Z" }),
+    createEntry({ type: "vomit", title: "Yellow bile", caregiver: "Apollo", severity: "watch", occurredAt: "2026-06-03T16:00:00.000Z" }),
+    createEntry({ type: "park", title: "Dog park", dogInteractions: 3, caregiver: "Both", occurredAt: "2026-06-04T20:00:00.000Z" }),
+    createEntry({ type: "training", title: "Place work", durationMinutes: 12, caregiver: "Girlfriend", occurredAt: "2026-06-04T21:00:00.000Z" }),
+    createEntry({ type: "weight", title: "Weight check", amount: "57.4 lb", caregiver: "Apollo", occurredAt: "2026-05-31T18:00:00.000Z" })
+  ];
+
+  const calendar = getCareCalendar({ ...state, entries }, "2026-06-15T12:00:00.000Z");
+  const juneThird = calendar.days.find((day) => day.dateKey === "2026-06-03");
+  const juneFourth = calendar.days.find((day) => day.dateKey === "2026-06-04");
+
+  assert.equal(calendar.monthLabel, "June 2026");
+  assert.equal(calendar.firstWeekday, 1);
+  assert.equal(calendar.days.length, 30);
+  assert.equal(calendar.reviewDays, 1);
+  assert.equal(calendar.vomitDays, 1);
+  assert.equal(calendar.monthTotals.totalEntries, 5);
+  assert.equal(juneThird.counts.meals, 1);
+  assert.equal(juneThird.counts.walks, 1);
+  assert.equal(juneThird.counts.vomit, 1);
+  assert.equal(juneThird.status, "review");
+  assert.match(juneThird.summary, /1 vomit/);
+  assert.equal(juneFourth.counts.parkVisits, 1);
+  assert.equal(juneFourth.counts.training, 1);
+  assert.equal(juneFourth.counts.dogInteractions, 3);
+  assert.equal(juneFourth.status, "active");
+  assert.equal(calendar.days.some((day) => day.counts.weight > 0), false);
 });
 
 test("builds a handoff-aware today plan from routines and latest logs", () => {

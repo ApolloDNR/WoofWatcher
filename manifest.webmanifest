@@ -32,6 +32,13 @@
       "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
+      "name": "Care Calendar",
+      "short_name": "Calendar",
+      "description": "Open Phoenix's monthly care calendar.",
+      "url": "/?tab=calendar",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
       "name": "Quick Log",
       "short_name": "Log",
       "description": "Open WoofWatcher to log Phoenix care.",

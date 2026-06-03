@@ -383,6 +383,123 @@ dd,
   overflow-wrap: anywhere;
 }
 
+.calendar-summary-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.care-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.calendar-weekday {
+  color: rgba(255, 250, 241, 0.58);
+  font-size: 0.72rem;
+  font-weight: 820;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.calendar-blank,
+.calendar-day-cell {
+  aspect-ratio: 1;
+  min-width: 0;
+}
+
+.calendar-day-cell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 4px;
+  border: 1px solid rgba(212, 207, 196, 0.16);
+  border-radius: var(--radius);
+  background: rgba(15, 23, 34, 0.32);
+  color: #fff8ec;
+  padding: 7px;
+  text-align: left;
+}
+
+.calendar-day-cell.active {
+  border-color: rgba(143, 173, 152, 0.42);
+  background: rgba(143, 173, 152, 0.14);
+}
+
+.calendar-day-cell.review {
+  border-color: rgba(216, 170, 82, 0.62);
+  background: rgba(216, 170, 82, 0.16);
+}
+
+.calendar-day-cell.today {
+  box-shadow: inset 0 0 0 2px rgba(200, 122, 58, 0.6);
+}
+
+.calendar-day-cell.selected {
+  border-color: rgba(255, 250, 241, 0.7);
+  background: rgba(200, 122, 58, 0.22);
+}
+
+.calendar-day-number {
+  color: rgba(255, 250, 241, 0.78);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.calendar-day-cell strong {
+  align-self: center;
+  color: #fff8ec;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.calendar-markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-height: 15px;
+}
+
+.calendar-markers i {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: rgba(212, 207, 196, 0.16);
+  color: #fff8ec;
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.calendar-markers .meal {
+  background: rgba(200, 122, 58, 0.72);
+}
+
+.calendar-markers .walk {
+  background: rgba(143, 173, 152, 0.72);
+}
+
+.calendar-markers .training {
+  background: rgba(212, 207, 196, 0.36);
+}
+
+.calendar-markers .social {
+  background: rgba(216, 170, 82, 0.72);
+}
+
+.calendar-markers .vomit {
+  background: rgba(201, 99, 88, 0.82);
+}
+
+.selected-day-grid {
+  display: grid;
+  gap: 10px;
+}
+
 .caregiver-list span,
 .quick-button {
   border: 1px solid rgba(212, 207, 196, 0.18);
@@ -680,8 +797,8 @@ textarea:focus {
 .bottom-nav {
   position: static;
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  width: min(940px, calc(100% - 24px));
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  width: min(1040px, calc(100% - 24px));
   margin: 18px auto 0;
   border: 1px solid rgba(212, 207, 196, 0.2);
   border-radius: var(--radius);
@@ -742,7 +859,7 @@ textarea:focus {
 
 @media (max-width: 680px) {
   .app-shell {
-    padding: 12px 12px 150px;
+    padding: 12px 12px 210px;
   }
 
   .topbar {
@@ -785,12 +902,16 @@ textarea:focus {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .calendar-summary-row {
+    grid-template-columns: 1fr;
+  }
+
   .bottom-nav {
     position: fixed;
     left: 50%;
     bottom: 12px;
     z-index: 10;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     margin: 0;
     transform: translateX(-50%);
   }
@@ -811,6 +932,20 @@ textarea:focus {
 @media (max-width: 420px) {
   .stat-row {
     grid-template-columns: 1fr;
+  }
+
+  .care-calendar-grid {
+    gap: 5px;
+  }
+
+  .calendar-day-cell {
+    padding: 5px;
+  }
+
+  .calendar-markers i {
+    width: 13px;
+    height: 13px;
+    font-size: 0.52rem;
   }
 }
 

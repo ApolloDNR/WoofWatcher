@@ -1,6 +1,7 @@
 import {
   buildReportText,
   createEntry,
+  getCareCalendar,
   getCaregiverHandoff,
   getAssistantContext,
   getDefaultState,
@@ -33,7 +34,9 @@ const ENTRY_SELECT_OPTIONS = [
 
 const app = document.querySelector("#app");
 let state = loadState();
-let activeTab = new URLSearchParams(window.location.search).get("tab") || "today";
+const initialParams = new URLSearchParams(window.location.search);
+let activeTab = initialParams.get("tab") || "today";
+let selectedCalendarDate = initialParams.get("date") || "";
 let assistantAnswer = "";
 let assistantBusy = false;
 let assistantStatus = { checked: false, configured: false, mode: "local", model: "" };
@@ -63,6 +66,7 @@ function render() {
   const plan = getTodayPlan(state);
   const handoff = getCaregiverHandoff(state);
   const goalReview = getGoalReview(state);
+  const calendar = getCareCalendar(state);
   const health = getHealthWatch(state);
 
   app.dataset.loading = "false";
@@ -92,7 +96,7 @@ function render() {
 
       <section class="primary-surface">
         ${renderTabHeader(activeTab)}
-        ${renderActiveTab(activeTab, { summary, plan, health, handoff, goalReview })}
+        ${renderActiveTab(activeTab, { summary, plan, health, handoff, goalReview, calendar })}
       </section>
     </main>
 
@@ -100,6 +104,7 @@ function render() {
       ${renderNavButton("today", "Today")}
       ${renderNavButton("schedule", "Schedule")}
       ${renderNavButton("goals", "Goals")}
+      ${renderNavButton("calendar", "Calendar")}
       ${renderNavButton("log", "Quick Log")}
       ${renderNavButton("health", "Health")}
       ${renderNavButton("records", "Records")}
@@ -205,6 +210,7 @@ function renderTabHeader(tab) {
     today: ["Today", "Routine, handoff, and latest care."],
     schedule: ["Schedule", "Edit meals, walks, snacks, training, and ownership."],
     goals: ["Goals", "Weight, training, social, anxiety, and health milestones."],
+    calendar: ["Calendar", "Monthly care patterns, vomit days, and daily handoff evidence."],
     log: ["Quick Log", "Capture what happened without a long conversation."],
     health: ["Health Watch", "Track patterns and know when review is needed."],
     records: ["Records", "Vaccines, vet notes, weight goals, and instructions."],
@@ -227,6 +233,7 @@ function renderTabHeader(tab) {
 function renderActiveTab(tab, context) {
   if (tab === "schedule") return renderScheduleTab();
   if (tab === "goals") return renderGoalsTab(context.goalReview);
+  if (tab === "calendar") return renderCalendarTab(context.calendar);
   if (tab === "log") return renderLogTab();
   if (tab === "health") return renderHealthTab(context.health);
   if (tab === "records") return renderRecordsTab();
@@ -317,6 +324,88 @@ function renderGoalForm(goal = {}) {
         }
       </div>
     </form>
+  `;
+}
+
+function renderCalendarTab(calendar) {
+  const selectedDay = getSelectedCalendarDay(calendar);
+  const leadingBlanks = Array.from({ length: calendar.firstWeekday }, (_, index) => `<span class="calendar-blank" aria-hidden="true" data-blank="${index}"></span>`);
+  return `
+    <div class="dashboard-grid">
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Care calendar</p>
+            <h3>${escapeHtml(calendar.monthLabel)}</h3>
+          </div>
+          <span class="status-chip ${calendar.reviewDays ? "watch" : "steady"}">${calendar.reviewDays} review days</span>
+        </div>
+        <div class="calendar-summary-row">
+          ${renderStat("Logged days", calendar.activeDays)}
+          ${renderStat("Total logs", calendar.monthTotals.totalEntries)}
+          ${renderStat("Vomit days", calendar.vomitDays)}
+        </div>
+        <div class="care-calendar-grid" aria-label="${escapeAttribute(calendar.monthLabel)} care calendar">
+          ${calendar.weekdays.map((day) => `<span class="calendar-weekday">${escapeHtml(day)}</span>`).join("")}
+          ${leadingBlanks.join("")}
+          ${calendar.days.map((day) => renderCalendarDay(day, selectedDay?.dateKey)).join("")}
+        </div>
+      </section>
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Selected day</p>
+            <h3>${escapeHtml(selectedDay ? formatLongDate(selectedDay.dateKey) : "No day selected")}</h3>
+          </div>
+          <span class="status-chip ${selectedDay?.status === "review" ? "review" : selectedDay?.status === "active" ? "steady" : "watch"}">${escapeHtml(selectedDay?.summary || "No logs")}</span>
+        </div>
+        ${selectedDay ? renderSelectedDay(selectedDay) : `<p class="empty">Choose a day on the calendar.</p>`}
+      </section>
+    </div>
+  `;
+}
+
+function renderCalendarDay(day, selectedDateKey) {
+  const classes = ["calendar-day-cell", day.status];
+  if (day.isToday) classes.push("today");
+  if (day.dateKey === selectedDateKey) classes.push("selected");
+  return `
+    <button class="${classes.join(" ")}" data-calendar-date="${escapeAttribute(day.dateKey)}" title="${escapeAttribute(day.summary)}">
+      <span class="calendar-day-number">${day.day}</span>
+      <strong>${day.totalEntries || ""}</strong>
+      ${renderCalendarMarkers(day.counts)}
+    </button>
+  `;
+}
+
+function renderCalendarMarkers(counts) {
+  const markers = [
+    counts.meals ? ["meal", "M"] : null,
+    counts.walks ? ["walk", "W"] : null,
+    counts.training ? ["training", "T"] : null,
+    counts.parkVisits || counts.social ? ["social", "S"] : null,
+    counts.vomit ? ["vomit", "V"] : null,
+    counts.health || counts.vet || counts.medication || counts.weight ? ["health", "H"] : null
+  ].filter(Boolean);
+  if (!markers.length) return `<span class="calendar-markers empty-markers"></span>`;
+  return `<span class="calendar-markers">${markers.map(([type, label]) => `<i class="${type}">${label}</i>`).join("")}</span>`;
+}
+
+function renderSelectedDay(day) {
+  return `
+    <div class="selected-day-grid">
+      <div class="calendar-summary-row">
+        ${renderStat("Meals", day.counts.meals)}
+        ${renderStat("Walks", day.counts.walks)}
+        ${renderStat("Training", day.counts.training)}
+      </div>
+      <div class="calendar-summary-row">
+        ${renderStat("Social", day.counts.parkVisits + day.counts.social)}
+        ${renderStat("Vomit", day.counts.vomit)}
+        ${renderStat("Follow-ups", day.counts.followUps)}
+      </div>
+      ${renderTimeline(day.entries)}
+    </div>
   `;
 }
 
@@ -735,7 +824,18 @@ function bindEvents() {
   app.querySelectorAll("[data-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       activeTab = button.dataset.tab;
-      history.replaceState(null, "", `?tab=${activeTab}`);
+      const params = new URLSearchParams({ tab: activeTab });
+      if (activeTab === "calendar" && selectedCalendarDate) params.set("date", selectedCalendarDate);
+      history.replaceState(null, "", `?${params.toString()}`);
+      render();
+    });
+  });
+
+  app.querySelectorAll("[data-calendar-date]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedCalendarDate = button.dataset.calendarDate;
+      activeTab = "calendar";
+      history.replaceState(null, "", `?tab=calendar&date=${encodeURIComponent(selectedCalendarDate)}`);
       render();
     });
   });
@@ -959,6 +1059,30 @@ function formatDateTime(value) {
     hour: "numeric",
     minute: "2-digit"
   });
+}
+
+function formatLongDate(dateKey) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric"
+  });
+}
+
+function getSelectedCalendarDay(calendar) {
+  const selected = calendar.days.find((day) => day.dateKey === selectedCalendarDate);
+  if (selected) return selected;
+  const today = calendar.days.find((day) => day.isToday);
+  if (today) {
+    selectedCalendarDate = today.dateKey;
+    return today;
+  }
+  const reviewDay = calendar.days.find((day) => day.status === "review");
+  const activeDay = calendar.days.find((day) => day.status === "active");
+  const fallback = reviewDay || activeDay || calendar.days[0] || null;
+  selectedCalendarDate = fallback?.dateKey || "";
+  return fallback;
 }
 
 function titleCase(value) {

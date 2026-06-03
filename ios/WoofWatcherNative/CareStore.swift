@@ -97,6 +97,56 @@ final class CareStore {
         )
     }
 
+    var careCalendar: CareCalendar {
+        let calendar = Calendar.current
+        let now = Date()
+        let start = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
+        let targetYear = calendar.component(.year, from: start)
+        let targetMonth = calendar.component(.month, from: start)
+        let monthRange = calendar.range(of: .day, in: .month, for: start) ?? 1..<2
+        let monthEntries = state.entries
+            .filter {
+                calendar.component(.year, from: $0.occurredAt) == targetYear
+                    && calendar.component(.month, from: $0.occurredAt) == targetMonth
+            }
+            .sorted { $0.occurredAt < $1.occurredAt }
+
+        let days = monthRange.compactMap { day -> CalendarDaySummary? in
+            var components = DateComponents()
+            components.year = targetYear
+            components.month = targetMonth
+            components.day = day
+            guard let date = calendar.date(from: components) else { return nil }
+
+            let key = dateKey(for: date)
+            let dayEntries = monthEntries.filter { dateKey(for: $0.occurredAt) == key }
+            let counts = countsForCalendarDay(dayEntries)
+            let needsReview = dayEntries.contains { $0.requiresFollowUp || $0.severity == .urgent }
+            let status = needsReview ? "review" : (dayEntries.isEmpty ? "empty" : "active")
+
+            return CalendarDaySummary(
+                day: day,
+                dateKey: key,
+                isToday: calendar.isDateInToday(date),
+                status: status,
+                summary: calendarDaySummary(counts),
+                counts: counts,
+                entries: dayEntries
+            )
+        }
+
+        return CareCalendar(
+            monthLabel: monthLabel(for: start),
+            weekdays: calendar.shortWeekdaySymbols,
+            firstWeekday: max(0, calendar.component(.weekday, from: start) - 1),
+            activeDays: days.filter { !$0.entries.isEmpty }.count,
+            reviewDays: days.filter { $0.status == "review" }.count,
+            vomitDays: days.filter { $0.counts.vomit > 0 }.count,
+            totalLogs: monthEntries.count,
+            days: days
+        )
+    }
+
     var goalReview: GoalReview {
         let calendar = Calendar.current
         let now = Date()
@@ -300,6 +350,56 @@ final class CareStore {
         }
     }
 
+    private func countsForCalendarDay(_ entries: [CareEntry]) -> CalendarDayCounts {
+        func count(_ type: CareEntryType) -> Int {
+            entries.filter { $0.type == type }.count
+        }
+
+        func minutes(_ type: CareEntryType) -> Int {
+            entries.filter { $0.type == type }.reduce(0) { $0 + $1.durationMinutes }
+        }
+
+        return CalendarDayCounts(
+            meals: count(.meal),
+            treats: count(.treat),
+            walks: count(.walk),
+            walkMinutes: minutes(.walk),
+            parkVisits: count(.park),
+            training: count(.training),
+            trainingMinutes: minutes(.training),
+            social: count(.social),
+            dogInteractions: entries.reduce(0) { $0 + $1.dogInteractions },
+            vomit: count(.vomit),
+            health: count(.health),
+            vet: count(.vet),
+            weight: count(.weight),
+            medication: count(.medication),
+            followUps: entries.filter { $0.requiresFollowUp }.count
+        )
+    }
+
+    private func calendarDaySummary(_ counts: CalendarDayCounts) -> String {
+        var parts: [String] = []
+        if counts.meals > 0 { parts.append("\(counts.meals) meal\(counts.meals == 1 ? "" : "s")") }
+        if counts.walks > 0 { parts.append("\(counts.walks) walk\(counts.walks == 1 ? "" : "s")") }
+        if counts.training > 0 { parts.append("\(counts.training) training") }
+        if counts.parkVisits + counts.social > 0 { parts.append("\(counts.parkVisits + counts.social) social") }
+        if counts.vomit > 0 { parts.append("\(counts.vomit) vomit") }
+        if counts.health + counts.vet + counts.medication + counts.weight > 0 { parts.append("\(counts.health + counts.vet + counts.medication + counts.weight) health") }
+        return parts.isEmpty ? "No logs" : parts.joined(separator: " | ")
+    }
+
+    private func dateKey(for date: Date) -> String {
+        let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
+    }
+
+    private func monthLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "LLLL yyyy"
+        return formatter.string(from: date)
+    }
+
     private func routineSortMinutes(_ value: String) -> Int {
         let text = value.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         let parts = text.split(separator: " ")
@@ -338,6 +438,46 @@ struct MonthlySummary {
     var walks: Int
     var training: Int
     var vomit: Int
+    var followUps: Int
+}
+
+struct CareCalendar {
+    var monthLabel: String
+    var weekdays: [String]
+    var firstWeekday: Int
+    var activeDays: Int
+    var reviewDays: Int
+    var vomitDays: Int
+    var totalLogs: Int
+    var days: [CalendarDaySummary]
+}
+
+struct CalendarDaySummary: Identifiable {
+    var id: String { dateKey }
+    var day: Int
+    var dateKey: String
+    var isToday: Bool
+    var status: String
+    var summary: String
+    var counts: CalendarDayCounts
+    var entries: [CareEntry]
+}
+
+struct CalendarDayCounts {
+    var meals: Int
+    var treats: Int
+    var walks: Int
+    var walkMinutes: Int
+    var parkVisits: Int
+    var training: Int
+    var trainingMinutes: Int
+    var social: Int
+    var dogInteractions: Int
+    var vomit: Int
+    var health: Int
+    var vet: Int
+    var weight: Int
+    var medication: Int
     var followUps: Int
 }
 
