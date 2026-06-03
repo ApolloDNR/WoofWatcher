@@ -129,6 +129,23 @@ final class CareStore {
         save()
     }
 
+    func upsertRoutine(_ draft: RoutineDraft) {
+        let routine = draft.routine()
+        if let index = state.routines.firstIndex(where: { $0.id == routine.id }) {
+            state.routines[index] = routine
+        } else {
+            state.routines.append(routine)
+        }
+        sortRoutines()
+        save()
+    }
+
+    func removeRoutine(id: String) {
+        state.routines.removeAll { $0.id == id }
+        sortRoutines()
+        save()
+    }
+
     func resetSeed() {
         state = .seed
         save()
@@ -205,6 +222,37 @@ final class CareStore {
         }
 
         return lines.joined(separator: " ")
+    }
+
+    private func sortRoutines() {
+        state.routines.sort { lhs, rhs in
+            let left = routineSortMinutes(lhs.time)
+            let right = routineSortMinutes(rhs.time)
+            if left != right {
+                return left < right
+            }
+            return lhs.label < rhs.label
+        }
+    }
+
+    private func routineSortMinutes(_ value: String) -> Int {
+        let text = value.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let parts = text.split(separator: " ")
+        guard parts.count == 2, ["AM", "PM"].contains(String(parts[1])) else {
+            return Int.max
+        }
+
+        let timeParts = parts[0].split(separator: ":")
+        guard let hourText = timeParts.first, let rawHour = Int(String(hourText)), rawHour >= 1, rawHour <= 12 else {
+            return Int.max
+        }
+
+        let minute = timeParts.count > 1 ? Int(String(timeParts[1])) ?? 0 : 0
+        var hour = rawHour == 12 ? 0 : rawHour
+        if String(parts[1]) == "PM" {
+            hour += 12
+        }
+        return hour * 60 + minute
     }
 
     private func storageURL() throws -> URL {

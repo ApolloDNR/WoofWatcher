@@ -6,8 +6,10 @@ import {
   getDefaultState,
   getHealthWatch,
   getMonthlySummary,
+  getTodayPlan,
   normalizeState,
-  getTodayPlan
+  removeRoutine,
+  upsertRoutine
 } from "./woof-core.js";
 
 const STORAGE_KEY = "woofwatcher.v1.state";
@@ -92,6 +94,7 @@ function render() {
 
     <nav class="bottom-nav" aria-label="WoofWatcher sections">
       ${renderNavButton("today", "Today")}
+      ${renderNavButton("schedule", "Schedule")}
       ${renderNavButton("log", "Quick Log")}
       ${renderNavButton("health", "Health")}
       ${renderNavButton("records", "Records")}
@@ -195,6 +198,7 @@ function renderStat(label, value) {
 function renderTabHeader(tab) {
   const labels = {
     today: ["Today", "Routine, handoff, and latest care."],
+    schedule: ["Schedule", "Edit meals, walks, snacks, training, and ownership."],
     log: ["Quick Log", "Capture what happened without a long conversation."],
     health: ["Health Watch", "Track patterns and know when review is needed."],
     records: ["Records", "Vaccines, vet notes, weight goals, and instructions."],
@@ -215,12 +219,86 @@ function renderTabHeader(tab) {
 }
 
 function renderActiveTab(tab, context) {
+  if (tab === "schedule") return renderScheduleTab();
   if (tab === "log") return renderLogTab();
   if (tab === "health") return renderHealthTab(context.health);
   if (tab === "records") return renderRecordsTab();
   if (tab === "report") return renderReportTab(context.summary);
   if (tab === "assistant") return renderAssistantTab();
   return renderTodayTab(context.plan, context.health, context.handoff);
+}
+
+function renderScheduleTab() {
+  return `
+    <div class="dashboard-grid">
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Care planner</p>
+            <h3>Editable daily routine</h3>
+          </div>
+          <span class="status-chip steady">${state.routines.length} items</span>
+        </div>
+        <div class="routine-editor-list">
+          ${state.routines.map(renderRoutineEditor).join("")}
+        </div>
+      </section>
+      <section class="panel span-2">
+        <p class="micro">Add routine</p>
+        <h3>New care item</h3>
+        ${renderRoutineForm()}
+      </section>
+    </div>
+  `;
+}
+
+function renderRoutineEditor(routine) {
+  return `
+    <article class="routine-editor-card">
+      ${renderRoutineForm(routine)}
+    </article>
+  `;
+}
+
+function renderRoutineForm(routine = {}) {
+  const typeOptions = [...ENTRY_SELECT_OPTIONS]
+    .map((type) => `<option value="${type}" ${routine.type === type ? "selected" : ""}>${titleCase(type)}</option>`)
+    .join("");
+  const isExisting = Boolean(routine.id);
+
+  return `
+    <form class="routine-form" data-form="routine">
+      <input type="hidden" name="id" value="${escapeAttribute(routine.id || "")}" />
+      <label>
+        <span>Routine</span>
+        <input name="label" value="${escapeAttribute(routine.label || "")}" placeholder="Breakfast, medication, bedtime snack" />
+      </label>
+      <label>
+        <span>Type</span>
+        <select name="type">${typeOptions}</select>
+      </label>
+      <label>
+        <span>Time</span>
+        <input name="time" value="${escapeAttribute(routine.time || "")}" placeholder="7:30 AM" />
+      </label>
+      <label>
+        <span>Owner</span>
+        <input name="owner" value="${escapeAttribute(routine.owner || "")}" placeholder="Apollo, Girlfriend, Either caregiver" />
+      </label>
+      <label class="wide">
+        <span>Care note</span>
+        <textarea name="note" rows="3" placeholder="What the other caregiver should know.">${escapeHtml(routine.note || "")}</textarea>
+      </label>
+      <div class="routine-form-actions wide">
+        <button class="button primary" type="submit">${isExisting ? "Save routine" : "Add routine"}</button>
+        ${
+          isExisting
+            ? `<button class="button ghost" type="button" data-action="remove-routine" data-routine-id="${escapeAttribute(routine.id)}">Remove</button>`
+            : ""
+        }
+      </div>
+    </form>
+  `;
 }
 
 function renderTodayTab(plan, health, handoff) {
@@ -607,6 +685,16 @@ function bindEvents() {
     render();
   });
 
+  app.querySelectorAll("[data-form='routine']").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+      saveState({ ...state, routines: upsertRoutine(state.routines, data) });
+      activeTab = "schedule";
+      render();
+    });
+  });
+
   app.querySelector("[data-form='assistant']")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const question = new FormData(event.currentTarget).get("question");
@@ -614,13 +702,13 @@ function bindEvents() {
   });
 
   app.querySelectorAll("[data-action]").forEach((button) => {
-    button.addEventListener("click", () => handleAction(button.dataset.action));
+    button.addEventListener("click", () => handleAction(button.dataset.action, button));
   });
 
   app.querySelector("[data-input='import-json']")?.addEventListener("change", handleImportFile);
 }
 
-function handleAction(action) {
+function handleAction(action, button) {
   if (action === "reset-demo") {
     const confirmed = window.confirm("Reset WoofWatcher to the Phoenix demo state? This clears local logs on this device.");
     if (!confirmed) return;
@@ -640,6 +728,13 @@ function handleAction(action) {
 
   if (action === "copy-handoff") {
     navigator.clipboard?.writeText(getCaregiverHandoff(state).message);
+  }
+
+  if (action === "remove-routine") {
+    const routineId = button?.dataset.routineId;
+    saveState({ ...state, routines: removeRoutine(state.routines, routineId) });
+    activeTab = "schedule";
+    render();
   }
 
   if (action === "print-report") {

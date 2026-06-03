@@ -180,7 +180,7 @@ export function normalizeState(input = {}, now = new Date().toISOString()) {
       }
     },
     caregivers: Array.isArray(input.caregivers) && input.caregivers.length ? input.caregivers.map(normalizeCaregiver) : defaults.caregivers,
-    routines: Array.isArray(input.routines) && input.routines.length ? input.routines.map(normalizeRoutine) : defaults.routines,
+    routines: Array.isArray(input.routines) && input.routines.length ? sortRoutines(input.routines.map(normalizeRoutineInput)) : defaults.routines,
     records: Array.isArray(input.records) ? input.records.map(normalizeRecord) : defaults.records,
     entries: Array.isArray(input.entries) ? input.entries.map(normalizeImportedEntry) : defaults.entries,
     updatedAt: now
@@ -205,6 +205,33 @@ export function normalizeEntryInput(input = {}) {
     note: cleanText(input.note),
     severity
   };
+}
+
+export function normalizeRoutineInput(input = {}) {
+  const type = ENTRY_TYPES.has(input.type) ? input.type : "note";
+  const label = cleanText(input.label) || TYPE_DEFAULT_TITLES[type] || "Care routine";
+  const time = cleanText(input.time) || "Unscheduled";
+  return {
+    id: cleanText(input.id) || makeRoutineId({ type, label, time }),
+    label,
+    type,
+    time,
+    owner: cleanText(input.owner) || "Either caregiver",
+    note: cleanText(input.note)
+  };
+}
+
+export function upsertRoutine(routines = [], input = {}) {
+  const routine = normalizeRoutineInput(input);
+  const existing = Array.isArray(routines) ? routines : [];
+  const replaced = existing.some((item) => item.id === routine.id);
+  const next = replaced ? existing.map((item) => (item.id === routine.id ? routine : normalizeRoutineInput(item))) : [...existing.map(normalizeRoutineInput), routine];
+  return sortRoutines(next);
+}
+
+export function removeRoutine(routines = [], routineId = "") {
+  const target = cleanText(routineId);
+  return sortRoutines((Array.isArray(routines) ? routines : []).filter((routine) => routine.id !== target).map(normalizeRoutineInput));
 }
 
 export function createEntry(input = {}) {
@@ -424,18 +451,6 @@ function normalizeCaregiver(caregiver = {}) {
   };
 }
 
-function normalizeRoutine(routine = {}) {
-  const type = ENTRY_TYPES.has(routine.type) ? routine.type : "note";
-  return {
-    id: cleanText(routine.id) || `routine_${type}_${Math.random().toString(36).slice(2, 8)}`,
-    label: cleanText(routine.label) || TYPE_DEFAULT_TITLES[type] || "Care routine",
-    type,
-    time: cleanText(routine.time) || "Unscheduled",
-    owner: cleanText(routine.owner) || "Either caregiver",
-    note: cleanText(routine.note)
-  };
-}
-
 function normalizeRecord(record = {}) {
   return {
     id: cleanText(record.id) || `record_${Math.random().toString(36).slice(2, 8)}`,
@@ -508,6 +523,37 @@ function makeEntryId(entry) {
   const stamp = new Date(entry.occurredAt).getTime().toString(36);
   const rand = Math.random().toString(36).slice(2, 8);
   return `entry_${entry.type}_${stamp}_${rand}`;
+}
+
+function makeRoutineId(routine) {
+  const label = cleanText(routine.label)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 32);
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `routine_${routine.type}_${label || "care"}_${suffix}`;
+}
+
+function sortRoutines(routines = []) {
+  return [...routines].sort((a, b) => {
+    const left = routineSortMinutes(a.time);
+    const right = routineSortMinutes(b.time);
+    if (left !== right) return left - right;
+    return a.label.localeCompare(b.label);
+  });
+}
+
+function routineSortMinutes(value) {
+  const text = cleanText(value);
+  const match = text.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (!match) return Number.MAX_SAFE_INTEGER;
+  let hour = Number(match[1]);
+  const minute = Number(match[2] || 0);
+  const meridiem = match[3].toUpperCase();
+  if (hour === 12) hour = 0;
+  if (meridiem === "PM") hour += 12;
+  return hour * 60 + minute;
 }
 
 function countType(entries, type) {

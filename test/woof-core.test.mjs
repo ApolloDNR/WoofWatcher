@@ -11,7 +11,10 @@ import {
   getMonthlySummary,
   getTodayPlan,
   normalizeState,
-  normalizeEntryInput
+  normalizeEntryInput,
+  normalizeRoutineInput,
+  removeRoutine,
+  upsertRoutine
 } from "../src/woof-core.js";
 
 test("normalizes a meal entry with caregiver context and Phoenix-specific appetite notes", () => {
@@ -152,6 +155,59 @@ test("includes caregiver handoff context in the local assistant review", () => {
   assert.equal(context.handoff.nextRoutine.label, "Midday check");
   assert.match(context.handoff.message, /Last meal: Breakfast by Apollo/);
   assert.match(context.localAnswer, /Handoff:/);
+});
+
+test("normalizes an editable routine without trusting malformed schedule input", () => {
+  const routine = normalizeRoutineInput({
+    id: "",
+    label: "",
+    type: "unknown",
+    time: "",
+    owner: "",
+    note: "  anxiety check after lunch  "
+  });
+
+  assert.match(routine.id, /^routine_note_/);
+  assert.equal(routine.label, "Care note");
+  assert.equal(routine.type, "note");
+  assert.equal(routine.time, "Unscheduled");
+  assert.equal(routine.owner, "Either caregiver");
+  assert.equal(routine.note, "anxiety check after lunch");
+});
+
+test("adds, updates, orders, and removes caregiver routines for the daily plan", () => {
+  const state = getDefaultState("2026-06-03T12:00:00.000Z");
+  const withUpdatedDinner = upsertRoutine(state.routines, {
+    id: "routine_dinner",
+    label: "Dinner",
+    type: "meal",
+    time: "5:45 PM",
+    owner: "Girlfriend",
+    note: "Early dinner if Phoenix is anxious."
+  });
+  const withMedication = upsertRoutine(withUpdatedDinner, {
+    label: "Medication",
+    type: "medication",
+    time: "9:00 PM",
+    owner: "Apollo",
+    note: "Only if prescribed."
+  });
+  const withoutMidday = removeRoutine(withMedication, "routine_midday_check");
+
+  const dinner = withoutMidday.find((routine) => routine.id === "routine_dinner");
+  const medication = withoutMidday.find((routine) => routine.label === "Medication");
+  const plan = getTodayPlan({ ...state, routines: withoutMidday, entries: [] }, "2026-06-03T13:00:00.000Z");
+
+  assert.equal(withUpdatedDinner.length, state.routines.length);
+  assert.equal(dinner.owner, "Girlfriend");
+  assert.equal(dinner.time, "5:45 PM");
+  assert.match(medication.id, /^routine_medication_/);
+  assert.equal(withoutMidday.some((routine) => routine.id === "routine_midday_check"), false);
+  assert.deepEqual(
+    withoutMidday.map((routine) => routine.label),
+    ["Breakfast", "Morning walk", "Dinner", "Evening walk", "Medication", "Bedtime snack"]
+  );
+  assert.equal(plan.nextItems.some((routine) => routine.label === "Midday check"), false);
 });
 
 test("health watch elevates repeated vomit incidents and missing appetite pattern", () => {

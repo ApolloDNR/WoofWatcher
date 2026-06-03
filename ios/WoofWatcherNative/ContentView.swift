@@ -2,6 +2,7 @@ import SwiftUI
 
 enum AppTab: String, CaseIterable, Identifiable {
     case today
+    case schedule
     case log
     case health
     case records
@@ -13,6 +14,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .today: return "Today"
+        case .schedule: return "Schedule"
         case .log: return "Log"
         case .health: return "Health"
         case .records: return "Records"
@@ -24,6 +26,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .today: return "calendar"
+        case .schedule: return "clock.badge.checkmark"
         case .log: return "plus.circle"
         case .health: return "heart.text.square"
         case .records: return "folder"
@@ -61,6 +64,8 @@ struct ContentView: View {
         switch tab {
         case .today:
             TodayView(store: store)
+        case .schedule:
+            ScheduleView(store: store)
         case .log:
             LogView(store: store)
         case .health:
@@ -71,6 +76,53 @@ struct ContentView: View {
             ReportView(store: store)
         case .helper:
             HelperView(store: store)
+        }
+    }
+}
+
+struct ScheduleView: View {
+    @Bindable var store: CareStore
+    @State private var draft = RoutineDraft()
+
+    var body: some View {
+        Form {
+            Section("Editable Daily Routine") {
+                ForEach(store.state.routines) { routine in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(routine.label).font(.headline)
+                                Text("\(routine.time) | \(routine.owner)").font(.subheadline).foregroundStyle(.secondary)
+                                Text(routine.note).font(.footnote)
+                            }
+                            Spacer()
+                            Button(role: .destructive) {
+                                store.removeRoutine(id: routine.id)
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Section("Add Routine") {
+                Picker("Type", selection: $draft.type) {
+                    ForEach(CareEntryType.allCases) { type in
+                        Text(type.title).tag(type)
+                    }
+                }
+                TextField("Routine", text: $draft.label)
+                TextField("Time", text: $draft.time)
+                TextField("Owner", text: $draft.owner)
+                TextField("Care note", text: $draft.note, axis: .vertical)
+                    .lineLimit(2...5)
+                Button("Add Routine") {
+                    store.upsertRoutine(draft)
+                    draft = RoutineDraft()
+                }
+                .buttonStyle(.borderedProminent)
+            }
         }
     }
 }

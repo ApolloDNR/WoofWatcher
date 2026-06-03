@@ -29,9 +29,10 @@ OPENAI_MODEL
 
 1. Load `/`.
 2. Load `/api/care-helper` and confirm it returns JSON with `configured` true or false.
-3. Load `/?tab=log`.
-4. Add a test care log.
-5. Confirm the Today routine and caregiver handoff update.
-6. Open `/?tab=report` and download the report.
-7. Open `/?tab=assistant`; if `OPENAI_API_KEY` is not configured, confirm local mode still answers.
-8. Open DevTools Application or the browser install prompt and confirm the manifest is detected.
+3. Load `/?tab=schedule` and add a test routine.
+4. Load `/?tab=log`.
+5. Add a test care log.
+6. Confirm the Today routine and caregiver handoff update.
+7. Open `/?tab=report` and download the report.
+8. Open `/?tab=assistant`; if `OPENAI_API_KEY` is not configured, confirm local mode still answers.
+9. Open DevTools Application or the browser install prompt and confirm the manifest is detected.

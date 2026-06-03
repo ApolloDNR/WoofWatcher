@@ -78,6 +78,31 @@ try {
   await expectEval(client, "document.body.innerText.includes('Phoenix care command')", true, "home text");
 
   await evaluate(client, `
+    document.querySelector('[data-tab="schedule"]').click();
+  `);
+  await delay(250);
+  await expectEval(client, "Boolean(document.querySelector('[data-form=\"routine\"]'))", true, "routine form visible");
+  await evaluate(client, `
+    (() => {
+    const forms = [...document.querySelectorAll('[data-form="routine"]')];
+    const form = forms[forms.length - 1];
+    form.querySelector('[name="label"]').value = 'QA medication';
+    form.querySelector('[name="type"]').value = 'medication';
+    form.querySelector('[name="time"]').value = '9:00 PM';
+    form.querySelector('[name="owner"]').value = 'Apollo';
+    form.querySelector('[name="note"]').value = 'Rendered schedule smoke check';
+    form.requestSubmit();
+    })();
+  `);
+  await delay(500);
+  await expectEval(
+    client,
+    `JSON.parse(localStorage.getItem('woofwatcher.v1.state')).routines.some((routine) => routine.label === 'QA medication')`,
+    true,
+    "saved routine"
+  );
+
+  await evaluate(client, `
     document.querySelector('[data-tab="log"]').click();
   `);
   await delay(250);
@@ -146,6 +171,7 @@ try {
 async function runDumpDomSmoke() {
   const checks = [
     { route: "/", label: "home", text: ["WoofWatcher", "Phoenix care command", "Import", "Next handoff", "Caregiver handoff"] },
+    { route: "/?tab=schedule", label: "schedule", text: ["Schedule", "Editable daily routine", "Add routine", "Save routine"] },
     { route: "/?tab=log", label: "log", text: ["Quick Log", "Capture what happened", "Save care log"] },
     { route: "/?tab=report", label: "report", text: ["WoofWatcher Monthly Report", "Download", "Print/PDF"] },
     { route: "/?tab=assistant", label: "assistant", text: ["Care Helper", "Ask with Phoenix context", "veterinarian"] }

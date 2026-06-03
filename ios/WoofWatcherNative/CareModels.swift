@@ -112,6 +112,39 @@ struct CareRoutine: Codable, Identifiable {
     ]
 }
 
+struct RoutineDraft {
+    var id: String = ""
+    var label: String = ""
+    var type: CareEntryType = .meal
+    var time: String = ""
+    var owner: String = "Either caregiver"
+    var note: String = ""
+
+    init() {}
+
+    init(routine: CareRoutine) {
+        id = routine.id
+        label = routine.label
+        type = routine.type
+        time = routine.time
+        owner = routine.owner
+        note = routine.note
+    }
+
+    func routine() -> CareRoutine {
+        let cleanLabel = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanTime = time.trimmingCharacters(in: .whitespacesAndNewlines)
+        return CareRoutine(
+            id: id.isEmpty ? "routine_\(type.rawValue)_\(UUID().uuidString.prefix(8))" : id,
+            label: cleanLabel.isEmpty ? type.title : cleanLabel,
+            type: type,
+            time: cleanTime.isEmpty ? "Unscheduled" : cleanTime,
+            owner: owner.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Either caregiver" : owner,
+            note: note.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+}
+
 struct CareRecord: Codable, Identifiable {
     var id = UUID()
     var type: String

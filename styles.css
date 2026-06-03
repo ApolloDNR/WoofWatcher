@@ -402,6 +402,7 @@ dd,
 }
 
 .routine-list,
+.routine-editor-list,
 .timeline,
 .record-list {
   display: grid;
@@ -483,6 +484,7 @@ dd,
 }
 
 .entry-form,
+.routine-form,
 .record-form,
 .assistant-form {
   display: grid;
@@ -491,9 +493,30 @@ dd,
   margin-top: 14px;
 }
 
+.routine-form {
+  grid-template-columns: minmax(150px, 1.2fr) minmax(120px, 0.8fr) minmax(110px, 0.7fr) minmax(150px, 1fr);
+}
+
 .record-form,
 .assistant-form {
   grid-template-columns: 1fr;
+}
+
+.routine-editor-card {
+  border: 1px solid rgba(212, 207, 196, 0.16);
+  border-radius: var(--radius);
+  background: rgba(15, 23, 34, 0.34);
+  padding: 12px;
+}
+
+.routine-editor-card .routine-form {
+  margin-top: 0;
+}
+
+.routine-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 label {
@@ -636,8 +659,8 @@ textarea:focus {
 .bottom-nav {
   position: static;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  width: min(760px, calc(100% - 24px));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  width: min(860px, calc(100% - 24px));
   margin: 18px auto 0;
   border: 1px solid rgba(212, 207, 196, 0.2);
   border-radius: var(--radius);
@@ -698,7 +721,7 @@ textarea:focus {
 
 @media (max-width: 680px) {
   .app-shell {
-    padding: 12px 12px 118px;
+    padding: 12px 12px 150px;
   }
 
   .topbar {
@@ -725,6 +748,7 @@ textarea:focus {
   .profile-rail,
   .dashboard-grid,
   .entry-form,
+  .routine-form,
   .mini-grid,
   .handoff-list {
     grid-template-columns: 1fr;
@@ -743,7 +767,7 @@ textarea:focus {
     left: 50%;
     bottom: 12px;
     z-index: 10;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     margin: 0;
     transform: translateX(-50%);
   }

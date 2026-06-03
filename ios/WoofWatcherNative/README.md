@@ -12,9 +12,9 @@ This folder is a SwiftUI source handoff for a future native iOS app. The shipped
 ## Files
 
 - `WoofWatcherApp.swift`: root app entry.
-- `CareModels.swift`: Codable model types and Phoenix seed data.
-- `CareStore.swift`: root-owned observable store with local JSON save/load, health watch, monthly summary, and caregiver handoff digest.
-- `ContentView.swift`: TabView shell for Today, Log, Health, Records, Report, and Helper, including a shareable Today handoff section.
+- `CareModels.swift`: Codable model types, Phoenix seed data, and routine draft shape.
+- `CareStore.swift`: root-owned observable store with local JSON save/load, editable routines, health watch, monthly summary, and caregiver handoff digest.
+- `ContentView.swift`: TabView shell for Today, Schedule, Log, Health, Records, Report, and Helper, including a shareable Today handoff section.
 
 ## Verification Still Needed On macOS
 
@@ -23,5 +23,6 @@ This folder is a SwiftUI source handoff for a future native iOS app. The shipped
 3. Build in Xcode.
 4. Run on Simulator.
 5. Add a care log, relaunch, and confirm persistence.
-6. Confirm the report and helper boundary match the PWA behavior.
-7. Confirm the Today handoff shows next routine, last meal, last walk, follow-ups, and caregiver load.
+6. Add and remove a schedule routine.
+7. Confirm the report and helper boundary match the PWA behavior.
+8. Confirm the Today handoff shows next routine, last meal, last walk, follow-ups, and caregiver load.

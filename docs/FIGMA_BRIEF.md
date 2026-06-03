@@ -9,6 +9,7 @@ WoofWatcher is a calm care command center for Phoenix, an anxious rescued shephe
 ## Required Screens
 
 - Today dashboard: Phoenix profile, health status, routines, next handoff, quick log, recent timeline.
+- Schedule: editable care routine list plus add-routine form for meals, walks, snacks, medication, training, and ownership.
 - Quick Log: event form plus recent entries.
 - Health Watch: signals, red flags, health timeline.
 - Records: stored vet/vaccine/weight/instruction records plus add form.
