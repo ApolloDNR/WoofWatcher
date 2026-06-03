@@ -19,6 +19,7 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 - `CareEntry`: meal, treat, walk, park, training, social, vomit, health, vet, weight, medication, note.
 - `CareGoal`: weight, training, anxiety, social, health, and custom milestones with active/paused/done status.
 - `CareRecord`: vet, vaccine, weight, instruction.
+- `RecordDraft`: editable record form shape for vet, vaccine, weight, medication, microchip, and instruction records.
 - `RoutineDraft`: editable schedule item for meals, walks, snacks, medication, training, and ownership.
 - `CaregiverHandoff`: next routine, latest meal, latest walk, follow-ups, caregiver load, and a shareable message.
 - `CareCalendar`: monthly day summaries with review days, vomit days, care markers, and selected-day evidence.
@@ -40,4 +41,4 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 
 ## Verification Gate
 
-Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit the schedule, add/edit/remove goals, add a care log, shows the care calendar and selected-day timeline, persists after relaunch, exports a report, shows the caregiver handoff, and shows the red-flag boundary in the helper.
+Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit the schedule, add/edit/remove goals, add/edit/remove records, add a care log, shows the care calendar and selected-day timeline, persists after relaunch, exports a report, shows the caregiver handoff, and shows the red-flag boundary in the helper.

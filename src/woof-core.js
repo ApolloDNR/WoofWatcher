@@ -14,6 +14,7 @@ const ENTRY_TYPES = new Set([
 ]);
 const GOAL_CATEGORIES = new Set(["weight", "training", "anxiety", "social", "health", "custom"]);
 const GOAL_STATUSES = new Set(["active", "paused", "done"]);
+const RECORD_TYPES = new Set(["vet", "vaccine", "weight", "instruction", "medication", "microchip"]);
 
 const TYPE_DEFAULT_TITLES = {
   meal: "Meal",
@@ -213,7 +214,7 @@ export function normalizeState(input = {}, now = new Date().toISOString()) {
     caregivers: Array.isArray(input.caregivers) && input.caregivers.length ? input.caregivers.map(normalizeCaregiver) : defaults.caregivers,
     routines: Array.isArray(input.routines) ? sortRoutines(input.routines.map(normalizeRoutineInput)) : defaults.routines,
     goals: Array.isArray(input.goals) ? sortGoals(input.goals.map(normalizeGoalInput)) : defaults.goals,
-    records: Array.isArray(input.records) ? input.records.map(normalizeRecord) : defaults.records,
+    records: Array.isArray(input.records) ? input.records.map(normalizeRecordInput) : defaults.records,
     entries: Array.isArray(input.entries) ? input.entries.map(normalizeImportedEntry) : defaults.entries,
     updatedAt: now
   };
@@ -291,6 +292,30 @@ export function upsertGoal(goals = [], input = {}) {
 export function removeGoal(goals = [], goalId = "") {
   const target = cleanText(goalId);
   return sortGoals((Array.isArray(goals) ? goals : []).filter((goal) => goal.id !== target).map(normalizeGoalInput));
+}
+
+export function normalizeRecordInput(input = {}) {
+  const type = RECORD_TYPES.has(input.type) ? input.type : "instruction";
+  const title = cleanText(input.title) || "Care record";
+  return {
+    id: cleanText(input.id) || makeRecordId({ type, title }),
+    type,
+    title,
+    due: cleanText(input.due) || "No date set",
+    note: cleanText(input.note)
+  };
+}
+
+export function upsertRecord(records = [], input = {}) {
+  const record = normalizeRecordInput(input);
+  const existing = Array.isArray(records) ? records : [];
+  const replaced = existing.some((item) => item.id === record.id);
+  return replaced ? existing.map((item) => (item.id === record.id ? record : normalizeRecordInput(item))) : [record, ...existing.map(normalizeRecordInput)];
+}
+
+export function removeRecord(records = [], recordId = "") {
+  const target = cleanText(recordId);
+  return (Array.isArray(records) ? records : []).filter((record) => record.id !== target).map(normalizeRecordInput);
 }
 
 export function createEntry(input = {}) {
@@ -595,16 +620,6 @@ function normalizeCaregiver(caregiver = {}) {
   };
 }
 
-function normalizeRecord(record = {}) {
-  return {
-    id: cleanText(record.id) || `record_${Math.random().toString(36).slice(2, 8)}`,
-    type: cleanText(record.type) || "instruction",
-    title: cleanText(record.title) || "Care record",
-    due: cleanText(record.due),
-    note: cleanText(record.note)
-  };
-}
-
 function normalizeImportedEntry(entry = {}) {
   const normalized = createEntry(entry);
   return {
@@ -687,6 +702,16 @@ function makeGoalId(goal) {
     .slice(0, 32);
   const suffix = Math.random().toString(36).slice(2, 8);
   return `goal_${goal.category}_${title || "care"}_${suffix}`;
+}
+
+function makeRecordId(record) {
+  const title = cleanText(record.title)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 32);
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `record_${record.type}_${title || "care"}_${suffix}`;
 }
 
 function sortGoals(goals = []) {

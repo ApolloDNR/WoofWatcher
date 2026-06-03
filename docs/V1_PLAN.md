@@ -20,7 +20,7 @@
 - Monthly care calendar with day-level care density, vomit days, review days, walk/training/social markers, and selected-day timeline evidence.
 - Quick logs for meals, walks, treats, training, social interactions, dog park visits, health, vomit, vet, weight, medication, and general notes.
 - Health watch that highlights repeat vomiting, appetite refusal, urgent severity, and veterinary red flags without diagnosing.
-- Records vault for vaccines, vet visits, weight goals, and care instructions.
+- Editable records vault for vaccines, vet visits, weight goals, medication, microchip details, and care instructions.
 - Monthly report with export/download and print/PDF behavior.
 - Local persistence, JSON backup export/import, reset to demo state, installable PWA shell, offline page, and Vercel-ready static/API serving.
 - AI-ready assistant panel that summarizes Phoenix context locally and can call `/api/care-helper` for a live OpenAI Responses API answer when `OPENAI_API_KEY` is configured server-side.
@@ -34,6 +34,7 @@
 - Daily plan completion/next item logic.
 - Editable routine normalization, ordering, add/update, and removal.
 - Goal normalization, add/update/removal, progress review, and report inclusion.
+- Record normalization, add/update/removal, and backup restore safety.
 - Caregiver handoff digest logic.
 - Health watch escalation.
 - Export-ready report text with veterinary boundary.

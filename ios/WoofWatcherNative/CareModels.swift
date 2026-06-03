@@ -259,6 +259,37 @@ struct CareRecord: Codable, Identifiable {
     ]
 }
 
+struct RecordDraft {
+    var id: UUID?
+    var type: String = "vet"
+    var title: String = ""
+    var due: String = ""
+    var note: String = ""
+
+    init() {}
+
+    init(record: CareRecord) {
+        id = record.id
+        type = record.type
+        title = record.title
+        due = record.due
+        note = record.note
+    }
+
+    func record() -> CareRecord {
+        var record = CareRecord(
+            type: type.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "instruction" : type,
+            title: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Care record" : title,
+            due: due.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "No date set" : due,
+            note: note.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+        if let id {
+            record.id = id
+        }
+        return record
+    }
+}
+
 struct CareEntry: Codable, Identifiable {
     var id = UUID()
     var type: CareEntryType

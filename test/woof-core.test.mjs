@@ -13,12 +13,15 @@ import {
   getMonthlySummary,
   getTodayPlan,
   normalizeGoalInput,
+  normalizeRecordInput,
   normalizeState,
   normalizeEntryInput,
   normalizeRoutineInput,
   removeGoal,
+  removeRecord,
   removeRoutine,
   upsertGoal,
+  upsertRecord,
   upsertRoutine
 } from "../src/woof-core.js";
 
@@ -329,6 +332,47 @@ test("adds, updates, removes, and reviews weight and training goals from logs", 
   assert.equal(review.training.minutes, 12);
   assert.equal(review.social.interactions, 1);
   assert.match(review.highlights[0], /57.4 lb/);
+});
+
+test("normalizes Phoenix records without trusting malformed medical vault input", () => {
+  const record = normalizeRecordInput({
+    id: "",
+    type: "unknown",
+    title: "",
+    due: "",
+    note: "  ask vet about yellow bile pattern  "
+  });
+
+  assert.match(record.id, /^record_instruction_/);
+  assert.equal(record.type, "instruction");
+  assert.equal(record.title, "Care record");
+  assert.equal(record.due, "No date set");
+  assert.equal(record.note, "ask vet about yellow bile pattern");
+});
+
+test("adds, updates, and removes vaccine, vet, and instruction records", () => {
+  const state = getDefaultState("2026-06-03T12:00:00.000Z");
+  const withRabies = upsertRecord(state.records, {
+    type: "vaccine",
+    title: "Rabies vaccine",
+    due: "2026-07-01",
+    note: "Upload certificate after the clinic visit."
+  });
+  const rabies = withRabies.find((record) => record.title === "Rabies vaccine");
+  const updated = upsertRecord(withRabies, {
+    id: rabies.id,
+    type: "vaccine",
+    title: "Rabies vaccine",
+    due: "2026-08-01",
+    note: "Booster date moved by clinic."
+  });
+  const withoutRabies = removeRecord(updated, rabies.id);
+
+  assert.equal(withRabies.length, state.records.length + 1);
+  assert.match(rabies.id, /^record_vaccine_/);
+  assert.equal(updated.find((record) => record.id === rabies.id).due, "2026-08-01");
+  assert.equal(updated.find((record) => record.id === rabies.id).note, "Booster date moved by clinic.");
+  assert.equal(withoutRabies.some((record) => record.id === rabies.id), false);
 });
 
 test("preserves explicitly empty routines and goals across backup restore", () => {

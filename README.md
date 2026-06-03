@@ -10,7 +10,7 @@ WoofWatcher is a local-first care command center for Phoenix, Apollo's anxious r
 - Shows a monthly care calendar with day-level meals, walks, training, social exposure, vomit days, follow-ups, and selected-day evidence.
 - Shows today's routine, completed items, next care items, caregiver load, and a copyable handoff note.
 - Highlights health patterns and red flags without making a veterinary diagnosis.
-- Stores records for vaccines, vet visits, weight goals, and care instructions.
+- Stores and edits records for vaccines, vet visits, weight goals, medication, microchip details, and care instructions.
 - Builds a monthly report that can be copied, downloaded, or printed to PDF.
 - Saves locally in the browser with `localStorage`, with JSON backup export and import/restore.
 - Installs as a mobile PWA through Safari/Chrome home-screen install.

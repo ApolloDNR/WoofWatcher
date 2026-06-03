@@ -573,17 +573,55 @@ struct HealthView: View {
 
 struct RecordsView: View {
     @Bindable var store: CareStore
+    @State private var draft = RecordDraft()
+    private let recordTypes = ["vet", "vaccine", "weight", "instruction", "medication", "microchip"]
 
     var body: some View {
-        List {
+        Form {
             Section("Care Vault") {
-                ForEach(store.state.records) { record in
+                ForEach($store.state.records) { $record in
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(record.title).font(.headline)
-                        Text("\(record.type) | \(record.due)").font(.subheadline).foregroundStyle(.secondary)
-                        Text(record.note).font(.footnote)
+                        Picker("Type", selection: $record.type) {
+                            ForEach(recordTypes, id: \.self) { type in
+                                Text(type.capitalized).tag(type)
+                            }
+                        }
+                        TextField("Title", text: $record.title)
+                        TextField("Due/date", text: $record.due)
+                        TextField("Notes", text: $record.note, axis: .vertical)
+                            .lineLimit(2...5)
+                        HStack {
+                            Button("Save Record") {
+                                store.upsertRecord(RecordDraft(record: record))
+                            }
+                            .buttonStyle(.borderedProminent)
+
+                            Button(role: .destructive) {
+                                store.removeRecord(id: record.id)
+                            } label: {
+                                Label("Remove", systemImage: "trash")
+                            }
+                            .buttonStyle(.bordered)
+                        }
                     }
                 }
+            }
+
+            Section("Add Record") {
+                Picker("Type", selection: $draft.type) {
+                    ForEach(recordTypes, id: \.self) { type in
+                        Text(type.capitalized).tag(type)
+                    }
+                }
+                TextField("Title", text: $draft.title)
+                TextField("Due/date", text: $draft.due)
+                TextField("Notes", text: $draft.note, axis: .vertical)
+                    .lineLimit(2...5)
+                Button("Add Record") {
+                    store.upsertRecord(draft)
+                    draft = RecordDraft()
+                }
+                .buttonStyle(.borderedProminent)
             }
         }
     }

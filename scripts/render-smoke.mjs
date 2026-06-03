@@ -161,6 +161,28 @@ try {
   await expectEval(client, "Boolean(document.querySelector('.care-calendar-grid'))", true, "calendar grid visible");
   await expectEval(client, "document.body.innerText.includes('QA breakfast')", true, "calendar includes current-day entry");
 
+  await evaluate(client, `document.querySelector('[data-tab="records"]').click();`);
+  await delay(250);
+  await expectEval(client, "Boolean(document.querySelector('[data-record-mode=\"add\"]'))", true, "record add form visible");
+  await evaluate(client, `
+    (() => {
+    const form = document.querySelector('[data-record-mode="add"]');
+    form.querySelector('[name="type"]').value = 'vaccine';
+    form.querySelector('[name="title"]').value = 'QA vaccine';
+    form.querySelector('[name="due"]').value = '2026-07-01';
+    form.querySelector('[name="note"]').value = 'Rendered smoke vault check';
+    form.requestSubmit();
+    })();
+  `);
+  await delay(500);
+  await expectEval(
+    client,
+    `JSON.parse(localStorage.getItem('woofwatcher.v1.state')).records[0].title`,
+    "QA vaccine",
+    "saved record"
+  );
+  await expectEval(client, "document.body.innerText.includes('QA vaccine')", true, "record vault updates");
+
   await evaluate(client, `document.querySelector('[data-tab="report"]').click();`);
   await delay(250);
   await expectEval(client, "document.body.innerText.includes('WoofWatcher Monthly Report')", true, "report renders");
@@ -206,6 +228,7 @@ async function runDumpDomSmoke() {
     { route: "/?tab=goals", label: "goals", text: ["Goals", "Goal review", "Phoenix goals", "Save goal"] },
     { route: "/?tab=calendar", label: "calendar", text: ["Calendar", "Care calendar", "Selected day", "Vomit days"] },
     { route: "/?tab=log", label: "log", text: ["Quick Log", "Capture what happened", "Save care log"] },
+    { route: "/?tab=records", label: "records", text: ["Records", "Stored records", "Add record", "Save record", "Remove"] },
     { route: "/?tab=report", label: "report", text: ["WoofWatcher Monthly Report", "Download", "Print/PDF"] },
     { route: "/?tab=assistant", label: "assistant", text: ["Care Helper", "Ask with Phoenix context", "veterinarian"] }
   ];

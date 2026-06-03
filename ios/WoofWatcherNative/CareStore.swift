@@ -245,6 +245,21 @@ final class CareStore {
         save()
     }
 
+    func upsertRecord(_ draft: RecordDraft) {
+        let record = draft.record()
+        if let index = state.records.firstIndex(where: { $0.id == record.id }) {
+            state.records[index] = record
+        } else {
+            state.records.insert(record, at: 0)
+        }
+        save()
+    }
+
+    func removeRecord(id: UUID) {
+        state.records.removeAll { $0.id == id }
+        save()
+    }
+
     func resetSeed() {
         state = .seed
         save()

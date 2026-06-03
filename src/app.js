@@ -11,8 +11,10 @@ import {
   getTodayPlan,
   normalizeState,
   removeGoal,
+  removeRecord,
   removeRoutine,
   upsertGoal,
+  upsertRecord,
   upsertRoutine
 } from "./woof-core.js";
 
@@ -31,6 +33,7 @@ const ENTRY_SELECT_OPTIONS = [
   "medication",
   "note"
 ];
+const RECORD_TYPE_OPTIONS = ["vet", "vaccine", "weight", "instruction", "medication", "microchip"];
 
 const app = document.querySelector("#app");
 let state = loadState();
@@ -666,14 +669,11 @@ function renderRecordsTab() {
       <section class="panel">
         <p class="micro">Add record</p>
         <h3>Vet, vaccine, weight, instruction</h3>
-        <form class="record-form" data-form="record">
+        <form class="record-form" data-form="record" data-record-mode="add">
           <label>
             <span>Type</span>
             <select name="type">
-              <option value="vet">Vet</option>
-              <option value="vaccine">Vaccine</option>
-              <option value="weight">Weight</option>
-              <option value="instruction">Instruction</option>
+              ${renderRecordTypeOptions()}
             </select>
           </label>
           <label>
@@ -699,13 +699,39 @@ function renderRecord(record) {
   return `
     <article class="record-row">
       <span>${escapeHtml(record.type)}</span>
-      <div>
-        <h4>${escapeHtml(record.title)}</h4>
-        <p>${escapeHtml(record.due || "No date set")}</p>
-        <small>${escapeHtml(record.note || "")}</small>
-      </div>
+      <form class="record-inline-form" data-form="record" data-record-mode="edit">
+        <input type="hidden" name="id" value="${escapeAttribute(record.id)}" />
+        <div class="record-fields">
+          <label>
+            <span>Type</span>
+            <select name="type">
+              ${renderRecordTypeOptions(record.type)}
+            </select>
+          </label>
+          <label>
+            <span>Title</span>
+            <input name="title" required value="${escapeAttribute(record.title)}" />
+          </label>
+          <label>
+            <span>Due/date</span>
+            <input name="due" value="${escapeAttribute(record.due || "")}" />
+          </label>
+          <label>
+            <span>Note</span>
+            <textarea name="note" rows="2">${escapeHtml(record.note || "")}</textarea>
+          </label>
+        </div>
+        <div class="button-row">
+          <button class="button ghost" type="submit">Save</button>
+          <button class="button ghost danger" type="button" data-action="remove-record" data-record-id="${escapeAttribute(record.id)}">Remove</button>
+        </div>
+      </form>
     </article>
   `;
+}
+
+function renderRecordTypeOptions(selected = "instruction") {
+  return RECORD_TYPE_OPTIONS.map((type) => `<option value="${escapeAttribute(type)}" ${type === selected ? "selected" : ""}>${escapeHtml(titleCase(type))}</option>`).join("");
 }
 
 function renderReportTab(summary) {
@@ -863,18 +889,22 @@ function bindEvents() {
     render();
   });
 
-  app.querySelector("[data-form='record']")?.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-    const record = {
-      id: `record_${Date.now().toString(36)}`,
-      type: clean(data.type || "instruction"),
-      title: clean(data.title || "Care record"),
-      due: clean(data.due || ""),
-      note: clean(data.note || "")
-    };
-    saveState({ ...state, records: [record, ...(state.records || [])] });
-    render();
+  app.querySelectorAll("[data-action='remove-record']").forEach((button) => {
+    button.addEventListener("click", () => {
+      saveState({ ...state, records: removeRecord(state.records, button.dataset.recordId) });
+      activeTab = "records";
+      render();
+    });
+  });
+
+  app.querySelectorAll("[data-form='record']").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+      saveState({ ...state, records: upsertRecord(state.records, data) });
+      activeTab = "records";
+      render();
+    });
   });
 
   app.querySelectorAll("[data-form='routine']").forEach((form) => {
@@ -1102,8 +1132,4 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, "&#96;");
-}
-
-function clean(value) {
-  return String(value ?? "").replace(/\s+/g, " ").trim();
 }
