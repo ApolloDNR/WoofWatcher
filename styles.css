@@ -403,6 +403,7 @@ dd,
 
 .routine-list,
 .routine-editor-list,
+.goal-list,
 .timeline,
 .record-list {
   display: grid;
@@ -485,6 +486,7 @@ dd,
 
 .entry-form,
 .routine-form,
+.goal-form,
 .record-form,
 .assistant-form {
   display: grid;
@@ -493,7 +495,8 @@ dd,
   margin-top: 14px;
 }
 
-.routine-form {
+.routine-form,
+.goal-form {
   grid-template-columns: minmax(150px, 1.2fr) minmax(120px, 0.8fr) minmax(110px, 0.7fr) minmax(150px, 1fr);
 }
 
@@ -502,15 +505,33 @@ dd,
   grid-template-columns: 1fr;
 }
 
-.routine-editor-card {
+.routine-editor-card,
+.goal-card {
   border: 1px solid rgba(212, 207, 196, 0.16);
   border-radius: var(--radius);
   background: rgba(15, 23, 34, 0.34);
   padding: 12px;
 }
 
-.routine-editor-card .routine-form {
+.routine-editor-card .routine-form,
+.goal-card .goal-form {
   margin-top: 0;
+}
+
+.goal-highlight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.goal-highlight-grid p {
+  min-height: 86px;
+  margin: 0;
+  border: 1px solid rgba(212, 207, 196, 0.16);
+  border-radius: var(--radius);
+  background: rgba(15, 23, 34, 0.34);
+  padding: 12px;
 }
 
 .routine-form-actions {
@@ -659,8 +680,8 @@ textarea:focus {
 .bottom-nav {
   position: static;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  width: min(860px, calc(100% - 24px));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  width: min(940px, calc(100% - 24px));
   margin: 18px auto 0;
   border: 1px solid rgba(212, 207, 196, 0.2);
   border-radius: var(--radius);
@@ -749,8 +770,10 @@ textarea:focus {
   .dashboard-grid,
   .entry-form,
   .routine-form,
+  .goal-form,
   .mini-grid,
-  .handoff-list {
+  .handoff-list,
+  .goal-highlight-grid {
     grid-template-columns: 1fr;
   }
 

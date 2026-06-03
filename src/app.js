@@ -4,11 +4,14 @@ import {
   getCaregiverHandoff,
   getAssistantContext,
   getDefaultState,
+  getGoalReview,
   getHealthWatch,
   getMonthlySummary,
   getTodayPlan,
   normalizeState,
+  removeGoal,
   removeRoutine,
+  upsertGoal,
   upsertRoutine
 } from "./woof-core.js";
 
@@ -59,6 +62,7 @@ function render() {
   const summary = getMonthlySummary(state);
   const plan = getTodayPlan(state);
   const handoff = getCaregiverHandoff(state);
+  const goalReview = getGoalReview(state);
   const health = getHealthWatch(state);
 
   app.dataset.loading = "false";
@@ -88,13 +92,14 @@ function render() {
 
       <section class="primary-surface">
         ${renderTabHeader(activeTab)}
-        ${renderActiveTab(activeTab, { summary, plan, health, handoff })}
+        ${renderActiveTab(activeTab, { summary, plan, health, handoff, goalReview })}
       </section>
     </main>
 
     <nav class="bottom-nav" aria-label="WoofWatcher sections">
       ${renderNavButton("today", "Today")}
       ${renderNavButton("schedule", "Schedule")}
+      ${renderNavButton("goals", "Goals")}
       ${renderNavButton("log", "Quick Log")}
       ${renderNavButton("health", "Health")}
       ${renderNavButton("records", "Records")}
@@ -199,6 +204,7 @@ function renderTabHeader(tab) {
   const labels = {
     today: ["Today", "Routine, handoff, and latest care."],
     schedule: ["Schedule", "Edit meals, walks, snacks, training, and ownership."],
+    goals: ["Goals", "Weight, training, social, anxiety, and health milestones."],
     log: ["Quick Log", "Capture what happened without a long conversation."],
     health: ["Health Watch", "Track patterns and know when review is needed."],
     records: ["Records", "Vaccines, vet notes, weight goals, and instructions."],
@@ -220,12 +226,98 @@ function renderTabHeader(tab) {
 
 function renderActiveTab(tab, context) {
   if (tab === "schedule") return renderScheduleTab();
+  if (tab === "goals") return renderGoalsTab(context.goalReview);
   if (tab === "log") return renderLogTab();
   if (tab === "health") return renderHealthTab(context.health);
   if (tab === "records") return renderRecordsTab();
   if (tab === "report") return renderReportTab(context.summary);
   if (tab === "assistant") return renderAssistantTab();
   return renderTodayTab(context.plan, context.health, context.handoff);
+}
+
+function renderGoalsTab(goalReview) {
+  return `
+    <div class="dashboard-grid">
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Goal review</p>
+            <h3>${goalReview.activeGoals}/${goalReview.totalGoals} active goals</h3>
+          </div>
+          <span class="status-chip steady">Milestones</span>
+        </div>
+        <div class="goal-highlight-grid">
+          ${goalReview.highlights.map((highlight) => `<p>${escapeHtml(highlight)}</p>`).join("")}
+        </div>
+      </section>
+      <section class="panel span-2">
+        <p class="micro">Phoenix goals</p>
+        <h3>Weight, training, social, anxiety, health</h3>
+        <div class="goal-list">
+          ${goalReview.goals.map(renderGoalEditor).join("")}
+        </div>
+      </section>
+      <section class="panel span-2">
+        <p class="micro">Add goal</p>
+        <h3>New milestone</h3>
+        ${renderGoalForm()}
+      </section>
+    </div>
+  `;
+}
+
+function renderGoalEditor(goal) {
+  return `
+    <article class="goal-card">
+      ${renderGoalForm(goal)}
+    </article>
+  `;
+}
+
+function renderGoalForm(goal = {}) {
+  const categories = ["weight", "training", "anxiety", "social", "health", "custom"];
+  const statuses = ["active", "paused", "done"];
+  const categoryOptions = categories.map((category) => `<option value="${category}" ${goal.category === category ? "selected" : ""}>${titleCase(category)}</option>`).join("");
+  const statusOptions = statuses.map((status) => `<option value="${status}" ${goal.status === status ? "selected" : ""}>${titleCase(status)}</option>`).join("");
+  const isExisting = Boolean(goal.id);
+
+  return `
+    <form class="goal-form" data-form="goal">
+      <input type="hidden" name="id" value="${escapeAttribute(goal.id || "")}" />
+      <label>
+        <span>Goal</span>
+        <input name="title" value="${escapeAttribute(goal.title || "")}" placeholder="Steady weight gain, calm greetings" />
+      </label>
+      <label>
+        <span>Category</span>
+        <select name="category">${categoryOptions}</select>
+      </label>
+      <label>
+        <span>Status</span>
+        <select name="status">${statusOptions}</select>
+      </label>
+      <label>
+        <span>Due</span>
+        <input name="due" value="${escapeAttribute(goal.due || "")}" placeholder="Weekly, monthly, 2026-07-01" />
+      </label>
+      <label class="wide">
+        <span>Target</span>
+        <input name="target" value="${escapeAttribute(goal.target || "")}" placeholder="What progress should look like" />
+      </label>
+      <label class="wide">
+        <span>Notes</span>
+        <textarea name="note" rows="3" placeholder="What helped, what needs work, and what to watch.">${escapeHtml(goal.note || "")}</textarea>
+      </label>
+      <div class="routine-form-actions wide">
+        <button class="button primary" type="submit">${isExisting ? "Save goal" : "Add goal"}</button>
+        ${
+          isExisting
+            ? `<button class="button ghost" type="button" data-action="remove-goal" data-goal-id="${escapeAttribute(goal.id)}">Remove</button>`
+            : ""
+        }
+      </div>
+    </form>
+  `;
 }
 
 function renderScheduleTab() {
@@ -695,6 +787,16 @@ function bindEvents() {
     });
   });
 
+  app.querySelectorAll("[data-form='goal']").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+      saveState({ ...state, goals: upsertGoal(state.goals, data) });
+      activeTab = "goals";
+      render();
+    });
+  });
+
   app.querySelector("[data-form='assistant']")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const question = new FormData(event.currentTarget).get("question");
@@ -734,6 +836,13 @@ function handleAction(action, button) {
     const routineId = button?.dataset.routineId;
     saveState({ ...state, routines: removeRoutine(state.routines, routineId) });
     activeTab = "schedule";
+    render();
+  }
+
+  if (action === "remove-goal") {
+    const goalId = button?.dataset.goalId;
+    saveState({ ...state, goals: removeGoal(state.goals, goalId) });
+    activeTab = "goals";
     render();
   }
 

@@ -12,6 +12,8 @@ const ENTRY_TYPES = new Set([
   "medication",
   "note"
 ]);
+const GOAL_CATEGORIES = new Set(["weight", "training", "anxiety", "social", "health", "custom"]);
+const GOAL_STATUSES = new Set(["active", "paused", "done"]);
 
 const TYPE_DEFAULT_TITLES = {
   meal: "Meal",
@@ -100,6 +102,35 @@ export function getDefaultState(now = new Date().toISOString()) {
         note: "Small snack may help reduce empty-stomach bile mornings."
       }
     ],
+    goals: [
+      {
+        id: "goal_weight_stability",
+        category: "weight",
+        title: "Stable weight gain",
+        target: "Move toward 58 lb with vet-guided pacing",
+        status: "active",
+        due: "Monthly",
+        note: "Use gentle trend tracking; do not force sudden food changes."
+      },
+      {
+        id: "goal_place_work",
+        category: "training",
+        title: "Calm place work",
+        target: "Three short calm sessions per week",
+        status: "active",
+        due: "Weekly",
+        note: "Track whether she settles faster when food or visitors are involved."
+      },
+      {
+        id: "goal_social_neutrality",
+        category: "social",
+        title: "Neutral dog exposure",
+        target: "Calm, low-pressure interactions",
+        status: "active",
+        due: "Ongoing",
+        note: "Log dog park visits and sidewalk passes with mood notes."
+      }
+    ],
     records: [
       {
         id: "record_vet_baseline",
@@ -180,7 +211,8 @@ export function normalizeState(input = {}, now = new Date().toISOString()) {
       }
     },
     caregivers: Array.isArray(input.caregivers) && input.caregivers.length ? input.caregivers.map(normalizeCaregiver) : defaults.caregivers,
-    routines: Array.isArray(input.routines) && input.routines.length ? sortRoutines(input.routines.map(normalizeRoutineInput)) : defaults.routines,
+    routines: Array.isArray(input.routines) ? sortRoutines(input.routines.map(normalizeRoutineInput)) : defaults.routines,
+    goals: Array.isArray(input.goals) ? sortGoals(input.goals.map(normalizeGoalInput)) : defaults.goals,
     records: Array.isArray(input.records) ? input.records.map(normalizeRecord) : defaults.records,
     entries: Array.isArray(input.entries) ? input.entries.map(normalizeImportedEntry) : defaults.entries,
     updatedAt: now
@@ -232,6 +264,33 @@ export function upsertRoutine(routines = [], input = {}) {
 export function removeRoutine(routines = [], routineId = "") {
   const target = cleanText(routineId);
   return sortRoutines((Array.isArray(routines) ? routines : []).filter((routine) => routine.id !== target).map(normalizeRoutineInput));
+}
+
+export function normalizeGoalInput(input = {}) {
+  const category = GOAL_CATEGORIES.has(input.category) ? input.category : "custom";
+  const title = cleanText(input.title) || "Care goal";
+  return {
+    id: cleanText(input.id) || makeGoalId({ category, title }),
+    category,
+    title,
+    target: cleanText(input.target) || "Define target",
+    status: GOAL_STATUSES.has(input.status) ? input.status : "active",
+    due: cleanText(input.due) || "No date set",
+    note: cleanText(input.note)
+  };
+}
+
+export function upsertGoal(goals = [], input = {}) {
+  const goal = normalizeGoalInput(input);
+  const existing = Array.isArray(goals) ? goals : [];
+  const replaced = existing.some((item) => item.id === goal.id);
+  const next = replaced ? existing.map((item) => (item.id === goal.id ? goal : normalizeGoalInput(item))) : [...existing.map(normalizeGoalInput), goal];
+  return sortGoals(next);
+}
+
+export function removeGoal(goals = [], goalId = "") {
+  const target = cleanText(goalId);
+  return sortGoals((Array.isArray(goals) ? goals : []).filter((goal) => goal.id !== target).map(normalizeGoalInput));
 }
 
 export function createEntry(input = {}) {
@@ -358,10 +417,46 @@ export function getHealthWatch(state, now = new Date().toISOString()) {
   };
 }
 
+export function getGoalReview(state, now = new Date().toISOString()) {
+  const goals = sortGoals((state.goals || []).map(normalizeGoalInput));
+  const active = goals.filter((goal) => goal.status === "active");
+  const done = goals.filter((goal) => goal.status === "done");
+  const monthEntries = entriesForCurrentMonth(state.entries || [], now);
+  const latestWeight = latestWeightEntry(state.entries || []);
+  const trainingEntries = monthEntries.filter((entry) => entry.type === "training");
+  const socialEntries = monthEntries.filter((entry) => entry.type === "social" || entry.type === "park");
+  const review = {
+    totalGoals: goals.length,
+    activeGoals: active.length,
+    completedGoals: done.length,
+    goals,
+    weight: {
+      current: latestWeight?.weight ?? null,
+      label: latestWeight ? `${latestWeight.weight} lb logged ${formatDateTime(latestWeight.entry.occurredAt)}` : "No weight check logged yet"
+    },
+    training: {
+      sessions: trainingEntries.length,
+      minutes: sumAll(trainingEntries, "durationMinutes")
+    },
+    social: {
+      sessions: socialEntries.length,
+      interactions: sumAll(socialEntries, "dogInteractions")
+    },
+    highlights: []
+  };
+
+  if (review.weight.current !== null) review.highlights.push(`Latest weight trend: ${review.weight.current} lb.`);
+  review.highlights.push(`Training this month: ${review.training.sessions} sessions, ${review.training.minutes} minutes.`);
+  review.highlights.push(`Social exposure this month: ${review.social.sessions} sessions, ${review.social.interactions} dog interactions.`);
+  if (!active.length) review.highlights.push("No active goals are set.");
+  return review;
+}
+
 export function buildReportText(state, now = new Date().toISOString()) {
   const profile = state.profile || { name: "Phoenix" };
   const summary = getMonthlySummary(state, now);
   const healthWatch = getHealthWatch(state, now);
+  const goalReview = getGoalReview(state, now);
   const latest = [...(state.entries || [])]
     .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt))
     .slice(0, 8);
@@ -383,6 +478,10 @@ export function buildReportText(state, now = new Date().toISOString()) {
     "Health Watch",
     `Status: ${healthWatch.label}`,
     ...healthWatch.signals.map((signal) => `- ${signal}`),
+    "",
+    "Goal Review",
+    `Active goals: ${goalReview.activeGoals}/${goalReview.totalGoals}`,
+    ...goalReview.highlights.map((highlight) => `- ${highlight}`),
     "",
     "Recent Care Timeline",
     ...latest.map((entry) => `- ${formatDateTime(entry.occurredAt)} | ${entry.type.toUpperCase()} | ${entry.title} | ${entry.caregiver}${entry.note ? ` | ${entry.note}` : ""}`),
@@ -535,6 +634,26 @@ function makeRoutineId(routine) {
   return `routine_${routine.type}_${label || "care"}_${suffix}`;
 }
 
+function makeGoalId(goal) {
+  const title = cleanText(goal.title)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 32);
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `goal_${goal.category}_${title || "care"}_${suffix}`;
+}
+
+function sortGoals(goals = []) {
+  const statusOrder = { active: 0, paused: 1, done: 2 };
+  return [...goals].sort((a, b) => {
+    const leftStatus = statusOrder[a.status] ?? 9;
+    const rightStatus = statusOrder[b.status] ?? 9;
+    if (leftStatus !== rightStatus) return leftStatus - rightStatus;
+    return a.title.localeCompare(b.title);
+  });
+}
+
 function sortRoutines(routines = []) {
   return [...routines].sort((a, b) => {
     const left = routineSortMinutes(a.time);
@@ -580,6 +699,14 @@ function entriesForLocalDay(entries, now) {
   });
 }
 
+function entriesForCurrentMonth(entries, now) {
+  const date = new Date(now);
+  return entries.filter((entry) => {
+    const occurred = new Date(entry.occurredAt);
+    return occurred.getFullYear() === date.getFullYear() && occurred.getMonth() === date.getMonth();
+  });
+}
+
 function entriesWithinDays(entries, now, days) {
   const end = new Date(now);
   const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
@@ -587,6 +714,22 @@ function entriesWithinDays(entries, now, days) {
     const occurred = new Date(entry.occurredAt);
     return occurred >= start && occurred <= end;
   });
+}
+
+function latestWeightEntry(entries) {
+  const weighted = entries
+    .filter((entry) => entry.type === "weight")
+    .map((entry) => ({ entry, weight: parseWeight(entry.amount || entry.note || entry.title) }))
+    .filter((item) => item.weight !== null)
+    .sort((a, b) => new Date(b.entry.occurredAt) - new Date(a.entry.occurredAt));
+  return weighted[0] || null;
+}
+
+function parseWeight(value) {
+  const match = cleanText(value).match(/(\d+(?:\.\d+)?)/);
+  if (!match) return null;
+  const parsed = Number.parseFloat(match[1]);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function routineMatchesEntry(routine, entry) {

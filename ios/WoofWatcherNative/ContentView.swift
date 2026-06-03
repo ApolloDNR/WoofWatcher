@@ -3,6 +3,7 @@ import SwiftUI
 enum AppTab: String, CaseIterable, Identifiable {
     case today
     case schedule
+    case goals
     case log
     case health
     case records
@@ -15,6 +16,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         switch self {
         case .today: return "Today"
         case .schedule: return "Schedule"
+        case .goals: return "Goals"
         case .log: return "Log"
         case .health: return "Health"
         case .records: return "Records"
@@ -27,6 +29,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         switch self {
         case .today: return "calendar"
         case .schedule: return "clock.badge.checkmark"
+        case .goals: return "target"
         case .log: return "plus.circle"
         case .health: return "heart.text.square"
         case .records: return "folder"
@@ -66,6 +69,8 @@ struct ContentView: View {
             TodayView(store: store)
         case .schedule:
             ScheduleView(store: store)
+        case .goals:
+            GoalsView(store: store)
         case .log:
             LogView(store: store)
         case .health:
@@ -76,6 +81,101 @@ struct ContentView: View {
             ReportView(store: store)
         case .helper:
             HelperView(store: store)
+        }
+    }
+}
+
+struct GoalsView: View {
+    @Bindable var store: CareStore
+    @State private var draft = GoalDraft()
+
+    var body: some View {
+        let review = store.goalReview
+
+        Form {
+            Section("Progress Review") {
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text("\(review.activeGoals)/\(review.totalGoals) active")
+                            .font(.title2.bold())
+                        Text("\(review.completedGoals) completed")
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "target")
+                        .font(.title2)
+                        .foregroundStyle(.copper)
+                }
+
+                ForEach(review.highlights, id: \.self) { highlight in
+                    Text(highlight)
+                }
+            }
+
+            Section("Phoenix Goals") {
+                ForEach($store.state.goals) { $goal in
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Picker("Category", selection: $goal.category) {
+                                ForEach(CareGoalCategory.allCases) { category in
+                                    Text(category.title).tag(category)
+                                }
+                            }
+                            Picker("Status", selection: $goal.status) {
+                                ForEach(CareGoalStatus.allCases) { status in
+                                    Text(status.title).tag(status)
+                                }
+                            }
+                        }
+
+                        TextField("Goal", text: $goal.title)
+                        TextField("Target", text: $goal.target, axis: .vertical)
+                            .lineLimit(2...4)
+                        TextField("Due", text: $goal.due)
+                        TextField("Notes", text: $goal.note, axis: .vertical)
+                            .lineLimit(2...5)
+
+                        HStack {
+                            Button("Save Goal") {
+                                store.upsertGoal(GoalDraft(goal: goal))
+                            }
+                            .buttonStyle(.borderedProminent)
+
+                            Button(role: .destructive) {
+                                store.removeGoal(id: goal.id)
+                            } label: {
+                                Label("Remove", systemImage: "trash")
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+
+            Section("Add Goal") {
+                Picker("Category", selection: $draft.category) {
+                    ForEach(CareGoalCategory.allCases) { category in
+                        Text(category.title).tag(category)
+                    }
+                }
+                Picker("Status", selection: $draft.status) {
+                    ForEach(CareGoalStatus.allCases) { status in
+                        Text(status.title).tag(status)
+                    }
+                }
+                TextField("Goal", text: $draft.title)
+                TextField("Target", text: $draft.target, axis: .vertical)
+                    .lineLimit(2...4)
+                TextField("Due", text: $draft.due)
+                TextField("Notes", text: $draft.note, axis: .vertical)
+                    .lineLimit(2...5)
+                Button("Add Goal") {
+                    store.upsertGoal(draft)
+                    draft = GoalDraft()
+                }
+                .buttonStyle(.borderedProminent)
+            }
         }
     }
 }

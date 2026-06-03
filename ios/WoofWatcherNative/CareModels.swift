@@ -41,10 +41,32 @@ enum CareSeverity: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+enum CareGoalCategory: String, Codable, CaseIterable, Identifiable {
+    case weight
+    case training
+    case anxiety
+    case social
+    case health
+    case custom
+
+    var id: String { rawValue }
+    var title: String { rawValue.capitalized }
+}
+
+enum CareGoalStatus: String, Codable, CaseIterable, Identifiable {
+    case active
+    case paused
+    case done
+
+    var id: String { rawValue }
+    var title: String { rawValue.capitalized }
+}
+
 struct CareState: Codable {
     var profile: PhoenixProfile
     var caregivers: [Caregiver]
     var routines: [CareRoutine]
+    var goals: [CareGoal]
     var records: [CareRecord]
     var entries: [CareEntry]
 
@@ -57,6 +79,7 @@ struct CareState: Codable {
                 Caregiver(name: "Girlfriend", role: "Primary caregiver")
             ],
             routines: CareRoutine.seed,
+            goals: CareGoal.seed,
             records: CareRecord.seed,
             entries: [
                 CareEntry(type: .meal, title: "Breakfast", caregiver: "Apollo", amount: "1 cup", mood: "settled", note: "Ate after a calm start.", occurredAt: now.addingTimeInterval(-7 * 3600)),
@@ -140,6 +163,83 @@ struct RoutineDraft {
             type: type,
             time: cleanTime.isEmpty ? "Unscheduled" : cleanTime,
             owner: owner.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Either caregiver" : owner,
+            note: note.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+}
+
+struct CareGoal: Codable, Identifiable {
+    var id: String
+    var category: CareGoalCategory
+    var title: String
+    var target: String
+    var status: CareGoalStatus
+    var due: String
+    var note: String
+
+    static let seed: [CareGoal] = [
+        CareGoal(
+            id: "goal_weight_stability",
+            category: .weight,
+            title: "Stable weight gain",
+            target: "Move toward 58 lb with vet-guided pacing",
+            status: .active,
+            due: "Monthly",
+            note: "Use gentle trend tracking; do not force sudden food changes."
+        ),
+        CareGoal(
+            id: "goal_place_work",
+            category: .training,
+            title: "Calm place work",
+            target: "Three short calm sessions per week",
+            status: .active,
+            due: "Weekly",
+            note: "Track whether she settles faster when food or visitors are involved."
+        ),
+        CareGoal(
+            id: "goal_social_neutrality",
+            category: .social,
+            title: "Neutral dog exposure",
+            target: "Calm, low-pressure interactions",
+            status: .active,
+            due: "Ongoing",
+            note: "Log dog park visits and sidewalk passes with mood notes."
+        )
+    ]
+}
+
+struct GoalDraft {
+    var id: String = ""
+    var category: CareGoalCategory = .weight
+    var title: String = ""
+    var target: String = ""
+    var status: CareGoalStatus = .active
+    var due: String = ""
+    var note: String = ""
+
+    init() {}
+
+    init(goal: CareGoal) {
+        id = goal.id
+        category = goal.category
+        title = goal.title
+        target = goal.target
+        status = goal.status
+        due = goal.due
+        note = goal.note
+    }
+
+    func goal() -> CareGoal {
+        let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanTarget = target.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanDue = due.trimmingCharacters(in: .whitespacesAndNewlines)
+        return CareGoal(
+            id: id.isEmpty ? "goal_\(category.rawValue)_\(UUID().uuidString.prefix(8))" : id,
+            category: category,
+            title: cleanTitle.isEmpty ? "Care goal" : cleanTitle,
+            target: cleanTarget.isEmpty ? "Define target" : cleanTarget,
+            status: status,
+            due: cleanDue.isEmpty ? "No date set" : cleanDue,
             note: note.trimmingCharacters(in: .whitespacesAndNewlines)
         )
     }

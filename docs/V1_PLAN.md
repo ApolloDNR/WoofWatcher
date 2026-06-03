@@ -16,6 +16,7 @@
 - Two-caregiver handoff visibility without requiring the caregivers to message each other directly.
 - Copyable caregiver handoff digest covering the next care action, last meal, last walk, follow-ups, and today's caregiver load.
 - Editable daily routine schedule with care times, owners, notes, completed items, and next care items.
+- Editable goals and milestones for weight, training, anxiety, social exposure, health, and custom care targets.
 - Quick logs for meals, walks, treats, training, social interactions, dog park visits, health, vomit, vet, weight, medication, and general notes.
 - Health watch that highlights repeat vomiting, appetite refusal, urgent severity, and veterinary red flags without diagnosing.
 - Records vault for vaccines, vet visits, weight goals, and care instructions.
@@ -30,6 +31,7 @@
 - Monthly summary aggregation.
 - Daily plan completion/next item logic.
 - Editable routine normalization, ordering, add/update, and removal.
+- Goal normalization, add/update/removal, progress review, and report inclusion.
 - Caregiver handoff digest logic.
 - Health watch escalation.
 - Export-ready report text with veterinary boundary.

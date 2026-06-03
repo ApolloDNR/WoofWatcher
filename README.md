@@ -6,6 +6,7 @@ WoofWatcher is a local-first care command center for Phoenix, Apollo's anxious r
 
 - Tracks meals, treats, walks, dog park visits, training, social interactions, vomit incidents, health notes, vet notes, weight checks, medication, and general care notes.
 - Lets caregivers edit Phoenix's daily routine schedule, care times, ownership, and notes.
+- Tracks Phoenix-specific care goals for weight, training, anxiety, social exposure, health, and custom milestones.
 - Shows today's routine, completed items, next care items, caregiver load, and a copyable handoff note.
 - Highlights health patterns and red flags without making a veterinary diagnosis.
 - Stores records for vaccines, vet visits, weight goals, and care instructions.
@@ -44,7 +45,7 @@ npm run screenshots
 & "C:\Users\Apoll\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" --test
 ```
 
-`npm run smoke:render` first tries an interactive Chrome DevTools smoke. If the local DevTools WebSocket does not answer, it falls back to Chrome-rendered DOM checks for the home, schedule, log, report, and assistant routes.
+`npm run smoke:render` first tries an interactive Chrome DevTools smoke. If the local DevTools WebSocket does not answer, it falls back to Chrome-rendered DOM checks for the home, schedule, goals, log, report, and assistant routes.
 
 ## Data
 

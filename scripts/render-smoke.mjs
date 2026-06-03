@@ -103,6 +103,32 @@ try {
   );
 
   await evaluate(client, `
+    document.querySelector('[data-tab="goals"]').click();
+  `);
+  await delay(250);
+  await expectEval(client, "Boolean(document.querySelector('[data-form=\"goal\"]'))", true, "goal form visible");
+  await evaluate(client, `
+    (() => {
+    const forms = [...document.querySelectorAll('[data-form="goal"]')];
+    const form = forms[forms.length - 1];
+    form.querySelector('[name="title"]').value = 'QA steady weight';
+    form.querySelector('[name="category"]').value = 'weight';
+    form.querySelector('[name="status"]').value = 'active';
+    form.querySelector('[name="due"]').value = '2026-07-01';
+    form.querySelector('[name="target"]').value = 'Reach 59 lb slowly';
+    form.querySelector('[name="note"]').value = 'Rendered goal smoke check';
+    form.requestSubmit();
+    })();
+  `);
+  await delay(500);
+  await expectEval(
+    client,
+    `JSON.parse(localStorage.getItem('woofwatcher.v1.state')).goals.some((goal) => goal.title === 'QA steady weight')`,
+    true,
+    "saved goal"
+  );
+
+  await evaluate(client, `
     document.querySelector('[data-tab="log"]').click();
   `);
   await delay(250);
@@ -172,6 +198,7 @@ async function runDumpDomSmoke() {
   const checks = [
     { route: "/", label: "home", text: ["WoofWatcher", "Phoenix care command", "Import", "Next handoff", "Caregiver handoff"] },
     { route: "/?tab=schedule", label: "schedule", text: ["Schedule", "Editable daily routine", "Add routine", "Save routine"] },
+    { route: "/?tab=goals", label: "goals", text: ["Goals", "Goal review", "Phoenix goals", "Save goal"] },
     { route: "/?tab=log", label: "log", text: ["Quick Log", "Capture what happened", "Save care log"] },
     { route: "/?tab=report", label: "report", text: ["WoofWatcher Monthly Report", "Download", "Print/PDF"] },
     { route: "/?tab=assistant", label: "assistant", text: ["Care Helper", "Ask with Phoenix context", "veterinarian"] }

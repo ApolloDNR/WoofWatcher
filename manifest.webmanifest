@@ -25,6 +25,13 @@
       "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
+      "name": "Care Goals",
+      "short_name": "Goals",
+      "description": "Open Phoenix's weight, training, and health goals.",
+      "url": "/?tab=goals",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
       "name": "Quick Log",
       "short_name": "Log",
       "description": "Open WoofWatcher to log Phoenix care.",

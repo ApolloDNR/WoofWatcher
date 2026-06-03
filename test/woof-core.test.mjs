@@ -7,13 +7,17 @@ import {
   getAssistantContext,
   getCaregiverHandoff,
   getDefaultState,
+  getGoalReview,
   getHealthWatch,
   getMonthlySummary,
   getTodayPlan,
+  normalizeGoalInput,
   normalizeState,
   normalizeEntryInput,
   normalizeRoutineInput,
+  removeGoal,
   removeRoutine,
+  upsertGoal,
   upsertRoutine
 } from "../src/woof-core.js";
 
@@ -210,6 +214,105 @@ test("adds, updates, orders, and removes caregiver routines for the daily plan",
   assert.equal(plan.nextItems.some((routine) => routine.label === "Midday check"), false);
 });
 
+test("normalizes a Phoenix goal without trusting malformed milestone input", () => {
+  const goal = normalizeGoalInput({
+    id: "",
+    category: "unknown",
+    title: "",
+    target: "",
+    status: "weird",
+    due: "",
+    note: "  keep meals calm  "
+  });
+
+  assert.match(goal.id, /^goal_custom_/);
+  assert.equal(goal.category, "custom");
+  assert.equal(goal.title, "Care goal");
+  assert.equal(goal.target, "Define target");
+  assert.equal(goal.status, "active");
+  assert.equal(goal.due, "No date set");
+  assert.equal(goal.note, "keep meals calm");
+});
+
+test("adds, updates, removes, and reviews weight and training goals from logs", () => {
+  const state = getDefaultState("2026-06-03T12:00:00.000Z");
+  const goals = [
+    normalizeGoalInput({
+      id: "goal_weight_gain",
+      category: "weight",
+      title: "Steady weight gain",
+      target: "Reach 58 lb",
+      due: "2026-07-01",
+      note: "Vet-guided."
+    }),
+    normalizeGoalInput({
+      id: "goal_place_work",
+      category: "training",
+      title: "Place work",
+      target: "Three short sessions per week",
+      due: "2026-06-30",
+      note: "Track calm reps."
+    })
+  ];
+  const updated = upsertGoal(goals, {
+    id: "goal_place_work",
+    category: "training",
+    title: "Place work",
+    target: "Four calm sessions per week",
+    due: "2026-06-30",
+    note: "Track duration and anxiety."
+  });
+  const withSocial = upsertGoal(updated, {
+    category: "social",
+    title: "Calm dog greetings",
+    target: "Two neutral interactions",
+    due: "2026-06-20",
+    note: "Avoid overwhelming her."
+  });
+  const withoutWeight = removeGoal(withSocial, "goal_weight_gain");
+  const review = getGoalReview(
+    {
+      ...state,
+      goals: withSocial,
+      entries: [
+        createEntry({ type: "weight", title: "Weight check", amount: "57.4 lb", caregiver: "Apollo", occurredAt: "2026-06-03T18:00:00.000Z" }),
+        createEntry({ type: "training", title: "Place work", durationMinutes: 12, caregiver: "Girlfriend", occurredAt: "2026-06-03T19:00:00.000Z" }),
+        createEntry({ type: "social", title: "Sidewalk dog pass", dogInteractions: 1, caregiver: "Apollo", occurredAt: "2026-06-03T20:00:00.000Z" })
+      ]
+    },
+    "2026-06-04T12:00:00.000Z"
+  );
+
+  assert.equal(updated.length, 2);
+  assert.equal(updated.find((goal) => goal.id === "goal_place_work").target, "Four calm sessions per week");
+  assert.equal(withSocial.length, 3);
+  assert.match(withSocial.find((goal) => goal.category === "social").id, /^goal_social_/);
+  assert.equal(withoutWeight.some((goal) => goal.id === "goal_weight_gain"), false);
+  assert.equal(review.totalGoals, 3);
+  assert.equal(review.activeGoals, 3);
+  assert.equal(review.weight.current, 57.4);
+  assert.equal(review.training.sessions, 1);
+  assert.equal(review.training.minutes, 12);
+  assert.equal(review.social.interactions, 1);
+  assert.match(review.highlights[0], /57.4 lb/);
+});
+
+test("preserves explicitly empty routines and goals across backup restore", () => {
+  const imported = normalizeState(
+    {
+      routines: [],
+      goals: [],
+      records: [],
+      entries: []
+    },
+    "2026-06-03T18:00:00.000Z"
+  );
+
+  assert.deepEqual(imported.routines, []);
+  assert.deepEqual(imported.goals, []);
+  assert.deepEqual(getGoalReview(imported).highlights.at(-1), "No active goals are set.");
+});
+
 test("health watch elevates repeated vomit incidents and missing appetite pattern", () => {
   const state = getDefaultState("2026-06-03T12:00:00.000Z");
   const entries = [
@@ -239,6 +342,7 @@ test("report text is export-ready and keeps veterinary boundaries visible", () =
   assert.match(report, /WoofWatcher Monthly Report/);
   assert.match(report, /Phoenix/);
   assert.match(report, /Vomit incidents: 1/);
+  assert.match(report, /Goal Review/);
   assert.match(report, /not a veterinary diagnosis/);
 });
 
@@ -293,6 +397,7 @@ test("normalizes imported backup state without trusting malformed records", () =
   assert.equal(imported.caregivers[1].name, "Unassigned");
   assert.equal(imported.routines[0].time, "Unscheduled");
   assert.equal(imported.records[0].type, "instruction");
+  assert.equal(imported.goals.length >= 1, true);
   assert.equal(imported.entries[0].id, "imported_entry");
   assert.equal(imported.entries[0].requiresFollowUp, true);
   assert.equal(imported.entries[1].type, "note");

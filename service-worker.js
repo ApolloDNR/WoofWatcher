@@ -1,4 +1,4 @@
-const CACHE_NAME = "woofwatcher-v1";
+const CACHE_NAME = "woofwatcher-v1-goals";
 const PRECACHE_URLS = [
   "/",
   "/index.html",

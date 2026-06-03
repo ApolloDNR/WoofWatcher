@@ -13,10 +13,11 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 ## Recommended SwiftUI Shape
 
 - `WoofWatcherApp`: root app entry.
-- `AppTab`: `today`, `schedule`, `log`, `health`, `records`, `report`, `helper`.
+- `AppTab`: `today`, `schedule`, `goals`, `log`, `health`, `records`, `report`, `helper`.
 - `CareStore`: `@Observable` root-owned model on iOS 17+; use SwiftData or file-backed JSON for persistence.
 - `PhoenixProfile`: static profile plus editable care focus fields.
 - `CareEntry`: meal, treat, walk, park, training, social, vomit, health, vet, weight, medication, note.
+- `CareGoal`: weight, training, anxiety, social, health, and custom milestones with active/paused/done status.
 - `CareRecord`: vet, vaccine, weight, instruction.
 - `RoutineDraft`: editable schedule item for meals, walks, snacks, medication, training, and ownership.
 - `CaregiverHandoff`: next routine, latest meal, latest walk, follow-ups, caregiver load, and a shareable message.
@@ -24,7 +25,7 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 
 ## Navigation Pattern
 
-- `TabView` for the seven primary surfaces.
+- `TabView` for the eight primary surfaces.
 - Per-tab `NavigationStack` if detail/edit screens are added.
 - `.sheet(item:)` for add/edit entry and add/edit record.
 - Keep state local to the root store and pass bindings into focused subviews.
@@ -38,4 +39,4 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 
 ## Verification Gate
 
-Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit the schedule, add a care log, persists after relaunch, exports a report, shows the caregiver handoff, and shows the red-flag boundary in the helper.
+Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit the schedule, add/edit/remove goals, add a care log, persists after relaunch, exports a report, shows the caregiver handoff, and shows the red-flag boundary in the helper.

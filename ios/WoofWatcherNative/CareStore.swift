@@ -97,6 +97,38 @@ final class CareStore {
         )
     }
 
+    var goalReview: GoalReview {
+        let calendar = Calendar.current
+        let now = Date()
+        let monthEntries = state.entries.filter {
+            calendar.component(.month, from: $0.occurredAt) == calendar.component(.month, from: now)
+                && calendar.component(.year, from: $0.occurredAt) == calendar.component(.year, from: now)
+        }
+        let latestWeight = latestEntries.first { $0.type == .weight }
+        let trainingEntries = monthEntries.filter { $0.type == .training }
+        let socialEntries = monthEntries.filter { $0.type == .social || $0.type == .park }
+        let trainingMinutes = trainingEntries.reduce(0) { $0 + $1.durationMinutes }
+        let dogInteractions = socialEntries.reduce(0) { $0 + $1.dogInteractions }
+        var highlights: [String] = []
+
+        if let latestWeight {
+            let value = latestWeight.amount.isEmpty ? latestWeight.title : latestWeight.amount
+            highlights.append("Latest weight trend: \(value).")
+        }
+        highlights.append("Training this month: \(trainingEntries.count) sessions, \(trainingMinutes) minutes.")
+        highlights.append("Social exposure this month: \(socialEntries.count) sessions, \(dogInteractions) dog interactions.")
+        if state.goals.filter({ $0.status == .active }).isEmpty {
+            highlights.append("No active goals are set.")
+        }
+
+        return GoalReview(
+            totalGoals: state.goals.count,
+            activeGoals: state.goals.filter { $0.status == .active }.count,
+            completedGoals: state.goals.filter { $0.status == .done }.count,
+            highlights: highlights
+        )
+    }
+
     func load() {
         do {
             let url = try storageURL()
@@ -146,6 +178,23 @@ final class CareStore {
         save()
     }
 
+    func upsertGoal(_ draft: GoalDraft) {
+        let goal = draft.goal()
+        if let index = state.goals.firstIndex(where: { $0.id == goal.id }) {
+            state.goals[index] = goal
+        } else {
+            state.goals.append(goal)
+        }
+        sortGoals()
+        save()
+    }
+
+    func removeGoal(id: String) {
+        state.goals.removeAll { $0.id == id }
+        sortGoals()
+        save()
+    }
+
     func resetSeed() {
         state = .seed
         save()
@@ -171,6 +220,10 @@ final class CareStore {
         Health Watch
         Status: \(healthWatch.status)
         \(healthWatch.signals.map { "- \($0)" }.joined(separator: "\n"))
+
+        Goal Review
+        Active goals: \(goalReview.activeGoals)/\(goalReview.totalGoals)
+        \(goalReview.highlights.map { "- \($0)" }.joined(separator: "\n"))
 
         Recent Care Timeline
         \(latest)
@@ -235,6 +288,18 @@ final class CareStore {
         }
     }
 
+    private func sortGoals() {
+        state.goals.sort { lhs, rhs in
+            let statusOrder: [CareGoalStatus: Int] = [.active: 0, .paused: 1, .done: 2]
+            let left = statusOrder[lhs.status] ?? 9
+            let right = statusOrder[rhs.status] ?? 9
+            if left != right {
+                return left < right
+            }
+            return lhs.title < rhs.title
+        }
+    }
+
     private func routineSortMinutes(_ value: String) -> Int {
         let text = value.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         let parts = text.split(separator: " ")
@@ -274,6 +339,13 @@ struct MonthlySummary {
     var training: Int
     var vomit: Int
     var followUps: Int
+}
+
+struct GoalReview {
+    var totalGoals: Int
+    var activeGoals: Int
+    var completedGoals: Int
+    var highlights: [String]
 }
 
 struct CaregiverHandoff {
