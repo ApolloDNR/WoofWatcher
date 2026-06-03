@@ -1,0 +1,7 @@
+tmp-*/
+*.log
+.env
+.env.local
+.env.*.local
+*backup*.json
+woofwatcher-*.json

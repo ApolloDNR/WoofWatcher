@@ -1,0 +1,35 @@
+{
+  "name": "WoofWatcher",
+  "short_name": "WoofWatcher",
+  "description": "Shared Phoenix care logging, health watch, reports, and caregiver handoffs.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1A2332",
+  "theme_color": "#1A2332",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/public/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Log",
+      "short_name": "Log",
+      "description": "Open WoofWatcher to log Phoenix care.",
+      "url": "/?tab=log",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Monthly Report",
+      "short_name": "Report",
+      "description": "Open Phoenix's monthly care report.",
+      "url": "/?tab=report",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}
