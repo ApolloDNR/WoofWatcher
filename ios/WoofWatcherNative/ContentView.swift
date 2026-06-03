@@ -79,6 +79,8 @@ struct TodayView: View {
     @Bindable var store: CareStore
 
     var body: some View {
+        let handoff = store.caregiverHandoff
+
         List {
             Section {
                 VStack(alignment: .leading, spacing: 10) {
@@ -115,6 +117,37 @@ struct TodayView: View {
                         .buttonStyle(.bordered)
                     }
                 }
+            }
+
+            Section("Caregiver Handoff") {
+                if let nextRoutine = handoff.nextRoutine {
+                    Label("\(nextRoutine.label) at \(nextRoutine.time)", systemImage: "arrow.forward.circle")
+                        .font(.headline)
+                    Text(nextRoutine.owner)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Label("Routine covered", systemImage: "checkmark.circle")
+                        .font(.headline)
+                }
+
+                Text(handoff.message)
+                    .font(.callout)
+                    .textSelection(.enabled)
+
+                ForEach(handoff.caregiverLoad) { caregiver in
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(caregiver.name).font(.headline)
+                            Text(caregiver.latestAction).font(.footnote).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text("\(caregiver.todayLogs)")
+                            .font(.title3.bold())
+                            .monospacedDigit()
+                    }
+                }
+
+                ShareLink("Share Handoff", item: handoff.message)
             }
 
             Section("Recent Logs") {

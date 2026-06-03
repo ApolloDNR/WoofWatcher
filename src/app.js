@@ -1,6 +1,7 @@
 import {
   buildReportText,
   createEntry,
+  getCaregiverHandoff,
   getAssistantContext,
   getDefaultState,
   getHealthWatch,
@@ -55,6 +56,7 @@ function saveState(nextState = state) {
 function render() {
   const summary = getMonthlySummary(state);
   const plan = getTodayPlan(state);
+  const handoff = getCaregiverHandoff(state);
   const health = getHealthWatch(state);
 
   app.dataset.loading = "false";
@@ -79,12 +81,12 @@ function render() {
       <aside class="profile-rail">
         ${renderProfileCard(health)}
         ${renderCareStats(summary)}
-        ${renderHandoff(plan)}
+        ${renderHandoff(handoff)}
       </aside>
 
       <section class="primary-surface">
         ${renderTabHeader(activeTab)}
-        ${renderActiveTab(activeTab, { summary, plan, health })}
+        ${renderActiveTab(activeTab, { summary, plan, health, handoff })}
       </section>
     </main>
 
@@ -153,16 +155,31 @@ function renderCareStats(summary) {
   `;
 }
 
-function renderHandoff(plan) {
+function renderHandoff(handoff) {
   return `
-    <section class="panel">
-      <p class="micro">Caregiver handoff</p>
-      <h3>${plan.completedCount}/${plan.totalCount} routines logged</h3>
-      <p>${escapeHtml(plan.handoffPrompt)}</p>
-      <div class="caregiver-list">
-        ${state.caregivers.map((caregiver) => `<span>${escapeHtml(caregiver.name)}</span>`).join("")}
+    <section class="panel handoff-card">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Caregiver handoff</p>
+          <h3>${handoff.completedCount}/${handoff.totalCount} routines logged</h3>
+        </div>
+        <button class="button ghost" data-action="copy-handoff">Copy</button>
+      </div>
+      <p>${escapeHtml(handoff.message)}</p>
+      <div class="handoff-list">
+        ${handoff.caregiverLoad.map(renderCaregiverLoad).join("")}
       </div>
     </section>
+  `;
+}
+
+function renderCaregiverLoad(caregiver) {
+  return `
+    <article>
+      <span>${escapeHtml(caregiver.name)}</span>
+      <strong>${caregiver.todayLogs}</strong>
+      <small>${escapeHtml(caregiver.latestAction)}</small>
+    </article>
   `;
 }
 
@@ -203,10 +220,10 @@ function renderActiveTab(tab, context) {
   if (tab === "records") return renderRecordsTab();
   if (tab === "report") return renderReportTab(context.summary);
   if (tab === "assistant") return renderAssistantTab();
-  return renderTodayTab(context.plan, context.health);
+  return renderTodayTab(context.plan, context.health, context.handoff);
 }
 
-function renderTodayTab(plan, health) {
+function renderTodayTab(plan, health, handoff) {
   return `
     <div class="dashboard-grid">
       <section class="panel span-2">
@@ -220,6 +237,16 @@ function renderTodayTab(plan, health) {
         <div class="routine-list">
           ${state.routines.map((routine) => renderRoutine(routine, plan.completedLabels.includes(routine.label))).join("")}
         </div>
+      </section>
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Next handoff</p>
+            <h3>${escapeHtml(handoff.nextRoutine?.label || "Routine covered")}</h3>
+          </div>
+          <button class="button ghost" data-action="copy-handoff">Copy</button>
+        </div>
+        <p class="handoff-message">${escapeHtml(handoff.message)}</p>
       </section>
       <section class="panel">
         <p class="micro">Quick Log</p>
@@ -609,6 +636,10 @@ function handleAction(action) {
 
   if (action === "copy-report") {
     navigator.clipboard?.writeText(buildReportText(state));
+  }
+
+  if (action === "copy-handoff") {
+    navigator.clipboard?.writeText(getCaregiverHandoff(state).message);
   }
 
   if (action === "print-report") {

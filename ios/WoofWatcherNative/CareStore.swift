@@ -28,6 +28,30 @@ final class CareStore {
         state.routines.first { !todaysCompletedRoutineLabels.contains($0.label) }
     }
 
+    var caregiverHandoff: CaregiverHandoff {
+        let calendar = Calendar.current
+        let todayEntries = state.entries
+            .filter { calendar.isDateInToday($0.occurredAt) }
+            .sorted { $0.occurredAt > $1.occurredAt }
+        let lastMeal = todayEntries.first { $0.type == .meal }
+        let lastWalk = todayEntries.first { $0.type == .walk }
+        let followUps = todayEntries.filter { $0.requiresFollowUp || $0.severity == .urgent }
+        let loads = state.caregivers.map { caregiver in
+            let logs = todayEntries.filter { entryMatchesCaregiver($0, caregiver.name) }
+            let latest = logs.first.map { "\($0.title) at \($0.occurredAt.formatted(date: .abbreviated, time: .shortened))" } ?? "No logs today"
+            return CaregiverLoad(name: caregiver.name, role: caregiver.role, todayLogs: logs.count, latestAction: latest)
+        }
+
+        return CaregiverHandoff(
+            nextRoutine: nextRoutine,
+            lastMeal: lastMeal,
+            lastWalk: lastWalk,
+            followUps: followUps,
+            caregiverLoad: loads,
+            message: handoffMessage(nextRoutine: nextRoutine, lastMeal: lastMeal, lastWalk: lastWalk, followUps: followUps)
+        )
+    }
+
     var healthWatch: HealthWatch {
         let recent = state.entries.filter { entry in
             entry.occurredAt >= Date().addingTimeInterval(-14 * 24 * 3600)
@@ -148,6 +172,41 @@ final class CareStore {
         return "\(lead) This month: \(monthlySummary.meals) meals, \(monthlySummary.walks) walks, \(monthlySummary.training) training sessions, \(monthlySummary.vomit) vomit incidents. Health watch is \(healthWatch.status.lowercased()). Next routine: \(nextRoutine?.label ?? "covered"). For urgent symptoms, repeated vomiting, blood, lethargy, bloating, dehydration, toxin exposure, or not eating, contact a veterinarian or urgent care."
     }
 
+    private func entryMatchesCaregiver(_ entry: CareEntry, _ caregiverName: String) -> Bool {
+        entry.caregiver.localizedCaseInsensitiveCompare(caregiverName) == .orderedSame
+            || entry.caregiver.localizedCaseInsensitiveCompare("Both") == .orderedSame
+    }
+
+    private func handoffMessage(nextRoutine: CareRoutine?, lastMeal: CareEntry?, lastWalk: CareEntry?, followUps: [CareEntry]) -> String {
+        var lines: [String] = []
+        if let nextRoutine {
+            lines.append("Next Phoenix care: \(nextRoutine.label) at \(nextRoutine.time) (\(nextRoutine.owner)).")
+        } else {
+            lines.append("Next Phoenix care: today's routine is covered.")
+        }
+
+        if let lastMeal {
+            lines.append("Last meal: \(lastMeal.title) by \(lastMeal.caregiver) at \(lastMeal.occurredAt.formatted(date: .abbreviated, time: .shortened)).")
+        } else {
+            lines.append("No meals logged today.")
+        }
+
+        if let lastWalk {
+            lines.append("Last walk: \(lastWalk.title) by \(lastWalk.caregiver) at \(lastWalk.occurredAt.formatted(date: .abbreviated, time: .shortened)).")
+        } else {
+            lines.append("No walks logged today.")
+        }
+
+        if let firstFollowUp = followUps.first {
+            let more = followUps.count > 1 ? ", plus \(followUps.count - 1) more" : ""
+            lines.append("Follow-up: \(firstFollowUp.title) needs review\(more).")
+        } else {
+            lines.append("No active follow-ups logged today.")
+        }
+
+        return lines.joined(separator: " ")
+    }
+
     private func storageURL() throws -> URL {
         let folder = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let appFolder = folder.appending(path: "WoofWatcher", directoryHint: .isDirectory)
@@ -167,6 +226,23 @@ struct MonthlySummary {
     var training: Int
     var vomit: Int
     var followUps: Int
+}
+
+struct CaregiverHandoff {
+    var nextRoutine: CareRoutine?
+    var lastMeal: CareEntry?
+    var lastWalk: CareEntry?
+    var followUps: [CareEntry]
+    var caregiverLoad: [CaregiverLoad]
+    var message: String
+}
+
+struct CaregiverLoad: Identifiable {
+    var id: String { name }
+    var name: String
+    var role: String
+    var todayLogs: Int
+    var latestAction: String
 }
 
 extension JSONEncoder {

@@ -90,6 +90,7 @@ export function compactAssistantContext(context = {}) {
     summary: compactPlainObject(context.summary),
     healthWatch: compactPlainObject(context.healthWatch),
     todayPlan: compactTodayPlan(context.todayPlan),
+    handoff: compactHandoff(context.handoff),
     latest: latest.slice(0, 5).map(compactEntry)
   };
 }
@@ -167,6 +168,30 @@ function compactEntry(entry = {}) {
     note: cleanText(entry.note),
     severity: cleanText(entry.severity),
     requiresFollowUp: Boolean(entry.requiresFollowUp)
+  };
+}
+
+function compactHandoff(handoff = {}) {
+  return {
+    nextRoutine: handoff.nextRoutine
+      ? {
+          label: cleanText(handoff.nextRoutine.label),
+          time: cleanText(handoff.nextRoutine.time),
+          owner: cleanText(handoff.nextRoutine.owner)
+        }
+      : null,
+    lastMeal: handoff.lastMeal ? compactEntry(handoff.lastMeal) : null,
+    lastWalk: handoff.lastWalk ? compactEntry(handoff.lastWalk) : null,
+    followUps: Array.isArray(handoff.followUps) ? handoff.followUps.slice(0, 3).map(compactEntry) : [],
+    caregiverLoad: Array.isArray(handoff.caregiverLoad)
+      ? handoff.caregiverLoad.slice(0, 4).map((caregiver) => ({
+          name: cleanText(caregiver.name),
+          role: cleanText(caregiver.role),
+          todayLogs: Number(caregiver.todayLogs) || 0,
+          latestAction: cleanText(caregiver.latestAction)
+        }))
+      : [],
+    message: cleanText(handoff.message)
   };
 }
 

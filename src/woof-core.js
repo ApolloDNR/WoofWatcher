@@ -271,6 +271,38 @@ export function getTodayPlan(state, now = new Date().toISOString()) {
   };
 }
 
+export function getCaregiverHandoff(state, now = new Date().toISOString()) {
+  const plan = getTodayPlan(state, now);
+  const todayEntries = entriesForLocalDay(state.entries || [], now).sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  const lastMeal = todayEntries.find((entry) => entry.type === "meal") || null;
+  const lastWalk = todayEntries.find((entry) => entry.type === "walk") || null;
+  const followUps = todayEntries.filter((entry) => entry.requiresFollowUp || entry.severity === "urgent");
+  const nextRoutine = plan.nextItems[0] || null;
+  const caregiverLoad = (state.caregivers || []).map((caregiver) => {
+    const name = cleanText(caregiver.name) || "Unassigned";
+    const logs = todayEntries.filter((entry) => entryMatchesCaregiver(entry, name));
+    const latest = logs[0] || null;
+    return {
+      name,
+      role: cleanText(caregiver.role) || "Caregiver",
+      todayLogs: logs.length,
+      latestAction: latest ? `${latest.title} at ${formatDateTime(latest.occurredAt)}` : "No logs today"
+    };
+  });
+
+  return {
+    dateLabel: plan.dateLabel,
+    completedCount: plan.completedCount,
+    totalCount: plan.totalCount,
+    nextRoutine,
+    lastMeal,
+    lastWalk,
+    followUps,
+    caregiverLoad,
+    message: buildHandoffMessage({ nextRoutine, lastMeal, lastWalk, followUps })
+  };
+}
+
 export function getHealthWatch(state, now = new Date().toISOString()) {
   const recent = entriesWithinDays(state.entries || [], now, 14);
   const vomitCount = countType(recent, "vomit");
@@ -337,6 +369,7 @@ export function getAssistantContext(state, question = "", now = new Date().toISO
   const summary = getMonthlySummary(state, now);
   const healthWatch = getHealthWatch(state, now);
   const todayPlan = getTodayPlan(state, now);
+  const handoff = getCaregiverHandoff(state, now);
   const latest = [...(state.entries || [])]
     .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt))
     .slice(0, 5);
@@ -347,12 +380,13 @@ export function getAssistantContext(state, question = "", now = new Date().toISO
     summary,
     healthWatch,
     todayPlan,
+    handoff,
     latest,
-    localAnswer: buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, latest })
+    localAnswer: buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, handoff, latest })
   };
 }
 
-function buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, latest }) {
+function buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, handoff, latest }) {
   const asksVomiting = /vomit|throw|bile|yellow|nausea/i.test(question);
   const lines = [];
 
@@ -365,6 +399,7 @@ function buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, 
   lines.push(`This month: ${summary.meals} meals, ${summary.walks} walks, ${summary.trainingSessions} training sessions, ${summary.vomitIncidents} vomit incidents.`);
   lines.push(`Health watch is ${healthWatch.label.toLowerCase()}: ${healthWatch.signals[0]}`);
   lines.push(`Today completed: ${todayPlan.completedCount}/${todayPlan.totalCount}. Next: ${todayPlan.nextItems[0]?.label || "routine covered"}.`);
+  lines.push(`Handoff: ${handoff.message}`);
 
   if (latest[0]) {
     lines.push(`Latest log: ${latest[0].title} by ${latest[0].caregiver}.`);
@@ -432,6 +467,41 @@ function clampWholeNumber(value) {
 
 function requiresFollowUp(entry) {
   return entry.type === "vomit" || entry.severity === "urgent";
+}
+
+function entryMatchesCaregiver(entry, caregiverName) {
+  const entryCaregiver = cleanText(entry.caregiver).toLowerCase();
+  const name = cleanText(caregiverName).toLowerCase();
+  return entryCaregiver === name || entryCaregiver === "both";
+}
+
+function buildHandoffMessage({ nextRoutine, lastMeal, lastWalk, followUps }) {
+  const lines = [];
+  if (nextRoutine) {
+    lines.push(`Next Phoenix care: ${nextRoutine.label} at ${nextRoutine.time} (${nextRoutine.owner}).`);
+  } else {
+    lines.push("Next Phoenix care: today's routine is covered.");
+  }
+
+  if (lastMeal) {
+    lines.push(`Last meal: ${lastMeal.title} by ${lastMeal.caregiver} at ${formatDateTime(lastMeal.occurredAt)}.`);
+  } else {
+    lines.push("No meals logged today.");
+  }
+
+  if (lastWalk) {
+    lines.push(`Last walk: ${lastWalk.title} by ${lastWalk.caregiver} at ${formatDateTime(lastWalk.occurredAt)}.`);
+  } else {
+    lines.push("No walks logged today.");
+  }
+
+  if (followUps.length) {
+    lines.push(`Follow-up: ${followUps[0].title} needs review${followUps.length > 1 ? `, plus ${followUps.length - 1} more` : ""}.`);
+  } else {
+    lines.push("No active follow-ups logged today.");
+  }
+
+  return lines.join(" ");
 }
 
 function makeEntryId(entry) {

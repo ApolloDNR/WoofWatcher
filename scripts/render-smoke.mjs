@@ -145,7 +145,7 @@ try {
 
 async function runDumpDomSmoke() {
   const checks = [
-    { route: "/", label: "home", text: ["WoofWatcher", "Phoenix care command", "Import", "Today"] },
+    { route: "/", label: "home", text: ["WoofWatcher", "Phoenix care command", "Import", "Next handoff", "Caregiver handoff"] },
     { route: "/?tab=log", label: "log", text: ["Quick Log", "Capture what happened", "Save care log"] },
     { route: "/?tab=report", label: "report", text: ["WoofWatcher Monthly Report", "Download", "Print/PDF"] },
     { route: "/?tab=assistant", label: "assistant", text: ["Care Helper", "Ask with Phoenix context", "veterinarian"] }

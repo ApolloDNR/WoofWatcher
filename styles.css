@@ -343,6 +343,46 @@ dd,
   gap: 8px;
 }
 
+.handoff-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.handoff-list article {
+  min-width: 0;
+  border: 1px solid rgba(212, 207, 196, 0.16);
+  border-radius: var(--radius);
+  background: rgba(15, 23, 34, 0.34);
+  padding: 10px;
+}
+
+.handoff-list span,
+.handoff-list small {
+  display: block;
+}
+
+.handoff-list span {
+  color: rgba(255, 250, 241, 0.64);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.handoff-list strong {
+  display: block;
+  margin-top: 3px;
+  color: #fff8ec;
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.handoff-list small,
+.handoff-message {
+  overflow-wrap: anywhere;
+}
+
 .caregiver-list span,
 .quick-button {
   border: 1px solid rgba(212, 207, 196, 0.18);
@@ -685,7 +725,8 @@ textarea:focus {
   .profile-rail,
   .dashboard-grid,
   .entry-form,
-  .mini-grid {
+  .mini-grid,
+  .handoff-list {
     grid-template-columns: 1fr;
   }
 

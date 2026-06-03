@@ -14,6 +14,7 @@
 
 - Phoenix profile with rescue/anxiety-aware notes.
 - Two-caregiver handoff visibility without requiring the caregivers to message each other directly.
+- Copyable caregiver handoff digest covering the next care action, last meal, last walk, follow-ups, and today's caregiver load.
 - Daily routine plan with completed and next care items.
 - Quick logs for meals, walks, treats, training, social interactions, dog park visits, health, vomit, vet, weight, medication, and general notes.
 - Health watch that highlights repeat vomiting, appetite refusal, urgent severity, and veterinary red flags without diagnosing.
@@ -28,6 +29,7 @@
 - Vomit/urgent health follow-up flags.
 - Monthly summary aggregation.
 - Daily plan completion/next item logic.
+- Caregiver handoff digest logic.
 - Health watch escalation.
 - Export-ready report text with veterinary boundary.
 - Syntax checks for all scripts.

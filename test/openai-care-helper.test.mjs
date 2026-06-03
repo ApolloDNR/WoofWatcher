@@ -28,6 +28,8 @@ test("compacts Phoenix context before sending it to OpenAI", () => {
   const compact = compactAssistantContext(context);
 
   assert.equal(compact.profile.name, "Phoenix");
+  assert.equal(compact.handoff.nextRoutine.label, "Midday check");
+  assert.match(compact.handoff.message, /Next Phoenix care/);
   assert.equal(compact.latest.length <= 5, true);
   assert.equal("localAnswer" in compact, false);
 });

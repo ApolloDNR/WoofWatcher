@@ -5,7 +5,7 @@ WoofWatcher is a local-first care command center for Phoenix, Apollo's anxious r
 ## What v1 Does
 
 - Tracks meals, treats, walks, dog park visits, training, social interactions, vomit incidents, health notes, vet notes, weight checks, medication, and general care notes.
-- Shows today's routine, completed items, next care items, and caregiver handoff context.
+- Shows today's routine, completed items, next care items, caregiver load, and a copyable handoff note.
 - Highlights health patterns and red flags without making a veterinary diagnosis.
 - Stores records for vaccines, vet visits, weight goals, and care instructions.
 - Builds a monthly report that can be copied, downloaded, or printed to PDF.

@@ -18,6 +18,7 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 - `PhoenixProfile`: static profile plus editable care focus fields.
 - `CareEntry`: meal, treat, walk, park, training, social, vomit, health, vet, weight, medication, note.
 - `CareRecord`: vet, vaccine, weight, instruction.
+- `CaregiverHandoff`: next routine, latest meal, latest walk, follow-ups, caregiver load, and a shareable message.
 - `CareSummaryEngine`: native equivalent of `src/woof-core.js`.
 
 ## Navigation Pattern
@@ -30,10 +31,10 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 ## iPhone-Specific Wins
 
 - Local notifications for breakfast, dinner, bedtime snack, and medication reminders.
-- Share sheet for the monthly report.
+- Share sheet for the caregiver handoff and monthly report.
 - Home-screen widgets for next routine and health watch.
 - iCloud sync only after caregiver account/privacy choices are decided.
 
 ## Verification Gate
 
-Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can add a care log, persists after relaunch, exports a report, and shows the red-flag boundary in the helper.
+Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can add a care log, persists after relaunch, exports a report, shows the caregiver handoff, and shows the red-flag boundary in the helper.

@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import {
   buildReportText,
   createEntry,
+  getAssistantContext,
+  getCaregiverHandoff,
   getDefaultState,
   getHealthWatch,
   getMonthlySummary,
@@ -97,6 +99,59 @@ test("builds a handoff-aware today plan from routines and latest logs", () => {
   assert.equal(plan.completedLabels.includes("Morning walk"), true);
   assert.equal(plan.nextItems.some((item) => item.label === "Dinner"), true);
   assert.equal(plan.handoffPrompt.includes("who fed, walked, trained, or noticed symptoms"), true);
+});
+
+test("builds a caregiver handoff digest with next action and latest care context", () => {
+  const state = getDefaultState("2026-06-03T12:00:00.000Z");
+  const withEntries = {
+    ...state,
+    entries: [
+      createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: "2026-06-03T14:00:00.000Z" }),
+      createEntry({ type: "walk", title: "Morning walk", caregiver: "Apollo", occurredAt: "2026-06-03T15:00:00.000Z" }),
+      createEntry({ type: "vomit", title: "Yellow bile", caregiver: "Apollo", severity: "watch", occurredAt: "2026-06-03T16:00:00.000Z" })
+    ]
+  };
+
+  const handoff = getCaregiverHandoff(withEntries, "2026-06-03T18:00:00.000Z");
+
+  assert.equal(handoff.nextRoutine.label, "Midday check");
+  assert.equal(handoff.lastMeal.title, "Breakfast");
+  assert.equal(handoff.lastWalk.title, "Morning walk");
+  assert.equal(handoff.followUps.length, 1);
+  assert.equal(handoff.caregiverLoad.find((item) => item.name === "Apollo").todayLogs, 3);
+  assert.equal(handoff.caregiverLoad.find((item) => item.name === "Girlfriend").todayLogs, 0);
+  assert.match(handoff.message, /Next Phoenix care: Midday check/);
+  assert.match(handoff.message, /Last meal: Breakfast by Apollo/);
+  assert.match(handoff.message, /Follow-up: Yellow bile/);
+});
+
+test("builds an empty-day caregiver handoff without inventing completed care", () => {
+  const state = { ...getDefaultState("2026-06-03T12:00:00.000Z"), entries: [] };
+
+  const handoff = getCaregiverHandoff(state, "2026-06-03T13:00:00.000Z");
+
+  assert.equal(handoff.nextRoutine.label, "Breakfast");
+  assert.equal(handoff.lastMeal, null);
+  assert.equal(handoff.lastWalk, null);
+  assert.equal(handoff.followUps.length, 0);
+  assert.match(handoff.message, /No meals logged today/);
+  assert.match(handoff.message, /No walks logged today/);
+});
+
+test("includes caregiver handoff context in the local assistant review", () => {
+  const state = {
+    ...getDefaultState("2026-06-03T12:00:00.000Z"),
+    entries: [
+      createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: "2026-06-03T14:00:00.000Z" }),
+      createEntry({ type: "walk", title: "Morning walk", caregiver: "Girlfriend", occurredAt: "2026-06-03T15:00:00.000Z" })
+    ]
+  };
+
+  const context = getAssistantContext(state, "What should I tell the other caregiver?", "2026-06-03T18:00:00.000Z");
+
+  assert.equal(context.handoff.nextRoutine.label, "Midday check");
+  assert.match(context.handoff.message, /Last meal: Breakfast by Apollo/);
+  assert.match(context.localAnswer, /Handoff:/);
 });
 
 test("health watch elevates repeated vomit incidents and missing appetite pattern", () => {
