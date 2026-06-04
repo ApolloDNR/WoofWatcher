@@ -9,6 +9,7 @@ import {
   getGoalReview,
   getHealthWatch,
   getMonthlySummary,
+  getNotificationCenter,
   getReminderCenter,
   getTrainingProgress,
   getTodayPlan,
@@ -24,6 +25,7 @@ import {
 } from "./woof-core.js";
 
 const STORAGE_KEY = "woofwatcher.v1.state";
+const NOTIFICATION_SENT_KEY = "woofwatcher.v1.lastNotificationKey";
 const ENTRY_SELECT_OPTIONS = [
   "meal",
   "treat",
@@ -48,6 +50,7 @@ let selectedCalendarDate = initialParams.get("date") || "";
 let assistantAnswer = "";
 let assistantBusy = false;
 let assistantStatus = { checked: false, configured: false, mode: "local", model: "" };
+let notificationPermission = getBrowserNotificationPermission();
 
 render();
 registerServiceWorker();
@@ -70,6 +73,7 @@ function saveState(nextState = state) {
 }
 
 function render() {
+  const now = new Date().toISOString();
   const summary = getMonthlySummary(state);
   const plan = getTodayPlan(state);
   const handoff = getCaregiverHandoff(state);
@@ -77,7 +81,11 @@ function render() {
   const calendar = getCareCalendar(state);
   const trainingProgress = getTrainingProgress(state);
   const health = getHealthWatch(state);
-  const reminders = getReminderCenter(state);
+  const reminders = getReminderCenter(state, now);
+  const notifications = getNotificationCenter(state, now, {
+    supported: isBrowserNotificationSupported(),
+    permission: notificationPermission
+  });
 
   app.dataset.loading = "false";
   app.innerHTML = `
@@ -107,7 +115,7 @@ function render() {
 
       <section class="primary-surface">
         ${renderTabHeader(activeTab)}
-        ${renderActiveTab(activeTab, { summary, plan, reminders, health, handoff, goalReview, calendar, trainingProgress })}
+        ${renderActiveTab(activeTab, { summary, plan, reminders, notifications, health, handoff, goalReview, calendar, trainingProgress })}
       </section>
     </main>
 
@@ -128,6 +136,7 @@ function render() {
   `;
 
   bindEvents();
+  maybeSendDueNotification(notifications);
 }
 
 function renderProfileCard(health) {
@@ -252,7 +261,7 @@ function renderTabHeader(tab) {
 
 function renderActiveTab(tab, context) {
   if (tab === "team") return renderTeamTab(context.handoff);
-  if (tab === "reminders") return renderRemindersTab(context.reminders);
+  if (tab === "reminders") return renderRemindersTab(context.reminders, context.notifications);
   if (tab === "schedule") return renderScheduleTab();
   if (tab === "goals") return renderGoalsTab(context.goalReview);
   if (tab === "calendar") return renderCalendarTab(context.calendar);
@@ -265,7 +274,7 @@ function renderActiveTab(tab, context) {
   return renderTodayTab(context.plan, context.health, context.handoff);
 }
 
-function renderRemindersTab(reminders) {
+function renderRemindersTab(reminders, notifications) {
   return `
     <div class="dashboard-grid">
       <section class="panel span-2">
@@ -301,7 +310,36 @@ function renderRemindersTab(reminders) {
         <h3>Log creates proof</h3>
         <p>Completing a reminder adds a normal care log with the routine label, owner, time, and note.</p>
       </section>
+      ${renderNotificationPanel(notifications)}
     </div>
+  `;
+}
+
+function renderNotificationPanel(notifications) {
+  return `
+    <section class="panel span-2 notification-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Phone alerts</p>
+          <h3>Local notification readiness</h3>
+          <p>${escapeHtml(notifications.message)}</p>
+        </div>
+        <span class="status-chip ${notificationStatusClass(notifications.status)}">${escapeHtml(notifications.statusLabel)}</span>
+      </div>
+      <div class="notification-actions">
+        ${
+          notifications.canRequestPermission
+            ? `<button class="button primary" data-action="enable-notifications">Enable alerts</button>`
+            : ""
+        }
+        ${
+          notifications.canSendTest
+            ? `<button class="button ghost" data-action="test-notification">Test alert</button>`
+            : ""
+        }
+      </div>
+      <p class="notification-boundary">${escapeHtml(notifications.deliveryBoundary)}</p>
+    </section>
   `;
 }
 
@@ -341,6 +379,12 @@ function renderReminderTiming(item) {
 function reminderStatusClass(status) {
   if (status === "completed" || status === "upcoming") return "steady";
   if (status === "due" || status === "unscheduled") return "watch";
+  return "review";
+}
+
+function notificationStatusClass(status) {
+  if (status === "enabled") return "steady";
+  if (status === "ready_to_enable") return "watch";
   return "review";
 }
 
@@ -1175,7 +1219,7 @@ function bindEvents() {
   app.querySelector("[data-input='import-json']")?.addEventListener("change", handleImportFile);
 }
 
-function handleAction(action, button) {
+async function handleAction(action, button) {
   if (action === "reset-demo") {
     const confirmed = window.confirm("Reset WoofWatcher to the Phoenix demo state? This clears local logs on this device.");
     if (!confirmed) return;
@@ -1232,6 +1276,20 @@ function handleAction(action, button) {
     render();
   }
 
+  if (action === "enable-notifications") {
+    notificationPermission = await requestNotificationPermission();
+    activeTab = "reminders";
+    render();
+  }
+
+  if (action === "test-notification") {
+    await showCareNotification({
+      title: "WoofWatcher test alert",
+      body: "Phoenix care alerts are ready while WoofWatcher is open.",
+      tag: "woofwatcher-test"
+    });
+  }
+
   if (action === "print-report") {
     window.print();
   }
@@ -1285,6 +1343,64 @@ function downloadText(filename, text, type = "text/plain") {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function isBrowserNotificationSupported() {
+  return typeof window !== "undefined" && "Notification" in window;
+}
+
+function getBrowserNotificationPermission() {
+  if (!isBrowserNotificationSupported()) return "unsupported";
+  return Notification.permission || "default";
+}
+
+async function requestNotificationPermission() {
+  if (!isBrowserNotificationSupported()) return "unsupported";
+  if (Notification.permission === "granted" || Notification.permission === "denied") {
+    return Notification.permission;
+  }
+  try {
+    return await Notification.requestPermission();
+  } catch {
+    return Notification.permission || "default";
+  }
+}
+
+function maybeSendDueNotification(notifications) {
+  if (!notifications.shouldNotifyNow || !notifications.nextNotification || !notifications.notificationKey) return;
+  const lastSent = sessionStorage.getItem(NOTIFICATION_SENT_KEY);
+  if (lastSent === notifications.notificationKey) return;
+  showCareNotification(notifications.nextNotification)
+    .then(() => sessionStorage.setItem(NOTIFICATION_SENT_KEY, notifications.notificationKey))
+    .catch(() => {});
+}
+
+async function showCareNotification(payload) {
+  if (!payload || !isBrowserNotificationSupported() || Notification.permission !== "granted") return false;
+  const options = {
+    body: payload.body,
+    tag: payload.tag,
+    icon: "/public/app-icon.svg",
+    badge: "/public/app-icon.svg",
+    data: { url: "/?tab=reminders" }
+  };
+
+  if ("serviceWorker" in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      if (registration?.showNotification) {
+        await registration.showNotification(payload.title, options);
+        return true;
+      }
+    } catch {}
+  }
+
+  try {
+    new Notification(payload.title, options);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function registerServiceWorker() {

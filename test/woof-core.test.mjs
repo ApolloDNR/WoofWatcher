@@ -12,6 +12,7 @@ import {
   getGoalReview,
   getHealthWatch,
   getMonthlySummary,
+  getNotificationCenter,
   getReminderCenter,
   getTrainingProgress,
   getTodayPlan,
@@ -212,6 +213,66 @@ test("flags overdue and unscheduled reminders without inventing completed care",
   assert.equal(weightCheck.requiresAction, false);
   assert.equal(reminders.nextReminder.label, "Morning walk");
   assert.match(reminders.message, /1 overdue/);
+});
+
+test("builds notification readiness without claiming closed-app push", () => {
+  const state = getDefaultState("2026-06-03T12:00:00.000Z");
+  const withEntries = {
+    ...state,
+    entries: [
+      createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: "2026-06-03T14:00:00.000Z" }),
+      createEntry({ type: "walk", title: "Morning walk", caregiver: "Apollo", occurredAt: "2026-06-03T15:00:00.000Z" })
+    ]
+  };
+
+  const notification = getNotificationCenter(withEntries, "2026-06-04T01:45:00.000Z", {
+    supported: true,
+    permission: "default"
+  });
+
+  assert.equal(notification.status, "ready_to_enable");
+  assert.equal(notification.canRequestPermission, true);
+  assert.equal(notification.shouldNotifyNow, false);
+  assert.equal(notification.dueReminderCount, 2);
+  assert.equal(notification.nextNotification.title, "Phoenix care due");
+  assert.match(notification.nextNotification.body, /Dinner at 6:30 PM/);
+  assert.match(notification.deliveryBoundary, /while WoofWatcher is open/);
+  assert.match(notification.message, /Enable alerts/);
+});
+
+test("flags due notifications when permission is granted and blocks unsupported browsers", () => {
+  const state = {
+    ...getDefaultState("2026-06-03T12:00:00.000Z"),
+    routines: [
+      normalizeRoutineInput({
+        id: "routine_dinner",
+        label: "Dinner",
+        type: "meal",
+        time: "6:30 PM",
+        owner: "Either caregiver",
+        note: "Keep her stomach settled."
+      })
+    ],
+    entries: []
+  };
+
+  const enabled = getNotificationCenter(state, "2026-06-04T01:45:00.000Z", {
+    supported: true,
+    permission: "granted"
+  });
+  const unsupported = getNotificationCenter(state, "2026-06-04T01:45:00.000Z", {
+    supported: false,
+    permission: "default"
+  });
+
+  assert.equal(enabled.status, "enabled");
+  assert.equal(enabled.shouldNotifyNow, true);
+  assert.match(enabled.notificationKey, /routine_dinner/);
+  assert.equal(enabled.canSendTest, true);
+  assert.equal(unsupported.status, "unsupported");
+  assert.equal(unsupported.canRequestPermission, false);
+  assert.equal(unsupported.shouldNotifyNow, false);
+  assert.match(unsupported.message, /does not support/);
 });
 
 test("builds a caregiver handoff digest with next action and latest care context", () => {

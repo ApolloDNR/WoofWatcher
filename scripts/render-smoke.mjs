@@ -273,7 +273,7 @@ async function runDumpDomSmoke() {
   const checks = [
     { route: "/", label: "home", text: ["WoofWatcher", "Phoenix care command", "Import", "Transfer", "Next handoff", "Caregiver handoff"] },
     { route: "/?tab=team", label: "team", text: ["Care Team", "Care team profiles", "Add caregiver", "Names carry care history"] },
-    { route: "/?tab=reminders", label: "reminders", text: ["Reminders", "Reminder Center", "Care proof", "Due now"] },
+    { route: "/?tab=reminders", label: "reminders", text: ["Reminders", "Reminder Center", "Care proof", "Due now", "Phone alerts"] },
     { route: "/?tab=schedule", label: "schedule", text: ["Schedule", "Editable daily routine", "Add routine", "Save routine"] },
     { route: "/?tab=goals", label: "goals", text: ["Goals", "Goal review", "Phoenix goals", "Save goal"] },
     { route: "/?tab=calendar", label: "calendar", text: ["Calendar", "Care calendar", "Selected day", "Vomit days"] },

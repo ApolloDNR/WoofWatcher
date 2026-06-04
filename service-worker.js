@@ -1,4 +1,4 @@
-const CACHE_NAME = "woofwatcher-v1-reminders";
+const CACHE_NAME = "woofwatcher-v1-notifications";
 const PRECACHE_URLS = [
   "/",
   "/index.html",
@@ -53,5 +53,22 @@ self.addEventListener("fetch", (event) => {
           .match(event.request)
           .then((cached) => cached || caches.match(event.request.mode === "navigate" ? "/offline.html" : "/"))
       )
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification?.data?.url || "/?tab=reminders", self.location.origin).href;
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windows) => {
+        const matchingWindow = windows.find((client) => client.url.startsWith(self.location.origin));
+        if (matchingWindow) {
+          return matchingWindow.navigate(targetUrl).then((client) => (client || matchingWindow).focus());
+        }
+        return clients.openWindow(targetUrl);
+      })
+      .catch(() => {})
   );
 });

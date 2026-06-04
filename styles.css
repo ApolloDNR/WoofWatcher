@@ -601,6 +601,23 @@ dd,
   border-color: rgba(216, 170, 82, 0.36);
 }
 
+.notification-panel {
+  border-color: rgba(200, 122, 58, 0.34);
+}
+
+.notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.notification-boundary {
+  margin-top: 12px;
+  color: rgba(255, 250, 241, 0.62);
+  font-size: 0.86rem;
+}
+
 .check-dot {
   display: grid;
   place-items: center;

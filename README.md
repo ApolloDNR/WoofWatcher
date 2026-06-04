@@ -8,6 +8,7 @@ WoofWatcher is a local-first care command center for Phoenix, Apollo's anxious r
 - Lets caregivers edit Phoenix's daily routine schedule, care times, ownership, and notes.
 - Lets the care team edit caregiver names and roles, with caregiver choices flowing into Quick Log and handoff load.
 - Turns the daily routine into a Reminder Center with completed, due, overdue, upcoming, and flexible care proof.
+- Adds local notification readiness for due/overdue reminders, with permission prompts, test alerts, and app-open nudges.
 - Tracks Phoenix-specific care goals for weight, training, anxiety, social exposure, health, and custom milestones.
 - Shows a monthly care calendar with day-level meals, walks, training, social exposure, vomit days, follow-ups, and selected-day evidence.
 - Reviews training and social progress with calm wins, rough spots, dog interactions, and next focus areas.
@@ -65,6 +66,10 @@ Use `Backup` to download the current JSON state before resetting or moving devic
 Use `Transfer` to download an importable care room package when another caregiver needs the current Phoenix state plus handoff/report context.
 
 Use `Import` to restore either a WoofWatcher JSON backup or a care room transfer package into the current browser.
+
+## Notification Status
+
+WoofWatcher can request browser/PWA notification permission and show local due-care alerts while the app is open. It does not claim closed-app, cross-device, or caregiver-synced push notifications; those require a hosted notification service and caregiver account/privacy decisions.
 
 ## OpenAI Status
 

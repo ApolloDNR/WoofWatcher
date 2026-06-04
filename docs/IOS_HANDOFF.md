@@ -23,6 +23,7 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 - `RecordDraft`: editable record form shape for vet, vaccine, weight, medication, microchip, and instruction records.
 - `RoutineDraft`: editable schedule item for meals, walks, snacks, medication, training, and ownership.
 - `ReminderCenter` and `RoutineReminder`: local routine status for completed, due, overdue, upcoming, and flexible care proof.
+- `NotificationReadiness`: native equivalent of the PWA notification model, backed by `UNUserNotificationCenter` permission state and local notification scheduling.
 - `CaregiverHandoff`: next routine, latest meal, latest walk, follow-ups, caregiver load, and a shareable message.
 - `CareRoomTransferPackage`: shareable/importable state package for caregiver or device handoff before account sync exists.
 - `CareCalendar`: monthly day summaries with review days, vomit days, care markers, and selected-day evidence.
@@ -38,11 +39,11 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 
 ## iPhone-Specific Wins
 
-- Local notifications for breakfast, dinner, bedtime snack, and medication reminders after the in-app Reminder Center is verified in Xcode.
+- `UNUserNotificationCenter` local notifications for breakfast, dinner, bedtime snack, and medication reminders after the in-app Reminder Center is verified in Xcode.
 - Share sheet for the caregiver handoff, care room transfer package, and monthly report.
 - Home-screen widgets for next routine and health watch.
 - iCloud sync only after caregiver account/privacy choices are decided.
 
 ## Verification Gate
 
-Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit caregiver profiles, can edit the schedule, complete a reminder into a care log, add/edit/remove goals, add/edit/remove records, add a care log, shows the care calendar and selected-day timeline, shows training/social progress, persists after relaunch, exports a report, shares a care room transfer package, shows the caregiver handoff, and shows the red-flag boundary in the helper.
+Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit caregiver profiles, can edit the schedule, complete a reminder into a care log, request local notification permission, schedule a local reminder notification, add/edit/remove goals, add/edit/remove records, add a care log, shows the care calendar and selected-day timeline, shows training/social progress, persists after relaunch, exports a report, shares a care room transfer package, shows the caregiver handoff, and shows the red-flag boundary in the helper.

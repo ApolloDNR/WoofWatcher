@@ -520,6 +520,90 @@ export function getReminderCenter(state, now = new Date().toISOString()) {
   };
 }
 
+export function getNotificationCenter(state, now = new Date().toISOString(), options = {}) {
+  const supported = options.supported !== false;
+  const permission = cleanText(options.permission || "default") || "default";
+  const reminders = getReminderCenter(state, now);
+  const dueReminders = reminders.items
+    .filter((item) => item.status === "due" || item.status === "overdue")
+    .sort(sortReminderItems);
+  const nextReminder = dueReminders[0] || reminders.nextReminder;
+  const dateKey = formatDateKey(new Date(now));
+  const notificationKey = dueReminders.length
+    ? `${dateKey}:${dueReminders.map((item) => item.id).sort().join(",")}`
+    : "";
+  const deliveryBoundary =
+    "Notifications are local reminders while WoofWatcher is open. Closed-app or cross-device push still needs a hosted notification service.";
+
+  if (!supported) {
+    return {
+      supported: false,
+      permission,
+      status: "unsupported",
+      statusLabel: "Not Supported",
+      canRequestPermission: false,
+      canSendTest: false,
+      shouldNotifyNow: false,
+      dueReminderCount: dueReminders.length,
+      notificationKey,
+      nextNotification: buildNotificationPayload(nextReminder, dueReminders),
+      deliveryBoundary,
+      message: "This browser does not support local care notifications. Reminder Center still shows due care."
+    };
+  }
+
+  if (permission === "denied") {
+    return {
+      supported: true,
+      permission,
+      status: "blocked",
+      statusLabel: "Blocked",
+      canRequestPermission: false,
+      canSendTest: false,
+      shouldNotifyNow: false,
+      dueReminderCount: dueReminders.length,
+      notificationKey,
+      nextNotification: buildNotificationPayload(nextReminder, dueReminders),
+      deliveryBoundary,
+      message: "Notifications are blocked in this browser. Use device settings or the Reminder Center for Phoenix care."
+    };
+  }
+
+  if (permission === "granted") {
+    return {
+      supported: true,
+      permission,
+      status: "enabled",
+      statusLabel: "Enabled",
+      canRequestPermission: false,
+      canSendTest: true,
+      shouldNotifyNow: dueReminders.length > 0,
+      dueReminderCount: dueReminders.length,
+      notificationKey,
+      nextNotification: buildNotificationPayload(nextReminder, dueReminders),
+      deliveryBoundary,
+      message: dueReminders.length
+        ? `App-open alerts are enabled. ${dueReminders.length} Phoenix reminder${dueReminders.length === 1 ? "" : "s"} need attention.`
+        : `App-open alerts are enabled. ${nextReminder ? `Next: ${nextReminder.label} at ${nextReminder.time}.` : "Scheduled care is covered."}`
+    };
+  }
+
+  return {
+    supported: true,
+    permission,
+    status: "ready_to_enable",
+    statusLabel: "Ready",
+    canRequestPermission: true,
+    canSendTest: false,
+    shouldNotifyNow: false,
+    dueReminderCount: dueReminders.length,
+    notificationKey,
+    nextNotification: buildNotificationPayload(nextReminder, dueReminders),
+    deliveryBoundary,
+    message: "Enable alerts to let WoofWatcher nudge you while the app is open. Closed-app push needs a hosted notification service."
+  };
+}
+
 export function getCaregiverHandoff(state, now = new Date().toISOString()) {
   const plan = getTodayPlan(state, now);
   const todayEntries = entriesForLocalDay(state.entries || [], now).sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
@@ -958,6 +1042,17 @@ function buildReminderMessage({ items, nextReminder }) {
   }
 
   return "Today's scheduled care is covered.";
+}
+
+function buildNotificationPayload(nextReminder, dueReminders = []) {
+  if (!nextReminder) return null;
+  const isDue = dueReminders.length > 0;
+  const owner = nextReminder.owner || "Either caregiver";
+  return {
+    title: isDue ? "Phoenix care due" : "Next Phoenix care",
+    body: `${nextReminder.label} at ${nextReminder.time} (${owner}). ${nextReminder.note || "Check WoofWatcher before assuming care is covered."}`,
+    tag: `woofwatcher-${nextReminder.id}`
+  };
 }
 
 function makeEntryId(entry) {
