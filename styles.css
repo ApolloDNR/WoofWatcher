@@ -383,11 +383,19 @@ dd,
   overflow-wrap: anywhere;
 }
 
-.calendar-summary-row {
+.calendar-summary-row,
+.reminder-summary-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 12px;
+}
+
+.calendar-summary-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reminder-summary-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .progress-signal-grid {
@@ -554,6 +562,7 @@ dd,
 
 .routine-list,
 .routine-editor-list,
+.reminder-list,
 .goal-list,
 .timeline,
 .record-list {
@@ -562,6 +571,7 @@ dd,
 }
 
 .routine-row,
+.reminder-row,
 .timeline-row,
 .record-row {
   display: grid;
@@ -575,6 +585,22 @@ dd,
   border-color: rgba(143, 173, 152, 0.5);
 }
 
+.reminder-row.completed {
+  border-color: rgba(143, 173, 152, 0.5);
+}
+
+.reminder-row.due {
+  border-color: rgba(216, 170, 82, 0.58);
+}
+
+.reminder-row.overdue {
+  border-color: rgba(201, 99, 88, 0.68);
+}
+
+.reminder-row.unscheduled {
+  border-color: rgba(216, 170, 82, 0.36);
+}
+
 .check-dot {
   display: grid;
   place-items: center;
@@ -586,7 +612,33 @@ dd,
   font-weight: 900;
 }
 
+.reminder-status-dot {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(212, 207, 196, 0.25);
+  border-radius: 50%;
+  color: #d7f1dd;
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.reminder-title-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.reminder-title-line h4 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .routine-row h4,
+.reminder-row h4,
 .timeline-row h4,
 .record-row h4 {
   margin-bottom: 4px;
@@ -594,9 +646,11 @@ dd,
 }
 
 .routine-row p,
+.reminder-row p,
 .timeline-row p,
 .record-row p,
 .routine-row small,
+.reminder-row small,
 .timeline-row small,
 .record-row small {
   display: block;
@@ -879,7 +933,7 @@ textarea:focus {
 .bottom-nav {
   position: static;
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   width: min(1120px, calc(100% - 24px));
   margin: 18px auto 0;
   border: 1px solid rgba(212, 207, 196, 0.2);
@@ -986,7 +1040,8 @@ textarea:focus {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .calendar-summary-row {
+  .calendar-summary-row,
+  .reminder-summary-row {
     grid-template-columns: 1fr;
   }
 

@@ -100,6 +100,26 @@ try {
   );
 
   await evaluate(client, `
+    document.querySelector('[data-tab="reminders"]').click();
+  `);
+  await delay(250);
+  await expectEval(client, "Boolean(document.querySelector('.reminder-list'))", true, "reminder list visible");
+  await evaluate(client, `
+    (() => {
+    const before = JSON.parse(localStorage.getItem('woofwatcher.v1.state')).entries.length;
+    window.__woofReminderEntryCount = before;
+    document.querySelector('[data-action="complete-reminder"]').click();
+    })();
+  `);
+  await delay(500);
+  await expectEval(
+    client,
+    `JSON.parse(localStorage.getItem('woofwatcher.v1.state')).entries.length === window.__woofReminderEntryCount + 1`,
+    true,
+    "completed reminder writes log"
+  );
+
+  await evaluate(client, `
     document.querySelector('[data-tab="schedule"]').click();
   `);
   await delay(250);
@@ -253,6 +273,7 @@ async function runDumpDomSmoke() {
   const checks = [
     { route: "/", label: "home", text: ["WoofWatcher", "Phoenix care command", "Import", "Transfer", "Next handoff", "Caregiver handoff"] },
     { route: "/?tab=team", label: "team", text: ["Care Team", "Care team profiles", "Add caregiver", "Names carry care history"] },
+    { route: "/?tab=reminders", label: "reminders", text: ["Reminders", "Reminder Center", "Care proof", "Due now"] },
     { route: "/?tab=schedule", label: "schedule", text: ["Schedule", "Editable daily routine", "Add routine", "Save routine"] },
     { route: "/?tab=goals", label: "goals", text: ["Goals", "Goal review", "Phoenix goals", "Save goal"] },
     { route: "/?tab=calendar", label: "calendar", text: ["Calendar", "Care calendar", "Selected day", "Vomit days"] },

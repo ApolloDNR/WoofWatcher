@@ -12,6 +12,7 @@ import {
   getGoalReview,
   getHealthWatch,
   getMonthlySummary,
+  getReminderCenter,
   getTrainingProgress,
   getTodayPlan,
   normalizeGoalInput,
@@ -147,6 +148,70 @@ test("builds a handoff-aware today plan from routines and latest logs", () => {
   assert.equal(plan.completedLabels.includes("Morning walk"), true);
   assert.equal(plan.nextItems.some((item) => item.label === "Dinner"), true);
   assert.equal(plan.handoffPrompt.includes("who fed, walked, trained, or noticed symptoms"), true);
+});
+
+test("builds a reminder center from today's routine proof", () => {
+  const state = getDefaultState("2026-06-03T12:00:00.000Z");
+  const withEntries = {
+    ...state,
+    entries: [
+      createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: "2026-06-03T14:00:00.000Z" }),
+      createEntry({ type: "walk", title: "Morning walk", caregiver: "Apollo", occurredAt: "2026-06-03T15:00:00.000Z" })
+    ]
+  };
+
+  const reminders = getReminderCenter(withEntries, "2026-06-04T01:45:00.000Z");
+  const breakfast = reminders.items.find((item) => item.label === "Breakfast");
+  const dinner = reminders.items.find((item) => item.label === "Dinner");
+  const eveningWalk = reminders.items.find((item) => item.label === "Evening walk");
+
+  assert.equal(reminders.completedCount, 2);
+  assert.equal(reminders.dueCount, 1);
+  assert.equal(reminders.overdueCount, 1);
+  assert.equal(breakfast.status, "completed");
+  assert.equal(dinner.status, "due");
+  assert.equal(eveningWalk.status, "upcoming");
+  assert.equal(reminders.nextReminder.label, "Dinner");
+  assert.match(reminders.message, /Dinner at 6:30 PM/);
+});
+
+test("flags overdue and unscheduled reminders without inventing completed care", () => {
+  const state = {
+    ...getDefaultState("2026-06-03T12:00:00.000Z"),
+    routines: [
+      normalizeRoutineInput({
+        id: "routine_morning_walk",
+        label: "Morning walk",
+        type: "walk",
+        time: "8:15 AM",
+        owner: "Apollo",
+        note: "Decompress walk."
+      }),
+      normalizeRoutineInput({
+        id: "routine_weight_check",
+        label: "Weight check",
+        type: "weight",
+        time: "Unscheduled",
+        owner: "Either caregiver",
+        note: "When Phoenix is calm."
+      })
+    ],
+    entries: []
+  };
+
+  const reminders = getReminderCenter(state, "2026-06-03T23:00:00.000Z");
+  const morningWalk = reminders.items.find((item) => item.label === "Morning walk");
+  const weightCheck = reminders.items.find((item) => item.label === "Weight check");
+
+  assert.equal(reminders.completedCount, 0);
+  assert.equal(reminders.overdueCount, 1);
+  assert.equal(reminders.unscheduledCount, 1);
+  assert.equal(morningWalk.status, "overdue");
+  assert.equal(morningWalk.minutesUntil, -465);
+  assert.equal(weightCheck.status, "unscheduled");
+  assert.equal(weightCheck.requiresAction, false);
+  assert.equal(reminders.nextReminder.label, "Morning walk");
+  assert.match(reminders.message, /1 overdue/);
 });
 
 test("builds a caregiver handoff digest with next action and latest care context", () => {

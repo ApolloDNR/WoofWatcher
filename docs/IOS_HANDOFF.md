@@ -13,7 +13,7 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 ## Recommended SwiftUI Shape
 
 - `WoofWatcherApp`: root app entry.
-- `AppTab`: `today`, `team`, `schedule`, `goals`, `calendar`, `progress`, `log`, `health`, `records`, `report`, `helper`.
+- `AppTab`: `today`, `team`, `reminders`, `schedule`, `goals`, `calendar`, `progress`, `log`, `health`, `records`, `report`, `helper`.
 - `CareStore`: `@Observable` root-owned model on iOS 17+; use SwiftData or file-backed JSON for persistence.
 - `PhoenixProfile`: static profile plus editable care focus fields.
 - `CareEntry`: meal, treat, walk, park, training, social, vomit, health, vet, weight, medication, note.
@@ -22,6 +22,7 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 - `CareRecord`: vet, vaccine, weight, instruction.
 - `RecordDraft`: editable record form shape for vet, vaccine, weight, medication, microchip, and instruction records.
 - `RoutineDraft`: editable schedule item for meals, walks, snacks, medication, training, and ownership.
+- `ReminderCenter` and `RoutineReminder`: local routine status for completed, due, overdue, upcoming, and flexible care proof.
 - `CaregiverHandoff`: next routine, latest meal, latest walk, follow-ups, caregiver load, and a shareable message.
 - `CareRoomTransferPackage`: shareable/importable state package for caregiver or device handoff before account sync exists.
 - `CareCalendar`: monthly day summaries with review days, vomit days, care markers, and selected-day evidence.
@@ -30,18 +31,18 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 
 ## Navigation Pattern
 
-- `TabView` for the eleven primary surfaces.
+- `TabView` for the twelve primary surfaces.
 - Per-tab `NavigationStack` if detail/edit screens are added.
 - `.sheet(item:)` for add/edit entry and add/edit record.
 - Keep state local to the root store and pass bindings into focused subviews.
 
 ## iPhone-Specific Wins
 
-- Local notifications for breakfast, dinner, bedtime snack, and medication reminders.
+- Local notifications for breakfast, dinner, bedtime snack, and medication reminders after the in-app Reminder Center is verified in Xcode.
 - Share sheet for the caregiver handoff, care room transfer package, and monthly report.
 - Home-screen widgets for next routine and health watch.
 - iCloud sync only after caregiver account/privacy choices are decided.
 
 ## Verification Gate
 
-Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit caregiver profiles, can edit the schedule, add/edit/remove goals, add/edit/remove records, add a care log, shows the care calendar and selected-day timeline, shows training/social progress, persists after relaunch, exports a report, shares a care room transfer package, shows the caregiver handoff, and shows the red-flag boundary in the helper.
+Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit caregiver profiles, can edit the schedule, complete a reminder into a care log, add/edit/remove goals, add/edit/remove records, add a care log, shows the care calendar and selected-day timeline, shows training/social progress, persists after relaunch, exports a report, shares a care room transfer package, shows the caregiver handoff, and shows the red-flag boundary in the helper.

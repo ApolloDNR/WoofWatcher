@@ -3,6 +3,7 @@ import SwiftUI
 enum AppTab: String, CaseIterable, Identifiable {
     case today
     case team
+    case reminders
     case schedule
     case goals
     case calendar
@@ -19,6 +20,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         switch self {
         case .today: return "Today"
         case .team: return "Team"
+        case .reminders: return "Reminders"
         case .schedule: return "Schedule"
         case .goals: return "Goals"
         case .calendar: return "Calendar"
@@ -35,6 +37,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         switch self {
         case .today: return "calendar"
         case .team: return "person.2"
+        case .reminders: return "bell.badge"
         case .schedule: return "clock.badge.checkmark"
         case .goals: return "target"
         case .calendar: return "calendar.badge.exclamationmark"
@@ -78,6 +81,8 @@ struct ContentView: View {
             TodayView(store: store)
         case .team:
             TeamView(store: store)
+        case .reminders:
+            RemindersView(store: store)
         case .schedule:
             ScheduleView(store: store)
         case .goals:
@@ -96,6 +101,114 @@ struct ContentView: View {
             ReportView(store: store)
         case .helper:
             HelperView(store: store)
+        }
+    }
+}
+
+struct RemindersView: View {
+    @Bindable var store: CareStore
+
+    var body: some View {
+        let reminders = store.reminderCenter
+
+        List {
+            Section("Reminder Center") {
+                Text(reminders.dateLabel)
+                    .font(.title2.bold())
+                Text(reminders.message)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    metric("Done", "\(reminders.completedCount)")
+                    metric("Due", "\(reminders.dueCount)")
+                    metric("Late", "\(reminders.overdueCount)")
+                    metric("Next", "\(reminders.upcomingCount)")
+                }
+            }
+
+            Section("Care Proof") {
+                ForEach(reminders.items) { item in
+                    ReminderRow(item: item) {
+                        store.completeReminder(routineId: item.routine.id)
+                    }
+                }
+            }
+
+            Section("Flexible Items") {
+                Text("\(reminders.unscheduledCount) flexible item\(reminders.unscheduledCount == 1 ? "" : "s") stay visible without being treated as missed care.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func metric(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.headline)
+                .monospacedDigit()
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct ReminderRow: View {
+    var item: RoutineReminder
+    var onComplete: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: item.status == "completed" ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(statusColor)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(item.routine.label)
+                        .font(.headline)
+                    Spacer()
+                    Text(item.statusLabel)
+                        .font(.caption.bold())
+                        .foregroundStyle(statusColor)
+                }
+                Text("\(item.routine.time) | \(item.routine.owner)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Text(timingLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if !item.routine.note.isEmpty {
+                    Text(item.routine.note)
+                        .font(.footnote)
+                }
+            }
+
+            if item.status != "completed" {
+                Button("Log") {
+                    onComplete()
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var timingLabel: String {
+        if let completedAt = item.completedAt {
+            return "Completed by \(item.completedBy.isEmpty ? "Unassigned" : item.completedBy) at \(completedAt.formatted(date: .abbreviated, time: .shortened))"
+        }
+        guard let minutesUntil = item.minutesUntil else { return "Flexible timing" }
+        if minutesUntil == 0 { return "Due now" }
+        if minutesUntil > 0 { return "\(minutesUntil) minutes away" }
+        return "\(abs(minutesUntil)) minutes past"
+    }
+
+    private var statusColor: Color {
+        switch item.status {
+        case "completed", "upcoming": return .green
+        case "due", "unscheduled": return .orange
+        default: return .red
         }
     }
 }

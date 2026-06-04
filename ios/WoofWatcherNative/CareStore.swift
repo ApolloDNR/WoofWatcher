@@ -61,6 +61,46 @@ final class CareStore {
         )
     }
 
+    var reminderCenter: ReminderCenter {
+        let now = Date()
+        let calendar = Calendar.current
+        let currentMinutes = calendar.component(.hour, from: now) * 60 + calendar.component(.minute, from: now)
+        let todayEntries = state.entries.filter { calendar.isDate($0.occurredAt, inSameDayAs: now) }
+        let items = state.routines.map { routine in
+            let completedEntry = todayEntries.first { entry in
+                entry.title.localizedCaseInsensitiveContains(routine.label) || entry.type == routine.type && entry.title == routine.label
+            }
+            let routineMinutes = parsedRoutineMinutes(routine.time)
+            let minutesUntil = routineMinutes.map { $0 - currentMinutes }
+            let status = reminderStatus(completedEntry: completedEntry, routineMinutes: routineMinutes, minutesUntil: minutesUntil)
+            return RoutineReminder(
+                routine: routine,
+                status: status,
+                minutesUntil: minutesUntil,
+                completedAt: completedEntry?.occurredAt,
+                completedBy: completedEntry?.caregiver ?? "",
+                requiresAction: status == "due" || status == "overdue"
+            )
+        }
+        let next = items
+            .filter { $0.status != "completed" }
+            .sorted(by: sortReminderItems)
+            .first
+
+        return ReminderCenter(
+            dateLabel: now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()),
+            totalCount: items.count,
+            completedCount: items.filter { $0.status == "completed" }.count,
+            dueCount: items.filter { $0.status == "due" }.count,
+            overdueCount: items.filter { $0.status == "overdue" }.count,
+            upcomingCount: items.filter { $0.status == "upcoming" }.count,
+            unscheduledCount: items.filter { $0.status == "unscheduled" }.count,
+            nextReminder: next,
+            items: items,
+            message: reminderMessage(items: items, next: next)
+        )
+    }
+
     var healthWatch: HealthWatch {
         let recent = state.entries.filter { entry in
             entry.occurredAt >= Date().addingTimeInterval(-14 * 24 * 3600)
@@ -246,6 +286,14 @@ final class CareStore {
         save()
     }
 
+    func completeReminder(routineId: String) {
+        guard let routine = state.routines.first(where: { $0.id == routineId }) else { return }
+        let caregiver = reminderCaregiver(owner: routine.owner)
+        let note = routine.note.isEmpty ? "Reminder completed." : "Reminder completed. \(routine.note)"
+        state.entries.insert(CareEntry(type: routine.type, title: routine.label, caregiver: caregiver, note: note), at: 0)
+        save()
+    }
+
     func upsertCaregiver(previousName: String, draft: CaregiverDraft) {
         let caregiver = draft.caregiver()
         let target = previousName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? caregiver.name : previousName
@@ -411,6 +459,10 @@ final class CareStore {
     private func entryMatchesCaregiver(_ entry: CareEntry, _ caregiverName: String) -> Bool {
         entry.caregiver.localizedCaseInsensitiveCompare(caregiverName) == .orderedSame
             || entry.caregiver.localizedCaseInsensitiveCompare("Both") == .orderedSame
+    }
+
+    private func reminderCaregiver(owner: String) -> String {
+        caregiverOptions.first { namesEqual($0, owner) } ?? "Unassigned"
     }
 
     private func replaceCareReferences(from previousName: String, to nextName: String) {
@@ -612,6 +664,45 @@ final class CareStore {
         return hour * 60 + minute
     }
 
+    private func parsedRoutineMinutes(_ value: String) -> Int? {
+        let minutes = routineSortMinutes(value)
+        return minutes == Int.max ? nil : minutes
+    }
+
+    private func reminderStatus(completedEntry: CareEntry?, routineMinutes: Int?, minutesUntil: Int?) -> String {
+        if completedEntry != nil { return "completed" }
+        guard routineMinutes != nil, let minutesUntil else { return "unscheduled" }
+        if minutesUntil < -30 { return "overdue" }
+        if minutesUntil <= 30 { return "due" }
+        return "upcoming"
+    }
+
+    private func sortReminderItems(_ left: RoutineReminder, _ right: RoutineReminder) -> Bool {
+        let statusOrder = ["due": 0, "overdue": 1, "upcoming": 2, "unscheduled": 3, "completed": 4]
+        let leftStatus = statusOrder[left.status] ?? 9
+        let rightStatus = statusOrder[right.status] ?? 9
+        if leftStatus != rightStatus { return leftStatus < rightStatus }
+        let leftMinutes = left.minutesUntil ?? Int.max
+        let rightMinutes = right.minutesUntil ?? Int.max
+        if leftMinutes != rightMinutes { return leftMinutes < rightMinutes }
+        return left.routine.label < right.routine.label
+    }
+
+    private func reminderMessage(items: [RoutineReminder], next: RoutineReminder?) -> String {
+        let dueCount = items.filter { $0.status == "due" }.count
+        let overdueCount = items.filter { $0.status == "overdue" }.count
+        if (dueCount > 0 || overdueCount > 0), let next {
+            var parts: [String] = []
+            if overdueCount > 0 { parts.append("\(overdueCount) overdue") }
+            if dueCount > 0 { parts.append("\(dueCount) due now") }
+            return "\(parts.joined(separator: " and ")). Next: \(next.routine.label) at \(next.routine.time) (\(next.routine.owner))."
+        }
+        if let next {
+            return "Next Phoenix reminder: \(next.routine.label) at \(next.routine.time) (\(next.routine.owner))."
+        }
+        return "Today's scheduled care is covered."
+    }
+
     private func storageURL() throws -> URL {
         let folder = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let appFolder = folder.appending(path: "WoofWatcher", directoryHint: .isDirectory)
@@ -642,6 +733,33 @@ struct CareCalendar {
     var vomitDays: Int
     var totalLogs: Int
     var days: [CalendarDaySummary]
+}
+
+struct ReminderCenter {
+    var dateLabel: String
+    var totalCount: Int
+    var completedCount: Int
+    var dueCount: Int
+    var overdueCount: Int
+    var upcomingCount: Int
+    var unscheduledCount: Int
+    var nextReminder: RoutineReminder?
+    var items: [RoutineReminder]
+    var message: String
+}
+
+struct RoutineReminder: Identifiable {
+    var id: String { routine.id }
+    var routine: CareRoutine
+    var status: String
+    var minutesUntil: Int?
+    var completedAt: Date?
+    var completedBy: String
+    var requiresAction: Bool
+
+    var statusLabel: String {
+        status.capitalized
+    }
 }
 
 struct CalendarDaySummary: Identifiable {

@@ -479,6 +479,47 @@ export function getTodayPlan(state, now = new Date().toISOString()) {
   };
 }
 
+export function getReminderCenter(state, now = new Date().toISOString()) {
+  const target = new Date(now);
+  const currentMinutes = target.getHours() * 60 + target.getMinutes();
+  const todayEntries = entriesForLocalDay(state.entries || [], now);
+  const items = (state.routines || []).map((routine) => {
+    const normalized = normalizeRoutineInput(routine);
+    const completedEntry = todayEntries.find((entry) => routineMatchesEntry(normalized, entry)) || null;
+    const routineMinutes = parseRoutineMinutes(normalized.time);
+    const minutesUntil = routineMinutes === null ? null : routineMinutes - currentMinutes;
+    const status = getReminderStatus({ completedEntry, routineMinutes, minutesUntil });
+    return {
+      ...normalized,
+      status,
+      statusLabel: titleCase(status),
+      minutesUntil,
+      completedAt: completedEntry?.occurredAt || null,
+      completedBy: completedEntry?.caregiver || "",
+      requiresAction: status === "due" || status === "overdue"
+    };
+  });
+  const actionable = items.filter((item) => item.status !== "completed").sort(sortReminderItems);
+  const nextReminder = actionable[0] || null;
+
+  return {
+    dateLabel: target.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "short",
+      day: "numeric"
+    }),
+    totalCount: items.length,
+    completedCount: items.filter((item) => item.status === "completed").length,
+    dueCount: items.filter((item) => item.status === "due").length,
+    overdueCount: items.filter((item) => item.status === "overdue").length,
+    upcomingCount: items.filter((item) => item.status === "upcoming").length,
+    unscheduledCount: items.filter((item) => item.status === "unscheduled").length,
+    nextReminder,
+    items,
+    message: buildReminderMessage({ items, nextReminder })
+  };
+}
+
 export function getCaregiverHandoff(state, now = new Date().toISOString()) {
   const plan = getTodayPlan(state, now);
   const todayEntries = entriesForLocalDay(state.entries || [], now).sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
@@ -675,6 +716,7 @@ export function getAssistantContext(state, question = "", now = new Date().toISO
   const healthWatch = getHealthWatch(state, now);
   const todayPlan = getTodayPlan(state, now);
   const handoff = getCaregiverHandoff(state, now);
+  const reminders = getReminderCenter(state, now);
   const latest = [...(state.entries || [])]
     .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt))
     .slice(0, 5);
@@ -685,13 +727,14 @@ export function getAssistantContext(state, question = "", now = new Date().toISO
     summary,
     healthWatch,
     todayPlan,
+    reminders,
     handoff,
     latest,
-    localAnswer: buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, handoff, latest })
+    localAnswer: buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, reminders, handoff, latest })
   };
 }
 
-function buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, handoff, latest }) {
+function buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, reminders, handoff, latest }) {
   const asksVomiting = /vomit|throw|bile|yellow|nausea/i.test(question);
   const lines = [];
 
@@ -704,6 +747,7 @@ function buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, 
   lines.push(`This month: ${summary.meals} meals, ${summary.walks} walks, ${summary.trainingSessions} training sessions, ${summary.vomitIncidents} vomit incidents.`);
   lines.push(`Health watch is ${healthWatch.label.toLowerCase()}: ${healthWatch.signals[0]}`);
   lines.push(`Today completed: ${todayPlan.completedCount}/${todayPlan.totalCount}. Next: ${todayPlan.nextItems[0]?.label || "routine covered"}.`);
+  lines.push(`Reminders: ${reminders.message}`);
   lines.push(`Handoff: ${handoff.message}`);
 
   if (latest[0]) {
@@ -716,6 +760,12 @@ function buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, 
 
 function cleanText(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function titleCase(value) {
+  return cleanText(value)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function compactObject(value) {
@@ -860,6 +910,54 @@ function buildHandoffMessage({ nextRoutine, lastMeal, lastWalk, followUps }) {
   }
 
   return lines.join(" ");
+}
+
+function parseRoutineMinutes(value) {
+  const minutes = routineSortMinutes(value);
+  return minutes === Number.MAX_SAFE_INTEGER ? null : minutes;
+}
+
+function getReminderStatus({ completedEntry, routineMinutes, minutesUntil }) {
+  if (completedEntry) return "completed";
+  if (routineMinutes === null) return "unscheduled";
+  if (minutesUntil < -30) return "overdue";
+  if (minutesUntil <= 30) return "due";
+  return "upcoming";
+}
+
+function sortReminderItems(left, right) {
+  const statusOrder = {
+    due: 0,
+    overdue: 1,
+    upcoming: 2,
+    unscheduled: 3,
+    completed: 4
+  };
+  const leftStatus = statusOrder[left.status] ?? 9;
+  const rightStatus = statusOrder[right.status] ?? 9;
+  if (leftStatus !== rightStatus) return leftStatus - rightStatus;
+
+  const leftMinutes = left.minutesUntil === null ? Number.MAX_SAFE_INTEGER : left.minutesUntil;
+  const rightMinutes = right.minutesUntil === null ? Number.MAX_SAFE_INTEGER : right.minutesUntil;
+  if (leftMinutes !== rightMinutes) return leftMinutes - rightMinutes;
+  return left.label.localeCompare(right.label);
+}
+
+function buildReminderMessage({ items, nextReminder }) {
+  const dueCount = items.filter((item) => item.status === "due").length;
+  const overdueCount = items.filter((item) => item.status === "overdue").length;
+  if (dueCount || overdueCount) {
+    const parts = [];
+    if (overdueCount) parts.push(`${overdueCount} overdue`);
+    if (dueCount) parts.push(`${dueCount} due now`);
+    return `${parts.join(" and ")}. Next: ${nextReminder.label} at ${nextReminder.time} (${nextReminder.owner}).`;
+  }
+
+  if (nextReminder) {
+    return `Next Phoenix reminder: ${nextReminder.label} at ${nextReminder.time} (${nextReminder.owner}).`;
+  }
+
+  return "Today's scheduled care is covered.";
 }
 
 function makeEntryId(entry) {

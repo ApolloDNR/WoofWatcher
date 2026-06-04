@@ -9,6 +9,7 @@ import {
   getGoalReview,
   getHealthWatch,
   getMonthlySummary,
+  getReminderCenter,
   getTrainingProgress,
   getTodayPlan,
   normalizeState,
@@ -76,6 +77,7 @@ function render() {
   const calendar = getCareCalendar(state);
   const trainingProgress = getTrainingProgress(state);
   const health = getHealthWatch(state);
+  const reminders = getReminderCenter(state);
 
   app.dataset.loading = "false";
   app.innerHTML = `
@@ -105,13 +107,14 @@ function render() {
 
       <section class="primary-surface">
         ${renderTabHeader(activeTab)}
-        ${renderActiveTab(activeTab, { summary, plan, health, handoff, goalReview, calendar, trainingProgress })}
+        ${renderActiveTab(activeTab, { summary, plan, reminders, health, handoff, goalReview, calendar, trainingProgress })}
       </section>
     </main>
 
     <nav class="bottom-nav" aria-label="WoofWatcher sections">
       ${renderNavButton("today", "Today")}
       ${renderNavButton("team", "Team")}
+      ${renderNavButton("reminders", "Reminders")}
       ${renderNavButton("schedule", "Schedule")}
       ${renderNavButton("goals", "Goals")}
       ${renderNavButton("calendar", "Calendar")}
@@ -223,6 +226,7 @@ function renderTabHeader(tab) {
   const labels = {
     today: ["Today", "Routine, handoff, and latest care."],
     team: ["Care Team", "Edit caregiver names, roles, and handoff ownership."],
+    reminders: ["Reminders", "Due, overdue, completed, and upcoming Phoenix care."],
     schedule: ["Schedule", "Edit meals, walks, snacks, training, and ownership."],
     goals: ["Goals", "Weight, training, social, anxiety, and health milestones."],
     calendar: ["Calendar", "Monthly care patterns, vomit days, and daily handoff evidence."],
@@ -248,6 +252,7 @@ function renderTabHeader(tab) {
 
 function renderActiveTab(tab, context) {
   if (tab === "team") return renderTeamTab(context.handoff);
+  if (tab === "reminders") return renderRemindersTab(context.reminders);
   if (tab === "schedule") return renderScheduleTab();
   if (tab === "goals") return renderGoalsTab(context.goalReview);
   if (tab === "calendar") return renderCalendarTab(context.calendar);
@@ -258,6 +263,85 @@ function renderActiveTab(tab, context) {
   if (tab === "report") return renderReportTab(context.summary);
   if (tab === "assistant") return renderAssistantTab();
   return renderTodayTab(context.plan, context.health, context.handoff);
+}
+
+function renderRemindersTab(reminders) {
+  return `
+    <div class="dashboard-grid">
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">${escapeHtml(reminders.dateLabel)}</p>
+            <h3>Reminder Center</h3>
+            <p>${escapeHtml(reminders.message)}</p>
+          </div>
+          <span class="status-chip ${reminders.overdueCount ? "review" : reminders.dueCount ? "watch" : "steady"}">${reminders.overdueCount} overdue | ${reminders.dueCount} due</span>
+        </div>
+        <div class="reminder-summary-row">
+          ${renderStat("Completed", reminders.completedCount)}
+          ${renderStat("Due now", reminders.dueCount)}
+          ${renderStat("Overdue", reminders.overdueCount)}
+          ${renderStat("Upcoming", reminders.upcomingCount)}
+        </div>
+      </section>
+      <section class="panel span-2">
+        <p class="micro">Care proof</p>
+        <h3>${escapeHtml(reminders.nextReminder?.label || "Scheduled care covered")}</h3>
+        <div class="reminder-list">
+          ${reminders.items.map(renderReminderItem).join("")}
+        </div>
+      </section>
+      <section class="panel">
+        <p class="micro">Unscheduled</p>
+        <h3>${reminders.unscheduledCount} flexible item${reminders.unscheduledCount === 1 ? "" : "s"}</h3>
+        <p>Flexible reminders stay visible without being treated as missed care.</p>
+      </section>
+      <section class="panel">
+        <p class="micro">Handoff</p>
+        <h3>Log creates proof</h3>
+        <p>Completing a reminder adds a normal care log with the routine label, owner, time, and note.</p>
+      </section>
+    </div>
+  `;
+}
+
+function renderReminderItem(item) {
+  const canComplete = item.status !== "completed";
+  const timing = item.completedAt
+    ? `Completed by ${item.completedBy || "Unassigned"} at ${formatDateTime(item.completedAt)}`
+    : renderReminderTiming(item);
+  return `
+    <article class="reminder-row ${escapeAttribute(item.status)}">
+      <div class="reminder-status-dot" aria-hidden="true">${item.status === "completed" ? "OK" : ""}</div>
+      <div>
+        <div class="reminder-title-line">
+          <h4>${escapeHtml(item.label)}</h4>
+          <span class="status-chip ${reminderStatusClass(item.status)}">${escapeHtml(item.statusLabel)}</span>
+        </div>
+        <p>${escapeHtml(item.time)} | ${escapeHtml(item.owner)}</p>
+        <small>${escapeHtml(timing)}</small>
+        ${item.note ? `<small>${escapeHtml(item.note)}</small>` : ""}
+      </div>
+      ${
+        canComplete
+          ? `<button class="button ghost" data-action="complete-reminder" data-routine-id="${escapeAttribute(item.id)}">Log</button>`
+          : ""
+      }
+    </article>
+  `;
+}
+
+function renderReminderTiming(item) {
+  if (item.status === "unscheduled") return "Flexible timing";
+  if (item.minutesUntil === 0) return "Due now";
+  if (item.minutesUntil > 0) return `${item.minutesUntil} minutes away`;
+  return `${Math.abs(item.minutesUntil)} minutes past`;
+}
+
+function reminderStatusClass(status) {
+  if (status === "completed" || status === "upcoming") return "steady";
+  if (status === "due" || status === "unscheduled") return "watch";
+  return "review";
 }
 
 function renderTeamTab(handoff) {
@@ -1133,6 +1217,21 @@ function handleAction(action, button) {
     render();
   }
 
+  if (action === "complete-reminder") {
+    const routine = (state.routines || []).find((item) => item.id === button?.dataset.routineId);
+    if (!routine) return;
+    const entry = createEntry({
+      type: routine.type,
+      title: routine.label,
+      caregiver: reminderCaregiver(routine.owner),
+      note: routine.note ? `Reminder completed. ${routine.note}` : "Reminder completed.",
+      occurredAt: new Date().toISOString()
+    });
+    saveState({ ...state, entries: [entry, ...(state.entries || [])] });
+    activeTab = "reminders";
+    render();
+  }
+
   if (action === "print-report") {
     window.print();
   }
@@ -1153,6 +1252,11 @@ function handleAction(action, button) {
 function getCaregiverOptions() {
   const names = (state.caregivers || []).map((caregiver) => caregiver.name).filter(Boolean);
   return [...new Set([...names, "Both", "Unassigned"])];
+}
+
+function reminderCaregiver(owner = "") {
+  const options = getCaregiverOptions();
+  return options.find((name) => name.toLowerCase() === String(owner).trim().toLowerCase()) || "Unassigned";
 }
 
 async function handleImportFile(event) {
