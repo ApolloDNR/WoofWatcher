@@ -9,6 +9,7 @@ WoofWatcher is a calm care command center for Phoenix, an anxious rescued shephe
 ## Required Screens
 
 - Today dashboard: Phoenix profile, health status, routines, next handoff, quick log, recent timeline.
+- Care Team: editable caregiver names/roles, today load, rename continuity, add/remove controls.
 - Care Room Transfer: caregiver handoff package with current state, report context, import/export controls, and privacy boundary.
 - Schedule: editable care routine list plus add-routine form for meals, walks, snacks, medication, training, and ownership.
 - Goals: progress review plus editable milestones for weight, training, anxiety, social exposure, health, and custom targets.
@@ -39,3 +40,4 @@ The existing Figma file `165jvlaygkksRtXW1bA1MA` includes:
 - `WoofWatcher v1 - Care Calendar` at node `9:2`.
 - `WoofWatcher v1 - Training Progress` at node `11:2`.
 - `WoofWatcher v1 - Care Room Transfer` at node `13:2`.
+- `WoofWatcher v1 - Care Team` at node `20:2`.

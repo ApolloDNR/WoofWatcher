@@ -18,6 +18,13 @@
   ],
   "shortcuts": [
     {
+      "name": "Care Team",
+      "short_name": "Team",
+      "description": "Open Phoenix's active caregiver profiles.",
+      "url": "/?tab=team",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
       "name": "Care Schedule",
       "short_name": "Schedule",
       "description": "Open Phoenix's editable care schedule.",

@@ -2,6 +2,7 @@ import SwiftUI
 
 enum AppTab: String, CaseIterable, Identifiable {
     case today
+    case team
     case schedule
     case goals
     case calendar
@@ -17,6 +18,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .today: return "Today"
+        case .team: return "Team"
         case .schedule: return "Schedule"
         case .goals: return "Goals"
         case .calendar: return "Calendar"
@@ -32,6 +34,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .today: return "calendar"
+        case .team: return "person.2"
         case .schedule: return "clock.badge.checkmark"
         case .goals: return "target"
         case .calendar: return "calendar.badge.exclamationmark"
@@ -73,6 +76,8 @@ struct ContentView: View {
         switch tab {
         case .today:
             TodayView(store: store)
+        case .team:
+            TeamView(store: store)
         case .schedule:
             ScheduleView(store: store)
         case .goals:
@@ -92,6 +97,81 @@ struct ContentView: View {
         case .helper:
             HelperView(store: store)
         }
+    }
+}
+
+struct TeamView: View {
+    var store: CareStore
+    @State private var draft = CaregiverDraft()
+
+    var body: some View {
+        Form {
+            Section("Care Team Profiles") {
+                ForEach(store.state.caregivers) { caregiver in
+                    CaregiverEditor(store: store, caregiver: caregiver)
+                }
+            }
+
+            Section("Add Caregiver") {
+                TextField("Name", text: $draft.name)
+                TextField("Role", text: $draft.role)
+                Button("Add Caregiver") {
+                    store.upsertCaregiver(previousName: "", draft: draft)
+                    draft = CaregiverDraft()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+
+            Section("Coordination Rule") {
+                Text("Renaming a caregiver updates matching logs and exact routine owners. Removing a caregiver keeps old logs intact and moves exact routine ownership back to Either caregiver.")
+            }
+        }
+    }
+}
+
+struct CaregiverEditor: View {
+    var store: CareStore
+    var caregiver: Caregiver
+    @State private var draft: CaregiverDraft
+
+    init(store: CareStore, caregiver: Caregiver) {
+        self.store = store
+        self.caregiver = caregiver
+        _draft = State(initialValue: CaregiverDraft(caregiver: caregiver))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(caregiver.name).font(.headline)
+                    Text(caregiver.role).font(.subheadline).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text("\(store.caregiverHandoff.caregiverLoad.first(where: { $0.name == caregiver.name })?.todayLogs ?? 0)")
+                    .font(.title3.bold())
+                    .monospacedDigit()
+            }
+
+            TextField("Name", text: $draft.name)
+            TextField("Role", text: $draft.role)
+
+            HStack {
+                Button("Save Caregiver") {
+                    store.upsertCaregiver(previousName: caregiver.name, draft: draft)
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button(role: .destructive) {
+                    store.removeCaregiver(name: caregiver.name)
+                } label: {
+                    Label("Remove", systemImage: "trash")
+                }
+                .buttonStyle(.bordered)
+                .disabled(store.state.caregivers.count <= 1)
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -579,7 +659,11 @@ struct LogView: View {
                     }
                 }
                 TextField("Title", text: $draft.title)
-                TextField("Caregiver", text: $draft.caregiver)
+                Picker("Caregiver", selection: $draft.caregiver) {
+                    ForEach(store.caregiverOptions, id: \.self) { caregiver in
+                        Text(caregiver).tag(caregiver)
+                    }
+                }
                 DatePicker("When", selection: $draft.occurredAt)
                 TextField("Amount", text: $draft.amount)
                 Stepper("Minutes: \(draft.durationMinutes)", value: $draft.durationMinutes, in: 0...240)

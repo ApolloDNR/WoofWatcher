@@ -19,9 +19,11 @@ import {
   normalizeState,
   normalizeEntryInput,
   normalizeRoutineInput,
+  removeCaregiverProfile,
   removeGoal,
   removeRecord,
   removeRoutine,
+  upsertCaregiverProfile,
   upsertGoal,
   upsertRecord,
   upsertRoutine
@@ -182,6 +184,66 @@ test("builds an empty-day caregiver handoff without inventing completed care", (
   assert.equal(handoff.followUps.length, 0);
   assert.match(handoff.message, /No meals logged today/);
   assert.match(handoff.message, /No walks logged today/);
+});
+
+test("renames a caregiver profile and keeps logs, routine ownership, handoff, and reports aligned", () => {
+  const state = {
+    ...getDefaultState("2026-06-03T12:00:00.000Z"),
+    routines: upsertRoutine(getDefaultState("2026-06-03T12:00:00.000Z").routines, {
+      id: "routine_evening_walk",
+      label: "Evening walk",
+      type: "walk",
+      time: "8:15 PM",
+      owner: "Girlfriend",
+      note: "Short settling walk before bedtime."
+    }),
+    entries: [
+      createEntry({ type: "meal", title: "Dinner", caregiver: "Girlfriend", occurredAt: "2026-06-03T23:30:00.000Z" }),
+      createEntry({ type: "walk", title: "Evening walk", caregiver: "Girlfriend", occurredAt: "2026-06-04T03:00:00.000Z" })
+    ]
+  };
+
+  const updated = upsertCaregiverProfile(
+    state,
+    "Girlfriend",
+    { name: "Maya", role: "Evening caregiver" },
+    "2026-06-04T04:00:00.000Z"
+  );
+  const handoff = getCaregiverHandoff(updated, "2026-06-04T04:00:00.000Z");
+  const report = buildReportText(updated, "2026-06-04T04:00:00.000Z");
+
+  assert.equal(updated.caregivers.some((caregiver) => caregiver.name === "Girlfriend"), false);
+  assert.equal(updated.caregivers.find((caregiver) => caregiver.name === "Maya").role, "Evening caregiver");
+  assert.equal(updated.entries.every((entry) => entry.caregiver === "Maya"), true);
+  assert.equal(updated.routines.find((routine) => routine.id === "routine_evening_walk").owner, "Maya");
+  assert.equal(handoff.caregiverLoad.find((caregiver) => caregiver.name === "Maya").todayLogs, 2);
+  assert.match(handoff.message, /Last meal: Dinner by Maya/);
+  assert.match(report, /Dinner \| Maya/);
+});
+
+test("removes a caregiver profile without deleting historical logs and clears owned routines", () => {
+  const state = {
+    ...getDefaultState("2026-06-03T12:00:00.000Z"),
+    routines: upsertRoutine(getDefaultState("2026-06-03T12:00:00.000Z").routines, {
+      id: "routine_dinner",
+      label: "Dinner",
+      type: "meal",
+      time: "6:30 PM",
+      owner: "Girlfriend",
+      note: "Document amount and whether she needed company to eat."
+    }),
+    entries: [
+      createEntry({ type: "meal", title: "Dinner", caregiver: "Girlfriend", occurredAt: "2026-06-03T23:00:00.000Z" })
+    ]
+  };
+
+  const updated = removeCaregiverProfile(state, "Girlfriend", "2026-06-04T04:00:00.000Z");
+  const report = buildReportText(updated, "2026-06-04T04:00:00.000Z");
+
+  assert.equal(updated.caregivers.some((caregiver) => caregiver.name === "Girlfriend"), false);
+  assert.equal(updated.entries[0].caregiver, "Girlfriend");
+  assert.equal(updated.routines.find((routine) => routine.id === "routine_dinner").owner, "Either caregiver");
+  assert.match(report, /Dinner \| Girlfriend/);
 });
 
 test("includes caregiver handoff context in the local assistant review", () => {

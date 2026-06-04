@@ -13,6 +13,15 @@ final class CareStore {
         state.entries.sorted { $0.occurredAt > $1.occurredAt }
     }
 
+    var caregiverOptions: [String] {
+        let options = state.caregivers.map(\.name).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } + ["Both", "Unassigned"]
+        var unique: [String] = []
+        for option in options where !unique.contains(where: { namesEqual($0, option) }) {
+            unique.append(option)
+        }
+        return unique
+    }
+
     var todaysCompletedRoutineLabels: Set<String> {
         let calendar = Calendar.current
         let todayEntries = state.entries.filter { calendar.isDateInToday($0.occurredAt) }
@@ -237,6 +246,41 @@ final class CareStore {
         save()
     }
 
+    func upsertCaregiver(previousName: String, draft: CaregiverDraft) {
+        let caregiver = draft.caregiver()
+        let target = previousName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? caregiver.name : previousName
+        var replaced = false
+        state.caregivers = state.caregivers.map { existing in
+            if namesEqual(existing.name, target) {
+                replaced = true
+                return caregiver
+            }
+            return existing
+        }
+        if !replaced {
+            state.caregivers.append(caregiver)
+        }
+        dedupeCaregivers()
+
+        if !previousName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !namesEqual(previousName, caregiver.name) {
+            replaceCareReferences(from: previousName, to: caregiver.name)
+        }
+        save()
+    }
+
+    func removeCaregiver(name: String) {
+        guard state.caregivers.count > 1 else { return }
+        state.caregivers.removeAll { namesEqual($0.name, name) }
+        state.routines = state.routines.map { routine in
+            var next = routine
+            if namesEqual(next.owner, name) {
+                next.owner = "Either caregiver"
+            }
+            return next
+        }
+        save()
+    }
+
     func upsertRoutine(_ draft: RoutineDraft) {
         let routine = draft.routine()
         if let index = state.routines.firstIndex(where: { $0.id == routine.id }) {
@@ -367,6 +411,38 @@ final class CareStore {
     private func entryMatchesCaregiver(_ entry: CareEntry, _ caregiverName: String) -> Bool {
         entry.caregiver.localizedCaseInsensitiveCompare(caregiverName) == .orderedSame
             || entry.caregiver.localizedCaseInsensitiveCompare("Both") == .orderedSame
+    }
+
+    private func replaceCareReferences(from previousName: String, to nextName: String) {
+        state.entries = state.entries.map { entry in
+            var next = entry
+            if namesEqual(next.caregiver, previousName) {
+                next.caregiver = nextName
+            }
+            return next
+        }
+
+        state.routines = state.routines.map { routine in
+            var next = routine
+            if namesEqual(next.owner, previousName) {
+                next.owner = nextName
+            }
+            return next
+        }
+    }
+
+    private func dedupeCaregivers() {
+        var seen: Set<String> = []
+        state.caregivers = Array(state.caregivers.reversed().filter { caregiver in
+            let key = caregiver.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !seen.contains(key) else { return false }
+            seen.insert(key)
+            return true
+        }.reversed())
+    }
+
+    private func namesEqual(_ left: String, _ right: String) -> Bool {
+        left.trimmingCharacters(in: .whitespacesAndNewlines).localizedCaseInsensitiveCompare(right.trimmingCharacters(in: .whitespacesAndNewlines)) == .orderedSame
     }
 
     private func handoffMessage(nextRoutine: CareRoutine?, lastMeal: CareEntry?, lastWalk: CareEntry?, followUps: [CareEntry]) -> String {

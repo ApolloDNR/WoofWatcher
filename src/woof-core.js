@@ -222,6 +222,56 @@ export function normalizeState(input = {}, now = new Date().toISOString()) {
   };
 }
 
+export function normalizeCaregiverInput(input = {}) {
+  return normalizeCaregiver(input);
+}
+
+export function upsertCaregiverProfile(state = {}, previousName = "", input = {}, now = new Date().toISOString()) {
+  const normalized = normalizeState(state, now);
+  const previous = cleanText(previousName);
+  const caregiver = normalizeCaregiver(input);
+  const target = previous || caregiver.name;
+  let replaced = false;
+
+  const caregivers = (normalized.caregivers || []).map((item) => {
+    const existing = normalizeCaregiver(item);
+    if (namesEqual(existing.name, target)) {
+      replaced = true;
+      return caregiver;
+    }
+    return existing;
+  });
+
+  if (!replaced) caregivers.push(caregiver);
+
+  const shouldMigrate = previous && !namesEqual(previous, caregiver.name);
+  return normalizeState(
+    {
+      ...normalized,
+      caregivers: dedupeCaregivers(caregivers),
+      routines: shouldMigrate ? replaceRoutineOwner(normalized.routines, previous, caregiver.name) : normalized.routines,
+      entries: shouldMigrate ? replaceEntryCaregiver(normalized.entries, previous, caregiver.name) : normalized.entries
+    },
+    now
+  );
+}
+
+export function removeCaregiverProfile(state = {}, caregiverName = "", now = new Date().toISOString()) {
+  const normalized = normalizeState(state, now);
+  const target = cleanText(caregiverName);
+  if (!target) return normalized;
+
+  const caregivers = (normalized.caregivers || []).filter((caregiver) => !namesEqual(caregiver.name, target));
+  return normalizeState(
+    {
+      ...normalized,
+      caregivers: caregivers.length ? caregivers : normalized.caregivers,
+      routines: replaceRoutineOwner(normalized.routines, target, "Either caregiver")
+    },
+    now
+  );
+}
+
 export function normalizeEntryInput(input = {}) {
   const type = ENTRY_TYPES.has(input.type) ? input.type : "note";
   const title = cleanText(input.title) || TYPE_DEFAULT_TITLES[type] || "Care note";
@@ -684,6 +734,32 @@ function normalizeCaregiver(caregiver = {}) {
     name: cleanText(caregiver.name) || "Unassigned",
     role: cleanText(caregiver.role) || "Caregiver"
   };
+}
+
+function dedupeCaregivers(caregivers = []) {
+  const byName = new Map();
+  for (const caregiver of caregivers.map(normalizeCaregiver)) {
+    byName.set(caregiver.name.toLowerCase(), caregiver);
+  }
+  return [...byName.values()];
+}
+
+function replaceRoutineOwner(routines = [], previousName = "", nextName = "") {
+  return (routines || []).map((routine) => {
+    const normalized = normalizeRoutineInput(routine);
+    return namesEqual(normalized.owner, previousName) ? { ...normalized, owner: nextName } : normalized;
+  });
+}
+
+function replaceEntryCaregiver(entries = [], previousName = "", nextName = "") {
+  return (entries || []).map((entry) => {
+    const normalized = normalizeImportedEntry(entry);
+    return namesEqual(normalized.caregiver, previousName) ? { ...normalized, caregiver: nextName } : normalized;
+  });
+}
+
+function namesEqual(left = "", right = "") {
+  return cleanText(left).toLowerCase() === cleanText(right).toLowerCase();
 }
 
 function normalizeImportedEntry(entry = {}) {

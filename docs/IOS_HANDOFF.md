@@ -13,10 +13,11 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 ## Recommended SwiftUI Shape
 
 - `WoofWatcherApp`: root app entry.
-- `AppTab`: `today`, `schedule`, `goals`, `calendar`, `progress`, `log`, `health`, `records`, `report`, `helper`.
+- `AppTab`: `today`, `team`, `schedule`, `goals`, `calendar`, `progress`, `log`, `health`, `records`, `report`, `helper`.
 - `CareStore`: `@Observable` root-owned model on iOS 17+; use SwiftData or file-backed JSON for persistence.
 - `PhoenixProfile`: static profile plus editable care focus fields.
 - `CareEntry`: meal, treat, walk, park, training, social, vomit, health, vet, weight, medication, note.
+- `Caregiver` and `CaregiverDraft`: editable care team profile with rename continuity for matching logs and exact routine owners.
 - `CareGoal`: weight, training, anxiety, social, health, and custom milestones with active/paused/done status.
 - `CareRecord`: vet, vaccine, weight, instruction.
 - `RecordDraft`: editable record form shape for vet, vaccine, weight, medication, microchip, and instruction records.
@@ -29,7 +30,7 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 
 ## Navigation Pattern
 
-- `TabView` for the ten primary surfaces.
+- `TabView` for the eleven primary surfaces.
 - Per-tab `NavigationStack` if detail/edit screens are added.
 - `.sheet(item:)` for add/edit entry and add/edit record.
 - Keep state local to the root store and pass bindings into focused subviews.
@@ -43,4 +44,4 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 
 ## Verification Gate
 
-Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit the schedule, add/edit/remove goals, add/edit/remove records, add a care log, shows the care calendar and selected-day timeline, shows training/social progress, persists after relaunch, exports a report, shares a care room transfer package, shows the caregiver handoff, and shows the red-flag boundary in the helper.
+Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit caregiver profiles, can edit the schedule, add/edit/remove goals, add/edit/remove records, add a care log, shows the care calendar and selected-day timeline, shows training/social progress, persists after relaunch, exports a report, shares a care room transfer package, shows the caregiver handoff, and shows the red-flag boundary in the helper.

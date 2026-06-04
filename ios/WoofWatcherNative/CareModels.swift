@@ -117,6 +117,25 @@ struct Caregiver: Codable, Identifiable {
     var role: String
 }
 
+struct CaregiverDraft {
+    var name: String = ""
+    var role: String = ""
+
+    init() {}
+
+    init(caregiver: Caregiver) {
+        name = caregiver.name
+        role = caregiver.role
+    }
+
+    func caregiver() -> Caregiver {
+        Caregiver(
+            name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Unassigned" : name.trimmingCharacters(in: .whitespacesAndNewlines),
+            role: role.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Caregiver" : role.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+}
+
 struct CareRoutine: Codable, Identifiable {
     var id: String
     var label: String

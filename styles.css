@@ -637,6 +637,7 @@ dd,
 
 .entry-form,
 .routine-form,
+.caregiver-form,
 .goal-form,
 .record-form,
 .assistant-form {
@@ -652,11 +653,13 @@ dd,
 }
 
 .record-form,
+.caregiver-form,
 .assistant-form {
   grid-template-columns: 1fr;
 }
 
 .routine-editor-card,
+.caregiver-editor-card,
 .goal-card {
   border: 1px solid rgba(212, 207, 196, 0.16);
   border-radius: var(--radius);
@@ -665,8 +668,34 @@ dd,
 }
 
 .routine-editor-card .routine-form,
+.caregiver-editor-card .caregiver-form,
 .goal-card .goal-form {
   margin-top: 0;
+}
+
+.care-team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.caregiver-card-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.caregiver-card-heading h4,
+.caregiver-card-heading small {
+  overflow-wrap: anywhere;
+}
+
+.caregiver-card-heading strong {
+  color: #fff8ec;
+  font-size: 1.7rem;
+  line-height: 1;
 }
 
 .goal-highlight-grid {
@@ -940,9 +969,11 @@ textarea:focus {
   .dashboard-grid,
   .entry-form,
   .routine-form,
+  .caregiver-form,
   .goal-form,
   .mini-grid,
   .handoff-list,
+  .care-team-grid,
   .goal-highlight-grid {
     grid-template-columns: 1fr;
   }

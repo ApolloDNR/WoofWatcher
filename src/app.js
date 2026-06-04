@@ -12,9 +12,11 @@ import {
   getTrainingProgress,
   getTodayPlan,
   normalizeState,
+  removeCaregiverProfile,
   removeGoal,
   removeRecord,
   removeRoutine,
+  upsertCaregiverProfile,
   upsertGoal,
   upsertRecord,
   upsertRoutine
@@ -109,6 +111,7 @@ function render() {
 
     <nav class="bottom-nav" aria-label="WoofWatcher sections">
       ${renderNavButton("today", "Today")}
+      ${renderNavButton("team", "Team")}
       ${renderNavButton("schedule", "Schedule")}
       ${renderNavButton("goals", "Goals")}
       ${renderNavButton("calendar", "Calendar")}
@@ -219,6 +222,7 @@ function renderStat(label, value) {
 function renderTabHeader(tab) {
   const labels = {
     today: ["Today", "Routine, handoff, and latest care."],
+    team: ["Care Team", "Edit caregiver names, roles, and handoff ownership."],
     schedule: ["Schedule", "Edit meals, walks, snacks, training, and ownership."],
     goals: ["Goals", "Weight, training, social, anxiety, and health milestones."],
     calendar: ["Calendar", "Monthly care patterns, vomit days, and daily handoff evidence."],
@@ -243,6 +247,7 @@ function renderTabHeader(tab) {
 }
 
 function renderActiveTab(tab, context) {
+  if (tab === "team") return renderTeamTab(context.handoff);
   if (tab === "schedule") return renderScheduleTab();
   if (tab === "goals") return renderGoalsTab(context.goalReview);
   if (tab === "calendar") return renderCalendarTab(context.calendar);
@@ -253,6 +258,77 @@ function renderActiveTab(tab, context) {
   if (tab === "report") return renderReportTab(context.summary);
   if (tab === "assistant") return renderAssistantTab();
   return renderTodayTab(context.plan, context.health, context.handoff);
+}
+
+function renderTeamTab(handoff) {
+  return `
+    <div class="dashboard-grid">
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Shared care</p>
+            <h3>Care team profiles</h3>
+          </div>
+          <span class="status-chip steady">${state.caregivers.length} active</span>
+        </div>
+        <div class="care-team-grid">
+          ${state.caregivers.map((caregiver) => renderCaregiverEditor(caregiver, handoff)).join("")}
+        </div>
+      </section>
+      <section class="panel">
+        <p class="micro">Add caregiver</p>
+        <h3>New care profile</h3>
+        ${renderCaregiverForm()}
+      </section>
+      <section class="panel">
+        <p class="micro">Coordination rule</p>
+        <h3>Names carry care history</h3>
+        <p>Renaming a caregiver updates matching logs and exact routine owners. Removing a caregiver keeps historical logs intact and moves exact routine ownership back to Either caregiver.</p>
+      </section>
+    </div>
+  `;
+}
+
+function renderCaregiverEditor(caregiver, handoff) {
+  const load = handoff.caregiverLoad.find((item) => item.name === caregiver.name);
+  return `
+    <article class="caregiver-editor-card">
+      <div class="caregiver-card-heading">
+        <div>
+          <p class="micro">${escapeHtml(caregiver.role)}</p>
+          <h4>${escapeHtml(caregiver.name)}</h4>
+          <small>${escapeHtml(load?.latestAction || "No logs today")}</small>
+        </div>
+        <strong>${load?.todayLogs || 0}</strong>
+      </div>
+      ${renderCaregiverForm(caregiver)}
+    </article>
+  `;
+}
+
+function renderCaregiverForm(caregiver = {}) {
+  const isExisting = Boolean(caregiver.name);
+  return `
+    <form class="caregiver-form" data-form="caregiver">
+      <input type="hidden" name="previousName" value="${escapeAttribute(caregiver.name || "")}" />
+      <label>
+        <span>Name</span>
+        <input name="name" value="${escapeAttribute(caregiver.name || "")}" placeholder="Apollo, Maya, sitter" />
+      </label>
+      <label>
+        <span>Role</span>
+        <input name="role" value="${escapeAttribute(caregiver.role || "")}" placeholder="Primary caregiver, evening caregiver" />
+      </label>
+      <div class="routine-form-actions wide">
+        <button class="button primary" type="submit">${isExisting ? "Save caregiver" : "Add caregiver"}</button>
+        ${
+          isExisting
+            ? `<button class="button ghost" type="button" data-action="remove-caregiver" data-caregiver-name="${escapeAttribute(caregiver.name)}">Remove</button>`
+            : ""
+        }
+      </div>
+    </form>
+  `;
 }
 
 function renderGoalsTab(goalReview) {
@@ -631,8 +707,8 @@ function renderLogTab() {
 }
 
 function renderEntryForm(prefill = {}) {
-  const caregiverOptions = ["Apollo", "Girlfriend", "Both", "Unassigned"]
-    .map((name) => `<option ${prefill.caregiver === name ? "selected" : ""}>${name}</option>`)
+  const caregiverOptions = getCaregiverOptions()
+    .map((name) => `<option value="${escapeAttribute(name)}" ${prefill.caregiver === name ? "selected" : ""}>${escapeHtml(name)}</option>`)
     .join("");
   const typeOptions = [...ENTRY_SELECT_OPTIONS]
     .map((type) => `<option value="${type}" ${prefill.type === type ? "selected" : ""}>${titleCase(type)}</option>`)
@@ -982,6 +1058,16 @@ function bindEvents() {
     });
   });
 
+  app.querySelectorAll("[data-form='caregiver']").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+      saveState(upsertCaregiverProfile(state, data.previousName, data));
+      activeTab = "team";
+      render();
+    });
+  });
+
   app.querySelectorAll("[data-form='goal']").forEach((form) => {
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -1041,6 +1127,12 @@ function handleAction(action, button) {
     render();
   }
 
+  if (action === "remove-caregiver") {
+    saveState(removeCaregiverProfile(state, button?.dataset.caregiverName));
+    activeTab = "team";
+    render();
+  }
+
   if (action === "print-report") {
     window.print();
   }
@@ -1056,6 +1148,11 @@ function handleAction(action, button) {
   if (action === "import-json") {
     app.querySelector("[data-input='import-json']")?.click();
   }
+}
+
+function getCaregiverOptions() {
+  const names = (state.caregivers || []).map((caregiver) => caregiver.name).filter(Boolean);
+  return [...new Set([...names, "Both", "Unassigned"])];
 }
 
 async function handleImportFile(event) {

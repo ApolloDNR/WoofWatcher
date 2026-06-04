@@ -14,6 +14,7 @@
 
 - Phoenix profile with rescue/anxiety-aware notes.
 - Two-caregiver handoff visibility without requiring the caregivers to message each other directly.
+- Editable care team profiles for caregiver names and roles, with rename continuity across matching logs and exact routine owners.
 - Copyable caregiver handoff digest covering the next care action, last meal, last walk, follow-ups, and today's caregiver load.
 - Importable care room transfer package containing Phoenix state, caregiver handoff, health context, and monthly report for caregiver/device handoff without accounts.
 - Editable daily routine schedule with care times, owners, notes, completed items, and next care items.
@@ -36,6 +37,7 @@
 - Training progress aggregation, calm/struggle signal detection, wins, focus areas, and report inclusion.
 - Daily plan completion/next item logic.
 - Editable routine normalization, ordering, add/update, and removal.
+- Caregiver profile add/update/removal, including rename migration for matching logs and exact routine owners.
 - Goal normalization, add/update/removal, progress review, and report inclusion.
 - Record normalization, add/update/removal, and backup restore safety.
 - Caregiver handoff digest logic.

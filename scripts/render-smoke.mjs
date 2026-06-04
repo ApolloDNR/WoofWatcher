@@ -78,6 +78,28 @@ try {
   await expectEval(client, "document.body.innerText.includes('Phoenix care command')", true, "home text");
 
   await evaluate(client, `
+    document.querySelector('[data-tab="team"]').click();
+  `);
+  await delay(250);
+  await expectEval(client, "Boolean(document.querySelector('[data-form=\"caregiver\"]'))", true, "caregiver form visible");
+  await evaluate(client, `
+    (() => {
+    const forms = [...document.querySelectorAll('[data-form="caregiver"]')];
+    const form = forms[forms.length - 1];
+    form.querySelector('[name="name"]').value = 'QA sitter';
+    form.querySelector('[name="role"]').value = 'Backup caregiver';
+    form.requestSubmit();
+    })();
+  `);
+  await delay(500);
+  await expectEval(
+    client,
+    `JSON.parse(localStorage.getItem('woofwatcher.v1.state')).caregivers.some((caregiver) => caregiver.name === 'QA sitter')`,
+    true,
+    "saved caregiver"
+  );
+
+  await evaluate(client, `
     document.querySelector('[data-tab="schedule"]').click();
   `);
   await delay(250);
@@ -139,7 +161,7 @@ try {
     const form = document.querySelector('[data-form="entry"]');
     form.querySelector('[name="type"]').value = 'meal';
     form.querySelector('[name="title"]').value = 'QA breakfast';
-    form.querySelector('[name="caregiver"]').value = 'Apollo';
+    form.querySelector('[name="caregiver"]').value = 'QA sitter';
     form.querySelector('[name="amount"]').value = '1 cup';
     form.querySelector('[name="mood"]').value = 'settled';
     form.querySelector('[name="note"]').value = 'Rendered smoke check';
@@ -230,6 +252,7 @@ try {
 async function runDumpDomSmoke() {
   const checks = [
     { route: "/", label: "home", text: ["WoofWatcher", "Phoenix care command", "Import", "Transfer", "Next handoff", "Caregiver handoff"] },
+    { route: "/?tab=team", label: "team", text: ["Care Team", "Care team profiles", "Add caregiver", "Names carry care history"] },
     { route: "/?tab=schedule", label: "schedule", text: ["Schedule", "Editable daily routine", "Add routine", "Save routine"] },
     { route: "/?tab=goals", label: "goals", text: ["Goals", "Goal review", "Phoenix goals", "Save goal"] },
     { route: "/?tab=calendar", label: "calendar", text: ["Calendar", "Care calendar", "Selected day", "Vomit days"] },
