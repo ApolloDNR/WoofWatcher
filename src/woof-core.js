@@ -522,11 +522,41 @@ export function getGoalReview(state, now = new Date().toISOString()) {
   return review;
 }
 
+export function getTrainingProgress(state, now = new Date().toISOString()) {
+  const target = new Date(now);
+  const monthEntries = entriesForCurrentMonth(state.entries || [], now);
+  const trainingEntries = monthEntries.filter((entry) => entry.type === "training");
+  const socialEntries = monthEntries.filter((entry) => entry.type === "social" || entry.type === "park");
+  const progressEntries = [...trainingEntries, ...socialEntries].sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  const calmEntries = progressEntries.filter(hasCalmSignal);
+  const struggleEntries = progressEntries.filter(hasStruggleSignal);
+  const status = progressEntries.length === 0 ? "Needs logs" : struggleEntries.length > 0 ? "Building" : "Steady";
+
+  return {
+    monthLabel: target.toLocaleString("en-US", { month: "long", year: "numeric" }),
+    status,
+    training: {
+      sessions: trainingEntries.length,
+      minutes: sumAll(trainingEntries, "durationMinutes")
+    },
+    social: {
+      sessions: socialEntries.length,
+      dogInteractions: sumAll(socialEntries, "dogInteractions")
+    },
+    calmSignals: calmEntries.length,
+    struggleSignals: struggleEntries.length,
+    wins: buildProgressWins(calmEntries),
+    focusAreas: buildProgressFocusAreas(struggleEntries, progressEntries),
+    recentEntries: progressEntries.slice(0, 6)
+  };
+}
+
 export function buildReportText(state, now = new Date().toISOString()) {
   const profile = state.profile || { name: "Phoenix" };
   const summary = getMonthlySummary(state, now);
   const healthWatch = getHealthWatch(state, now);
   const goalReview = getGoalReview(state, now);
+  const trainingProgress = getTrainingProgress(state, now);
   const latest = [...(state.entries || [])]
     .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt))
     .slice(0, 8);
@@ -552,6 +582,17 @@ export function buildReportText(state, now = new Date().toISOString()) {
     "Goal Review",
     `Active goals: ${goalReview.activeGoals}/${goalReview.totalGoals}`,
     ...goalReview.highlights.map((highlight) => `- ${highlight}`),
+    "",
+    "Training Progress",
+    `Status: ${trainingProgress.status}`,
+    `Training: ${trainingProgress.training.sessions} sessions, ${trainingProgress.training.minutes} minutes`,
+    `Social exposure: ${trainingProgress.social.sessions} sessions, ${trainingProgress.social.dogInteractions} dog interactions`,
+    `Calm signals: ${trainingProgress.calmSignals}`,
+    `Struggle signals: ${trainingProgress.struggleSignals}`,
+    "Wins",
+    ...trainingProgress.wins.map((win) => `- ${win}`),
+    "Focus areas",
+    ...trainingProgress.focusAreas.map((focus) => `- ${focus}`),
     "",
     "Recent Care Timeline",
     ...latest.map((entry) => `- ${formatDateTime(entry.occurredAt)} | ${entry.type.toUpperCase()} | ${entry.title} | ${entry.caregiver}${entry.note ? ` | ${entry.note}` : ""}`),
@@ -626,6 +667,48 @@ function normalizeImportedEntry(entry = {}) {
     ...normalized,
     id: cleanText(entry.id) || normalized.id
   };
+}
+
+function hasCalmSignal(entry) {
+  return /calm|settled|engaged|neutral|held|loose|relax|confident/i.test(progressText(entry));
+}
+
+function hasStruggleSignal(entry) {
+  return /anxious|bark|react|lung|pull|tense|stress|overwhelm|scared|refus|guard/i.test(progressText(entry));
+}
+
+function buildProgressWins(entries) {
+  if (!entries.length) return ["No calm training or social wins logged yet this month."];
+  return sortProgressWins(entries)
+    .slice(0, 3)
+    .map((entry) => `${entry.title}: ${cleanText(entry.note || entry.mood || "calm progress logged")}`);
+}
+
+function buildProgressFocusAreas(struggleEntries, progressEntries) {
+  if (struggleEntries.length) {
+    return sortProgressWins(struggleEntries)
+      .slice(0, 3)
+      .map((entry) => `${entry.title}: keep this short, low-pressure, and log what helped Phoenix recover.`);
+  }
+
+  if (!progressEntries.length) {
+    return ["Log one short training session and one low-pressure social exposure to establish a baseline."];
+  }
+
+  return ["Keep repeating the calm patterns that worked, and log duration, mood, dog interactions, and recovery time."];
+}
+
+function progressText(entry) {
+  return `${entry.title || ""} ${entry.mood || ""} ${entry.note || ""}`;
+}
+
+function sortProgressWins(entries) {
+  return [...entries].sort((a, b) => {
+    const left = a.type === "training" ? 0 : 1;
+    const right = b.type === "training" ? 0 : 1;
+    if (left !== right) return left - right;
+    return new Date(b.occurredAt) - new Date(a.occurredAt);
+  });
 }
 
 function normalizeDate(value) {

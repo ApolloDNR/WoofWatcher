@@ -18,6 +18,7 @@
 - Editable daily routine schedule with care times, owners, notes, completed items, and next care items.
 - Editable goals and milestones for weight, training, anxiety, social exposure, health, and custom care targets.
 - Monthly care calendar with day-level care density, vomit days, review days, walk/training/social markers, and selected-day timeline evidence.
+- Training and social progress review with calm wins, struggle signals, dog-interaction counts, focus areas, and monthly report inclusion.
 - Quick logs for meals, walks, treats, training, social interactions, dog park visits, health, vomit, vet, weight, medication, and general notes.
 - Health watch that highlights repeat vomiting, appetite refusal, urgent severity, and veterinary red flags without diagnosing.
 - Editable records vault for vaccines, vet visits, weight goals, medication, microchip details, and care instructions.
@@ -31,6 +32,7 @@
 - Vomit/urgent health follow-up flags.
 - Monthly summary aggregation.
 - Monthly care calendar aggregation, day markers, review-day counts, and vomit-day counts.
+- Training progress aggregation, calm/struggle signal detection, wins, focus areas, and report inclusion.
 - Daily plan completion/next item logic.
 - Editable routine normalization, ordering, add/update, and removal.
 - Goal normalization, add/update/removal, progress review, and report inclusion.

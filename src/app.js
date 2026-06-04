@@ -8,6 +8,7 @@ import {
   getGoalReview,
   getHealthWatch,
   getMonthlySummary,
+  getTrainingProgress,
   getTodayPlan,
   normalizeState,
   removeGoal,
@@ -70,6 +71,7 @@ function render() {
   const handoff = getCaregiverHandoff(state);
   const goalReview = getGoalReview(state);
   const calendar = getCareCalendar(state);
+  const trainingProgress = getTrainingProgress(state);
   const health = getHealthWatch(state);
 
   app.dataset.loading = "false";
@@ -99,7 +101,7 @@ function render() {
 
       <section class="primary-surface">
         ${renderTabHeader(activeTab)}
-        ${renderActiveTab(activeTab, { summary, plan, health, handoff, goalReview, calendar })}
+        ${renderActiveTab(activeTab, { summary, plan, health, handoff, goalReview, calendar, trainingProgress })}
       </section>
     </main>
 
@@ -108,6 +110,7 @@ function render() {
       ${renderNavButton("schedule", "Schedule")}
       ${renderNavButton("goals", "Goals")}
       ${renderNavButton("calendar", "Calendar")}
+      ${renderNavButton("progress", "Progress")}
       ${renderNavButton("log", "Quick Log")}
       ${renderNavButton("health", "Health")}
       ${renderNavButton("records", "Records")}
@@ -214,6 +217,7 @@ function renderTabHeader(tab) {
     schedule: ["Schedule", "Edit meals, walks, snacks, training, and ownership."],
     goals: ["Goals", "Weight, training, social, anxiety, and health milestones."],
     calendar: ["Calendar", "Monthly care patterns, vomit days, and daily handoff evidence."],
+    progress: ["Progress", "Training wins, rough spots, social exposure, and next focus."],
     log: ["Quick Log", "Capture what happened without a long conversation."],
     health: ["Health Watch", "Track patterns and know when review is needed."],
     records: ["Records", "Vaccines, vet notes, weight goals, and instructions."],
@@ -237,6 +241,7 @@ function renderActiveTab(tab, context) {
   if (tab === "schedule") return renderScheduleTab();
   if (tab === "goals") return renderGoalsTab(context.goalReview);
   if (tab === "calendar") return renderCalendarTab(context.calendar);
+  if (tab === "progress") return renderProgressTab(context.trainingProgress);
   if (tab === "log") return renderLogTab();
   if (tab === "health") return renderHealthTab(context.health);
   if (tab === "records") return renderRecordsTab();
@@ -363,6 +368,60 @@ function renderCalendarTab(calendar) {
           <span class="status-chip ${selectedDay?.status === "review" ? "review" : selectedDay?.status === "active" ? "steady" : "watch"}">${escapeHtml(selectedDay?.summary || "No logs")}</span>
         </div>
         ${selectedDay ? renderSelectedDay(selectedDay) : `<p class="empty">Choose a day on the calendar.</p>`}
+      </section>
+    </div>
+  `;
+}
+
+function renderProgressTab(progress) {
+  const statusClass = progress.status === "Steady" ? "steady" : progress.status === "Building" ? "watch" : "review";
+  return `
+    <div class="dashboard-grid">
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Training progress</p>
+            <h3>${escapeHtml(progress.monthLabel)}</h3>
+          </div>
+          <span class="status-chip ${statusClass}">${escapeHtml(progress.status)}</span>
+        </div>
+        <div class="stat-row">
+          ${renderStat("Sessions", progress.training.sessions)}
+          ${renderStat("Minutes", progress.training.minutes)}
+          ${renderStat("Social sessions", progress.social.sessions)}
+          ${renderStat("Dog interactions", progress.social.dogInteractions)}
+        </div>
+        <div class="progress-signal-grid">
+          <article>
+            <span>Calm signals</span>
+            <strong>${progress.calmSignals}</strong>
+            <p>Settled, neutral, engaged, relaxed, or confident moments.</p>
+          </article>
+          <article>
+            <span>Struggle signals</span>
+            <strong>${progress.struggleSignals}</strong>
+            <p>Anxiety, barking, pulling, tension, reactivity, or overwhelm.</p>
+          </article>
+        </div>
+      </section>
+      <section class="panel">
+        <p class="micro">Wins</p>
+        <h3>What improved</h3>
+        <div class="signal-list">
+          ${progress.wins.map((win) => `<p>${escapeHtml(win)}</p>`).join("")}
+        </div>
+      </section>
+      <section class="panel">
+        <p class="micro">Focus</p>
+        <h3>What to keep working on</h3>
+        <div class="signal-list">
+          ${progress.focusAreas.map((focus) => `<p>${escapeHtml(focus)}</p>`).join("")}
+        </div>
+      </section>
+      <section class="panel span-2">
+        <p class="micro">Evidence</p>
+        <h3>Recent training and social logs</h3>
+        ${renderTimeline(progress.recentEntries)}
       </section>
     </div>
   `;

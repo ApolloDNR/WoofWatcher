@@ -32,10 +32,11 @@ OPENAI_MODEL
 3. Load `/?tab=schedule` and add a test routine.
 4. Load `/?tab=goals` and add a test goal.
 5. Load `/?tab=calendar` and confirm the current-month grid and selected-day panel render.
-6. Load `/?tab=records` and add a test vaccine or vet record.
-7. Load `/?tab=log`.
-8. Add a test care log.
-9. Confirm the Today routine, caregiver handoff, Calendar selected-day evidence, and Records vault update.
-10. Open `/?tab=report` and download the report.
-11. Open `/?tab=assistant`; if `OPENAI_API_KEY` is not configured, confirm local mode still answers.
-12. Open DevTools Application or the browser install prompt and confirm the manifest is detected.
+6. Load `/?tab=progress` and confirm the training/social progress review renders.
+7. Load `/?tab=records` and add a test vaccine or vet record.
+8. Load `/?tab=log`.
+9. Add a test care log.
+10. Confirm the Today routine, caregiver handoff, Calendar selected-day evidence, Progress evidence, and Records vault update.
+11. Open `/?tab=report` and download the report.
+12. Open `/?tab=assistant`; if `OPENAI_API_KEY` is not configured, confirm local mode still answers.
+13. Open DevTools Application or the browser install prompt and confirm the manifest is detected.

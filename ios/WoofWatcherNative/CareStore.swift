@@ -179,6 +179,32 @@ final class CareStore {
         )
     }
 
+    var trainingProgress: TrainingProgressReview {
+        let calendar = Calendar.current
+        let now = Date()
+        let monthEntries = state.entries.filter {
+            calendar.component(.month, from: $0.occurredAt) == calendar.component(.month, from: now)
+                && calendar.component(.year, from: $0.occurredAt) == calendar.component(.year, from: now)
+        }
+        let trainingEntries = monthEntries.filter { $0.type == .training }
+        let socialEntries = monthEntries.filter { $0.type == .social || $0.type == .park }
+        let progressEntries = (trainingEntries + socialEntries).sorted { $0.occurredAt > $1.occurredAt }
+        let calmEntries = progressEntries.filter(hasCalmSignal)
+        let struggleEntries = progressEntries.filter(hasStruggleSignal)
+        let status = progressEntries.isEmpty ? "Needs logs" : (struggleEntries.isEmpty ? "Steady" : "Building")
+
+        return TrainingProgressReview(
+            status: status,
+            training: TrainingMetric(sessions: trainingEntries.count, minutes: trainingEntries.reduce(0) { $0 + $1.durationMinutes }),
+            social: SocialMetric(sessions: socialEntries.count, dogInteractions: socialEntries.reduce(0) { $0 + $1.dogInteractions }),
+            calmSignals: calmEntries.count,
+            struggleSignals: struggleEntries.count,
+            wins: buildProgressWins(calmEntries),
+            focusAreas: buildProgressFocusAreas(struggleEntries: struggleEntries, progressEntries: progressEntries),
+            recentEntries: Array(progressEntries.prefix(6))
+        )
+    }
+
     func load() {
         do {
             let url = try storageURL()
@@ -289,6 +315,17 @@ final class CareStore {
         Goal Review
         Active goals: \(goalReview.activeGoals)/\(goalReview.totalGoals)
         \(goalReview.highlights.map { "- \($0)" }.joined(separator: "\n"))
+
+        Training Progress
+        Status: \(trainingProgress.status)
+        Training: \(trainingProgress.training.sessions) sessions, \(trainingProgress.training.minutes) minutes
+        Social exposure: \(trainingProgress.social.sessions) sessions, \(trainingProgress.social.dogInteractions) dog interactions
+        Calm signals: \(trainingProgress.calmSignals)
+        Struggle signals: \(trainingProgress.struggleSignals)
+        Wins
+        \(trainingProgress.wins.map { "- \($0)" }.joined(separator: "\n"))
+        Focus areas
+        \(trainingProgress.focusAreas.map { "- \($0)" }.joined(separator: "\n"))
 
         Recent Care Timeline
         \(latest)
@@ -404,6 +441,50 @@ final class CareStore {
         return parts.isEmpty ? "No logs" : parts.joined(separator: " | ")
     }
 
+    private func hasCalmSignal(_ entry: CareEntry) -> Bool {
+        let text = progressText(entry)
+        return ["calm", "settled", "engaged", "neutral", "held", "loose", "relax", "confident"].contains { text.contains($0) }
+    }
+
+    private func hasStruggleSignal(_ entry: CareEntry) -> Bool {
+        let text = progressText(entry)
+        return ["anxious", "bark", "react", "lung", "pull", "tense", "stress", "overwhelm", "scared", "refus", "guard"].contains { text.contains($0) }
+    }
+
+    private func buildProgressWins(_ entries: [CareEntry]) -> [String] {
+        let sorted = sortProgressEvidence(entries)
+        guard !sorted.isEmpty else {
+            return ["No calm training or social wins logged yet this month."]
+        }
+        return sorted.prefix(3).map { "\($0.title): \($0.note.isEmpty ? ($0.mood.isEmpty ? "calm progress logged" : $0.mood) : $0.note)" }
+    }
+
+    private func buildProgressFocusAreas(struggleEntries: [CareEntry], progressEntries: [CareEntry]) -> [String] {
+        let sorted = sortProgressEvidence(struggleEntries)
+        if !sorted.isEmpty {
+            return sorted.prefix(3).map { "\($0.title): keep this short, low-pressure, and log what helped Phoenix recover." }
+        }
+        if progressEntries.isEmpty {
+            return ["Log one short training session and one low-pressure social exposure to establish a baseline."]
+        }
+        return ["Keep repeating the calm patterns that worked, and log duration, mood, dog interactions, and recovery time."]
+    }
+
+    private func progressText(_ entry: CareEntry) -> String {
+        "\(entry.title) \(entry.mood) \(entry.note)".lowercased()
+    }
+
+    private func sortProgressEvidence(_ entries: [CareEntry]) -> [CareEntry] {
+        entries.sorted { left, right in
+            let leftRank = left.type == .training ? 0 : 1
+            let rightRank = right.type == .training ? 0 : 1
+            if leftRank != rightRank {
+                return leftRank < rightRank
+            }
+            return left.occurredAt > right.occurredAt
+        }
+    }
+
     private func dateKey(for date: Date) -> String {
         let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
@@ -501,6 +582,27 @@ struct GoalReview {
     var activeGoals: Int
     var completedGoals: Int
     var highlights: [String]
+}
+
+struct TrainingProgressReview {
+    var status: String
+    var training: TrainingMetric
+    var social: SocialMetric
+    var calmSignals: Int
+    var struggleSignals: Int
+    var wins: [String]
+    var focusAreas: [String]
+    var recentEntries: [CareEntry]
+}
+
+struct TrainingMetric {
+    var sessions: Int
+    var minutes: Int
+}
+
+struct SocialMetric {
+    var sessions: Int
+    var dogInteractions: Int
 }
 
 struct CaregiverHandoff {

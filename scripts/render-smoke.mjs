@@ -161,6 +161,11 @@ try {
   await expectEval(client, "Boolean(document.querySelector('.care-calendar-grid'))", true, "calendar grid visible");
   await expectEval(client, "document.body.innerText.includes('QA breakfast')", true, "calendar includes current-day entry");
 
+  await evaluate(client, `document.querySelector('[data-tab="progress"]').click();`);
+  await delay(250);
+  await expectEval(client, "document.body.innerText.includes('Training progress')", true, "progress renders");
+  await expectEval(client, "document.body.innerText.includes('What to keep working on')", true, "progress focus renders");
+
   await evaluate(client, `document.querySelector('[data-tab="records"]').click();`);
   await delay(250);
   await expectEval(client, "Boolean(document.querySelector('[data-record-mode=\"add\"]'))", true, "record add form visible");
@@ -227,6 +232,7 @@ async function runDumpDomSmoke() {
     { route: "/?tab=schedule", label: "schedule", text: ["Schedule", "Editable daily routine", "Add routine", "Save routine"] },
     { route: "/?tab=goals", label: "goals", text: ["Goals", "Goal review", "Phoenix goals", "Save goal"] },
     { route: "/?tab=calendar", label: "calendar", text: ["Calendar", "Care calendar", "Selected day", "Vomit days"] },
+    { route: "/?tab=progress", label: "progress", text: ["Progress", "Training progress", "What improved", "What to keep working on"] },
     { route: "/?tab=log", label: "log", text: ["Quick Log", "Capture what happened", "Save care log"] },
     { route: "/?tab=records", label: "records", text: ["Records", "Stored records", "Add record", "Save record", "Remove"] },
     { route: "/?tab=report", label: "report", text: ["WoofWatcher Monthly Report", "Download", "Print/PDF"] },

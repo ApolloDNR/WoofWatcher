@@ -5,6 +5,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     case schedule
     case goals
     case calendar
+    case progress
     case log
     case health
     case records
@@ -19,6 +20,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .schedule: return "Schedule"
         case .goals: return "Goals"
         case .calendar: return "Calendar"
+        case .progress: return "Progress"
         case .log: return "Log"
         case .health: return "Health"
         case .records: return "Records"
@@ -33,6 +35,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .schedule: return "clock.badge.checkmark"
         case .goals: return "target"
         case .calendar: return "calendar.badge.exclamationmark"
+        case .progress: return "chart.line.uptrend.xyaxis"
         case .log: return "plus.circle"
         case .health: return "heart.text.square"
         case .records: return "folder"
@@ -76,6 +79,8 @@ struct ContentView: View {
             GoalsView(store: store)
         case .calendar:
             CalendarView(store: store)
+        case .progress:
+            TrainingProgressView(store: store)
         case .log:
             LogView(store: store)
         case .health:
@@ -280,6 +285,59 @@ struct CalendarMarkerStrip: View {
             .foregroundStyle(.white)
             .frame(width: 14, height: 14)
             .background(color, in: Circle())
+    }
+}
+
+struct TrainingProgressView: View {
+    @Bindable var store: CareStore
+
+    var body: some View {
+        let progress = store.trainingProgress
+
+        List {
+            Section("Training Progress") {
+                Label(progress.status, systemImage: "chart.line.uptrend.xyaxis")
+                    .font(.title2.bold())
+                HStack {
+                    metric("Sessions", "\(progress.training.sessions)")
+                    metric("Minutes", "\(progress.training.minutes)")
+                    metric("Social", "\(progress.social.sessions)")
+                    metric("Dogs", "\(progress.social.dogInteractions)")
+                }
+                HStack {
+                    metric("Calm", "\(progress.calmSignals)")
+                    metric("Struggle", "\(progress.struggleSignals)")
+                }
+            }
+
+            Section("What Improved") {
+                ForEach(progress.wins, id: \.self) { win in
+                    Text(win)
+                }
+            }
+
+            Section("What To Keep Working On") {
+                ForEach(progress.focusAreas, id: \.self) { focus in
+                    Text(focus)
+                }
+            }
+
+            Section("Recent Evidence") {
+                TimelineList(entries: progress.recentEntries)
+            }
+        }
+    }
+
+    private func metric(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.headline)
+                .monospacedDigit()
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

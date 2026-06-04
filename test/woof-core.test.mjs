@@ -11,6 +11,7 @@ import {
   getGoalReview,
   getHealthWatch,
   getMonthlySummary,
+  getTrainingProgress,
   getTodayPlan,
   normalizeGoalInput,
   normalizeRecordInput,
@@ -334,6 +335,71 @@ test("adds, updates, removes, and reviews weight and training goals from logs", 
   assert.match(review.highlights[0], /57.4 lb/);
 });
 
+test("reviews Phoenix training progress with calm wins, struggle signals, and focus areas", () => {
+  const state = getDefaultState("2026-06-03T12:00:00.000Z");
+  const entries = [
+    createEntry({
+      type: "training",
+      title: "Place work",
+      durationMinutes: 12,
+      caregiver: "Girlfriend",
+      mood: "calm",
+      note: "Held place while food was prepared.",
+      occurredAt: "2026-06-03T19:00:00.000Z"
+    }),
+    createEntry({
+      type: "training",
+      title: "Door manners",
+      durationMinutes: 8,
+      caregiver: "Apollo",
+      mood: "anxious",
+      note: "Barked when the hallway got loud.",
+      occurredAt: "2026-06-04T19:00:00.000Z"
+    }),
+    createEntry({
+      type: "park",
+      title: "Dog park",
+      dogInteractions: 3,
+      caregiver: "Both",
+      mood: "neutral",
+      note: "Short calm greetings.",
+      occurredAt: "2026-06-05T20:00:00.000Z"
+    }),
+    createEntry({
+      type: "social",
+      title: "Sidewalk dog pass",
+      dogInteractions: 1,
+      caregiver: "Apollo",
+      mood: "tense",
+      note: "Pulled toward the dog before redirecting.",
+      occurredAt: "2026-06-06T20:00:00.000Z"
+    }),
+    createEntry({
+      type: "training",
+      title: "Old place work",
+      durationMinutes: 20,
+      caregiver: "Apollo",
+      mood: "calm",
+      note: "Previous month should not count.",
+      occurredAt: "2026-05-30T20:00:00.000Z"
+    })
+  ];
+
+  const progress = getTrainingProgress({ ...state, entries }, "2026-06-15T12:00:00.000Z");
+
+  assert.equal(progress.monthLabel, "June 2026");
+  assert.equal(progress.status, "Building");
+  assert.equal(progress.training.sessions, 2);
+  assert.equal(progress.training.minutes, 20);
+  assert.equal(progress.social.sessions, 2);
+  assert.equal(progress.social.dogInteractions, 4);
+  assert.equal(progress.calmSignals, 2);
+  assert.equal(progress.struggleSignals, 2);
+  assert.match(progress.wins[0], /Place work/);
+  assert.match(progress.focusAreas[0], /Door manners/);
+  assert.equal(progress.recentEntries.length, 4);
+});
+
 test("normalizes Phoenix records without trusting malformed medical vault input", () => {
   const record = normalizeRecordInput({
     id: "",
@@ -421,6 +487,7 @@ test("report text is export-ready and keeps veterinary boundaries visible", () =
   assert.match(report, /Phoenix/);
   assert.match(report, /Vomit incidents: 1/);
   assert.match(report, /Goal Review/);
+  assert.match(report, /Training Progress/);
   assert.match(report, /not a veterinary diagnosis/);
 });
 

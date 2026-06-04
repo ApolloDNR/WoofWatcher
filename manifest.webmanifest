@@ -39,6 +39,13 @@
       "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
+      "name": "Training Progress",
+      "short_name": "Progress",
+      "description": "Review Phoenix's training and social progress.",
+      "url": "/?tab=progress",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
       "name": "Quick Log",
       "short_name": "Log",
       "description": "Open WoofWatcher to log Phoenix care.",

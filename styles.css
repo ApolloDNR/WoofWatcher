@@ -390,6 +390,40 @@ dd,
   margin-top: 12px;
 }
 
+.progress-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.progress-signal-grid article {
+  border: 1px solid rgba(212, 207, 196, 0.16);
+  border-radius: var(--radius);
+  background: rgba(15, 23, 34, 0.34);
+  padding: 12px;
+}
+
+.progress-signal-grid span {
+  color: rgba(255, 250, 241, 0.58);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.progress-signal-grid strong {
+  display: block;
+  margin-top: 6px;
+  color: #fff8ec;
+  font-size: 1.6rem;
+}
+
+.progress-signal-grid p {
+  margin-top: 4px;
+  color: rgba(255, 250, 241, 0.68);
+  font-size: 0.86rem;
+}
+
 .care-calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -816,8 +850,8 @@ textarea:focus {
 .bottom-nav {
   position: static;
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
-  width: min(1040px, calc(100% - 24px));
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  width: min(1120px, calc(100% - 24px));
   margin: 18px auto 0;
   border: 1px solid rgba(212, 207, 196, 0.2);
   border-radius: var(--radius);
@@ -878,7 +912,7 @@ textarea:focus {
 
 @media (max-width: 680px) {
   .app-shell {
-    padding: 12px 12px 210px;
+    padding: 12px 12px 240px;
   }
 
   .topbar {
@@ -922,6 +956,10 @@ textarea:focus {
   }
 
   .calendar-summary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-signal-grid {
     grid-template-columns: 1fr;
   }
 
