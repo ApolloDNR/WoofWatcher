@@ -10,8 +10,8 @@ WoofWatcher v1 is a functional local-first PWA and private GitHub project. It is
 
 - Local repo: `projects/woofwatcher`
 - Private GitHub repo: `ApolloDNR/WoofWatcher`
-- Confirmed remote `main`: `174097fd7756fdfd848f8da3917dacd7cc085313`
-- Latest local branch state: `main...origin/main`
+- Latest verified implementation commit: `1b6f9a8b28721fa7b8a6d6f593edde921a98bff6`
+- Latest verified GitHub Actions run at audit time: `WoofWatcher Verify` run `26980717210`, completed successfully for implementation commit `1b6f9a8`.
 - Vercel projects visible on Apollo team: `pegasus-hq-operating-system` only; no WoofWatcher Vercel project exists yet.
 - Figma file: `165jvlaygkksRtXW1bA1MA`
 - Current Figma frames: Phoenix Care Command, Goals & Milestones, Care Calendar, Training Progress, Care Room Transfer, Care Team, Reminder Center, and Bile Watch.
@@ -29,8 +29,8 @@ WoofWatcher v1 is a functional local-first PWA and private GitHub project. It is
 | Reports and vet-safe boundaries | Monthly report includes care metrics, health watch, Bile Watch, goals, progress, timeline, and non-diagnosis boundary. | `buildReportText` tests. | Proven locally |
 | AI-ready helper | Local deterministic helper works; server and Vercel API routes are wired for OpenAI Responses API only when server-side key exists. | `src/openai-care-helper.js`, `api/care-helper.js`, `server.mjs`, OpenAI helper tests. | Proven in local mode |
 | Live OpenAI helper | No approved `OPENAI_API_KEY` is configured. Live API call is intentionally not active. | `docs/OPENAI_INTEGRATION.md`; local helper route reports local mode when no key exists. | Gated |
-| GitHub publishing | Private GitHub repo exists and local app history is pushed. | `ApolloDNR/WoofWatcher`; remote `main` confirmed at `174097f`. | Proven |
-| GitHub Actions | Workflow exists and is committed. Run status could not be confirmed through available tooling in this session. | `.github/workflows/verify.yml`; connector only returned PR-filtered workflow runs. | Partially verified |
+| GitHub publishing | Private GitHub repo exists and local app history is pushed. | `ApolloDNR/WoofWatcher`; implementation commit `1b6f9a8` is pushed. | Proven |
+| GitHub Actions | Workflow exists, timezone-sensitive tests were stabilized, and latest push verification completed successfully. | `.github/workflows/verify.yml`; run `26980717210`; local UTC and default Node test suites pass. | Proven |
 | Vercel deployability | `vercel.json` excludes `/api/*` from SPA fallback; deployment notes exist. No WoofWatcher Vercel project exists yet. | `vercel.json`, deployment config test, Vercel project list. | Gated |
 | Native iOS direction | SwiftUI source handoff mirrors the care model and UI surface. This Windows session cannot build/run it. | `ios/WoofWatcherNative`, `docs/IOS_HANDOFF.md`, no `swift`/`xcodebuild`. | Source-ready, unbuilt |
 | Figma design parity | Main v1 frames exist for most major surfaces, including Bile Watch. Standalone Schedule and newer Handoff digest frames remain next design parity work. | Figma inspection: eight top-level frames in `WoofWatcher v1`. | Mostly complete |
@@ -40,10 +40,9 @@ WoofWatcher v1 is a functional local-first PWA and private GitHub project. It is
 
 1. Decide whether WoofWatcher should be deployed to Vercel now, and whether that deployment should be public, protected, or kept local until account/privacy decisions are made.
 2. If live AI mode is desired, configure `OPENAI_API_KEY` server-side only and run `/api/care-helper` smoke without exposing the key.
-3. Verify GitHub Actions run status from GitHub UI or a refreshed local `gh` login.
-4. Build and run the SwiftUI source on macOS/Xcode before calling native iOS shipped.
-5. Add standalone Figma Schedule and Handoff frames if deeper design parity is required before handoff.
-6. Retry browser extension-backed QA after the Chrome plugin/kernel setup issue is repaired; otherwise continue using Chrome DOM fallback for local rendered smoke.
+3. Build and run the SwiftUI source on macOS/Xcode before calling native iOS shipped.
+4. Add standalone Figma Schedule and Handoff frames if deeper design parity is required before handoff.
+5. Retry browser extension-backed QA after the Chrome plugin/kernel setup issue is repaired; otherwise continue using Chrome DOM fallback for local rendered smoke.
 
 ## Recommended Next Slice
 
