@@ -94,3 +94,11 @@ The generated v1 concept is saved at:
 ```text
 docs/woofwatcher-v1-concept.png
 ```
+
+## Completion Audit
+
+Current proof and remaining gates are tracked in:
+
+```text
+docs/V1_COMPLETION_AUDIT.md
+```
