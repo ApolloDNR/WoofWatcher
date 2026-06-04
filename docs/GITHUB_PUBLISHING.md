@@ -9,7 +9,8 @@ WoofWatcher is published to a private GitHub repository.
 - GitHub repository: `ApolloDNR/WoofWatcher`
 - Visibility: private.
 - Local remote: `origin` -> `https://github.com/ApolloDNR/WoofWatcher.git`
-- Current pushed head: `438d83d` (`Merge remote repository initialization`), which preserves GitHub's initial repository commit and the full local WoofWatcher app history through `fdd3574` (`Add Phoenix bile watch`).
+- Publishing merge milestone: `438d83d` (`Merge remote repository initialization`), which preserves GitHub's initial repository commit and the full local WoofWatcher app history through `fdd3574` (`Add Phoenix bile watch`).
+- To confirm the latest pushed head, run `git ls-remote origin refs/heads/main` from this folder.
 - A GitHub Actions workflow is ready at `.github/workflows/verify.yml`.
 - The GitHub connector confirmed admin/push permissions. The local `gh` CLI may still need refreshed auth for interactive GitHub CLI commands.
 
