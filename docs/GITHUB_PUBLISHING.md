@@ -1,37 +1,29 @@
 # GitHub Publishing Notes
 
-WoofWatcher is ready to publish as a repository, but this local folder is not currently connected to a GitHub remote.
+WoofWatcher is published to a private GitHub repository.
 
 ## Current State
 
 - Project folder: `projects/woofwatcher`
 - Local repository root: `projects/woofwatcher`
-- Current local commit: run `git rev-parse --short HEAD` from this folder.
-- `gh auth status` found an invalid token for `ApolloDNR`.
+- GitHub repository: `ApolloDNR/WoofWatcher`
+- Visibility: private.
+- Local remote: `origin` -> `https://github.com/ApolloDNR/WoofWatcher.git`
+- Current pushed head: `438d83d` (`Merge remote repository initialization`), which preserves GitHub's initial repository commit and the full local WoofWatcher app history through `fdd3574` (`Add Phoenix bile watch`).
 - A GitHub Actions workflow is ready at `.github/workflows/verify.yml`.
+- The GitHub connector confirmed admin/push permissions. The local `gh` CLI may still need refreshed auth for interactive GitHub CLI commands.
 
-## Recommended Repository Shape
+## Repository Shape
 
-Create a new private repository, for example:
+Keep the repository private until caregiver privacy, account sync, and medical-record handling are decided.
 
-```text
-ApolloDNR/woofwatcher
-```
+## Future GitHub CLI Auth
 
-Keep it private until caregiver privacy, account sync, and medical-record handling are decided.
-
-## Publish Steps After GitHub Auth Is Fixed
+If Apollo wants to use the local GitHub CLI instead of the connector or normal git remote, refresh CLI auth:
 
 ```powershell
 gh auth login -h github.com
-gh repo create ApolloDNR/woofwatcher --private --source . --remote origin --push
-```
-
-After push, GitHub Actions should run:
-
-```powershell
-npm run check
-npm test
+gh run list --repo ApolloDNR/WoofWatcher
 ```
 
 ## Do Not Commit
