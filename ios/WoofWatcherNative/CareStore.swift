@@ -335,6 +335,26 @@ final class CareStore {
         """
     }
 
+    func careRoomTransferText() -> String {
+        let package = CareRoomTransferPackage(
+            packageType: "woofwatcher.care-room-transfer",
+            version: 1,
+            createdAt: Date(),
+            petName: state.profile.name,
+            importNote: "Import this file in WoofWatcher to continue Phoenix care from the same local state.",
+            handoffMessage: caregiverHandoff.message,
+            monthlyReport: reportText(),
+            state: state
+        )
+
+        do {
+            let data = try JSONEncoder.woofWatcher.encode(package)
+            return String(data: data, encoding: .utf8) ?? reportText()
+        } catch {
+            return reportText()
+        }
+    }
+
     func localHelperAnswer(question: String) -> String {
         let asksVomit = question.range(of: "vomit|throw|bile|yellow|nausea", options: [.regularExpression, .caseInsensitive]) != nil
         let lead = asksVomit
@@ -620,6 +640,17 @@ struct CaregiverLoad: Identifiable {
     var role: String
     var todayLogs: Int
     var latestAction: String
+}
+
+struct CareRoomTransferPackage: Codable {
+    var packageType: String
+    var version: Int
+    var createdAt: Date
+    var petName: String
+    var importNote: String
+    var handoffMessage: String
+    var monthlyReport: String
+    var state: CareState
 }
 
 extension JSONEncoder {

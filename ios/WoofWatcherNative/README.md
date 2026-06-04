@@ -13,8 +13,8 @@ This folder is a SwiftUI source handoff for a future native iOS app. The shipped
 
 - `WoofWatcherApp.swift`: root app entry.
 - `CareModels.swift`: Codable model types, Phoenix seed data, routine draft shape, goal draft shape, and record draft shape.
-- `CareStore.swift`: root-owned observable store with local JSON save/load, editable routines, editable goals, editable records, health watch, monthly summary, care calendar, training progress, goal review, and caregiver handoff digest.
-- `ContentView.swift`: TabView shell for Today, Schedule, Goals, Calendar, Progress, Log, Health, Records, Report, and Helper, including a shareable Today handoff section.
+- `CareStore.swift`: root-owned observable store with local JSON save/load, editable routines, editable goals, editable records, health watch, monthly summary, care calendar, training progress, goal review, caregiver handoff digest, and care room transfer package generation.
+- `ContentView.swift`: TabView shell for Today, Schedule, Goals, Calendar, Progress, Log, Health, Records, Report, and Helper, including shareable Today handoff and care room transfer actions.
 
 ## Verification Still Needed On macOS
 
@@ -30,3 +30,4 @@ This folder is a SwiftUI source handoff for a future native iOS app. The shipped
 10. Confirm the Progress tab shows training sessions, social exposure, wins, focus areas, and recent evidence.
 11. Confirm the report and helper boundary match the PWA behavior.
 12. Confirm the Today handoff shows next routine, last meal, last walk, follow-ups, and caregiver load.
+13. Confirm the care room transfer ShareLink exports importable JSON with Phoenix state and handoff context.

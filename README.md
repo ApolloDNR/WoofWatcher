@@ -10,6 +10,7 @@ WoofWatcher is a local-first care command center for Phoenix, Apollo's anxious r
 - Shows a monthly care calendar with day-level meals, walks, training, social exposure, vomit days, follow-ups, and selected-day evidence.
 - Reviews training and social progress with calm wins, rough spots, dog interactions, and next focus areas.
 - Shows today's routine, completed items, next care items, caregiver load, and a copyable handoff note.
+- Exports a care room transfer package with Phoenix state, caregiver handoff, health context, and the monthly report for another caregiver/device to import.
 - Highlights health patterns and red flags without making a veterinary diagnosis.
 - Stores and edits records for vaccines, vet visits, weight goals, medication, microchip details, and care instructions.
 - Builds a monthly report that can be copied, downloaded, or printed to PDF.
@@ -59,7 +60,9 @@ woofwatcher.v1.state
 
 Use `Backup` to download the current JSON state before resetting or moving devices.
 
-Use `Import` to restore a WoofWatcher JSON backup into the current browser.
+Use `Transfer` to download an importable care room package when another caregiver needs the current Phoenix state plus handoff/report context.
+
+Use `Import` to restore either a WoofWatcher JSON backup or a care room transfer package into the current browser.
 
 ## OpenAI Status
 

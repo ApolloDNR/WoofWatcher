@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildCareRoomTransfer,
   buildReportText,
   createEntry,
   getAssistantContext,
@@ -489,6 +490,61 @@ test("report text is export-ready and keeps veterinary boundaries visible", () =
   assert.match(report, /Goal Review/);
   assert.match(report, /Training Progress/);
   assert.match(report, /not a veterinary diagnosis/);
+});
+
+test("builds an importable care room transfer package with handoff and report context", () => {
+  const state = {
+    ...getDefaultState("2026-06-03T12:00:00.000Z"),
+    entries: [
+      createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: "2026-06-03T14:00:00.000Z" }),
+      createEntry({ type: "walk", title: "Morning walk", caregiver: "Girlfriend", occurredAt: "2026-06-03T15:00:00.000Z" }),
+      createEntry({ type: "vomit", title: "Yellow bile", caregiver: "Apollo", severity: "watch", occurredAt: "2026-06-03T16:00:00.000Z" })
+    ]
+  };
+
+  const transfer = buildCareRoomTransfer(state, "2026-06-03T18:00:00.000Z");
+
+  assert.equal(transfer.packageType, "woofwatcher.care-room-transfer");
+  assert.equal(transfer.version, 1);
+  assert.equal(transfer.petName, "Phoenix");
+  assert.equal(transfer.state.profile.name, "Phoenix");
+  assert.equal(transfer.handoff.nextRoutine.label, "Midday check");
+  assert.match(transfer.handoff.message, /Last meal: Breakfast by Apollo/);
+  assert.match(transfer.monthlyReport, /WoofWatcher Monthly Report/);
+  assert.match(transfer.importNote, /Import this file/);
+});
+
+test("normalizes care room transfer imports from nested state and ignores tampered summaries", () => {
+  const state = getDefaultState("2026-06-03T12:00:00.000Z");
+  const transfer = buildCareRoomTransfer(
+    {
+      ...state,
+      entries: [createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: "2026-06-03T14:00:00.000Z" })]
+    },
+    "2026-06-03T18:00:00.000Z"
+  );
+
+  const imported = normalizeState(
+    {
+      ...transfer,
+      handoff: { message: "tampered" },
+      monthlyReport: "tampered",
+      state: {
+        ...transfer.state,
+        entries: [
+          ...transfer.state.entries,
+          createEntry({ type: "walk", title: "Evening walk", caregiver: "Girlfriend", occurredAt: "2026-06-03T20:00:00.000Z" })
+        ]
+      }
+    },
+    "2026-06-03T21:00:00.000Z"
+  );
+
+  assert.equal(imported.profile.name, "Phoenix");
+  assert.equal(imported.entries.length, 2);
+  assert.equal(imported.entries.some((entry) => entry.title === "Evening walk"), true);
+  assert.equal(imported.handoff, undefined);
+  assert.equal(imported.monthlyReport, undefined);
 });
 
 test("normalizes unsafe or missing entry input into a safe log draft", () => {

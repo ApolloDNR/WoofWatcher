@@ -192,6 +192,7 @@ try {
   await delay(250);
   await expectEval(client, "document.body.innerText.includes('WoofWatcher Monthly Report')", true, "report renders");
   await expectEval(client, "document.body.innerText.includes('QA breakfast')", true, "report includes entry");
+  await expectEval(client, "document.body.innerText.includes('Transfer')", true, "transfer export visible");
 
   await evaluate(client, `
     document.querySelector('[data-tab="assistant"]').click();
@@ -228,14 +229,14 @@ try {
 
 async function runDumpDomSmoke() {
   const checks = [
-    { route: "/", label: "home", text: ["WoofWatcher", "Phoenix care command", "Import", "Next handoff", "Caregiver handoff"] },
+    { route: "/", label: "home", text: ["WoofWatcher", "Phoenix care command", "Import", "Transfer", "Next handoff", "Caregiver handoff"] },
     { route: "/?tab=schedule", label: "schedule", text: ["Schedule", "Editable daily routine", "Add routine", "Save routine"] },
     { route: "/?tab=goals", label: "goals", text: ["Goals", "Goal review", "Phoenix goals", "Save goal"] },
     { route: "/?tab=calendar", label: "calendar", text: ["Calendar", "Care calendar", "Selected day", "Vomit days"] },
     { route: "/?tab=progress", label: "progress", text: ["Progress", "Training progress", "What improved", "What to keep working on"] },
     { route: "/?tab=log", label: "log", text: ["Quick Log", "Capture what happened", "Save care log"] },
     { route: "/?tab=records", label: "records", text: ["Records", "Stored records", "Add record", "Save record", "Remove"] },
-    { route: "/?tab=report", label: "report", text: ["WoofWatcher Monthly Report", "Download", "Print/PDF"] },
+    { route: "/?tab=report", label: "report", text: ["WoofWatcher Monthly Report", "Download", "Transfer", "Print/PDF"] },
     { route: "/?tab=assistant", label: "assistant", text: ["Care Helper", "Ask with Phoenix context", "veterinarian"] }
   ];
 

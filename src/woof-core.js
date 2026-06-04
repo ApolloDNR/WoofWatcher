@@ -15,6 +15,7 @@ const ENTRY_TYPES = new Set([
 const GOAL_CATEGORIES = new Set(["weight", "training", "anxiety", "social", "health", "custom"]);
 const GOAL_STATUSES = new Set(["active", "paused", "done"]);
 const RECORD_TYPES = new Set(["vet", "vaccine", "weight", "instruction", "medication", "microchip"]);
+const CARE_ROOM_TRANSFER_TYPE = "woofwatcher.care-room-transfer";
 
 const TYPE_DEFAULT_TITLES = {
   meal: "Meal",
@@ -195,13 +196,14 @@ export function getDefaultState(now = new Date().toISOString()) {
 }
 
 export function normalizeState(input = {}, now = new Date().toISOString()) {
-  const defaults = getDefaultState(input.createdAt || now);
-  const profile = typeof input.profile === "object" && input.profile ? input.profile : {};
+  const source = unwrapTransferState(input);
+  const defaults = getDefaultState(source.createdAt || now);
+  const profile = typeof source.profile === "object" && source.profile ? source.profile : {};
   const weight = typeof profile.weight === "object" && profile.weight ? profile.weight : {};
 
   return {
     ...defaults,
-    ...compactObject(input),
+    ...compactObject(source),
     version: 1,
     profile: {
       ...defaults.profile,
@@ -211,11 +213,11 @@ export function normalizeState(input = {}, now = new Date().toISOString()) {
         ...compactObject(weight)
       }
     },
-    caregivers: Array.isArray(input.caregivers) && input.caregivers.length ? input.caregivers.map(normalizeCaregiver) : defaults.caregivers,
-    routines: Array.isArray(input.routines) ? sortRoutines(input.routines.map(normalizeRoutineInput)) : defaults.routines,
-    goals: Array.isArray(input.goals) ? sortGoals(input.goals.map(normalizeGoalInput)) : defaults.goals,
-    records: Array.isArray(input.records) ? input.records.map(normalizeRecordInput) : defaults.records,
-    entries: Array.isArray(input.entries) ? input.entries.map(normalizeImportedEntry) : defaults.entries,
+    caregivers: Array.isArray(source.caregivers) && source.caregivers.length ? source.caregivers.map(normalizeCaregiver) : defaults.caregivers,
+    routines: Array.isArray(source.routines) ? sortRoutines(source.routines.map(normalizeRoutineInput)) : defaults.routines,
+    goals: Array.isArray(source.goals) ? sortGoals(source.goals.map(normalizeGoalInput)) : defaults.goals,
+    records: Array.isArray(source.records) ? source.records.map(normalizeRecordInput) : defaults.records,
+    entries: Array.isArray(source.entries) ? source.entries.map(normalizeImportedEntry) : defaults.entries,
     updatedAt: now
   };
 }
@@ -602,6 +604,22 @@ export function buildReportText(state, now = new Date().toISOString()) {
   ].join("\n");
 }
 
+export function buildCareRoomTransfer(state, now = new Date().toISOString()) {
+  const normalized = normalizeState(state, now);
+  return {
+    packageType: CARE_ROOM_TRANSFER_TYPE,
+    version: 1,
+    createdAt: now,
+    petName: normalized.profile.name,
+    importNote: "Import this file in WoofWatcher to continue Phoenix care from the same local state.",
+    handoff: getCaregiverHandoff(normalized, now),
+    monthlySummary: getMonthlySummary(normalized, now),
+    healthWatch: getHealthWatch(normalized, now),
+    monthlyReport: buildReportText(normalized, now),
+    state: normalized
+  };
+}
+
 export function getAssistantContext(state, question = "", now = new Date().toISOString()) {
   const summary = getMonthlySummary(state, now);
   const healthWatch = getHealthWatch(state, now);
@@ -652,6 +670,13 @@ function cleanText(value) {
 
 function compactObject(value) {
   return Object.fromEntries(Object.entries(value || {}).filter(([, item]) => item !== undefined && item !== null));
+}
+
+function unwrapTransferState(input = {}) {
+  if (input.packageType === CARE_ROOM_TRANSFER_TYPE && typeof input.state === "object" && input.state) {
+    return input.state;
+  }
+  return input;
 }
 
 function normalizeCaregiver(caregiver = {}) {

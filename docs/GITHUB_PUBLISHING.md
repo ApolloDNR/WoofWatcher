@@ -40,3 +40,4 @@ npm test
 - `.env.local`
 - any `OPENAI_API_KEY`
 - exported Phoenix backup JSON containing private care records
+- exported Phoenix transfer JSON containing private care records and handoff context

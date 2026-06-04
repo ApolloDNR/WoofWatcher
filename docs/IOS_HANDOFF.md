@@ -22,6 +22,7 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 - `RecordDraft`: editable record form shape for vet, vaccine, weight, medication, microchip, and instruction records.
 - `RoutineDraft`: editable schedule item for meals, walks, snacks, medication, training, and ownership.
 - `CaregiverHandoff`: next routine, latest meal, latest walk, follow-ups, caregiver load, and a shareable message.
+- `CareRoomTransferPackage`: shareable/importable state package for caregiver or device handoff before account sync exists.
 - `CareCalendar`: monthly day summaries with review days, vomit days, care markers, and selected-day evidence.
 - `TrainingProgressReview`: monthly training/social progress, calm wins, struggle signals, and next focus areas.
 - `CareSummaryEngine`: native equivalent of `src/woof-core.js`.
@@ -36,10 +37,10 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 ## iPhone-Specific Wins
 
 - Local notifications for breakfast, dinner, bedtime snack, and medication reminders.
-- Share sheet for the caregiver handoff and monthly report.
+- Share sheet for the caregiver handoff, care room transfer package, and monthly report.
 - Home-screen widgets for next routine and health watch.
 - iCloud sync only after caregiver account/privacy choices are decided.
 
 ## Verification Gate
 
-Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit the schedule, add/edit/remove goals, add/edit/remove records, add a care log, shows the care calendar and selected-day timeline, shows training/social progress, persists after relaunch, exports a report, shows the caregiver handoff, and shows the red-flag boundary in the helper.
+Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit the schedule, add/edit/remove goals, add/edit/remove records, add a care log, shows the care calendar and selected-day timeline, shows training/social progress, persists after relaunch, exports a report, shares a care room transfer package, shows the caregiver handoff, and shows the red-flag boundary in the helper.

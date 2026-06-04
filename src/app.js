@@ -1,4 +1,5 @@
 import {
+  buildCareRoomTransfer,
   buildReportText,
   createEntry,
   getCareCalendar,
@@ -86,6 +87,7 @@ function render() {
       </div>
       <div class="top-actions">
         <button class="button ghost" data-action="export-json">Backup</button>
+        <button class="button ghost" data-action="export-transfer">Transfer</button>
         <button class="button ghost" data-action="import-json">Import</button>
         <button class="button ghost" data-action="reset-demo">Reset</button>
       </div>
@@ -185,6 +187,9 @@ function renderHandoff(handoff) {
         <button class="button ghost" data-action="copy-handoff">Copy</button>
       </div>
       <p>${escapeHtml(handoff.message)}</p>
+      <div class="button-row">
+        <button class="button ghost" data-action="export-transfer">Transfer package</button>
+      </div>
       <div class="handoff-list">
         ${handoff.caregiverLoad.map(renderCaregiverLoad).join("")}
       </div>
@@ -806,6 +811,7 @@ function renderReportTab(summary) {
           <div class="button-row">
             <button class="button ghost" data-action="copy-report">Copy</button>
             <button class="button ghost" data-action="download-report">Download</button>
+            <button class="button ghost" data-action="export-transfer">Transfer</button>
             <button class="button primary" data-action="print-report">Print/PDF</button>
           </div>
         </div>
@@ -1043,6 +1049,10 @@ function handleAction(action, button) {
     downloadText("woofwatcher-phoenix-backup.json", JSON.stringify(state, null, 2), "application/json");
   }
 
+  if (action === "export-transfer") {
+    downloadText("woofwatcher-phoenix-transfer.json", JSON.stringify(buildCareRoomTransfer(state), null, 2), "application/json");
+  }
+
   if (action === "import-json") {
     app.querySelector("[data-input='import-json']")?.click();
   }
@@ -1057,10 +1067,12 @@ async function handleImportFile(event) {
     const imported = JSON.parse(await file.text());
     saveState(normalizeState(imported));
     activeTab = "today";
-    assistantAnswer = "Backup imported. Review Phoenix's latest care timeline before acting on any old notes.";
+    assistantAnswer = imported.packageType === "woofwatcher.care-room-transfer"
+      ? "Care room transfer imported. Review Phoenix's handoff and latest timeline before continuing care."
+      : "Backup imported. Review Phoenix's latest care timeline before acting on any old notes.";
     render();
   } catch {
-    window.alert("WoofWatcher could not import that backup. Choose a JSON backup exported from this app.");
+    window.alert("WoofWatcher could not import that file. Choose a JSON backup or care room transfer exported from this app.");
   }
 }
 

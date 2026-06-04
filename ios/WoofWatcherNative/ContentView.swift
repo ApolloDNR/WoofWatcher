@@ -556,6 +556,7 @@ struct TodayView: View {
                 }
 
                 ShareLink("Share Handoff", item: handoff.message)
+                ShareLink("Share Care Room", item: store.careRoomTransferText())
             }
 
             Section("Recent Logs") {
@@ -698,6 +699,7 @@ struct ReportView: View {
                     .textSelection(.enabled)
                     .padding()
                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                ShareLink("Share Care Room Transfer", item: store.careRoomTransferText())
             }
             .padding()
         }
