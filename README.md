@@ -15,6 +15,7 @@ WoofWatcher is a local-first care command center for Phoenix, Apollo's anxious r
 - Shows today's routine, completed items, next care items, caregiver load, and a copyable handoff note.
 - Exports a care room transfer package with Phoenix state, caregiver handoff, health context, and the monthly report for another caregiver/device to import.
 - Highlights health patterns and red flags without making a veterinary diagnosis.
+- Adds Bile Watch for empty-stomach food gaps, bedtime snack proof, yellow bile logs, and vet-ready pattern tracking.
 - Stores and edits records for vaccines, vet visits, weight goals, medication, microchip details, and care instructions.
 - Builds a monthly report that can be copied, downloaded, or printed to PDF.
 - Saves locally in the browser with `localStorage`, with JSON backup export and import/restore.

@@ -278,6 +278,7 @@ async function runDumpDomSmoke() {
     { route: "/?tab=goals", label: "goals", text: ["Goals", "Goal review", "Phoenix goals", "Save goal"] },
     { route: "/?tab=calendar", label: "calendar", text: ["Calendar", "Care calendar", "Selected day", "Vomit days"] },
     { route: "/?tab=progress", label: "progress", text: ["Progress", "Training progress", "What improved", "What to keep working on"] },
+    { route: "/?tab=health", label: "health", text: ["Health Watch", "Pattern status", "Bile Watch", "Empty-stomach pattern", "Red flags", "Health timeline"] },
     { route: "/?tab=log", label: "log", text: ["Quick Log", "Capture what happened", "Save care log"] },
     { route: "/?tab=records", label: "records", text: ["Records", "Stored records", "Add record", "Save record", "Remove"] },
     { route: "/?tab=report", label: "report", text: ["WoofWatcher Monthly Report", "Download", "Transfer", "Print/PDF"] },

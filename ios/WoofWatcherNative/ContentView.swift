@@ -807,13 +807,38 @@ struct HealthView: View {
     @Bindable var store: CareStore
 
     var body: some View {
+        let healthWatch = store.healthWatch
+        let bileWatch = store.bileWatch
+
         List {
             Section("Pattern Status") {
-                Label(store.healthWatch.status, systemImage: "heart.text.square")
+                Label(healthWatch.status, systemImage: "heart.text.square")
                     .font(.title2.bold())
-                ForEach(store.healthWatch.signals, id: \.self) { signal in
+                ForEach(healthWatch.signals, id: \.self) { signal in
                     Text(signal)
                 }
+            }
+
+            Section("Bile Watch") {
+                Label(bileWatch.status, systemImage: "fork.knife.circle")
+                    .font(.title2.bold())
+                HStack {
+                    metric("Food gap", foodGapLabel(bileWatch.hoursSinceLastFood))
+                    metric("Bile logs", "\(bileWatch.recentYellowBileCount)")
+                    metric("Bed snack", bileWatch.bedtimeSnackLogged ? "Logged" : "Missing")
+                }
+
+                ForEach(bileWatch.signals, id: \.self) { signal in
+                    Text(signal)
+                }
+
+                ForEach(bileWatch.actions, id: \.self) { action in
+                    Label(action, systemImage: "checklist")
+                }
+
+                Text(bileWatch.vetBoundary)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Vet Boundary") {
@@ -824,6 +849,26 @@ struct HealthView: View {
                 TimelineList(entries: store.latestEntries.filter { [.vomit, .health, .vet, .weight, .medication].contains($0.type) })
             }
         }
+    }
+
+    private func metric(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.headline)
+                .monospacedDigit()
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func foodGapLabel(_ value: Double?) -> String {
+        guard let value else { return "No logs" }
+        if value.truncatingRemainder(dividingBy: 1) == 0 {
+            return "\(Int(value))h"
+        }
+        return "\(value)h"
     }
 }
 

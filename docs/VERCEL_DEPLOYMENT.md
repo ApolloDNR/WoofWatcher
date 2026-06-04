@@ -36,11 +36,12 @@ OPENAI_MODEL
 7. Load `/?tab=goals` and add a test goal.
 8. Load `/?tab=calendar` and confirm the current-month grid and selected-day panel render.
 9. Load `/?tab=progress` and confirm the training/social progress review renders.
-10. Load `/?tab=records` and add a test vaccine or vet record.
-11. Load `/?tab=log`.
-12. Add a test care log using the test caregiver.
-13. Confirm the Today routine, caregiver handoff, Calendar selected-day evidence, Progress evidence, and Records vault update.
-14. Use `Transfer` to download a care room transfer package and confirm it is JSON.
-15. Open `/?tab=report` and download the report.
-16. Open `/?tab=assistant`; if `OPENAI_API_KEY` is not configured, confirm local mode still answers.
-17. Open DevTools Application or the browser install prompt and confirm the manifest is detected.
+10. Load `/?tab=health` and confirm Bile Watch, empty-stomach pattern, red flags, and health timeline render.
+11. Load `/?tab=records` and add a test vaccine or vet record.
+12. Load `/?tab=log`.
+13. Add a test care log using the test caregiver.
+14. Confirm the Today routine, caregiver handoff, Calendar selected-day evidence, Progress evidence, Health/Bile Watch, and Records vault update.
+15. Use `Transfer` to download a care room transfer package and confirm it is JSON.
+16. Open `/?tab=report` and download the report.
+17. Open `/?tab=assistant`; if `OPENAI_API_KEY` is not configured, confirm local mode still answers.
+18. Open DevTools Application or the browser install prompt and confirm the manifest is detected.

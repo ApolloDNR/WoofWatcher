@@ -2,6 +2,7 @@ import {
   buildCareRoomTransfer,
   buildReportText,
   createEntry,
+  getBileWatch,
   getCareCalendar,
   getCaregiverHandoff,
   getAssistantContext,
@@ -81,6 +82,7 @@ function render() {
   const calendar = getCareCalendar(state);
   const trainingProgress = getTrainingProgress(state);
   const health = getHealthWatch(state);
+  const bileWatch = getBileWatch(state, now);
   const reminders = getReminderCenter(state, now);
   const notifications = getNotificationCenter(state, now, {
     supported: isBrowserNotificationSupported(),
@@ -115,7 +117,7 @@ function render() {
 
       <section class="primary-surface">
         ${renderTabHeader(activeTab)}
-        ${renderActiveTab(activeTab, { summary, plan, reminders, notifications, health, handoff, goalReview, calendar, trainingProgress })}
+        ${renderActiveTab(activeTab, { summary, plan, reminders, notifications, health, bileWatch, handoff, goalReview, calendar, trainingProgress })}
       </section>
     </main>
 
@@ -267,11 +269,11 @@ function renderActiveTab(tab, context) {
   if (tab === "calendar") return renderCalendarTab(context.calendar);
   if (tab === "progress") return renderProgressTab(context.trainingProgress);
   if (tab === "log") return renderLogTab();
-  if (tab === "health") return renderHealthTab(context.health);
+  if (tab === "health") return renderHealthTab(context.health, context.bileWatch);
   if (tab === "records") return renderRecordsTab();
   if (tab === "report") return renderReportTab(context.summary);
   if (tab === "assistant") return renderAssistantTab();
-  return renderTodayTab(context.plan, context.health, context.handoff);
+  return renderTodayTab(context.plan, context.health, context.bileWatch, context.handoff);
 }
 
 function renderRemindersTab(reminders, notifications) {
@@ -753,7 +755,7 @@ function renderRoutineForm(routine = {}) {
   `;
 }
 
-function renderTodayTab(plan, health, handoff) {
+function renderTodayTab(plan, health, bileWatch, handoff) {
   return `
     <div class="dashboard-grid">
       <section class="panel span-2">
@@ -789,6 +791,17 @@ function renderTodayTab(plan, health, handoff) {
           ${renderQuickButton("vomit", "Yellow bile")}
           ${renderQuickButton("weight", "Weight check")}
         </div>
+      </section>
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Bile Watch</p>
+            <h3>${escapeHtml(bileWatch.label)}</h3>
+          </div>
+          <span class="status-chip ${escapeAttribute(bileWatch.status)}">${escapeHtml(bileWatch.status)}</span>
+        </div>
+        <p>${escapeHtml(bileWatch.signals[0])}</p>
+        <small>${escapeHtml(bileWatch.actions[0])}</small>
       </section>
       <section class="panel">
         <p class="micro">Care timeline</p>
@@ -893,7 +906,7 @@ function renderEntryForm(prefill = {}) {
   `;
 }
 
-function renderHealthTab(health) {
+function renderHealthTab(health, bileWatch) {
   return `
     <div class="dashboard-grid">
       <section class="panel span-2">
@@ -914,6 +927,27 @@ function renderHealthTab(health) {
         <ul>
           ${health.redFlags.map((flag) => `<li>${escapeHtml(flag)}</li>`).join("")}
         </ul>
+      </section>
+      <section class="panel span-2 bile-watch-panel">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Bile Watch</p>
+            <h3>Empty-stomach pattern</h3>
+          </div>
+          <span class="status-chip ${escapeAttribute(bileWatch.status)}">${escapeHtml(bileWatch.label)}</span>
+        </div>
+        <div class="bile-watch-grid">
+          ${renderStat("Food gap", bileWatch.hoursSinceLastFood === null ? "No logs" : `${bileWatch.hoursSinceLastFood}h`)}
+          ${renderStat("Bile logs", bileWatch.recentYellowBileCount)}
+          ${renderStat("Bed snack", bileWatch.bedtimeSnackLogged ? "Logged" : "Missing")}
+        </div>
+        <div class="signal-list">
+          ${bileWatch.signals.map((signal) => `<p>${escapeHtml(signal)}</p>`).join("")}
+        </div>
+        <ul class="action-list">
+          ${bileWatch.actions.map((action) => `<li>${escapeHtml(action)}</li>`).join("")}
+        </ul>
+        <p class="notification-boundary">${escapeHtml(bileWatch.vetBoundary)}</p>
       </section>
       <section class="panel">
         <p class="micro">Health timeline</p>

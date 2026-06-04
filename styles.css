@@ -618,6 +618,29 @@ dd,
   font-size: 0.86rem;
 }
 
+.bile-watch-panel {
+  border-color: rgba(216, 170, 82, 0.38);
+}
+
+.bile-watch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.action-list {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding-left: 18px;
+}
+
+.action-list li {
+  color: rgba(255, 250, 241, 0.72);
+  font-size: 0.9rem;
+}
+
 .check-dot {
   display: grid;
   place-items: center;
@@ -1058,7 +1081,8 @@ textarea:focus {
   }
 
   .calendar-summary-row,
-  .reminder-summary-row {
+  .reminder-summary-row,
+  .bile-watch-grid {
     grid-template-columns: 1fr;
   }
 

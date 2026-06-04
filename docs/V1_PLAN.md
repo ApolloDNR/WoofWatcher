@@ -25,6 +25,7 @@
 - Training and social progress review with calm wins, struggle signals, dog-interaction counts, focus areas, and monthly report inclusion.
 - Quick logs for meals, walks, treats, training, social interactions, dog park visits, health, vomit, vet, weight, medication, and general notes.
 - Health watch that highlights repeat vomiting, appetite refusal, urgent severity, and veterinary red flags without diagnosing.
+- Bile Watch that highlights empty-stomach food gaps, bedtime snack coverage, yellow bile logs, appetite disruption, caregiver actions, and veterinary boundary language.
 - Editable records vault for vaccines, vet visits, weight goals, medication, microchip details, and care instructions.
 - Monthly report with export/download and print/PDF behavior.
 - Local persistence, JSON backup export/import, care room transfer export/import, reset to demo state, installable PWA shell, offline page, and Vercel-ready static/API serving.
@@ -42,6 +43,7 @@
 - Notification readiness status, permission state, due reminder payload, unsupported browser boundary, and app-open delivery boundary.
 - Editable routine normalization, ordering, add/update, and removal.
 - Caregiver profile add/update/removal, including rename migration for matching logs and exact routine owners.
+- Bile Watch food-gap thresholds, bedtime snack detection, yellow bile signal detection, report inclusion, and assistant context.
 - Goal normalization, add/update/removal, progress review, and report inclusion.
 - Record normalization, add/update/removal, and backup restore safety.
 - Caregiver handoff digest logic.

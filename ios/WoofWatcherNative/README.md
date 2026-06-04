@@ -13,7 +13,7 @@ This folder is a SwiftUI source handoff for a future native iOS app. The shipped
 
 - `WoofWatcherApp.swift`: root app entry.
 - `CareModels.swift`: Codable model types, Phoenix seed data, caregiver draft shape, routine draft shape, goal draft shape, and record draft shape.
-- `CareStore.swift`: root-owned observable store with local JSON save/load, editable caregivers, editable routines, reminder center, log-from-reminder behavior, editable goals, editable records, health watch, monthly summary, care calendar, training progress, goal review, caregiver handoff digest, and care room transfer package generation.
+- `CareStore.swift`: root-owned observable store with local JSON save/load, editable caregivers, editable routines, reminder center, log-from-reminder behavior, editable goals, editable records, health watch, Bile Watch, monthly summary, care calendar, training progress, goal review, caregiver handoff digest, and care room transfer package generation.
 - `ContentView.swift`: TabView shell for Today, Team, Reminders, Schedule, Goals, Calendar, Progress, Log, Health, Records, Report, and Helper, including shareable Today handoff and care room transfer actions.
 
 ## Verification Still Needed On macOS
@@ -27,10 +27,11 @@ This folder is a SwiftUI source handoff for a future native iOS app. The shipped
 7. Add and remove a schedule routine.
 8. Confirm Reminders shows completed, due, overdue, upcoming, and flexible care, and that Log adds a care entry.
 9. Confirm the native app can request local notification permission and schedule at least one local routine reminder.
-10. Add, edit, and remove a care goal.
-11. Add, edit, and remove a care record.
-12. Confirm the Calendar tab shows current-month logs, vomit days, review days, and selected-day evidence.
-13. Confirm the Progress tab shows training sessions, social exposure, wins, focus areas, and recent evidence.
-14. Confirm the report and helper boundary match the PWA behavior.
-15. Confirm the Today handoff shows next routine, last meal, last walk, follow-ups, and caregiver load.
-16. Confirm the care room transfer ShareLink exports importable JSON with Phoenix state and handoff context.
+10. Confirm Bile Watch shows food gap, bedtime snack coverage, yellow bile signal, and veterinary boundary.
+11. Add, edit, and remove a care goal.
+12. Add, edit, and remove a care record.
+13. Confirm the Calendar tab shows current-month logs, vomit days, review days, and selected-day evidence.
+14. Confirm the Progress tab shows training sessions, social exposure, wins, focus areas, and recent evidence.
+15. Confirm the report and helper boundary match the PWA behavior.
+16. Confirm the Today handoff shows next routine, last meal, last walk, follow-ups, and caregiver load.
+17. Confirm the care room transfer ShareLink exports importable JSON with Phoenix state and handoff context.

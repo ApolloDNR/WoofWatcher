@@ -6,6 +6,7 @@ import {
   buildReportText,
   createEntry,
   getAssistantContext,
+  getBileWatch,
   getCareCalendar,
   getCaregiverHandoff,
   getDefaultState,
@@ -386,6 +387,64 @@ test("includes caregiver handoff context in the local assistant review", () => {
   assert.equal(context.handoff.nextRoutine.label, "Midday check");
   assert.match(context.handoff.message, /Last meal: Breakfast by Apollo/);
   assert.match(context.localAnswer, /Handoff:/);
+});
+
+test("flags empty-stomach bile risk without diagnosing Phoenix", () => {
+  const state = {
+    ...getDefaultState("2026-06-03T12:00:00.000Z"),
+    entries: [
+      createEntry({ type: "meal", title: "Dinner", caregiver: "Girlfriend", occurredAt: "2026-06-04T01:00:00.000Z" }),
+      createEntry({ type: "vomit", title: "Yellow bile", caregiver: "Apollo", severity: "watch", note: "Before breakfast.", occurredAt: "2026-06-04T13:30:00.000Z" })
+    ]
+  };
+
+  const bileWatch = getBileWatch(state, "2026-06-04T14:00:00.000Z");
+
+  assert.equal(bileWatch.status, "review");
+  assert.equal(bileWatch.label, "Review");
+  assert.equal(bileWatch.hoursSinceLastFood, 13);
+  assert.equal(bileWatch.bedtimeSnackLogged, false);
+  assert.equal(bileWatch.recentYellowBileCount, 1);
+  assert.equal(bileWatch.emptyStomachWindow, true);
+  assert.match(bileWatch.signals.join(" "), /13 hours since Phoenix last logged food/);
+  assert.match(bileWatch.actions.join(" "), /bedtime snack/i);
+  assert.match(bileWatch.vetBoundary, /veterinarian/);
+});
+
+test("keeps bile watch steady when bedtime snack coverage exists", () => {
+  const state = {
+    ...getDefaultState("2026-06-03T12:00:00.000Z"),
+    entries: [
+      createEntry({ type: "meal", title: "Dinner", caregiver: "Apollo", occurredAt: "2026-06-04T01:30:00.000Z" }),
+      createEntry({ type: "treat", title: "Bedtime snack", caregiver: "Girlfriend", note: "Small snack before sleep.", occurredAt: "2026-06-04T05:30:00.000Z" })
+    ]
+  };
+
+  const bileWatch = getBileWatch(state, "2026-06-04T14:00:00.000Z");
+
+  assert.equal(bileWatch.status, "steady");
+  assert.equal(bileWatch.bedtimeSnackLogged, true);
+  assert.equal(bileWatch.emptyStomachWindow, false);
+  assert.equal(bileWatch.recentYellowBileCount, 0);
+  assert.match(bileWatch.signals.join(" "), /Bedtime snack coverage logged/);
+});
+
+test("includes bile watch in report and local assistant context", () => {
+  const state = {
+    ...getDefaultState("2026-06-03T12:00:00.000Z"),
+    entries: [
+      createEntry({ type: "meal", title: "Dinner", caregiver: "Girlfriend", occurredAt: "2026-06-04T01:00:00.000Z" }),
+      createEntry({ type: "vomit", title: "Yellow bile", caregiver: "Apollo", occurredAt: "2026-06-04T13:30:00.000Z" })
+    ]
+  };
+
+  const context = getAssistantContext(state, "Phoenix threw up yellow again", "2026-06-04T14:00:00.000Z");
+  const report = buildReportText(state, "2026-06-04T14:00:00.000Z");
+
+  assert.equal(context.bileWatch.status, "review");
+  assert.match(context.localAnswer, /Bile watch:/);
+  assert.match(report, /Bile Watch/);
+  assert.match(report, /13 hours since Phoenix last logged food/);
 });
 
 test("normalizes an editable routine without trusting malformed schedule input", () => {

@@ -664,6 +664,81 @@ export function getHealthWatch(state, now = new Date().toISOString()) {
   };
 }
 
+export function getBileWatch(state, now = new Date().toISOString()) {
+  const target = new Date(now);
+  const recent = entriesWithinDays(state.entries || [], now, 14);
+  const recentFood = entriesWithinDays(state.entries || [], now, 3)
+    .filter(isFoodEntry)
+    .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  const latestFood = recentFood[0] || null;
+  const hoursSinceLastFood = latestFood
+    ? roundHours((target.getTime() - new Date(latestFood.occurredAt).getTime()) / (60 * 60 * 1000))
+    : null;
+  const bedtimeSnackLogged = entriesWithinDays(state.entries || [], now, 2).some(isBedtimeSnackEntry);
+  const yellowBileEntries = recent.filter((entry) => entry.type === "vomit" && hasYellowBileSignal(entry));
+  const refusedMealEntries = recent.filter((entry) => entry.type === "meal" && hasAppetiteDisruption(entry));
+  const emptyStomachWindow = hoursSinceLastFood === null || hoursSinceLastFood >= 10;
+  const status =
+    hoursSinceLastFood === null || hoursSinceLastFood >= 12 || yellowBileEntries.length >= 2 || refusedMealEntries.length > 0
+      ? "review"
+      : emptyStomachWindow || yellowBileEntries.length === 1 || !bedtimeSnackLogged
+        ? "watch"
+        : "steady";
+  const signals = [];
+  const actions = [];
+
+  if (latestFood) {
+    signals.push(`${hoursSinceLastFood} hours since Phoenix last logged food (${latestFood.title}).`);
+  } else {
+    signals.push("No meal or snack has been logged in the last 3 days.");
+  }
+
+  signals.push(
+    bedtimeSnackLogged
+      ? "Bedtime snack coverage logged in the recent overnight window."
+      : "No bedtime snack coverage logged in the recent overnight window."
+  );
+
+  if (yellowBileEntries.length) {
+    signals.push(`${yellowBileEntries.length} yellow bile or bile-like vomit incident${yellowBileEntries.length === 1 ? "" : "s"} logged in the last 14 days.`);
+  }
+
+  if (refusedMealEntries.length) {
+    signals.push(`${refusedMealEntries.length} refused or skipped meal pattern${refusedMealEntries.length === 1 ? "" : "s"} logged in the last 14 days.`);
+  }
+
+  if (emptyStomachWindow) {
+    actions.push("Offer a small calm snack if Phoenix is willing and it fits her normal routine.");
+  }
+
+  if (!bedtimeSnackLogged) {
+    actions.push("Use the bedtime snack reminder when it fits her routine, then log whether it helped the next morning.");
+  }
+
+  if (yellowBileEntries.length || refusedMealEntries.length) {
+    actions.push("Track timing, appetite, energy, stool changes, and meal gaps; contact a veterinarian if the pattern repeats, worsens, or appears with any red flag.");
+  }
+
+  if (!actions.length) {
+    actions.push("Keep logging meals, bedtime snack coverage, appetite, and any bile/vomit timing.");
+  }
+
+  return {
+    status,
+    label: status === "steady" ? "Steady" : status === "watch" ? "Watch" : "Review",
+    latestFood,
+    hoursSinceLastFood,
+    bedtimeSnackLogged,
+    recentYellowBileCount: yellowBileEntries.length,
+    refusedMealCount: refusedMealEntries.length,
+    emptyStomachWindow,
+    signals,
+    actions,
+    vetBoundary:
+      "Bile Watch tracks empty-stomach and yellow-bile patterns for caregiver and veterinarian review. It is not a diagnosis."
+  };
+}
+
 export function getGoalReview(state, now = new Date().toISOString()) {
   const goals = sortGoals((state.goals || []).map(normalizeGoalInput));
   const active = goals.filter((goal) => goal.status === "active");
@@ -732,6 +807,7 @@ export function buildReportText(state, now = new Date().toISOString()) {
   const profile = state.profile || { name: "Phoenix" };
   const summary = getMonthlySummary(state, now);
   const healthWatch = getHealthWatch(state, now);
+  const bileWatch = getBileWatch(state, now);
   const goalReview = getGoalReview(state, now);
   const trainingProgress = getTrainingProgress(state, now);
   const latest = [...(state.entries || [])]
@@ -755,6 +831,12 @@ export function buildReportText(state, now = new Date().toISOString()) {
     "Health Watch",
     `Status: ${healthWatch.label}`,
     ...healthWatch.signals.map((signal) => `- ${signal}`),
+    "",
+    "Bile Watch",
+    `Status: ${bileWatch.label}`,
+    ...bileWatch.signals.map((signal) => `- ${signal}`),
+    "Care actions",
+    ...bileWatch.actions.map((action) => `- ${action}`),
     "",
     "Goal Review",
     `Active goals: ${goalReview.activeGoals}/${goalReview.totalGoals}`,
@@ -790,6 +872,7 @@ export function buildCareRoomTransfer(state, now = new Date().toISOString()) {
     handoff: getCaregiverHandoff(normalized, now),
     monthlySummary: getMonthlySummary(normalized, now),
     healthWatch: getHealthWatch(normalized, now),
+    bileWatch: getBileWatch(normalized, now),
     monthlyReport: buildReportText(normalized, now),
     state: normalized
   };
@@ -798,6 +881,7 @@ export function buildCareRoomTransfer(state, now = new Date().toISOString()) {
 export function getAssistantContext(state, question = "", now = new Date().toISOString()) {
   const summary = getMonthlySummary(state, now);
   const healthWatch = getHealthWatch(state, now);
+  const bileWatch = getBileWatch(state, now);
   const todayPlan = getTodayPlan(state, now);
   const handoff = getCaregiverHandoff(state, now);
   const reminders = getReminderCenter(state, now);
@@ -810,15 +894,16 @@ export function getAssistantContext(state, question = "", now = new Date().toISO
     profile: state.profile,
     summary,
     healthWatch,
+    bileWatch,
     todayPlan,
     reminders,
     handoff,
     latest,
-    localAnswer: buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, reminders, handoff, latest })
+    localAnswer: buildLocalAssistantAnswer({ question, summary, healthWatch, bileWatch, todayPlan, reminders, handoff, latest })
   };
 }
 
-function buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, reminders, handoff, latest }) {
+function buildLocalAssistantAnswer({ question, summary, healthWatch, bileWatch, todayPlan, reminders, handoff, latest }) {
   const asksVomiting = /vomit|throw|bile|yellow|nausea/i.test(question);
   const lines = [];
 
@@ -830,6 +915,7 @@ function buildLocalAssistantAnswer({ question, summary, healthWatch, todayPlan, 
 
   lines.push(`This month: ${summary.meals} meals, ${summary.walks} walks, ${summary.trainingSessions} training sessions, ${summary.vomitIncidents} vomit incidents.`);
   lines.push(`Health watch is ${healthWatch.label.toLowerCase()}: ${healthWatch.signals[0]}`);
+  lines.push(`Bile watch: ${bileWatch.label}. ${bileWatch.signals[0]}`);
   lines.push(`Today completed: ${todayPlan.completedCount}/${todayPlan.totalCount}. Next: ${todayPlan.nextItems[0]?.label || "routine covered"}.`);
   lines.push(`Reminders: ${reminders.message}`);
   lines.push(`Handoff: ${handoff.message}`);
@@ -1217,6 +1303,30 @@ function latestWeightEntry(entries) {
     .filter((item) => item.weight !== null)
     .sort((a, b) => new Date(b.entry.occurredAt) - new Date(a.entry.occurredAt));
   return weighted[0] || null;
+}
+
+function isFoodEntry(entry) {
+  return entry.type === "meal" || entry.type === "treat";
+}
+
+function isBedtimeSnackEntry(entry) {
+  if (!isFoodEntry(entry)) return false;
+  const text = `${entry.title || ""} ${entry.note || ""}`.toLowerCase();
+  const hour = new Date(entry.occurredAt).getHours();
+  const overnight = hour >= 20 || hour <= 2;
+  return overnight && (entry.type === "treat" || /bedtime|snack|treat/.test(text));
+}
+
+function hasYellowBileSignal(entry) {
+  return /yellow|bile/i.test(`${entry.title || ""} ${entry.note || ""} ${entry.mood || ""}`);
+}
+
+function hasAppetiteDisruption(entry) {
+  return /refus|skip|would not|did not|not eat|wouldn't/i.test(`${entry.title || ""} ${entry.mood || ""} ${entry.note || ""}`);
+}
+
+function roundHours(value) {
+  return Math.round(value * 10) / 10;
 }
 
 function parseWeight(value) {

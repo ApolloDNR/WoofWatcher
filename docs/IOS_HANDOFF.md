@@ -24,6 +24,7 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 - `RoutineDraft`: editable schedule item for meals, walks, snacks, medication, training, and ownership.
 - `ReminderCenter` and `RoutineReminder`: local routine status for completed, due, overdue, upcoming, and flexible care proof.
 - `NotificationReadiness`: native equivalent of the PWA notification model, backed by `UNUserNotificationCenter` permission state and local notification scheduling.
+- `BileWatch`: empty-stomach gap, bedtime snack proof, yellow bile signal, appetite disruption, caregiver action, and veterinarian-boundary model.
 - `CaregiverHandoff`: next routine, latest meal, latest walk, follow-ups, caregiver load, and a shareable message.
 - `CareRoomTransferPackage`: shareable/importable state package for caregiver or device handoff before account sync exists.
 - `CareCalendar`: monthly day summaries with review days, vomit days, care markers, and selected-day evidence.
@@ -46,4 +47,4 @@ These files are a handoff pack for a macOS/Xcode session, not a verified App Sto
 
 ## Verification Gate
 
-Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit caregiver profiles, can edit the schedule, complete a reminder into a care log, request local notification permission, schedule a local reminder notification, add/edit/remove goals, add/edit/remove records, add a care log, shows the care calendar and selected-day timeline, shows training/social progress, persists after relaunch, exports a report, shares a care room transfer package, shows the caregiver handoff, and shows the red-flag boundary in the helper.
+Native iOS should not be called shipped until it builds in Xcode, runs on Simulator, can edit caregiver profiles, can edit the schedule, complete a reminder into a care log, request local notification permission, schedule a local reminder notification, show Bile Watch with food-gap and bedtime-snack proof, add/edit/remove goals, add/edit/remove records, add a care log, shows the care calendar and selected-day timeline, shows training/social progress, persists after relaunch, exports a report, shares a care room transfer package, shows the caregiver handoff, and shows the red-flag boundary in the helper.

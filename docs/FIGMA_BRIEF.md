@@ -17,7 +17,8 @@ WoofWatcher is a calm care command center for Phoenix, an anxious rescued shephe
 - Calendar: monthly day grid with logged-day density, vomit/review days, care markers, and selected-day evidence.
 - Progress: training/social review with calm wins, struggle signals, dog interactions, focus areas, and recent evidence.
 - Quick Log: event form plus recent entries.
-- Health Watch: signals, red flags, health timeline.
+- Health Watch: signals, red flags, Bile Watch, health timeline.
+- Bile Watch: empty-stomach food gap, bedtime snack proof, yellow bile logs, caregiver actions, and vet boundary.
 - Records: editable vet/vaccine/weight/instruction records plus add/remove controls.
 - Report: monthly metrics, report preview, copy/download/print controls.
 - Helper: local/AI-ready question box and care-context answer.
@@ -43,3 +44,4 @@ The existing Figma file `165jvlaygkksRtXW1bA1MA` includes:
 - `WoofWatcher v1 - Care Room Transfer` at node `13:2`.
 - `WoofWatcher v1 - Care Team` at node `20:2`.
 - `WoofWatcher v1 - Reminder Center` at node `24:2`, updated with app-open notification readiness.
+- `WoofWatcher v1 - Bile Watch` at node `30:2`.

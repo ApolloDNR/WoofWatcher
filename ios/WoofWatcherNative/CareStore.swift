@@ -129,6 +129,72 @@ final class CareStore {
         return HealthWatch(status: "Steady", signals: ["No recent vomit, appetite refusal, or urgent health flags logged."])
     }
 
+    var bileWatch: BileWatch {
+        let now = Date()
+        let recent = state.entries.filter { $0.occurredAt >= now.addingTimeInterval(-14 * 24 * 3600) }
+        let recentFood = state.entries
+            .filter { $0.occurredAt >= now.addingTimeInterval(-3 * 24 * 3600) && isFoodEntry($0) }
+            .sorted { $0.occurredAt > $1.occurredAt }
+        let latestFood = recentFood.first
+        let hoursSinceLastFood = latestFood.map { ((now.timeIntervalSince($0.occurredAt) / 3600) * 10).rounded() / 10 }
+        let bedtimeSnackLogged = state.entries
+            .filter { $0.occurredAt >= now.addingTimeInterval(-2 * 24 * 3600) }
+            .contains { isBedtimeSnackEntry($0) }
+        let yellowBileEntries = recent.filter { $0.type == .vomit && hasYellowBileSignal($0) }
+        let refusedMealEntries = recent.filter { $0.type == .meal && hasAppetiteDisruption($0) }
+        let emptyStomachWindow = hoursSinceLastFood == nil || (hoursSinceLastFood ?? 0) >= 10
+        let status: String
+
+        if hoursSinceLastFood == nil || (hoursSinceLastFood ?? 0) >= 12 || yellowBileEntries.count >= 2 || !refusedMealEntries.isEmpty {
+            status = "Review"
+        } else if emptyStomachWindow || yellowBileEntries.count == 1 || !bedtimeSnackLogged {
+            status = "Watch"
+        } else {
+            status = "Steady"
+        }
+
+        var signals: [String] = []
+        var actions: [String] = []
+        if let latestFood, let hoursSinceLastFood {
+            signals.append("\(formatHours(hoursSinceLastFood)) hours since Phoenix last logged food (\(latestFood.title)).")
+        } else {
+            signals.append("No meal or snack has been logged in the last 3 days.")
+        }
+        signals.append(bedtimeSnackLogged ? "Bedtime snack coverage logged in the recent overnight window." : "No bedtime snack coverage logged in the recent overnight window.")
+        if !yellowBileEntries.isEmpty {
+            signals.append("\(yellowBileEntries.count) yellow bile or bile-like vomit incident\(yellowBileEntries.count == 1 ? "" : "s") logged in the last 14 days.")
+        }
+        if !refusedMealEntries.isEmpty {
+            signals.append("\(refusedMealEntries.count) refused or skipped meal pattern\(refusedMealEntries.count == 1 ? "" : "s") logged in the last 14 days.")
+        }
+
+        if emptyStomachWindow {
+            actions.append("Offer a small calm snack if Phoenix is willing and it fits her normal routine.")
+        }
+        if !bedtimeSnackLogged {
+            actions.append("Use the bedtime snack reminder when it fits her routine, then log whether it helped the next morning.")
+        }
+        if !yellowBileEntries.isEmpty || !refusedMealEntries.isEmpty {
+            actions.append("Track timing, appetite, energy, stool changes, and meal gaps; contact a veterinarian if the pattern repeats, worsens, or appears with any red flag.")
+        }
+        if actions.isEmpty {
+            actions.append("Keep logging meals, bedtime snack coverage, appetite, and any bile/vomit timing.")
+        }
+
+        return BileWatch(
+            status: status,
+            latestFood: latestFood,
+            hoursSinceLastFood: hoursSinceLastFood,
+            bedtimeSnackLogged: bedtimeSnackLogged,
+            recentYellowBileCount: yellowBileEntries.count,
+            refusedMealCount: refusedMealEntries.count,
+            emptyStomachWindow: emptyStomachWindow,
+            signals: signals,
+            actions: actions,
+            vetBoundary: "Bile Watch tracks empty-stomach and yellow-bile patterns for caregiver and veterinarian review. It is not a diagnosis."
+        )
+    }
+
     var monthlySummary: MonthlySummary {
         let calendar = Calendar.current
         let now = Date()
@@ -404,6 +470,12 @@ final class CareStore {
         Status: \(healthWatch.status)
         \(healthWatch.signals.map { "- \($0)" }.joined(separator: "\n"))
 
+        Bile Watch
+        Status: \(bileWatch.status)
+        \(bileWatch.signals.map { "- \($0)" }.joined(separator: "\n"))
+        Care actions
+        \(bileWatch.actions.map { "- \($0)" }.joined(separator: "\n"))
+
         Goal Review
         Active goals: \(goalReview.activeGoals)/\(goalReview.totalGoals)
         \(goalReview.highlights.map { "- \($0)" }.joined(separator: "\n"))
@@ -453,7 +525,7 @@ final class CareStore {
             ? "Phoenix has a vomit pattern worth tracking closely. Yellow bile can happen around empty-stomach windows, but this app should treat it as a pattern for veterinarian review, not a diagnosis."
             : "Phoenix's care picture is built from today's routine, logged meals, walks, training, social exposure, and health notes."
 
-        return "\(lead) This month: \(monthlySummary.meals) meals, \(monthlySummary.walks) walks, \(monthlySummary.training) training sessions, \(monthlySummary.vomit) vomit incidents. Health watch is \(healthWatch.status.lowercased()). Next routine: \(nextRoutine?.label ?? "covered"). For urgent symptoms, repeated vomiting, blood, lethargy, bloating, dehydration, toxin exposure, or not eating, contact a veterinarian or urgent care."
+        return "\(lead) This month: \(monthlySummary.meals) meals, \(monthlySummary.walks) walks, \(monthlySummary.training) training sessions, \(monthlySummary.vomit) vomit incidents. Health watch is \(healthWatch.status.lowercased()). Bile watch: \(bileWatch.status). \(bileWatch.signals.first ?? ""). Next routine: \(nextRoutine?.label ?? "covered"). For urgent symptoms, repeated vomiting, blood, lethargy, bloating, dehydration, toxin exposure, or not eating, contact a veterinarian or urgent care."
     }
 
     private func entryMatchesCaregiver(_ entry: CareEntry, _ caregiverName: String) -> Bool {
@@ -463,6 +535,35 @@ final class CareStore {
 
     private func reminderCaregiver(owner: String) -> String {
         caregiverOptions.first { namesEqual($0, owner) } ?? "Unassigned"
+    }
+
+    private func isFoodEntry(_ entry: CareEntry) -> Bool {
+        entry.type == .meal || entry.type == .treat
+    }
+
+    private func isBedtimeSnackEntry(_ entry: CareEntry) -> Bool {
+        guard isFoodEntry(entry) else { return false }
+        let text = "\(entry.title) \(entry.note)".lowercased()
+        let hour = Calendar.current.component(.hour, from: entry.occurredAt)
+        let overnight = hour >= 20 || hour <= 2
+        return overnight && (entry.type == .treat || text.contains("bedtime") || text.contains("snack") || text.contains("treat"))
+    }
+
+    private func hasYellowBileSignal(_ entry: CareEntry) -> Bool {
+        let text = "\(entry.title) \(entry.note) \(entry.mood)".lowercased()
+        return text.contains("yellow") || text.contains("bile")
+    }
+
+    private func hasAppetiteDisruption(_ entry: CareEntry) -> Bool {
+        let text = "\(entry.title) \(entry.mood) \(entry.note)".lowercased()
+        return ["refus", "skip", "would not", "did not", "not eat", "wouldn't"].contains { text.contains($0) }
+    }
+
+    private func formatHours(_ value: Double) -> String {
+        if value.truncatingRemainder(dividingBy: 1) == 0 {
+            return "\(Int(value))"
+        }
+        return "\(value)"
     }
 
     private func replaceCareReferences(from previousName: String, to nextName: String) {
@@ -714,6 +815,19 @@ final class CareStore {
 struct HealthWatch {
     var status: String
     var signals: [String]
+}
+
+struct BileWatch {
+    var status: String
+    var latestFood: CareEntry?
+    var hoursSinceLastFood: Double?
+    var bedtimeSnackLogged: Bool
+    var recentYellowBileCount: Int
+    var refusedMealCount: Int
+    var emptyStomachWindow: Bool
+    var signals: [String]
+    var actions: [String]
+    var vetBoundary: String
 }
 
 struct MonthlySummary {
