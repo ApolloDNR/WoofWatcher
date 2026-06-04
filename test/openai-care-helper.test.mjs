@@ -13,6 +13,10 @@ import {
 } from "../src/openai-care-helper.js";
 import { getAssistantContext, getDefaultState } from "../src/woof-core.js";
 
+function localIso(year, month, day, hour = 0, minute = 0) {
+  return new Date(year, month - 1, day, hour, minute, 0, 0).toISOString();
+}
+
 test("reports OpenAI status without exposing secrets", () => {
   assert.equal(isOpenAIConfigured({}), false);
   assert.equal(isOpenAIConfigured({ OPENAI_API_KEY: "sk-test" }), true);
@@ -24,7 +28,8 @@ test("reports OpenAI status without exposing secrets", () => {
 });
 
 test("compacts Phoenix context before sending it to OpenAI", () => {
-  const context = getAssistantContext(getDefaultState("2026-06-03T18:00:00.000Z"), "What happened?");
+  const careNow = localIso(2026, 6, 3, 11);
+  const context = getAssistantContext(getDefaultState(careNow), "What happened?", careNow);
   const compact = compactAssistantContext(context);
 
   assert.equal(compact.profile.name, "Phoenix");
@@ -35,7 +40,8 @@ test("compacts Phoenix context before sending it to OpenAI", () => {
 });
 
 test("builds a safe care helper input with question and compact context", () => {
-  const context = getAssistantContext(getDefaultState("2026-06-03T18:00:00.000Z"), "Yellow bile again?");
+  const careNow = localIso(2026, 6, 3, 11);
+  const context = getAssistantContext(getDefaultState(careNow), "Yellow bile again?", careNow);
   const input = buildCareHelperInput({ question: "Yellow bile again?", context });
 
   assert.match(input, /Question: Yellow bile again/);
@@ -77,7 +83,8 @@ test("calls the Responses API with server-side key and returns bounded answer", 
     };
   };
 
-  const context = getAssistantContext(getDefaultState("2026-06-03T18:00:00.000Z"), "Yellow bile again?");
+  const careNow = localIso(2026, 6, 3, 11);
+  const context = getAssistantContext(getDefaultState(careNow), "Yellow bile again?", careNow);
   const result = await createOpenAICareAnswer({
     question: "Yellow bile again?",
     context,

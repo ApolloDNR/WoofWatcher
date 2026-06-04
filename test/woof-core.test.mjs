@@ -32,6 +32,10 @@ import {
   upsertRoutine
 } from "../src/woof-core.js";
 
+function localIso(year, month, day, hour = 0, minute = 0) {
+  return new Date(year, month - 1, day, hour, minute, 0, 0).toISOString();
+}
+
 test("normalizes a meal entry with caregiver context and Phoenix-specific appetite notes", () => {
   const entry = createEntry({
     type: "meal",
@@ -157,12 +161,12 @@ test("builds a reminder center from today's routine proof", () => {
   const withEntries = {
     ...state,
     entries: [
-      createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: "2026-06-03T14:00:00.000Z" }),
-      createEntry({ type: "walk", title: "Morning walk", caregiver: "Apollo", occurredAt: "2026-06-03T15:00:00.000Z" })
+      createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: localIso(2026, 6, 3, 7) }),
+      createEntry({ type: "walk", title: "Morning walk", caregiver: "Apollo", occurredAt: localIso(2026, 6, 3, 8) })
     ]
   };
 
-  const reminders = getReminderCenter(withEntries, "2026-06-04T01:45:00.000Z");
+  const reminders = getReminderCenter(withEntries, localIso(2026, 6, 3, 18, 45));
   const breakfast = reminders.items.find((item) => item.label === "Breakfast");
   const dinner = reminders.items.find((item) => item.label === "Dinner");
   const eveningWalk = reminders.items.find((item) => item.label === "Evening walk");
@@ -201,7 +205,7 @@ test("flags overdue and unscheduled reminders without inventing completed care",
     entries: []
   };
 
-  const reminders = getReminderCenter(state, "2026-06-03T23:00:00.000Z");
+  const reminders = getReminderCenter(state, localIso(2026, 6, 3, 16));
   const morningWalk = reminders.items.find((item) => item.label === "Morning walk");
   const weightCheck = reminders.items.find((item) => item.label === "Weight check");
 
@@ -221,12 +225,12 @@ test("builds notification readiness without claiming closed-app push", () => {
   const withEntries = {
     ...state,
     entries: [
-      createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: "2026-06-03T14:00:00.000Z" }),
-      createEntry({ type: "walk", title: "Morning walk", caregiver: "Apollo", occurredAt: "2026-06-03T15:00:00.000Z" })
+      createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: localIso(2026, 6, 3, 7) }),
+      createEntry({ type: "walk", title: "Morning walk", caregiver: "Apollo", occurredAt: localIso(2026, 6, 3, 8) })
     ]
   };
 
-  const notification = getNotificationCenter(withEntries, "2026-06-04T01:45:00.000Z", {
+  const notification = getNotificationCenter(withEntries, localIso(2026, 6, 3, 18, 45), {
     supported: true,
     permission: "default"
   });
@@ -257,11 +261,11 @@ test("flags due notifications when permission is granted and blocks unsupported 
     entries: []
   };
 
-  const enabled = getNotificationCenter(state, "2026-06-04T01:45:00.000Z", {
+  const enabled = getNotificationCenter(state, localIso(2026, 6, 3, 18, 45), {
     supported: true,
     permission: "granted"
   });
-  const unsupported = getNotificationCenter(state, "2026-06-04T01:45:00.000Z", {
+  const unsupported = getNotificationCenter(state, localIso(2026, 6, 3, 18, 45), {
     supported: false,
     permission: "default"
   });
@@ -325,8 +329,8 @@ test("renames a caregiver profile and keeps logs, routine ownership, handoff, an
       note: "Short settling walk before bedtime."
     }),
     entries: [
-      createEntry({ type: "meal", title: "Dinner", caregiver: "Girlfriend", occurredAt: "2026-06-03T23:30:00.000Z" }),
-      createEntry({ type: "walk", title: "Evening walk", caregiver: "Girlfriend", occurredAt: "2026-06-04T03:00:00.000Z" })
+      createEntry({ type: "meal", title: "Dinner", caregiver: "Girlfriend", occurredAt: localIso(2026, 6, 3, 18, 30) }),
+      createEntry({ type: "walk", title: "Evening walk", caregiver: "Girlfriend", occurredAt: localIso(2026, 6, 3, 20) })
     ]
   };
 
@@ -334,10 +338,10 @@ test("renames a caregiver profile and keeps logs, routine ownership, handoff, an
     state,
     "Girlfriend",
     { name: "Maya", role: "Evening caregiver" },
-    "2026-06-04T04:00:00.000Z"
+    localIso(2026, 6, 3, 21)
   );
-  const handoff = getCaregiverHandoff(updated, "2026-06-04T04:00:00.000Z");
-  const report = buildReportText(updated, "2026-06-04T04:00:00.000Z");
+  const handoff = getCaregiverHandoff(updated, localIso(2026, 6, 3, 21));
+  const report = buildReportText(updated, localIso(2026, 6, 3, 21));
 
   assert.equal(updated.caregivers.some((caregiver) => caregiver.name === "Girlfriend"), false);
   assert.equal(updated.caregivers.find((caregiver) => caregiver.name === "Maya").role, "Evening caregiver");
@@ -415,12 +419,12 @@ test("keeps bile watch steady when bedtime snack coverage exists", () => {
   const state = {
     ...getDefaultState("2026-06-03T12:00:00.000Z"),
     entries: [
-      createEntry({ type: "meal", title: "Dinner", caregiver: "Apollo", occurredAt: "2026-06-04T01:30:00.000Z" }),
-      createEntry({ type: "treat", title: "Bedtime snack", caregiver: "Girlfriend", note: "Small snack before sleep.", occurredAt: "2026-06-04T05:30:00.000Z" })
+      createEntry({ type: "meal", title: "Dinner", caregiver: "Apollo", occurredAt: localIso(2026, 6, 3, 18, 30) }),
+      createEntry({ type: "treat", title: "Bedtime snack", caregiver: "Girlfriend", note: "Small snack before sleep.", occurredAt: localIso(2026, 6, 3, 22, 30) })
     ]
   };
 
-  const bileWatch = getBileWatch(state, "2026-06-04T14:00:00.000Z");
+  const bileWatch = getBileWatch(state, localIso(2026, 6, 4, 7));
 
   assert.equal(bileWatch.status, "steady");
   assert.equal(bileWatch.bedtimeSnackLogged, true);
