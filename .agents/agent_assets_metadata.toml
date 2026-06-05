@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "6nXvvqwnPPLMVjQI3gI_p"
+uri = "file://artifacts/woofwatcher-mobile/assets/images/icon.png"
+type = "image"
+title = "generated_image"

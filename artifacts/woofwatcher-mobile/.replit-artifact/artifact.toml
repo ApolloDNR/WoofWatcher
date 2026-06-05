@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/woofwatcher-mobile/"
+title = "WoofWatcher Mobile"
+version = "1.0.0"
+id = "artifacts/woofwatcher-mobile"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/woofwatcher-mobile/" ]
+localPort = 25223
+
+[services.development]
+run = "pnpm --filter @workspace/woofwatcher-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/woofwatcher-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/woofwatcher-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "25223"
+BASE_PATH = "/woofwatcher-mobile/"
