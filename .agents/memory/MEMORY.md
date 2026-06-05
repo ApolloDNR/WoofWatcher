@@ -1,3 +1,1 @@
-- [Expo Router tab patterns](expo-router-tabs.md) — files prefixed with `_` are ignored as routes; center "+" tab needs `tabBarButton`, not interactive `tabBarIcon`.
-- [WoofWatcher web app structure](woofwatcher-web.md) — real entry is `src/vanilla/app-entry.js`; `src/vanilla/app.js` is dead code; data getters in `woof-core.js`.
-- [WoofWatcher mobile app structure](woofwatcher-mobile.md) — painted per-mood dog PNGs (static require), data-derived mood engine in `lib/phoenixStatus.ts`, Expo-web Animated/insets gotchas.
+- [WoofWatcher Mobile](woofwatcher-mobile.md) — Expo app: only Inter 400/500/600/700 loaded, gate useNativeDriver to native, web top inset fixed, brand palette + mark.png, home data from CareContext entries.

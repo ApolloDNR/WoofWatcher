@@ -48,3 +48,15 @@ id = "V9j1mDVE0Odc18JgmDv93"
 uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/phoenix-unwell.png"
 type = "image"
 title = "phoenix unwell"
+
+[[generated]]
+id = "kcSfQsKjMEIerSp4G4FDL"
+uri = "file://artifacts/woofwatcher-mobile/assets/brand/logo.png"
+type = "image"
+title = "woofwatcher paw heart logo"
+
+[[generated]]
+id = "tdxq4Ad3JAXhw0p69bX5S"
+uri = "file://artifacts/woofwatcher-mobile/assets/brand/mark.png"
+type = "image"
+title = "woofwatcher paw heart mark"
