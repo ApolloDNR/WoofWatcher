@@ -29,6 +29,10 @@ import {
   buildTalkToLogDraft,
   createAuditEvent
 } from "./woof-operations.js";
+import {
+  buildBackendSchemaPlan,
+  buildBackendSeedDraft
+} from "./woof-backend-schema.js";
 
 export const PRODUCT_NAVIGATION = [
   { id: "phoenix", label: "Phoenix" },
@@ -88,6 +92,8 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
   const cloud = buildCloudSyncPlan(state, {}, now);
   const reportArtifact = buildReportArtifact(state, { format: "text" }, now);
   const hostedNudges = buildHostedNudgePlan(state, {}, now);
+  const backendSchema = buildBackendSchemaPlan({}, now);
+  const backendSeedDraft = buildBackendSeedDraft(state, {}, now);
 
   return {
     appName: "WoofWatcher",
@@ -169,6 +175,12 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
           now
         )
       ]
+    },
+    backend: {
+      schema: backendSchema,
+      seedDraft: backendSeedDraft,
+      boundary:
+        "Backend schema and seed drafts are planning contracts only until Apollo chooses auth, database, deployment, and privacy settings."
     },
     uiGuidance: {
       visualStatus: "functional-placeholder",

@@ -40,6 +40,8 @@ test("builds a stable five-tab product contract for UI builders", () => {
   assert.equal(model.operations.hostedNudges.packageType, "woofwatcher.hosted-nudge-plan");
   assert.equal(model.operations.talkToLogDraft.autoSave, false);
   assert.equal(model.operations.auditTrail[0].action, "sync_plan");
+  assert.equal(model.backend.schema.packageType, "woofwatcher.backend-schema-plan");
+  assert.equal(model.backend.seedDraft.status, "blocked");
 });
 
 test("keeps product contract health-safe and UI-agnostic", () => {

@@ -29,6 +29,7 @@ WoofWatcher is a local-first care command center for Phoenix, Apollo's anxious r
 - Exposes `src/woof-product-view-model.js` as a stable product contract so a future Replit/high-end UI rebuild can replace the visual layer without breaking the care model.
 - Adds `src/woof-privacy-cloud.js` for scoped Care Passes, caregiver invite drafts, role/scope access, and an honest cloud-sync readiness plan.
 - Adds `src/woof-operations.js` for audit events, talk-to-log drafts, hosted nudge planning, and monthly report artifact packaging.
+- Adds `src/woof-backend-schema.js` for provider-neutral backend schema planning and blocked seed drafts.
 
 ## Run Locally
 
@@ -139,6 +140,12 @@ Backend operations foundation notes are tracked at:
 
 ```text
 docs/BACKEND_OPERATIONS_FOUNDATION.md
+```
+
+Backend schema planning notes are tracked at:
+
+```text
+docs/BACKEND_SCHEMA_PLAN.md
 ```
 
 ## Completion Audit

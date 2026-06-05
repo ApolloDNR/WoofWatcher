@@ -22,6 +22,8 @@ Keep building backend/functions/codebase first. Treat the current UI as a test h
   - Now exposes `access`, `cloud`, `scopedCarePasses`, and `carePassVariants` for future UI builders.
 - `src/woof-operations.js`
   - Adds audit event, hosted nudge, talk-to-log draft, and report artifact contracts that can connect to a real backend later.
+- `src/woof-backend-schema.js`
+  - Adds a provider-neutral table/index/policy/migration plan and a blocked backend seed draft.
 
 ## Care Pass Model
 
@@ -80,7 +82,7 @@ Default conflict policy:
 1. Wire audit events into local create/update/remove actions in the browser app.
 2. Connect hosted nudge jobs to a real backend/provider after privacy decisions.
 3. Add server-side PDF generation when a deployment target is chosen.
-4. Add provider-neutral database schema draft.
+4. Wire the local browser app through audit-aware operations before live sync.
 5. Add OpenAI WoofGuide live-mode smoke once the key is approved server-side.
 
 ## Still Not Implemented
