@@ -1,14 +1,16 @@
 {
-  "name": "woofwatcher",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "description": "WoofWatcher v1 care command center for Phoenix.",
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
   "scripts": {
-    "test": "node --test",
-    "check": "node --check src/woof-core.js && node --check src/woof-privacy-cloud.js && node --check src/woof-operations.js && node --check src/woof-backend-schema.js && node --check src/woof-product-view-model.js && node --check src/openai-care-helper.js && node --check src/app.js && node --check server.mjs && node --check service-worker.js && node --check api/care-helper.js && node --check scripts/capture-screenshots.mjs && node --check scripts/render-smoke.mjs",
-    "screenshots": "node scripts/capture-screenshots.mjs",
-    "smoke:render": "node scripts/render-smoke.mjs",
-    "start": "node server.mjs"
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+  },
+  "private": true,
+  "devDependencies": {
+    "prettier": "^3.8.3",
+    "typescript": "~5.9.3"
   }
 }
