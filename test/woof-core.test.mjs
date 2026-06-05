@@ -11,7 +11,9 @@ import {
   getCaregiverHandoff,
   getDefaultState,
   getGoalReview,
+  getAvatarState,
   getHealthWatch,
+  getHouseholdPulse,
   getMonthlySummary,
   getNotificationCenter,
   getReminderCenter,
@@ -78,6 +80,68 @@ test("marks vomit and urgent health entries for follow-up without making a diagn
   assert.equal(vomit.requiresFollowUp, true);
   assert.equal(urgent.requiresFollowUp, true);
   assert.equal(vomit.vetDisclaimer.includes("veterinarian"), true);
+});
+
+test("normalizes diet profile and preserves Phoenix appetite quirks", () => {
+  const state = normalizeState(
+    {
+      dietProfile: {
+        primaryFood: "Sensitive stomach kibble",
+        normalPortion: "1.5 cups",
+        mealSchedule: "Breakfast and dinner with bedtime snack",
+        toppers: "Warm water if anxious",
+        supplements: "Vet-approved probiotic",
+        bedtimeSnack: "Small biscuit before sleep",
+        treatsAllowed: "Training treats, dental chew",
+        avoid: "Rich table scraps",
+        sensitivities: "Sudden food changes",
+        appetiteQuirks: "Eats best when the house is calm",
+        vetNotes: "Track long food gaps for bile watch"
+      }
+    },
+    "2026-06-05T12:00:00.000Z"
+  );
+
+  assert.equal(state.dietProfile.primaryFood, "Sensitive stomach kibble");
+  assert.equal(state.dietProfile.normalPortion, "1.5 cups");
+  assert.equal(state.dietProfile.bedtimeSnack, "Small biscuit before sleep");
+  assert.match(state.dietProfile.appetiteQuirks, /house is calm/);
+  assert.match(state.dietProfile.vetNotes, /bile watch/);
+});
+
+test("normalizes treat, training win, and alone time logs with optional details", () => {
+  const treat = createEntry({
+    type: "treat",
+    title: "Training treat",
+    treatType: "High-value",
+    reason: "Recall practice",
+    reaction: "Focused"
+  });
+  const win = createEntry({
+    type: "training",
+    title: "Loose leash win",
+    skill: "Loose leash",
+    outcome: "win",
+    moodBefore: "excited",
+    moodAfter: "proud"
+  });
+  const alone = createEntry({
+    type: "alone",
+    title: "Home alone",
+    durationMinutes: 82,
+    aloneOutcome: "calm",
+    endedAt: "2026-06-05T20:10:00.000Z"
+  });
+
+  assert.equal(treat.treatType, "High-value");
+  assert.equal(treat.reason, "Recall practice");
+  assert.equal(treat.reaction, "Focused");
+  assert.equal(win.skill, "Loose leash");
+  assert.equal(win.outcome, "win");
+  assert.equal(win.moodAfter, "proud");
+  assert.equal(alone.type, "alone");
+  assert.equal(alone.aloneOutcome, "calm");
+  assert.equal(alone.endedAt, "2026-06-05T20:10:00.000Z");
 });
 
 test("summarizes the current month across meals, walks, social, training, and vomit logs", () => {
@@ -154,6 +218,40 @@ test("builds a handoff-aware today plan from routines and latest logs", () => {
   assert.equal(plan.completedLabels.includes("Morning walk"), true);
   assert.equal(plan.nextItems.some((item) => item.label === "Dinner"), true);
   assert.equal(plan.handoffPrompt.includes("who fed, walked, trained, or noticed symptoms"), true);
+});
+
+test("builds Household Pulse with daily status and careful language", () => {
+  const state = {
+    ...getDefaultState("2026-06-05T12:00:00.000Z"),
+    entries: [
+      createEntry({ type: "meal", title: "Breakfast", caregiver: "Apollo", occurredAt: "2026-06-05T14:00:00.000Z" }),
+      createEntry({ type: "walk", title: "Morning walk", caregiver: "Girlfriend", occurredAt: "2026-06-05T15:00:00.000Z" }),
+      createEntry({ type: "vomit", title: "Yellow bile", caregiver: "Apollo", occurredAt: "2026-06-05T16:00:00.000Z" })
+    ]
+  };
+
+  const pulse = getHouseholdPulse(state, "2026-06-05T18:00:00.000Z");
+
+  assert.equal(pulse.label, "Household Pulse");
+  assert.match(pulse.summary, /Phoenix/);
+  assert.equal(pulse.timeline.length, 3);
+  assert.equal(pulse.nextAction.label, "Midday check");
+  assert.match(pulse.healthBoundary, /not veterinary advice/);
+});
+
+test("chooses Phoenix avatar state from evidence without diagnosing", () => {
+  const state = {
+    ...getDefaultState("2026-06-05T12:00:00.000Z"),
+    entries: [createEntry({ type: "vomit", title: "Yellow bile", occurredAt: "2026-06-05T16:00:00.000Z" })]
+  };
+
+  const avatar = getAvatarState(state, "2026-06-05T18:00:00.000Z");
+
+  assert.equal(avatar.mood, "tummy-watch");
+  assert.equal(avatar.urgency, "watch");
+  assert.match(avatar.speech, /tummy/);
+  assert.match(avatar.evidence.join(" "), /vomit/i);
+  assert.doesNotMatch(avatar.speech, /diagnosed|treat/i);
 });
 
 test("builds a reminder center from today's routine proof", () => {

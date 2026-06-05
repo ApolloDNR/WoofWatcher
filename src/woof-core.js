@@ -3,8 +3,14 @@ const ENTRY_TYPES = new Set([
   "treat",
   "walk",
   "park",
+  "potty",
+  "poop",
+  "pee",
+  "play",
   "training",
   "social",
+  "mood",
+  "alone",
   "vomit",
   "health",
   "vet",
@@ -22,8 +28,14 @@ const TYPE_DEFAULT_TITLES = {
   treat: "Treat",
   walk: "Walk",
   park: "Dog park",
+  potty: "Potty",
+  poop: "Poop",
+  pee: "Pee",
+  play: "Play",
   training: "Training",
   social: "Social interaction",
+  mood: "Mood check",
+  alone: "Alone time",
   vomit: "Vomit incident",
   health: "Health note",
   vet: "Vet record",
@@ -54,6 +66,19 @@ export function getDefaultState(now = new Date().toISOString()) {
       { name: "Apollo", role: "Primary caregiver" },
       { name: "Girlfriend", role: "Primary caregiver" }
     ],
+    dietProfile: {
+      primaryFood: "Regular kibble Phoenix tolerates well",
+      normalPortion: "1 to 1.5 cups per meal, adjusted gently",
+      mealSchedule: "Breakfast, dinner, and a small bedtime snack",
+      toppers: "Warm water or gentle topper only when needed",
+      supplements: "Only vet-approved supplements",
+      bedtimeSnack: "Small snack before sleep to reduce long empty-stomach windows",
+      treatsAllowed: "Training treats and simple chews",
+      avoid: "Rich table scraps and sudden food changes",
+      sensitivities: "Food anxiety and long meal gaps",
+      appetiteQuirks: "Eats best when the house is calm and nobody pressures her",
+      vetNotes: "Track appetite, refused meals, and yellow bile patterns for vet review"
+    },
     routines: [
       {
         id: "routine_breakfast",
@@ -200,6 +225,7 @@ export function normalizeState(input = {}, now = new Date().toISOString()) {
   const defaults = getDefaultState(source.createdAt || now);
   const profile = typeof source.profile === "object" && source.profile ? source.profile : {};
   const weight = typeof profile.weight === "object" && profile.weight ? profile.weight : {};
+  const dietProfile = typeof source.dietProfile === "object" && source.dietProfile ? source.dietProfile : {};
 
   return {
     ...defaults,
@@ -214,6 +240,7 @@ export function normalizeState(input = {}, now = new Date().toISOString()) {
       }
     },
     caregivers: Array.isArray(source.caregivers) && source.caregivers.length ? source.caregivers.map(normalizeCaregiver) : defaults.caregivers,
+    dietProfile: normalizeDietProfileInput({ ...defaults.dietProfile, ...dietProfile }),
     routines: Array.isArray(source.routines) ? sortRoutines(source.routines.map(normalizeRoutineInput)) : defaults.routines,
     goals: Array.isArray(source.goals) ? sortGoals(source.goals.map(normalizeGoalInput)) : defaults.goals,
     records: Array.isArray(source.records) ? source.records.map(normalizeRecordInput) : defaults.records,
@@ -286,9 +313,38 @@ export function normalizeEntryInput(input = {}) {
     durationMinutes: clampWholeNumber(input.durationMinutes),
     dogInteractions: clampWholeNumber(input.dogInteractions),
     amount: cleanText(input.amount),
+    food: cleanText(input.food),
+    portionOffered: cleanText(input.portionOffered),
+    portionEaten: cleanText(input.portionEaten),
+    appetite: cleanText(input.appetite),
+    treatType: cleanText(input.treatType),
+    reason: cleanText(input.reason),
+    reaction: cleanText(input.reaction),
+    skill: cleanText(input.skill),
+    outcome: cleanText(input.outcome),
+    moodBefore: cleanText(input.moodBefore),
     mood: cleanText(input.mood),
+    moodAfter: cleanText(input.moodAfter),
+    aloneOutcome: cleanText(input.aloneOutcome),
+    endedAt: input.endedAt ? normalizeDate(input.endedAt) : "",
     note: cleanText(input.note),
     severity
+  };
+}
+
+export function normalizeDietProfileInput(input = {}) {
+  return {
+    primaryFood: cleanText(input.primaryFood) || "Food not set",
+    normalPortion: cleanText(input.normalPortion) || "Portion not set",
+    mealSchedule: cleanText(input.mealSchedule) || "Schedule not set",
+    toppers: cleanText(input.toppers),
+    supplements: cleanText(input.supplements),
+    bedtimeSnack: cleanText(input.bedtimeSnack),
+    treatsAllowed: cleanText(input.treatsAllowed),
+    avoid: cleanText(input.avoid),
+    sensitivities: cleanText(input.sensitivities),
+    appetiteQuirks: cleanText(input.appetiteQuirks),
+    vetNotes: cleanText(input.vetNotes)
   };
 }
 
@@ -636,6 +692,150 @@ export function getCaregiverHandoff(state, now = new Date().toISOString()) {
   };
 }
 
+export function getHouseholdPulse(state, now = new Date().toISOString()) {
+  const plan = getTodayPlan(state, now);
+  const handoff = getCaregiverHandoff(state, now);
+  const health = getHealthWatch(state, now);
+  const todayEntries = entriesForLocalDay(state.entries || [], now).sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  const timeline = todayEntries.slice(0, 6).map((entry) => ({
+    id: entry.id,
+    type: entry.type,
+    title: entry.title,
+    caregiver: entry.caregiver,
+    occurredAt: entry.occurredAt,
+    label: `${entry.title} by ${entry.caregiver}`,
+    detail: entry.note || entry.mood || entry.appetite || entry.outcome || ""
+  }));
+  const nextAction = plan.nextItems[0] || {
+    label: "Routine covered",
+    type: "note",
+    time: "Today",
+    owner: "Phoenix's humans",
+    note: "No scheduled care is currently waiting."
+  };
+  const latest = timeline[0];
+  const summary = latest
+    ? `Phoenix has ${plan.completedCount}/${plan.totalCount} routine items covered. Latest: ${latest.title} by ${latest.caregiver}.`
+    : `Phoenix has ${plan.completedCount}/${plan.totalCount} routine items covered. Start with the next planned care item.`;
+
+  return {
+    label: "Household Pulse",
+    summary,
+    nextAction,
+    completedCount: plan.completedCount,
+    totalCount: plan.totalCount,
+    humans: handoff.caregiverLoad,
+    timeline,
+    healthStatus: health.label,
+    healthBoundary: "Household Pulse is shared care context, not veterinary advice."
+  };
+}
+
+export function getAvatarState(state, now = new Date().toISOString()) {
+  const normalized = normalizeState(state, now);
+  const reminders = getReminderCenter(normalized, now);
+  const plan = getTodayPlan(normalized, now);
+  const health = getHealthWatch(normalized, now);
+  const bileWatch = getBileWatch(normalized, now);
+  const todayEntries = entriesForLocalDay(normalized.entries || [], now).sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  const latestVomit = todayEntries.find((entry) => entry.type === "vomit");
+  const activeAlone = todayEntries.find((entry) => entry.type === "alone" && !entry.endedAt);
+  const latestTrainingWin = todayEntries.find((entry) => entry.type === "training" && /win|good|calm|brave|proud/i.test(`${entry.title} ${entry.outcome} ${entry.note} ${entry.moodAfter}`));
+  const walkPlanned = reminders.items.find((item) => item.type === "walk" && (item.status === "due" || item.status === "upcoming"));
+  const overdueWalk = reminders.items.find((item) => item.type === "walk" && item.status === "overdue");
+  const foodGapEvidence = bileWatch.emptyStomachWindow ? `${bileWatch.hoursSinceLastFood} hours since food` : "";
+
+  if (latestVomit || health.status === "review" || bileWatch.status === "review") {
+    const urgentReview =
+      latestVomit?.severity === "urgent" ||
+      health.signals.some((signal) => /repeated|urgent|red flag/i.test(signal)) ||
+      bileWatch.signals.some((signal) => /repeated|urgent|red flag/i.test(signal));
+    return avatarState({
+      mood: "tummy-watch",
+      urgency: urgentReview ? "review" : "watch",
+      scene: "tummy-watch",
+      speech: "My tummy was weird. Let's keep an eye on me and save the details for the vet if it repeats.",
+      suggestedAction: "Check appetite and energy",
+      evidence: [latestVomit ? `Latest vomit log: ${latestVomit.title}` : "", health.signals[0], bileWatch.signals[0]].filter(Boolean)
+    });
+  }
+
+  if (activeAlone) {
+    return avatarState({
+      mood: "home-alone",
+      urgency: "watch",
+      scene: "home-alone",
+      speech: "I'm holding down the house. Log how I did when you get back.",
+      suggestedAction: "End alone time",
+      evidence: [`Alone time started ${formatDateTime(activeAlone.occurredAt)}`]
+    });
+  }
+
+  if (overdueWalk) {
+    return avatarState({
+      mood: "bored",
+      urgency: "watch",
+      scene: "living-room",
+      speech: "I have inspected the room twice. A sniff walk would improve my leadership skills.",
+      suggestedAction: `Start ${overdueWalk.label}`,
+      evidence: [`${overdueWalk.label} is overdue`, reminders.message]
+    });
+  }
+
+  if (walkPlanned) {
+    return avatarState({
+      mood: "excited",
+      urgency: "steady",
+      scene: "walk-path",
+      speech: "Adventure is scheduled. I am emotionally preparing my paws.",
+      suggestedAction: `${walkPlanned.label} at ${walkPlanned.time}`,
+      evidence: [`${walkPlanned.label} is ${walkPlanned.statusLabel.toLowerCase()}`]
+    });
+  }
+
+  if (latestTrainingWin) {
+    return avatarState({
+      mood: "proud",
+      urgency: "steady",
+      scene: "training-win",
+      speech: "I was brave. Please update my resume.",
+      suggestedAction: "Celebrate training win",
+      evidence: [`Training win: ${latestTrainingWin.title}`]
+    });
+  }
+
+  if (bileWatch.emptyStomachWindow) {
+    return avatarState({
+      mood: "hungry-watch",
+      urgency: "watch",
+      scene: "kitchen",
+      speech: "My snack committee may need to meet soon.",
+      suggestedAction: "Offer normal snack if appropriate",
+      evidence: [foodGapEvidence, bileWatch.signals[0]].filter(Boolean)
+    });
+  }
+
+  if (plan.completedCount >= plan.totalCount && plan.totalCount > 0) {
+    return avatarState({
+      mood: "calm",
+      urgency: "steady",
+      scene: "cozy-home",
+      speech: "Care is covered. I will now supervise the household from a comfortable location.",
+      suggestedAction: "Review today's notes",
+      evidence: [`${plan.completedCount}/${plan.totalCount} routines covered`]
+    });
+  }
+
+  return avatarState({
+    mood: "ready",
+    urgency: "steady",
+    scene: "morning-yard",
+    speech: "Let's make today amazing.",
+    suggestedAction: plan.nextItems[0] ? `${plan.nextItems[0].label} at ${plan.nextItems[0].time}` : "Log Phoenix's next moment",
+    evidence: [plan.nextItems[0] ? `Next planned care: ${plan.nextItems[0].label}` : "No urgent care signals"]
+  });
+}
+
 export function getHealthWatch(state, now = new Date().toISOString()) {
   const recent = entriesWithinDays(state.entries || [], now, 14);
   const vomitCount = countType(recent, "vomit");
@@ -926,6 +1126,17 @@ function buildLocalAssistantAnswer({ question, summary, healthWatch, bileWatch, 
 
   lines.push("For urgent symptoms, repeated vomiting, blood, lethargy, bloating, dehydration, toxin exposure, or not eating, contact a veterinarian or urgent care.");
   return lines.join(" ");
+}
+
+function avatarState({ mood, urgency, scene, speech, suggestedAction, evidence = [] }) {
+  return {
+    mood,
+    urgency,
+    scene,
+    speech,
+    suggestedAction,
+    evidence
+  };
 }
 
 function cleanText(value) {
