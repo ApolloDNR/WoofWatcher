@@ -25,6 +25,8 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back", headerTintColor: "#2E5846" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="variant-a" options={{ headerShown: false }} />
+      <Stack.Screen name="variant-b" options={{ headerShown: false }} />
       <Stack.Screen name="woofguide" options={{ title: "WoofGuide", presentation: "card", headerStyle: { backgroundColor: "#F7F5F1" } }} />
     </Stack>
   );

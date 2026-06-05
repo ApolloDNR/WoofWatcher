@@ -27,3 +27,17 @@ description: How the Expo mobile home screen, mood engine, and painted dog art f
   use `Platform.OS === "web"` branches rather than trusting `useSafeAreaInsets()`.
 - Pre-existing TS error in `hooks/useColors.ts` (radius vs index signature cast) is
   scaffold noise — out of scope, not from feature work.
+
+## Previewing the RN home screen on the canvas
+- The `mockup-sandbox` is React-web only (no react-native / react-native-web /
+  svg / expo deps) — it **cannot render** the Expo home screen. Don't try to
+  extract RN into it or hand-code a web approximation.
+- Instead, build variant screens as **real Expo routes** (`app/variant-*.tsx`,
+  registered in `_layout.tsx` with `headerShown:false`) and embed each route URL
+  (`$EXPO_DOMAIN/variant-x`) as a live canvas iframe. Real RN, exact fidelity.
+- Heading font: only Inter 400/500/600/700 are loaded in `_layout.tsx`. The
+  original home referenced `Inter_800ExtraBold` (silently falls back) — use
+  `Inter_700Bold` for headings.
+- When refining/duplicating the home screen, preserve the **full 10-item**
+  `QUICK_LOG` (incl. `vomit`/`alone`) — dropping items quietly removes one-tap
+  logging (caught in review).
