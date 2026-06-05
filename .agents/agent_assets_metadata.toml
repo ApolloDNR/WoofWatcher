@@ -18,3 +18,33 @@ id = "m9WvwWXCiHV4ft9RFprmu"
 uri = "file://artifacts/woofwatcher/public/phoenix-avatar.png"
 type = "image"
 title = "phoenix avatar portrait"
+
+[[generated]]
+id = "L6GWfxbPec4wTiCwg2Dl0"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/phoenix-happy.png"
+type = "image"
+title = "phoenix happy"
+
+[[generated]]
+id = "6IEj2HEHxhHyFBl81Y9wW"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/phoenix-excited.png"
+type = "image"
+title = "phoenix excited"
+
+[[generated]]
+id = "icq_ZUah-GB_Oz8yhnpY4"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/phoenix-calm.png"
+type = "image"
+title = "phoenix calm"
+
+[[generated]]
+id = "tMlqtxTzEewupNIXIFVho"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/phoenix-anxious.png"
+type = "image"
+title = "phoenix anxious"
+
+[[generated]]
+id = "V9j1mDVE0Odc18JgmDv93"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/phoenix-unwell.png"
+type = "image"
+title = "phoenix unwell"
