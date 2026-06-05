@@ -95,6 +95,18 @@ The generated v1 concept is saved at:
 docs/woofwatcher-v1-concept.png
 ```
 
+The 2026-06-05 product vision lock is tracked at:
+
+```text
+docs/VISION_LOCK.md
+```
+
+The approved visual lock design spec is tracked at:
+
+```text
+docs/superpowers/specs/2026-06-05-woofwatcher-visual-lock-design.md
+```
+
 ## Completion Audit
 
 Current proof and remaining gates are tracked in:

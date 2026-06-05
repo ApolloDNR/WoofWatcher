@@ -4,7 +4,9 @@ Use this brief to recreate or refine the v1 screen in Figma.
 
 ## Product Direction
 
-WoofWatcher is a calm care command center for Phoenix, an anxious rescued shepherd mix. It should feel useful to two adults coordinating real care, not like a cute pet novelty app.
+WoofWatcher is a living care companion for Phoenix, an anxious rescued shepherd mix. The v1 foundation is a serious local-first care command center; the next approved design layer should make Phoenix feel like the interface while preserving mature health, privacy, and household coordination boundaries.
+
+Design posture: Premium Playful Storybook Utility. It can be visual, warm, animated, and emotionally alive, but it should not become a childish pet novelty app or a cluttered dashboard.
 
 ## Required Screens
 
@@ -23,18 +25,44 @@ WoofWatcher is a calm care command center for Phoenix, an anxious rescued shephe
 - Report: monthly metrics, report preview, copy/download/print controls.
 - Helper: local/AI-ready question box and care-context answer.
 
+## Vision-Lock Frames To Add After Approval
+
+- Phoenix Home: avatar scene, current mood, next best action, Household Pulse, and quick actions.
+- Effortless Log: one-tap grid plus optional smart detail for meal, treat, walk, potty, mood, vomit, training win, alone time, medication, vet, and note.
+- Plans: scheduled walks, meals, bedtime snacks, training sessions, vet visits, and alone-time windows.
+- Household Pulse: daily shared status for Phoenix's humans, replacing everyday handoff language.
+- Care Pass: formal vet/sitter/trainer/emergency export surface with diet snapshot, health watch, records, behavior notes, and non-diagnostic boundary.
+- Diet Profile: usual food, portions, toppers, supplements, treats, bedtime snack routine, foods to avoid, sensitivities, appetite quirks, and vet notes.
+- WoofGuide Memory: natural-language "tell me about Phoenix" onboarding and editable memory cards.
+
 ## Visual System
 
-- Background: Midnight `#1A2332` and Navy `#243044`.
-- Accent: Copper `#C87A3A`, used sparingly for action and status.
-- Surfaces: Cream/off-white text and report panels.
+- App background: warm ivory `#F7F5F1`.
+- Shell/rail: deep navy `#0F1F33`.
+- Primary action/success: forest `#2E5B46`.
+- Soft panels: sage `#D6E0D2`.
+- Accent: copper `#B8643D`, used sparingly for warmth, personality, and status.
+- Dividers/secondary surfaces: stone `#E5E2DC`.
+- Text: deep navy or near-charcoal on light surfaces; cream/off-white on navy surfaces.
 - Supporting signals: sage for steady, amber for watch, rose for review.
 - Radius: 8px or less for panels and controls.
 - Typography: Inter or system UI; no playful pet-store type.
+- Avatar: illustrated Phoenix can be expressive and animated, but professional guidance must come from WoofGuide, not from Phoenix pretending to be a clinician.
+- Nudge tone: warm and funny for routine moments, calm and careful for health moments, never shame-based.
+
+## Naming Corrections
+
+- Use `WoofWatcher`, not `Woof Watcher`.
+- Use `Phoenix`, not `Dashboard`.
+- Use `Household Pulse`, not daily handoff.
+- Use `Care Pass` for formal export/share surfaces.
+- Use `WoofGuide`, not Woof Assistant.
 
 ## Current Reference
 
 Use `docs/woofwatcher-v1-concept.png` as the initial concept reference, but the implementation corrects detail drift from the generated image: Phoenix is referred to as a female rescued shepherd mix by context, and the app avoids fake medical certainty.
+
+The current product lock is documented in `docs/VISION_LOCK.md`. The approved visual design spec is `docs/superpowers/specs/2026-06-05-woofwatcher-visual-lock-design.md`.
 
 The existing Figma file `165jvlaygkksRtXW1bA1MA` includes:
 

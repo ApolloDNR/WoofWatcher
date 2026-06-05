@@ -10,6 +10,21 @@
 
 ---
 
+## Vision Lock
+
+The 2026-06-05 vision source import is tracked in `docs/VISION_LOCK.md`. It reframes the next product layer around Phoenix as the interface, not around adding more dashboard panels.
+
+The existing v1 implementation remains the proven local-first care engine. The next approved build slice should reshape that engine around:
+
+- Phoenix Home and a deterministic Avatar State Engine.
+- Effortless three-layer logging.
+- Household Pulse for daily shared status.
+- Care Pass for formal external sharing.
+- First-class Diet Profile, Treat Log, Training Win, and Alone Time objects.
+- WoofGuide memory and Talk-to-log as later assistant layers.
+
+The approved visual lock is `Premium Playful Storybook Utility`, documented in `docs/superpowers/specs/2026-06-05-woofwatcher-visual-lock-design.md`.
+
 ## Functional Scope
 
 - Phoenix profile with rescue/anxiety-aware notes.
@@ -30,6 +45,18 @@
 - Monthly report with export/download and print/PDF behavior.
 - Local persistence, JSON backup export/import, care room transfer export/import, reset to demo state, installable PWA shell, offline page, and Vercel-ready static/API serving.
 - AI-ready assistant panel that summarizes Phoenix context locally and can call `/api/care-helper` for a live OpenAI Responses API answer when `OPENAI_API_KEY` is configured server-side.
+
+## Next Vision Layer
+
+These are product-lock targets, not claims about the already shipped local PWA:
+
+- Rename the everyday handoff mental model to Household Pulse and reserve Care Pass for vet/sitter/trainer/boarding/emergency export.
+- Collapse the user-facing app structure toward `Phoenix`, `Log`, `Plans`, `Health`, and `More`.
+- Add Diet Profile with usual food, portions, toppers, supplements, bedtime snack routine, treats allowed, foods to avoid, sensitivities, appetite quirks, and vet notes.
+- Separate Meal Log and Treat Log so diet history can explain appetite, treat-heavy days, bedtime snack proof, and Bile Watch context.
+- Make Training Win and Alone Time first-class quick-log event types.
+- Keep Phoenix as the avatar/personality layer while WoofGuide remains the careful assistant with explicit non-veterinary boundaries.
+- Add a deterministic Avatar State Engine before adding more dashboards.
 
 ## Test Plan
 

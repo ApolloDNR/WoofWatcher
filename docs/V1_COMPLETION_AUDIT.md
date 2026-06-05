@@ -1,6 +1,6 @@
 # WoofWatcher v1 Completion Audit
 
-Last audited: 2026-06-04
+Last audited: 2026-06-05
 
 ## Verdict
 
@@ -15,6 +15,8 @@ WoofWatcher v1 is a functional local-first PWA and private GitHub project. It is
 - Vercel projects visible on Apollo team: `pegasus-hq-operating-system` only; no WoofWatcher Vercel project exists yet.
 - Figma file: `165jvlaygkksRtXW1bA1MA`
 - Current Figma frames: Phoenix Care Command, Goals & Milestones, Care Calendar, Training Progress, Care Room Transfer, Care Team, Reminder Center, and Bile Watch.
+- Vision source import: `docs/VISION_LOCK.md` imports the 2026-06-05 ChatGPT shared conversation `UI Design Help` as the next product direction.
+- Visual lock: Apollo approved the warm illustrated `Premium Playful Storybook Utility` direction from the iCloud concept references on 2026-06-05.
 - Local Windows tool gaps: `npm`, `swift`, and `xcodebuild` are not on PATH in this session.
 - Chrome extension-backed browser control is still unavailable in this session because the browser-control kernel exits during setup with `windows sandbox failed: spawn setup refresh`.
 
@@ -35,21 +37,31 @@ WoofWatcher v1 is a functional local-first PWA and private GitHub project. It is
 | Native iOS direction | SwiftUI source handoff mirrors the care model and UI surface. This Windows session cannot build/run it. | `ios/WoofWatcherNative`, `docs/IOS_HANDOFF.md`, no `swift`/`xcodebuild`. | Source-ready, unbuilt |
 | Figma design parity | Main v1 frames exist for most major surfaces, including Bile Watch. Standalone Schedule and newer Handoff digest frames remain next design parity work. | Figma inspection: eight top-level frames in `WoofWatcher v1`. | Mostly complete |
 | Chrome/browser verification | Chrome DOM fallback render smoke passes in project script. Chrome extension-backed control remains unavailable in this Windows sandbox. | `scripts/render-smoke.mjs`; extension setup failure. | Partially verified |
+| Vision lock | The imported source reframes the next slice around Phoenix as the interface, Household Pulse, Care Pass, effortless logging, Diet/Treats/Training Wins/Alone Time, WoofGuide memory, Talk-to-log, and nudge budget. | `docs/VISION_LOCK.md`, `docs/SOURCES.md`. | Approved direction, not implemented |
+| Visual lock | Apollo approved the iCloud concept lane as the base visual direction, corrected to WoofWatcher naming, Phoenix-first navigation, Household Pulse, Care Pass, WoofGuide, and Plans. | `docs/superpowers/specs/2026-06-05-woofwatcher-visual-lock-design.md`, `docs/FIGMA_BRIEF.md`. | Approved design spec, not implemented |
 
 ## Remaining Gates
 
 1. Decide whether WoofWatcher should be deployed to Vercel now, and whether that deployment should be public, protected, or kept local until account/privacy decisions are made.
 2. If live AI mode is desired, configure `OPENAI_API_KEY` server-side only and run `/api/care-helper` smoke without exposing the key.
 3. Build and run the SwiftUI source on macOS/Xcode before calling native iOS shipped.
-4. Add standalone Figma Schedule and Handoff frames if deeper design parity is required before handoff.
+4. Add standalone Figma Schedule and Handoff/Household Pulse/Care Pass frames if deeper design parity is required before implementation handoff.
 5. Retry browser extension-backed QA after the Chrome plugin/kernel setup issue is repaired; otherwise continue using Chrome DOM fallback for local rendered smoke.
 
 ## Recommended Next Slice
 
-The next best implementation slice is not new app behavior. It is a deploy/privacy decision:
+The next best product slice, after Apollo explicitly approves the 2026-06-05 vision lock, is Phoenix Memory + Effortless Log:
+
+- Deterministic Avatar State Engine.
+- Phoenix Home redesign.
+- Household Pulse terminology and model.
+- One-tap Log redesign.
+- Diet Profile, Treat Log, Training Win Log, and Alone Time.
+
+Deployment remains a separate privacy decision:
 
 - Keep local/private: maintain the current PWA and GitHub repo, no Vercel deployment.
 - Protected preview: deploy to Vercel only if access protection is acceptable for Phoenix/caregiver context.
 - Public demo: deploy only after replacing Phoenix-specific private context with a safer demo profile or after Apollo explicitly accepts that the public URL contains Phoenix care context.
 
-After that decision, the next build slice should be either Vercel deployment verification or live OpenAI helper smoke.
+Live OpenAI mode still requires server-side `OPENAI_API_KEY` approval/configuration and a smoke test that does not expose the key.
