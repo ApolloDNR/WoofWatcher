@@ -41,3 +41,9 @@ description: How the Expo mobile home screen, mood engine, and painted dog art f
 - When refining/duplicating the home screen, preserve the **full 10-item**
   `QUICK_LOG` (incl. `vomit`/`alone`) — dropping items quietly removes one-tap
   logging (caught in review).
+- **Canvas iframe gotcha:** do NOT set `artifactKind:"mobile"` on a canvas iframe
+  that points at a custom Expo route. The canvas then renders the registered
+  mobile *artifact* at its root (the tabs home) and ignores your explicit `url`,
+  so every such frame shows the same default screen. Use a plain iframe with just
+  `url` + `componentName` (no `artifactKind`, no `componentPath`) to embed a
+  specific route.
