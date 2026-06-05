@@ -6,14 +6,17 @@ import {
   getCareCalendar,
   getCaregiverHandoff,
   getAssistantContext,
+  getAvatarState,
   getDefaultState,
   getGoalReview,
   getHealthWatch,
+  getHouseholdPulse,
   getMonthlySummary,
   getNotificationCenter,
   getReminderCenter,
   getTrainingProgress,
   getTodayPlan,
+  normalizeDietProfileInput,
   normalizeState,
   removeCaregiverProfile,
   removeGoal,
@@ -32,8 +35,14 @@ const ENTRY_SELECT_OPTIONS = [
   "treat",
   "walk",
   "park",
+  "potty",
+  "poop",
+  "pee",
+  "play",
   "training",
   "social",
+  "mood",
+  "alone",
   "vomit",
   "health",
   "vet",
@@ -42,11 +51,26 @@ const ENTRY_SELECT_OPTIONS = [
   "note"
 ];
 const RECORD_TYPE_OPTIONS = ["vet", "vaccine", "weight", "instruction", "medication", "microchip"];
+const PRIMARY_TABS = new Set(["phoenix", "log", "plans", "health", "more"]);
+const TAB_ALIASES = {
+  today: "phoenix",
+  dashboard: "phoenix",
+  home: "phoenix",
+  reminders: "plans",
+  schedule: "plans",
+  goals: "plans",
+  calendar: "more",
+  progress: "more",
+  team: "more",
+  records: "more",
+  report: "more",
+  assistant: "more"
+};
 
 const app = document.querySelector("#app");
 let state = loadState();
 const initialParams = new URLSearchParams(window.location.search);
-let activeTab = initialParams.get("tab") || "today";
+let activeTab = normalizeTab(initialParams.get("tab"));
 let selectedCalendarDate = initialParams.get("date") || "";
 let assistantAnswer = "";
 let assistantBusy = false;
@@ -73,11 +97,19 @@ function saveState(nextState = state) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+function normalizeTab(tab) {
+  const normalized = String(tab || "").trim().toLowerCase();
+  if (PRIMARY_TABS.has(normalized)) return normalized;
+  return TAB_ALIASES[normalized] || "phoenix";
+}
+
 function render() {
   const now = new Date().toISOString();
   const summary = getMonthlySummary(state);
   const plan = getTodayPlan(state);
   const handoff = getCaregiverHandoff(state);
+  const pulse = getHouseholdPulse(state, now);
+  const avatar = getAvatarState(state, now);
   const goalReview = getGoalReview(state);
   const calendar = getCareCalendar(state);
   const trainingProgress = getTrainingProgress(state);
@@ -96,12 +128,12 @@ function render() {
         <img src="/public/app-icon.svg" alt="" class="app-icon" />
         <div>
           <p class="micro">WoofWatcher</p>
-          <h1>Phoenix care command</h1>
+          <h1>Phoenix care</h1>
         </div>
       </div>
       <div class="top-actions">
         <button class="button ghost" data-action="export-json">Backup</button>
-        <button class="button ghost" data-action="export-transfer">Transfer</button>
+        <button class="button ghost" data-action="export-transfer">Care Pass</button>
         <button class="button ghost" data-action="import-json">Import</button>
         <button class="button ghost" data-action="reset-demo">Reset</button>
       </div>
@@ -110,30 +142,23 @@ function render() {
 
     <main class="workspace">
       <aside class="profile-rail">
-        ${renderProfileCard(health)}
+        ${renderProfileCard(health, avatar)}
         ${renderCareStats(summary)}
-        ${renderHandoff(handoff)}
+        ${renderPulseRail(pulse, handoff)}
       </aside>
 
       <section class="primary-surface">
         ${renderTabHeader(activeTab)}
-        ${renderActiveTab(activeTab, { summary, plan, reminders, notifications, health, bileWatch, handoff, goalReview, calendar, trainingProgress })}
+        ${renderActiveTab(activeTab, { summary, plan, reminders, notifications, health, bileWatch, handoff, pulse, avatar, goalReview, calendar, trainingProgress })}
       </section>
     </main>
 
     <nav class="bottom-nav" aria-label="WoofWatcher sections">
-      ${renderNavButton("today", "Today")}
-      ${renderNavButton("team", "Team")}
-      ${renderNavButton("reminders", "Reminders")}
-      ${renderNavButton("schedule", "Schedule")}
-      ${renderNavButton("goals", "Goals")}
-      ${renderNavButton("calendar", "Calendar")}
-      ${renderNavButton("progress", "Progress")}
-      ${renderNavButton("log", "Quick Log")}
+      ${renderNavButton("phoenix", "Phoenix")}
+      ${renderNavButton("log", "Log")}
+      ${renderNavButton("plans", "Plans")}
       ${renderNavButton("health", "Health")}
-      ${renderNavButton("records", "Records")}
-      ${renderNavButton("report", "Report")}
-      ${renderNavButton("assistant", "Helper")}
+      ${renderNavButton("more", "More")}
     </nav>
   `;
 
@@ -141,7 +166,7 @@ function render() {
   maybeSendDueNotification(notifications);
 }
 
-function renderProfileCard(health) {
+function renderProfileCard(health, avatar) {
   return `
     <section class="panel profile-card">
       <div class="profile-heading">
@@ -152,14 +177,8 @@ function renderProfileCard(health) {
         </div>
         <span class="status-chip ${health.status}">${escapeHtml(health.label)}</span>
       </div>
-      <div class="dog-portrait" aria-hidden="true">
-        <div class="dog-ear left"></div>
-        <div class="dog-ear right"></div>
-        <div class="dog-face">
-          <span></span>
-          <span></span>
-        </div>
-      </div>
+      ${renderPhoenixAvatar(avatar, "rail")}
+      <p class="avatar-caption">${escapeHtml(avatar.speech)}</p>
       <p class="profile-note">${escapeHtml(state.profile.background)}</p>
       <dl class="mini-grid">
         <div>
@@ -172,6 +191,43 @@ function renderProfileCard(health) {
         </div>
       </dl>
     </section>
+  `;
+}
+
+function renderPhoenixAvatar(avatar, size = "hero") {
+  const evidence = (avatar.evidence || []).slice(0, 2);
+  return `
+    <div class="phoenix-avatar-stage ${escapeAttribute(size)} mood-${escapeAttribute(avatar.mood)} urgency-${escapeAttribute(avatar.urgency)}" aria-label="Phoenix avatar state: ${escapeAttribute(avatar.mood)}">
+      <div class="avatar-sky" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="phoenix-avatar" aria-hidden="true">
+        <div class="avatar-ear left"></div>
+        <div class="avatar-ear right"></div>
+        <div class="avatar-head">
+          <div class="avatar-brow left"></div>
+          <div class="avatar-brow right"></div>
+          <div class="avatar-eye left"></div>
+          <div class="avatar-eye right"></div>
+          <div class="avatar-muzzle">
+            <span></span>
+          </div>
+          <div class="avatar-smile"></div>
+        </div>
+        <div class="avatar-bandana"></div>
+      </div>
+      ${
+        size === "hero"
+          ? `<div class="avatar-bubble">
+              <strong>${escapeHtml(avatar.suggestedAction)}</strong>
+              <p>${escapeHtml(avatar.speech)}</p>
+              ${evidence.length ? `<small>${evidence.map(escapeHtml).join(" | ")}</small>` : ""}
+            </div>`
+          : ""
+      }
+    </div>
   `;
 }
 
@@ -193,19 +249,24 @@ function renderCareStats(summary) {
   `;
 }
 
-function renderHandoff(handoff) {
+function renderPulseRail(pulse, handoff) {
   return `
     <section class="panel handoff-card">
       <div class="section-heading">
         <div>
-          <p class="micro">Caregiver handoff</p>
+          <p class="micro">Household Pulse</p>
           <h3>${handoff.completedCount}/${handoff.totalCount} routines logged</h3>
         </div>
         <button class="button ghost" data-action="copy-handoff">Copy</button>
       </div>
-      <p>${escapeHtml(handoff.message)}</p>
+      <p>${escapeHtml(pulse.summary)}</p>
+      <article class="next-action-mini">
+        <span>${escapeHtml(pulse.nextAction.time || "Today")}</span>
+        <strong>${escapeHtml(pulse.nextAction.label)}</strong>
+        <small>${escapeHtml(pulse.nextAction.owner || "Phoenix's humans")}</small>
+      </article>
       <div class="button-row">
-        <button class="button ghost" data-action="export-transfer">Transfer package</button>
+        <button class="button ghost" data-action="export-transfer">Care Pass</button>
       </div>
       <div class="handoff-list">
         ${handoff.caregiverLoad.map(renderCaregiverLoad).join("")}
@@ -233,26 +294,43 @@ function renderStat(label, value) {
   `;
 }
 
+function renderGlyph(type) {
+  const labels = {
+    meal: "M",
+    treat: "T",
+    walk: "W",
+    park: "P",
+    potty: "P",
+    poop: "P",
+    pee: "P",
+    play: "Y",
+    training: "R",
+    social: "S",
+    mood: "O",
+    alone: "A",
+    vomit: "B",
+    health: "H",
+    vet: "V",
+    weight: "L",
+    medication: "Rx",
+    note: "N"
+  };
+  return `<span class="care-glyph glyph-${escapeAttribute(type)}" aria-hidden="true">${escapeHtml(labels[type] || "N")}</span>`;
+}
+
 function renderTabHeader(tab) {
   const labels = {
-    today: ["Today", "Routine, handoff, and latest care."],
-    team: ["Care Team", "Edit caregiver names, roles, and handoff ownership."],
-    reminders: ["Reminders", "Due, overdue, completed, and upcoming Phoenix care."],
-    schedule: ["Schedule", "Edit meals, walks, snacks, training, and ownership."],
-    goals: ["Goals", "Weight, training, social, anxiety, and health milestones."],
-    calendar: ["Calendar", "Monthly care patterns, vomit days, and daily handoff evidence."],
-    progress: ["Progress", "Training wins, rough spots, social exposure, and next focus."],
-    log: ["Quick Log", "Capture what happened without a long conversation."],
-    health: ["Health Watch", "Track patterns and know when review is needed."],
-    records: ["Records", "Vaccines, vet notes, weight goals, and instructions."],
-    report: ["Monthly Report", "Export a clean care summary for review."],
-    assistant: ["Care Helper", "Local context now; OpenAI-ready when credentials are approved."]
+    phoenix: ["Phoenix", "A shared care home that turns the next best action into one calm screen."],
+    log: ["Effortless Log", "Tap fast, add detail only when it matters, and keep both humans aligned."],
+    plans: ["Plans", "Meals, walks, bedtime snack, training, reminders, and goals in one routine lane."],
+    health: ["Health Watch", "Pattern support for appetite, bile, weight, medication, and vet review."],
+    more: ["More", "Diet Profile, Care Team, Records, Care Pass, and WoofGuide."]
   };
-  const [title, body] = labels[tab] || labels.today;
+  const [title, body] = labels[tab] || labels.phoenix;
   return `
     <div class="surface-header">
       <div>
-        <p class="micro">Phoenix</p>
+        <p class="micro">WoofWatcher</p>
         <h2>${title}</h2>
         <p>${body}</p>
       </div>
@@ -262,18 +340,11 @@ function renderTabHeader(tab) {
 }
 
 function renderActiveTab(tab, context) {
-  if (tab === "team") return renderTeamTab(context.handoff);
-  if (tab === "reminders") return renderRemindersTab(context.reminders, context.notifications);
-  if (tab === "schedule") return renderScheduleTab();
-  if (tab === "goals") return renderGoalsTab(context.goalReview);
-  if (tab === "calendar") return renderCalendarTab(context.calendar);
-  if (tab === "progress") return renderProgressTab(context.trainingProgress);
   if (tab === "log") return renderLogTab();
+  if (tab === "plans") return renderPlansTab(context);
   if (tab === "health") return renderHealthTab(context.health, context.bileWatch);
-  if (tab === "records") return renderRecordsTab();
-  if (tab === "report") return renderReportTab(context.summary);
-  if (tab === "assistant") return renderAssistantTab();
-  return renderTodayTab(context.plan, context.health, context.bileWatch, context.handoff);
+  if (tab === "more") return renderMoreTab(context);
+  return renderPhoenixTab(context);
 }
 
 function renderRemindersTab(reminders, notifications) {
@@ -755,44 +826,72 @@ function renderRoutineForm(routine = {}) {
   `;
 }
 
-function renderTodayTab(plan, health, bileWatch, handoff) {
+function renderPhoenixTab(context) {
+  const { avatar, pulse, summary, health, bileWatch, reminders } = context;
+  const nextReminder = reminders.nextReminder || pulse.nextAction;
   return `
-    <div class="dashboard-grid">
-      <section class="panel span-2">
+    <div class="phoenix-home">
+      <section class="phoenix-hero panel span-2">
+        <div class="phoenix-story">
+          <p class="micro">Phoenix</p>
+          <h3>${escapeHtml(avatar.suggestedAction)}</h3>
+          <p>${escapeHtml(avatar.speech)}</p>
+          <div class="next-action-card">
+            <span>Next best action</span>
+            <strong>${escapeHtml(pulse.nextAction.label)}</strong>
+            <small>${escapeHtml(pulse.nextAction.time || "Today")} | ${escapeHtml(pulse.nextAction.owner || "Phoenix's humans")}</small>
+          </div>
+        </div>
+        ${renderPhoenixAvatar(avatar, "hero")}
+      </section>
+
+      <section class="panel household-pulse-panel">
         <div class="section-heading">
           <div>
-            <p class="micro">${escapeHtml(plan.dateLabel)}</p>
-            <h3>Today's routine</h3>
+            <p class="micro">Household Pulse</p>
+            <h3>${pulse.completedCount}/${pulse.totalCount} routine items covered</h3>
           </div>
-          <span class="status-chip ${health.status}">${escapeHtml(health.label)}</span>
+          <span class="status-chip ${health.status}">${escapeHtml(pulse.healthStatus)}</span>
         </div>
-        <div class="routine-list">
-          ${state.routines.map((routine) => renderRoutine(routine, plan.completedLabels.includes(routine.label))).join("")}
+        <p>${escapeHtml(pulse.summary)}</p>
+        <div class="pulse-human-list">
+          ${pulse.humans.map(renderPulseHuman).join("")}
         </div>
+        <small>${escapeHtml(pulse.healthBoundary)}</small>
       </section>
-      <section class="panel">
+
+      <section class="panel care-overview-panel">
         <div class="section-heading">
           <div>
-            <p class="micro">Next handoff</p>
-            <h3>${escapeHtml(handoff.nextRoutine?.label || "Routine covered")}</h3>
+            <p class="micro">${escapeHtml(summary.monthLabel)}</p>
+            <h3>Care overview</h3>
           </div>
-          <button class="button ghost" data-action="copy-handoff">Copy</button>
+          <button class="button ghost" data-tab="plans">View plans</button>
         </div>
-        <p class="handoff-message">${escapeHtml(handoff.message)}</p>
+        <div class="care-overview-grid">
+          ${renderMetricTile("Meals", summary.meals, "meal")}
+          ${renderMetricTile("Walks", summary.walks, "walk")}
+          ${renderMetricTile("Training", summary.trainingSessions, "training")}
+          ${renderMetricTile("Bile", summary.vomitIncidents, "vomit")}
+        </div>
       </section>
-      <section class="panel">
-        <p class="micro">Quick Log</p>
+
+      <section class="panel quick-log-panel span-2">
+        <p class="micro">Effortless Log</p>
         <h3>Most common actions</h3>
-        <div class="quick-actions">
-          ${renderQuickButton("meal", "Breakfast")}
-          ${renderQuickButton("walk", "Morning walk")}
+        <div class="effortless-grid">
+          ${renderQuickButton("meal", "Meal")}
+          ${renderQuickButton("walk", "Walk")}
+          ${renderQuickButton("potty", "Potty")}
+          ${renderQuickButton("treat", "Treat")}
           ${renderQuickButton("training", "Training")}
-          ${renderQuickButton("social", "Dog interaction")}
-          ${renderQuickButton("vomit", "Yellow bile")}
-          ${renderQuickButton("weight", "Weight check")}
+          ${renderQuickButton("alone", "Alone time")}
+          ${renderQuickButton("vomit", "Bile note")}
+          ${renderQuickButton("note", "Note")}
         </div>
       </section>
-      <section class="panel">
+
+      <section class="panel health-mini-panel">
         <div class="section-heading">
           <div>
             <p class="micro">Bile Watch</p>
@@ -802,13 +901,50 @@ function renderTodayTab(plan, health, bileWatch, handoff) {
         </div>
         <p>${escapeHtml(bileWatch.signals[0])}</p>
         <small>${escapeHtml(bileWatch.actions[0])}</small>
+        <button class="button ghost full" data-tab="health">Open Health Watch</button>
       </section>
-      <section class="panel">
+
+      <section class="panel next-plan-panel">
+        <p class="micro">Today plan</p>
+        <h3>${escapeHtml(nextReminder?.label || "Routine covered")}</h3>
+        <p>${escapeHtml(nextReminder?.note || "No scheduled care is waiting right now.")}</p>
+        <small>${escapeHtml(nextReminder?.time || "Today")} | ${escapeHtml(nextReminder?.owner || "Phoenix's humans")}</small>
+        <button class="button ghost full" data-tab="plans">Review Plans</button>
+      </section>
+
+      <section class="panel woofguide-mini-panel">
+        <p class="micro">WoofGuide</p>
+        <h3>Ask with Phoenix context</h3>
+        <p>Use Phoenix's logs, diet profile, and health patterns to decide what to track next.</p>
+        <button class="button ghost full" data-tab="more">Open WoofGuide</button>
+      </section>
+
+      <section class="panel span-2">
         <p class="micro">Care timeline</p>
         <h3>Recent logs</h3>
         ${renderTimeline(state.entries.slice(0, 6))}
       </section>
     </div>
+  `;
+}
+
+function renderPulseHuman(human) {
+  return `
+    <article>
+      <span>${escapeHtml(human.name)}</span>
+      <strong>${human.todayLogs}</strong>
+      <small>${escapeHtml(human.latestAction)}</small>
+    </article>
+  `;
+}
+
+function renderMetricTile(label, value, type) {
+  return `
+    <article class="metric-tile">
+      ${renderGlyph(type)}
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </article>
   `;
 }
 
@@ -827,20 +963,44 @@ function renderRoutine(routine, completed) {
 }
 
 function renderQuickButton(type, title) {
-  return `<button class="quick-button" data-quick-type="${type}" data-quick-title="${escapeHtml(title)}">${escapeHtml(title)}</button>`;
+  return `
+    <button class="quick-button" data-quick-type="${escapeAttribute(type)}" data-quick-title="${escapeAttribute(title)}">
+      ${renderGlyph(type)}
+      <span>${escapeHtml(title)}</span>
+    </button>
+  `;
 }
 
 function renderLogTab() {
   return `
-    <div class="dashboard-grid">
+    <div class="dashboard-grid log-screen">
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Effortless Log</p>
+            <h3>Tap first, detail second</h3>
+          </div>
+          <span class="status-chip steady">Local-first</span>
+        </div>
+        <div class="effortless-grid">
+          ${renderQuickButton("meal", "Meal")}
+          ${renderQuickButton("treat", "Treat")}
+          ${renderQuickButton("walk", "Walk")}
+          ${renderQuickButton("potty", "Potty")}
+          ${renderQuickButton("training", "Training win")}
+          ${renderQuickButton("alone", "Alone time")}
+          ${renderQuickButton("mood", "Mood")}
+          ${renderQuickButton("vomit", "Bile note")}
+        </div>
+      </section>
       <section class="panel span-2">
         <p class="micro">New care event</p>
         <h3>Log Phoenix's care</h3>
         ${renderEntryForm()}
       </section>
-      <section class="panel">
+      <section class="panel span-2">
         <p class="micro">Recent entries</p>
-        <h3>Editable by reset or backup import</h3>
+        <h3>Latest household proof</h3>
         ${renderTimeline(state.entries.slice(0, 12))}
       </section>
     </div>
@@ -878,6 +1038,22 @@ function renderEntryForm(prefill = {}) {
         <input name="amount" placeholder="1 cup, small snack, 56.2 lb" />
       </label>
       <label>
+        <span>Food</span>
+        <input name="food" placeholder="Kibble, topper, snack" />
+      </label>
+      <label>
+        <span>Offered</span>
+        <input name="portionOffered" placeholder="1 cup, half bowl" />
+      </label>
+      <label>
+        <span>Eaten</span>
+        <input name="portionEaten" placeholder="All, half, refused" />
+      </label>
+      <label>
+        <span>Appetite</span>
+        <input name="appetite" placeholder="eager, picky, refused" />
+      </label>
+      <label>
         <span>Minutes</span>
         <input name="durationMinutes" inputmode="numeric" placeholder="20" />
       </label>
@@ -886,8 +1062,40 @@ function renderEntryForm(prefill = {}) {
         <input name="dogInteractions" inputmode="numeric" placeholder="0" />
       </label>
       <label>
+        <span>Treat details</span>
+        <input name="treatType" placeholder="Puzzle toy, chew, training treat" />
+      </label>
+      <label>
+        <span>Reason</span>
+        <input name="reason" placeholder="Training, calm time, enrichment" />
+      </label>
+      <label>
+        <span>Reaction</span>
+        <input name="reaction" placeholder="calm, excited, anxious, ignored" />
+      </label>
+      <label>
+        <span>Training win</span>
+        <input name="skill" placeholder="Place, leash, greeting, recall" />
+      </label>
+      <label>
+        <span>Outcome</span>
+        <input name="outcome" placeholder="settled faster, pulled, barked, improved" />
+      </label>
+      <label>
         <span>Mood/appetite</span>
         <input name="mood" placeholder="settled, anxious, refused" />
+      </label>
+      <label>
+        <span>Mood before</span>
+        <input name="moodBefore" placeholder="anxious, excited, sleepy" />
+      </label>
+      <label>
+        <span>Mood after</span>
+        <input name="moodAfter" placeholder="calm, proud, tired" />
+      </label>
+      <label>
+        <span>Alone outcome</span>
+        <input name="aloneOutcome" placeholder="calm return, barking, damage, settled" />
       </label>
       <label>
         <span>Severity</span>
@@ -906,6 +1114,295 @@ function renderEntryForm(prefill = {}) {
   `;
 }
 
+function renderPlansTab(context) {
+  const { plan, reminders, notifications, goalReview } = context;
+  const bedtimeRoutine = (state.routines || []).find((routine) => /bed|snack/i.test(`${routine.label} ${routine.note}`));
+  return `
+    <div class="dashboard-grid plans-screen">
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">${escapeHtml(plan.dateLabel)}</p>
+            <h3>Today plan</h3>
+          </div>
+          <span class="status-chip ${reminders.overdueCount ? "review" : reminders.dueCount ? "watch" : "steady"}">${reminders.completedCount}/${reminders.totalCount} logged</span>
+        </div>
+        <div class="routine-list">
+          ${state.routines.map((routine) => renderRoutine(routine, plan.completedLabels.includes(routine.label))).join("")}
+        </div>
+      </section>
+
+      <section class="panel">
+        <p class="micro">Bedtime snack</p>
+        <h3>${escapeHtml(bedtimeRoutine?.label || "Small bedtime snack")}</h3>
+        <p>${escapeHtml(bedtimeRoutine?.note || state.dietProfile.bedtimeSnack)}</p>
+        <small>${escapeHtml(bedtimeRoutine?.time || "Before sleep")} | ${escapeHtml(bedtimeRoutine?.owner || "Either caregiver")}</small>
+      </section>
+
+      <section class="panel">
+        <p class="micro">Goals</p>
+        <h3>${goalReview.activeGoals}/${goalReview.totalGoals} active milestones</h3>
+        <div class="signal-list compact">
+          ${goalReview.highlights.slice(0, 3).map((highlight) => `<p>${escapeHtml(highlight)}</p>`).join("")}
+        </div>
+      </section>
+
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Reminder Center</p>
+            <h3>${escapeHtml(reminders.message)}</h3>
+          </div>
+          <span class="status-chip ${reminders.overdueCount ? "review" : reminders.dueCount ? "watch" : "steady"}">${reminders.overdueCount} overdue | ${reminders.dueCount} due</span>
+        </div>
+        <div class="reminder-list">
+          ${reminders.items.map(renderReminderItem).join("")}
+        </div>
+      </section>
+
+      ${renderNotificationPanel(notifications)}
+
+      <section class="panel span-2">
+        <p class="micro">Routine editor</p>
+        <h3>Meals, walks, snacks, training</h3>
+        <div class="routine-editor-list compact">
+          ${state.routines.map(renderRoutineEditor).join("")}
+        </div>
+        <div class="inline-add-panel">
+          <p class="micro">Add routine</p>
+          ${renderRoutineForm()}
+        </div>
+      </section>
+
+      <section class="panel span-2">
+        <p class="micro">Phoenix goals</p>
+        <h3>Weight, training, social, anxiety, health</h3>
+        <div class="goal-list compact">
+          ${goalReview.goals.map(renderGoalEditor).join("")}
+        </div>
+        <div class="inline-add-panel">
+          <p class="micro">Add goal</p>
+          ${renderGoalForm()}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function renderMoreTab(context) {
+  return `
+    <div class="dashboard-grid more-screen">
+      ${renderDietProfilePanel()}
+      ${renderCarePassPanel(context.summary)}
+      ${renderCareTeamPanel(context.handoff)}
+      ${renderRecordsPanel()}
+      ${renderProgressMemoryPanel(context.calendar, context.trainingProgress)}
+      ${renderWoofGuidePanel()}
+    </div>
+  `;
+}
+
+function renderDietProfilePanel() {
+  const profile = state.dietProfile || {};
+  return `
+    <section class="panel span-2 diet-profile-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Diet Profile</p>
+          <h3>What helps Phoenix eat calmly</h3>
+        </div>
+        <span class="status-chip steady">Editable</span>
+      </div>
+      <div class="diet-profile-grid">
+        ${renderDietFact("Food", profile.primaryFood)}
+        ${renderDietFact("Portion", profile.normalPortion)}
+        ${renderDietFact("Schedule", profile.mealSchedule)}
+        ${renderDietFact("Bedtime", profile.bedtimeSnack)}
+        ${renderDietFact("Avoid", profile.avoid)}
+        ${renderDietFact("Quirk", profile.appetiteQuirks)}
+      </div>
+      <form class="diet-form" data-form="diet-profile">
+        ${renderDietField("primaryFood", "Primary food", profile.primaryFood)}
+        ${renderDietField("normalPortion", "Normal portion", profile.normalPortion)}
+        ${renderDietField("mealSchedule", "Meal schedule", profile.mealSchedule)}
+        ${renderDietField("toppers", "Toppers", profile.toppers)}
+        ${renderDietField("supplements", "Supplements", profile.supplements)}
+        ${renderDietField("bedtimeSnack", "Bedtime snack", profile.bedtimeSnack)}
+        ${renderDietField("treatsAllowed", "Treats allowed", profile.treatsAllowed)}
+        ${renderDietField("avoid", "Avoid", profile.avoid)}
+        ${renderDietField("sensitivities", "Sensitivities", profile.sensitivities)}
+        ${renderDietField("appetiteQuirks", "Appetite quirks", profile.appetiteQuirks)}
+        ${renderDietField("vetNotes", "Vet notes", profile.vetNotes)}
+        <button class="button primary wide" type="submit">Save Diet Profile</button>
+      </form>
+    </section>
+  `;
+}
+
+function renderDietFact(label, value) {
+  return `
+    <article>
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value || "Not set")}</strong>
+    </article>
+  `;
+}
+
+function renderDietField(name, label, value) {
+  return `
+    <label>
+      <span>${escapeHtml(label)}</span>
+      <input name="${escapeAttribute(name)}" value="${escapeAttribute(value || "")}" />
+    </label>
+  `;
+}
+
+function renderCarePassPanel(summary) {
+  const report = buildReportText(state);
+  return `
+    <section class="panel span-2 care-pass-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Care Pass</p>
+          <h3>${escapeHtml(summary.monthLabel)} share package</h3>
+        </div>
+        <div class="button-row">
+          <button class="button ghost" data-action="copy-report">Copy report</button>
+          <button class="button ghost" data-action="download-report">Download</button>
+          <button class="button ghost" data-action="export-transfer">Care Pass JSON</button>
+          <button class="button primary" data-action="print-report">Print/PDF</button>
+        </div>
+      </div>
+      <p>Care Pass packages Phoenix's care context for a caregiver, sitter, vet conversation, or monthly review.</p>
+      <pre class="report-box compact">${escapeHtml(report)}</pre>
+    </section>
+  `;
+}
+
+function renderCareTeamPanel(handoff) {
+  return `
+    <section class="panel span-2 care-team-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Care Team</p>
+          <h3>Humans caring for Phoenix</h3>
+        </div>
+        <span class="status-chip steady">${state.caregivers.length} active</span>
+      </div>
+      <div class="care-team-grid">
+        ${state.caregivers.map((caregiver) => renderCaregiverEditor(caregiver, handoff)).join("")}
+      </div>
+      <div class="inline-add-panel">
+        <p class="micro">Add caregiver</p>
+        ${renderCaregiverForm()}
+      </div>
+    </section>
+  `;
+}
+
+function renderRecordsPanel() {
+  return `
+    <section class="panel span-2 records-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Records</p>
+          <h3>Vaccines, vet notes, weight, instructions</h3>
+        </div>
+        <span class="status-chip steady">${state.records.length} stored</span>
+      </div>
+      <div class="record-list">
+        ${state.records.map(renderRecord).join("")}
+      </div>
+      <div class="inline-add-panel">
+        <p class="micro">Add record</p>
+        <form class="record-form" data-form="record" data-record-mode="add">
+          <label>
+            <span>Type</span>
+            <select name="type">
+              ${renderRecordTypeOptions()}
+            </select>
+          </label>
+          <label>
+            <span>Title</span>
+            <input name="title" required placeholder="Rabies vaccine, weight check" />
+          </label>
+          <label>
+            <span>Due/date</span>
+            <input name="due" placeholder="2026-06-20 or next visit" />
+          </label>
+          <label class="wide">
+            <span>Note</span>
+            <textarea name="note" rows="3" placeholder="Clinic, result, next step, or care instruction."></textarea>
+          </label>
+          <button class="button primary wide" type="submit">Save record</button>
+        </form>
+      </div>
+    </section>
+  `;
+}
+
+function renderProgressMemoryPanel(calendar, trainingProgress) {
+  const selectedDay = getSelectedCalendarDay(calendar);
+  return `
+    <section class="panel span-2 memory-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Memory</p>
+          <h3>Patterns and milestones</h3>
+        </div>
+        <span class="status-chip ${calendar.reviewDays ? "watch" : "steady"}">${calendar.reviewDays} review days</span>
+      </div>
+      <div class="memory-grid">
+        <article>
+          <span>Care calendar</span>
+          <strong>${escapeHtml(calendar.monthLabel)}</strong>
+          ${renderMonthMap()}
+        </article>
+        <article>
+          <span>Training progress</span>
+          <strong>${escapeHtml(trainingProgress.status)}</strong>
+          <p>${escapeHtml(trainingProgress.focusAreas[0] || "Keep logging short sessions and calm wins.")}</p>
+        </article>
+        <article>
+          <span>Selected day</span>
+          <strong>${escapeHtml(selectedDay ? formatLongDate(selectedDay.dateKey) : "Today")}</strong>
+          <p>${escapeHtml(selectedDay?.summary || "Choose a calendar day after logs build up.")}</p>
+        </article>
+      </div>
+    </section>
+  `;
+}
+
+function renderWoofGuidePanel() {
+  const context = getAssistantContext(state, "");
+  const answer = assistantAnswer || context.localAnswer;
+  const liveReady = assistantStatus.configured;
+  const chipLabel = assistantBusy ? "Reviewing" : liveReady ? "Live OpenAI" : "Local mode";
+  const chipClass = assistantBusy ? "watch" : liveReady ? "steady" : "watch";
+  return `
+    <section class="panel span-2 woofguide-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">WoofGuide</p>
+          <h3>Ask with Phoenix context</h3>
+        </div>
+        <span class="status-chip ${chipClass}">${chipLabel}</span>
+      </div>
+      <form class="assistant-form" data-form="assistant">
+        <label>
+          <span>Question</span>
+          <textarea name="question" rows="4" placeholder="Phoenix threw up yellow again. What should we track before calling the vet?"></textarea>
+        </label>
+        <button class="button primary" type="submit">Review Phoenix context</button>
+      </form>
+      <div class="assistant-answer" aria-live="polite">
+        <p>${escapeHtml(answer)}</p>
+      </div>
+      <p class="notification-boundary">WoofGuide can organize Phoenix's logs and caregiver notes. It does not diagnose, replace a veterinarian, or decide urgent care.</p>
+    </section>
+  `;
+}
+
 function renderHealthTab(health, bileWatch) {
   return `
     <div class="dashboard-grid">
@@ -920,6 +1417,7 @@ function renderHealthTab(health, bileWatch) {
         <div class="signal-list">
           ${health.signals.map((signal) => `<p>${escapeHtml(signal)}</p>`).join("")}
         </div>
+        <p class="notification-boundary">This is pattern support, not a diagnosis. Use it to decide what to track, what to share, and when Phoenix needs a veterinarian.</p>
       </section>
       <section class="panel alert-panel">
         <p class="micro">Vet boundary</p>
@@ -1152,9 +1650,8 @@ function renderNavButton(tab, label) {
 function bindEvents() {
   app.querySelectorAll("[data-tab]").forEach((button) => {
     button.addEventListener("click", () => {
-      activeTab = button.dataset.tab;
+      activeTab = normalizeTab(button.dataset.tab);
       const params = new URLSearchParams({ tab: activeTab });
-      if (activeTab === "calendar" && selectedCalendarDate) params.set("date", selectedCalendarDate);
       history.replaceState(null, "", `?${params.toString()}`);
       render();
     });
@@ -1163,8 +1660,8 @@ function bindEvents() {
   app.querySelectorAll("[data-calendar-date]").forEach((button) => {
     button.addEventListener("click", () => {
       selectedCalendarDate = button.dataset.calendarDate;
-      activeTab = "calendar";
-      history.replaceState(null, "", `?tab=calendar&date=${encodeURIComponent(selectedCalendarDate)}`);
+      activeTab = "more";
+      history.replaceState(null, "", `?tab=more&date=${encodeURIComponent(selectedCalendarDate)}`);
       render();
     });
   });
@@ -1175,7 +1672,7 @@ function bindEvents() {
       const title = button.dataset.quickTitle;
       const entry = createEntry({ type, title, caregiver: "Unassigned", occurredAt: new Date().toISOString() });
       saveState({ ...state, entries: [entry, ...(state.entries || [])] });
-      activeTab = "today";
+      activeTab = "phoenix";
       render();
     });
   });
@@ -1188,14 +1685,14 @@ function bindEvents() {
       occurredAt: data.occurredAt ? new Date(data.occurredAt).toISOString() : new Date().toISOString()
     });
     saveState({ ...state, entries: [entry, ...(state.entries || [])] });
-    activeTab = "today";
+    activeTab = "phoenix";
     render();
   });
 
   app.querySelectorAll("[data-action='remove-record']").forEach((button) => {
     button.addEventListener("click", () => {
       saveState({ ...state, records: removeRecord(state.records, button.dataset.recordId) });
-      activeTab = "records";
+      activeTab = "more";
       render();
     });
   });
@@ -1205,7 +1702,7 @@ function bindEvents() {
       event.preventDefault();
       const data = Object.fromEntries(new FormData(event.currentTarget).entries());
       saveState({ ...state, records: upsertRecord(state.records, data) });
-      activeTab = "records";
+      activeTab = "more";
       render();
     });
   });
@@ -1215,7 +1712,7 @@ function bindEvents() {
       event.preventDefault();
       const data = Object.fromEntries(new FormData(event.currentTarget).entries());
       saveState({ ...state, routines: upsertRoutine(state.routines, data) });
-      activeTab = "schedule";
+      activeTab = "plans";
       render();
     });
   });
@@ -1225,7 +1722,7 @@ function bindEvents() {
       event.preventDefault();
       const data = Object.fromEntries(new FormData(event.currentTarget).entries());
       saveState(upsertCaregiverProfile(state, data.previousName, data));
-      activeTab = "team";
+      activeTab = "more";
       render();
     });
   });
@@ -1235,9 +1732,17 @@ function bindEvents() {
       event.preventDefault();
       const data = Object.fromEntries(new FormData(event.currentTarget).entries());
       saveState({ ...state, goals: upsertGoal(state.goals, data) });
-      activeTab = "goals";
+      activeTab = "plans";
       render();
     });
+  });
+
+  app.querySelector("[data-form='diet-profile']")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+    saveState({ ...state, dietProfile: normalizeDietProfileInput(data) });
+    activeTab = "more";
+    render();
   });
 
   app.querySelector("[data-form='assistant']")?.addEventListener("submit", async (event) => {
@@ -1258,7 +1763,7 @@ async function handleAction(action, button) {
     const confirmed = window.confirm("Reset WoofWatcher to the Phoenix demo state? This clears local logs on this device.");
     if (!confirmed) return;
     saveState(getDefaultState());
-    activeTab = "today";
+    activeTab = "phoenix";
     assistantAnswer = "";
     render();
   }
@@ -1278,20 +1783,20 @@ async function handleAction(action, button) {
   if (action === "remove-routine") {
     const routineId = button?.dataset.routineId;
     saveState({ ...state, routines: removeRoutine(state.routines, routineId) });
-    activeTab = "schedule";
+    activeTab = "plans";
     render();
   }
 
   if (action === "remove-goal") {
     const goalId = button?.dataset.goalId;
     saveState({ ...state, goals: removeGoal(state.goals, goalId) });
-    activeTab = "goals";
+    activeTab = "plans";
     render();
   }
 
   if (action === "remove-caregiver") {
     saveState(removeCaregiverProfile(state, button?.dataset.caregiverName));
-    activeTab = "team";
+    activeTab = "more";
     render();
   }
 
@@ -1306,13 +1811,13 @@ async function handleAction(action, button) {
       occurredAt: new Date().toISOString()
     });
     saveState({ ...state, entries: [entry, ...(state.entries || [])] });
-    activeTab = "reminders";
+    activeTab = "plans";
     render();
   }
 
   if (action === "enable-notifications") {
     notificationPermission = await requestNotificationPermission();
-    activeTab = "reminders";
+    activeTab = "plans";
     render();
   }
 
@@ -1333,7 +1838,7 @@ async function handleAction(action, button) {
   }
 
   if (action === "export-transfer") {
-    downloadText("woofwatcher-phoenix-transfer.json", JSON.stringify(buildCareRoomTransfer(state), null, 2), "application/json");
+    downloadText("woofwatcher-phoenix-care-pass.json", JSON.stringify(buildCareRoomTransfer(state), null, 2), "application/json");
   }
 
   if (action === "import-json") {
@@ -1359,7 +1864,7 @@ async function handleImportFile(event) {
   try {
     const imported = JSON.parse(await file.text());
     saveState(normalizeState(imported));
-    activeTab = "today";
+    activeTab = "phoenix";
     assistantAnswer = imported.packageType === "woofwatcher.care-room-transfer"
       ? "Care room transfer imported. Review Phoenix's handoff and latest timeline before continuing care."
       : "Backup imported. Review Phoenix's latest care timeline before acting on any old notes.";

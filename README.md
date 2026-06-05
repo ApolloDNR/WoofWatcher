@@ -4,6 +4,11 @@ WoofWatcher is a local-first care command center for Phoenix, Apollo's anxious r
 
 ## What v1 Does
 
+- Presents the app as a Phoenix-first care home with five main sections: `Phoenix`, `Log`, `Plans`, `Health`, and `More`.
+- Uses a deterministic Phoenix avatar state and `Household Pulse` to surface mood, evidence, next best action, caregiver load, and latest care context.
+- Adds an `Effortless Log` surface for one-tap care logging plus richer optional details for meals, treats, training wins, mood shifts, and alone time.
+- Adds a first-class editable `Diet Profile` for normal food, portions, meal schedule, toppers, supplements, bedtime snack, treats, sensitivities, appetite quirks, and vet notes.
+- Uses `Care Pass` language for report/transfer export and `WoofGuide` for Phoenix-context care review.
 - Tracks meals, treats, walks, dog park visits, training, social interactions, vomit incidents, health notes, vet notes, weight checks, medication, and general care notes.
 - Lets caregivers edit Phoenix's daily routine schedule, care times, ownership, and notes.
 - Lets the care team edit caregiver names and roles, with caregiver choices flowing into Quick Log and handoff load.
@@ -52,7 +57,7 @@ npm run screenshots
 & "C:\Users\Apoll\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" --test
 ```
 
-`npm run smoke:render` first tries an interactive Chrome DevTools smoke. If the local DevTools WebSocket does not answer, it falls back to Chrome-rendered DOM checks for the home, team, reminders, schedule, goals, calendar, progress, log, records, report, and assistant routes.
+`npm run smoke:render` first tries an interactive Chrome DevTools smoke. If the local DevTools WebSocket does not answer, it falls back to Chrome-rendered DOM checks for the `Phoenix`, `Log`, `Plans`, `Health`, and `More` routes.
 
 ## Data
 
@@ -64,7 +69,7 @@ woofwatcher.v1.state
 
 Use `Backup` to download the current JSON state before resetting or moving devices.
 
-Use `Transfer` to download an importable care room package when another caregiver needs the current Phoenix state plus handoff/report context.
+Use `Care Pass` to download an importable care room package when another caregiver needs the current Phoenix state plus handoff/report context.
 
 Use `Import` to restore either a WoofWatcher JSON backup or a care room transfer package into the current browser.
 

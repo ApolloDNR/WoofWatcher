@@ -48,13 +48,13 @@ The approved visual lock is `Premium Playful Storybook Utility`, documented in `
 
 ## Next Vision Layer
 
-These are product-lock targets, not claims about the already shipped local PWA:
+These were product-lock targets before the 2026-06-05 local implementation slice. The local PWA now implements the first Phoenix Memory + Effortless Log layer, while later assistant/audio/cloud/native work remains future work:
 
 - Rename the everyday handoff mental model to Household Pulse and reserve Care Pass for vet/sitter/trainer/boarding/emergency export.
 - Collapse the user-facing app structure toward `Phoenix`, `Log`, `Plans`, `Health`, and `More`.
-- Add Diet Profile with usual food, portions, toppers, supplements, bedtime snack routine, treats allowed, foods to avoid, sensitivities, appetite quirks, and vet notes.
-- Separate Meal Log and Treat Log so diet history can explain appetite, treat-heavy days, bedtime snack proof, and Bile Watch context.
-- Make Training Win and Alone Time first-class quick-log event types.
+- Add Diet Profile with usual food, portions, toppers, supplements, bedtime snack routine, treats allowed, foods to avoid, sensitivities, appetite quirks, and vet notes. Implemented locally.
+- Separate Meal Log and Treat Log so diet history can explain appetite, treat-heavy days, bedtime snack proof, and Bile Watch context. Implemented locally through richer entry fields and Effortless Log.
+- Make Training Win and Alone Time first-class quick-log event types. Implemented locally through `training` detail fields and `alone` entries.
 - Keep Phoenix as the avatar/personality layer while WoofGuide remains the careful assistant with explicit non-veterinary boundaries.
 - Add a deterministic Avatar State Engine before adding more dashboards.
 

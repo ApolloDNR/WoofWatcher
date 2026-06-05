@@ -21,10 +21,15 @@ const browser = spawn(
   [
     "--headless=new",
     "--disable-gpu",
+    "--disable-gpu-compositing",
     "--disable-software-rasterizer",
+    "--disable-features=VizDisplayCompositor",
+    "--disable-gpu-sandbox",
     "--disable-crash-reporter",
     "--disable-breakpad",
     "--disable-extensions",
+    "--disable-dev-shm-usage",
+    "--no-sandbox",
     "--no-first-run",
     "--no-default-browser-check",
     `--user-data-dir=${userDataDir}`,
@@ -58,6 +63,22 @@ try {
   });
 
   console.log("captured desktop and mobile screenshots");
+} catch (error) {
+  browser.kill();
+  console.error(`CDP screenshot capture unavailable: ${error.message || error.name || "unknown CDP error"}`);
+  await captureWithChromeScreenshot({
+    label: "desktop",
+    file: join(outDir, "woofwatcher-desktop.png"),
+    width: 1440,
+    height: 1100
+  });
+  await captureWithChromeScreenshot({
+    label: "mobile",
+    file: join(outDir, "woofwatcher-mobile.png"),
+    width: 390,
+    height: 844
+  });
+  console.log("captured desktop and mobile screenshots with Chrome fallback");
 } finally {
   browser.kill();
 }
@@ -79,6 +100,55 @@ async function capture(client, options) {
   });
   await writeFile(options.file, Buffer.from(result.data, "base64"));
   console.log(`${options.label}: ${options.file}`);
+}
+
+function captureWithChromeScreenshot(options) {
+  const profile = join(tmpdir(), `woofwatcher-screenshot-${options.label}-${Date.now()}`);
+  const args = [
+    "--headless=new",
+    "--disable-gpu",
+    "--disable-gpu-compositing",
+    "--disable-software-rasterizer",
+    "--disable-features=VizDisplayCompositor",
+    "--disable-gpu-sandbox",
+    "--disable-crash-reporter",
+    "--disable-breakpad",
+    "--disable-extensions",
+    "--disable-dev-shm-usage",
+    "--no-sandbox",
+    "--no-first-run",
+    "--no-default-browser-check",
+    `--user-data-dir=${profile}`,
+    `--window-size=${options.width},${options.height}`,
+    `--screenshot=${options.file}`,
+    url
+  ];
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(chrome, args, { stdio: ["ignore", "pipe", "pipe"] });
+    let stderr = "";
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error(`Timed out capturing ${options.label} screenshot.`));
+    }, 20000);
+    child.on("error", (childError) => {
+      clearTimeout(timer);
+      reject(childError);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (code !== 0) {
+        reject(new Error(`Chrome screenshot for ${options.label} exited ${code}: ${stderr.slice(0, 500)}`));
+        return;
+      }
+      console.log(`${options.label}: ${options.file}`);
+      resolve();
+    });
+  });
 }
 
 async function waitForPageTarget(debugPort) {

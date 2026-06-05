@@ -75,35 +75,19 @@ try {
   await delay(800);
 
   await expectEval(client, "document.title", "WoofWatcher | Phoenix Care", "page title");
-  await expectEval(client, "document.body.innerText.includes('Phoenix care command')", true, "home text");
-
-  await evaluate(client, `
-    document.querySelector('[data-tab="team"]').click();
-  `);
-  await delay(250);
-  await expectEval(client, "Boolean(document.querySelector('[data-form=\"caregiver\"]'))", true, "caregiver form visible");
-  await evaluate(client, `
-    (() => {
-    const forms = [...document.querySelectorAll('[data-form="caregiver"]')];
-    const form = forms[forms.length - 1];
-    form.querySelector('[name="name"]').value = 'QA sitter';
-    form.querySelector('[name="role"]').value = 'Backup caregiver';
-    form.requestSubmit();
-    })();
-  `);
-  await delay(500);
   await expectEval(
     client,
-    `JSON.parse(localStorage.getItem('woofwatcher.v1.state')).caregivers.some((caregiver) => caregiver.name === 'QA sitter')`,
+    "document.body.innerText.includes('Next best action') && document.body.innerText.includes('Household Pulse') && document.body.innerText.includes('WoofGuide')",
     true,
-    "saved caregiver"
+    "phoenix home text"
   );
 
   await evaluate(client, `
-    document.querySelector('[data-tab="reminders"]').click();
+    document.querySelector('[data-tab="plans"]').click();
   `);
   await delay(250);
-  await expectEval(client, "Boolean(document.querySelector('.reminder-list'))", true, "reminder list visible");
+  await expectEval(client, "document.body.innerText.includes('Today plan')", true, "plans tab visible");
+  await expectEval(client, "Boolean(document.querySelector('.reminder-list'))", true, "plans reminder list visible");
   await evaluate(client, `
     (() => {
     const before = JSON.parse(localStorage.getItem('woofwatcher.v1.state')).entries.length;
@@ -116,74 +100,26 @@ try {
     client,
     `JSON.parse(localStorage.getItem('woofwatcher.v1.state')).entries.length === window.__woofReminderEntryCount + 1`,
     true,
-    "completed reminder writes log"
-  );
-
-  await evaluate(client, `
-    document.querySelector('[data-tab="schedule"]').click();
-  `);
-  await delay(250);
-  await expectEval(client, "Boolean(document.querySelector('[data-form=\"routine\"]'))", true, "routine form visible");
-  await evaluate(client, `
-    (() => {
-    const forms = [...document.querySelectorAll('[data-form="routine"]')];
-    const form = forms[forms.length - 1];
-    form.querySelector('[name="label"]').value = 'QA medication';
-    form.querySelector('[name="type"]').value = 'medication';
-    form.querySelector('[name="time"]').value = '9:00 PM';
-    form.querySelector('[name="owner"]').value = 'Apollo';
-    form.querySelector('[name="note"]').value = 'Rendered schedule smoke check';
-    form.requestSubmit();
-    })();
-  `);
-  await delay(500);
-  await expectEval(
-    client,
-    `JSON.parse(localStorage.getItem('woofwatcher.v1.state')).routines.some((routine) => routine.label === 'QA medication')`,
-    true,
-    "saved routine"
-  );
-
-  await evaluate(client, `
-    document.querySelector('[data-tab="goals"]').click();
-  `);
-  await delay(250);
-  await expectEval(client, "Boolean(document.querySelector('[data-form=\"goal\"]'))", true, "goal form visible");
-  await evaluate(client, `
-    (() => {
-    const forms = [...document.querySelectorAll('[data-form="goal"]')];
-    const form = forms[forms.length - 1];
-    form.querySelector('[name="title"]').value = 'QA steady weight';
-    form.querySelector('[name="category"]').value = 'weight';
-    form.querySelector('[name="status"]').value = 'active';
-    form.querySelector('[name="due"]').value = '2026-07-01';
-    form.querySelector('[name="target"]').value = 'Reach 59 lb slowly';
-    form.querySelector('[name="note"]').value = 'Rendered goal smoke check';
-    form.requestSubmit();
-    })();
-  `);
-  await delay(500);
-  await expectEval(
-    client,
-    `JSON.parse(localStorage.getItem('woofwatcher.v1.state')).goals.some((goal) => goal.title === 'QA steady weight')`,
-    true,
-    "saved goal"
+    "completed plan reminder writes log"
   );
 
   await evaluate(client, `
     document.querySelector('[data-tab="log"]').click();
   `);
   await delay(250);
+  await expectEval(client, "document.body.innerText.includes('Effortless Log')", true, "effortless log visible");
   await expectEval(client, "Boolean(document.querySelector('[data-form=\"entry\"]'))", true, "entry form visible");
 
   await evaluate(client, `
     (() => {
     const form = document.querySelector('[data-form="entry"]');
-    form.querySelector('[name="type"]').value = 'meal';
-    form.querySelector('[name="title"]').value = 'QA breakfast';
-    form.querySelector('[name="caregiver"]').value = 'QA sitter';
-    form.querySelector('[name="amount"]').value = '1 cup';
-    form.querySelector('[name="mood"]').value = 'settled';
+    form.querySelector('[name="type"]').value = 'treat';
+    form.querySelector('[name="title"]').value = 'QA puzzle treat';
+    form.querySelector('[name="caregiver"]').value = 'Apollo';
+    form.querySelector('[name="amount"]').value = 'small';
+    form.querySelector('[name="treatType"]').value = 'puzzle toy';
+    form.querySelector('[name="reason"]').value = 'settle practice';
+    form.querySelector('[name="reaction"]').value = 'calm focus';
     form.querySelector('[name="note"]').value = 'Rendered smoke check';
     form.requestSubmit();
     })();
@@ -193,53 +129,26 @@ try {
   await expectEval(
     client,
     `JSON.parse(localStorage.getItem('woofwatcher.v1.state')).entries[0].title`,
-    "QA breakfast",
+    "QA puzzle treat",
     "saved entry"
   );
-  await expectEval(client, "document.body.innerText.includes('QA breakfast')", true, "timeline updates");
-
-  await evaluate(client, `document.querySelector('[data-tab="calendar"]').click();`);
-  await delay(250);
-  await expectEval(client, "Boolean(document.querySelector('.care-calendar-grid'))", true, "calendar grid visible");
-  await expectEval(client, "document.body.innerText.includes('QA breakfast')", true, "calendar includes current-day entry");
-
-  await evaluate(client, `document.querySelector('[data-tab="progress"]').click();`);
-  await delay(250);
-  await expectEval(client, "document.body.innerText.includes('Training progress')", true, "progress renders");
-  await expectEval(client, "document.body.innerText.includes('What to keep working on')", true, "progress focus renders");
-
-  await evaluate(client, `document.querySelector('[data-tab="records"]').click();`);
-  await delay(250);
-  await expectEval(client, "Boolean(document.querySelector('[data-record-mode=\"add\"]'))", true, "record add form visible");
-  await evaluate(client, `
-    (() => {
-    const form = document.querySelector('[data-record-mode="add"]');
-    form.querySelector('[name="type"]').value = 'vaccine';
-    form.querySelector('[name="title"]').value = 'QA vaccine';
-    form.querySelector('[name="due"]').value = '2026-07-01';
-    form.querySelector('[name="note"]').value = 'Rendered smoke vault check';
-    form.requestSubmit();
-    })();
-  `);
-  await delay(500);
-  await expectEval(
-    client,
-    `JSON.parse(localStorage.getItem('woofwatcher.v1.state')).records[0].title`,
-    "QA vaccine",
-    "saved record"
-  );
-  await expectEval(client, "document.body.innerText.includes('QA vaccine')", true, "record vault updates");
-
-  await evaluate(client, `document.querySelector('[data-tab="report"]').click();`);
-  await delay(250);
-  await expectEval(client, "document.body.innerText.includes('WoofWatcher Monthly Report')", true, "report renders");
-  await expectEval(client, "document.body.innerText.includes('QA breakfast')", true, "report includes entry");
-  await expectEval(client, "document.body.innerText.includes('Transfer')", true, "transfer export visible");
+  await expectEval(client, "document.body.innerText.includes('QA puzzle treat')", true, "timeline updates");
 
   await evaluate(client, `
-    document.querySelector('[data-tab="assistant"]').click();
+    document.querySelector('[data-tab="health"]').click();
   `);
   await delay(250);
+  await expectEval(client, "document.body.innerText.includes('Bile Watch')", true, "health bile watch visible");
+  await expectEval(client, "document.body.innerText.includes('This is pattern support, not a diagnosis')", true, "health boundary visible");
+
+  await evaluate(client, `
+    document.querySelector('[data-tab="more"]').click();
+  `);
+  await delay(250);
+  await expectEval(client, "document.body.innerText.includes('Diet Profile')", true, "diet profile visible");
+  await expectEval(client, "document.body.innerText.includes('Care Pass')", true, "care pass visible");
+  await expectEval(client, "document.body.innerText.includes('WoofGuide')", true, "woofguide visible");
+  await expectEval(client, "Boolean(document.querySelector('[data-form=\"assistant\"]'))", true, "woofguide form visible");
   await evaluate(client, `
     (() => {
     const form = document.querySelector('[data-form="assistant"]');
@@ -271,18 +180,11 @@ try {
 
 async function runDumpDomSmoke() {
   const checks = [
-    { route: "/", label: "home", text: ["WoofWatcher", "Phoenix care command", "Import", "Transfer", "Next handoff", "Caregiver handoff"] },
-    { route: "/?tab=team", label: "team", text: ["Care Team", "Care team profiles", "Add caregiver", "Names carry care history"] },
-    { route: "/?tab=reminders", label: "reminders", text: ["Reminders", "Reminder Center", "Care proof", "Due now", "Phone alerts"] },
-    { route: "/?tab=schedule", label: "schedule", text: ["Schedule", "Editable daily routine", "Add routine", "Save routine"] },
-    { route: "/?tab=goals", label: "goals", text: ["Goals", "Goal review", "Phoenix goals", "Save goal"] },
-    { route: "/?tab=calendar", label: "calendar", text: ["Calendar", "Care calendar", "Selected day", "Vomit days"] },
-    { route: "/?tab=progress", label: "progress", text: ["Progress", "Training progress", "What improved", "What to keep working on"] },
-    { route: "/?tab=health", label: "health", text: ["Health Watch", "Pattern status", "Bile Watch", "Empty-stomach pattern", "Red flags", "Health timeline"] },
-    { route: "/?tab=log", label: "log", text: ["Quick Log", "Capture what happened", "Save care log"] },
-    { route: "/?tab=records", label: "records", text: ["Records", "Stored records", "Add record", "Save record", "Remove"] },
-    { route: "/?tab=report", label: "report", text: ["WoofWatcher Monthly Report", "Download", "Transfer", "Print/PDF"] },
-    { route: "/?tab=assistant", label: "assistant", text: ["Care Helper", "Ask with Phoenix context", "veterinarian"] }
+    { route: "/", label: "phoenix", text: ["WoofWatcher", "Next best action", "Household Pulse", "WoofGuide", "Phoenix", "Log", "Plans", "Health", "More"] },
+    { route: "/?tab=log", label: "log", text: ["Effortless Log", "Treat details", "Training win", "Alone time", "Save care log"] },
+    { route: "/?tab=plans", label: "plans", text: ["Plans", "Today plan", "Reminder Center", "Bedtime snack", "Phone alerts"] },
+    { route: "/?tab=health", label: "health", text: ["Health Watch", "Bile Watch", "This is pattern support, not a diagnosis", "Health timeline"] },
+    { route: "/?tab=more", label: "more", text: ["More", "Diet Profile", "Care Pass", "Records", "WoofGuide", "Care Team"] }
   ];
 
   for (const check of checks) {

@@ -25,7 +25,7 @@
 - Modify: `src/woof-core.js`
 - Test: `test/woof-core.test.mjs`
 
-- [ ] **Step 1: Write failing tests for new entry fields and diet profile**
+- [x] **Step 1: Write failing tests for new entry fields and diet profile**
 
 Add tests that demonstrate the intended API:
 
@@ -79,7 +79,7 @@ test("normalizes treat, training win, and alone time logs with optional details"
 });
 ```
 
-- [ ] **Step 2: Run red tests**
+- [x] **Step 2: Run red tests**
 
 Run:
 
@@ -89,11 +89,11 @@ Run:
 
 Expected: FAIL because `dietProfile` defaults and the new entry detail fields are not normalized yet.
 
-- [ ] **Step 3: Implement minimal core normalization**
+- [x] **Step 3: Implement minimal core normalization**
 
 Add event types: `potty`, `poop`, `pee`, `play`, `mood`, `alone`, and keep all existing types. Add `dietProfile` to default/normalized state. Extend `normalizeEntryInput` with optional fields: `food`, `portionOffered`, `portionEaten`, `appetite`, `treatType`, `reason`, `reaction`, `skill`, `outcome`, `moodBefore`, `moodAfter`, `aloneOutcome`, `endedAt`.
 
-- [ ] **Step 4: Run green tests**
+- [x] **Step 4: Run green tests**
 
 Run the same focused test command. Expected: all tests in `test/woof-core.test.mjs` pass.
 
@@ -103,7 +103,7 @@ Run the same focused test command. Expected: all tests in `test/woof-core.test.m
 - Modify: `src/woof-core.js`
 - Test: `test/woof-core.test.mjs`
 
-- [ ] **Step 1: Write failing tests for Household Pulse and avatar states**
+- [x] **Step 1: Write failing tests for Household Pulse and avatar states**
 
 Add tests:
 
@@ -144,15 +144,15 @@ test("chooses Phoenix avatar state from evidence without diagnosing", () => {
 });
 ```
 
-- [ ] **Step 2: Run red tests**
+- [x] **Step 2: Run red tests**
 
 Expected: FAIL because `getHouseholdPulse` and `getAvatarState` do not exist.
 
-- [ ] **Step 3: Implement helpers**
+- [x] **Step 3: Implement helpers**
 
 Export `getHouseholdPulse(state, now)` and `getAvatarState(state, now)`. Use existing `getTodayPlan`, `getReminderCenter`, `getHealthWatch`, and `getBileWatch`. Priority order for avatar state: vomit/urgent health -> active alone time -> overdue walk/play -> upcoming walk -> training win -> all care complete -> calm/default.
 
-- [ ] **Step 4: Run green tests**
+- [x] **Step 4: Run green tests**
 
 Expected: focused tests pass.
 
@@ -163,7 +163,7 @@ Expected: focused tests pass.
 - Modify: `styles.css`
 - Test: `scripts/render-smoke.mjs`
 
-- [ ] **Step 1: Update smoke expectations first**
+- [x] **Step 1: Update smoke expectations first**
 
 Change render-smoke fallback checks to expect:
 
@@ -175,7 +175,7 @@ Change render-smoke fallback checks to expect:
 { route: "/?tab=more", label: "more", text: ["More", "Diet Profile", "Care Pass", "WoofGuide"] }
 ```
 
-- [ ] **Step 2: Run red smoke**
+- [x] **Step 2: Run red smoke**
 
 Run:
 
@@ -185,13 +185,13 @@ Run:
 
 Expected: FAIL or fallback failure because the new labels/screens do not exist.
 
-- [ ] **Step 3: Implement navigation and Phoenix Home**
+- [x] **Step 3: Implement navigation and Phoenix Home**
 
 Import `getAvatarState` and `getHouseholdPulse`. Set default tab to `phoenix`. Keep old route aliases working: `today` -> `phoenix`, `assistant` -> `more`, `schedule` -> `plans`, `reminders` -> `plans`, `team` -> `more`, `records` -> `more`, `report` -> `more`.
 
 Render bottom nav: `Phoenix`, `Log`, `Plans`, `Health`, `More`. Create Phoenix Home with avatar scene, mood, evidence, next best action, today's care overview, Household Pulse, Health Watch, and WoofGuide compact card.
 
-- [ ] **Step 4: Implement visual system**
+- [x] **Step 4: Implement visual system**
 
 Update `styles.css` tokens and shell:
 
@@ -209,7 +209,7 @@ Update `styles.css` tokens and shell:
 
 Keep responsive mobile constraints and prevent text overlap.
 
-- [ ] **Step 5: Run green smoke**
+- [x] **Step 5: Run green smoke**
 
 Expected: render smoke passes through fallback or CDP.
 
@@ -220,23 +220,23 @@ Expected: render smoke passes through fallback or CDP.
 - Modify: `styles.css`
 - Test: `scripts/render-smoke.mjs`
 
-- [ ] **Step 1: Write/adjust smoke checks for forms**
+- [x] **Step 1: Write/adjust smoke checks for forms**
 
 Ensure smoke can submit a meal, treat, training win, and alone time through the UI and then verify localStorage contains entries of those types.
 
-- [ ] **Step 2: Run red smoke**
+- [x] **Step 2: Run red smoke**
 
 Expected: FAIL before UI handlers exist.
 
-- [ ] **Step 3: Implement Effortless Log grid**
+- [x] **Step 3: Implement Effortless Log grid**
 
 Add one-tap buttons for Meal, Treat, Walk, Potty, Poop, Pee, Play, Zoomies, Training Win, Anxious, Happy, Sleepy, Vomit, Medication, Alone Time, Vet, Note. Clicking a button creates a safe default entry and shows it in the recent log strip. Keep the deep manual form available under `Add details`.
 
-- [ ] **Step 4: Implement Plans and More surfaces**
+- [x] **Step 4: Implement Plans and More surfaces**
 
 Plans should show today routine, scheduled walks, meals, bedtime snack, training, vet visit, alone-time windows, and reminder proof. More should show Diet Profile, Humans/Care Team, Records, Reports, Care Pass, and WoofGuide.
 
-- [ ] **Step 5: Run green smoke**
+- [x] **Step 5: Run green smoke**
 
 Expected: the new UI workflows write local state and visible text updates.
 
@@ -247,11 +247,11 @@ Expected: the new UI workflows write local state and visible text updates.
 - Modify: `docs/V1_COMPLETION_AUDIT.md`
 - Modify: `docs/V1_PLAN.md`
 
-- [ ] **Step 1: Update docs after tests pass**
+- [x] **Step 1: Update docs after tests pass**
 
 Record that Phoenix Home, Avatar State Engine, Household Pulse, Effortless Log, Diet Profile, Treat Log, Training Win, and Alone Time are implemented locally.
 
-- [ ] **Step 2: Run full verification**
+- [x] **Step 2: Run full verification**
 
 Run:
 
@@ -265,7 +265,7 @@ Run:
 
 Expected: all pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 Commit message:
 
