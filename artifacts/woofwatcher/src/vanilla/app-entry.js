@@ -134,38 +134,26 @@ function render() {
   app.innerHTML = `
     <header class="topbar">
       <div class="brand-lockup">
-        <img src="/public/app-icon.svg" alt="" class="app-icon" />
+        <img src="/app-icon.svg" alt="" class="app-icon" />
         <div>
-          <p class="micro">WoofWatcher</p>
-          <h1>Phoenix care</h1>
+          <h1 class="brand-title"><span class="woof">Woof</span> <span class="watcher">Watcher</span></h1>
+          <p class="tagline">Happy dog. Simplified care.</p>
         </div>
       </div>
       <div class="top-actions">
         <button class="button ghost" data-action="export-json">Backup</button>
-        <button class="button ghost" data-action="export-transfer">Care Pass</button>
-        <button class="button ghost" data-action="import-json">Import</button>
-        <button class="button ghost" data-action="reset-demo">Reset</button>
       </div>
       <input class="visually-hidden" data-input="import-json" type="file" accept="application/json,.json" />
     </header>
 
     <main class="workspace">
-      <aside class="profile-rail">
-        ${renderProfileCard(health, avatar)}
-        ${renderCareStats(summary)}
-        ${renderPulseRail(pulse, handoff)}
-      </aside>
-
-      <section class="primary-surface">
-        ${renderTabHeader(activeTab)}
-        ${renderActiveTab(activeTab, { summary, plan, reminders, notifications, health, bileWatch, handoff, pulse, avatar, goalReview, calendar, trainingProgress })}
-      </section>
+      ${renderActiveTab(activeTab, { summary, plan, reminders, notifications, health, bileWatch, handoff, pulse, avatar, goalReview, calendar, trainingProgress })}
     </main>
 
     <nav class="bottom-nav" aria-label="WoofWatcher sections">
-      ${renderNavButton("phoenix", "Phoenix")}
-      ${renderNavButton("log", "Log")}
+      ${renderNavButton("phoenix", "Home")}
       ${renderNavButton("plans", "Plans")}
+      <button class="nav-center-btn" data-tab="log">+</button>
       ${renderNavButton("health", "Health")}
       ${renderNavButton("more", "More")}
     </nav>
@@ -836,102 +824,113 @@ function renderRoutineForm(routine = {}) {
 }
 
 function renderPhoenixTab(context) {
-  const { avatar, pulse, summary, health, bileWatch, reminders } = context;
+  const { avatar, pulse, summary, health, bileWatch, reminders, handoff } = context;
   const nextReminder = reminders.nextReminder || pulse.nextAction;
+
+  // Derive mood emoji
+  const moodEmoji = avatar.mood === "settled" ? "😌" : avatar.mood === "anxious" ? "😟" : "🐶";
+
   return `
     <div class="phoenix-home">
-      <section class="phoenix-hero panel span-2">
-        <div class="phoenix-story">
-          <p class="micro">Phoenix</p>
-          <h3>${escapeHtml(avatar.suggestedAction)}</h3>
-          <p>${escapeHtml(avatar.speech)}</p>
-          <div class="next-action-card">
-            <span>Next best action</span>
-            <strong>${escapeHtml(pulse.nextAction.label)}</strong>
-            <small>${escapeHtml(pulse.nextAction.time || "Today")} | ${escapeHtml(pulse.nextAction.owner || "Phoenix's humans")}</small>
+      <!-- Tamagotchi Hero -->
+      <section class="hero-card">
+        <div class="hero-img-wrap">
+          <img src="/phoenix-hero.png" alt="Phoenix" />
+        </div>
+        <div class="hero-content">
+          <div class="hero-bubble">
+            ${escapeHtml(avatar.suggestedAction)}
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <span>Mood</span>
+              <strong>${moodEmoji} ${escapeHtml(titleCase(avatar.mood))}</strong>
+            </div>
+            <div class="hero-stat">
+              <span>Energy</span>
+              <strong>${escapeHtml(health.status === 'steady' ? 'High' : 'Normal')}</strong>
+            </div>
+            <div class="hero-stat">
+              <span>Status</span>
+              <strong class="status-chip ${health.status}" style="font-size: 0.8rem;">${escapeHtml(health.label)}</strong>
+            </div>
           </div>
         </div>
-        ${renderPhoenixAvatar(avatar, "hero")}
-      </section>
-
-      <section class="panel household-pulse-panel">
-        <div class="section-heading">
-          <div>
-            <p class="micro">Household Pulse</p>
-            <h3>${pulse.completedCount}/${pulse.totalCount} routine items covered</h3>
+        <div style="background: var(--surface-nested); padding: 12px 20px; border-top: 1px solid var(--stone); display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Next up</span>
+            <strong style="font-size: 0.875rem;">${escapeHtml(nextReminder?.label || "Routine covered")} · ${escapeHtml(nextReminder?.time || "Today")}</strong>
           </div>
-          <span class="status-chip ${health.status}">${escapeHtml(pulse.healthStatus)}</span>
+          <button class="button" data-tab="plans">View</button>
         </div>
-        <p>${escapeHtml(pulse.summary)}</p>
-        <div class="pulse-human-list">
-          ${pulse.humans.map(renderPulseHuman).join("")}
-        </div>
-        <small>${escapeHtml(pulse.healthBoundary)}</small>
       </section>
 
-      <section class="panel care-overview-panel">
-        <div class="section-heading">
-          <div>
-            <p class="micro">${escapeHtml(summary.monthLabel)}</p>
-            <h3>Care overview</h3>
+      <!-- Today's Care Overview -->
+      <section style="margin-bottom: 24px;">
+        <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Today's Care</h3>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+          ${renderMetricTile("Meals", summary.meals, "M")}
+          ${renderMetricTile("Walks", summary.walks, "W")}
+          ${renderMetricTile("Potty", summary.potty, "P")}
+        </div>
+      </section>
+
+      <!-- Quick Log grid -->
+      <section class="quick-log-panel" style="margin-bottom: 24px;">
+        <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Quick Log</h3>
+        <div class="quick-log-grid">
+          ${renderQuickButton("meal", "Meal", "M")}
+          ${renderQuickButton("walk", "Walk", "W")}
+          ${renderQuickButton("potty", "Potty", "P")}
+          ${renderQuickButton("medication", "Meds", "Rx")}
+          ${renderQuickButton("vomit", "Symptoms", "V")}
+          ${renderQuickButton("training", "Training", "T")}
+          ${renderQuickButton("alone", "Alone", "A")}
+          ${renderQuickButton("note", "Note", "N")}
+        </div>
+      </section>
+
+      <!-- Health Watch -->
+      <section style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="font-size: 1.1rem;">Health Watch</h3>
+          <span class="status-chip ${health.status}">${escapeHtml(health.status)}</span>
+        </div>
+        <div class="health-watch-row">
+          <div class="health-watch-card">
+            <span>Overall</span>
+            <strong style="color: var(--status-good);">${escapeHtml(health.label)}</strong>
           </div>
-          <button class="button ghost" data-tab="plans">View plans</button>
-        </div>
-        <div class="care-overview-grid">
-          ${renderMetricTile("Meals", summary.meals, "meal")}
-          ${renderMetricTile("Walks", summary.walks, "walk")}
-          ${renderMetricTile("Training", summary.trainingSessions, "training")}
-          ${renderMetricTile("Bile", summary.vomitIncidents, "vomit")}
-        </div>
-      </section>
-
-      <section class="panel quick-log-panel span-2">
-        <p class="micro">Effortless Log</p>
-        <h3>Most common actions</h3>
-        <div class="effortless-grid">
-          ${renderQuickButton("meal", "Meal")}
-          ${renderQuickButton("walk", "Walk")}
-          ${renderQuickButton("potty", "Potty")}
-          ${renderQuickButton("treat", "Treat")}
-          ${renderQuickButton("training", "Training")}
-          ${renderQuickButton("alone", "Alone time")}
-          ${renderQuickButton("vomit", "Bile note")}
-          ${renderQuickButton("note", "Note")}
-        </div>
-      </section>
-
-      <section class="panel health-mini-panel">
-        <div class="section-heading">
-          <div>
-            <p class="micro">Bile Watch</p>
-            <h3>${escapeHtml(bileWatch.label)}</h3>
+          <div class="health-watch-card">
+            <span>Bile Watch</span>
+            <strong style="color: var(--status-good);">${escapeHtml(bileWatch.label)}</strong>
           </div>
-          <span class="status-chip ${escapeAttribute(bileWatch.status)}">${escapeHtml(bileWatch.status)}</span>
+          <div class="health-watch-card">
+            <span>Food Gap</span>
+            <strong style="color: var(--status-good);">${bileWatch.hoursSinceLastFood === null ? "No logs" : escapeHtml(bileWatch.hoursSinceLastFood + "h")}</strong>
+          </div>
+          <div class="health-watch-card">
+            <span>Recent Logs</span>
+            <strong style="color: var(--status-good);">${escapeHtml(summary.totalEntries)}</strong>
+          </div>
         </div>
-        <p>${escapeHtml(bileWatch.signals[0])}</p>
-        <small>${escapeHtml(bileWatch.actions[0])}</small>
-        <button class="button ghost full" data-tab="health">Open Health Watch</button>
       </section>
 
-      <section class="panel next-plan-panel">
-        <p class="micro">Today plan</p>
-        <h3>${escapeHtml(nextReminder?.label || "Routine covered")}</h3>
-        <p>${escapeHtml(nextReminder?.note || "No scheduled care is waiting right now.")}</p>
-        <small>${escapeHtml(nextReminder?.time || "Today")} | ${escapeHtml(nextReminder?.owner || "Phoenix's humans")}</small>
-        <button class="button ghost full" data-tab="plans">Review Plans</button>
+      <!-- Handoff Timeline / Care Team -->
+      <section style="margin-bottom: 24px;">
+        <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Care Team</h3>
+        ${renderTimeline(state.entries.slice(0, 3))}
+        <button class="button ghost full" style="width: 100%; margin-top: 8px;" data-tab="more">View Full Team & Timeline</button>
       </section>
 
-      <section class="panel woofguide-mini-panel">
-        <p class="micro">WoofGuide</p>
-        <h3>Ask with Phoenix context</h3>
-        <p>Use Phoenix's logs, diet profile, and health patterns to decide what to track next.</p>
-        <button class="button ghost full" data-tab="more">Open WoofGuide</button>
-      </section>
-
-      <section class="panel span-2">
-        <p class="micro">Care timeline</p>
-        <h3>Recent logs</h3>
-        ${renderTimeline(state.entries.slice(0, 6))}
+      <!-- Woof Assistant -->
+      <section class="panel assistant-panel" style="margin-bottom: 24px;">
+        <h3 style="margin-bottom: 8px;">Woof Assistant</h3>
+        <p style="margin-bottom: 16px; font-size: 0.875rem;">I can help analyze Phoenix's patterns. What would you like to know?</p>
+        <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;">
+          <button class="button" style="white-space: nowrap;" data-tab="assistant">Ask about bile</button>
+          <button class="button" style="white-space: nowrap;" data-tab="assistant">Check appetite</button>
+        </div>
       </section>
     </div>
   `;
@@ -947,12 +946,12 @@ function renderPulseHuman(human) {
   `;
 }
 
-function renderMetricTile(label, value, type) {
+function renderMetricTile(label, value, glyphLabel) {
   return `
-    <article class="metric-tile">
-      ${renderGlyph(type)}
-      <span>${escapeHtml(label)}</span>
-      <strong>${escapeHtml(value)}</strong>
+    <article class="panel" style="padding: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+      <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--sage); color: var(--forest); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">${escapeHtml(glyphLabel)}</div>
+      <strong style="font-size: 1.25rem;">${escapeHtml(value)}</strong>
+      <span style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(label)}</span>
     </article>
   `;
 }
@@ -971,10 +970,11 @@ function renderRoutine(routine, completed) {
   `;
 }
 
-function renderQuickButton(type, title) {
+function renderQuickButton(type, title, overrideGlyph) {
+  const glyph = overrideGlyph || (type.charAt(0).toUpperCase());
   return `
-    <button class="quick-button" data-quick-type="${escapeAttribute(type)}" data-quick-title="${escapeAttribute(title)}">
-      ${renderGlyph(type)}
+    <button class="quick-btn" data-quick-type="${escapeAttribute(type)}" data-quick-title="${escapeAttribute(title)}">
+      <div class="icon">${escapeHtml(glyph)}</div>
       <span>${escapeHtml(title)}</span>
     </button>
   `;
@@ -1619,14 +1619,17 @@ function renderTimeline(entries) {
         .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt))
         .map(
           (entry) => `
-          <article class="timeline-row ${entry.requiresFollowUp ? "follow-up" : ""}">
-            <div>
-              <span>${escapeHtml(titleCase(entry.type))}</span>
-              <h4>${escapeHtml(entry.title)}</h4>
-              <p>${escapeHtml(entry.caregiver)} | ${escapeHtml(formatDateTime(entry.occurredAt))}</p>
-              ${entry.note ? `<small>${escapeHtml(entry.note)}</small>` : ""}
+          <article class="timeline-item ${entry.requiresFollowUp ? "follow-up" : ""}">
+            <div class="timeline-avatar">${escapeHtml(entry.caregiver.charAt(0) || "U")}</div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <strong>${escapeHtml(titleCase(entry.type))}: ${escapeHtml(entry.title)}</strong>
+                <span>${escapeHtml(formatDateTime(entry.occurredAt))}</span>
+              </div>
+              <div class="timeline-body">
+                ${entry.note ? escapeHtml(entry.note) : "Logged by " + escapeHtml(entry.caregiver)}
+              </div>
             </div>
-            ${entry.requiresFollowUp ? `<strong>Review</strong>` : ""}
           </article>
         `
         )

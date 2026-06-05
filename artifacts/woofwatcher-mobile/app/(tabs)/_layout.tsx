@@ -1,44 +1,17 @@
 import { BlurView } from "expo-blur";
-import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Tabs } from "expo-router";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
+import { Tabs, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { MaterialCommunityIcons, Feather, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, StyleSheet, View, Pressable } from "react-native";
 import { useColors } from "@/hooks/useColors";
-
-function NativeTabLayout() {
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "pawprint", selected: "pawprint.fill" }} />
-        <Label>Phoenix</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="log">
-        <Icon sf={{ default: "plus.circle", selected: "plus.circle.fill" }} />
-        <Label>Log</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="plans">
-        <Icon sf={{ default: "list.bullet", selected: "list.bullet" }} />
-        <Label>Plans</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="health">
-        <Icon sf={{ default: "heart", selected: "heart.fill" }} />
-        <Label>Health</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="more">
-        <Icon sf={{ default: "message", selected: "message.fill" }} />
-        <Label>Assistant</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
-}
+import * as Haptics from "expo-haptics";
 
 function ClassicTabLayout() {
   const colors = useColors();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const router = useRouter();
 
   return (
     <Tabs
@@ -48,29 +21,32 @@ function ClassicTabLayout() {
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.ink,
+          backgroundColor: isIOS ? "transparent" : colors.card,
           borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
+          paddingTop: 8,
           ...(isWeb ? { height: 84 } : {}),
         },
         tabBarBackground: () =>
           isIOS ? (
-            <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />
           ) : isWeb ? (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.ink }]} />
-          ) : null,
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
+          ),
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Phoenix",
-          tabBarIcon: ({ color }) =>
+          title: "Home",
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="pawprint.fill" tintColor={color} size={22} />
+              <SymbolView name={focused ? "house.fill" : "house"} tintColor={color} size={24} />
             ) : (
-              <MaterialCommunityIcons name="paw" size={22} color={color} />
+              <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
             ),
         }}
       />
@@ -78,48 +54,66 @@ function ClassicTabLayout() {
         name="log"
         options={{
           title: "Log",
-          tabBarIcon: ({ color }) =>
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="plus.circle.fill" tintColor={color} size={22} />
+              <SymbolView name={focused ? "list.bullet.clipboard.fill" : "list.bullet.clipboard"} tintColor={color} size={22} />
             ) : (
-              <Feather name="plus-circle" size={22} color={color} />
+              <Ionicons name={focused ? "list" : "list-outline"} size={24} color={color} />
             ),
         }}
       />
       <Tabs.Screen
-        name="plans"
+        name="add"
         options={{
-          title: "Plans",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="list.bullet" tintColor={color} size={22} />
-            ) : (
-              <Feather name="list" size={22} color={color} />
-            ),
+          title: "",
+          tabBarButton: () => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add care entry"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.navigate("/log");
+              }}
+              style={s.addBtnWrap}
+            >
+              {({ pressed }) => (
+                <View style={[s.addBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}>
+                  <Ionicons name="add" size={32} color="#fff" />
+                </View>
+              )}
+            </Pressable>
+          ),
         }}
       />
       <Tabs.Screen
         name="health"
         options={{
           title: "Health",
-          tabBarIcon: ({ color }) =>
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="heart.fill" tintColor={color} size={22} />
+              <SymbolView name={focused ? "heart.fill" : "heart"} tintColor={color} size={24} />
             ) : (
-              <Feather name="heart" size={22} color={color} />
+              <Ionicons name={focused ? "heart" : "heart-outline"} size={24} color={color} />
             ),
         }}
       />
       <Tabs.Screen
         name="more"
         options={{
-          title: "Assistant",
-          tabBarIcon: ({ color }) =>
+          title: "More",
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="message.fill" tintColor={color} size={22} />
+              <SymbolView name={focused ? "ellipsis.circle.fill" : "ellipsis.circle"} tintColor={color} size={24} />
             ) : (
-              <Ionicons name="chatbubble-ellipses-outline" size={22} color={color} />
+              <Ionicons name={focused ? "ellipsis-horizontal-circle" : "ellipsis-horizontal-circle-outline"} size={24} color={color} />
             ),
+        }}
+      />
+      
+      <Tabs.Screen
+        name="plans"
+        options={{
+          href: null, // Hide from tab bar, but keep route active
         }}
       />
     </Tabs>
@@ -127,8 +121,26 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
   return <ClassicTabLayout />;
 }
+
+const s = StyleSheet.create({
+  addBtnWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -20,
+    shadowColor: "#2E5846",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  }
+});

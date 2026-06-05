@@ -1,44 +1,44 @@
-const darkTheme = {
-  text: "#d4cfc4",
-  tint: "#c87a3a",
+const lightTheme = {
+  text: "#1F2D27",
+  tint: "#BB602D",
 
-  background: "#1a2332",
-  foreground: "#d4cfc4",
+  background: "#F7F5F1",
+  foreground: "#1F2D27",
 
-  card: "#243044",
-  cardForeground: "#d4cfc4",
+  card: "#FFFFFF",
+  cardForeground: "#1F2D27",
 
-  primary: "#c87a3a",
-  primaryForeground: "#ffffff",
+  primary: "#2E5846",
+  primaryForeground: "#FFFFFF",
 
-  secondary: "#2a3a56",
-  secondaryForeground: "#d4cfc4",
+  secondary: "#DCE6D9",
+  secondaryForeground: "#1F2D27",
 
-  muted: "#243044",
-  mutedForeground: "#7a8fa8",
+  muted: "#F7F5F1",
+  mutedForeground: "#6F7B72",
 
-  accent: "#8fad98",
-  accentForeground: "#1a2332",
+  accent: "#DCE6D9",
+  accentForeground: "#1F2D27",
 
-  destructive: "#c96358",
-  destructiveForeground: "#ffffff",
+  destructive: "#C2603F",
+  destructiveForeground: "#FFFFFF",
 
-  border: "rgba(212,207,196,0.15)",
-  input: "rgba(212,207,196,0.12)",
+  border: "#E5E2DC",
+  input: "#E5E2DC",
 
-  amber: "#d8aa52",
-  rose: "#c96358",
-  sage: "#8fad98",
-  copper: "#c87a3a",
-  ink: "#0f1722",
-  navy: "#243044",
-  midnight: "#1a2332",
+  amber: "#D29A3E",
+  rose: "#C2603F",
+  sage: "#3F7D5C",
+  copper: "#BB602D",
+  ink: "#1F2D27",
+  navy: "#0F1F33",
+  midnight: "#0A131F",
 };
 
 const colors = {
-  light: darkTheme,
-  dark: darkTheme,
-  radius: 10,
+  light: lightTheme,
+  dark: lightTheme, // Keep it light even in dark mode for this brand identity
+  radius: 18,
 };
 
 export default colors;

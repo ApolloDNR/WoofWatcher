@@ -41,12 +41,12 @@ function EntryItem({ entry, onDelete }: { entry: Entry; onDelete: (id: string, t
   const colors = useColors();
   const tc = entryTypeColor(entry.type, colors);
   return (
-    <View style={[es.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[es.card, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
       <View style={[es.iconBg, { backgroundColor: tc + "1a" }]}>
-        <EntryTypeIcon type={entry.type} size={18} />
+        <EntryTypeIcon type={entry.type} size={20} color={tc} />
       </View>
       <View style={es.mid}>
-        <Text style={[es.title, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{entry.title}</Text>
+        <Text style={[es.title, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{entry.title}</Text>
         <View style={es.meta}>
           <Text style={[es.metaText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{entry.caregiver}</Text>
           <Text style={[es.dot, { color: colors.border }]}>·</Text>
@@ -55,30 +55,31 @@ function EntryItem({ entry, onDelete }: { entry: Entry; onDelete: (id: string, t
             <>
               <Text style={[es.dot, { color: colors.border }]}>·</Text>
               <View style={[es.badge, { backgroundColor: entry.severity === "urgent" ? colors.rose + "22" : colors.amber + "22" }]}>
-                <Text style={[es.badgeText, { color: entry.severity === "urgent" ? colors.rose : colors.amber, fontFamily: "Inter_500Medium" }]}>{entry.severity}</Text>
+                <Text style={[es.badgeText, { color: entry.severity === "urgent" ? colors.rose : colors.amber, fontFamily: "Inter_600SemiBold" }]}>{entry.severity}</Text>
               </View>
             </>
           )}
         </View>
         {entry.note ? <Text numberOfLines={2} style={[es.note, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{entry.note}</Text> : null}
       </View>
-      <Pressable onPress={() => onDelete(entry.id, entry.title)} hitSlop={10}>
-        <Feather name="trash-2" size={15} color={colors.mutedForeground} />
+      <Pressable onPress={() => onDelete(entry.id, entry.title)} hitSlop={15} style={es.delBtn}>
+        <Ionicons name="trash-outline" size={18} color={colors.mutedForeground} />
       </Pressable>
     </View>
   );
 }
 const es = StyleSheet.create({
-  card: { flexDirection: "row", alignItems: "flex-start", borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, padding: 12, gap: 10 },
-  iconBg: { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center", marginTop: 1 },
-  mid: { flex: 1 },
-  title: { fontSize: 14, marginBottom: 3 },
-  meta: { flexDirection: "row", alignItems: "center", gap: 4, flexWrap: "wrap" },
-  metaText: { fontSize: 12 },
-  dot: { fontSize: 12 },
-  note: { fontSize: 12, marginTop: 4, lineHeight: 17 },
-  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  badgeText: { fontSize: 11 },
+  card: { flexDirection: "row", alignItems: "flex-start", borderRadius: 20, borderWidth: 1, padding: 16, gap: 14, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 },
+  iconBg: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  mid: { flex: 1, paddingTop: 2 },
+  title: { fontSize: 16, marginBottom: 4 },
+  meta: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  metaText: { fontSize: 13 },
+  dot: { fontSize: 13 },
+  note: { fontSize: 14, marginTop: 8, lineHeight: 20 },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  badgeText: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 },
+  delBtn: { padding: 4 }
 });
 
 export default function LogScreen() {
@@ -114,7 +115,7 @@ export default function LogScreen() {
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
       <View style={[s.header, { paddingTop: topInset + 16, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <Text style={[s.screenTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Log entry</Text>
+        <Text style={[s.screenTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>Log entry</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.typePicker} style={s.typeScroll}>
           {ENTRY_TYPES.map((t) => {
             const active = selectedType === t;
@@ -123,10 +124,10 @@ export default function LogScreen() {
               <Pressable
                 key={t}
                 onPress={() => { setSelectedType(t); Haptics.selectionAsync(); }}
-                style={[s.typeChip, { backgroundColor: active ? tc + "22" : colors.card, borderColor: active ? tc : colors.border }]}
+                style={[s.typeChip, { backgroundColor: active ? tc : colors.card, borderColor: active ? tc : colors.border }]}
               >
-                <EntryTypeIcon type={t} size={15} color={active ? tc : colors.mutedForeground} />
-                <Text style={[s.typeLabel, { color: active ? tc : colors.mutedForeground, fontFamily: active ? "Inter_600SemiBold" : "Inter_400Regular" }]}>
+                <EntryTypeIcon type={t} size={16} color={active ? "#fff" : colors.foreground} />
+                <Text style={[s.typeLabel, { color: active ? "#fff" : colors.foreground, fontFamily: active ? "Inter_600SemiBold" : "Inter_500Medium" }]}>
                   {TYPE_LABELS[t]}
                 </Text>
               </Pressable>
@@ -143,22 +144,22 @@ export default function LogScreen() {
             returnKeyType="done"
             onSubmitEditing={handleLog}
           />
-          <Pressable onPress={handleLog} style={[s.logBtn, { backgroundColor: entryTypeColor(selectedType, colors) }]}>
-            <Ionicons name="add" size={22} color="#fff" />
+          <Pressable onPress={handleLog} style={[s.logBtn, { backgroundColor: colors.primary }]}>
+            <Ionicons name="checkmark" size={24} color="#fff" />
           </Pressable>
         </View>
       </View>
       <FlatList
         data={entries}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 12, paddingBottom: Platform.OS === "web" ? 118 : 100 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Platform.OS === "web" ? 118 : 120 }}
         ListEmptyComponent={
           <View style={[s.empty, { borderColor: colors.border }]}>
-            <Feather name="clipboard" size={28} color={colors.mutedForeground} />
+            <Ionicons name="clipboard-outline" size={32} color={colors.mutedForeground} />
             <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>No entries logged yet</Text>
           </View>
         }
-        ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         renderItem={({ item }) => <EntryItem entry={item} onDelete={handleDelete} />}
       />
     </View>
@@ -167,15 +168,15 @@ export default function LogScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 18, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth },
-  screenTitle: { fontSize: 24, marginBottom: 14 },
-  typeScroll: { marginBottom: 10 },
-  typePicker: { gap: 6, paddingRight: 18 },
-  typeChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
-  typeLabel: { fontSize: 12 },
-  inputRow: { flexDirection: "row", gap: 8 },
-  input: { flex: 1, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
-  logBtn: { width: 44, height: 44, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  empty: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 32, alignItems: "center", gap: 10, marginTop: 12 },
-  emptyText: { fontSize: 14 },
+  header: { paddingHorizontal: 20, paddingBottom: 20, borderBottomWidth: 1 },
+  screenTitle: { fontSize: 28, marginBottom: 16, letterSpacing: -0.5 },
+  typeScroll: { marginBottom: 16 },
+  typePicker: { gap: 10, paddingRight: 20 },
+  typeChip: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 24, borderWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+  typeLabel: { fontSize: 14 },
+  inputRow: { flexDirection: "row", gap: 12 },
+  input: { flex: 1, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15 },
+  logBtn: { width: 52, height: 52, borderRadius: 16, alignItems: "center", justifyContent: "center", shadowColor: "#2E5846", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
+  empty: { borderRadius: 20, borderWidth: 1, padding: 40, alignItems: "center", gap: 12, marginTop: 20 },
+  emptyText: { fontSize: 15 },
 });

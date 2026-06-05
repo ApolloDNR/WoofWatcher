@@ -459,6 +459,7 @@ export function getMonthlySummary(state, now = new Date().toISOString()) {
     trainingSessions: countType(entries, "training"),
     trainingMinutes: sumNumber(entries, "training", "durationMinutes"),
     vomitIncidents: countType(entries, "vomit"),
+    potty: countType(entries, "potty"),
     healthNotes: countType(entries, "health"),
     vetRecords: countType(entries, "vet"),
     weightChecks: countType(entries, "weight"),

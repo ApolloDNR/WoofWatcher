@@ -1,0 +1,2 @@
+- [Expo Router tab patterns](expo-router-tabs.md) — files prefixed with `_` are ignored as routes; center "+" tab needs `tabBarButton`, not interactive `tabBarIcon`.
+- [WoofWatcher web app structure](woofwatcher-web.md) — real entry is `src/vanilla/app-entry.js`; `src/vanilla/app.js` is dead code; data getters in `woof-core.js`.

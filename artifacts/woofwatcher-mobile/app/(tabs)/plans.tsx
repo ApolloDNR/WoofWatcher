@@ -19,16 +19,16 @@ function GoalCategoryBadge({ category }: { category: string }) {
   };
   const bg = bgMap[category] || colors.mutedForeground;
   return (
-    <View style={[gb.badge, { backgroundColor: bg + "22" }]}>
-      <Text style={[gb.label, { color: bg, fontFamily: "Inter_500Medium" }]}>
+    <View style={[gb.badge, { backgroundColor: bg + "1A" }]}>
+      <Text style={[gb.label, { color: bg, fontFamily: "Inter_600SemiBold" }]}>
         {CATEGORY_LABELS[category] || category}
       </Text>
     </View>
   );
 }
 const gb = StyleSheet.create({
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: "flex-start" },
-  label: { fontSize: 11 },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, alignSelf: "flex-start" },
+  label: { fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 },
 });
 
 function StatusDot({ status }: { status: string }) {
@@ -36,7 +36,7 @@ function StatusDot({ status }: { status: string }) {
   const colorMap: Record<string, string> = { active: colors.sage, paused: colors.amber, done: colors.mutedForeground };
   return <View style={[sd.dot, { backgroundColor: colorMap[status] || colors.mutedForeground }]} />;
 }
-const sd = StyleSheet.create({ dot: { width: 7, height: 7, borderRadius: 4, marginTop: 5 } });
+const sd = StyleSheet.create({ dot: { width: 10, height: 10, borderRadius: 5, marginTop: 5 } });
 
 export default function PlansScreen() {
   const colors = useColors();
@@ -48,51 +48,53 @@ export default function PlansScreen() {
   return (
     <ScrollView
       style={[s.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingTop: topInset + 16, paddingBottom: Platform.OS === "web" ? 118 : 100, paddingHorizontal: 18 }}
+      contentContainerStyle={{ paddingTop: topInset + 16, paddingBottom: Platform.OS === "web" ? 118 : 120, paddingHorizontal: 20 }}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={[s.screenTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Plans</Text>
+      <Text style={[s.screenTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>Plans</Text>
 
-      <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Daily schedule</Text>
-      <View style={[s.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[s.sectionTitle, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>DAILY SCHEDULE</Text>
+      <View style={[s.listCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
         {routines.map((r, i) => (
-          <View key={r.id} style={[s.routineRow, i < routines.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+          <View key={r.id} style={[s.routineRow, i < routines.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
             <View style={s.timeCol}>
-              <Text style={[s.routineTime, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>{r.time}</Text>
+              <Text style={[s.routineTime, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>{r.time}</Text>
             </View>
             <View style={[s.iconBg, { backgroundColor: entryTypeColor(r.type, colors) + "1a" }]}>
-              <EntryTypeIcon type={r.type} size={16} />
+              <EntryTypeIcon type={r.type} size={18} color={entryTypeColor(r.type, colors)} />
             </View>
             <View style={s.routineMid}>
-              <Text style={[s.routineLabel, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{r.label}</Text>
-              <Text style={[s.routineOwner, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{r.owner}</Text>
+              <Text style={[s.routineLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{r.label}</Text>
+              <Text style={[s.routineOwner, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{r.owner}</Text>
               {r.note ? <Text numberOfLines={2} style={[s.routineNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{r.note}</Text> : null}
             </View>
           </View>
         ))}
       </View>
 
-      <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Goals</Text>
+      <Text style={[s.sectionTitle, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold", marginTop: 12 }]}>GOALS</Text>
       {goals.length === 0 ? (
-        <View style={[s.empty, { borderColor: colors.border }]}>
-          <Ionicons name="flag-outline" size={28} color={colors.mutedForeground} />
+        <View style={[s.empty, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="flag-outline" size={32} color={colors.mutedForeground} />
           <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>No goals set</Text>
         </View>
       ) : (
         goals.map((g) => (
-          <View key={g.id} style={[s.goalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View key={g.id} style={[s.goalCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
             <View style={s.goalHeader}>
               <StatusDot status={g.status} />
               <View style={s.goalHeaderText}>
-                <Text style={[s.goalTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{g.title}</Text>
+                <Text style={[s.goalTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{g.title}</Text>
                 <GoalCategoryBadge category={g.category} />
               </View>
             </View>
-            <Text style={[s.goalTarget, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{g.target}</Text>
-            {g.note ? <Text style={[s.goalNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{g.note}</Text> : null}
+            <View style={[s.goalBody, { backgroundColor: colors.background }]}>
+              <Text style={[s.goalTarget, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{g.target}</Text>
+              {g.note ? <Text style={[s.goalNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{g.note}</Text> : null}
+            </View>
             <View style={s.goalFooter}>
-              <Ionicons name="calendar-outline" size={12} color={colors.mutedForeground} />
-              <Text style={[s.goalDue, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{g.due}</Text>
+              <Ionicons name="calendar" size={14} color={colors.mutedForeground} />
+              <Text style={[s.goalDue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{g.due}</Text>
             </View>
           </View>
         ))
@@ -103,25 +105,29 @@ export default function PlansScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  screenTitle: { fontSize: 28, marginBottom: 18 },
-  sectionTitle: { fontSize: 14, marginBottom: 9 },
-  listCard: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden", marginBottom: 24 },
-  routineRow: { flexDirection: "row", alignItems: "flex-start", paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-  timeCol: { width: 68 },
-  routineTime: { fontSize: 13, marginTop: 1 },
-  iconBg: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  screenTitle: { fontSize: 28, marginBottom: 20, letterSpacing: -0.5 },
+  sectionTitle: { fontSize: 12, letterSpacing: 1.2, marginBottom: 12, marginLeft: 4 },
+  
+  listCard: { borderRadius: 20, borderWidth: 1, overflow: "hidden", marginBottom: 32, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 },
+  routineRow: { flexDirection: "row", alignItems: "flex-start", paddingHorizontal: 16, paddingVertical: 16, gap: 12 },
+  timeCol: { width: 72, paddingTop: 6 },
+  routineTime: { fontSize: 14 },
+  iconBg: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", marginTop: -2 },
   routineMid: { flex: 1 },
-  routineLabel: { fontSize: 14, marginBottom: 2 },
-  routineOwner: { fontSize: 12, marginBottom: 3 },
-  routineNote: { fontSize: 12, lineHeight: 17 },
-  goalCard: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 14, marginBottom: 10 },
-  goalHeader: { flexDirection: "row", gap: 10, marginBottom: 8 },
-  goalHeaderText: { flex: 1, gap: 4 },
-  goalTitle: { fontSize: 15 },
-  goalTarget: { fontSize: 13, lineHeight: 18, marginBottom: 4 },
-  goalNote: { fontSize: 12, lineHeight: 17, marginBottom: 6 },
-  goalFooter: { flexDirection: "row", alignItems: "center", gap: 4 },
-  goalDue: { fontSize: 12 },
-  empty: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 28, alignItems: "center", gap: 8 },
-  emptyText: { fontSize: 14 },
+  routineLabel: { fontSize: 16, marginBottom: 2 },
+  routineOwner: { fontSize: 13, marginBottom: 6 },
+  routineNote: { fontSize: 14, lineHeight: 20 },
+  
+  goalCard: { borderRadius: 20, borderWidth: 1, padding: 20, marginBottom: 16, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 },
+  goalHeader: { flexDirection: "row", gap: 12, marginBottom: 16 },
+  goalHeaderText: { flex: 1, gap: 8, alignItems: "flex-start" },
+  goalTitle: { fontSize: 18 },
+  goalBody: { padding: 16, borderRadius: 12, marginBottom: 16 },
+  goalTarget: { fontSize: 14, lineHeight: 20, marginBottom: 8 },
+  goalNote: { fontSize: 13, lineHeight: 18 },
+  goalFooter: { flexDirection: "row", alignItems: "center", gap: 6 },
+  goalDue: { fontSize: 13 },
+  
+  empty: { borderRadius: 20, borderWidth: 1, padding: 40, alignItems: "center", gap: 12 },
+  emptyText: { fontSize: 15 },
 });

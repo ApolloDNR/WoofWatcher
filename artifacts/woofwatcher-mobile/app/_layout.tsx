@@ -8,6 +8,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -22,9 +23,9 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
+    <Stack screenOptions={{ headerBackTitle: "Back", headerTintColor: "#2E5846" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="woofguide" options={{ title: "WoofGuide", presentation: "card" }} />
+      <Stack.Screen name="woofguide" options={{ title: "WoofGuide", presentation: "card", headerStyle: { backgroundColor: "#F7F5F1" } }} />
     </Stack>
   );
 }
@@ -52,6 +53,7 @@ export default function RootLayout() {
           <CareProvider>
             <GestureHandlerRootView>
               <KeyboardProvider>
+                <StatusBar style="dark" />
                 <RootLayoutNav />
               </KeyboardProvider>
             </GestureHandlerRootView>

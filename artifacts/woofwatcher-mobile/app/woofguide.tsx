@@ -1,4 +1,4 @@
-import { Ionicons, Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Stack } from "expo-router";
 import React, { useCallback, useState } from "react";
@@ -12,6 +12,7 @@ import {
   Text,
   TextInput,
   View,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
@@ -164,8 +165,8 @@ export default function WoofGuideScreen() {
           ListEmptyComponent={
             !loading ? (
               <View style={s.emptyArea}>
-                <View style={[s.emptyIcon, { backgroundColor: colors.copper + "1a" }]}>
-                  <Ionicons name="paw" size={28} color={colors.copper} />
+                <View style={s.emptyIconContainer}>
+                  <Image source={require("@/assets/images/phoenix-avatar.png")} style={s.avatar} />
                 </View>
                 <Text style={[s.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Ask me anything</Text>
                 <Text style={[s.emptySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
@@ -176,7 +177,7 @@ export default function WoofGuideScreen() {
                     <Pressable
                       key={q}
                       onPress={() => sendMessage(q)}
-                      style={[s.quickChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+                      style={({pressed}) => [s.quickChip, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
                     >
                       <Text style={[s.quickText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>{q}</Text>
                     </Pressable>
@@ -197,7 +198,7 @@ export default function WoofGuideScreen() {
               </Text>
             </View>
           )}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         />
         <View style={[s.inputArea, { borderTopColor: colors.border, paddingBottom: bottomInset + 12, backgroundColor: colors.background }]}>
           <TextInput
@@ -214,11 +215,11 @@ export default function WoofGuideScreen() {
           <Pressable
             onPress={() => sendMessage(input)}
             disabled={!input.trim() || loading}
-            style={[s.sendBtn, { backgroundColor: input.trim() && !loading ? colors.copper : colors.card, borderColor: colors.border }]}
+            style={[s.sendBtn, { backgroundColor: input.trim() && !loading ? colors.primary : colors.card, borderColor: colors.border }]}
           >
             {loading
-              ? <ActivityIndicator size="small" color={colors.copper} />
-              : <Feather name="arrow-up" size={18} color={input.trim() ? "#fff" : colors.mutedForeground} />
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Ionicons name="arrow-up" size={20} color={input.trim() ? "#fff" : colors.mutedForeground} />
             }
           </Pressable>
         </View>
@@ -230,19 +231,20 @@ export default function WoofGuideScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   emptyArea: { alignItems: "center", paddingTop: 40, gap: 10 },
-  emptyIcon: { width: 60, height: 60, borderRadius: 20, alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  emptyTitle: { fontSize: 18 },
-  emptySub: { fontSize: 14, textAlign: "center", paddingHorizontal: 24, lineHeight: 20 },
-  quickRow: { width: "100%", gap: 8, paddingHorizontal: 8, marginTop: 8 },
-  quickChip: { borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, padding: 10 },
-  quickText: { fontSize: 13, lineHeight: 18 },
-  bubble: { maxWidth: "86%", borderRadius: 16, padding: 12 },
-  userBubble: { alignSelf: "flex-end", borderBottomRightRadius: 4 },
-  assistantBubble: { alignSelf: "flex-start", borderBottomLeftRadius: 4, borderWidth: StyleSheet.hairlineWidth },
-  bubbleText: { fontSize: 14, lineHeight: 21 },
-  typingBubble: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: 10, marginBottom: 8 },
-  typingText: { fontSize: 13 },
-  inputArea: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 14, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
-  input: { flex: 1, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, maxHeight: 100, minHeight: 44 },
-  sendBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
+  emptyIconContainer: { width: 80, height: 80, borderRadius: 40, overflow: "hidden", marginBottom: 8, borderWidth: 4, borderColor: "#fff", shadowColor: "#2E5846", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
+  avatar: { width: "100%", height: "100%" },
+  emptyTitle: { fontSize: 20 },
+  emptySub: { fontSize: 15, textAlign: "center", paddingHorizontal: 24, lineHeight: 22 },
+  quickRow: { width: "100%", gap: 10, paddingHorizontal: 12, marginTop: 16 },
+  quickChip: { borderRadius: 14, borderWidth: 1, padding: 14, shadowColor: "#2E5846", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8 },
+  quickText: { fontSize: 14, lineHeight: 20 },
+  bubble: { maxWidth: "86%", borderRadius: 20, padding: 14, shadowColor: "#2E5846", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  userBubble: { alignSelf: "flex-end", borderBottomRightRadius: 6 },
+  assistantBubble: { alignSelf: "flex-start", borderBottomLeftRadius: 6, borderWidth: 1 },
+  bubbleText: { fontSize: 15, lineHeight: 22 },
+  typingBubble: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 20, borderWidth: 1, padding: 12, marginBottom: 8 },
+  typingText: { fontSize: 14 },
+  inputArea: { flexDirection: "row", alignItems: "flex-end", gap: 10, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1 },
+  input: { flex: 1, borderRadius: 20, borderWidth: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, fontSize: 15, maxHeight: 120, minHeight: 48 },
+  sendBtn: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, alignItems: "center", justifyContent: "center" },
 });
