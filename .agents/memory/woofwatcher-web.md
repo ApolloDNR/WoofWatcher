@@ -15,3 +15,9 @@ description: Where the real code lives in the vanilla-JS web artifact, and routi
   sub-views (calendar, report, reminders, diet, assistant) map to a parent tab
   via `TAB_PARENT` and are reached by in-app buttons, not nav. They still need
   CSS — easy to miss when restyling since they aren't in the bottom nav.
+- Dashboard hero shows an animated inline-SVG dog (`renderDogScene`), NOT the
+  `phoenix-hero.png` photo (now unused). Emotion is data-driven: `dogMoodClass()`
+  maps the many raw `avatar.mood` strings from woof-core into 4 buckets
+  (m-happy/m-calm/m-watch/m-down); CSS drives expression + emote overlays per
+  bucket. **Avoid CSS `d: path()` for SVG shape morphs — not cross-browser.**
+  Give shapes a real default `d` and animate expression with transforms instead.
