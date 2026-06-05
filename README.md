@@ -26,6 +26,7 @@ WoofWatcher is a local-first care command center for Phoenix, Apollo's anxious r
 - Saves locally in the browser with `localStorage`, with JSON backup export and import/restore.
 - Installs as a mobile PWA through Safari/Chrome home-screen install.
 - Runs a local care helper by default, with a server-side OpenAI Responses API route when `OPENAI_API_KEY` is configured.
+- Exposes `src/woof-product-view-model.js` as a stable product contract so a future Replit/high-end UI rebuild can replace the visual layer without breaking the care model.
 
 ## Run Locally
 
@@ -39,6 +40,12 @@ Then open:
 
 ```text
 http://127.0.0.1:4190
+```
+
+For Replit import, the repo includes `.replit`; Replit can run:
+
+```bash
+node server.mjs
 ```
 
 If global Node works on the machine, these also work:
@@ -111,6 +118,14 @@ The approved visual lock design spec is tracked at:
 ```text
 docs/superpowers/specs/2026-06-05-woofwatcher-visual-lock-design.md
 ```
+
+For the next high-end UI pass in Replit, use:
+
+```text
+docs/REPLIT_HANDOFF.md
+```
+
+That file intentionally says the current UI is a functional placeholder and points future builders to `src/woof-product-view-model.js`.
 
 ## Completion Audit
 

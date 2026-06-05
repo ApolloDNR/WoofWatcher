@@ -1,0 +1,8 @@
+run = "node server.mjs"
+entrypoint = "server.mjs"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "node server.mjs"]
