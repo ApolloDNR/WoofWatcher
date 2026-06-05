@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface CareHelperStatus {
+  configured: boolean;
+  mode: string;
+  model?: string;
+  boundary?: string;
 }

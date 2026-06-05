@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">WoofWatcher app icon</title>
+  <desc id="desc">A copper shield with a shepherd care signal on a midnight background.</desc>
+  <rect width="512" height="512" rx="104" fill="#1A2332"/>
+  <path d="M256 80 384 132v100c0 86-50 154-128 200-78-46-128-114-128-200V132l128-52Z" fill="#243044" stroke="#C87A3A" stroke-width="18"/>
+  <path d="M198 272c18-50 36-74 58-74s40 24 58 74" fill="none" stroke="#D4CFC4" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="210" cy="202" r="22" fill="#C87A3A"/>
+  <circle cx="302" cy="202" r="22" fill="#C87A3A"/>
+  <path d="M212 326h88M224 356h64" stroke="#D4CFC4" stroke-width="18" stroke-linecap="round"/>
+</svg>

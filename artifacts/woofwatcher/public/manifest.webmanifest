@@ -1,0 +1,77 @@
+{
+  "name": "WoofWatcher",
+  "short_name": "WoofWatcher",
+  "description": "Shared Phoenix care logging, health watch, reports, and caregiver handoffs.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1A2332",
+  "theme_color": "#1A2332",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/public/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Care Team",
+      "short_name": "Team",
+      "description": "Open Phoenix's active caregiver profiles.",
+      "url": "/?tab=team",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Care Reminders",
+      "short_name": "Reminders",
+      "description": "Open Phoenix's due and overdue care reminders.",
+      "url": "/?tab=reminders",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Care Schedule",
+      "short_name": "Schedule",
+      "description": "Open Phoenix's editable care schedule.",
+      "url": "/?tab=schedule",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Care Goals",
+      "short_name": "Goals",
+      "description": "Open Phoenix's weight, training, and health goals.",
+      "url": "/?tab=goals",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Care Calendar",
+      "short_name": "Calendar",
+      "description": "Open Phoenix's monthly care calendar.",
+      "url": "/?tab=calendar",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Training Progress",
+      "short_name": "Progress",
+      "description": "Review Phoenix's training and social progress.",
+      "url": "/?tab=progress",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Quick Log",
+      "short_name": "Log",
+      "description": "Open WoofWatcher to log Phoenix care.",
+      "url": "/?tab=log",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Monthly Report",
+      "short_name": "Report",
+      "description": "Open Phoenix's monthly care report.",
+      "url": "/?tab=report",
+      "icons": [{ "src": "/public/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}

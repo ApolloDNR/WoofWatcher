@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: care-helper
+    description: WoofWatcher AI care assistant
 paths:
   /healthz:
     get:
@@ -24,6 +26,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /care-helper:
+    get:
+      operationId: getCareHelperStatus
+      tags: [care-helper]
+      summary: Get AI care helper status
+      description: Returns whether OpenAI is configured and what mode is active
+      responses:
+        "200":
+          description: Status info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareHelperStatus"
+    post:
+      operationId: askCareHelper
+      tags: [care-helper]
+      summary: Ask the AI care helper a question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareHelperInput"
+      responses:
+        "200":
+          description: AI answer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareHelperAnswer"
+        "501":
+          description: OpenAI not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareHelperError"
+        "502":
+          description: OpenAI request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareHelperError"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +77,51 @@ components:
           type: string
       required:
         - status
-
+    CareHelperStatus:
+      type: object
+      properties:
+        configured:
+          type: boolean
+        mode:
+          type: string
+        model:
+          type: string
+        boundary:
+          type: string
+      required:
+        - configured
+        - mode
+    CareHelperInput:
+      type: object
+      properties:
+        question:
+          type: string
+        context:
+          type: object
+          additionalProperties: true
+    CareHelperAnswer:
+      type: object
+      properties:
+        answer:
+          type: string
+        mode:
+          type: string
+        model:
+          type: string
+        requestId:
+          type: ["string", "null"]
+      required:
+        - answer
+        - mode
+    CareHelperError:
+      type: object
+      properties:
+        error:
+          type: string
+        mode:
+          type: string
+        boundary:
+          type: string
+      required:
+        - error
+        - mode
