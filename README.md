@@ -28,6 +28,7 @@ WoofWatcher is a local-first care command center for Phoenix, Apollo's anxious r
 - Runs a local care helper by default, with a server-side OpenAI Responses API route when `OPENAI_API_KEY` is configured.
 - Exposes `src/woof-product-view-model.js` as a stable product contract so a future Replit/high-end UI rebuild can replace the visual layer without breaking the care model.
 - Adds `src/woof-privacy-cloud.js` for scoped Care Passes, caregiver invite drafts, role/scope access, and an honest cloud-sync readiness plan.
+- Adds `src/woof-operations.js` for audit events, talk-to-log drafts, hosted nudge planning, and monthly report artifact packaging.
 
 ## Run Locally
 
@@ -132,6 +133,12 @@ Cloud/caregiver backend foundation notes are tracked at:
 
 ```text
 docs/CLOUD_CAREGIVER_FOUNDATION.md
+```
+
+Backend operations foundation notes are tracked at:
+
+```text
+docs/BACKEND_OPERATIONS_FOUNDATION.md
 ```
 
 ## Completion Audit

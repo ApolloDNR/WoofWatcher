@@ -20,6 +20,8 @@ Keep building backend/functions/codebase first. Treat the current UI as a test h
   - Proves sync readiness reports missing backend pieces honestly.
 - `src/woof-product-view-model.js`
   - Now exposes `access`, `cloud`, `scopedCarePasses`, and `carePassVariants` for future UI builders.
+- `src/woof-operations.js`
+  - Adds audit event, hosted nudge, talk-to-log draft, and report artifact contracts that can connect to a real backend later.
 
 ## Care Pass Model
 
@@ -75,9 +77,9 @@ Default conflict policy:
 
 ## Next Backend Slices
 
-1. Add append-only audit event helpers for local create/update/remove actions.
-2. Add durable reminder jobs model for hosted push readiness.
-3. Add real PDF/report artifact generation contract.
+1. Wire audit events into local create/update/remove actions in the browser app.
+2. Connect hosted nudge jobs to a real backend/provider after privacy decisions.
+3. Add server-side PDF generation when a deployment target is chosen.
 4. Add provider-neutral database schema draft.
 5. Add OpenAI WoofGuide live-mode smoke once the key is approved server-side.
 

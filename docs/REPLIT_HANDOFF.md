@@ -19,6 +19,8 @@ The server uses `process.env.PORT` when Replit provides it. Locally it defaults 
 ```bash
 node --test
 node --check src/woof-core.js
+node --check src/woof-privacy-cloud.js
+node --check src/woof-operations.js
 node --check src/woof-product-view-model.js
 node --check src/openai-care-helper.js
 node --check src/app.js
@@ -32,6 +34,7 @@ node --check scripts/render-smoke.mjs
 
 - `src/woof-core.js`: care model, normalization, summaries, plans, health watch, Bile Watch, Household Pulse, avatar state, report, Care Pass, WoofGuide context.
 - `src/woof-privacy-cloud.js`: scoped Care Passes, caregiver invite drafts, role/scope access model, and cloud sync readiness.
+- `src/woof-operations.js`: audit events, talk-to-log drafts, hosted nudge planning, and report artifact packaging.
 - `src/woof-product-view-model.js`: stable UI-builder contract. Use this for a new high-end UI.
 - `src/app.js`: current local-first app wiring and functional placeholder UI.
 - `styles.css`: current placeholder styling. Replace freely.
@@ -57,6 +60,7 @@ The contract returns:
 - `more`: Diet Profile, caregivers, records, Care Pass, report text, WoofGuide.
 - `access`: owner/caregiver/sitter/vet/trainer roles and invite draft model.
 - `cloud`: provider-neutral sync readiness, resource list, privacy checklist, and blockers.
+- `operations`: report artifact, hosted nudge plan, talk-to-log draft shape, and audit trail proof.
 - `uiGuidance`: instructions and boundaries for replacing the UI.
 
 ## Redesign Rules

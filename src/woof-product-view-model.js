@@ -23,6 +23,12 @@ import {
   buildScopedCarePass,
   CARE_PASS_VARIANTS
 } from "./woof-privacy-cloud.js";
+import {
+  buildHostedNudgePlan,
+  buildReportArtifact,
+  buildTalkToLogDraft,
+  createAuditEvent
+} from "./woof-operations.js";
 
 export const PRODUCT_NAVIGATION = [
   { id: "phoenix", label: "Phoenix" },
@@ -80,6 +86,8 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
   const reportText = buildReportText(state, now);
   const access = buildCaregiverAccessModel(state, now);
   const cloud = buildCloudSyncPlan(state, {}, now);
+  const reportArtifact = buildReportArtifact(state, { format: "text" }, now);
+  const hostedNudges = buildHostedNudgePlan(state, {}, now);
 
   return {
     appName: "WoofWatcher",
@@ -140,6 +148,28 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
     },
     access,
     cloud,
+    operations: {
+      reportArtifact,
+      hostedNudges,
+      talkToLogDraft: buildTalkToLogDraft("", { source: "product_contract" }, now),
+      auditTrail: [
+        createAuditEvent(
+          {
+            action: "sync_plan",
+            resourceType: "household",
+            resourceId: cloud.householdId || "local_only",
+            actor: "system",
+            summary: "Built WoofWatcher cloud sync readiness plan",
+            privacyLevel: "system_private",
+            metadata: {
+              status: cloud.status,
+              blockerCount: cloud.blockers.length
+            }
+          },
+          now
+        )
+      ]
+    },
     uiGuidance: {
       visualStatus: "functional-placeholder",
       redesignInstruction:

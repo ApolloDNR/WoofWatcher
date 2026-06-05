@@ -36,6 +36,10 @@ test("builds a stable five-tab product contract for UI builders", () => {
   assert.equal(model.access.roles.some((role) => role.id === "sitter"), true);
   assert.equal(model.cloud.status, "local_only");
   assert.equal(model.cloud.resources.some((resource) => resource.name === "care_entries"), true);
+  assert.equal(model.operations.reportArtifact.packageType, "woofwatcher.report-artifact");
+  assert.equal(model.operations.hostedNudges.packageType, "woofwatcher.hosted-nudge-plan");
+  assert.equal(model.operations.talkToLogDraft.autoSave, false);
+  assert.equal(model.operations.auditTrail[0].action, "sync_plan");
 });
 
 test("keeps product contract health-safe and UI-agnostic", () => {
