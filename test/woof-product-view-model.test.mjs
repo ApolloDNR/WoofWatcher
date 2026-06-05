@@ -32,6 +32,10 @@ test("builds a stable five-tab product contract for UI builders", () => {
   assert.equal(model.log.quickActions.some((action) => action.type === "alone"), true);
   assert.equal(model.more.dietProfile.bedtimeSnack.includes("Small snack"), true);
   assert.equal(model.more.carePass.packageType, "woofwatcher.care-room-transfer");
+  assert.equal(model.more.scopedCarePasses.vet.packageType, "woofwatcher.care-pass");
+  assert.equal(model.access.roles.some((role) => role.id === "sitter"), true);
+  assert.equal(model.cloud.status, "local_only");
+  assert.equal(model.cloud.resources.some((resource) => resource.name === "care_entries"), true);
 });
 
 test("keeps product contract health-safe and UI-agnostic", () => {

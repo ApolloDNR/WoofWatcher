@@ -17,6 +17,12 @@ import {
   getTrainingProgress,
   normalizeState
 } from "./woof-core.js";
+import {
+  buildCaregiverAccessModel,
+  buildCloudSyncPlan,
+  buildScopedCarePass,
+  CARE_PASS_VARIANTS
+} from "./woof-privacy-cloud.js";
 
 export const PRODUCT_NAVIGATION = [
   { id: "phoenix", label: "Phoenix" },
@@ -72,6 +78,8 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
   const assistantContext = getAssistantContext(state, "", now);
   const carePass = buildCareRoomTransfer(state, now);
   const reportText = buildReportText(state, now);
+  const access = buildCaregiverAccessModel(state, now);
+  const cloud = buildCloudSyncPlan(state, {}, now);
 
   return {
     appName: "WoofWatcher",
@@ -115,6 +123,14 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
       calendar,
       trainingProgress,
       carePass,
+      scopedCarePasses: {
+        vet: buildScopedCarePass(state, { audience: "vet" }, now),
+        sitter: buildScopedCarePass(state, { audience: "sitter" }, now),
+        trainer: buildScopedCarePass(state, { audience: "trainer" }, now),
+        emergency: buildScopedCarePass(state, { audience: "emergency" }, now),
+        weekend: buildScopedCarePass(state, { audience: "weekend" }, now)
+      },
+      carePassVariants: CARE_PASS_VARIANTS,
       reportText,
       woofGuide: {
         status: "local-first",
@@ -122,6 +138,8 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
         boundary: "WoofGuide can organize Phoenix's logs and caregiver notes. It does not diagnose, replace a veterinarian, or decide urgent care."
       }
     },
+    access,
+    cloud,
     uiGuidance: {
       visualStatus: "functional-placeholder",
       redesignInstruction:

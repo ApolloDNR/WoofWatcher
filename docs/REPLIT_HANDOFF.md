@@ -31,6 +31,7 @@ node --check scripts/render-smoke.mjs
 ## Source Of Truth
 
 - `src/woof-core.js`: care model, normalization, summaries, plans, health watch, Bile Watch, Household Pulse, avatar state, report, Care Pass, WoofGuide context.
+- `src/woof-privacy-cloud.js`: scoped Care Passes, caregiver invite drafts, role/scope access model, and cloud sync readiness.
 - `src/woof-product-view-model.js`: stable UI-builder contract. Use this for a new high-end UI.
 - `src/app.js`: current local-first app wiring and functional placeholder UI.
 - `styles.css`: current placeholder styling. Replace freely.
@@ -54,6 +55,8 @@ The contract returns:
 - `plans`: today plan, reminders, routines, goals, notification readiness.
 - `health`: Health Watch, Bile Watch, non-diagnostic boundary.
 - `more`: Diet Profile, caregivers, records, Care Pass, report text, WoofGuide.
+- `access`: owner/caregiver/sitter/vet/trainer roles and invite draft model.
+- `cloud`: provider-neutral sync readiness, resource list, privacy checklist, and blockers.
 - `uiGuidance`: instructions and boundaries for replacing the UI.
 
 ## Redesign Rules

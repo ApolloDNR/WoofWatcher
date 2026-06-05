@@ -27,6 +27,7 @@ WoofWatcher is a local-first care command center for Phoenix, Apollo's anxious r
 - Installs as a mobile PWA through Safari/Chrome home-screen install.
 - Runs a local care helper by default, with a server-side OpenAI Responses API route when `OPENAI_API_KEY` is configured.
 - Exposes `src/woof-product-view-model.js` as a stable product contract so a future Replit/high-end UI rebuild can replace the visual layer without breaking the care model.
+- Adds `src/woof-privacy-cloud.js` for scoped Care Passes, caregiver invite drafts, role/scope access, and an honest cloud-sync readiness plan.
 
 ## Run Locally
 
@@ -126,6 +127,12 @@ docs/REPLIT_HANDOFF.md
 ```
 
 That file intentionally says the current UI is a functional placeholder and points future builders to `src/woof-product-view-model.js`.
+
+Cloud/caregiver backend foundation notes are tracked at:
+
+```text
+docs/CLOUD_CAREGIVER_FOUNDATION.md
+```
 
 ## Completion Audit
 

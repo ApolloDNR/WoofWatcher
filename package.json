@@ -6,7 +6,7 @@
   "description": "WoofWatcher v1 care command center for Phoenix.",
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/woof-core.js && node --check src/woof-product-view-model.js && node --check src/openai-care-helper.js && node --check src/app.js && node --check server.mjs && node --check service-worker.js && node --check api/care-helper.js && node --check scripts/capture-screenshots.mjs && node --check scripts/render-smoke.mjs",
+    "check": "node --check src/woof-core.js && node --check src/woof-privacy-cloud.js && node --check src/woof-product-view-model.js && node --check src/openai-care-helper.js && node --check src/app.js && node --check server.mjs && node --check service-worker.js && node --check api/care-helper.js && node --check scripts/capture-screenshots.mjs && node --check scripts/render-smoke.mjs",
     "screenshots": "node scripts/capture-screenshots.mjs",
     "smoke:render": "node scripts/render-smoke.mjs",
     "start": "node server.mjs"
