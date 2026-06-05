@@ -28,6 +28,28 @@ import {
   upsertRoutine
 } from "./woof-core.js";
 
+import phoenixHappy from "../assets/phoenix/phoenix-happy.png";
+import phoenixExcited from "../assets/phoenix/phoenix-excited.png";
+import phoenixCalm from "../assets/phoenix/phoenix-calm.png";
+import phoenixAnxious from "../assets/phoenix/phoenix-anxious.png";
+import phoenixUnwell from "../assets/phoenix/phoenix-unwell.png";
+
+const PHOENIX_ART = {
+  happy: phoenixHappy,
+  excited: phoenixExcited,
+  calm: phoenixCalm,
+  anxious: phoenixAnxious,
+  unwell: phoenixUnwell,
+};
+
+function phoenixArt(mood) {
+  if (["settled", "calm"].includes(mood)) return PHOENIX_ART.calm;
+  if (["tummy-watch", "hungry-watch", "unwell", "sick"].includes(mood)) return PHOENIX_ART.unwell;
+  if (["home-alone", "bored", "anxious", "nervous"].includes(mood)) return PHOENIX_ART.anxious;
+  if (["excited", "playful", "zoomies"].includes(mood)) return PHOENIX_ART.excited;
+  return PHOENIX_ART.happy;
+}
+
 const STORAGE_KEY = "woofwatcher.v1.state";
 const NOTIFICATION_SENT_KEY = "woofwatcher.v1.lastNotificationKey";
 const ENTRY_SELECT_OPTIONS = [
@@ -884,7 +906,7 @@ function renderPhoenixTab(context) {
       <div class="dash-col">
         <section class="card hero">
           <div class="dog-scene ${dogMoodClass(avatar.mood)}">
-            ${renderDogScene()}
+            ${renderDogScene(avatar.mood)}
             <span class="hero-name">${escapeHtml(state.profile.name)}</span>
             <span class="hero-speech">${escapeHtml(avatar.suggestedAction)}</span>
             <span class="hero-mood">${mood.emoji} ${escapeHtml(mood.label)}</span>
@@ -978,50 +1000,9 @@ function dogMoodClass(mood) {
   return "m-happy";
 }
 
-function renderDogScene() {
+function renderDogScene(mood) {
   return `
-    <div class="scene-glow" aria-hidden="true"></div>
-    <div class="scene-dots" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-    <div class="emotes" aria-hidden="true">
-      <span class="em em-heart">♥</span>
-      <span class="em em-heart d2">♥</span>
-      <span class="em em-heart d3">♥</span>
-      <span class="em em-zzz">Z</span>
-      <span class="em em-zzz d2">Z</span>
-      <span class="em em-zzz d3">Z</span>
-      <span class="em em-drop"></span>
-      <span class="em em-cross">＋</span>
-    </div>
-    <svg class="dog-svg" viewBox="0 0 260 230" role="img" aria-label="Animated illustration of the dog reacting to its current mood">
-      <ellipse class="dog-shadow" cx="130" cy="214" rx="80" ry="13"/>
-      <g class="dog">
-        <path class="dog-tail" d="M184 178 Q232 170 238 118 Q224 152 186 160 Z"/>
-        <path class="dog-body" d="M66 198 Q58 130 130 126 Q202 130 194 198 Q170 216 130 216 Q90 216 66 198 Z"/>
-        <path class="dog-saddle" d="M86 150 Q130 130 174 150 Q178 178 168 196 Q130 204 92 196 Q82 176 86 150 Z"/>
-        <ellipse class="dog-chest" cx="130" cy="188" rx="31" ry="25"/>
-        <rect class="dog-leg" x="103" y="168" width="21" height="48" rx="10"/>
-        <rect class="dog-leg" x="136" y="168" width="21" height="48" rx="10"/>
-        <ellipse class="dog-paw" cx="113" cy="214" rx="14" ry="7"/>
-        <ellipse class="dog-paw" cx="147" cy="214" rx="14" ry="7"/>
-        <path class="dog-bandana" d="M102 150 Q130 164 158 150 L151 170 Q130 180 109 170 Z"/>
-        <path class="dog-bandana-knot" d="M152 149 l15 -7 l-2 18 z"/>
-        <g class="dog-head">
-          <path class="dog-ear left" d="M96 70 L78 10 L118 50 Z"/>
-          <path class="dog-ear right" d="M164 70 L182 10 L142 50 Z"/>
-          <path class="dog-ear-inner left" d="M99 64 L88 26 L112 52 Z"/>
-          <path class="dog-ear-inner right" d="M161 64 L172 26 L148 52 Z"/>
-          <path class="dog-face" d="M130 42 Q178 46 178 92 Q178 134 130 142 Q82 134 82 92 Q82 46 130 42 Z"/>
-          <path class="dog-muzzle" d="M130 102 Q158 102 155 124 Q151 144 130 146 Q109 144 105 124 Q102 102 130 102 Z"/>
-          <path class="dog-brow left" d="M104 80 q10 -4 21 0"/>
-          <path class="dog-brow right" d="M156 80 q-10 -4 -21 0"/>
-          <g class="dog-eye left"><ellipse class="eye-white" cx="113" cy="93" rx="9.2" ry="11.5"/><circle class="eye-pupil" cx="114" cy="95" r="5.4"/><circle class="eye-glint" cx="116.4" cy="90.5" r="1.9"/></g>
-          <g class="dog-eye right"><ellipse class="eye-white" cx="147" cy="93" rx="9.2" ry="11.5"/><circle class="eye-pupil" cx="146" cy="95" r="5.4"/><circle class="eye-glint" cx="148.4" cy="90.5" r="1.9"/></g>
-          <path class="dog-nose" d="M130 115 q9.5 0 9.5 7 q0 6.5 -9.5 8.5 q-9.5 -2 -9.5 -8.5 q0 -7 9.5 -7 Z"/>
-          <path class="dog-mouth" d="M130 131 q-9 8 -18 3 M130 131 q9 8 18 3"/>
-          <path class="dog-tongue" d="M123 134 q7 19 14 0 q0 -5 -7 -5 q-7 0 -7 5 Z"/>
-        </g>
-      </g>
-    </svg>
+    <img class="dog-art" src="${phoenixArt(mood)}" alt="Painted portrait of ${escapeAttribute(state.profile.name)} reflecting their current mood" />
   `;
 }
 

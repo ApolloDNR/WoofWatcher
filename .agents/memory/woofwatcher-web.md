@@ -15,9 +15,9 @@ description: Where the real code lives in the vanilla-JS web artifact, and routi
   sub-views (calendar, report, reminders, diet, assistant) map to a parent tab
   via `TAB_PARENT` and are reached by in-app buttons, not nav. They still need
   CSS — easy to miss when restyling since they aren't in the bottom nav.
-- Dashboard hero shows an animated inline-SVG dog (`renderDogScene`), NOT the
-  `phoenix-hero.png` photo (now unused). Emotion is data-driven: `dogMoodClass()`
-  maps the many raw `avatar.mood` strings from woof-core into 4 buckets
-  (m-happy/m-calm/m-watch/m-down); CSS drives expression + emote overlays per
-  bucket. **Avoid CSS `d: path()` for SVG shape morphs — not cross-browser.**
-  Give shapes a real default `d` and animate expression with transforms instead.
+- Dashboard hero uses AI-generated painted dog art (one PNG per mood), NOT the
+  earlier inline-SVG cartoon dog (that approach was rejected on aesthetics).
+  **Why:** illustrated/painterly look was the explicit design direction.
+  **How to apply:** web and mobile share the same 5 mood paintings — keep them in
+  sync. Import images as ES modules (Vite handles base-path URLs); selecting art
+  by mood lives near `renderDogScene`. Leftover `dog-*`/`scene-*` SVG CSS is dead.

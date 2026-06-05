@@ -996,6 +996,11 @@ p { margin: 0; }
 .scene-dots span:nth-child(5) { left: 50%; top: 16%; width: 7px; height: 7px; animation-delay: 2.4s; }
 .scene-dots span:nth-child(6) { left: 36%; top: 80%; width: 5px; height: 5px; animation-delay: 0.9s; background: rgba(194, 96, 63, 0.2); }
 
+.dog-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; display: block; }
+.dog-scene::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(20, 30, 24, 0.04) 0%, rgba(20, 30, 24, 0) 38%, rgba(20, 30, 24, 0.36) 100%);
+}
 .dog-svg { position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); width: 250px; height: 222px; }
 
 .dog-shadow { fill: rgba(31, 51, 35, 0.16); animation: shadowPulse 3.6s ease-in-out infinite; }
