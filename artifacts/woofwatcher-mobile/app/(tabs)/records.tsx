@@ -24,13 +24,20 @@ import Svg, {
   Stop,
   Text as SvgText,
 } from "react-native-svg";
-import { deriveHealthWatch, normalizeCareEventType } from "@workspace/care-domain";
+import {
+  buildCarePass,
+  deriveHealthWatch,
+  normalizeCareEventType,
+  type CarePassAudience,
+} from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 const HEALTH_ICON: Record<string, PulseIconName> = {
   vomit: "vomit",
@@ -56,6 +63,18 @@ const PERIODS = [
   { key: 30, label: "Month" },
   { key: 90, label: "Quarter" },
 ] as const;
+
+const CARE_PASS_OPTIONS: {
+  audience: CarePassAudience;
+  label: string;
+  detail: string;
+  icon: IoniconName;
+}[] = [
+  { audience: "sitter", label: "Sitter", detail: "Routine, food, next care", icon: "home-outline" },
+  { audience: "vet", label: "Vet", detail: "Health signals, records", icon: "medkit-outline" },
+  { audience: "trainer", label: "Trainer", detail: "Behavior, activity, focus", icon: "school-outline" },
+  { audience: "caregiver", label: "Caregiver", detail: "Shift handoff", icon: "people-outline" },
+];
 
 function daysBetween(iso: string, now: number): number {
   return (now - new Date(iso).getTime()) / 86400000;
@@ -242,6 +261,23 @@ export default function RecordsScreen() {
       .join("\n");
     Share.share({ message: lines, title: `${state.profile.name} — ${periodLabel} report` }).catch(() =>
       Alert.alert("Progress report", lines),
+    );
+  };
+
+  const shareCarePass = (audience: CarePassAudience) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const pass = buildCarePass({
+      audience,
+      profile: state.profile,
+      dietProfile: state.dietProfile,
+      entries: state.entries,
+      routines: state.routines,
+      caregivers: state.caregivers,
+      records: state.records,
+      now,
+    });
+    Share.share({ message: pass.message, title: pass.title }).catch(() =>
+      Alert.alert(pass.title, pass.message),
     );
   };
 
@@ -504,6 +540,42 @@ export default function RecordsScreen() {
             )}
           </View>
 
+          {/* Care pass */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Care Pass</Text>
+            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
+          </View>
+          <View style={s.carePassGrid}>
+            {CARE_PASS_OPTIONS.map((option) => (
+              <Pressable
+                key={option.audience}
+                onPress={() => shareCarePass(option.audience)}
+                style={({ pressed }) => [
+                  s.carePassCard,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    shadowColor: colors.primary,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+              >
+                <View style={[s.carePassIcon, { backgroundColor: colors.primary + "14" }]}>
+                  <Ionicons name={option.icon} size={18} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[s.carePassLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {option.label}
+                  </Text>
+                  <Text numberOfLines={2} style={[s.carePassDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {option.detail}
+                  </Text>
+                </View>
+                <Ionicons name="share-outline" size={16} color={colors.copper} />
+              </Pressable>
+            ))}
+          </View>
+
           {/* Progress report */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Progress Report</Text>
@@ -692,6 +764,22 @@ const s = StyleSheet.create({
   incidentLabel: { fontSize: 12, marginTop: 1 },
   incidentBarTrack: { height: 5, borderRadius: 3, width: "70%", marginTop: 8, overflow: "hidden" },
   incidentBarFill: { height: "100%", borderRadius: 3 },
+
+  carePassGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  carePassCard: {
+    width: "48%",
+    minHeight: 92,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 13,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  carePassIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 9 },
+  carePassLabel: { fontSize: 15 },
+  carePassDetail: { fontSize: 12, lineHeight: 16, marginTop: 2, paddingRight: 14 },
 
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
   rowIconWrap: { width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center" },
