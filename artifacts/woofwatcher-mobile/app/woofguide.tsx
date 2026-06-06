@@ -16,7 +16,12 @@ import {
   Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { deriveCareDayStatus, normalizeCareEventType } from "@workspace/care-domain";
+import {
+  deriveCareDayStatus,
+  deriveCareHandoff,
+  deriveHealthWatch,
+  normalizeCareEventType,
+} from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare, CareState } from "@/context/CareContext";
 
@@ -32,33 +37,29 @@ const BASE_URL = process.env.EXPO_PUBLIC_DOMAIN
 
 function buildAssistantContext(state: CareState) {
   const today = new Date().toISOString().slice(0, 10);
+  const now = Date.now();
   const todayEntries = state.entries.filter((e) => e.occurredAt.startsWith(today));
   const normalizedType = (entry: CareState["entries"][number]) =>
     normalizeCareEventType(entry.type, entry.details);
-  const meals = state.entries.filter((e) => normalizedType(e) === "meal");
-  const walks = state.entries.filter((e) => normalizedType(e) === "walk");
-  const vomitIncidents = state.entries.filter((e) => normalizedType(e) === "vomit");
+  const sortedEntries = [...state.entries].sort(
+    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+  );
+  const meals = sortedEntries.filter((e) => normalizedType(e) === "meal");
+  const walks = sortedEntries.filter((e) => normalizedType(e) === "walk");
   const lastMeal = meals[0] ?? null;
   const lastWalk = walks[0] ?? null;
-  const dayStatus = deriveCareDayStatus(state.entries, state.routines);
-
-  const now = Date.now();
-  const nextRoutine = state.routines.find((r) => {
-    const [time, period] = r.time.split(" ");
-    const [hStr, mStr] = time.split(":");
-    let h = parseInt(hStr, 10);
-    if (period === "PM" && h !== 12) h += 12;
-    if (period === "AM" && h === 12) h = 0;
-    const routineMs = new Date().setHours(h, parseInt(mStr || "0", 10), 0, 0);
-    return routineMs > now;
-  }) ?? state.routines[0];
-
-  const caregiverLoad = state.caregivers.map((c) => ({
-    name: c.name,
-    role: c.role,
-    todayLogs: state.entries.filter((e) => e.caregiver === c.name && e.occurredAt.startsWith(today)).length,
-    latestAction: state.entries.find((e) => e.caregiver === c.name)?.title ?? "",
-  }));
+  const dayStatus = deriveCareDayStatus(state.entries, state.routines, now);
+  const healthWatch = deriveHealthWatch({
+    entries: state.entries,
+    routines: state.routines,
+    now,
+  });
+  const handoffSummary = deriveCareHandoff({
+    entries: state.entries,
+    routines: state.routines,
+    caregivers: state.caregivers,
+    now,
+  });
 
   return {
     profile: {
@@ -74,29 +75,46 @@ function buildAssistantContext(state: CareState) {
       todayEntries: todayEntries.length,
       meals: dayStatus.counts.meals.done,
       walks: dayStatus.counts.walks.done,
-      vomitIncidents: dayStatus.counts.vomit,
+      vomitIncidents: healthWatch.counts.vomit30,
     },
     healthWatch: {
-      status: dayStatus.healthAlert ? "watch" : "normal",
-      label: dayStatus.healthAlert ? "Bile or symptom pattern present" : "No concerns",
-      signals: vomitIncidents.slice(0, 3).map((e) => e.note ?? e.title),
-      redFlags: vomitIncidents.filter((e) => e.severity === "urgent").map((e) => e.title),
+      status: healthWatch.status,
+      label: healthWatch.status === "good" ? "No concerns" : healthWatch.summary,
+      summary: healthWatch.summary,
+      signals: healthWatch.signals.slice(0, 4),
+      redFlags: healthWatch.redFlags,
+      counts: healthWatch.counts,
+      vetBoundary: healthWatch.vetBoundary,
     },
     todayPlan: {
       dateLabel: today,
       completedCount: todayEntries.length,
       totalCount: state.routines.length,
-      nextItems: nextRoutine ? [{ label: nextRoutine.label, time: nextRoutine.time, owner: nextRoutine.owner, note: nextRoutine.note }] : [],
+      nextItems: handoffSummary.next
+        ? [{
+            label: handoffSummary.next.label,
+            time: handoffSummary.next.time,
+            owner: handoffSummary.next.owner,
+            note: handoffSummary.next.note,
+          }]
+        : [],
     },
     handoff: {
-      nextRoutine: nextRoutine ? { label: nextRoutine.label, time: nextRoutine.time, owner: nextRoutine.owner } : null,
+      nextRoutine: handoffSummary.next
+        ? {
+            label: handoffSummary.next.label,
+            time: handoffSummary.next.time,
+            owner: handoffSummary.next.owner,
+          }
+        : null,
       lastMeal,
       lastWalk,
       followUps: state.entries.filter((e) => e.severity === "watch" || e.severity === "urgent").slice(0, 3),
-      caregiverLoad,
-      message: `${caregiverLoad[0]?.todayLogs ?? 0} logs today.`,
+      caregiverLoad: handoffSummary.caregiverLoad,
+      sections: handoffSummary.sections,
+      message: handoffSummary.message,
     },
-    latest: state.entries.slice(0, 5),
+    latest: sortedEntries.slice(0, 5),
     dietProfile: state.dietProfile,
   };
 }

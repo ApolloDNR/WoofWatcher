@@ -24,7 +24,7 @@ import Svg, {
   Stop,
   Text as SvgText,
 } from "react-native-svg";
-import { normalizeCareEventType } from "@workspace/care-domain";
+import { deriveHealthWatch, normalizeCareEventType } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
@@ -97,6 +97,11 @@ export default function RecordsScreen() {
 
   const [period, setPeriod] = useState<number>(30);
 
+  const healthWatch = useMemo(
+    () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
+    [state.entries, state.routines, now],
+  );
+
   // ---- Weight trend (prefer real weight logs, fall back to gentle synthesis) ----
   const goalWeight = useMemo(() => {
     const g = state.goals.find((x) => x.category === "weight");
@@ -165,6 +170,12 @@ export default function RecordsScreen() {
   const incident7 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 7).length;
   const incident30 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 30).length;
   const incident90 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 90).length;
+  const healthTone =
+    healthWatch.status === "alert"
+      ? colors.rose
+      : healthWatch.status === "watch"
+        ? colors.amber
+        : colors.sage;
 
   // ---- Progress report (period-scoped, computed from real logs) ----
   const report = useMemo(() => {
@@ -424,6 +435,35 @@ export default function RecordsScreen() {
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Incident Lookback</Text>
           </View>
           <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <View style={s.watchSummary}>
+              <View style={[s.watchSummaryIcon, { backgroundColor: healthTone + "18" }]}>
+                <Ionicons
+                  name={healthWatch.status === "good" ? "heart" : "alert-circle"}
+                  size={18}
+                  color={healthTone}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {healthWatch.status === "good"
+                    ? "Health steady"
+                    : healthWatch.status === "alert"
+                      ? "Health alert"
+                      : "Health watch"}
+                </Text>
+                <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {healthWatch.summary}
+                </Text>
+              </View>
+            </View>
+            {healthWatch.signals.slice(0, 2).map((signal) => (
+              <View key={signal.kind} style={s.watchSignalRow}>
+                <View style={[s.watchSignalDot, { backgroundColor: signal.urgency === "alert" ? colors.rose : colors.amber }]} />
+                <Text style={[s.watchSignalText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {signal.label}: {signal.detail}
+                </Text>
+              </View>
+            ))}
             <View style={s.incidentRow}>
               {[
                 { label: "7 days", value: incident7 },
@@ -640,6 +680,13 @@ const s = StyleSheet.create({
   moodCount: { fontSize: 12, width: 28 },
 
   incidentRow: { flexDirection: "row", marginBottom: 4 },
+  watchSummary: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
+  watchSummaryIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  watchSummaryTitle: { fontSize: 15 },
+  watchSummaryDetail: { fontSize: 12.5, lineHeight: 18, marginTop: 2 },
+  watchSignalRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 10 },
+  watchSignalDot: { width: 7, height: 7, borderRadius: 4, marginTop: 6 },
+  watchSignalText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
   incidentCol: { flex: 1, alignItems: "center", paddingHorizontal: 10, paddingBottom: 14 },
   incidentValue: { fontSize: 26, letterSpacing: -0.4 },
   incidentLabel: { fontSize: 12, marginTop: 1 },
