@@ -2,10 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Animated,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -17,6 +18,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
+import { useAvatar } from "@/context/AvatarContext";
+import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -28,6 +31,10 @@ export default function MoreScreen() {
   const router = useRouter();
   const { state } = useCare();
   const { dietProfile, caregivers, profile, entries, routines } = state;
+  const { getAvatarSource } = useAvatar();
+
+  const now = Date.now();
+  const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
 
@@ -150,7 +157,7 @@ export default function MoreScreen() {
             />
             <View style={s.profileAvatarWrap}>
               <View style={[s.profileAvatar, { backgroundColor: colors.card }]}>
-                <PulseIcon name="paw" size={36} />
+                <Image source={getAvatarSource(status.mood)} style={s.profileAvatarImg} resizeMode="cover" />
               </View>
             </View>
             <View style={s.profileBody}>
@@ -314,7 +321,9 @@ const s = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 10,
     elevation: 3,
+    overflow: "hidden",
   },
+  profileAvatarImg: { width: "100%", height: "100%", borderRadius: 20 },
   profileBody: { alignItems: "center", paddingHorizontal: 20, paddingBottom: 20, paddingTop: 10 },
   profileName: { fontSize: 24, letterSpacing: -0.3 },
   profileBreed: { fontSize: 13.5, marginTop: 2, textAlign: "center" },

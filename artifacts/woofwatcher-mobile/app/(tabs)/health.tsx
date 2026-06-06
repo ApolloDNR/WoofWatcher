@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef } from "react";
 import {
   Animated,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -23,6 +24,7 @@ import Svg, {
   Text as SvgText,
 } from "react-native-svg";
 import { useCare } from "@/context/CareContext";
+import { useAvatar } from "@/context/AvatarContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
@@ -54,6 +56,7 @@ export default function HealthScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state } = useCare();
+  const { getAvatarSource } = useAvatar();
   const { width } = useWindowDimensions();
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
@@ -175,8 +178,8 @@ export default function HealthScreen() {
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           {/* Header */}
           <View style={s.header}>
-            <View style={[s.headerIcon, { backgroundColor: (healthOk ? colors.sage : colors.copper) + "18" }]}>
-              <Ionicons name={healthOk ? "heart" : "alert-circle"} size={22} color={healthOk ? colors.sage : colors.copper} />
+            <View style={[s.headerIcon, { backgroundColor: colors.card, borderColor: (healthOk ? colors.sage : colors.copper) + "55", borderWidth: 2 }]}>
+              <Image source={getAvatarSource(status.mood)} style={s.headerAvatarImg} resizeMode="cover" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.title, { color: colors.foreground, fontFamily: DISPLAY }]}>Health Watch</Text>
@@ -391,7 +394,8 @@ const s = StyleSheet.create({
   container: { flex: 1 },
 
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
-  headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  headerAvatarImg: { width: "100%", height: "100%", borderRadius: 13 },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
 

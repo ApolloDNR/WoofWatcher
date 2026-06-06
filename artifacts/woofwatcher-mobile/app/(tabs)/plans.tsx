@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef } from "react";
-import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCare } from "@/context/CareContext";
+import { useAvatar } from "@/context/AvatarContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
@@ -45,6 +46,7 @@ export default function PlansScreen() {
   const router = useRouter();
   const { state } = useCare();
   const { routines, goals } = state;
+  const { getAvatarSource } = useAvatar();
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
   const now = Date.now();
@@ -97,8 +99,8 @@ export default function PlansScreen() {
           {/* Day progress card */}
           <View style={[s.progressCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             <View style={s.progressTop}>
-              <View style={[s.progressIcon, { backgroundColor: colors.sage + "1A" }]}>
-                <PulseIcon name="paw" size={22} />
+              <View style={[s.progressIcon, { backgroundColor: colors.card, borderColor: colors.sage + "55", borderWidth: 2 }]}>
+                <Image source={getAvatarSource(status.mood)} style={s.progressAvatarImg} resizeMode="cover" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.progressTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -253,7 +255,8 @@ const s = StyleSheet.create({
     elevation: 4,
   },
   progressTop: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
-  progressIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  progressIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  progressAvatarImg: { width: "100%", height: "100%", borderRadius: 13 },
   progressTitle: { fontSize: 16 },
   progressSub: { fontSize: 13, marginTop: 2 },
   progressTrack: { height: 8, borderRadius: 4, overflow: "hidden" },
