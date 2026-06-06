@@ -225,10 +225,17 @@ const TYPE_ICON: Record<string, PulseIconName> = {
   meds: "pill",
 };
 
+function syncLabel(status: Entry["syncStatus"]): string | null {
+  if (status === "pending") return "Pending sync";
+  if (status === "local") return "Saved offline";
+  if (status === "failed") return "Sync failed";
+  return null;
+}
+
 export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { state, addEntry, deleteEntry, updateEntry, updateCareDoc } = useCare();
+  const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, isSyncing } = useCare();
   const me = useGetMe();
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
@@ -480,6 +487,23 @@ export default function LogScreen() {
                 Logging as {caregiver} — every wag accounted for 🐾
               </Text>
             </View>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                refresh();
+              }}
+              disabled={isSyncing}
+              style={({ pressed }) => [
+                s.syncBtn,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  opacity: pressed || isSyncing ? 0.65 : 1,
+                },
+              ]}
+            >
+              <Ionicons name={isSyncing ? "sync" : "cloud-upload-outline"} size={18} color={colors.primary} />
+            </Pressable>
           </View>
 
           {/* Composer card */}
@@ -716,6 +740,7 @@ export default function LogScreen() {
                     const cg = caregiverColor(e.caregiver);
                     const sev = e.severity && e.severity !== "normal" ? e.severity : null;
                     const sevColor = sev === "alert" ? colors.rose : colors.amber;
+                    const statusLabel = syncLabel(e.syncStatus);
                     return (
                       <View
                         key={e.id}
@@ -743,7 +768,13 @@ export default function LogScreen() {
                           </View>
                           <Text style={[s.entryMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                             {e.caregiver} · {new Date(e.occurredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                            {statusLabel ? ` · ${statusLabel}` : ""}
                           </Text>
+                          {e.syncStatus === "failed" && e.syncError ? (
+                            <Text style={[s.entrySyncError, { color: colors.rose, fontFamily: "Inter_500Medium" }]}>
+                              {e.syncError}
+                            </Text>
+                          ) : null}
                           {e.note ? (
                             <Text numberOfLines={3} style={[s.entryNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                               {e.note}
@@ -863,6 +894,7 @@ const s = StyleSheet.create({
 
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 18 },
   headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  syncBtn: { width: 40, height: 40, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
 
@@ -953,6 +985,7 @@ const s = StyleSheet.create({
   sevBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
   sevText: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0.4 },
   entryMeta: { fontSize: 12, marginTop: 2 },
+  entrySyncError: { fontSize: 12, marginTop: 4 },
   entryNote: { fontSize: 13, lineHeight: 18, marginTop: 4 },
   entryRight: { alignItems: "flex-end", gap: 4 },
   entryRelTime: { fontSize: 11.5 },

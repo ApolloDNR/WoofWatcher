@@ -23,6 +23,11 @@ import {
   type CareEntryUpdate,
   type CareStateEnvelope,
 } from "@workspace/api-client-react";
+import {
+  isUnsyncedEntry,
+  mergeServerAndLocalEntries,
+  type EntrySyncStatus,
+} from "@/lib/careSync";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
 
@@ -99,6 +104,8 @@ export interface Entry {
   dogInteractions?: number;
   food?: string;
   details?: { [key: string]: unknown };
+  syncStatus?: EntrySyncStatus;
+  syncError?: string;
 }
 
 export interface DietProfile {
@@ -199,6 +206,7 @@ function toEntry(c: ApiCareEntry): Entry {
       typeof d.dogInteractions === "number" ? d.dogInteractions : undefined,
     food: typeof d.food === "string" ? d.food : undefined,
     details: d,
+    syncStatus: "synced",
   };
 }
 
@@ -271,6 +279,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   // Refs mirror state so async callbacks read fresh values without re-binding.
   const docRef = useRef(doc);
+  const entriesRef = useRef(entries);
   const versionRef = useRef(serverVersion);
   const signedInRef = useRef(false);
   const syncingRef = useRef(false);
@@ -281,6 +290,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     docRef.current = doc;
   }, [doc]);
+  useEffect(() => {
+    entriesRef.current = entries;
+  }, [entries]);
   useEffect(() => {
     versionRef.current = serverVersion;
   }, [serverVersion]);
@@ -349,6 +361,60 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const persistEntryCreate = useCallback(
+    (tempId: string, entry: Omit<Entry, "id">) => {
+      setEntries((prev) =>
+        prev.map((e) =>
+          e.id === tempId
+            ? { ...e, syncStatus: "pending", syncError: undefined }
+            : e,
+        ),
+      );
+      createCareEntry(toCreateInput(entry))
+        .then((created) => {
+          const real = toEntry(created);
+          realIdByTemp.current.set(tempId, real.id);
+          // Apply any patch that landed while the create was in flight.
+          const queued = pendingPatch.current.get(tempId);
+          pendingPatch.current.delete(tempId);
+          const merged = queued ? { ...real, ...queued } : real;
+          setEntries((prev) => prev.map((e) => (e.id === tempId ? merged : e)));
+          queryClient.invalidateQueries({
+            queryKey: getListCareEntriesQueryKey(),
+          });
+          if (queued) {
+            updateCareEntry(real.id, toUpdateInput(merged)).catch(() => {
+              setEntries((prev) =>
+                prev.map((e) =>
+                  e.id === real.id
+                    ? {
+                        ...e,
+                        syncStatus: "failed",
+                        syncError: "Saved locally. Refresh to retry sync.",
+                      }
+                    : e,
+                ),
+              );
+            });
+          }
+        })
+        .catch(() => {
+          setEntries((prev) =>
+            prev.map((e) =>
+              e.id === tempId
+                ? {
+                    ...e,
+                    syncStatus: "failed",
+                    syncError: "Saved locally. Refresh to retry sync.",
+                  }
+                : e,
+            ),
+          );
+        });
+    },
+    [queryClient],
+  );
+
   const syncFromServer = useCallback(async () => {
     if (!signedInRef.current || syncingRef.current) return;
     syncingRef.current = true;
@@ -372,14 +438,21 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       }
 
       const rows = await listCareEntries();
-      setEntries(rows.map(toEntry));
+      const serverEntries = rows.map(toEntry);
+      const retryable = entriesRef.current.filter(
+        (entry) => isUnsyncedEntry(entry) && entry.syncStatus !== "pending",
+      );
+      setEntries((prev) => mergeServerAndLocalEntries(prev, serverEntries));
+      retryable.forEach((entry) => {
+        persistEntryCreate(entry.id, entry);
+      });
     } catch {
       // Offline or transient failure: keep showing the cached state.
     } finally {
       syncingRef.current = false;
       setIsSyncing(false);
     }
-  }, []);
+  }, [persistEntryCreate]);
 
   useEffect(() => {
     if (!clerkLoaded || !isSignedIn) return;
@@ -391,30 +464,17 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       const tempId = `temp_${Date.now()}_${Math.random()
         .toString(36)
         .slice(2, 7)}`;
-      setEntries((prev) => [{ id: tempId, ...entry }, ...prev]);
+      const localEntry: Entry = {
+        id: tempId,
+        ...entry,
+        syncStatus: signedInRef.current ? "pending" : "local",
+      };
+      setEntries((prev) => [localEntry, ...prev]);
       if (!signedInRef.current) return tempId;
-      createCareEntry(toCreateInput(entry))
-        .then((created) => {
-          const real = toEntry(created);
-          realIdByTemp.current.set(tempId, real.id);
-          // Apply any patch that landed while the create was in flight.
-          const queued = pendingPatch.current.get(tempId);
-          pendingPatch.current.delete(tempId);
-          const merged = queued ? { ...real, ...queued } : real;
-          setEntries((prev) => prev.map((e) => (e.id === tempId ? merged : e)));
-          queryClient.invalidateQueries({
-            queryKey: getListCareEntriesQueryKey(),
-          });
-          if (queued) {
-            updateCareEntry(real.id, toUpdateInput(merged)).catch(() => {});
-          }
-        })
-        .catch(() => {
-          setEntries((prev) => prev.filter((e) => e.id !== tempId));
-        });
+      persistEntryCreate(tempId, entry);
       return tempId;
     },
-    [queryClient],
+    [persistEntryCreate],
   );
 
   const deleteEntry = useCallback(
