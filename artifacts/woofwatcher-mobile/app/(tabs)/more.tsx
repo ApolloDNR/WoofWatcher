@@ -40,7 +40,7 @@ export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, refresh } = useCare();
+  const { state, refresh, updateCareDoc } = useCare();
   const { dietProfile, profile, entries, routines } = state;
   const { getAvatarSource } = useAvatar();
 
@@ -58,6 +58,26 @@ export default function MoreScreen() {
   const now = Date.now();
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
 
+  const streak = useMemo(() => {
+    const days = new Set(entries.map((e) => e.occurredAt.slice(0, 10)));
+    let s = 0;
+    let d = new Date(now);
+    for (let i = 0; i < 365; i++) {
+      const key = d.toISOString().slice(0, 10);
+      if (!days.has(key)) break;
+      s++;
+      d = new Date(d.getTime() - 86400000);
+    }
+    return s;
+  }, [entries, now]);
+
+  const todayLogCount = useMemo(() => {
+    const today = new Date(now).toISOString().slice(0, 10);
+    return entries.filter((e) => e.occurredAt.startsWith(today)).length;
+  }, [entries, now]);
+
+  const energyDots = Math.round(((status.energy - 35) / (96 - 35)) * 4) + 1;
+
   const topInset = Platform.OS === "web" ? 24 : insets.top;
 
   const [dietOpen, setDietOpen] = useState(false);
@@ -67,6 +87,25 @@ export default function MoreScreen() {
   const [renameValue, setRenameValue] = useState("");
   const [nameOpen, setNameOpen] = useState(false);
   const [nameValue, setNameValue] = useState("");
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [pName, setPName] = useState("");
+  const [pBreed, setPBreed] = useState("");
+  const [pWeight, setPWeight] = useState("");
+  const [pWeightUnit, setPWeightUnit] = useState<"lb" | "kg">("lb");
+  const [pFocus, setPFocus] = useState("");
+
+  const [dietEditOpen, setDietEditOpen] = useState(false);
+  const [dPrimaryFood, setDPrimaryFood] = useState("");
+  const [dNormalPortion, setDNormalPortion] = useState("");
+  const [dMealSchedule, setDMealSchedule] = useState("");
+  const [dToppers, setDToppers] = useState("");
+  const [dBedtimeSnack, setDBedtimeSnack] = useState("");
+  const [dTreatsAllowed, setDTreatsAllowed] = useState("");
+  const [dAvoid, setDAvoid] = useState("");
+  const [dSensitivities, setDSensitivities] = useState("");
+  const [dAppetiteQuirks, setDAppetiteQuirks] = useState("");
+  const [dVetNotes, setDVetNotes] = useState("");
+  const [dSupplements, setDSupplements] = useState("");
 
   const memberColor = (idx: number) => {
     const palette = [colors.primary, colors.copper, colors.sage, colors.amber, colors.rose];
@@ -132,6 +171,74 @@ export default function MoreScreen() {
         onError: () => Alert.alert("Couldn't update name", "Please try again."),
       },
     );
+  };
+
+  const openProfileEdit = () => {
+    setPName(profile.name === "My Dog" ? "" : profile.name);
+    setPBreed(profile.breed);
+    setPWeight(profile.weight.current > 0 ? String(profile.weight.current) : "");
+    setPWeightUnit((profile.weight.unit as "lb" | "kg") || "lb");
+    setPFocus(profile.careFocus);
+    setProfileOpen(true);
+  };
+
+  const saveProfile = () => {
+    const name = pName.trim() || "My Dog";
+    const w = parseFloat(pWeight);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateCareDoc((doc) => ({
+      ...doc,
+      profile: {
+        ...doc.profile,
+        name,
+        publicLabel: name,
+        breed: pBreed.trim(),
+        careFocus: pFocus.trim(),
+        weight: {
+          ...doc.profile.weight,
+          current: Number.isFinite(w) && w > 0 ? w : doc.profile.weight.current,
+          unit: pWeightUnit,
+        },
+      },
+    }));
+    setProfileOpen(false);
+  };
+
+  const openDietEdit = () => {
+    setDPrimaryFood(dietProfile.primaryFood);
+    setDNormalPortion(dietProfile.normalPortion);
+    setDMealSchedule(dietProfile.mealSchedule);
+    setDToppers(dietProfile.toppers);
+    setDBedtimeSnack(dietProfile.bedtimeSnack);
+    setDTreatsAllowed(dietProfile.treatsAllowed);
+    setDAvoid(dietProfile.avoid);
+    setDSensitivities(dietProfile.sensitivities);
+    setDAppetiteQuirks(dietProfile.appetiteQuirks);
+    setDVetNotes(dietProfile.vetNotes);
+    setDSupplements(dietProfile.supplements);
+    setDietEditOpen(true);
+  };
+
+  const saveDiet = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateCareDoc((doc) => ({
+      ...doc,
+      dietProfile: {
+        ...doc.dietProfile,
+        primaryFood: dPrimaryFood.trim(),
+        normalPortion: dNormalPortion.trim(),
+        mealSchedule: dMealSchedule.trim(),
+        toppers: dToppers.trim(),
+        supplements: dSupplements.trim(),
+        bedtimeSnack: dBedtimeSnack.trim(),
+        treatsAllowed: dTreatsAllowed.trim(),
+        avoid: dAvoid.trim(),
+        sensitivities: dSensitivities.trim(),
+        appetiteQuirks: dAppetiteQuirks.trim(),
+        vetNotes: dVetNotes.trim(),
+      },
+    }));
+    setDietEditOpen(false);
   };
 
   const confirmSignOut = () => {
@@ -206,7 +313,7 @@ export default function MoreScreen() {
       icon: "heart",
       iconName: "chatbubbles",
       label: "WoofGuide Assistant",
-      sub: "Ask about Phoenix's care, diet, and patterns",
+      sub: `Ask about ${profile.name}'s care, diet, and patterns`,
       onPress: () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.push("/woofguide");
@@ -257,8 +364,15 @@ export default function MoreScreen() {
               end={{ x: 1, y: 1 }}
               style={s.profileBanner}
             />
+            <Pressable
+              onPress={openProfileEdit}
+              hitSlop={8}
+              style={[s.profileEditBtn, { backgroundColor: "rgba(255,255,255,0.9)" }]}
+            >
+              <Ionicons name="pencil" size={14} color={colors.primary} />
+            </Pressable>
             <View style={s.profileAvatarWrap}>
-              <View style={[s.profileAvatar, { backgroundColor: colors.card }]}>
+              <View style={[s.profileAvatar, { backgroundColor: colors.card, borderColor: colors.card }]}>
                 <Image source={getAvatarSource(status.mood)} style={s.profileAvatarImg} resizeMode="cover" />
               </View>
             </View>
@@ -268,16 +382,49 @@ export default function MoreScreen() {
               <View style={[s.profileStats, { borderTopColor: colors.border }]}>
                 <View style={s.profileStat}>
                   <Text style={[s.profileStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {profile.weight.current} {profile.weight.unit}
+                    {profile.weight.current > 0 ? `${profile.weight.current} ${profile.weight.unit}` : "—"}
                   </Text>
                   <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Weight</Text>
                 </View>
                 <View style={[s.profileStatDivider, { backgroundColor: colors.border }]} />
-                <View style={[s.profileStat, { flex: 1.6 }]}>
-                  <Text numberOfLines={1} style={[s.profileStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{profile.weight.goal}</Text>
-                  <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Goal</Text>
+                <View style={s.profileStat}>
+                  <Text style={[s.profileStatValue, { color: streak > 0 ? colors.sage : colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>
+                    {streak > 0 ? `${streak}d` : "—"}
+                  </Text>
+                  <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Streak</Text>
+                </View>
+                <View style={[s.profileStatDivider, { backgroundColor: colors.border }]} />
+                <View style={s.profileStat}>
+                  <Text style={[s.profileStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{routines.length}</Text>
+                  <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Routines</Text>
                 </View>
               </View>
+            </View>
+          </View>
+
+          {/* Today's status strip */}
+          <View style={[s.statusStrip, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
+            <View style={[s.statusCell, { borderRightWidth: 1, borderRightColor: colors.border }]}>
+              <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{status.mood}</Text>
+              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Today's mood</Text>
+            </View>
+            <View style={s.statusCell}>
+              <View style={s.statusEnergyRow}>
+                {[1, 2, 3, 4, 5].map((dot) => (
+                  <View
+                    key={dot}
+                    style={[
+                      s.statusEnergyDot,
+                      { backgroundColor: dot <= energyDots ? colors.primary : colors.border },
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Energy level</Text>
+            </View>
+            <View style={[s.statusCell, { borderLeftWidth: 1, borderLeftColor: colors.border }]}>
+              <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{todayLogCount}</Text>
+              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Logs today</Text>
             </View>
           </View>
 
@@ -443,15 +590,14 @@ export default function MoreScreen() {
           {/* Diet profile */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Diet Profile</Text>
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                setDietOpen((v) => !v);
-              }}
-              hitSlop={8}
-            >
-              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>{dietOpen ? "Hide" : "Show all"}</Text>
-            </Pressable>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+              <Pressable onPress={() => { Haptics.selectionAsync(); openDietEdit(); }} hitSlop={8}>
+                <Text style={[s.sectionLink, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>Edit</Text>
+              </Pressable>
+              <Pressable onPress={() => { Haptics.selectionAsync(); setDietOpen((v) => !v); }} hitSlop={8}>
+                <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>{dietOpen ? "Hide" : "Details"}</Text>
+              </Pressable>
+            </View>
           </View>
           <View style={[s.dietCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             <View style={s.dietHeader}>
@@ -505,6 +651,54 @@ export default function MoreScreen() {
         </Animated.View>
       </ScrollView>
 
+      {/* Diet profile edit modal */}
+      <Modal visible={dietEditOpen} transparent animationType="slide" onRequestClose={() => setDietEditOpen(false)}>
+        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDietEditOpen(false)}>
+          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 20, paddingHorizontal: 22 }}
+              bounces={false}
+            >
+              <View style={s.modalHandle} />
+              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Diet Profile</Text>
+
+              {[
+                { label: "PRIMARY FOOD", value: dPrimaryFood, set: setDPrimaryFood, placeholder: "e.g. Royal Canin GI dry kibble" },
+                { label: "NORMAL PORTION", value: dNormalPortion, set: setDNormalPortion, placeholder: "e.g. 1¼ cups twice daily" },
+                { label: "MEAL SCHEDULE", value: dMealSchedule, set: setDMealSchedule, placeholder: "e.g. 7 AM and 6 PM" },
+                { label: "TOPPERS", value: dToppers, set: setDToppers, placeholder: "e.g. Bone broth, low-sodium" },
+                { label: "SUPPLEMENTS", value: dSupplements, set: setDSupplements, placeholder: "e.g. Probiotic daily" },
+                { label: "BEDTIME SNACK", value: dBedtimeSnack, set: setDBedtimeSnack, placeholder: "e.g. ½ cup kibble at 10 PM" },
+                { label: "TREATS ALLOWED", value: dTreatsAllowed, set: setDTreatsAllowed, placeholder: "e.g. Zuke's minis, max 3/day" },
+                { label: "AVOID", value: dAvoid, set: setDAvoid, placeholder: "e.g. Grains, chicken, rawhide" },
+                { label: "SENSITIVITIES", value: dSensitivities, set: setDSensitivities, placeholder: "e.g. Chicken allergy confirmed" },
+                { label: "APPETITE QUIRKS", value: dAppetiteQuirks, set: setDAppetiteQuirks, placeholder: "e.g. Eats slowly, dislikes change" },
+                { label: "VET NOTES", value: dVetNotes, set: setDVetNotes, placeholder: "e.g. Low-fat diet per Dr. Kim" },
+              ].map((f) => (
+                <View key={f.label}>
+                  <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{f.label}</Text>
+                  <TextInput
+                    value={f.value}
+                    onChangeText={f.set}
+                    placeholder={f.placeholder}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                  />
+                </View>
+              ))}
+
+              <Pressable
+                onPress={saveDiet}
+                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+              >
+                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save diet profile</Text>
+              </Pressable>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* Join household modal */}
       <PromptModal
         visible={joinOpen}
@@ -553,6 +747,88 @@ export default function MoreScreen() {
         onCancel={() => setNameOpen(false)}
         onConfirm={submitName}
       />
+
+      {/* Dog profile edit modal */}
+      <Modal visible={profileOpen} transparent animationType="slide" onRequestClose={() => setProfileOpen(false)}>
+        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProfileOpen(false)}>
+          <Pressable
+            style={[s.profileModal, { backgroundColor: colors.card }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 20, paddingHorizontal: 22 }}
+              bounces={false}
+            >
+            <View style={s.modalHandle} />
+            <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Dog Profile</Text>
+
+            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
+            <TextInput
+              value={pName}
+              onChangeText={setPName}
+              placeholder="e.g. Luna"
+              placeholderTextColor={colors.mutedForeground}
+              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+            />
+
+            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>BREED</Text>
+            <TextInput
+              value={pBreed}
+              onChangeText={setPBreed}
+              placeholder="e.g. Golden Retriever mix"
+              placeholderTextColor={colors.mutedForeground}
+              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+            />
+
+            <View style={s.profWeightRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>WEIGHT</Text>
+                <TextInput
+                  value={pWeight}
+                  onChangeText={setPWeight}
+                  placeholder="0.0"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="decimal-pad"
+                  style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                />
+              </View>
+              <View>
+                <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>UNIT</Text>
+                <View style={s.unitRow}>
+                  {(["lb", "kg"] as const).map((u) => (
+                    <Pressable
+                      key={u}
+                      onPress={() => { Haptics.selectionAsync(); setPWeightUnit(u); }}
+                      style={[s.unitPill, { backgroundColor: pWeightUnit === u ? colors.primary : colors.background, borderColor: pWeightUnit === u ? colors.primary : colors.border }]}
+                    >
+                      <Text style={[s.unitText, { color: pWeightUnit === u ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{u}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>CARE FOCUS (OPTIONAL)</Text>
+            <TextInput
+              value={pFocus}
+              onChangeText={setPFocus}
+              placeholder="e.g. Maintain healthy weight, ease anxiety"
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_400Regular", minHeight: 60, textAlignVertical: "top" }]}
+            />
+
+            <Pressable
+              onPress={saveProfile}
+              style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save profile</Text>
+            </Pressable>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -649,7 +925,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 4,
-    borderColor: "#FFFFFF",
     shadowColor: "#0F1F33",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
@@ -773,7 +1048,49 @@ const s = StyleSheet.create({
   vetNote: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 14, borderWidth: 1, padding: 14, marginTop: 12 },
   vetNoteText: { flex: 1, fontSize: 13.5, lineHeight: 19 },
 
+  statusStrip: {
+    flexDirection: "row",
+    borderRadius: 22,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  statusCell: { flex: 1, alignItems: "center", paddingVertical: 16, paddingHorizontal: 6 },
+  statusValue: { fontSize: 16, letterSpacing: -0.2, textTransform: "capitalize" },
+  statusLabel: { fontSize: 11.5, marginTop: 3, textAlign: "center" },
+  statusEnergyRow: { flexDirection: "row", gap: 4, marginBottom: 1 },
+  statusEnergyDot: { width: 8, height: 8, borderRadius: 4 },
+
   notice: { flexDirection: "row", gap: 10, borderRadius: 18, borderWidth: 1, padding: 16, marginTop: 24 },
   noticeText: { flex: 1, fontSize: 13, lineHeight: 19 },
   footer: { fontSize: 13, textAlign: "center", marginTop: 18 },
+
+  profileEditBtn: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#0F1F33",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  profileModal: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", paddingTop: 14 },
+  modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
+  sheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
+  profFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 16 },
+  profField: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  profWeightRow: { flexDirection: "row", alignItems: "flex-end", gap: 12 },
+  unitRow: { flexDirection: "row", gap: 8, paddingBottom: 1 },
+  unitPill: { paddingHorizontal: 16, paddingVertical: 11, borderRadius: 13, borderWidth: 1 },
+  unitText: { fontSize: 14 },
+  profSaveBtn: { marginTop: 24, borderRadius: 15, paddingVertical: 15, alignItems: "center" },
+  profSaveBtnText: { color: "#fff", fontSize: 15.5 },
 });

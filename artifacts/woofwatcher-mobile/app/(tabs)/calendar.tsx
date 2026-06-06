@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Modal,
   Platform,
@@ -16,9 +17,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@clerk/expo";
-import { useCare, CalendarEvent } from "@/context/CareContext";
+import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { parseLocalDate } from "@/lib/time";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -32,6 +34,16 @@ const ROUTINE_ICON: Record<string, PulseIconName> = {
   potty: "drop",
   note: "heart",
 };
+
+const ROUTINE_TYPES: { key: string; label: string; icon: PulseIconName }[] = [
+  { key: "meal", label: "Meal", icon: "bowl" },
+  { key: "walk", label: "Walk", icon: "paw" },
+  { key: "treat", label: "Treat", icon: "bone" },
+  { key: "play", label: "Play", icon: "candy" },
+  { key: "training", label: "Training", icon: "star" },
+  { key: "potty", label: "Potty", icon: "drop" },
+  { key: "note", label: "Check-in", icon: "heart" },
+];
 
 const EVENT_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
   beach: "sunny",
@@ -94,8 +106,9 @@ export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, updateCareDoc } = useCare();
+
   const { getToken } = useAuth();
-  const { routines, calendarEvents, profile } = state;
+  const { routines, calendarEvents, profile, entries } = state;
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
   const now = Date.now();
@@ -109,6 +122,16 @@ export default function CalendarScreen() {
   const [evTime, setEvTime] = useState("");
   const [evLocation, setEvLocation] = useState("");
 
+  // Routine editor
+  const [routineOpen, setRoutineOpen] = useState(false);
+  const [routineEditId, setRoutineEditId] = useState<string | null>(null);
+  const [rLabel, setRLabel] = useState("");
+  const [rType, setRType] = useState("meal");
+  const [rTime, setRTime] = useState("");
+  const [rOwner, setROwner] = useState("");
+  const [rNote, setRNote] = useState("");
+  const [rTimeError, setRTimeError] = useState<string | null>(null);
+
   // WoofGuide discovery
   const [discoverOpen, setDiscoverOpen] = useState(false);
   const [location, setLocation] = useState("");
@@ -119,6 +142,21 @@ export default function CalendarScreen() {
   const sortedRoutines = useMemo(
     () => [...routines].sort((a, b) => routineMinutes(a.time) - routineMinutes(b.time)),
     [routines],
+  );
+
+  // Smart completion: which routine types have a matching log entry today?
+  const todayLoggedTypes = useMemo(() => {
+    return new Set(
+      entries
+        .filter((e) => e.occurredAt.startsWith(today))
+        .map((e) => e.type),
+    );
+  }, [entries, today]);
+
+  // How many routines are completed today?
+  const routinesDoneCount = useMemo(
+    () => sortedRoutines.filter((r) => todayLoggedTypes.has(r.type)).length,
+    [sortedRoutines, todayLoggedTypes],
   );
 
   // Group upcoming one-off events by date.
@@ -145,8 +183,15 @@ export default function CalendarScreen() {
     updateCareDoc((doc) => ({ ...doc, calendarEvents: doc.calendarEvents.filter((e) => e.id !== id) }));
   };
 
+  const [dateError, setDateError] = useState<string | null>(null);
+
   const submitEvent = () => {
     if (!evTitle.trim()) return;
+    if (!parseLocalDate(evDate)) {
+      setDateError("Enter a valid date (YYYY-MM-DD)");
+      return;
+    }
+    setDateError(null);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addEvent({
       title: evTitle.trim(),
@@ -162,6 +207,70 @@ export default function CalendarScreen() {
     setEvType("event");
     setEvDate(today);
     setAddOpen(false);
+  };
+
+  const openNewRoutine = () => {
+    setRoutineEditId(null);
+    setRLabel("");
+    setRType("meal");
+    setRTime("");
+    setROwner("");
+    setRNote("");
+    setRTimeError(null);
+    setRoutineOpen(true);
+  };
+
+  const openEditRoutine = (r: Routine) => {
+    setRoutineEditId(r.id);
+    setRLabel(r.label);
+    setRType(r.type);
+    setRTime(r.time);
+    setROwner(r.owner ?? "");
+    setRNote(r.note ?? "");
+    setRTimeError(null);
+    setRoutineOpen(true);
+  };
+
+  const deleteRoutine = (id: string) => {
+    Alert.alert("Delete Routine", "Remove this routine from your schedule?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          updateCareDoc((doc) => ({ ...doc, routines: doc.routines.filter((r) => r.id !== id) }));
+          setRoutineOpen(false);
+        },
+      },
+    ]);
+  };
+
+  const submitRoutine = () => {
+    if (!rLabel.trim()) return;
+    if (!rTime.trim()) {
+      setRTimeError("Enter a time (e.g. 7:00 AM)");
+      return;
+    }
+    setRTimeError(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (routineEditId) {
+      updateCareDoc((doc) => ({
+        ...doc,
+        routines: doc.routines.map((r) =>
+          r.id === routineEditId
+            ? { ...r, label: rLabel.trim(), type: rType, time: rTime.trim(), owner: rOwner.trim(), note: rNote.trim() }
+            : r,
+        ),
+      }));
+    } else {
+      const id = `routine_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      updateCareDoc((doc) => ({
+        ...doc,
+        routines: [...doc.routines, { id, label: rLabel.trim(), type: rType, time: rTime.trim(), owner: rOwner.trim(), note: rNote.trim() }],
+      }));
+    }
+    setRoutineOpen(false);
   };
 
   const discover = async () => {
@@ -329,6 +438,8 @@ export default function CalendarScreen() {
                 <Text style={[s.dayHeading, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>{dayLabel(group.date)}</Text>
                 {group.events.map((e) => {
                   const icon = EVENT_ICON[e.type] ?? "calendar";
+                  const daysUntil = Math.round((new Date(`${e.date}T12:00:00`).getTime() - Date.now()) / 86400000);
+                  const countdownLabel = daysUntil === 0 ? "Today" : daysUntil === 1 ? "Tomorrow" : daysUntil <= 7 ? `${daysUntil}d away` : null;
                   return (
                     <View key={e.id} style={[s.eventCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
                       <View style={[s.eventIcon, { backgroundColor: colors.sage + "16" }]}>
@@ -341,6 +452,11 @@ export default function CalendarScreen() {
                             <View style={[s.tag, { backgroundColor: colors.primary + "16" }]}>
                               <Ionicons name="sparkles" size={9} color={colors.primary} />
                               <Text style={[s.tagText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>WoofGuide</Text>
+                            </View>
+                          )}
+                          {countdownLabel && (
+                            <View style={[s.tag, { backgroundColor: (daysUntil === 0 ? colors.copper : colors.sage) + "18" }]}>
+                              <Text style={[s.tagText, { color: daysUntil === 0 ? colors.copper : colors.sage, fontFamily: "Inter_700Bold" }]}>{countdownLabel}</Text>
                             </View>
                           )}
                         </View>
@@ -363,36 +479,139 @@ export default function CalendarScreen() {
 
           {/* Daily routine */}
           <View style={[s.sectionHeader, { marginTop: 14 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Daily Routine</Text>
-            <Text style={[s.sectionLink, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{sortedRoutines.length} recurring</Text>
+            <View>
+              <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Daily Routine</Text>
+              {sortedRoutines.length > 0 && (
+                <Text style={[s.routineProgress, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {routinesDoneCount}/{sortedRoutines.length} done today
+                </Text>
+              )}
+            </View>
+            <Pressable onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }} style={[s.sectionAddBtn, { backgroundColor: colors.primary }]}>
+              <Ionicons name="add" size={18} color="#fff" />
+            </Pressable>
           </View>
-          <View style={s.timeline}>
-            {sortedRoutines.map((r, i) => {
-              const icon = ROUTINE_ICON[r.type] ?? "heart";
-              const tint = PULSE_COLORS[icon];
-              const last = i === sortedRoutines.length - 1;
-              return (
-                <View key={r.id} style={s.timelineRow}>
-                  <View style={s.rail}>
-                    <View style={[s.railDot, { backgroundColor: tint, borderColor: tint }]} />
-                    {!last && <View style={[s.railLine, { backgroundColor: colors.border }]} />}
-                  </View>
-                  <View style={[s.routineCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-                    <View style={[s.routineIconWrap, { backgroundColor: tint + "16" }]}>
-                      <PulseIcon name={icon} size={20} />
+          {sortedRoutines.length === 0 ? (
+            <Pressable onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }} style={[s.emptyCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+              <PulseIcon name="bowl" size={30} />
+              <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                No routines yet. Tap to add feeding times, walks, and more.
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={s.timeline}>
+              {sortedRoutines.map((r, i) => {
+                const icon = ROUTINE_ICON[r.type] ?? "heart";
+                const tint = PULSE_COLORS[icon];
+                const last = i === sortedRoutines.length - 1;
+                const done = todayLoggedTypes.has(r.type);
+                return (
+                  <Pressable key={r.id} onPress={() => { Haptics.selectionAsync(); openEditRoutine(r); }} style={s.timelineRow}>
+                    <View style={s.rail}>
+                      <View style={[s.railDot, { backgroundColor: done ? colors.sage : tint, borderColor: done ? colors.sage : tint }]} />
+                      {!last && <View style={[s.railLine, { backgroundColor: colors.border }]} />}
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.routineLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{r.label}</Text>
-                      <Text style={[s.routineOwner, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{r.owner}</Text>
+                    <View style={[s.routineCard, { backgroundColor: colors.card, shadowColor: colors.primary, opacity: done ? 0.72 : 1 }]}>
+                      <View style={[s.routineIconWrap, { backgroundColor: (done ? colors.sage : tint) + "16" }]}>
+                        <PulseIcon name={icon} size={20} color={done ? colors.sage : undefined} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.routineLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{r.label}</Text>
+                        {r.owner ? <Text style={[s.routineOwner, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{r.owner}</Text> : null}
+                      </View>
+                      <Text style={[s.routineTime, { color: done ? colors.sage : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{r.time}</Text>
+                      {done
+                        ? <Ionicons name="checkmark-circle" size={18} color={colors.sage} />
+                        : <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                      }
                     </View>
-                    <Text style={[s.routineTime, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{r.time}</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
         </Animated.View>
       </ScrollView>
+
+      {/* Routine editor modal */}
+      <Modal visible={routineOpen} transparent animationType="slide" onRequestClose={() => setRoutineOpen(false)}>
+        <Pressable style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
+          <Pressable style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]} onPress={(e) => e.stopPropagation()}>
+            <View style={s.modalHandle} />
+            <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+              {routineEditId ? "Edit Routine" : "New Routine"}
+            </Text>
+
+            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LABEL</Text>
+            <TextInput
+              value={rLabel}
+              onChangeText={setRLabel}
+              placeholder="Morning walk, breakfast, bedtime snack…"
+              placeholderTextColor={colors.mutedForeground}
+              style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+            />
+
+            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TYPE</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
+              {ROUTINE_TYPES.map((t) => {
+                const active = rType === t.key;
+                return (
+                  <Pressable key={t.key} onPress={() => { Haptics.selectionAsync(); setRType(t.key); }} style={[s.typeChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}>
+                    <PulseIcon name={t.icon} size={14} color={active ? "#fff" : undefined} />
+                    <Text style={[s.typeChipText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <View style={s.fieldRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TIME</Text>
+                <TextInput
+                  value={rTime}
+                  onChangeText={(v) => { setRTime(v); setRTimeError(null); }}
+                  placeholder="7:00 AM"
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[s.field, { backgroundColor: colors.background, color: rTimeError ? colors.rose : colors.foreground, borderWidth: rTimeError ? 1 : 0, borderColor: rTimeError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
+                />
+                {rTimeError && (
+                  <Text style={{ color: colors.rose, fontSize: 12, marginTop: 4, fontFamily: "Inter_500Medium" }}>{rTimeError}</Text>
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>OWNER (OPTIONAL)</Text>
+                <TextInput
+                  value={rOwner}
+                  onChangeText={setROwner}
+                  placeholder="Apollo, Maya…"
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                />
+              </View>
+            </View>
+
+            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NOTE (OPTIONAL)</Text>
+            <TextInput
+              value={rNote}
+              onChangeText={setRNote}
+              placeholder="Any extra details…"
+              placeholderTextColor={colors.mutedForeground}
+              style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+            />
+
+            <Pressable onPress={submitRoutine} disabled={!rLabel.trim()} style={[s.saveBtn, { backgroundColor: rLabel.trim() ? colors.primary : colors.border }]}>
+              <Text style={[s.saveBtnText, { fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
+            </Pressable>
+
+            {routineEditId && (
+              <Pressable onPress={() => deleteRoutine(routineEditId)} style={s.deleteBtn}>
+                <Ionicons name="trash-outline" size={15} color={colors.rose} />
+                <Text style={[s.deleteBtnText, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>Delete Routine</Text>
+              </Pressable>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Add-event modal */}
       <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
@@ -428,11 +647,24 @@ export default function CalendarScreen() {
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>DATE</Text>
                 <TextInput
                   value={evDate}
-                  onChangeText={setEvDate}
+                  onChangeText={(raw) => {
+                    setDateError(null);
+                    // Auto-insert dashes: 2026 → 2026- → 2026-06- → 2026-06-15
+                    const digits = raw.replace(/\D/g, "").slice(0, 8);
+                    let fmt = digits;
+                    if (digits.length > 4) fmt = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+                    if (digits.length > 6) fmt = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
+                    setEvDate(fmt);
+                  }}
                   placeholder="YYYY-MM-DD"
                   placeholderTextColor={colors.mutedForeground}
-                  style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                  keyboardType="number-pad"
+                  maxLength={10}
+                  style={[s.field, { backgroundColor: colors.background, color: dateError ? colors.rose : colors.foreground, borderWidth: dateError ? 1 : 0, borderColor: dateError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
                 />
+                {dateError && (
+                  <Text style={{ color: colors.rose, fontSize: 12, marginTop: 4, fontFamily: "Inter_500Medium" }}>{dateError}</Text>
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TIME</Text>
@@ -507,6 +739,8 @@ const s = StyleSheet.create({
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   sectionTitle: { fontSize: 20, letterSpacing: -0.2 },
   sectionLink: { fontSize: 13 },
+  sectionAddBtn: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  routineProgress: { fontSize: 12, marginTop: 1 },
 
   emptyCard: { borderRadius: 20, padding: 32, alignItems: "center", gap: 12, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
   emptyText: { fontSize: 14, textAlign: "center", lineHeight: 20 },
@@ -567,4 +801,6 @@ const s = StyleSheet.create({
   typeChipText: { fontSize: 13 },
   saveBtn: { marginTop: 24, borderRadius: 15, paddingVertical: 15, alignItems: "center" },
   saveBtnText: { color: "#fff", fontSize: 15.5 },
+  deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, paddingVertical: 10 },
+  deleteBtnText: { fontSize: 14 },
 });

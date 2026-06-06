@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 import {
   db,
@@ -126,7 +126,12 @@ export async function getCaregiverName(
     })
     .from(householdMembersTable)
     .leftJoin(usersTable, eq(usersTable.id, householdMembersTable.userId))
-    .where(eq(householdMembersTable.userId, userId))
+    .where(
+      and(
+        eq(householdMembersTable.userId, userId),
+        eq(householdMembersTable.householdId, householdId),
+      ),
+    )
     .limit(1);
   return row?.memberName ?? row?.userName ?? null;
 }
@@ -148,28 +153,23 @@ export async function buildMe(
   userId: string,
   householdId: string,
 ): Promise<MePayload> {
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, userId));
-  const [household] = await db
-    .select()
-    .from(householdsTable)
-    .where(eq(householdsTable.id, householdId));
-
-  const memberRows = await db
-    .select({
-      id: householdMembersTable.id,
-      userId: householdMembersTable.userId,
-      role: householdMembersTable.role,
-      memberName: householdMembersTable.displayName,
-      userName: usersTable.displayName,
-      email: usersTable.email,
-    })
-    .from(householdMembersTable)
-    .leftJoin(usersTable, eq(usersTable.id, householdMembersTable.userId))
-    .where(eq(householdMembersTable.householdId, householdId))
-    .orderBy(householdMembersTable.createdAt);
+  const [[user], [household], memberRows] = await Promise.all([
+    db.select().from(usersTable).where(eq(usersTable.id, userId)),
+    db.select().from(householdsTable).where(eq(householdsTable.id, householdId)),
+    db
+      .select({
+        id: householdMembersTable.id,
+        userId: householdMembersTable.userId,
+        role: householdMembersTable.role,
+        memberName: householdMembersTable.displayName,
+        userName: usersTable.displayName,
+        email: usersTable.email,
+      })
+      .from(householdMembersTable)
+      .leftJoin(usersTable, eq(usersTable.id, householdMembersTable.userId))
+      .where(eq(householdMembersTable.householdId, householdId))
+      .orderBy(householdMembersTable.createdAt),
+  ]);
 
   return {
     user: {

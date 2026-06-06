@@ -1,5 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { getGemini } from "../gemini";
+import { requireAuth } from "../lib/auth";
+import { makeRateLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
 
@@ -35,32 +37,9 @@ const EMOTION_PROMPTS: Record<string, string> = {
 
 const EMOTION_LIST = ["happy", "excited", "calm", "anxious", "unwell"] as const;
 
-// Lightweight in-memory throttle to protect a paid upstream model from abuse.
-const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 6;
-const GLOBAL_MAX_PER_WINDOW = 60;
-const hits = new Map<string, number[]>();
-let globalHits: number[] = [];
+const rateLimited = makeRateLimiter({ maxPerWindow: 6, globalMaxPerWindow: 60 });
 
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const cutoff = now - WINDOW_MS;
-  globalHits = globalHits.filter((t) => t > cutoff);
-  const recent = (hits.get(ip) ?? []).filter((t) => t > cutoff);
-  if (recent.length >= MAX_PER_WINDOW || globalHits.length >= GLOBAL_MAX_PER_WINDOW) {
-    hits.set(ip, recent);
-    return true;
-  }
-  recent.push(now);
-  globalHits.push(now);
-  hits.set(ip, recent);
-  if (hits.size > 500) {
-    for (const [k, v] of hits) if (v.every((t) => t <= cutoff)) hits.delete(k);
-  }
-  return false;
-}
-
-router.post("/avatar-stylize", async (req: Request, res: Response) => {
+router.post("/avatar-stylize", requireAuth, async (req: Request, res: Response) => {
   try {
     const ai = getGemini();
     if (!ai) {
@@ -164,7 +143,7 @@ async function generateEmotion(
 
 // Generate a full SET of emotion avatars from a single photo, so the user's own
 // dog becomes the live, emoting avatar across the app.
-router.post("/avatar-emotions", async (req: Request, res: Response) => {
+router.post("/avatar-emotions", requireAuth, async (req: Request, res: Response) => {
   try {
     const ai = getGemini();
     if (!ai) {

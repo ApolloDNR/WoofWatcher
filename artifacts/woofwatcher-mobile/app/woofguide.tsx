@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Stack } from "expo-router";
-import React, { useCallback, useState } from "react";
+import { useAuth } from "@clerk/expo";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -27,13 +28,6 @@ interface Message {
 const BASE_URL = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
   : "";
-
-const QUICK_QUESTIONS = [
-  "Why does Phoenix vomit yellow bile?",
-  "How much should Phoenix eat?",
-  "Tips for food anxiety in dogs",
-  "How to help a nervous eater",
-];
 
 function buildAssistantContext(state: CareState) {
   const today = new Date().toISOString().slice(0, 10);
@@ -99,6 +93,7 @@ function buildAssistantContext(state: CareState) {
       message: `${caregiverLoad[0]?.todayLogs ?? 0} logs today.`,
     },
     latest: state.entries.slice(0, 5),
+    dietProfile: state.dietProfile,
   };
 }
 
@@ -106,10 +101,19 @@ export default function WoofGuideScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { state } = useCare();
+  const { getToken } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
+  const name = state.profile.name || "your dog";
+
+  const quickQuestions = useMemo(() => [
+    `Why does ${name} vomit yellow bile?`,
+    `How much should ${name} eat?`,
+    "Tips for food anxiety in dogs",
+    "How to help a nervous eater",
+  ], [name]);
 
   const sendMessage = useCallback(async (text: string) => {
     const q = text.trim();
@@ -122,10 +126,14 @@ export default function WoofGuideScreen() {
     setLoading(true);
 
     try {
+      const token = await getToken();
       const context = buildAssistantContext(state);
       const res = await fetch(`${BASE_URL}/api/care-helper`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ question: q, context }),
       });
       const data = await res.json();
@@ -139,7 +147,7 @@ export default function WoofGuideScreen() {
     } finally {
       setLoading(false);
     }
-  }, [loading, state]);
+  }, [loading, state, getToken]);
 
   return (
     <>
@@ -170,10 +178,10 @@ export default function WoofGuideScreen() {
                 </View>
                 <Text style={[s.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Ask me anything</Text>
                 <Text style={[s.emptySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  Get help with Phoenix's care, diet, anxiety, and more.
+                  Get help with {name}'s care, diet, anxiety, and more.
                 </Text>
                 <View style={s.quickRow}>
-                  {QUICK_QUESTIONS.map((q) => (
+                  {quickQuestions.map((q) => (
                     <Pressable
                       key={q}
                       onPress={() => sendMessage(q)}

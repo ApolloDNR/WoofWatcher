@@ -38,8 +38,8 @@ const HEALTH_ICON: Record<string, PulseIconName> = {
   vet: "heart",
   mood: "sad",
   alone: "house",
-  medication: "drop",
-  meds: "drop",
+  medication: "pill",
+  meds: "pill",
 };
 
 const MOOD_META: Record<string, { label: string; score: number; tone: "good" | "watch" | "alert" }> = {
@@ -81,7 +81,11 @@ export default function RecordsScreen() {
   const { width } = useWindowDimensions();
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
-  const now = Date.now();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   const current = state.profile.weight.current;
   const unit = state.profile.weight.unit;
@@ -259,6 +263,24 @@ export default function RecordsScreen() {
   const maxBar = Math.max(1, ...moodStats.bars.map((b) => b.count));
   const incidentMax = Math.max(1, incident7, incident30, incident90);
 
+  const streak = useMemo(() => {
+    const days = new Set(state.entries.map((e) => e.occurredAt.slice(0, 10)));
+    let s = 0;
+    let d = new Date(now);
+    for (let i = 0; i < 365; i++) {
+      const key = d.toISOString().slice(0, 10);
+      if (!days.has(key)) break;
+      s++;
+      d = new Date(d.getTime() - 86400000);
+    }
+    return s;
+  }, [state.entries, now]);
+
+  const lastIncidentDays = useMemo(() => {
+    if (incidents.length === 0) return null;
+    return Math.floor(daysBetween(incidents[0].occurredAt, now));
+  }, [incidents, now]);
+
   const reportStats: { icon: PulseIconName; label: string; value: string }[] = [
     { icon: "bowl", label: "Meals", value: String(report.meals) },
     { icon: "paw", label: "Walks", value: `${report.walks} · ${report.walkMinutes}m` },
@@ -289,8 +311,22 @@ export default function RecordsScreen() {
             </View>
           </View>
 
+          {/* Care highlights strip */}
+          <View style={[s.highlightStrip, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            {[
+              { value: streak > 0 ? `${streak}d` : "—", label: "Streak", color: streak >= 7 ? colors.sage : streak > 0 ? colors.primary : colors.mutedForeground },
+              { value: String(report.total), label: `${periodLabel} entries`, color: colors.primary },
+              { value: lastIncidentDays !== null ? `${lastIncidentDays}d` : "Clear", label: "Since incident", color: lastIncidentDays === 0 ? colors.rose : lastIncidentDays !== null && lastIncidentDays <= 3 ? colors.amber : colors.sage },
+            ].map((h, i) => (
+              <View key={h.label} style={[s.highlightCell, i < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
+                <Text style={[s.highlightValue, { color: h.color, fontFamily: DISPLAY }]}>{h.value}</Text>
+                <Text style={[s.highlightLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{h.label}</Text>
+              </View>
+            ))}
+          </View>
+
           {/* Weight trend */}
-          <View style={s.sectionHeader}>
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Weight Trend</Text>
             <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
               {remaining > 0 ? `${remaining.toFixed(1)} ${unit} to go` : "Goal reached"}
@@ -322,6 +358,10 @@ export default function RecordsScreen() {
                   <Stop offset="1" stopColor={colors.sage} stopOpacity={0.02} />
                 </SvgGradient>
               </Defs>
+              {[0.25, 0.5, 0.75].map((t) => {
+                const gy = padT + t * plotH;
+                return <Line key={t} x1={padL} y1={gy} x2={padL + plotW} y2={gy} stroke={colors.border} strokeWidth={1} opacity={0.7} />;
+              })}
               <Line x1={padL} y1={goalY} x2={padL + plotW} y2={goalY} stroke={colors.sage} strokeWidth={1.5} strokeDasharray="5 5" opacity={0.55} />
               <Path d={areaPath} fill="url(#weightFill)" />
               <Path d={linePath} fill="none" stroke={colors.primary} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
@@ -359,13 +399,15 @@ export default function RecordsScreen() {
             ) : (
               moodStats.bars.map((b) => {
                 const tone = b.tone === "alert" ? colors.rose : b.tone === "watch" ? colors.amber : colors.sage;
+                const pct = moodStats.total > 0 ? Math.round((b.count / moodStats.total) * 100) : 0;
                 return (
                   <View key={b.key} style={s.moodRow}>
                     <Text style={[s.moodLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{b.label}</Text>
                     <View style={[s.moodTrack, { backgroundColor: colors.background }]}>
                       <View style={[s.moodFill, { backgroundColor: tone, width: `${(b.count / maxBar) * 100}%` }]} />
                     </View>
-                    <Text style={[s.moodCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{b.count}</Text>
+                    <Text style={[s.moodPct, { color: tone, fontFamily: "Inter_700Bold" }]}>{pct}%</Text>
+                    <Text style={[s.moodCount, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>({b.count})</Text>
                   </View>
                 );
               })
@@ -445,6 +487,21 @@ export default function RecordsScreen() {
                 );
               })}
             </View>
+            <View style={[s.reportTotalRow, { backgroundColor: colors.primary + "10" }]}>
+              <View>
+                <Text style={[s.reportTotalValue, { color: colors.primary, fontFamily: DISPLAY }]}>{report.total}</Text>
+                <Text style={[s.reportTotalLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>total care entries</Text>
+              </View>
+              {report.topCaregiver && (
+                <View style={[s.topCaregiverInline, { backgroundColor: colors.sage + "14" }]}>
+                  <Ionicons name="ribbon" size={13} color={colors.sage} />
+                  <Text style={[s.topCaregiverInlineText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    {report.topCaregiver.name}
+                    <Text style={{ fontFamily: "Inter_400Regular", color: colors.mutedForeground }}> · {report.topCaregiver.count} logs</Text>
+                  </Text>
+                </View>
+              )}
+            </View>
             <View style={s.reportGrid}>
               {reportStats.map((r) => (
                 <View key={r.label} style={[s.reportCell, { backgroundColor: colors.background }]}>
@@ -456,14 +513,6 @@ export default function RecordsScreen() {
                 </View>
               ))}
             </View>
-            {report.topCaregiver && (
-              <View style={[s.topCaregiver, { backgroundColor: colors.sage + "12" }]}>
-                <Ionicons name="ribbon" size={16} color={colors.sage} />
-                <Text style={[s.topCaregiverText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                  <Text style={{ fontFamily: "Inter_700Bold" }}>{report.topCaregiver.name}</Text> logged the most this {periodLabel.toLowerCase()} ({report.topCaregiver.count})
-                </Text>
-              </View>
-            )}
           </View>
 
           {/* Diet folder */}
@@ -578,11 +627,12 @@ const s = StyleSheet.create({
   },
   empty: { fontSize: 14, paddingVertical: 16, textAlign: "center" },
 
-  moodRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 7 },
+  moodRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   moodLabel: { fontSize: 14, width: 64 },
-  moodTrack: { flex: 1, height: 10, borderRadius: 5, overflow: "hidden" },
-  moodFill: { height: "100%", borderRadius: 5 },
-  moodCount: { fontSize: 13, width: 22, textAlign: "right" },
+  moodTrack: { flex: 1, height: 12, borderRadius: 6, overflow: "hidden" },
+  moodFill: { height: "100%", borderRadius: 6 },
+  moodPct: { fontSize: 12.5, width: 34, textAlign: "right" },
+  moodCount: { fontSize: 12, width: 28 },
 
   incidentRow: { flexDirection: "row", marginBottom: 4 },
   incidentCol: { flex: 1, alignItems: "center", paddingHorizontal: 10, paddingBottom: 14 },
@@ -601,6 +651,34 @@ const s = StyleSheet.create({
   duePill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   dueText: { fontSize: 11.5 },
 
+  highlightStrip: {
+    flexDirection: "row",
+    borderRadius: 22,
+    marginBottom: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    elevation: 2,
+    overflow: "hidden",
+  },
+  highlightCell: { flex: 1, alignItems: "center", paddingVertical: 18, paddingHorizontal: 6 },
+  highlightValue: { fontSize: 24, letterSpacing: -0.4 },
+  highlightLabel: { fontSize: 11.5, marginTop: 3, textAlign: "center" },
+
+  reportTotalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 14,
+  },
+  reportTotalValue: { fontSize: 30, letterSpacing: -0.5 },
+  reportTotalLabel: { fontSize: 12.5, marginTop: 1 },
+  topCaregiverInline: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  topCaregiverInlineText: { fontSize: 13 },
+
   segRow: { flexDirection: "row", borderRadius: 14, padding: 4, marginBottom: 16 },
   segPill: {
     flex: 1,
@@ -617,9 +695,6 @@ const s = StyleSheet.create({
   reportIcon: { width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center", marginBottom: 7 },
   reportValue: { fontSize: 18, letterSpacing: -0.3 },
   reportLabel: { fontSize: 11, marginTop: 2 },
-  topCaregiver: { flexDirection: "row", alignItems: "center", gap: 9, borderRadius: 14, padding: 12, marginTop: 14 },
-  topCaregiverText: { flex: 1, fontSize: 13, lineHeight: 18 },
-
   dietHead: { flexDirection: "row", alignItems: "center", gap: 12, paddingBottom: 6 },
   subHeading: { fontSize: 11, letterSpacing: 0.6, marginTop: 10, marginBottom: 4 },
   dietNoteRow: { flexDirection: "row", gap: 10, paddingVertical: 7, alignItems: "flex-start" },

@@ -6,6 +6,7 @@ import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useAuth } from "@clerk/expo";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -49,6 +50,7 @@ export default function PortraitScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state } = useCare();
+  const { getToken } = useAuth();
   const { avatarSet, getAvatarSource, hasCustomAvatar, saveAvatarSet, clearAvatarSet } = useAvatar();
   const name = state.profile.name;
 
@@ -162,9 +164,13 @@ export default function PortraitScreen() {
       const imageBase64 = shrunk.base64;
       if (!imageBase64) throw new Error("Could not read that image.");
 
+      const token = await getToken();
       const res = await fetch(`${BASE_URL}/api/avatar-emotions`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ imageBase64, mimeType: "image/jpeg" }),
       });
       const data = await res.json();

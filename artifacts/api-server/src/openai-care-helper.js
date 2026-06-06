@@ -87,6 +87,7 @@ export function compactAssistantContext(context = {}) {
   const latest = Array.isArray(context.latest) ? context.latest : [];
   return {
     profile: compactProfile(context.profile),
+    dietProfile: compactDietProfile(context.dietProfile),
     summary: compactPlainObject(context.summary),
     healthWatch: compactPlainObject(context.healthWatch),
     todayPlan: compactTodayPlan(context.todayPlan),
@@ -127,6 +128,23 @@ async function safeJson(response) {
   } catch {
     return null;
   }
+}
+
+function compactDietProfile(diet = {}) {
+  if (!diet || typeof diet !== "object") return null;
+  return {
+    primaryFood: cleanText(diet.primaryFood),
+    normalPortion: cleanText(diet.normalPortion),
+    mealSchedule: cleanText(diet.mealSchedule),
+    toppers: cleanText(diet.toppers),
+    supplements: cleanText(diet.supplements),
+    bedtimeSnack: cleanText(diet.bedtimeSnack),
+    treatsAllowed: cleanText(diet.treatsAllowed),
+    avoid: cleanText(diet.avoid),
+    sensitivities: cleanText(diet.sensitivities),
+    appetiteQuirks: cleanText(diet.appetiteQuirks),
+    vetNotes: cleanText(diet.vetNotes),
+  };
 }
 
 function compactProfile(profile = {}) {

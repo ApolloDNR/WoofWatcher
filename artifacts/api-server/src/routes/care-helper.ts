@@ -2,45 +2,21 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { getGemini } from "../gemini";
 // @ts-ignore — vanilla JS module, no types
 import { buildCareHelperInstructions, buildCareHelperInput, ensureVeterinaryBoundary, CARE_HELPER_BOUNDARY } from "../openai-care-helper.js";
+import { requireAuth } from "../lib/auth";
+import { makeRateLimiter } from "../lib/rateLimit";
 
 const router: IRouter = Router();
 
 const MODEL = "gemini-2.5-flash";
 
-// Lightweight in-memory throttle to protect a paid upstream model from abuse.
-const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 12;
-const GLOBAL_MAX_PER_WINDOW = 120;
-const hits = new Map<string, number[]>();
-let globalHits: number[] = [];
-
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const cutoff = now - WINDOW_MS;
-  globalHits = globalHits.filter((t) => t > cutoff);
-  const recent = (hits.get(ip) ?? []).filter((t) => t > cutoff);
-  if (recent.length >= MAX_PER_WINDOW || globalHits.length >= GLOBAL_MAX_PER_WINDOW) {
-    hits.set(ip, recent);
-    return true;
-  }
-  recent.push(now);
-  globalHits.push(now);
-  hits.set(ip, recent);
-  if (hits.size > 500) {
-    for (const [k, v] of hits) if (v.every((t) => t <= cutoff)) hits.delete(k);
-  }
-  return false;
-}
+const rateLimited = makeRateLimiter({ maxPerWindow: 12, globalMaxPerWindow: 120 });
 
 function extractGeminiText(response: any): string {
-  const direct = typeof response?.text === "string" ? response.text : "";
-  if (direct.trim()) return direct.trim();
   const parts = response?.candidates?.[0]?.content?.parts ?? [];
-  const text = parts
+  return parts
     .map((p: { text?: string }) => (typeof p.text === "string" ? p.text : ""))
     .join("")
     .trim();
-  return text;
 }
 
 router.get("/care-helper", (_req: Request, res: Response) => {
@@ -53,7 +29,7 @@ router.get("/care-helper", (_req: Request, res: Response) => {
   });
 });
 
-router.post("/care-helper", async (req: Request, res: Response) => {
+router.post("/care-helper", requireAuth, async (req: Request, res: Response) => {
   const ai = getGemini();
 
   const ip = req.ip || req.socket.remoteAddress || "unknown";

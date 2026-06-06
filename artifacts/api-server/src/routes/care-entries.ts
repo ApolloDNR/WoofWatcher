@@ -33,11 +33,15 @@ router.get("/care-entries", requireAuth, async (req, res): Promise<void> => {
       )
     : eq(careEntriesTable.householdId, householdId);
 
+  const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
+  const limit = Math.min(500, Math.max(1, parseInt(typeof limitRaw === "string" ? limitRaw : "250", 10) || 250));
+
   const rows = await db
     .select()
     .from(careEntriesTable)
     .where(where)
-    .orderBy(desc(careEntriesTable.occurredAt));
+    .orderBy(desc(careEntriesTable.occurredAt))
+    .limit(limit);
 
   res.json(ListCareEntriesResponse.parse(rows));
 });

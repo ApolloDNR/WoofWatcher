@@ -36,7 +36,11 @@ app.use(
 // The Clerk proxy streams raw bytes, so it must run before the body parsers.
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
-app.use(cors({ credentials: true, origin: true }));
+// Restrict to explicit allowed origins in production; reflect origin in dev.
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+app.use(cors({ credentials: true, origin: allowedOrigins?.length ? allowedOrigins : true }));
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 

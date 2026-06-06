@@ -23,6 +23,7 @@ import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import Svg, { Circle } from "react-native-svg";
 import { computeCareStreak, computeDayProgress, derivePhoenixStatus, getGreeting } from "@/lib/phoenixStatus";
+import { relativeTime } from "@/lib/time";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -51,21 +52,13 @@ const QUICK_LOG: QuickLogItem[] = [
 ];
 
 const TYPE_ICON: Record<string, PulseIconName> = {
-  meal: "bowl",
-  treat: "bone",
-  walk: "paw",
-  potty: "drop",
-  pee: "drop",
-  poop: "drop",
-  play: "candy",
-  training: "star",
-  vomit: "vomit",
-  alone: "house",
-  mood: "heart",
+  meal: "bowl", treat: "bone", walk: "paw", potty: "drop", pee: "drop",
+  poop: "drop", play: "candy", training: "star", vomit: "vomit", alone: "house",
+  mood: "heart", weight: "scale", meds: "pill", medication: "pill", symptom: "vomit",
 };
 
 function ProgressRing({ progress, color, track }: { progress: number; color: string; track: string }) {
-  const size = 52;
+  const size = 54;
   const stroke = 6;
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
@@ -74,32 +67,14 @@ function ProgressRing({ progress, color, track }: { progress: number; color: str
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
         <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke={color}
-          strokeWidth={stroke}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${circ}`}
-        />
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={stroke} fill="none"
+          strokeLinecap="round" strokeDasharray={`${dash} ${circ}`} />
       </Svg>
       <Text style={{ position: "absolute", fontFamily: "Fredoka_700Bold", fontSize: 13, color }}>
         {Math.round(progress * 100)}%
       </Text>
     </View>
   );
-}
-
-function relativeTime(iso: string, now: number): string {
-  const mins = Math.floor((now - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
 }
 
 export default function PhoenixScreen() {
@@ -111,28 +86,35 @@ export default function PhoenixScreen() {
   const { width } = useWindowDimensions();
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
-  const now = Date.now();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, []);
 
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
   const greeting = useMemo(() => getGreeting(now), [now]);
   const careStreak = useMemo(() => computeCareStreak(state, now), [state, now]);
   const dayProgress = useMemo(() => computeDayProgress(status), [status]);
   const caregiver = state.caregivers[0]?.name ?? "friend";
+
   const dateLabel = useMemo(
-    () =>
-      new Date(now).toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      }),
+    () => new Date(now).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
     [now],
   );
 
+  // Smart: types logged in the last 45 minutes
+  const recentlyLogged = useMemo(() => {
+    const cutoff = now - 45 * 60 * 1000;
+    return new Set(
+      state.entries
+        .filter((e) => new Date(e.occurredAt).getTime() > cutoff)
+        .map((e) => e.type),
+    );
+  }, [state.entries, now]);
+
   const recent = useMemo(
-    () =>
-      [...state.entries]
-        .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
-        .slice(0, 4),
+    () => [...state.entries].sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()).slice(0, 4),
     [state.entries],
   );
 
@@ -143,35 +125,40 @@ export default function PhoenixScreen() {
   };
 
   const bedtimeLogged = useMemo(
-    () =>
-      state.entries.some((e) => {
-        const d = new Date(e.occurredAt);
-        const t = new Date(now);
-        const sameDay =
-          d.getFullYear() === t.getFullYear() &&
-          d.getMonth() === t.getMonth() &&
-          d.getDate() === t.getDate();
-        return sameDay && e.type === "treat" && /snack|bedtime/i.test(e.title);
-      }),
+    () => state.entries.some((e) => {
+      const d = new Date(e.occurredAt);
+      const t = new Date(now);
+      const sameDay = d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
+      return sameDay && e.type === "treat" && /snack|bedtime/i.test(e.title);
+    }),
     [state.entries, now],
   );
 
+  const weightDisplay = useMemo(() => {
+    const w = state.profile.weight;
+    if (!w.current || w.current === 0) return "—";
+    return `${w.current} ${w.unit}`;
+  }, [state.profile.weight]);
+
+  // Weight trend: compare most recent two weight logs
+  const weightTrend = useMemo(() => {
+    const logs = state.entries
+      .filter((e) => e.type === "weight" && e.amount)
+      .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+    if (logs.length < 2) return null;
+    const latest = parseFloat(logs[0].amount as string);
+    const prev = parseFloat(logs[1].amount as string);
+    if (Number.isNaN(latest) || Number.isNaN(prev) || latest === prev) return null;
+    return latest < prev ? "down" : "up";
+  }, [state.entries]);
+
   // Mount fade-in
   const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(16)).current;
+  const slide = useRef(new Animated.Value(20)).current;
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fade, {
-        toValue: 1,
-        duration: 460,
-        useNativeDriver: Platform.OS !== "web",
-      }),
-      Animated.spring(slide, {
-        toValue: 0,
-        friction: 8,
-        tension: 60,
-        useNativeDriver: Platform.OS !== "web",
-      }),
+      Animated.timing(fade, { toValue: 1, duration: 500, useNativeDriver: Platform.OS !== "web" }),
+      Animated.spring(slide, { toValue: 0, friction: 7, tension: 50, useNativeDriver: Platform.OS !== "web" }),
     ]).start();
   }, [fade, slide]);
 
@@ -184,9 +171,7 @@ export default function PhoenixScreen() {
     Animated.timing(toastOpacity, { toValue: 1, duration: 180, useNativeDriver: Platform.OS !== "web" }).start();
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => {
-      Animated.timing(toastOpacity, { toValue: 0, duration: 260, useNativeDriver: Platform.OS !== "web" }).start(
-        () => setToast(null),
-      );
+      Animated.timing(toastOpacity, { toValue: 0, duration: 260, useNativeDriver: Platform.OS !== "web" }).start(() => setToast(null));
     }, 1500);
   };
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
@@ -194,9 +179,7 @@ export default function PhoenixScreen() {
   const logQuick = (item: QuickLogItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     addEntry({
-      type: item.type,
-      title: item.title,
-      caregiver,
+      type: item.type, title: item.title, caregiver,
       occurredAt: new Date().toISOString(),
       ...(item.mood ? { mood: item.mood } : {}),
       ...(item.severity ? { severity: item.severity } : {}),
@@ -206,12 +189,7 @@ export default function PhoenixScreen() {
 
   const logBedtimeSnack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    addEntry({
-      type: "treat",
-      title: "Bedtime snack",
-      caregiver,
-      occurredAt: new Date().toISOString(),
-    });
+    addEntry({ type: "treat", title: "Bedtime snack", caregiver, occurredAt: new Date().toISOString() });
     showToast("Bedtime snack logged");
   };
 
@@ -221,41 +199,44 @@ export default function PhoenixScreen() {
 
   const c = status.counts;
   const pulse = [
-    { icon: "bowl" as PulseIconName, label: "Meals", value: `${c.meals.done}/${c.meals.target}` },
-    { icon: "paw" as PulseIconName, label: "Walks", value: `${c.walks.done}/${c.walks.target}` },
-    { icon: "drop" as PulseIconName, label: "Potty", value: `${c.potty.done}/${c.potty.target}` },
-    { icon: "star" as PulseIconName, label: "Training", value: `${c.training}` },
-    { icon: "heart" as PulseIconName, label: "Health", value: c.healthAlert ? "!" : "✓" },
+    { icon: "bowl" as PulseIconName, label: "Meals", value: `${c.meals.done}/${c.meals.target}`, done: c.meals.done >= c.meals.target },
+    { icon: "paw" as PulseIconName, label: "Walks", value: `${c.walks.done}/${c.walks.target}`, done: c.walks.done >= c.walks.target },
+    { icon: "drop" as PulseIconName, label: "Potty", value: `${c.potty.done}/${c.potty.target}`, done: c.potty.done >= c.potty.target },
+    { icon: "star" as PulseIconName, label: "Training", value: `${c.training}`, done: c.training > 0 },
+    { icon: "heart" as PulseIconName, label: "Health", value: c.healthAlert ? "!" : "✓", done: !c.healthAlert },
   ];
 
   const healthOk = !c.healthAlert;
   const appetiteOk = c.meals.done >= c.meals.target;
   const healthStats = [
-    { label: "Energy", value: `${status.energy}%` },
-    { label: "Weight", value: `${state.profile.weight.current} ${state.profile.weight.unit}` },
-    { label: "Appetite", value: appetiteOk ? "Good" : "Low" },
+    { label: "Energy", value: `${status.energy}%`, tint: colors.primary },
+    {
+      label: "Weight",
+      value: weightDisplay,
+      tint: colors.copper,
+      suffix: weightTrend === "down" ? "↓" : weightTrend === "up" ? "↑" : undefined,
+      suffixColor: weightTrend === "down" ? colors.sage : colors.amber,
+    },
+    { label: "Appetite", value: appetiteOk ? "Good" : "Low", tint: appetiteOk ? colors.sage : colors.amber },
   ];
+
+  const isNewUser = !state.profile.name || state.profile.name === "My Dog";
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
         style={s.container}
-        contentContainerStyle={{
-          paddingTop: topInset + 8,
-          paddingBottom: 130,
-          paddingHorizontal: H_PAD,
-        }}
+        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: 130, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
+
           {/* Branded header */}
           <View style={s.brandRow}>
             <WoofWatcherLogo size={30} wordmarkSize={21} />
             <View style={[s.datePill, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Ionicons name="calendar-outline" size={13} color={colors.mutedForeground} />
-              <Text style={[s.datePillText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                {dateLabel}
-              </Text>
+              <Text style={[s.datePillText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{dateLabel}</Text>
             </View>
           </View>
 
@@ -269,25 +250,39 @@ export default function PhoenixScreen() {
             </Text>
           </View>
 
+          {/* Onboarding nudge */}
+          {isNewUser && (
+            <Pressable
+              onPress={() => router.push("/more")}
+              style={({ pressed }) => [s.onboardCard, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "28", opacity: pressed ? 0.85 : 1 }]}
+            >
+              <View style={[s.onboardIcon, { backgroundColor: colors.primary + "18" }]}>
+                <Ionicons name="paw" size={22} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.onboardTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Set up your dog's profile</Text>
+                <Text style={[s.onboardSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  Add a name, breed, and weight to get personalised insights.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+            </Pressable>
+          )}
+
           {/* Living hero card */}
           <View style={[s.heroCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             <View style={s.heroImageWrap}>
               <AnimatedAvatar mood={status.mood} speech={status.meta.speech} />
-
               <LinearGradient
-                colors={["rgba(20,30,24,0.10)", "transparent", "rgba(20,30,24,0.58)"]}
-                locations={[0, 0.45, 1]}
+                colors={["rgba(20,30,24,0.08)", "transparent", "rgba(10,20,16,0.65)"]}
+                locations={[0, 0.42, 1]}
                 style={s.heroScrim}
                 pointerEvents="none"
               />
-
               <Pressable onPress={() => router.push("/more")} style={s.nameChip}>
-                <Text style={[s.nameChipText, { color: colors.foreground, fontFamily: DISPLAY }]}>
-                  {state.profile.name}
-                </Text>
+                <Text style={[s.nameChipText, { color: colors.foreground, fontFamily: DISPLAY }]}>{state.profile.name}</Text>
                 <Ionicons name="chevron-down" size={15} color={colors.mutedForeground} />
               </Pressable>
-
               <Pressable
                 onPress={() => router.push("/portrait")}
                 style={({ pressed }) => [s.portraitBtn, { opacity: pressed ? 0.7 : 1 }]}
@@ -295,34 +290,25 @@ export default function PhoenixScreen() {
               >
                 <Ionicons name="color-palette" size={18} color={colors.primary} />
               </Pressable>
-
-              {/* Bottom overlay: mood headline + energy */}
               <View style={s.heroFooter} pointerEvents="none">
                 <View style={s.moodRow}>
                   <Text style={s.moodEmoji}>{status.meta.emoji}</Text>
                   <Text style={[s.moodValue, { fontFamily: DISPLAY }]}>{status.meta.label}</Text>
                   <View style={s.energyChip}>
-                    <Ionicons name="flash" size={13} color="#FFFFFF" />
+                    <Ionicons name="flash" size={12} color="#FFFFFF" />
                     <Text style={[s.energyChipText, { fontFamily: "Inter_700Bold" }]}>{status.energy}%</Text>
                   </View>
                 </View>
                 <View style={s.energyTrack}>
-                  <LinearGradient
-                    colors={["#FFFFFF", "#E7F0E9"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={[s.energyFill, { width: `${status.energy}%` }]}
-                  />
+                  <LinearGradient colors={["#FFFFFF", "#D8EEE2"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                    style={[s.energyFill, { width: `${status.energy}%` }]} />
                 </View>
               </View>
             </View>
 
             {/* Next up row */}
-            <Pressable
-              onPress={() => router.push("/calendar")}
-              style={({ pressed }) => [s.nextUpRow, { opacity: pressed ? 0.6 : 1 }]}
-            >
-              <View style={[s.nextUpIcon, { backgroundColor: colors.sage + "18" }]}>
+            <Pressable onPress={() => router.push("/calendar")} style={({ pressed }) => [s.nextUpRow, { opacity: pressed ? 0.6 : 1 }]}>
+              <View style={[s.nextUpIcon, { backgroundColor: colors.sage + "16" }]}>
                 <PulseIcon name="paw" size={22} />
               </View>
               <View style={{ flex: 1 }}>
@@ -330,26 +316,25 @@ export default function PhoenixScreen() {
                 <Text style={[s.nextUpValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   {status.nextRoutine
                     ? `${status.nextRoutine.label}${status.minutesUntilNext != null && status.minutesUntilNext <= 180 ? ` in ${status.minutesUntilNext} min` : ""} · ${status.nextRoutine.time}`
-                    : "All caught up for today"}
+                    : "All caught up for today ✓"}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
+              <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
             </Pressable>
           </View>
 
-          {/* Care streak + day progress strip */}
+          {/* Care streak + day progress */}
           <View style={[s.statStrip, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             <View style={s.statStreak}>
-              <View style={[s.streakBadge, { backgroundColor: colors.copper + "16" }]}>
+              <LinearGradient colors={[colors.copper + "30", colors.copper + "10"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={s.streakBadge}>
                 <Ionicons name="flame" size={22} color={colors.copper} />
-              </View>
+              </LinearGradient>
               <View>
                 <Text style={[s.statBig, { color: colors.foreground, fontFamily: DISPLAY }]}>
                   {careStreak} {careStreak === 1 ? "day" : "days"}
                 </Text>
-                <Text style={[s.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Care streak
-                </Text>
+                <Text style={[s.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Care streak</Text>
               </View>
             </View>
             <View style={[s.statDivider, { backgroundColor: colors.border }]} />
@@ -359,14 +344,14 @@ export default function PhoenixScreen() {
                   {dayProgress >= 1 ? "All done" : "Today"}
                 </Text>
                 <Text style={[s.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Routines complete
+                  {dayProgress >= 1 ? "Routines complete ✓" : "Routines in progress"}
                 </Text>
               </View>
-              <ProgressRing progress={dayProgress} color={colors.sage} track={colors.border} />
+              <ProgressRing progress={dayProgress} color={dayProgress >= 1 ? colors.sage : colors.primary} track={colors.border} />
             </View>
           </View>
 
-          {/* Today's Pulse — 5-card row */}
+          {/* Today's Pulse */}
           <View style={s.sectionHeader}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Today's Pulse</Text>
             <Pressable onPress={() => router.push("/calendar")} hitSlop={8}>
@@ -377,23 +362,21 @@ export default function PhoenixScreen() {
             {pulse.map((p) => {
               const tint = PULSE_COLORS[p.icon];
               return (
-                <View
-                  key={p.label}
-                  style={[s.pulseCard, { width: colW, backgroundColor: colors.card, shadowColor: colors.primary }]}
-                >
-                  <View style={[s.pulseIconWrap, { backgroundColor: tint + "1A" }]}>
+                <View key={p.label} style={[s.pulseCard, { width: colW, backgroundColor: colors.card, shadowColor: tint }]}>
+                  {p.done && (
+                    <View style={[s.pulseDoneDot, { backgroundColor: colors.sage }]} />
+                  )}
+                  <View style={[s.pulseIconWrap, { backgroundColor: tint + "18" }]}>
                     <PulseIcon name={p.icon} size={18} />
                   </View>
-                  <Text style={[s.pulseValue, { color: colors.foreground, fontFamily: DISPLAY }]}>{p.value}</Text>
-                  <Text numberOfLines={1} style={[s.pulseLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {p.label}
-                  </Text>
+                  <Text style={[s.pulseValue, { color: p.done ? colors.sage : colors.foreground, fontFamily: DISPLAY }]}>{p.value}</Text>
+                  <Text numberOfLines={1} style={[s.pulseLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{p.label}</Text>
                 </View>
               );
             })}
           </View>
 
-          {/* Quick Log — 5-col grid */}
+          {/* Quick Log */}
           <View style={[s.sectionHeader, { marginTop: 26 }]}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Quick Log</Text>
             <Pressable onPress={() => router.push("/log")} hitSlop={8}>
@@ -403,19 +386,25 @@ export default function PhoenixScreen() {
           <View style={[s.quickGrid, { gap: GAP }]}>
             {QUICK_LOG.map((item) => {
               const tint = PULSE_COLORS[item.icon];
+              const isRecent = recentlyLogged.has(item.type);
               return (
                 <Pressable
                   key={item.key}
                   onPress={() => logQuick(item)}
                   style={({ pressed }) => [
                     s.quickTile,
-                    { width: colW, transform: [{ scale: pressed ? 0.92 : 1 }] },
+                    { width: colW, transform: [{ scale: pressed ? 0.88 : 1 }] },
                   ]}
                 >
-                  <View style={[s.quickIconWrap, { backgroundColor: tint + "18" }]}>
-                    <PulseIcon name={item.icon} size={26} />
+                  <View style={{ position: "relative" }}>
+                    <View style={[s.quickIconWrap, { backgroundColor: isRecent ? tint + "28" : tint + "16" }]}>
+                      <PulseIcon name={item.icon} size={26} color={isRecent ? tint : undefined} />
+                    </View>
+                    {isRecent && (
+                      <View style={[s.recentDot, { backgroundColor: colors.sage, borderColor: colors.background }]} />
+                    )}
                   </View>
-                  <Text numberOfLines={1} style={[s.quickLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text numberOfLines={1} style={[s.quickLabel, { color: isRecent ? colors.foreground : colors.mutedForeground, fontFamily: isRecent ? "Inter_700Bold" : "Inter_600SemiBold" }]}>
                     {item.label}
                   </Text>
                 </Pressable>
@@ -432,33 +421,36 @@ export default function PhoenixScreen() {
           </View>
           <View style={[s.handoffCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             {recent.length === 0 ? (
-              <Text style={[s.handoffEmpty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                No activity logged yet today.
-              </Text>
+              <View style={s.handoffEmptyWrap}>
+                <Ionicons name="clipboard-outline" size={28} color={colors.mutedForeground} />
+                <Text style={[s.handoffEmpty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  No activity logged yet. Use Quick Log above.
+                </Text>
+              </View>
             ) : (
               recent.map((e, i) => {
                 const cg = caregiverColor(e.caregiver);
+                const icon = TYPE_ICON[e.type] ?? "paw";
+                const timeStr = new Date(e.occurredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
                 return (
-                  <View
-                    key={e.id}
-                    style={[s.handoffRow, i < recent.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
-                  >
-                    <View style={[s.handoffAvatar, { backgroundColor: cg + "1A" }]}>
+                  <View key={e.id} style={[s.handoffRow, i < recent.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                    <View style={[s.handoffAvatar, { backgroundColor: cg + "18" }]}>
                       <Text style={[s.handoffInitial, { color: cg, fontFamily: "Inter_700Bold" }]}>
                         {(e.caregiver || "?").charAt(0).toUpperCase()}
                       </Text>
                     </View>
-                    <View style={[s.handoffIconWrap, { backgroundColor: PULSE_COLORS[TYPE_ICON[e.type] ?? "paw"] + "16" }]}>
-                      <PulseIcon name={TYPE_ICON[e.type] ?? "paw"} size={18} />
+                    <View style={[s.handoffIconWrap, { backgroundColor: PULSE_COLORS[icon] + "14" }]}>
+                      <PulseIcon name={icon} size={18} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text numberOfLines={1} style={[s.handoffTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                        {e.title}
-                      </Text>
+                      <Text numberOfLines={1} style={[s.handoffTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{e.title}</Text>
                       <Text style={[s.handoffMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                        {e.caregiver} · {relativeTime(e.occurredAt, now)}
+                        {e.caregiver} · {timeStr}
                       </Text>
                     </View>
+                    <Text style={[s.handoffRelTime, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {relativeTime(e.occurredAt, now)}
+                    </Text>
                   </View>
                 );
               })
@@ -477,7 +469,7 @@ export default function PhoenixScreen() {
             style={({ pressed }) => [s.healthCard, { backgroundColor: colors.card, shadowColor: colors.primary, opacity: pressed ? 0.9 : 1 }]}
           >
             <View style={s.healthHeader}>
-              <View style={[s.healthIconWrap, { backgroundColor: (healthOk ? colors.sage : colors.copper) + "1A" }]}>
+              <View style={[s.healthIconWrap, { backgroundColor: (healthOk ? colors.sage : colors.copper) + "18" }]}>
                 <Ionicons name={healthOk ? "heart" : "alert-circle"} size={20} color={healthOk ? colors.sage : colors.copper} />
               </View>
               <View style={{ flex: 1 }}>
@@ -485,10 +477,10 @@ export default function PhoenixScreen() {
                   {healthOk ? "All looking good" : "Keep an eye out"}
                 </Text>
                 <Text style={[s.healthSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {healthOk ? "No alerts to review today" : "A tummy alert was logged today"}
+                  {healthOk ? "No alerts today" : "A tummy alert was logged"}
                 </Text>
               </View>
-              <View style={[s.healthPill, { backgroundColor: (healthOk ? colors.sage : colors.copper) + "16" }]}>
+              <View style={[s.healthPill, { backgroundColor: (healthOk ? colors.sage : colors.copper) + "14" }]}>
                 <Text style={[s.healthPillText, { color: healthOk ? colors.sage : colors.copper, fontFamily: "Inter_700Bold" }]}>
                   {healthOk ? "Good" : "Watch"}
                 </Text>
@@ -497,30 +489,39 @@ export default function PhoenixScreen() {
             <View style={[s.healthStatsRow, { borderTopColor: colors.border }]}>
               {healthStats.map((h, i) => (
                 <View key={h.label} style={[s.healthStat, i < healthStats.length - 1 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
-                  <Text style={[s.healthStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{h.value}</Text>
+                  <View style={s.healthStatValueRow}>
+                    <Text style={[s.healthStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{h.value}</Text>
+                    {h.suffix && (
+                      <Text style={[s.healthStatArrow, { color: h.suffixColor }]}>{h.suffix}</Text>
+                    )}
+                  </View>
                   <Text style={[s.healthStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{h.label}</Text>
                 </View>
               ))}
             </View>
           </Pressable>
 
-          {/* Bedtime snack nudge — soft lavender */}
+          {/* Bedtime snack nudge */}
           {!bedtimeLogged && (
-            <View style={[s.banner, { backgroundColor: "#EDE9F6", borderColor: "#DCD2EF" }]}>
+            <View style={[s.banner, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Image source={getAvatarSource("happy")} style={s.bannerAvatar} resizeMode="cover" />
               <View style={{ flex: 1 }}>
-                <Text style={[s.bannerText, { color: "#3B2E63", fontFamily: "Inter_500Medium" }]}>
-                  A bedtime snack helps {state.profile.name} feel great in the mornings.
+                <Text style={[s.bannerTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  Bedtime snack?
+                </Text>
+                <Text style={[s.bannerText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  Helps {state.profile.name} feel great in the mornings.
                 </Text>
               </View>
               <Pressable
                 onPress={logBedtimeSnack}
-                style={({ pressed }) => [s.bannerBtn, { borderColor: "#8B6FD0", opacity: pressed ? 0.7 : 1 }]}
+                style={({ pressed }) => [s.bannerBtn, { backgroundColor: colors.primary + "16", borderColor: colors.primary + "30", opacity: pressed ? 0.7 : 1 }]}
               >
-                <Text style={[s.bannerBtnText, { color: "#6A4FB5", fontFamily: "Inter_700Bold" }]}>Log snack</Text>
+                <Text style={[s.bannerBtnText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>Log</Text>
               </Pressable>
             </View>
           )}
+
         </Animated.View>
       </ScrollView>
 
@@ -528,10 +529,7 @@ export default function PhoenixScreen() {
       {toast && (
         <Animated.View
           pointerEvents="none"
-          style={[
-            s.toast,
-            { bottom: (Platform.OS === "web" ? 100 : insets.bottom + 96), opacity: toastOpacity, backgroundColor: colors.foreground },
-          ]}
+          style={[s.toast, { bottom: (Platform.OS === "web" ? 100 : insets.bottom + 96), opacity: toastOpacity, backgroundColor: colors.foreground }]}
         >
           <Ionicons name="checkmark-circle" size={18} color={colors.sage} />
           <Text style={[s.toastText, { fontFamily: "Inter_600SemiBold" }]}>{toast}</Text>
@@ -546,115 +544,56 @@ const s = StyleSheet.create({
   container: { flex: 1 },
 
   brandRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
-  datePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
+  datePill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, borderWidth: 1 },
   datePillText: { fontSize: 12.5 },
 
   greeting: { marginBottom: 18 },
   greetingTitle: { fontSize: 26, letterSpacing: -0.3, lineHeight: 32 },
   greetingSub: { fontSize: 15, marginTop: 4 },
 
-  heroCard: {
-    borderRadius: 28,
-    overflow: "hidden",
-    marginBottom: 26,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.14,
-    shadowRadius: 26,
-    elevation: 7,
-  },
-  heroImageWrap: {
-    width: "100%",
-    aspectRatio: 0.96,
-    position: "relative",
-    backgroundColor: "#CFE3EF",
-  },
+  onboardCard: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 18, padding: 14, marginBottom: 16, borderWidth: 1 },
+  onboardIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  onboardTitle: { fontSize: 15 },
+  onboardSub: { fontSize: 12.5, marginTop: 2, lineHeight: 17 },
+
+  heroCard: { borderRadius: 28, overflow: "hidden", marginBottom: 20, shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.14, shadowRadius: 28, elevation: 7 },
+  heroImageWrap: { width: "100%", aspectRatio: 0.96, position: "relative", backgroundColor: "#CFE3EF" },
   heroScrim: { ...StyleSheet.absoluteFillObject },
   nameChip: {
-    position: "absolute",
-    top: 14,
-    left: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
+    position: "absolute", top: 14, left: 14,
+    flexDirection: "row", alignItems: "center", gap: 4,
     backgroundColor: "rgba(255,255,255,0.92)",
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    borderRadius: 14,
-    shadowColor: "#0F1F33",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
+    paddingHorizontal: 13, paddingVertical: 7, borderRadius: 14,
+    shadowColor: "#0F1F33", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3,
   },
   nameChipText: { fontSize: 15.5 },
   portraitBtn: {
-    position: "absolute",
-    top: 14,
-    right: 14,
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
+    position: "absolute", top: 14, right: 14,
+    width: 40, height: 40, borderRadius: 14,
+    alignItems: "center", justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.92)",
-    shadowColor: "#0F1F33",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: "#0F1F33", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3,
   },
   heroFooter: { position: "absolute", left: 16, right: 16, bottom: 14 },
   moodRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
   moodEmoji: { fontSize: 22 },
   moodValue: { fontSize: 19, color: "#FFFFFF", flex: 1 },
-  energyChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    backgroundColor: "rgba(255,255,255,0.22)",
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 11,
-  },
-  energyChipText: { fontSize: 12.5, color: "#FFFFFF" },
-  energyTrack: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "rgba(255,255,255,0.3)",
-    overflow: "hidden",
-  },
+  energyChip: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 11 },
+  energyChipText: { fontSize: 12, color: "#FFFFFF" },
+  energyTrack: { height: 7, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.28)", overflow: "hidden" },
   energyFill: { height: "100%", borderRadius: 4 },
-
   nextUpRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
   nextUpIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  nextUpLabel: { fontSize: 11, letterSpacing: 0.8 },
-  nextUpValue: { fontSize: 15.5, marginTop: 2 },
+  nextUpLabel: { fontSize: 10.5, letterSpacing: 0.8 },
+  nextUpValue: { fontSize: 15, marginTop: 2 },
 
-  statStrip: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 22,
-    padding: 16,
-    marginBottom: 26,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    elevation: 3,
-  },
+  statStrip: { flexDirection: "row", alignItems: "center", borderRadius: 22, padding: 16, marginBottom: 24, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 18, elevation: 3 },
   statStreak: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
-  streakBadge: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  streakBadge: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   statDivider: { width: 1, height: 40, marginHorizontal: 14 },
   statProgress: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
   statBig: { fontSize: 18, letterSpacing: -0.2 },
-  statLabel: { fontSize: 12.5, marginTop: 1 },
+  statLabel: { fontSize: 12, marginTop: 2 },
 
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   sectionTitle: { fontSize: 20, letterSpacing: -0.2 },
@@ -662,55 +601,33 @@ const s = StyleSheet.create({
 
   pulseRow: { flexDirection: "row", justifyContent: "space-between" },
   pulseCard: {
-    borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    alignItems: "center",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 2,
+    borderRadius: 18, paddingVertical: 13, paddingHorizontal: 4, alignItems: "center",
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 2,
+    position: "relative",
   },
-  pulseIconWrap: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center", marginBottom: 7 },
+  pulseDoneDot: { position: "absolute", top: 7, right: 7, width: 7, height: 7, borderRadius: 4 },
+  pulseIconWrap: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 7 },
   pulseValue: { fontSize: 16, letterSpacing: -0.3 },
-  pulseLabel: { fontSize: 10.5, marginTop: 1 },
+  pulseLabel: { fontSize: 10, marginTop: 2 },
 
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 14 },
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 16 },
   quickTile: { alignItems: "center" },
-  quickIconWrap: {
-    width: 58,
-    height: 58,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 7,
-  },
+  quickIconWrap: { width: 58, height: 58, borderRadius: 20, alignItems: "center", justifyContent: "center", marginBottom: 7 },
   quickLabel: { fontSize: 11.5 },
+  recentDot: { position: "absolute", top: -2, right: -2, width: 10, height: 10, borderRadius: 5, borderWidth: 2 },
 
-  handoffCard: {
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
-  },
-  handoffEmpty: { fontSize: 14, paddingVertical: 18, textAlign: "center" },
+  handoffCard: { borderRadius: 22, paddingHorizontal: 16, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
+  handoffEmptyWrap: { paddingVertical: 24, alignItems: "center", gap: 10 },
+  handoffEmpty: { fontSize: 14, textAlign: "center" },
   handoffRow: { flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 13 },
   handoffAvatar: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   handoffInitial: { fontSize: 14 },
   handoffIconWrap: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center" },
   handoffTitle: { fontSize: 15 },
-  handoffMeta: { fontSize: 12.5, marginTop: 1 },
+  handoffMeta: { fontSize: 12, marginTop: 1 },
+  handoffRelTime: { fontSize: 12 },
 
-  healthCard: {
-    borderRadius: 22,
-    padding: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
-  },
+  healthCard: { borderRadius: 22, padding: 16, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
   healthHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   healthIconWrap: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   healthTitle: { fontSize: 16 },
@@ -719,42 +636,18 @@ const s = StyleSheet.create({
   healthPillText: { fontSize: 13 },
   healthStatsRow: { flexDirection: "row", marginTop: 14, paddingTop: 14, borderTopWidth: 1 },
   healthStat: { flex: 1, alignItems: "center" },
+  healthStatValueRow: { flexDirection: "row", alignItems: "center", gap: 3 },
   healthStatValue: { fontSize: 17 },
+  healthStatArrow: { fontSize: 14, fontFamily: "Inter_700Bold" },
   healthStatLabel: { fontSize: 12, marginTop: 2 },
 
-  banner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderRadius: 22,
-    padding: 14,
-    marginTop: 26,
-    borderWidth: 1,
-  },
-  bannerAvatar: { width: 46, height: 46, borderRadius: 14 },
-  bannerText: { fontSize: 13.5, lineHeight: 19 },
-  bannerBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 13,
-    borderWidth: 1.5,
-  },
-  bannerBtnText: { fontSize: 13.5 },
+  banner: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 22, padding: 14, marginTop: 24, borderWidth: 1, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 1 },
+  bannerAvatar: { width: 44, height: 44, borderRadius: 14 },
+  bannerTitle: { fontSize: 14.5 },
+  bannerText: { fontSize: 12.5, lineHeight: 18, marginTop: 2 },
+  bannerBtn: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 13, borderWidth: 1.5 },
+  bannerBtnText: { fontSize: 14 },
 
-  toast: {
-    position: "absolute",
-    alignSelf: "center",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
-  },
+  toast: { position: "absolute", alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 18, paddingVertical: 12, borderRadius: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
   toastText: { color: "#FFFFFF", fontSize: 14 },
 });

@@ -14,6 +14,10 @@ router.get("/care-state", requireAuth, async (req, res): Promise<void> => {
     .select()
     .from(careStateTable)
     .where(eq(careStateTable.householdId, householdId));
+  if (!row) {
+    res.status(404).json({ error: "Care state not found" });
+    return;
+  }
   res.json(
     GetCareStateResponse.parse({
       version: row.version,
@@ -37,6 +41,11 @@ router.put("/care-state", requireAuth, async (req, res): Promise<void> => {
     .select()
     .from(careStateTable)
     .where(eq(careStateTable.householdId, householdId));
+
+  if (!current) {
+    res.status(404).json({ error: "Care state not found" });
+    return;
+  }
 
   // Optimistic concurrency: reject stale writes so a slow device can't
   // clobber newer data. The client refetches and merges on 409.

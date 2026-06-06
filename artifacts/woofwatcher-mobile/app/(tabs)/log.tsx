@@ -19,6 +19,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -150,11 +151,11 @@ const LOG_TYPES: LogType[] = [
   {
     type: "meds",
     label: "Meds",
-    icon: "drop",
+    icon: "pill",
     baseTitle: "Medication",
     noteField: { placeholder: "Which medication & dose?" },
   },
-  { type: "weight", label: "Weight", icon: "bone", baseTitle: "Weight", numeric: { label: "Weight", placeholder: "0.0" } },
+  { type: "weight", label: "Weight", icon: "scale", baseTitle: "Weight", numeric: { label: "Weight", placeholder: "0.0" } },
   {
     type: "symptom",
     label: "Symptom",
@@ -222,32 +223,6 @@ const TYPE_ICON: Record<string, PulseIconName> = {
   medication: "drop",
 };
 
-function relativeTime(iso: string, now: number): string {
-  const mins = Math.floor((now - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
-
-function dayKey(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-}
-
-function dayLabel(iso: string, now: number): string {
-  const d = new Date(iso);
-  const today = new Date(now);
-  const yest = new Date(now - 86400000);
-  const same = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  if (same(d, today)) return "Today";
-  if (same(d, yest)) return "Yesterday";
-  return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
-}
-
 export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -255,7 +230,11 @@ export default function LogScreen() {
   const me = useGetMe();
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
-  const now = Date.now();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, []);
 
   const caregiver =
     me.data?.user.displayName?.trim() || state.caregivers[0]?.name || "You";
@@ -286,6 +265,11 @@ export default function LogScreen() {
   const [promptTitle, setPromptTitle] = useState("");
   const [promptNote, setPromptNote] = useState("");
   const promptRef = useRef<TextInput>(null);
+
+  // Entry editor
+  const [editEntry, setEditEntry] = useState<Entry | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editNote, setEditNote] = useState("");
 
   const caregiverColor = (name: string) => {
     const palette = [colors.primary, colors.copper, colors.sage, colors.amber];
@@ -403,6 +387,24 @@ export default function LogScreen() {
     [deleteEntry],
   );
 
+  const openEditEntry = useCallback((e: Entry) => {
+    setEditEntry(e);
+    setEditTitle(e.title);
+    setEditNote(e.note ?? "");
+    Haptics.selectionAsync();
+  }, []);
+
+  const saveEditEntry = useCallback(() => {
+    if (!editEntry) return;
+    const title = editTitle.trim() || editEntry.title;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateEntry(editEntry.id, { note: editNote.trim() || undefined });
+    if (title !== editEntry.title) {
+      updateEntry(editEntry.id, { title });
+    }
+    setEditEntry(null);
+  }, [editEntry, editTitle, editNote, updateEntry]);
+
   const filtered = useMemo(() => {
     const sorted = [...state.entries].sort(
       (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
@@ -427,6 +429,22 @@ export default function LogScreen() {
   const presentTypes = useMemo(() => {
     const set = new Set(state.entries.map((e) => e.type));
     return LOG_TYPES.filter((q) => set.has(q.type));
+  }, [state.entries]);
+
+  // Today's snapshot: total count and per-type counts
+  const todaySnapshot = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const todayEntries = state.entries.filter((e) => e.occurredAt.startsWith(today));
+    const counts: Record<string, number> = {};
+    for (const e of todayEntries) {
+      counts[e.type] = (counts[e.type] ?? 0) + 1;
+    }
+    // Top 5 types by count
+    const top = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([type, count]) => ({ type, count, icon: TYPE_ICON[type] ?? ("paw" as PulseIconName) }));
+    return { total: todayEntries.length, top };
   }, [state.entries]);
 
   const H_PAD = 20;
@@ -610,6 +628,27 @@ export default function LogScreen() {
             </Pressable>
           </View>
 
+          {/* Today at a glance */}
+          {todaySnapshot.total > 0 && (
+            <View style={[s.snapshotBar, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+              <View style={s.snapshotLeft}>
+                <Text style={[s.snapshotCount, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{todaySnapshot.total}</Text>
+                <Text style={[s.snapshotLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>logged today</Text>
+              </View>
+              <View style={s.snapshotIcons}>
+                {todaySnapshot.top.map((t) => {
+                  const tint = PULSE_COLORS[t.icon];
+                  return (
+                    <View key={t.type} style={[s.snapshotChip, { backgroundColor: tint + "16" }]}>
+                      <PulseIcon name={t.icon} size={13} />
+                      <Text style={[s.snapshotChipCount, { color: tint, fontFamily: "Inter_700Bold" }]}>{t.count}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
           {/* Filter chips */}
           {presentTypes.length > 0 && (
             <ScrollView
@@ -670,12 +709,13 @@ export default function LogScreen() {
                         key={e.id}
                         style={[s.entryRow, i < g.entries.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
                       >
-                        <View style={[s.entryAvatar, { backgroundColor: cg + "1A" }]}>
+                        <View style={[s.entryAccent, { backgroundColor: PULSE_COLORS[icon] }]} />
+                        <View style={[s.entryAvatar, { backgroundColor: cg + "18" }]}>
                           <Text style={[s.entryInitial, { color: cg, fontFamily: "Inter_700Bold" }]}>
                             {(e.caregiver || "?").charAt(0).toUpperCase()}
                           </Text>
                         </View>
-                        <View style={[s.entryIconWrap, { backgroundColor: PULSE_COLORS[icon] + "16" }]}>
+                        <View style={[s.entryIconWrap, { backgroundColor: PULSE_COLORS[icon] + "14" }]}>
                           <PulseIcon name={icon} size={18} />
                         </View>
                         <View style={{ flex: 1 }}>
@@ -684,23 +724,33 @@ export default function LogScreen() {
                               {e.title}
                             </Text>
                             {sev && (
-                              <View style={[s.sevBadge, { backgroundColor: sevColor + "1A" }]}>
+                              <View style={[s.sevBadge, { backgroundColor: sevColor + "18" }]}>
                                 <Text style={[s.sevText, { color: sevColor, fontFamily: "Inter_700Bold" }]}>{sev}</Text>
                               </View>
                             )}
                           </View>
                           <Text style={[s.entryMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                            {e.caregiver} · {relativeTime(e.occurredAt, now)}
+                            {e.caregiver} · {new Date(e.occurredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                           </Text>
                           {e.note ? (
-                            <Text numberOfLines={4} style={[s.entryNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                            <Text numberOfLines={3} style={[s.entryNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                               {e.note}
                             </Text>
                           ) : null}
                         </View>
-                        <Pressable onPress={() => handleDelete(e.id, e.title)} hitSlop={12} style={s.delBtn}>
-                          <Ionicons name="trash-outline" size={18} color={colors.mutedForeground} />
-                        </Pressable>
+                        <View style={s.entryRight}>
+                          <Text style={[s.entryRelTime, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                            {relativeTime(e.occurredAt, now)}
+                          </Text>
+                          <View style={s.entryActions}>
+                            <Pressable onPress={() => openEditEntry(e)} hitSlop={10} style={s.actionBtn}>
+                              <Ionicons name="pencil-outline" size={15} color={colors.mutedForeground} />
+                            </Pressable>
+                            <Pressable onPress={() => handleDelete(e.id, e.title)} hitSlop={10} style={s.actionBtn}>
+                              <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
+                            </Pressable>
+                          </View>
+                        </View>
                       </View>
                     );
                   })}
@@ -710,6 +760,39 @@ export default function LogScreen() {
           )}
         </Animated.View>
       </ScrollView>
+
+      {/* Entry editor modal */}
+      <Modal visible={editEntry !== null} transparent animationType="slide" onRequestClose={() => setEditEntry(null)}>
+        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
+          <Pressable style={[s.editSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]} onPress={(e) => e.stopPropagation()}>
+            <View style={s.editHandle} />
+            <Text style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit Entry</Text>
+            <Text style={[s.editFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
+            <TextInput
+              value={editTitle}
+              onChangeText={setEditTitle}
+              placeholderTextColor={colors.mutedForeground}
+              style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+            />
+            <Text style={[s.editFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NOTE (OPTIONAL)</Text>
+            <TextInput
+              value={editNote}
+              onChangeText={setEditNote}
+              placeholder="Add or update a note…"
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
+            />
+            <Pressable
+              onPress={saveEditEntry}
+              style={({ pressed }) => [s.logBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1, marginTop: 20 }]}
+            >
+              <Ionicons name="checkmark" size={18} color="#fff" />
+              <Text style={[s.logBtnText, { fontFamily: "Inter_700Bold" }]}>Save changes</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Post-log quick-note prompt */}
       <Modal visible={promptId !== null} transparent animationType="fade" onRequestClose={() => setPromptId(null)}>
@@ -831,6 +914,14 @@ const s = StyleSheet.create({
   },
   filterText: { fontSize: 13 },
 
+  snapshotBar: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 12, marginTop: 12, marginBottom: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 2 },
+  snapshotLeft: { flexDirection: "row", alignItems: "baseline", gap: 5 },
+  snapshotCount: { fontSize: 22, letterSpacing: -0.3 },
+  snapshotLabel: { fontSize: 13 },
+  snapshotIcons: { flexDirection: "row", gap: 6, flex: 1, justifyContent: "flex-end", flexWrap: "wrap" },
+  snapshotChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 10 },
+  snapshotChipCount: { fontSize: 12 },
+
   dayHeading: { fontSize: 18, letterSpacing: -0.2, marginBottom: 10, marginLeft: 2 },
   dayCard: {
     borderRadius: 22,
@@ -840,17 +931,25 @@ const s = StyleSheet.create({
     shadowRadius: 14,
     elevation: 2,
   },
-  entryRow: { flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 14 },
-  entryAvatar: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
-  entryInitial: { fontSize: 14 },
+  entryRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 14 },
+  entryAccent: { width: 3, height: 38, borderRadius: 2, marginRight: 2 },
+  entryAvatar: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  entryInitial: { fontSize: 13 },
   entryIconWrap: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center" },
   entryTitleLine: { flexDirection: "row", alignItems: "center", gap: 8 },
-  entryTitle: { fontSize: 15, flexShrink: 1 },
-  sevBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
-  sevText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
-  entryMeta: { fontSize: 12.5, marginTop: 2 },
-  entryNote: { fontSize: 13.5, lineHeight: 19, marginTop: 5 },
-  delBtn: { padding: 4 },
+  entryTitle: { fontSize: 14.5, flexShrink: 1 },
+  sevBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
+  sevText: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0.4 },
+  entryMeta: { fontSize: 12, marginTop: 2 },
+  entryNote: { fontSize: 13, lineHeight: 18, marginTop: 4 },
+  entryRight: { alignItems: "flex-end", gap: 4 },
+  entryRelTime: { fontSize: 11.5 },
+  entryActions: { flexDirection: "row", gap: 2 },
+  actionBtn: { padding: 4 },
+  editSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
+  editHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
+  editSheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
+  editFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
 
   empty: {
     borderRadius: 22,

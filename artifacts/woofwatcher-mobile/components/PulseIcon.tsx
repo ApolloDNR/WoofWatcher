@@ -12,7 +12,9 @@ export type PulseIconName =
   | "bolt"
   | "sad"
   | "vomit"
-  | "house";
+  | "house"
+  | "scale"
+  | "pill";
 
 export const PULSE_COLORS: Record<PulseIconName, string> = {
   bowl: "#3F7D5C",
@@ -26,6 +28,8 @@ export const PULSE_COLORS: Record<PulseIconName, string> = {
   sad: "#9B7BD4",
   vomit: "#E0903E",
   house: "#6E9BD0",
+  scale: "#7A8FA6",
+  pill: "#A05C9A",
 };
 
 interface Props {
@@ -149,6 +153,23 @@ export function PulseIcon({ name, size = 32, color }: Props) {
             <Path d="M24 7 L43 24 L5 24 Z" fill={c} />
             <Rect x={10} y={23} width={28} height={17} rx={2.5} fill={c} />
             <Rect x={20} y={29} width={8} height={11} rx={1.5} fill={white} opacity={0.8} />
+          </G>
+        );
+      case "scale":
+        return (
+          <G>
+            <Circle cx={24} cy={28} r={14} fill={c} />
+            <Rect x={20} y={10} width={8} height={10} rx={3} fill={c} />
+            <Rect x={15} y={7} width={18} height={6} rx={3} fill={c} />
+            <Ellipse cx={24} cy={28} rx={9} ry={5.5} fill={white} opacity={0.2} />
+          </G>
+        );
+      case "pill":
+        return (
+          <G>
+            <Rect x={16} y={9} width={16} height={30} rx={8} fill={c} />
+            <Rect x={16} y={9} width={8} height={30} rx={8} fill={white} opacity={0.35} />
+            <Rect x={16} y={23} width={16} height={2.5} fill={white} opacity={0.55} />
           </G>
         );
       default:
