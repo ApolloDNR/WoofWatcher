@@ -1,2 +1,2 @@
-- [Photo→avatar stylization](photo-avatar-stylization.md) — Gemini nano-banana image-edit endpoint + Express body-limit gotcha for base64 image uploads.
+- [Paid-AI endpoint pitfalls](photo-avatar-stylization.md) — lazy-init AI clients (never throw at import), raised body limit for base64 images, rate-limit paid endpoints.
 - [Mobile design language](mobile-design-language.md) — WoofWatcher premium mobile look: fonts, tokens, components to reuse for consistency.

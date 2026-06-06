@@ -1,29 +1,21 @@
 ---
 name: WoofWatcher mobile design language
-description: The premium look the WoofWatcher Expo app standardized on — reuse these tokens/components so new screens stay consistent.
+description: Durable design decisions for the WoofWatcher Expo app so new screens stay consistent (not a file map — grep the code for specifics).
 ---
 
 # WoofWatcher mobile premium design language
 
-New mobile screens should match the home (`app/(tabs)/index.tsx`) and Portrait Studio
-(`app/portrait.tsx`). Reuse, don't reinvent.
+Decisions a future screen should honor (find exact tokens/components via `useColors()`,
+`PulseIcon`, and `AnimatedAvatar` in the code):
 
-- Display/heading font: `Fredoka_700Bold` (DISPLAY) and `Fredoka_600SemiBold`
-  (DISPLAY_SEMI); body text uses the Inter weights. Loaded in `app/_layout.tsx`.
-- Colors via `useColors()` (`hooks/useColors.ts`): warm ivory bg, forest `primary`,
-  `sage`, `copper`, `amber`. Cards = `colors.card`, rounded 22–28, soft shadow
-  (shadowColor `colors.primary`).
-- Illustrated tile icons: `PulseIcon` + `PULSE_COLORS` from `components/PulseIcon.tsx`.
-- The living mascot is `components/AnimatedAvatar.tsx` (Reanimated): breathing/bob/tilt
-  idle, mood cross-fade across 5 transparent cutouts in `assets/phoenix/cutout/`,
-  floating emotes, tap→bounce+bark+haptic, speech bubble. Needs the 5 mood cutouts, so
-  it can't be swapped for an arbitrary user photo — keep the photo portrait separate.
-- Layout: ScrollView, `paddingHorizontal: 20`, top inset `(web ? 24 : insets.top)+8`,
-  bottom padding ~130 (floating blurred tab bar). Mount fade+slide entrance, light haptics.
-- Charts: use `react-native-svg` (already installed) for lightweight on-brand sparklines;
-  do NOT add chart libraries.
+- Two type registers: a rounded friendly display face for headings + Inter for body. Keep
+  headings on the display face — don't mix in a third family.
+- Warm ivory background, forest/sage/copper/amber accents. Cards are rounded (~22–28) with
+  a soft shadow tinted by the primary color, not black.
+- Charts use `react-native-svg` only — do NOT add a charting library for simple sparklines.
+- The living mascot reacts to mood via 5 transparent cutouts; it is NOT a generic photo
+  slot. Keep the user's uploaded photo portrait as a separate feature from the mascot.
 
 ## useColors cast gotcha
-`hooks/useColors.ts` casts the colors object to `Record<string, palette>` to pick a
-dark palette. It must be `as unknown as Record<...>` because the object also has
-`radius: number`, which otherwise fails the TS2352 overlap check.
+The colors object mixes palettes with a numeric `radius`, so selecting a dark palette
+needs `as unknown as Record<...>` (a plain `as` fails TS2352's overlap check).

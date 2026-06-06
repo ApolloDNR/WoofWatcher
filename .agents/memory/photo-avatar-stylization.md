@@ -1,34 +1,28 @@
 ---
-name: Photo→avatar stylization
-description: How the WoofWatcher photo→illustrated-avatar feature is wired (Gemini image-edit) and the Express body-limit gotcha that breaks base64 image uploads.
+name: Paid-AI endpoint pitfalls
+description: Two durable, non-obvious traps when adding a backend endpoint that calls a paid AI integration (image stylization, LLMs, etc.).
 ---
 
-# Photo → illustrated avatar (image-to-image)
+# Adding a backend endpoint backed by a paid AI integration
 
-The mobile "Portrait Studio" sends a user dog photo to the api-server, which calls
-Gemini's image model to repaint it in the app's storybook style.
+## Never throw at module load when an integration env var is missing
+**Rule:** construct AI clients lazily (inside the handler / a guarded factory) and have
+the client module export an `isConfigured()` check; the route should return 503 when the
+integration is absent — never `throw` at import time.
+**Why:** routers are usually mounted unconditionally, so a top-level `throw` in the client
+module crashes the *entire* server at startup, taking down unrelated routes (health,
+other features). A code review rejected exactly this regression here.
+**How to apply:** any time a module reads `*_API_KEY` / `*_BASE_URL` at the top level and
+throws — move it behind a function that callers invoke at request time.
 
-- Provider: Replit AI Integration for Gemini (no user API key; billed to credits).
-  Env vars `AI_INTEGRATIONS_GEMINI_BASE_URL` / `AI_INTEGRATIONS_GEMINI_API_KEY`.
-- Model: `gemini-2.5-flash-image` (nano-banana, flash). Good + cheap for stylization;
-  only use a pro image model if the user explicitly asks for higher quality.
-- Image-edit call shape: `ai.models.generateContent({ model, contents:[{ role:"user",
-  parts:[{ inlineData:{ mimeType, data: <base64-no-prefix> } }, { text: prompt }] }] })`.
-  The returned image is in `response.candidates[0].content.parts[].inlineData.data`
-  (base64) — find the part that has `inlineData.data`; a text-only part means the model
-  refused/returned no image.
+## Base64 image uploads need a raised body-parser limit
+**Rule:** any endpoint accepting a base64 image must raise `express.json({ limit })`
+(e.g. 15mb) and the client should downscale before upload.
+**Why:** the default is 100kb, so phone photos are rejected and the Replit proxy returns
+an **HTML** error page — the client sees `SyntaxError: Unexpected token '<' ... not valid
+JSON`, which masquerades as a routing bug but is really payload-too-large.
 
-## Gotcha: Express default JSON body limit breaks image uploads
-**Rule:** any endpoint that accepts a base64 image MUST raise the body-parser limit.
-**Why:** `express.json()` defaults to 100kb. Phone photos are MBs, so the request is
-rejected and the Replit proxy returns an **HTML error page** (not JSON) — the symptom is
-a client `SyntaxError: Unexpected token '<' ... is not valid JSON`, which looks like a
-routing bug but is actually payload-too-large.
-**How to apply:** set `express.json({ limit: "15mb" })` (and matching urlencoded). Also
-downscale client-side (expo-image-manipulator, ~900px, jpeg 0.7) to keep payloads small.
-
-## Cost protection (paid upstream)
-The stylize endpoint is unauthenticated, so it has an in-memory per-IP + global rate
-limiter (returns 429) and the Gemini client uses `httpOptions.timeout`. Keep these — an
-exposed endpoint hitting a paid model is a cost-exhaustion vector. If real auth is added,
-prefer user/session-scoped quotas.
+## Cost protection for unauthenticated paid endpoints
+An exposed endpoint hitting a paid model is a cost-exhaustion vector. Add a per-IP +
+global in-memory rate limit (429) and an upstream client timeout. If real auth lands
+later, switch to user/session-scoped quotas.

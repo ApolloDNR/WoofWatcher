@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { ai } from "../gemini";
+import { getGemini } from "../gemini";
 
 const router: IRouter = Router();
 
@@ -40,6 +40,14 @@ function rateLimited(ip: string): boolean {
 
 router.post("/avatar-stylize", async (req: Request, res: Response) => {
   try {
+    const ai = getGemini();
+    if (!ai) {
+      res.status(503).json({
+        error: "Portrait Studio isn't configured yet. Please try again later.",
+      });
+      return;
+    }
+
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     if (rateLimited(ip)) {
       res.status(429).json({ error: "Too many portraits at once. Please wait a moment and try again." });
