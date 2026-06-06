@@ -37,3 +37,132 @@ export interface CareHelperError {
   boundary?: string;
 }
 
+export interface ApiError {
+  error: string;
+}
+
+export interface User {
+  id: string;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  displayName?: string | null;
+}
+
+export interface Household {
+  id: string;
+  name: string;
+  inviteCode: string;
+}
+
+export interface Member {
+  id: string;
+  userId: string;
+  role: string;
+  /** @nullable */
+  displayName?: string | null;
+  /** @nullable */
+  email?: string | null;
+  isSelf: boolean;
+}
+
+export interface Me {
+  user: User;
+  household: Household;
+  members: Member[];
+}
+
+export interface MeUpdate {
+  /** @minLength 1 */
+  displayName?: string;
+}
+
+export interface HouseholdUpdate {
+  /** @minLength 1 */
+  name: string;
+}
+
+export interface JoinHouseholdInput {
+  /** @minLength 1 */
+  inviteCode: string;
+}
+
+export type CareStateEnvelopeDoc = { [key: string]: unknown };
+
+export interface CareStateEnvelope {
+  version: number;
+  updatedAt: string;
+  /** @nullable */
+  updatedBy?: string | null;
+  doc: CareStateEnvelopeDoc;
+}
+
+export type CareStateInputDoc = { [key: string]: unknown };
+
+export interface CareStateInput {
+  version: number;
+  doc: CareStateInputDoc;
+}
+
+/**
+ * @nullable
+ */
+export type CareEntryDetails = { [key: string]: unknown } | null;
+
+export interface CareEntry {
+  id: string;
+  /** @nullable */
+  petId?: string | null;
+  type: string;
+  occurredAt: string;
+  /** @nullable */
+  caregiverUserId?: string | null;
+  /** @nullable */
+  caregiverName?: string | null;
+  /** @nullable */
+  mood?: string | null;
+  /** @nullable */
+  severity?: string | null;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  details?: CareEntryDetails;
+  createdAt: string;
+}
+
+export type CareEntryInputDetails = { [key: string]: unknown };
+
+export interface CareEntryInput {
+  petId?: string;
+  /** @minLength 1 */
+  type: string;
+  occurredAt?: string;
+  mood?: string;
+  severity?: string;
+  note?: string;
+  details?: CareEntryInputDetails;
+}
+
+/**
+ * @nullable
+ */
+export type CareEntryUpdateDetails = { [key: string]: unknown } | null;
+
+export interface CareEntryUpdate {
+  /** @minLength 1 */
+  type?: string;
+  occurredAt?: string;
+  /** @nullable */
+  mood?: string | null;
+  /** @nullable */
+  severity?: string | null;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  details?: CareEntryUpdateDetails;
+}
+
+export type ListCareEntriesParams = {
+since?: string;
+};
+

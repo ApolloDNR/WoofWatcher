@@ -327,7 +327,7 @@ export default function PhoenixScreen() {
 
             {/* Next up row */}
             <Pressable
-              onPress={() => router.push("/plans")}
+              onPress={() => router.push("/calendar")}
               style={({ pressed }) => [s.nextUpRow, { opacity: pressed ? 0.6 : 1 }]}
             >
               <View style={[s.nextUpIcon, { backgroundColor: colors.sage + "18" }]}>
@@ -377,7 +377,7 @@ export default function PhoenixScreen() {
           {/* Today's Pulse — 5-card row */}
           <View style={s.sectionHeader}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Today's Pulse</Text>
-            <Pressable onPress={() => router.push("/plans")} hitSlop={8}>
+            <Pressable onPress={() => router.push("/calendar")} hitSlop={8}>
               <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Full day</Text>
             </Pressable>
           </View>
@@ -476,12 +476,12 @@ export default function PhoenixScreen() {
           {/* Health Watch */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Health Watch</Text>
-            <Pressable onPress={() => router.push("/health")} hitSlop={8}>
+            <Pressable onPress={() => router.push("/records")} hitSlop={8}>
               <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Details</Text>
             </Pressable>
           </View>
           <Pressable
-            onPress={() => router.push("/health")}
+            onPress={() => router.push("/records")}
             style={({ pressed }) => [s.healthCard, { backgroundColor: colors.card, shadowColor: colors.primary, opacity: pressed ? 0.9 : 1 }]}
           >
             <View style={s.healthHeader}>

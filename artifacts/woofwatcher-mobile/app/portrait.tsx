@@ -16,6 +16,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -52,14 +53,21 @@ export default function PortraitScreen() {
   const name = state.profile.name;
 
   const topInset = Platform.OS === "web" ? 20 : insets.top;
+  const { width: winW } = useWindowDimensions();
+  const canvasW = Math.min(winW, 520) - 40;
+  const canvasH = canvasW / 0.82;
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<ResultSet | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lineIdx, setLineIdx] = useState(0);
+  const [sourceUri, setSourceUri] = useState<string | null>(null);
 
   // Brush spinner + rotating copy while working
   const spin = useRef(new Animated.Value(0)).current;
+  // Cinematic scan beam sweeping over the source photo
+  const scan = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (phase !== "working") return;
     const loop = Animated.loop(
@@ -70,16 +78,38 @@ export default function PortraitScreen() {
         useNativeDriver: Platform.OS !== "web",
       }),
     );
+    const scanLoop = Animated.loop(
+      Animated.timing(scan, {
+        toValue: 1,
+        duration: 1900,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: Platform.OS !== "web",
+      }),
+    );
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: Platform.OS !== "web" }),
+        Animated.timing(pulse, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: Platform.OS !== "web" }),
+      ]),
+    );
     loop.start();
+    scanLoop.start();
+    pulseLoop.start();
     const t = setInterval(() => setLineIdx((i) => (i + 1) % PAINTING_LINES.length), 1900);
     return () => {
       loop.stop();
+      scanLoop.stop();
+      pulseLoop.stop();
       spin.setValue(0);
+      scan.setValue(0);
+      pulse.setValue(0);
       clearInterval(t);
     };
-  }, [phase, spin]);
+  }, [phase, spin, scan, pulse]);
 
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+  const scanTranslate = scan.interpolate({ inputRange: [0, 1], outputRange: [0, canvasH - 56] });
+  const reticleOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.85] });
 
   const ensurePermission = async (camera: boolean) => {
     if (Platform.OS === "web") return true;
@@ -122,6 +152,7 @@ export default function PortraitScreen() {
       setResult(null);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+      setSourceUri(uri);
       // Downscale + compress to keep the upload small and fast
       const shrunk = await manipulateAsync(uri, [{ resize: { width: 900 } }], {
         compress: 0.7,
@@ -231,22 +262,50 @@ export default function PortraitScreen() {
           unsure and sleepy. They become {name}'s live avatar across the app.
         </Text>
 
-        {/* Working state */}
+        {/* Working state — cinematic scan over the source photo */}
         {phase === "working" && (
-          <View style={[s.canvasCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-            <LinearGradient colors={["#FBF6EE", "#EAF1E9"]} style={s.canvasFill}>
-              <Animated.View style={{ transform: [{ rotate }] }}>
-                <View style={[s.brushCircle, { backgroundColor: colors.primary + "18" }]}>
-                  <Ionicons name="brush" size={34} color={colors.primary} />
-                </View>
-              </Animated.View>
-              <Text style={[s.workingText, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                {PAINTING_LINES[lineIdx]}
+          <View style={[s.canvasCard, { backgroundColor: colors.card, shadowColor: colors.primary, width: canvasW, height: canvasH, alignSelf: "center" }]}>
+            {sourceUri ? (
+              <Image source={{ uri: sourceUri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
+            ) : (
+              <LinearGradient colors={["#FBF6EE", "#EAF1E9"]} style={StyleSheet.absoluteFill} />
+            )}
+
+            {/* Cool scan tint so the beam reads clearly */}
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(20,40,32,0.34)" }]} pointerEvents="none" />
+
+            {/* Sweeping scan beam */}
+            <Animated.View style={[s.scanBand, { transform: [{ translateY: scanTranslate }] }]} pointerEvents="none">
+              <LinearGradient
+                colors={["transparent", colors.sage + "22", colors.sage + "66"]}
+                style={s.scanBandFill}
+              />
+              <View style={[s.scanLine, { backgroundColor: "#EAFBF0", shadowColor: colors.sage }]} />
+            </Animated.View>
+
+            {/* Reticle corner brackets */}
+            <Animated.View style={[s.reticle, { opacity: reticleOpacity }]} pointerEvents="none">
+              <View style={[s.corner, s.cornerTL, { borderColor: "#EAFBF0" }]} />
+              <View style={[s.corner, s.cornerTR, { borderColor: "#EAFBF0" }]} />
+              <View style={[s.corner, s.cornerBL, { borderColor: "#EAFBF0" }]} />
+              <View style={[s.corner, s.cornerBR, { borderColor: "#EAFBF0" }]} />
+            </Animated.View>
+
+            {/* Bottom copy */}
+            <LinearGradient colors={["transparent", "rgba(15,28,22,0.82)"]} style={s.workingScrim} pointerEvents="none" />
+            <View style={s.workingCopy}>
+              <View style={s.workingCopyRow}>
+                <Animated.View style={{ transform: [{ rotate }] }}>
+                  <Ionicons name="sparkles" size={16} color="#EAFBF0" />
+                </Animated.View>
+                <Text style={[s.workingText, { color: "#FFFFFF", fontFamily: DISPLAY_SEMI }]}>
+                  {PAINTING_LINES[lineIdx]}
+                </Text>
+              </View>
+              <Text style={[s.workingHint, { color: "rgba(255,255,255,0.82)", fontFamily: "Inter_400Regular" }]}>
+                Reading {name}'s features and painting all five moods.
               </Text>
-              <Text style={[s.workingHint, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Painting all five moods — this takes a little longer.
-              </Text>
-            </LinearGradient>
+            </View>
           </View>
         )}
 
@@ -395,17 +454,37 @@ const s = StyleSheet.create({
   canvasCard: {
     borderRadius: 26,
     overflow: "hidden",
-    aspectRatio: 0.82,
     marginBottom: 18,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.14,
     shadowRadius: 24,
     elevation: 6,
   },
-  canvasFill: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, padding: 24 },
-  brushCircle: { width: 74, height: 74, borderRadius: 37, alignItems: "center", justifyContent: "center" },
-  workingText: { fontSize: 18, textAlign: "center" },
-  workingHint: { fontSize: 13.5, textAlign: "center" },
+  scanBand: { position: "absolute", left: 0, right: 0, top: 0, height: 56 },
+  scanBandFill: { ...StyleSheet.absoluteFillObject, borderRadius: 2 },
+  scanLine: {
+    position: "absolute",
+    left: 10,
+    right: 10,
+    bottom: 0,
+    height: 2.5,
+    borderRadius: 2,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  reticle: { ...StyleSheet.absoluteFillObject, margin: 20 },
+  corner: { position: "absolute", width: 26, height: 26 },
+  cornerTL: { top: 0, left: 0, borderTopWidth: 2.5, borderLeftWidth: 2.5, borderTopLeftRadius: 8 },
+  cornerTR: { top: 0, right: 0, borderTopWidth: 2.5, borderRightWidth: 2.5, borderTopRightRadius: 8 },
+  cornerBL: { bottom: 0, left: 0, borderBottomWidth: 2.5, borderLeftWidth: 2.5, borderBottomLeftRadius: 8 },
+  cornerBR: { bottom: 0, right: 0, borderBottomWidth: 2.5, borderRightWidth: 2.5, borderBottomRightRadius: 8 },
+  workingScrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: "42%" },
+  workingCopy: { position: "absolute", left: 20, right: 20, bottom: 20, gap: 6 },
+  workingCopyRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  workingText: { fontSize: 17, flexShrink: 1 },
+  workingHint: { fontSize: 13, lineHeight: 18 },
 
   heroPreview: {
     borderRadius: 26,

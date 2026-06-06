@@ -68,6 +68,202 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareHelperError"
+  /me:
+    get:
+      operationId: getMe
+      tags: [household]
+      summary: Get the current user, their household and members
+      description: >-
+        Returns the authenticated user. On first call this JIT-provisions the
+        user, a default household, and a membership.
+      responses:
+        "200":
+          description: Current user context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+    patch:
+      operationId: updateMe
+      tags: [household]
+      summary: Update the current user's profile / display name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeUpdate"
+      responses:
+        "200":
+          description: Updated user context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+  /household:
+    patch:
+      operationId: updateHousehold
+      tags: [household]
+      summary: Rename the current household
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HouseholdUpdate"
+      responses:
+        "200":
+          description: Updated household context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+  /household/join:
+    post:
+      operationId: joinHousehold
+      tags: [household]
+      summary: Join an existing household by invite code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinHouseholdInput"
+      responses:
+        "200":
+          description: Joined household context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "404":
+          description: Invite code not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /care-state:
+    get:
+      operationId: getCareState
+      tags: [care-state]
+      summary: Get the household's synced care document
+      responses:
+        "200":
+          description: Care state document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareStateEnvelope"
+    put:
+      operationId: putCareState
+      tags: [care-state]
+      summary: Replace the household's synced care document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareStateInput"
+      responses:
+        "200":
+          description: Updated care state document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareStateEnvelope"
+        "409":
+          description: Version conflict — refetch and retry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareStateEnvelope"
+  /care-entries:
+    get:
+      operationId: listCareEntries
+      tags: [care-entries]
+      summary: List the household's care log entries
+      parameters:
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Care entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CareEntry"
+    post:
+      operationId: createCareEntry
+      tags: [care-entries]
+      summary: Append a care log entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareEntryInput"
+      responses:
+        "201":
+          description: Created entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntry"
+  /care-entries/{id}:
+    patch:
+      operationId: updateCareEntry
+      tags: [care-entries]
+      summary: Update a care log entry (e.g. add a quick note)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareEntryUpdate"
+      responses:
+        "200":
+          description: Updated entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntry"
+        "404":
+          description: Entry not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteCareEntry
+      tags: [care-entries]
+      summary: Delete a care log entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Entry not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 components:
   schemas:
     HealthStatus:
@@ -125,3 +321,192 @@ components:
       required:
         - error
         - mode
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: ["string", "null"]
+        displayName:
+          type: ["string", "null"]
+      required:
+        - id
+    Household:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        inviteCode:
+          type: string
+      required:
+        - id
+        - name
+        - inviteCode
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        role:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        isSelf:
+          type: boolean
+      required:
+        - id
+        - userId
+        - role
+        - isSelf
+    Me:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        household:
+          $ref: "#/components/schemas/Household"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/Member"
+      required:
+        - user
+        - household
+        - members
+    MeUpdate:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+    HouseholdUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+      required:
+        - name
+    JoinHouseholdInput:
+      type: object
+      properties:
+        inviteCode:
+          type: string
+          minLength: 1
+      required:
+        - inviteCode
+    CareStateEnvelope:
+      type: object
+      properties:
+        version:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: ["string", "null"]
+        doc:
+          type: object
+          additionalProperties: true
+      required:
+        - version
+        - updatedAt
+        - doc
+    CareStateInput:
+      type: object
+      properties:
+        version:
+          type: integer
+        doc:
+          type: object
+          additionalProperties: true
+      required:
+        - version
+        - doc
+    CareEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        petId:
+          type: ["string", "null"]
+        type:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        caregiverUserId:
+          type: ["string", "null"]
+        caregiverName:
+          type: ["string", "null"]
+        mood:
+          type: ["string", "null"]
+        severity:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+        details:
+          type: ["object", "null"]
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - occurredAt
+        - createdAt
+    CareEntryInput:
+      type: object
+      properties:
+        petId:
+          type: string
+        type:
+          type: string
+          minLength: 1
+        occurredAt:
+          type: string
+          format: date-time
+        mood:
+          type: string
+        severity:
+          type: string
+        note:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+      required:
+        - type
+    CareEntryUpdate:
+      type: object
+      properties:
+        type:
+          type: string
+          minLength: 1
+        occurredAt:
+          type: string
+          format: date-time
+        mood:
+          type: ["string", "null"]
+        severity:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+        details:
+          type: ["object", "null"]
+          additionalProperties: true

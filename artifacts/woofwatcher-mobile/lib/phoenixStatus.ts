@@ -145,7 +145,9 @@ export function derivePhoenixStatus(
     .reduce((sum, e) => sum + (e.durationMinutes ?? 0), 0);
 
   const recentVomit = todays.some(
-    (e) => e.type === "vomit" && (e.severity === "watch" || e.severity === "alert"),
+    (e) =>
+      (e.type === "vomit" || e.type === "symptom") &&
+      (e.severity === "watch" || e.severity === "alert"),
   );
   const healthAlert = recentVomit;
 

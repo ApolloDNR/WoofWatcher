@@ -1,1 +1,2 @@
 - [WoofWatcher living avatar](woofwatcher-avatar.md) — dog stays STILL; swap emotion scene via cross-fade, animate only ambient bg; mood images via AvatarContext (custom set or default).
+- [WoofWatcher mobile sync](woofwatcher-sync.md) — config in versioned care-state doc, log as append-only rows; 409 duck-typed; Clerk auth wiring; MOBILE ONLY.

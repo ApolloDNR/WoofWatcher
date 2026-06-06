@@ -1,7 +1,30 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { useAuth } from "@clerk/expo";
+import { useQueryClient } from "@tanstack/react-query";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  createCareEntry,
+  deleteCareEntry,
+  getCareState,
+  getListCareEntriesQueryKey,
+  listCareEntries,
+  putCareState,
+  updateCareEntry,
+  type CareEntry as ApiCareEntry,
+  type CareEntryInput,
+  type CareEntryUpdate,
+  type CareStateEnvelope,
+} from "@workspace/api-client-react";
 
-const STORAGE_KEY = "woofwatcher.v1.state";
+const STORAGE_KEY = "woofwatcher.v2.state";
 
 export interface WeightInfo {
   current: number;
@@ -51,6 +74,17 @@ export interface Record {
   note: string;
 }
 
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  type: string;
+  date: string;
+  time?: string;
+  location?: string;
+  note?: string;
+  source: "manual" | "woofguide";
+}
+
 export interface Entry {
   id: string;
   type: string;
@@ -80,8 +114,12 @@ export interface DietProfile {
   vetNotes: string;
 }
 
-export interface CareState {
-  version: number;
+/**
+ * The shared, synced configuration document. Holds everything about the dog
+ * and the household's care plan EXCEPT the running care log, which lives as
+ * individual server rows (see {@link Entry}) so concurrent edits are safe.
+ */
+export interface CareDoc {
   createdAt: string;
   updatedAt: string;
   profile: Profile;
@@ -90,15 +128,17 @@ export interface CareState {
   routines: Routine[];
   goals: Goal[];
   records: Record[];
+  calendarEvents: CalendarEvent[];
+}
+
+export interface CareState extends CareDoc {
+  version: number;
   entries: Entry[];
 }
 
-function getDefaultState(): CareState {
+function getDefaultDoc(): CareDoc {
   const now = new Date().toISOString();
-  const h = (offset: number) =>
-    new Date(Date.now() - offset * 60 * 60 * 1000).toISOString();
   return {
-    version: 1,
     createdAt: now,
     updatedAt: now,
     profile: {
@@ -109,7 +149,11 @@ function getDefaultState(): CareState {
         "Rescued over a year ago after being underweight and food anxious.",
       careFocus:
         "Keep routines calm, document appetite patterns, and prevent long empty-stomach windows.",
-      weight: { current: 56.2, goal: "Slow, vet-guided weight gain", unit: "lb" },
+      weight: {
+        current: 56.2,
+        goal: "Slow, vet-guided weight gain",
+        unit: "lb",
+      },
       vetBoundary:
         "WoofWatcher tracks patterns for caregiver and veterinarian review. It is not a veterinary diagnosis.",
     },
@@ -232,105 +276,353 @@ function getDefaultState(): CareState {
         note: "Store rabies, DHPP, Bordetella, and any clinic notes here.",
       },
     ],
-    entries: [
-      {
-        id: "e1",
-        type: "meal",
-        title: "Breakfast",
-        caregiver: "Apollo",
-        occurredAt: h(7),
-        amount: "1 cup",
-        mood: "settled",
-        note: "Ate after a calm start.",
-      },
-      {
-        id: "e2",
-        type: "walk",
-        title: "Morning walk",
-        caregiver: "Apollo",
-        occurredAt: h(6),
-        durationMinutes: 22,
-        note: "Loose leash, sniffed calmly.",
-      },
-      {
-        id: "e3",
-        type: "training",
-        title: "Place work",
-        caregiver: "Girlfriend",
-        occurredAt: h(5),
-        durationMinutes: 10,
-        mood: "engaged",
-        note: "Held place while food was prepared.",
-      },
-      {
-        id: "e4",
-        type: "vomit",
-        title: "Yellow bile",
-        caregiver: "Apollo",
-        occurredAt: h(4),
-        severity: "watch",
-        note: "Small amount before breakfast. Normal energy after.",
-      },
-    ],
+    calendarEvents: [],
   };
+}
+
+function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
+  return { ...getDefaultDoc(), ...(partial ?? {}) };
+}
+
+function toEntry(c: ApiCareEntry): Entry {
+  const d = (c.details ?? {}) as { [key: string]: unknown };
+  return {
+    id: c.id,
+    type: c.type,
+    title: typeof d.title === "string" ? d.title : "",
+    caregiver: c.caregiverName ?? "",
+    occurredAt: c.occurredAt,
+    durationMinutes:
+      typeof d.durationMinutes === "number" ? d.durationMinutes : undefined,
+    amount: typeof d.amount === "string" ? d.amount : undefined,
+    mood: c.mood ?? undefined,
+    severity: c.severity ?? undefined,
+    note: c.note ?? undefined,
+    dogInteractions:
+      typeof d.dogInteractions === "number" ? d.dogInteractions : undefined,
+    food: typeof d.food === "string" ? d.food : undefined,
+  };
+}
+
+function toCreateInput(e: Omit<Entry, "id">): CareEntryInput {
+  const details: { [key: string]: unknown } = {};
+  if (e.title) details.title = e.title;
+  if (e.durationMinutes != null) details.durationMinutes = e.durationMinutes;
+  if (e.amount != null) details.amount = e.amount;
+  if (e.dogInteractions != null) details.dogInteractions = e.dogInteractions;
+  if (e.food != null) details.food = e.food;
+  return {
+    type: e.type,
+    occurredAt: e.occurredAt,
+    mood: e.mood,
+    severity: e.severity,
+    note: e.note,
+    details: Object.keys(details).length ? details : undefined,
+  };
+}
+
+// Build a full update payload from a merged entry so a partial patch never
+// clobbers server-side details (PATCH replaces the details object wholesale).
+function toUpdateInput(e: Entry): CareEntryUpdate {
+  const details: { [key: string]: unknown } = {};
+  if (e.title) details.title = e.title;
+  if (e.durationMinutes != null) details.durationMinutes = e.durationMinutes;
+  if (e.amount != null) details.amount = e.amount;
+  if (e.dogInteractions != null) details.dogInteractions = e.dogInteractions;
+  if (e.food != null) details.food = e.food;
+  return {
+    type: e.type,
+    occurredAt: e.occurredAt,
+    mood: e.mood ?? null,
+    severity: e.severity ?? null,
+    note: e.note ?? null,
+    details: Object.keys(details).length ? details : null,
+  };
+}
+
+function isConflict(err: unknown): err is { status: number; data: unknown } {
+  return (
+    !!err &&
+    typeof err === "object" &&
+    (err as { status?: unknown }).status === 409
+  );
 }
 
 interface CareContextValue {
   state: CareState;
-  addEntry: (entry: Omit<Entry, "id">) => void;
+  addEntry: (entry: Omit<Entry, "id">) => string;
   deleteEntry: (id: string) => void;
+  updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => void;
+  updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => void;
+  refresh: () => void;
   isLoaded: boolean;
+  isSyncing: boolean;
 }
 
 const CareContext = createContext<CareContextValue | null>(null);
 
 export function CareProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<CareState>(getDefaultState());
-  const [isLoaded, setIsLoaded] = useState(false);
+  const { isSignedIn, isLoaded: clerkLoaded } = useAuth();
+  const queryClient = useQueryClient();
 
+  const [doc, setDoc] = useState<CareDoc>(getDefaultDoc);
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [serverVersion, setServerVersion] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Refs mirror state so async callbacks read fresh values without re-binding.
+  const docRef = useRef(doc);
+  const versionRef = useRef(serverVersion);
+  const signedInRef = useRef(false);
+  const syncingRef = useRef(false);
+  // Maps optimistic temp ids to their server ids, and queues patches that
+  // arrive before a create resolves (post-log quick-note race).
+  const realIdByTemp = useRef<Map<string, string>>(new Map());
+  const pendingPatch = useRef<Map<string, Partial<Omit<Entry, "id">>>>(new Map());
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (parsed && typeof parsed === "object") {
-            setState((prev) => ({ ...prev, ...parsed }));
+    docRef.current = doc;
+  }, [doc]);
+  useEffect(() => {
+    versionRef.current = serverVersion;
+  }, [serverVersion]);
+  useEffect(() => {
+    signedInRef.current = !!isSignedIn;
+  }, [isSignedIn]);
+
+  // Hydrate instantly from the offline cache so the UI never flashes empty.
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed?.doc) setDoc(mergeDoc(parsed.doc));
+            if (Array.isArray(parsed?.entries)) setEntries(parsed.entries);
+            if (typeof parsed?.serverVersion === "number") {
+              setServerVersion(parsed.serverVersion);
+            }
+          } catch {
+            // Ignore corrupt cache; fall back to defaults.
           }
-        } catch {
         }
+      })
+      .finally(() => setHydrated(true));
+  }, []);
+
+  // Persist the offline cache whenever synced state changes.
+  useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ doc, entries, serverVersion }),
+    ).catch(() => {});
+  }, [doc, entries, serverVersion, hydrated]);
+
+  const pushDoc = useCallback(async (next: CareDoc) => {
+    try {
+      const res = await putCareState({
+        version: versionRef.current,
+        doc: next as unknown as CareStateEnvelope["doc"],
+      });
+      setServerVersion(res.version);
+    } catch (err) {
+      if (!isConflict(err)) return;
+      // Another device wrote first. Adopt their doc + version, replay our
+      // change on top (last-writer-wins per field), and retry once.
+      const envelope = err.data as CareStateEnvelope | null;
+      if (!envelope) return;
+      const merged: CareDoc = {
+        ...mergeDoc(envelope.doc as Partial<CareDoc>),
+        ...next,
+        updatedAt: new Date().toISOString(),
+      };
+      setServerVersion(envelope.version);
+      setDoc(merged);
+      try {
+        const res = await putCareState({
+          version: envelope.version,
+          doc: merged as unknown as CareStateEnvelope["doc"],
+        });
+        setServerVersion(res.version);
+      } catch {
+        // Give up; the next full refresh reconciles.
       }
-      setIsLoaded(true);
-    });
+    }
+  }, []);
+
+  const syncFromServer = useCallback(async () => {
+    if (!signedInRef.current || syncingRef.current) return;
+    syncingRef.current = true;
+    setIsSyncing(true);
+    try {
+      const envelope = await getCareState();
+      const serverDoc = envelope.doc as Partial<CareDoc>;
+      const isEmpty = !serverDoc || Object.keys(serverDoc).length === 0;
+      if (isEmpty) {
+        // Fresh household: seed it with whatever the device currently has.
+        const seed = docRef.current;
+        const res = await putCareState({
+          version: envelope.version,
+          doc: seed as unknown as CareStateEnvelope["doc"],
+        });
+        setDoc(mergeDoc(res.doc as Partial<CareDoc>));
+        setServerVersion(res.version);
+      } else {
+        setDoc(mergeDoc(serverDoc));
+        setServerVersion(envelope.version);
+      }
+
+      const rows = await listCareEntries();
+      setEntries(rows.map(toEntry));
+    } catch {
+      // Offline or transient failure: keep showing the cached state.
+    } finally {
+      syncingRef.current = false;
+      setIsSyncing(false);
+    }
   }, []);
 
   useEffect(() => {
-    if (isLoaded) {
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
-  }, [state, isLoaded]);
+    if (!clerkLoaded || !isSignedIn) return;
+    void syncFromServer();
+  }, [clerkLoaded, isSignedIn, syncFromServer]);
 
-  const addEntry = useCallback((entry: Omit<Entry, "id">) => {
-    const id = `e_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    setState((prev) => ({
-      ...prev,
-      entries: [{ id, ...entry }, ...prev.entries],
-      updatedAt: new Date().toISOString(),
-    }));
-  }, []);
-
-  const deleteEntry = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      entries: prev.entries.filter((e) => e.id !== id),
-      updatedAt: new Date().toISOString(),
-    }));
-  }, []);
-
-  return (
-    <CareContext.Provider value={{ state, addEntry, deleteEntry, isLoaded }}>
-      {children}
-    </CareContext.Provider>
+  const addEntry = useCallback(
+    (entry: Omit<Entry, "id">) => {
+      const tempId = `temp_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2, 7)}`;
+      setEntries((prev) => [{ id: tempId, ...entry }, ...prev]);
+      if (!signedInRef.current) return tempId;
+      createCareEntry(toCreateInput(entry))
+        .then((created) => {
+          const real = toEntry(created);
+          realIdByTemp.current.set(tempId, real.id);
+          // Apply any patch that landed while the create was in flight.
+          const queued = pendingPatch.current.get(tempId);
+          pendingPatch.current.delete(tempId);
+          const merged = queued ? { ...real, ...queued } : real;
+          setEntries((prev) => prev.map((e) => (e.id === tempId ? merged : e)));
+          queryClient.invalidateQueries({
+            queryKey: getListCareEntriesQueryKey(),
+          });
+          if (queued) {
+            updateCareEntry(real.id, toUpdateInput(merged)).catch(() => {});
+          }
+        })
+        .catch(() => {
+          setEntries((prev) => prev.filter((e) => e.id !== tempId));
+        });
+      return tempId;
+    },
+    [queryClient],
   );
+
+  const deleteEntry = useCallback(
+    (id: string) => {
+      let removed: Entry | undefined;
+      setEntries((prev) => {
+        removed = prev.find((e) => e.id === id);
+        return prev.filter((e) => e.id !== id);
+      });
+      if (!signedInRef.current || id.startsWith("temp_")) return;
+      deleteCareEntry(id)
+        .then(() => {
+          queryClient.invalidateQueries({
+            queryKey: getListCareEntriesQueryKey(),
+          });
+        })
+        .catch(() => {
+          if (removed) {
+            const restored = removed;
+            setEntries((prev) => [restored, ...prev]);
+          }
+        });
+    },
+    [queryClient],
+  );
+
+  const updateEntry = useCallback(
+    (id: string, patch: Partial<Omit<Entry, "id">>) => {
+      const realId = realIdByTemp.current.get(id) ?? id;
+      let merged: Entry | undefined;
+      setEntries((prev) =>
+        prev.map((e) => {
+          if (e.id !== realId) return e;
+          merged = { ...e, ...patch };
+          return merged;
+        }),
+      );
+      if (!signedInRef.current || !merged) return;
+      // Create still in flight — remember the patch and apply it on resolve.
+      if (realId.startsWith("temp_")) {
+        pendingPatch.current.set(realId, {
+          ...(pendingPatch.current.get(realId) ?? {}),
+          ...patch,
+        });
+        return;
+      }
+      updateCareEntry(realId, toUpdateInput(merged)).catch(() => {});
+    },
+    [],
+  );
+
+  const updateCareDoc = useCallback(
+    (updater: (doc: CareDoc) => CareDoc) => {
+      setDoc((prev) => {
+        const next: CareDoc = {
+          ...updater(prev),
+          updatedAt: new Date().toISOString(),
+        };
+        if (signedInRef.current) void pushDoc(next);
+        return next;
+      });
+    },
+    [pushDoc],
+  );
+
+  const state = useMemo<CareState>(
+    () => ({
+      version: serverVersion,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+      profile: doc.profile,
+      caregivers: doc.caregivers,
+      dietProfile: doc.dietProfile,
+      routines: doc.routines,
+      goals: doc.goals,
+      records: doc.records,
+      calendarEvents: doc.calendarEvents,
+      entries,
+    }),
+    [doc, entries, serverVersion],
+  );
+
+  const value = useMemo<CareContextValue>(
+    () => ({
+      state,
+      addEntry,
+      deleteEntry,
+      updateEntry,
+      updateCareDoc,
+      refresh: () => void syncFromServer(),
+      isLoaded: hydrated,
+      isSyncing,
+    }),
+    [
+      state,
+      addEntry,
+      deleteEntry,
+      updateEntry,
+      updateCareDoc,
+      syncFromServer,
+      hydrated,
+      isSyncing,
+    ],
+  );
+
+  return <CareContext.Provider value={value}>{children}</CareContext.Provider>;
 }
 
 export function useCare() {

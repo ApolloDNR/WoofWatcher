@@ -45,3 +45,234 @@ export const AskCareHelperResponse = zod.object({
 })
 
 
+/**
+ * Returns the authenticated user. On first call this JIT-provisions the user, a default household, and a membership.
+ * @summary Get the current user, their household and members
+ */
+export const GetMeResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "displayName": zod.string().nullish()
+}),
+  "household": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+}),
+  "members": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "role": zod.string(),
+  "displayName": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "isSelf": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Update the current user's profile / display name
+ */
+
+
+
+export const UpdateMeBody = zod.object({
+  "displayName": zod.string().min(1).optional()
+})
+
+export const UpdateMeResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "displayName": zod.string().nullish()
+}),
+  "household": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+}),
+  "members": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "role": zod.string(),
+  "displayName": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "isSelf": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Rename the current household
+ */
+
+
+
+export const UpdateHouseholdBody = zod.object({
+  "name": zod.string().min(1)
+})
+
+export const UpdateHouseholdResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "displayName": zod.string().nullish()
+}),
+  "household": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+}),
+  "members": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "role": zod.string(),
+  "displayName": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "isSelf": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Join an existing household by invite code
+ */
+
+
+
+export const JoinHouseholdBody = zod.object({
+  "inviteCode": zod.string().min(1)
+})
+
+export const JoinHouseholdResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "displayName": zod.string().nullish()
+}),
+  "household": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+}),
+  "members": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "role": zod.string(),
+  "displayName": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "isSelf": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Get the household's synced care document
+ */
+export const GetCareStateResponse = zod.object({
+  "version": zod.number(),
+  "updatedAt": zod.coerce.date(),
+  "updatedBy": zod.string().nullish(),
+  "doc": zod.record(zod.string(), zod.unknown())
+})
+
+
+/**
+ * @summary Replace the household's synced care document
+ */
+export const PutCareStateBody = zod.object({
+  "version": zod.number(),
+  "doc": zod.record(zod.string(), zod.unknown())
+})
+
+export const PutCareStateResponse = zod.object({
+  "version": zod.number(),
+  "updatedAt": zod.coerce.date(),
+  "updatedBy": zod.string().nullish(),
+  "doc": zod.record(zod.string(), zod.unknown())
+})
+
+
+/**
+ * @summary List the household's care log entries
+ */
+export const ListCareEntriesQueryParams = zod.object({
+  "since": zod.date().optional()
+})
+
+export const ListCareEntriesResponseItem = zod.object({
+  "id": zod.string(),
+  "petId": zod.string().nullish(),
+  "type": zod.string(),
+  "occurredAt": zod.coerce.date(),
+  "caregiverUserId": zod.string().nullish(),
+  "caregiverName": zod.string().nullish(),
+  "mood": zod.string().nullish(),
+  "severity": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "details": zod.record(zod.string(), zod.unknown()).nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCareEntriesResponse = zod.array(ListCareEntriesResponseItem)
+
+
+/**
+ * @summary Append a care log entry
+ */
+
+
+
+export const CreateCareEntryBody = zod.object({
+  "petId": zod.string().optional(),
+  "type": zod.string().min(1),
+  "occurredAt": zod.coerce.date().optional(),
+  "mood": zod.string().optional(),
+  "severity": zod.string().optional(),
+  "note": zod.string().optional(),
+  "details": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+
+/**
+ * @summary Update a care log entry (e.g. add a quick note)
+ */
+export const UpdateCareEntryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+export const UpdateCareEntryBody = zod.object({
+  "type": zod.string().min(1).optional(),
+  "occurredAt": zod.coerce.date().optional(),
+  "mood": zod.string().nullish(),
+  "severity": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "details": zod.record(zod.string(), zod.unknown()).nullish()
+})
+
+export const UpdateCareEntryResponse = zod.object({
+  "id": zod.string(),
+  "petId": zod.string().nullish(),
+  "type": zod.string(),
+  "occurredAt": zod.coerce.date(),
+  "caregiverUserId": zod.string().nullish(),
+  "caregiverName": zod.string().nullish(),
+  "mood": zod.string().nullish(),
+  "severity": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "details": zod.record(zod.string(), zod.unknown()).nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a care log entry
+ */
+export const DeleteCareEntryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
