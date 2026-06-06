@@ -1,5 +1,6 @@
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
-import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -13,28 +14,19 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { useAvatar } from "@/context/AvatarContext";
 import type { Mood } from "@/lib/phoenixStatus";
 
-const SCENE = require("@/assets/phoenix/scene.png");
-
-const CUTOUTS: Record<Mood, any> = {
-  happy: require("@/assets/phoenix/cutout/phoenix-happy.png"),
-  excited: require("@/assets/phoenix/cutout/phoenix-excited.png"),
-  calm: require("@/assets/phoenix/cutout/phoenix-calm.png"),
-  anxious: require("@/assets/phoenix/cutout/phoenix-anxious.png"),
-  unwell: require("@/assets/phoenix/cutout/phoenix-unwell.png"),
+// Soft ambient tint per mood — drives the floating light motes + scene wash.
+const MOOD_TINT: Record<Mood, string> = {
+  happy: "#FFE9A8",
+  excited: "#FFD37A",
+  calm: "#CFE7D2",
+  anxious: "#CBD8EE",
+  unwell: "#E6D6EC",
 };
 
-// Floating emotes per mood — small drifting glyphs that give life
-const EMOTES: Record<Mood, string[]> = {
-  happy: ["💚", "✨", "🐾"],
-  excited: ["⚡", "🐾", "❗"],
-  calm: ["☁️", "💤", "🍃"],
-  anxious: ["💧", "🫧", "…"],
-  unwell: ["🤍", "🌡️", "·"],
-};
-
-// Tap reactions per mood — playful one-liners
+// Tap reactions per mood — playful one-liners.
 const BARKS: Record<Mood, string[]> = {
   happy: ["Woof! 💛", "Hi friend!", "Boop!"],
   excited: ["Let's GO!", "Walk?! 🐾", "Zoomies!"],
@@ -43,50 +35,81 @@ const BARKS: Record<Mood, string[]> = {
   unwell: ["I'm okay…", "*soft woof*", "Thanks."],
 };
 
-interface EmoteProps {
-  glyph: string;
-  delay: number;
-  startX: number;
+// ---- Time-of-day ambient wash -------------------------------------------------
+
+function dayPhaseGradient(hour: number): [string, string, string] {
+  // top → mid → bottom, low-alpha so the painted scene reads through.
+  if (hour >= 5 && hour < 11) {
+    // morning — warm peach light
+    return ["rgba(255,214,153,0.30)", "rgba(255,236,210,0.05)", "rgba(255,196,140,0.16)"];
+  }
+  if (hour >= 11 && hour < 17) {
+    // midday — bright airy
+    return ["rgba(208,233,247,0.26)", "rgba(255,255,255,0.04)", "rgba(180,214,196,0.16)"];
+  }
+  if (hour >= 17 && hour < 21) {
+    // evening — golden hour
+    return ["rgba(255,176,110,0.30)", "rgba(255,210,170,0.06)", "rgba(150,96,60,0.24)"];
+  }
+  // night — deep indigo calm
+  return ["rgba(70,86,140,0.34)", "rgba(40,52,96,0.08)", "rgba(22,30,60,0.34)"];
 }
 
-function Emote({ glyph, delay, startX }: EmoteProps) {
+// ---- Floating light mote ------------------------------------------------------
+
+interface MoteProps {
+  index: number;
+  tint: string;
+}
+
+function Mote({ index, tint }: MoteProps) {
   const progress = useSharedValue(0);
+  const startLeft = 6 + ((index * 17) % 86);
+  const size = 5 + (index % 4) * 4;
+  const dur = 5200 + (index % 5) * 1100;
+  const drift = (index % 2 === 0 ? 1 : -1) * (12 + (index % 3) * 9);
+  const peak = 0.18 + (index % 3) * 0.08;
 
   useEffect(() => {
-    progress.value = 0;
     progress.value = withDelay(
-      delay,
+      index * 520,
       withRepeat(
-        withTiming(1, { duration: 2900, easing: Easing.out(Easing.quad) }),
+        withTiming(1, { duration: dur, easing: Easing.inOut(Easing.sin) }),
         -1,
         false,
       ),
     );
     return () => cancelAnimation(progress);
-  }, [glyph, delay, progress]);
+  }, [index, dur, progress]);
 
   const style = useAnimatedStyle(() => {
     const p = progress.value;
-    const opacity = p < 0.15 ? p / 0.15 : p > 0.7 ? (1 - p) / 0.3 : 1;
+    const opacity = p < 0.2 ? (p / 0.2) * peak : p > 0.78 ? ((1 - p) / 0.22) * peak : peak;
     return {
       opacity,
       transform: [
-        { translateY: -p * 86 },
-        { translateX: Math.sin(p * Math.PI * 2) * 10 },
-        { scale: 0.7 + p * 0.5 },
+        { translateY: -p * 130 },
+        { translateX: Math.sin(p * Math.PI * 2) * drift },
+        { scale: 0.6 + p * 0.7 },
       ],
     };
   });
 
   return (
-    <Animated.Text
-      style={[styles.emote, { left: startX }, style]}
+    <Animated.View
       pointerEvents="none"
-    >
-      {glyph}
-    </Animated.Text>
+      style={[
+        styles.mote,
+        { left: `${startLeft}%`, width: size, height: size, borderRadius: size / 2, backgroundColor: tint },
+        style,
+      ]}
+    />
   );
 }
+
+const MOTE_COUNT = 9;
+
+// ---- Living avatar ------------------------------------------------------------
 
 interface Props {
   mood: Mood;
@@ -95,51 +118,22 @@ interface Props {
 }
 
 export function AnimatedAvatar({ mood, speech, onTap }: Props) {
-  // Idle life
-  const breathe = useSharedValue(0);
-  const bob = useSharedValue(0);
-  const tilt = useSharedValue(0);
-  const sway = useSharedValue(0);
-  // Tap reaction
-  const pop = useSharedValue(0);
-  const wobble = useSharedValue(0);
-  // Mood cross-fade
+  const { getAvatarSource } = useAvatar();
+
+  // Mood cross-fade (the ONLY thing that moves on the dog: opacity).
   const fade = useSharedValue(1);
   const [displayMood, setDisplayMood] = useState<Mood>(mood);
   const prevMood = useRef<Mood>(mood);
 
+  // Tap reaction — one-shot, no idle motion.
+  const tap = useSharedValue(0);
+
   const [bark, setBark] = useState<string | null>(null);
   const barkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Idle loops
-  useEffect(() => {
-    breathe.value = withRepeat(
-      withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-    bob.value = withRepeat(
-      withTiming(1, { duration: 3200, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-    tilt.value = withRepeat(
-      withTiming(1, { duration: 4200, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-    sway.value = withRepeat(
-      withTiming(1, { duration: 9000, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-    return () => {
-      cancelAnimation(breathe);
-      cancelAnimation(bob);
-      cancelAnimation(tilt);
-      cancelAnimation(sway);
-    };
-  }, [breathe, bob, tilt, sway]);
+  const hour = new Date().getHours();
+  const phase = dayPhaseGradient(hour);
+  const tint = MOOD_TINT[displayMood];
 
   // Mood change cross-fade
   useEffect(() => {
@@ -147,7 +141,7 @@ export function AnimatedAvatar({ mood, speech, onTap }: Props) {
     prevMood.current = displayMood;
     setDisplayMood(mood);
     fade.value = 0;
-    fade.value = withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) });
+    fade.value = withTiming(1, { duration: 620, easing: Easing.out(Easing.cubic) });
   }, [mood, displayMood, fade]);
 
   useEffect(() => {
@@ -167,84 +161,57 @@ export function AnimatedAvatar({ mood, speech, onTap }: Props) {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     }
-    pop.value = withSequence(
-      withSpring(1, { damping: 6, stiffness: 220 }),
-      withSpring(0, { damping: 9, stiffness: 160 }),
-    );
-    wobble.value = withSequence(
-      withTiming(1, { duration: 90 }),
-      withTiming(-1, { duration: 120 }),
-      withTiming(0, { duration: 110 }),
+    // gentle one-shot acknowledgement — dog is otherwise perfectly still
+    tap.value = withSequence(
+      withSpring(1, { damping: 7, stiffness: 240 }),
+      withSpring(0, { damping: 10, stiffness: 170 }),
     );
     runOnJS(showBark)();
     onTap?.();
   };
 
-  const dogStyle = useAnimatedStyle(() => {
-    const breatheScale = 1 + breathe.value * 0.022 + pop.value * 0.07;
-    const bobY = -bob.value * 5 - pop.value * 8;
-    const tiltDeg = (tilt.value - 0.5) * 3 + wobble.value * 5;
-    const swayX = (sway.value - 0.5) * 8;
-    return {
-      transform: [
-        { translateX: swayX },
-        { translateY: bobY },
-        { scale: breatheScale },
-        { rotate: `${tiltDeg}deg` },
-      ],
-    };
-  });
-
-  const shadowStyle = useAnimatedStyle(() => {
-    const lift = bob.value + pop.value * 1.2;
-    return {
-      transform: [{ scaleX: 1 - lift * 0.12 }],
-      opacity: 0.28 - lift * 0.08,
-    };
-  });
+  const tapStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + tap.value * 0.035 }, { translateY: -tap.value * 4 }],
+  }));
 
   const topStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
 
-  const emoteGlyphs = EMOTES[displayMood];
+  const prevSource = getAvatarSource(prevMood.current);
+  const currentSource = getAvatarSource(displayMood);
+  const crossfading = prevMood.current !== displayMood;
 
   return (
     <Pressable onPress={handleTap} style={styles.root}>
-      <Image source={SCENE} style={styles.scene} resizeMode="cover" />
-
-      {/* floating emotes */}
-      <View style={styles.emoteLayer} pointerEvents="none">
-        {emoteGlyphs.map((g, i) => (
-          <Emote
-            key={`${displayMood}-${i}`}
-            glyph={g}
-            delay={i * 900}
-            startX={`${24 + i * 26}%` as unknown as number}
-          />
-        ))}
-      </View>
-
-      {/* ground shadow */}
-      <Animated.View style={[styles.shadow, shadowStyle]} pointerEvents="none" />
-
-      {/* dog — previous mood underneath, current fades in on top */}
-      <Animated.View style={[styles.dogWrap, dogStyle]} pointerEvents="none">
-        {prevMood.current !== displayMood && (
-          <Image source={CUTOUTS[prevMood.current]} style={styles.dog} resizeMode="contain" />
+      {/* still dog scene — previous emotion underneath, current fades in on top */}
+      <Animated.View style={[StyleSheet.absoluteFill, tapStyle]} pointerEvents="none">
+        {crossfading && (
+          <Animated.Image source={prevSource} style={styles.scene} resizeMode="cover" />
         )}
         <Animated.Image
-          source={CUTOUTS[displayMood]}
-          style={[styles.dog, StyleSheet.absoluteFill as object, topStyle]}
-          resizeMode="contain"
+          source={currentSource}
+          style={[styles.scene, StyleSheet.absoluteFill, topStyle]}
+          resizeMode="cover"
         />
       </Animated.View>
+
+      {/* animated ambient background: time-of-day wash + drifting light motes */}
+      <LinearGradient
+        colors={phase}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <View style={styles.moteLayer} pointerEvents="none">
+        {Array.from({ length: MOTE_COUNT }).map((_, i) => (
+          <Mote key={`${displayMood}-${i}`} index={i} tint={tint} />
+        ))}
+      </View>
 
       {/* speech bubble — persistent mood line, swapped for a fun bark on tap */}
       {(bark || speech) && (
         <View style={styles.barkWrap} pointerEvents="none">
           <View style={[styles.barkBubble, bark && styles.barkBubbleActive]}>
-            <Text style={[styles.barkText, !bark && styles.speechText]}>
-              {bark ?? speech}
-            </Text>
+            <Text style={[styles.barkText, !bark && styles.speechText]}>{bark ?? speech}</Text>
           </View>
           <View style={[styles.barkTail, bark && styles.barkTailActive]} />
         </View>
@@ -256,23 +223,14 @@ export function AnimatedAvatar({ mood, speech, onTap }: Props) {
 const styles = StyleSheet.create({
   root: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
   scene: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
-  emoteLayer: { ...StyleSheet.absoluteFillObject, bottom: "30%" },
-  emote: { position: "absolute", bottom: "32%", fontSize: 22 },
-  dogWrap: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "flex-end",
-    paddingBottom: 0,
-  },
-  dog: { width: "92%", height: "98%", alignSelf: "center" },
-  shadow: {
+  moteLayer: { ...StyleSheet.absoluteFillObject },
+  mote: {
     position: "absolute",
-    alignSelf: "center",
-    bottom: "5%",
-    width: "52%",
-    height: 18,
-    borderRadius: 999,
-    backgroundColor: "rgba(20,30,24,1)",
+    bottom: "30%",
+    shadowColor: "#FFFFFF",
+    shadowOpacity: 0.7,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
   },
   barkWrap: {
     position: "absolute",

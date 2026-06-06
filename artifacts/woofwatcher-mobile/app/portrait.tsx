@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
@@ -22,11 +21,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
+import { useAvatar, MOODS, AvatarSet } from "@/context/AvatarContext";
+import { MOOD_META, type Mood } from "@/lib/phoenixStatus";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
-
-const PORTRAIT_KEY = "woofwatcher.portrait.v1";
 
 const BASE_URL = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
@@ -36,33 +35,28 @@ const PAINTING_LINES = [
   "Mixing the paints…",
   "Getting the ears just right…",
   "Adding a sparkle to those eyes…",
-  "Capturing that goofy grin…",
+  "Painting every little mood…",
   "A few more brushstrokes…",
 ];
 
 type Phase = "idle" | "working" | "result";
+
+type ResultSet = Partial<Record<Mood, string>>; // mood -> data uri
 
 export default function PortraitScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state } = useCare();
+  const { avatarSet, getAvatarSource, hasCustomAvatar, saveAvatarSet, clearAvatarSet } = useAvatar();
   const name = state.profile.name;
 
   const topInset = Platform.OS === "web" ? 20 : insets.top;
 
   const [phase, setPhase] = useState<Phase>("idle");
-  const [saved, setSaved] = useState<string | null>(null);
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<ResultSet | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lineIdx, setLineIdx] = useState(0);
-
-  // Load any previously saved portrait
-  useEffect(() => {
-    AsyncStorage.getItem(PORTRAIT_KEY).then((uri) => {
-      if (uri) setSaved(uri);
-    });
-  }, []);
 
   // Brush spinner + rotating copy while working
   const spin = useRef(new Animated.Value(0)).current;
@@ -119,10 +113,10 @@ export default function PortraitScreen() {
       : await ImagePicker.launchImageLibraryAsync(opts);
 
     if (res.canceled || !res.assets?.[0]?.uri) return;
-    await stylize(res.assets[0].uri);
+    await generate(res.assets[0].uri);
   };
 
-  const stylize = async (uri: string) => {
+  const generate = async (uri: string) => {
     try {
       setPhase("working");
       setResult(null);
@@ -137,18 +131,24 @@ export default function PortraitScreen() {
       const imageBase64 = shrunk.base64;
       if (!imageBase64) throw new Error("Could not read that image.");
 
-      const res = await fetch(`${BASE_URL}/api/avatar-stylize`, {
+      const res = await fetch(`${BASE_URL}/api/avatar-emotions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64, mimeType: "image/jpeg" }),
       });
       const data = await res.json();
-      if (!res.ok || !data.imageBase64) {
+      if (!res.ok || !data.images || Object.keys(data.images).length === 0) {
         throw new Error(data.error || "The portrait studio is busy. Try again in a moment.");
       }
 
-      const dataUri = `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`;
-      setResult(dataUri);
+      const set: ResultSet = {};
+      for (const mood of MOODS) {
+        const img = data.images[mood];
+        if (img?.imageBase64) {
+          set[mood] = `data:${img.mimeType || "image/png"};base64,${img.imageBase64}`;
+        }
+      }
+      setResult(set);
       setPhase("result");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: unknown) {
@@ -157,27 +157,59 @@ export default function PortraitScreen() {
     }
   };
 
-  const savePortrait = async () => {
+  const deleteStoredFiles = async (set: AvatarSet | null) => {
+    if (!set || Platform.OS === "web") return;
+    await Promise.all(
+      Object.values(set).map(async (uri) => {
+        if (uri && uri.startsWith("file://")) {
+          try {
+            await FileSystem.deleteAsync(uri, { idempotent: true });
+          } catch {
+            // best-effort cleanup
+          }
+        }
+      }),
+    );
+  };
+
+  const saveSet = async () => {
     if (!result) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      let stored = result;
-      if (Platform.OS !== "web" && FileSystem.documentDirectory) {
-        const base64 = result.slice(result.indexOf(",") + 1);
-        const fileUri = `${FileSystem.documentDirectory}phoenix-portrait-${Date.now()}.png`;
-        await FileSystem.writeAsStringAsync(fileUri, base64, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        stored = fileUri;
+      const previous = avatarSet;
+      const stored: AvatarSet = {};
+      for (const mood of MOODS) {
+        const dataUri = result[mood];
+        if (!dataUri) continue;
+        if (Platform.OS !== "web" && FileSystem.documentDirectory) {
+          const base64 = dataUri.slice(dataUri.indexOf(",") + 1);
+          const fileUri = `${FileSystem.documentDirectory}avatar-${mood}-${Date.now()}.png`;
+          await FileSystem.writeAsStringAsync(fileUri, base64, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          stored[mood] = fileUri;
+        } else {
+          stored[mood] = dataUri;
+        }
       }
-      await AsyncStorage.setItem(PORTRAIT_KEY, stored);
-      setSaved(stored);
+      await saveAvatarSet(stored);
+      await deleteStoredFiles(previous);
       setResult(null);
       setPhase("idle");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      setError("Couldn't save the portrait. Please try again.");
+      setError("Couldn't save the avatars. Please try again.");
     }
   };
+
+  const revertToDefault = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const previous = avatarSet;
+    await clearAvatarSet();
+    await deleteStoredFiles(previous);
+  };
+
+  const moodLabel = (m: Mood) => MOOD_META[m].label;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -190,12 +222,13 @@ export default function PortraitScreen() {
           <Pressable onPress={() => router.back()} hitSlop={10} style={[s.backBtn, { backgroundColor: colors.card }]}>
             <Ionicons name="chevron-back" size={22} color={colors.foreground} />
           </Pressable>
-          <Text style={[s.headerTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Portrait Studio</Text>
+          <Text style={[s.headerTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Avatar Studio</Text>
           <View style={{ width: 40 }} />
         </View>
 
         <Text style={[s.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          Snap a photo of {name} and we'll paint a cozy storybook portrait.
+          Snap one photo of {name} and we'll paint a full set of moods — happy, playful, cozy,
+          unsure and sleepy. They become {name}'s live avatar across the app.
         </Text>
 
         {/* Working state */}
@@ -211,22 +244,38 @@ export default function PortraitScreen() {
                 {PAINTING_LINES[lineIdx]}
               </Text>
               <Text style={[s.workingHint, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                This usually takes a few seconds.
+                Painting all five moods — this takes a little longer.
               </Text>
             </LinearGradient>
           </View>
         )}
 
-        {/* Result preview */}
+        {/* Result preview — the full emotion set */}
         {phase === "result" && result && (
           <View>
-            <View style={[s.canvasCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-              <Image source={{ uri: result }} style={s.canvasImage} contentFit="cover" transition={300} />
+            <View style={[s.heroPreview, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+              <Image source={{ uri: result.happy ?? Object.values(result)[0] }} style={s.heroImg} contentFit="cover" transition={300} />
               <View style={[s.resultBadge, { backgroundColor: colors.primary }]}>
                 <Ionicons name="sparkles" size={13} color="#FFF" />
                 <Text style={[s.resultBadgeText, { fontFamily: "Inter_700Bold" }]}>Fresh off the easel</Text>
               </View>
             </View>
+
+            <View style={s.moodGrid}>
+              {MOODS.map((m) =>
+                result[m] ? (
+                  <View key={m} style={s.moodChip}>
+                    <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
+                      <Image source={{ uri: result[m] }} style={s.moodThumb} contentFit="cover" transition={200} />
+                    </View>
+                    <Text style={[s.moodChipLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      {moodLabel(m)}
+                    </Text>
+                  </View>
+                ) : null,
+              )}
+            </View>
+
             <View style={s.actionRow}>
               <Pressable
                 onPress={() => { setResult(null); setPhase("idle"); }}
@@ -236,42 +285,50 @@ export default function PortraitScreen() {
                 <Text style={[s.secondaryBtnText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Try again</Text>
               </Pressable>
               <Pressable
-                onPress={savePortrait}
+                onPress={saveSet}
                 style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
                 <Ionicons name="heart" size={18} color="#FFF" />
-                <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>Save portrait</Text>
+                <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>Make it live</Text>
               </Pressable>
             </View>
           </View>
         )}
 
-        {/* Idle: saved portrait (if any) + actions */}
+        {/* Idle: current live avatar set + actions */}
         {phase === "idle" && (
           <View>
-            {saved ? (
-              <View style={[s.canvasCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-                <Image source={{ uri: saved }} style={s.canvasImage} contentFit="cover" transition={200} />
-                <LinearGradient
-                  colors={["transparent", "rgba(20,30,24,0.55)"]}
-                  style={s.savedScrim}
-                  pointerEvents="none"
-                />
-                <Text style={[s.savedName, { fontFamily: DISPLAY }]}>{name}'s portrait</Text>
-              </View>
-            ) : (
-              <View style={[s.canvasCard, s.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={[s.emptyIcon, { backgroundColor: colors.primary + "14" }]}>
-                  <Ionicons name="color-palette-outline" size={40} color={colors.primary} />
+            <View style={[s.heroPreview, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+              <Image source={getAvatarSource("happy")} style={s.heroImg} contentFit="cover" transition={200} />
+              <LinearGradient
+                colors={["transparent", "rgba(20,30,24,0.55)"]}
+                style={s.savedScrim}
+                pointerEvents="none"
+              />
+              <Text style={[s.savedName, { fontFamily: DISPLAY }]}>
+                {hasCustomAvatar ? `${name}'s avatar` : "Default art"}
+              </Text>
+              {hasCustomAvatar && (
+                <View style={[s.liveBadge, { backgroundColor: colors.sage }]}>
+                  <View style={s.liveDot} />
+                  <Text style={[s.liveBadgeText, { fontFamily: "Inter_700Bold" }]}>LIVE</Text>
                 </View>
-                <Text style={[s.emptyTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  No portrait yet
-                </Text>
-                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  Best with a clear, well-lit photo where {name}'s face is easy to see.
-                </Text>
-              </View>
-            )}
+              )}
+            </View>
+
+            {/* Current mood set preview */}
+            <View style={s.moodGrid}>
+              {MOODS.map((m) => (
+                <View key={m} style={s.moodChip}>
+                  <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
+                    <Image source={getAvatarSource(m)} style={s.moodThumb} contentFit="cover" transition={150} />
+                  </View>
+                  <Text style={[s.moodChipLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {moodLabel(m)}
+                  </Text>
+                </View>
+              ))}
+            </View>
 
             {error && (
               <View style={[s.errorBox, { backgroundColor: colors.copper + "14", borderColor: colors.copper + "44" }]}>
@@ -294,15 +351,24 @@ export default function PortraitScreen() {
               >
                 <Ionicons name="camera" size={18} color="#FFF" />
                 <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>
-                  {saved ? "New photo" : "Take photo"}
+                  {hasCustomAvatar ? "New photo" : "Create set"}
                 </Text>
               </Pressable>
             </View>
 
-            <View style={[s.tipRow]}>
+            {hasCustomAvatar && (
+              <Pressable onPress={revertToDefault} style={({ pressed }) => [s.revertBtn, { opacity: pressed ? 0.6 : 1 }]}>
+                <Ionicons name="arrow-undo" size={15} color={colors.mutedForeground} />
+                <Text style={[s.revertText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  Revert to default art
+                </Text>
+              </Pressable>
+            )}
+
+            <View style={s.tipRow}>
               <Ionicons name="sparkles-outline" size={15} color={colors.sage} />
               <Text style={[s.tipText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Every portrait is hand-painted by AI in {name}'s app style.
+                One photo paints all five moods. Best with a clear, well-lit shot of {name}'s face.
               </Text>
             </View>
           </View>
@@ -337,10 +403,21 @@ const s = StyleSheet.create({
     elevation: 6,
   },
   canvasFill: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, padding: 24 },
-  canvasImage: { width: "100%", height: "100%" },
   brushCircle: { width: 74, height: 74, borderRadius: 37, alignItems: "center", justifyContent: "center" },
   workingText: { fontSize: 18, textAlign: "center" },
   workingHint: { fontSize: 13.5, textAlign: "center" },
+
+  heroPreview: {
+    borderRadius: 26,
+    overflow: "hidden",
+    aspectRatio: 1,
+    marginBottom: 16,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    elevation: 6,
+  },
+  heroImg: { width: "100%", height: "100%" },
 
   resultBadge: {
     position: "absolute", top: 14, left: 14, flexDirection: "row", alignItems: "center", gap: 5,
@@ -350,11 +427,20 @@ const s = StyleSheet.create({
 
   savedScrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: "40%" },
   savedName: { position: "absolute", left: 18, bottom: 16, color: "#FFF", fontSize: 22 },
+  liveBadge: {
+    position: "absolute", top: 14, right: 14, flexDirection: "row", alignItems: "center", gap: 5,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12,
+  },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#FFFFFF" },
+  liveBadgeText: { color: "#FFF", fontSize: 11, letterSpacing: 0.5 },
 
-  emptyCard: { borderWidth: 1.5, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 12, padding: 30 },
-  emptyIcon: { width: 84, height: 84, borderRadius: 26, alignItems: "center", justifyContent: "center" },
-  emptyTitle: { fontSize: 19 },
-  emptyText: { fontSize: 14, lineHeight: 20, textAlign: "center", paddingHorizontal: 10 },
+  moodGrid: { flexDirection: "row", justifyContent: "space-between", marginBottom: 18 },
+  moodChip: { alignItems: "center", flex: 1 },
+  moodThumbWrap: {
+    width: "92%", aspectRatio: 1, borderRadius: 14, overflow: "hidden", borderWidth: 1, marginBottom: 6,
+  },
+  moodThumb: { width: "100%", height: "100%" },
+  moodChipLabel: { fontSize: 11 },
 
   errorBox: {
     flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderRadius: 14, borderWidth: 1, marginBottom: 14,
@@ -373,6 +459,9 @@ const s = StyleSheet.create({
     shadowColor: "#2E5846", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 4,
   },
   primaryBtnText: { color: "#FFF", fontSize: 15 },
+
+  revertBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14 },
+  revertText: { fontSize: 13.5 },
 
   tipRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 18, paddingHorizontal: 16 },
   tipText: { fontSize: 13, textAlign: "center", flexShrink: 1 },

@@ -90,6 +90,40 @@ export function getGreeting(now: number): { text: string; emoji: string } {
   return { text: "Good night", emoji: "🌙" };
 }
 
+function dayKeyOf(d: Date): string {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+/**
+ * Consecutive days (ending today, or yesterday if today is still empty) that have
+ * at least one logged entry. Pure function of the logged history.
+ */
+export function computeCareStreak(state: CareState, now: number = Date.now()): number {
+  const days = new Set<string>();
+  for (const e of state.entries) {
+    days.add(dayKeyOf(new Date(e.occurredAt)));
+  }
+  const cursor = new Date(now);
+  if (!days.has(dayKeyOf(cursor))) cursor.setDate(cursor.getDate() - 1);
+  let streak = 0;
+  while (days.has(dayKeyOf(cursor))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+/** 0..1 share of today's core routines (meals, walks, potty) that are done. */
+export function computeDayProgress(status: PhoenixStatus): number {
+  const c = status.counts;
+  const parts = [
+    c.meals.target ? Math.min(1, c.meals.done / c.meals.target) : 0,
+    c.walks.target ? Math.min(1, c.walks.done / c.walks.target) : 0,
+    c.potty.target ? Math.min(1, c.potty.done / c.potty.target) : 0,
+  ];
+  return parts.reduce((a, b) => a + b, 0) / parts.length;
+}
+
 export function derivePhoenixStatus(
   state: CareState,
   now: number = Date.now(),

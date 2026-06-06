@@ -16,13 +16,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCare } from "@/context/CareContext";
+import { useAvatar } from "@/context/AvatarContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { AnimatedAvatar } from "@/components/AnimatedAvatar";
-import { derivePhoenixStatus, getGreeting } from "@/lib/phoenixStatus";
+import Svg, { Circle } from "react-native-svg";
+import { computeCareStreak, computeDayProgress, derivePhoenixStatus, getGreeting } from "@/lib/phoenixStatus";
 
 const BRAND_MARK = require("@/assets/brand/mark.png");
-const HAPPY_CUTOUT = require("@/assets/phoenix/cutout/phoenix-happy.png");
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -64,6 +65,34 @@ const TYPE_ICON: Record<string, PulseIconName> = {
   mood: "heart",
 };
 
+function ProgressRing({ progress, color, track }: { progress: number; color: string; track: string }) {
+  const size = 52;
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = circ * Math.max(0, Math.min(1, progress));
+  return (
+    <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+      <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={color}
+          strokeWidth={stroke}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circ}`}
+        />
+      </Svg>
+      <Text style={{ position: "absolute", fontFamily: "Fredoka_700Bold", fontSize: 13, color }}>
+        {Math.round(progress * 100)}%
+      </Text>
+    </View>
+  );
+}
+
 function relativeTime(iso: string, now: number): string {
   const mins = Math.floor((now - new Date(iso).getTime()) / 60000);
   if (mins < 1) return "Just now";
@@ -79,6 +108,7 @@ export default function PhoenixScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, addEntry } = useCare();
+  const { getAvatarSource } = useAvatar();
   const { width } = useWindowDimensions();
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
@@ -86,6 +116,8 @@ export default function PhoenixScreen() {
 
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
   const greeting = useMemo(() => getGreeting(now), [now]);
+  const careStreak = useMemo(() => computeCareStreak(state, now), [state, now]);
+  const dayProgress = useMemo(() => computeDayProgress(status), [status]);
   const caregiver = state.caregivers[0]?.name ?? "friend";
   const dateLabel = useMemo(
     () =>
@@ -313,6 +345,35 @@ export default function PhoenixScreen() {
             </Pressable>
           </View>
 
+          {/* Care streak + day progress strip */}
+          <View style={[s.statStrip, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <View style={s.statStreak}>
+              <View style={[s.streakBadge, { backgroundColor: colors.copper + "16" }]}>
+                <Ionicons name="flame" size={22} color={colors.copper} />
+              </View>
+              <View>
+                <Text style={[s.statBig, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                  {careStreak} {careStreak === 1 ? "day" : "days"}
+                </Text>
+                <Text style={[s.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Care streak
+                </Text>
+              </View>
+            </View>
+            <View style={[s.statDivider, { backgroundColor: colors.border }]} />
+            <View style={s.statProgress}>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.statBig, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                  {dayProgress >= 1 ? "All done" : "Today"}
+                </Text>
+                <Text style={[s.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Routines complete
+                </Text>
+              </View>
+              <ProgressRing progress={dayProgress} color={colors.sage} track={colors.border} />
+            </View>
+          </View>
+
           {/* Today's Pulse — 5-card row */}
           <View style={s.sectionHeader}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Today's Pulse</Text>
@@ -454,7 +515,7 @@ export default function PhoenixScreen() {
           {/* Bedtime snack nudge — soft lavender */}
           {!bedtimeLogged && (
             <View style={[s.banner, { backgroundColor: "#EDE9F6", borderColor: "#DCD2EF" }]}>
-              <Image source={HAPPY_CUTOUT} style={s.bannerAvatar} resizeMode="contain" />
+              <Image source={getAvatarSource("happy")} style={s.bannerAvatar} resizeMode="cover" />
               <View style={{ flex: 1 }}>
                 <Text style={[s.bannerText, { color: "#3B2E63", fontFamily: "Inter_500Medium" }]}>
                   A bedtime snack helps {state.profile.name} feel great in the mornings.
@@ -588,6 +649,24 @@ const s = StyleSheet.create({
   nextUpIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   nextUpLabel: { fontSize: 11, letterSpacing: 0.8 },
   nextUpValue: { fontSize: 15.5, marginTop: 2 },
+
+  statStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 26,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 3,
+  },
+  statStreak: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
+  streakBadge: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  statDivider: { width: 1, height: 40, marginHorizontal: 14 },
+  statProgress: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+  statBig: { fontSize: 18, letterSpacing: -0.2 },
+  statLabel: { fontSize: 12.5, marginTop: 1 },
 
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   sectionTitle: { fontSize: 20, letterSpacing: -0.2 },

@@ -1,2 +1,1 @@
-- [Paid-AI endpoint pitfalls](photo-avatar-stylization.md) — lazy-init AI clients (never throw at import), raised body limit for base64 images, rate-limit paid endpoints.
-- [Mobile design language](mobile-design-language.md) — WoofWatcher premium mobile look: fonts, tokens, components to reuse for consistency.
+- [WoofWatcher living avatar](woofwatcher-avatar.md) — dog stays STILL; swap emotion scene via cross-fade, animate only ambient bg; mood images via AvatarContext (custom set or default).
