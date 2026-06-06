@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system/legacy";
 import React, {
   createContext,
   useCallback,
@@ -7,7 +8,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import type { ImageSourcePropType } from "react-native";
+import { Platform, type ImageSourcePropType } from "react-native";
 import type { Mood } from "@/lib/phoenixStatus";
 
 const AVATAR_KEY = "woofwatcher.avatarSet.v1";
@@ -23,6 +24,44 @@ const DEFAULT_SOURCES: Record<Mood, ImageSourcePropType> = {
 };
 
 export type AvatarSet = Partial<Record<Mood, string>>;
+
+async function uriExists(uri: string): Promise<boolean> {
+  try {
+    const info = await FileSystem.getInfoAsync(uri);
+    return info.exists;
+  } catch {
+    return false;
+  }
+}
+
+async function verifyAvatarSet(
+  set: AvatarSet,
+): Promise<{ set: AvatarSet; changed: boolean }> {
+  // Bundled defaults are always available on web; only file URIs need checking.
+  if (Platform.OS === "web") {
+    return { set, changed: false };
+  }
+
+  const entries = MOODS.map((mood) => [mood, set[mood]] as const).filter(
+    ([, uri]) => typeof uri === "string" && uri.length > 0,
+  );
+
+  const checks = await Promise.all(
+    entries.map(async ([mood, uri]) => [mood, await uriExists(uri!)] as const),
+  );
+
+  const next: AvatarSet = {};
+  let changed = false;
+  for (const [mood, exists] of checks) {
+    if (exists) {
+      next[mood] = set[mood];
+    } else {
+      changed = true;
+    }
+  }
+
+  return { set: next, changed };
+}
 
 interface AvatarContextValue {
   avatarSet: AvatarSet | null;
@@ -40,19 +79,54 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(AVATAR_KEY).then((raw) => {
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (parsed && typeof parsed === "object") {
-            setAvatarSet(parsed as AvatarSet);
+    let cancelled = false;
+
+    const load = async () => {
+      let parsed: AvatarSet | null = null;
+      try {
+        const raw = await AsyncStorage.getItem(AVATAR_KEY);
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (data && typeof data === "object") {
+            parsed = data as AvatarSet;
           }
-        } catch {
-          // ignore corrupt cache
+        }
+      } catch {
+        // ignore corrupt cache
+        parsed = null;
+      }
+
+      if (parsed) {
+        const verified = await verifyAvatarSet(parsed);
+        if (verified) {
+          parsed = verified.set;
+          if (verified.changed) {
+            try {
+              if (Object.keys(verified.set).length > 0) {
+                await AsyncStorage.setItem(
+                  AVATAR_KEY,
+                  JSON.stringify(verified.set),
+                );
+              } else {
+                await AsyncStorage.removeItem(AVATAR_KEY);
+              }
+            } catch {
+              // ignore persistence errors; in-memory state is already corrected
+            }
+          }
         }
       }
+
+      if (cancelled) return;
+      setAvatarSet(parsed && Object.keys(parsed).length > 0 ? parsed : null);
       setIsLoaded(true);
-    });
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const getAvatarSource = useCallback(
