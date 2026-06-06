@@ -18,21 +18,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
-import {
-  derivePhoenixStatus,
-  getGreeting,
-  Mood,
-} from "@/lib/phoenixStatus";
+import { AnimatedAvatar } from "@/components/AnimatedAvatar";
+import { derivePhoenixStatus, getGreeting } from "@/lib/phoenixStatus";
 
 const BRAND_MARK = require("@/assets/brand/mark.png");
+const HAPPY_CUTOUT = require("@/assets/phoenix/cutout/phoenix-happy.png");
 
-const HERO_IMAGES: Record<Mood, any> = {
-  happy: require("@/assets/phoenix/phoenix-happy.png"),
-  excited: require("@/assets/phoenix/phoenix-excited.png"),
-  calm: require("@/assets/phoenix/phoenix-calm.png"),
-  anxious: require("@/assets/phoenix/phoenix-anxious.png"),
-  unwell: require("@/assets/phoenix/phoenix-unwell.png"),
-};
+const DISPLAY = "Fredoka_700Bold";
+const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
 interface QuickLogItem {
   key: string;
@@ -50,8 +43,8 @@ const QUICK_LOG: QuickLogItem[] = [
   { key: "walk", icon: "paw", label: "Walk", type: "walk", title: "Walk" },
   { key: "potty", icon: "drop", label: "Potty", type: "potty", title: "Potty break" },
   { key: "play", icon: "candy", label: "Play", type: "play", title: "Play session" },
-  { key: "zoomies", icon: "bolt", label: "Zoomies", type: "mood", title: "Zoomies", mood: "excited" },
   { key: "win", icon: "star", label: "Training", type: "training", title: "Training win" },
+  { key: "zoomies", icon: "bolt", label: "Zoomies", type: "mood", title: "Zoomies", mood: "excited" },
   { key: "anxious", icon: "sad", label: "Anxious", type: "mood", title: "Anxious moment", mood: "anxious" },
   { key: "vomit", icon: "vomit", label: "Vomit", type: "vomit", title: "Vomit", severity: "watch" },
   { key: "alone", icon: "house", label: "Alone", type: "alone", title: "Alone time" },
@@ -134,13 +127,22 @@ export default function PhoenixScreen() {
 
   // Mount fade-in
   const fade = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(16)).current;
   useEffect(() => {
-    Animated.timing(fade, {
-      toValue: 1,
-      duration: 420,
-      useNativeDriver: Platform.OS !== "web",
-    }).start();
-  }, [fade]);
+    Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: 460,
+        useNativeDriver: Platform.OS !== "web",
+      }),
+      Animated.spring(slide, {
+        toValue: 0,
+        friction: 8,
+        tension: 60,
+        useNativeDriver: Platform.OS !== "web",
+      }),
+    ]).start();
+  }, [fade, slide]);
 
   // Toast
   const [toast, setToast] = useState<string | null>(null);
@@ -183,25 +185,20 @@ export default function PhoenixScreen() {
   };
 
   const H_PAD = 20;
-  const GAP = 12;
-  const tileW = (width - H_PAD * 2 - GAP * 3) / 4;
-  const gridCardW = (width - H_PAD * 2 - GAP) / 2;
+  const GAP = 10;
+  const colW = (width - H_PAD * 2 - GAP * 4) / 5;
 
   const c = status.counts;
-  const feature = {
-    icon: "paw" as PulseIconName,
-    value: `${c.walks.done}/${c.walks.target}`,
-    sub: c.walkMinutes > 0 ? `${c.walkMinutes} minutes walked today` : "No walks logged yet",
-  };
-  const gridStats = [
-    { icon: "bowl" as PulseIconName, label: "Meals", value: `${c.meals.done}/${c.meals.target}`, sub: c.meals.done >= c.meals.target ? "All done" : "On track" },
-    { icon: "drop" as PulseIconName, label: "Potty", value: `${c.potty.done}/${c.potty.target}`, sub: c.potty.done > 0 ? "Good" : "—" },
-    { icon: "star" as PulseIconName, label: "Training", value: `${c.training}`, sub: c.training > 0 ? "Nice work" : "—" },
-    { icon: "heart" as PulseIconName, label: "Health", value: c.healthAlert ? "Watch" : "Good", sub: c.healthAlert ? "1 alert" : "No alerts" },
+  const pulse = [
+    { icon: "bowl" as PulseIconName, label: "Meals", value: `${c.meals.done}/${c.meals.target}` },
+    { icon: "paw" as PulseIconName, label: "Walks", value: `${c.walks.done}/${c.walks.target}` },
+    { icon: "drop" as PulseIconName, label: "Potty", value: `${c.potty.done}/${c.potty.target}` },
+    { icon: "star" as PulseIconName, label: "Training", value: `${c.training}` },
+    { icon: "heart" as PulseIconName, label: "Health", value: c.healthAlert ? "!" : "✓" },
   ];
 
-  const appetiteOk = c.meals.done >= c.meals.target;
   const healthOk = !c.healthAlert;
+  const appetiteOk = c.meals.done >= c.meals.target;
   const healthStats = [
     { label: "Energy", value: `${status.energy}%` },
     { label: "Weight", value: `${state.profile.weight.current} ${state.profile.weight.unit}` },
@@ -219,14 +216,14 @@ export default function PhoenixScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={{ opacity: fade }}>
+        <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           {/* Branded header */}
           <View style={s.brandRow}>
             <View style={s.brandLeft}>
               <View style={[s.brandMarkWrap, { backgroundColor: colors.primary + "12" }]}>
                 <Image source={BRAND_MARK} style={s.brandMark} resizeMode="contain" />
               </View>
-              <Text style={[s.brandName, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+              <Text style={[s.brandName, { color: colors.primary, fontFamily: DISPLAY }]}>
                 WoofWatcher
               </Text>
             </View>
@@ -240,7 +237,7 @@ export default function PhoenixScreen() {
 
           {/* Greeting */}
           <View style={s.greeting}>
-            <Text style={[s.greetingTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+            <Text style={[s.greetingTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
               {greeting.text}, {caregiver} {greeting.emoji}
             </Text>
             <Text style={[s.greetingSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
@@ -248,34 +245,38 @@ export default function PhoenixScreen() {
             </Text>
           </View>
 
-          {/* Painted hero card */}
+          {/* Living hero card */}
           <View style={[s.heroCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             <View style={s.heroImageWrap}>
-              <Image source={HERO_IMAGES[status.mood]} style={s.heroImage} resizeMode="cover" />
+              <AnimatedAvatar mood={status.mood} speech={status.meta.speech} />
+
               <LinearGradient
-                colors={["transparent", "rgba(20,30,24,0.08)", "rgba(20,30,24,0.62)"]}
-                locations={[0, 0.5, 1]}
+                colors={["rgba(20,30,24,0.10)", "transparent", "rgba(20,30,24,0.58)"]}
+                locations={[0, 0.45, 1]}
                 style={s.heroScrim}
+                pointerEvents="none"
               />
 
-              <Pressable onPress={() => router.push("/plans")} style={s.nameChip}>
-                <Text style={[s.nameChipText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+              <Pressable onPress={() => router.push("/more")} style={s.nameChip}>
+                <Text style={[s.nameChipText, { color: colors.foreground, fontFamily: DISPLAY }]}>
                   {state.profile.name}
                 </Text>
                 <Ionicons name="chevron-down" size={15} color={colors.mutedForeground} />
               </Pressable>
 
-              <View style={s.speechBubble}>
-                <Text style={[s.speechText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                  {status.meta.speech}
-                </Text>
-              </View>
+              <Pressable
+                onPress={() => router.push("/portrait")}
+                style={({ pressed }) => [s.portraitBtn, { opacity: pressed ? 0.7 : 1 }]}
+                hitSlop={8}
+              >
+                <Ionicons name="color-palette" size={18} color={colors.primary} />
+              </Pressable>
 
               {/* Bottom overlay: mood headline + energy */}
-              <View style={s.heroFooter}>
+              <View style={s.heroFooter} pointerEvents="none">
                 <View style={s.moodRow}>
                   <Text style={s.moodEmoji}>{status.meta.emoji}</Text>
-                  <Text style={[s.moodValue, { fontFamily: "Inter_700Bold" }]}>{status.meta.label}</Text>
+                  <Text style={[s.moodValue, { fontFamily: DISPLAY }]}>{status.meta.label}</Text>
                   <View style={s.energyChip}>
                     <Ionicons name="flash" size={13} color="#FFFFFF" />
                     <Text style={[s.energyChipText, { fontFamily: "Inter_700Bold" }]}>{status.energy}%</Text>
@@ -301,8 +302,8 @@ export default function PhoenixScreen() {
                 <PulseIcon name="paw" size={22} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.nextUpLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>NEXT UP</Text>
-                <Text style={[s.nextUpValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                <Text style={[s.nextUpLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NEXT UP</Text>
+                <Text style={[s.nextUpValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   {status.nextRoutine
                     ? `${status.nextRoutine.label}${status.minutesUntilNext != null && status.minutesUntilNext <= 180 ? ` in ${status.minutesUntilNext} min` : ""} · ${status.nextRoutine.time}`
                     : "All caught up for today"}
@@ -312,51 +313,36 @@ export default function PhoenixScreen() {
             </Pressable>
           </View>
 
-          {/* Today's Pulse — featured card + 2x2 grid */}
+          {/* Today's Pulse — 5-card row */}
           <View style={s.sectionHeader}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Today's Pulse</Text>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Today's Pulse</Text>
             <Pressable onPress={() => router.push("/plans")} hitSlop={8}>
               <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Full day</Text>
             </Pressable>
           </View>
-
-          <Pressable onPress={() => router.push("/plans")} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
-            <LinearGradient
-              colors={[colors.primary, colors.sage]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={s.featureCard}
-            >
-              <View style={s.featureIcon}>
-                <PulseIcon name={feature.icon} size={30} color="#FFFFFF" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.featureLabel, { fontFamily: "Inter_600SemiBold" }]}>WALKS</Text>
-                <Text style={[s.featureSub, { fontFamily: "Inter_400Regular" }]}>{feature.sub}</Text>
-              </View>
-              <Text style={[s.featureValue, { fontFamily: "Inter_700Bold" }]}>{feature.value}</Text>
-            </LinearGradient>
-          </Pressable>
-
-          <View style={[s.statGrid, { gap: GAP }]}>
-            {gridStats.map((p) => (
-              <View
-                key={p.label}
-                style={[s.statCard, { width: gridCardW, backgroundColor: colors.card, shadowColor: colors.primary }]}
-              >
-                <View style={[s.statIconWrap, { backgroundColor: PULSE_COLORS[p.icon] + "18" }]}>
-                  <PulseIcon name={p.icon} size={22} />
+          <View style={[s.pulseRow, { gap: GAP }]}>
+            {pulse.map((p) => {
+              const tint = PULSE_COLORS[p.icon];
+              return (
+                <View
+                  key={p.label}
+                  style={[s.pulseCard, { width: colW, backgroundColor: colors.card, shadowColor: colors.primary }]}
+                >
+                  <View style={[s.pulseIconWrap, { backgroundColor: tint + "1A" }]}>
+                    <PulseIcon name={p.icon} size={18} />
+                  </View>
+                  <Text style={[s.pulseValue, { color: colors.foreground, fontFamily: DISPLAY }]}>{p.value}</Text>
+                  <Text numberOfLines={1} style={[s.pulseLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {p.label}
+                  </Text>
                 </View>
-                <Text style={[s.statValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{p.value}</Text>
-                <Text style={[s.statLabelText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{p.label}</Text>
-                <Text style={[s.statSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{p.sub}</Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
 
-          {/* Quick Log — tinted tactile tiles */}
+          {/* Quick Log — 5-col grid */}
           <View style={[s.sectionHeader, { marginTop: 26 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Quick Log</Text>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Quick Log</Text>
             <Pressable onPress={() => router.push("/log")} hitSlop={8}>
               <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>See all</Text>
             </Pressable>
@@ -370,10 +356,10 @@ export default function PhoenixScreen() {
                   onPress={() => logQuick(item)}
                   style={({ pressed }) => [
                     s.quickTile,
-                    { width: tileW, backgroundColor: tint + "14", transform: [{ scale: pressed ? 0.93 : 1 }] },
+                    { width: colW, transform: [{ scale: pressed ? 0.92 : 1 }] },
                   ]}
                 >
-                  <View style={[s.quickIconWrap, { backgroundColor: tint + "26" }]}>
+                  <View style={[s.quickIconWrap, { backgroundColor: tint + "18" }]}>
                     <PulseIcon name={item.icon} size={26} />
                   </View>
                   <Text numberOfLines={1} style={[s.quickLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
@@ -386,7 +372,7 @@ export default function PhoenixScreen() {
 
           {/* Handoff timeline */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Handoff</Text>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Handoff</Text>
             <Pressable onPress={() => router.push("/log")} hitSlop={8}>
               <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>View all</Text>
             </Pressable>
@@ -428,7 +414,7 @@ export default function PhoenixScreen() {
 
           {/* Health Watch */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Health Watch</Text>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Health Watch</Text>
             <Pressable onPress={() => router.push("/health")} hitSlop={8}>
               <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Details</Text>
             </Pressable>
@@ -442,7 +428,7 @@ export default function PhoenixScreen() {
                 <Ionicons name={healthOk ? "heart" : "alert-circle"} size={20} color={healthOk ? colors.sage : colors.copper} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.healthTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                <Text style={[s.healthTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   {healthOk ? "All looking good" : "Keep an eye out"}
                 </Text>
                 <Text style={[s.healthSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
@@ -458,35 +444,28 @@ export default function PhoenixScreen() {
             <View style={[s.healthStatsRow, { borderTopColor: colors.border }]}>
               {healthStats.map((h, i) => (
                 <View key={h.label} style={[s.healthStat, i < healthStats.length - 1 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
-                  <Text style={[s.healthStatValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{h.value}</Text>
+                  <Text style={[s.healthStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{h.value}</Text>
                   <Text style={[s.healthStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{h.label}</Text>
                 </View>
               ))}
             </View>
           </Pressable>
 
-          {/* Bedtime snack banner — on-brand */}
+          {/* Bedtime snack nudge — soft lavender */}
           {!bedtimeLogged && (
-            <View style={s.bannerWrap}>
-              <LinearGradient
-                colors={[colors.sage, colors.primary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={s.banner}
+            <View style={[s.banner, { backgroundColor: "#EDE9F6", borderColor: "#DCD2EF" }]}>
+              <Image source={HAPPY_CUTOUT} style={s.bannerAvatar} resizeMode="contain" />
+              <View style={{ flex: 1 }}>
+                <Text style={[s.bannerText, { color: "#3B2E63", fontFamily: "Inter_500Medium" }]}>
+                  A bedtime snack helps {state.profile.name} feel great in the mornings.
+                </Text>
+              </View>
+              <Pressable
+                onPress={logBedtimeSnack}
+                style={({ pressed }) => [s.bannerBtn, { borderColor: "#8B6FD0", opacity: pressed ? 0.7 : 1 }]}
               >
-                <Image source={HERO_IMAGES.happy} style={s.bannerAvatar} resizeMode="cover" />
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.bannerText, { color: "#FFFFFF", fontFamily: "Inter_500Medium" }]}>
-                    A bedtime snack helps {state.profile.name} feel great in the mornings.
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={logBedtimeSnack}
-                  style={({ pressed }) => [s.bannerBtn, { opacity: pressed ? 0.85 : 1 }]}
-                >
-                  <Text style={[s.bannerBtnText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>Log</Text>
-                </Pressable>
-              </LinearGradient>
+                <Text style={[s.bannerBtnText, { color: "#6A4FB5", fontFamily: "Inter_700Bold" }]}>Log snack</Text>
+              </Pressable>
             </View>
           )}
         </Animated.View>
@@ -517,7 +496,7 @@ const s = StyleSheet.create({
   brandLeft: { flexDirection: "row", alignItems: "center", gap: 9 },
   brandMarkWrap: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   brandMark: { width: 26, height: 26 },
-  brandName: { fontSize: 19, letterSpacing: -0.4 },
+  brandName: { fontSize: 21, letterSpacing: -0.2 },
   datePill: {
     flexDirection: "row",
     alignItems: "center",
@@ -530,176 +509,169 @@ const s = StyleSheet.create({
   datePillText: { fontSize: 12.5 },
 
   greeting: { marginBottom: 18 },
-  greetingTitle: { fontSize: 25, letterSpacing: -0.6, lineHeight: 31 },
+  greetingTitle: { fontSize: 26, letterSpacing: -0.3, lineHeight: 32 },
   greetingSub: { fontSize: 15, marginTop: 4 },
 
   heroCard: {
     borderRadius: 28,
     overflow: "hidden",
-    marginBottom: 28,
+    marginBottom: 26,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.14,
     shadowRadius: 26,
     elevation: 7,
   },
-  heroImageWrap: { height: 330, position: "relative" },
-  heroImage: { width: "100%", height: "100%" },
-  heroScrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: "60%" },
-
+  heroImageWrap: {
+    width: "100%",
+    aspectRatio: 0.96,
+    position: "relative",
+    backgroundColor: "#CFE3EF",
+  },
+  heroScrim: { ...StyleSheet.absoluteFillObject },
   nameChip: {
     position: "absolute",
-    top: 16,
-    left: 16,
+    top: 14,
+    left: 14,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
     backgroundColor: "rgba(255,255,255,0.92)",
-  },
-  nameChipText: { fontSize: 16, letterSpacing: -0.3 },
-
-  speechBubble: {
-    position: "absolute",
-    top: 16,
-    right: 16,
-    maxWidth: "58%",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 14,
+    shadowColor: "#0F1F33",
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.12,
-    shadowRadius: 10,
+    shadowRadius: 8,
     elevation: 3,
   },
-  speechText: { fontSize: 13.5, lineHeight: 19 },
-
-  heroFooter: { position: "absolute", left: 18, right: 18, bottom: 16 },
-  moodRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
-  moodEmoji: { fontSize: 26 },
-  moodValue: { fontSize: 22, color: "#FFFFFF", letterSpacing: -0.4 },
+  nameChipText: { fontSize: 15.5 },
+  portraitBtn: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.92)",
+    shadowColor: "#0F1F33",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  heroFooter: { position: "absolute", left: 16, right: 16, bottom: 14 },
+  moodRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+  moodEmoji: { fontSize: 22 },
+  moodValue: { fontSize: 19, color: "#FFFFFF", flex: 1 },
   energyChip: {
-    marginLeft: "auto",
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 3,
     backgroundColor: "rgba(255,255,255,0.22)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 11,
   },
-  energyChipText: { color: "#FFFFFF", fontSize: 13 },
-  energyTrack: { height: 7, borderRadius: 7, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.3)" },
-  energyFill: { height: "100%", borderRadius: 7 },
+  energyChipText: { fontSize: 12.5, color: "#FFFFFF" },
+  energyTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    overflow: "hidden",
+  },
+  energyFill: { height: "100%", borderRadius: 4 },
 
-  nextUpRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
-  nextUpIcon: { width: 40, height: 40, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  nextUpLabel: { fontSize: 10, letterSpacing: 0.6 },
-  nextUpValue: { fontSize: 15, marginTop: 2 },
+  nextUpRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
+  nextUpIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  nextUpLabel: { fontSize: 11, letterSpacing: 0.8 },
+  nextUpValue: { fontSize: 15.5, marginTop: 2 },
 
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-  sectionTitle: { fontSize: 19, letterSpacing: -0.4 },
+  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  sectionTitle: { fontSize: 20, letterSpacing: -0.2 },
   sectionLink: { fontSize: 14 },
 
-  featureCard: {
-    flexDirection: "row",
+  pulseRow: { flexDirection: "row", justifyContent: "space-between" },
+  pulseCard: {
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
     alignItems: "center",
-    gap: 14,
-    padding: 18,
-    borderRadius: 22,
-    marginBottom: 12,
-    shadowColor: "#2E5846",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  featureIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.2)",
-  },
-  featureLabel: { fontSize: 12, letterSpacing: 1, color: "rgba(255,255,255,0.85)" },
-  featureSub: { fontSize: 13, color: "rgba(255,255,255,0.92)", marginTop: 3 },
-  featureValue: { fontSize: 30, color: "#FFFFFF", letterSpacing: -0.5 },
-
-  statGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: 12 },
-  statCard: {
-    borderRadius: 20,
-    padding: 16,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
     elevation: 2,
   },
-  statIconWrap: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 12 },
-  statValue: { fontSize: 24, letterSpacing: -0.5 },
-  statLabelText: { fontSize: 14, marginTop: 4 },
-  statSub: { fontSize: 12, marginTop: 2 },
+  pulseIconWrap: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center", marginBottom: 7 },
+  pulseValue: { fontSize: 16, letterSpacing: -0.3 },
+  pulseLabel: { fontSize: 10.5, marginTop: 1 },
 
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-start", rowGap: 12 },
-  quickTile: {
-    aspectRatio: 0.94,
-    borderRadius: 18,
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 14 },
+  quickTile: { alignItems: "center" },
+  quickIconWrap: {
+    width: 58,
+    height: 58,
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    marginBottom: 7,
   },
-  quickIconWrap: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  quickLabel: { fontSize: 12 },
+  quickLabel: { fontSize: 11.5 },
 
   handoffCard: {
     borderRadius: 22,
     paddingHorizontal: 16,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.07,
     shadowRadius: 14,
     elevation: 2,
   },
   handoffEmpty: { fontSize: 14, paddingVertical: 18, textAlign: "center" },
-  handoffRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13 },
+  handoffRow: { flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 13 },
   handoffAvatar: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   handoffInitial: { fontSize: 14 },
-  handoffIconWrap: { width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center" },
-  handoffTitle: { fontSize: 14.5 },
-  handoffMeta: { fontSize: 12.5, marginTop: 2 },
+  handoffIconWrap: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  handoffTitle: { fontSize: 15 },
+  handoffMeta: { fontSize: 12.5, marginTop: 1 },
 
   healthCard: {
     borderRadius: 22,
     padding: 16,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.07,
     shadowRadius: 14,
     elevation: 2,
   },
-  healthHeader: { flexDirection: "row", alignItems: "center", gap: 12, paddingBottom: 16 },
-  healthIconWrap: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  healthTitle: { fontSize: 15.5, letterSpacing: -0.3 },
-  healthSub: { fontSize: 12.5, marginTop: 2 },
+  healthHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  healthIconWrap: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  healthTitle: { fontSize: 16 },
+  healthSub: { fontSize: 13, marginTop: 2 },
   healthPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
-  healthPillText: { fontSize: 12.5 },
-  healthStatsRow: { flexDirection: "row", borderTopWidth: 1, paddingTop: 14 },
+  healthPillText: { fontSize: 13 },
+  healthStatsRow: { flexDirection: "row", marginTop: 14, paddingTop: 14, borderTopWidth: 1 },
   healthStat: { flex: 1, alignItems: "center" },
-  healthStatValue: { fontSize: 17, letterSpacing: -0.3 },
-  healthStatLabel: { fontSize: 11.5, marginTop: 3, letterSpacing: 0.2 },
+  healthStatValue: { fontSize: 17 },
+  healthStatLabel: { fontSize: 12, marginTop: 2 },
 
-  bannerWrap: { marginTop: 26 },
   banner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 14,
     borderRadius: 22,
+    padding: 14,
+    marginTop: 26,
+    borderWidth: 1,
   },
-  bannerAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#fff" },
+  bannerAvatar: { width: 46, height: 46, borderRadius: 14 },
   bannerText: { fontSize: 13.5, lineHeight: 19 },
-  bannerBtn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14, backgroundColor: "#FFFFFF" },
+  bannerBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 13,
+    borderWidth: 1.5,
+  },
   bannerBtnText: { fontSize: 13.5 },
 
   toast: {
@@ -710,12 +682,12 @@ const s = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 18,
     paddingVertical: 12,
-    borderRadius: 24,
+    borderRadius: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  toastText: { color: "#fff", fontSize: 14 },
+  toastText: { color: "#FFFFFF", fontSize: 14 },
 });

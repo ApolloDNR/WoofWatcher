@@ -5,6 +5,11 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import {
+  Fredoka_500Medium,
+  Fredoka_600SemiBold,
+  Fredoka_700Bold,
+} from "@expo-google-fonts/fredoka";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -25,8 +30,7 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back", headerTintColor: "#2E5846" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="variant-a" options={{ headerShown: false }} />
-      <Stack.Screen name="variant-b" options={{ headerShown: false }} />
+      <Stack.Screen name="portrait" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="woofguide" options={{ title: "WoofGuide", presentation: "card", headerStyle: { backgroundColor: "#F7F5F1" } }} />
     </Stack>
   );
@@ -38,6 +42,9 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    Fredoka_500Medium,
+    Fredoka_600SemiBold,
+    Fredoka_700Bold,
   });
 
   useEffect(() => {

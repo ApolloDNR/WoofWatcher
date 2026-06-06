@@ -1,1 +1,2 @@
-- [WoofWatcher Mobile](woofwatcher-mobile.md) — Expo app: only Inter 400/500/600/700 loaded, gate useNativeDriver to native, web top inset fixed, brand palette + mark.png, home data from CareContext entries.
+- [Photo→avatar stylization](photo-avatar-stylization.md) — Gemini nano-banana image-edit endpoint + Express body-limit gotcha for base64 image uploads.
+- [Mobile design language](mobile-design-language.md) — WoofWatcher premium mobile look: fonts, tokens, components to reuse for consistency.

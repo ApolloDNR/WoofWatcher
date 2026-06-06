@@ -60,3 +60,9 @@ id = "tdxq4Ad3JAXhw0p69bX5S"
 uri = "file://artifacts/woofwatcher-mobile/assets/brand/mark.png"
 type = "image"
 title = "woofwatcher paw heart mark"
+
+[[generated]]
+id = "AT2aZE4qjw5gyhkpFeiLm"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/scene.png"
+type = "image"
+title = "generated_image"

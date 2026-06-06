@@ -1,9 +1,11 @@
-import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   Platform,
   Pressable,
   ScrollView,
@@ -15,76 +17,37 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
+import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 
-function SectionHeader({ title }: { title: string }) {
-  const colors = useColors();
-  return <Text style={[sh.header, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{title.toUpperCase()}</Text>;
-}
-const sh = StyleSheet.create({ header: { fontSize: 12, letterSpacing: 1.2, marginBottom: 12, marginTop: 32, paddingHorizontal: 4 } });
-
-function MenuRow({
-  icon,
-  label,
-  sublabel,
-  color,
-  onPress,
-  last,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  sublabel?: string;
-  color?: string;
-  onPress: () => void;
-  last?: boolean;
-}) {
-  const colors = useColors();
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [mr.row, { backgroundColor: colors.card, opacity: pressed ? 0.7 : 1, borderBottomWidth: last ? 0 : 1, borderBottomColor: colors.border }]}
-    >
-      <View style={[mr.iconBg, { backgroundColor: (color || colors.copper) + "1a" }]}>{icon}</View>
-      <View style={mr.mid}>
-        <Text style={[mr.label, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{label}</Text>
-        {sublabel ? <Text numberOfLines={1} style={[mr.sub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{sublabel}</Text> : null}
-      </View>
-      <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
-    </Pressable>
-  );
-}
-const mr = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 16, gap: 14 },
-  iconBg: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  mid: { flex: 1 },
-  label: { fontSize: 16 },
-  sub: { fontSize: 13, marginTop: 4 },
-});
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  const colors = useColors();
-  return (
-    <View style={[ir.row, { borderBottomColor: colors.background }]}>
-      <Text style={[ir.label, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{label}</Text>
-      <Text style={[ir.value, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{value}</Text>
-    </View>
-  );
-}
-const ir = StyleSheet.create({
-  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingVertical: 12, gap: 16, borderBottomWidth: 1 },
-  label: { fontSize: 14, flexShrink: 0 },
-  value: { fontSize: 14, flex: 1, textAlign: "right" },
-});
+const DISPLAY = "Fredoka_700Bold";
+const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
 export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { state } = useCare();
   const router = useRouter();
-  const topInset = Platform.OS === "web" ? 67 : insets.top;
+  const { state } = useCare();
   const { dietProfile, caregivers, profile, entries, routines } = state;
 
+  const topInset = Platform.OS === "web" ? 24 : insets.top;
+
   const [dietOpen, setDietOpen] = useState(false);
-  const [teamOpen, setTeamOpen] = useState(false);
+
+  const caregiverColor = (name: string) => {
+    const palette = [colors.primary, colors.copper, colors.sage, colors.amber];
+    const idx = caregivers.findIndex((c) => c.name === name);
+    return palette[(idx >= 0 ? idx : 0) % palette.length];
+  };
+
+  // Mount animation
+  const fade = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(16)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: Platform.OS !== "web" }),
+      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: Platform.OS !== "web" }),
+    ]).start();
+  }, [fade, slide]);
 
   const generateCarePass = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -115,164 +78,298 @@ export default function MoreScreen() {
     ].join("\n");
 
     Share.share({ message: pass, title: `WoofWatcher Care Pass — ${profile.name}` }).catch(() =>
-      Alert.alert("Care Pass", pass)
+      Alert.alert("Care Pass", pass),
     );
   };
 
+  const dietItems: { icon: PulseIconName; label: string; value: string }[] = [
+    { icon: "bowl", label: "Food", value: dietProfile.primaryFood },
+    { icon: "bowl", label: "Portion", value: dietProfile.normalPortion },
+    { icon: "star", label: "Schedule", value: dietProfile.mealSchedule },
+    { icon: "candy", label: "Toppers", value: dietProfile.toppers },
+    { icon: "bone", label: "Bedtime snack", value: dietProfile.bedtimeSnack },
+    { icon: "bone", label: "Treats", value: dietProfile.treatsAllowed },
+    { icon: "vomit", label: "Avoid", value: dietProfile.avoid },
+  ];
+
+  const links: { icon: PulseIconName; iconName: keyof typeof Ionicons.glyphMap; label: string; sub: string; onPress: () => void }[] = [
+    {
+      icon: "heart",
+      iconName: "chatbubbles",
+      label: "WoofGuide Assistant",
+      sub: "Ask about Phoenix's care, diet, and patterns",
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push("/woofguide");
+      },
+    },
+    {
+      icon: "star",
+      iconName: "color-palette",
+      label: "Portrait Studio",
+      sub: "Turn a photo into a hand-painted masterpiece",
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push("/portrait");
+      },
+    },
+    {
+      icon: "paw",
+      iconName: "card",
+      label: "Care Pass",
+      sub: "Share a summary for sitters or the vet",
+      onPress: generateCarePass,
+    },
+  ];
+
+  const H_PAD = 20;
+
   return (
-    <ScrollView
-      style={[s.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingTop: topInset + 16, paddingBottom: Platform.OS === "web" ? 118 : 120, paddingHorizontal: 20 }}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={[s.screenTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>More</Text>
-
-      {/* WoofGuide CTA - Dark Navy Theme */}
-      <Pressable
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/woofguide"); }}
-        style={({pressed}) => [s.woofCard, { backgroundColor: colors.navy, opacity: pressed ? 0.9 : 1, shadowColor: colors.navy }]}
+    <View style={[s.root, { backgroundColor: colors.background }]}>
+      <ScrollView
+        style={s.container}
+        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: 130, paddingHorizontal: H_PAD }}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={[s.woofIcon, { backgroundColor: "rgba(255,255,255,0.1)" }]}>
-          <Ionicons name="chatbubbles" size={28} color="#FFF" />
-        </View>
-        <View style={s.woofText}>
-          <Text style={[s.woofTitle, { color: "#FFF", fontFamily: "Inter_700Bold" }]}>Woof Assistant</Text>
-          <Text style={[s.woofSub, { color: "rgba(255,255,255,0.7)", fontFamily: "Inter_400Regular" }]}>Ask about Phoenix's care, diet, and patterns</Text>
-        </View>
-        <Feather name="arrow-right" size={24} color="#FFF" />
-      </Pressable>
-
-      {/* Diet Profile */}
-      <SectionHeader title="Diet profile" />
-      <Pressable
-        onPress={() => { Haptics.selectionAsync(); setDietOpen((v) => !v); }}
-        style={[s.card, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}
-      >
-        <View style={s.cardRow}>
-          <View style={[s.cardIcon, { backgroundColor: colors.copper + "1a" }]}>
-            <Ionicons name="restaurant" size={20} color={colors.copper} />
+        <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
+          {/* Header */}
+          <View style={s.header}>
+            <Text style={[s.title, { color: colors.foreground, fontFamily: DISPLAY }]}>Profile & Care Team</Text>
+            <Text style={[s.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              Everything that keeps {profile.name} thriving 🐾
+            </Text>
           </View>
-          <Text style={[s.cardTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Phoenix's diet</Text>
-          <Feather name={dietOpen ? "chevron-up" : "chevron-down"} size={20} color={colors.mutedForeground} />
-        </View>
-        {dietOpen && (
-          <View style={[s.cardBody, { borderTopColor: colors.border }]}>
-            <InfoRow label="Food" value={dietProfile.primaryFood} />
-            <InfoRow label="Portion" value={dietProfile.normalPortion} />
-            <InfoRow label="Schedule" value={dietProfile.mealSchedule} />
-            <InfoRow label="Toppers" value={dietProfile.toppers} />
-            <InfoRow label="Snack" value={dietProfile.bedtimeSnack} />
-            <InfoRow label="Treats" value={dietProfile.treatsAllowed} />
-            <InfoRow label="Avoid" value={dietProfile.avoid} />
-            
-            {dietProfile.vetNotes ? (
-              <View style={[s.vetNote, { backgroundColor: colors.amber + "1A", borderColor: colors.amber + "33" }]}>
-                <Ionicons name="information-circle" size={16} color={colors.amber} style={{marginTop: 2}}/>
-                <Text style={[s.vetNoteText, { color: colors.amber, fontFamily: "Inter_500Medium" }]}>{dietProfile.vetNotes}</Text>
+
+          {/* Profile header card */}
+          <View style={[s.profileCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <LinearGradient
+              colors={[colors.primary, colors.sage]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={s.profileBanner}
+            />
+            <View style={s.profileAvatarWrap}>
+              <View style={[s.profileAvatar, { backgroundColor: colors.card }]}>
+                <PulseIcon name="paw" size={36} />
               </View>
-            ) : null}
-          </View>
-        )}
-      </Pressable>
-
-      {/* Care Team */}
-      <SectionHeader title="Care team" />
-      <Pressable
-        onPress={() => { Haptics.selectionAsync(); setTeamOpen((v) => !v); }}
-        style={[s.card, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}
-      >
-        <View style={s.cardRow}>
-          <View style={[s.cardIcon, { backgroundColor: colors.sage + "1a" }]}>
-            <Ionicons name="people" size={20} color={colors.sage} />
-          </View>
-          <Text style={[s.cardTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-            {caregivers.map((c) => c.name).join(" & ")}
-          </Text>
-          <Feather name={teamOpen ? "chevron-up" : "chevron-down"} size={20} color={colors.mutedForeground} />
-        </View>
-        {teamOpen && (
-          <View style={[s.cardBody, { borderTopColor: colors.border }]}>
-            {caregivers.map((c) => (
-              <View key={c.name} style={s.caregiverRow}>
-                <View style={[s.avatarSmall, { backgroundColor: colors.sage + "22" }]}>
-                  <Ionicons name="person" size={16} color={colors.sage} />
-                </View>
-                <View style={s.caregiverText}>
-                  <Text style={[s.caregiverName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{c.name}</Text>
-                  <Text style={[s.caregiverRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{c.role}</Text>
-                </View>
-                <View style={[s.countBadge, { backgroundColor: colors.background }]}>
-                  <Text style={[s.caregiverCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {entries.filter((e) => e.caregiver === c.name).length} logs
+            </View>
+            <View style={s.profileBody}>
+              <Text style={[s.profileName, { color: colors.foreground, fontFamily: DISPLAY }]}>{profile.name}</Text>
+              <Text style={[s.profileBreed, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{profile.breed}</Text>
+              <View style={[s.profileStats, { borderTopColor: colors.border }]}>
+                <View style={s.profileStat}>
+                  <Text style={[s.profileStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {profile.weight.current} {profile.weight.unit}
                   </Text>
+                  <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Weight</Text>
+                </View>
+                <View style={[s.profileStatDivider, { backgroundColor: colors.border }]} />
+                <View style={[s.profileStat, { flex: 1.6 }]}>
+                  <Text numberOfLines={1} style={[s.profileStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{profile.weight.goal}</Text>
+                  <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Goal</Text>
                 </View>
               </View>
+            </View>
+          </View>
+
+          {/* Care Team */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Care Team</Text>
+          </View>
+          <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            {caregivers.map((c, i) => {
+              const cg = caregiverColor(c.name);
+              const logCount = entries.filter((e) => e.caregiver === c.name).length;
+              return (
+                <View
+                  key={c.name}
+                  style={[s.teamRow, i < caregivers.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+                >
+                  <View style={[s.teamAvatar, { backgroundColor: cg + "1A" }]}>
+                    <Text style={[s.teamInitial, { color: cg, fontFamily: "Inter_700Bold" }]}>
+                      {(c.name || "?").charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.teamName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{c.name}</Text>
+                    <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{c.role}</Text>
+                  </View>
+                  <View style={[s.logBadge, { backgroundColor: colors.background }]}>
+                    <Text style={[s.logBadgeText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{logCount} logs</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Links */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Tools & Sharing</Text>
+          </View>
+          <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            {links.map((l, i) => (
+              <Pressable
+                key={l.label}
+                onPress={l.onPress}
+                style={({ pressed }) => [s.linkRow, i < links.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <View style={[s.linkIconWrap, { backgroundColor: PULSE_COLORS[l.icon] + "16" }]}>
+                  <Ionicons name={l.iconName} size={20} color={PULSE_COLORS[l.icon]} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.linkLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{l.label}</Text>
+                  <Text numberOfLines={1} style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{l.sub}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
+              </Pressable>
             ))}
           </View>
-        )}
-      </Pressable>
 
-      {/* Care Pass */}
-      <SectionHeader title="Share & export" />
-      <View style={[s.listCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
-        <MenuRow
-          icon={<MaterialCommunityIcons name="card-account-details" size={20} color={colors.amber} />}
-          color={colors.amber}
-          label="Care Pass"
-          sublabel="Generate a shareable summary for sitters or vets"
-          onPress={generateCarePass}
-          last
-        />
-      </View>
+          {/* Diet profile */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Diet Profile</Text>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                setDietOpen((v) => !v);
+              }}
+              hitSlop={8}
+            >
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>{dietOpen ? "Hide" : "Show all"}</Text>
+            </Pressable>
+          </View>
+          <View style={[s.dietCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <View style={s.dietHeader}>
+              <View style={[s.dietIconWrap, { backgroundColor: colors.copper + "1A" }]}>
+                <PulseIcon name="bowl" size={22} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.dietTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{dietProfile.primaryFood}</Text>
+                <Text style={[s.dietSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{dietProfile.mealSchedule}</Text>
+              </View>
+            </View>
+            {dietOpen && (
+              <View style={[s.dietBody, { borderTopColor: colors.border }]}>
+                {dietItems.map((d) => (
+                  <View key={d.label} style={s.dietRow}>
+                    <View style={[s.dietRowIcon, { backgroundColor: PULSE_COLORS[d.icon] + "14" }]}>
+                      <PulseIcon name={d.icon} size={14} />
+                    </View>
+                    <Text style={[s.dietLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{d.label}</Text>
+                    <Text style={[s.dietValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{d.value}</Text>
+                  </View>
+                ))}
+                {dietProfile.vetNotes ? (
+                  <View style={[s.vetNote, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "33" }]}>
+                    <Ionicons name="information-circle" size={16} color={colors.amber} style={{ marginTop: 1 }} />
+                    <Text style={[s.vetNoteText, { color: colors.amber, fontFamily: "Inter_500Medium" }]}>{dietProfile.vetNotes}</Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
+          </View>
 
-      {/* About */}
-      <SectionHeader title="About" />
-      <View style={[s.listCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
-        <View style={[mr.row, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
-          <View style={[mr.iconBg, { backgroundColor: colors.copper + "1a" }]}>
-            <MaterialCommunityIcons name="paw" size={20} color={colors.copper} />
+          {/* About / boundary */}
+          <View style={[s.notice, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Ionicons name="shield-checkmark" size={16} color={colors.sage} />
+            <Text style={[s.noticeText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{profile.vetBoundary}</Text>
           </View>
-          <View style={mr.mid}>
-            <Text style={[mr.label, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>WoofWatcher</Text>
-            <Text style={[mr.sub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Happy dog. Simplified care.</Text>
-          </View>
-        </View>
-        <View style={[mr.row, { paddingVertical: 20 }]}>
-          <View style={mr.mid}>
-            <Text numberOfLines={4} style={[mr.sub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular", lineHeight: 20 }]}>{profile.vetBoundary}</Text>
-          </View>
-        </View>
-      </View>
-    </ScrollView>
+          <Text style={[s.footer, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            WoofWatcher · Happy dog, simplified care 💚
+          </Text>
+        </Animated.View>
+      </ScrollView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
+  root: { flex: 1 },
   container: { flex: 1 },
-  screenTitle: { fontSize: 28, marginBottom: 8, letterSpacing: -0.5 },
-  
-  woofCard: { flexDirection: "row", alignItems: "center", borderRadius: 24, padding: 20, gap: 16, marginTop: 16, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 6 },
-  woofIcon: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  woofText: { flex: 1 },
-  woofTitle: { fontSize: 18, marginBottom: 4 },
-  woofSub: { fontSize: 14, lineHeight: 20 },
-  
-  card: { borderRadius: 20, borderWidth: 1, overflow: "hidden", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 },
-  cardRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 16, gap: 14 },
-  cardIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  cardTitle: { flex: 1, fontSize: 16 },
-  cardBody: { borderTopWidth: 1, paddingHorizontal: 16, paddingTop: 4, paddingBottom: 16, gap: 0 },
-  
-  vetNote: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, borderWidth: 1, padding: 16, marginTop: 12 },
-  vetNoteText: { flex: 1, fontSize: 14, lineHeight: 20 },
-  
-  caregiverRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 12, borderBottomWidth: 1, borderBottomColor: "#F7F5F1" },
-  avatarSmall: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  caregiverText: { flex: 1 },
-  caregiverName: { fontSize: 15, marginBottom: 2 },
-  caregiverRole: { fontSize: 13 },
-  countBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  caregiverCount: { fontSize: 12 },
-  
-  listCard: { borderRadius: 20, borderWidth: 1, overflow: "hidden", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 },
+
+  header: { marginBottom: 18 },
+  title: { fontSize: 26, letterSpacing: -0.3 },
+  subtitle: { fontSize: 14, marginTop: 3 },
+
+  profileCard: {
+    borderRadius: 26,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 5,
+  },
+  profileBanner: { height: 72, width: "100%" },
+  profileAvatarWrap: { alignItems: "center", marginTop: -38 },
+  profileAvatar: {
+    width: 76,
+    height: 76,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 4,
+    borderColor: "#FFFFFF",
+    shadowColor: "#0F1F33",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  profileBody: { alignItems: "center", paddingHorizontal: 20, paddingBottom: 20, paddingTop: 10 },
+  profileName: { fontSize: 24, letterSpacing: -0.3 },
+  profileBreed: { fontSize: 13.5, marginTop: 2, textAlign: "center" },
+  profileStats: { flexDirection: "row", alignItems: "center", marginTop: 16, paddingTop: 16, borderTopWidth: 1, width: "100%" },
+  profileStat: { flex: 1, alignItems: "center", paddingHorizontal: 8 },
+  profileStatValue: { fontSize: 16, letterSpacing: -0.2, textAlign: "center" },
+  profileStatLabel: { fontSize: 12, marginTop: 3 },
+  profileStatDivider: { width: 1, height: 36 },
+
+  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  sectionTitle: { fontSize: 20, letterSpacing: -0.2 },
+  sectionLink: { fontSize: 14 },
+
+  listCard: {
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  teamRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
+  teamAvatar: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
+  teamInitial: { fontSize: 17 },
+  teamName: { fontSize: 15.5 },
+  teamRole: { fontSize: 13, marginTop: 2 },
+  logBadge: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 11 },
+  logBadgeText: { fontSize: 12 },
+
+  linkRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 15 },
+  linkIconWrap: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  linkLabel: { fontSize: 15.5 },
+  linkSub: { fontSize: 13, marginTop: 2 },
+
+  dietCard: {
+    borderRadius: 22,
+    padding: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  dietHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  dietIconWrap: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  dietTitle: { fontSize: 15.5 },
+  dietSub: { fontSize: 13, marginTop: 2 },
+  dietBody: { borderTopWidth: 1, marginTop: 14, paddingTop: 6 },
+  dietRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9 },
+  dietRowIcon: { width: 26, height: 26, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  dietLabel: { fontSize: 13, width: 92 },
+  dietValue: { fontSize: 13, flex: 1, textAlign: "right" },
+  vetNote: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 14, borderWidth: 1, padding: 14, marginTop: 12 },
+  vetNoteText: { flex: 1, fontSize: 13.5, lineHeight: 19 },
+
+  notice: { flexDirection: "row", gap: 10, borderRadius: 18, borderWidth: 1, padding: 16, marginTop: 24 },
+  noticeText: { flex: 1, fontSize: 13, lineHeight: 19 },
+  footer: { fontSize: 13, textAlign: "center", marginTop: 18 },
 });
