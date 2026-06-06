@@ -16,7 +16,7 @@
 - Create: `artifacts/woofwatcher-mobile/lib/todayCommand.ts`
 - Create: `artifacts/woofwatcher-mobile/lib/todayCommand.test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Cover:
 
@@ -25,7 +25,7 @@ Cover:
 - next routine produces a routine action.
 - recent failed sync creates a sync action.
 
-- [ ] **Step 2: Implement view-model**
+- [x] **Step 2: Implement view-model**
 
 Export `deriveTodayCommand(state, now)` returning:
 
@@ -39,16 +39,16 @@ Export `deriveTodayCommand(state, now)` returning:
 **Files:**
 - Modify: `artifacts/woofwatcher-mobile/app/(tabs)/index.tsx`
 
-- [ ] **Step 1: Import command model**
-- [ ] **Step 2: Render a command card after the greeting**
-- [ ] **Step 3: Route command actions to Log, Calendar, Records, or WoofGuide**
-- [ ] **Step 4: Keep existing hero, pulse, quick log, and handoff sections intact**
+- [x] **Step 1: Import command model**
+- [x] **Step 2: Render a command card after the greeting**
+- [x] **Step 3: Route command actions to Log, Calendar, Records, or WoofGuide**
+- [x] **Step 4: Keep existing hero, pulse, quick log, and handoff sections intact**
 
 ### Task 3: Verification
 
-- [ ] Run today command tests.
-- [ ] Run care-domain tests.
-- [ ] Run sync tests.
-- [ ] Run placeholder/mojibake scans.
-- [ ] Run `git diff --check`.
-- [ ] Commit and push.
+- [x] Run today command tests.
+- [x] Run care-domain tests.
+- [x] Run sync tests.
+- [x] Run placeholder/mojibake scans.
+- [x] Run `git diff --check`.
+- [x] Commit and push.

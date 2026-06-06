@@ -24,6 +24,7 @@ import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import Svg, { Circle } from "react-native-svg";
 import { normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
 import { computeCareStreak, computeDayProgress, derivePhoenixStatus, getGreeting } from "@/lib/phoenixStatus";
+import { deriveTodayCommand } from "@/lib/todayCommand";
 import { relativeTime } from "@/lib/time";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -82,7 +83,7 @@ export default function PhoenixScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, addEntry } = useCare();
+  const { state, addEntry, refresh, isSyncing } = useCare();
   const { getAvatarSource } = useAvatar();
   const { width } = useWindowDimensions();
 
@@ -94,10 +95,17 @@ export default function PhoenixScreen() {
   }, []);
 
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const todayCommand = useMemo(() => deriveTodayCommand(state, now), [state, now]);
   const greeting = useMemo(() => getGreeting(now), [now]);
   const careStreak = useMemo(() => computeCareStreak(state, now), [state, now]);
   const dayProgress = useMemo(() => computeDayProgress(status), [status]);
   const caregiver = state.caregivers[0]?.name ?? "friend";
+  const commandTint =
+    todayCommand.primaryAction.urgency === "alert"
+      ? colors.copper
+      : todayCommand.primaryAction.urgency === "watch"
+        ? colors.amber
+        : colors.primary;
 
   const dateLabel = useMemo(
     () => new Date(now).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
@@ -194,6 +202,32 @@ export default function PhoenixScreen() {
     showToast("Bedtime snack logged");
   };
 
+  const openCommand = () => {
+    Haptics.selectionAsync();
+    if (todayCommand.primaryAction.kind === "sync") {
+      refresh();
+    }
+
+    switch (todayCommand.primaryAction.route) {
+      case "/calendar":
+        router.push("/calendar");
+        break;
+      case "/records":
+        router.push("/records");
+        break;
+      case "/woofguide":
+        router.push("/woofguide");
+        break;
+      case "/more":
+        router.push("/more");
+        break;
+      case "/log":
+      default:
+        router.push("/log");
+        break;
+    }
+  };
+
   const H_PAD = 20;
   const GAP = 10;
   const colW = (width - H_PAD * 2 - GAP * 4) / 5;
@@ -269,6 +303,65 @@ export default function PhoenixScreen() {
               <Ionicons name="chevron-forward" size={18} color={colors.primary} />
             </Pressable>
           )}
+
+          {/* Today command */}
+          <Pressable
+            onPress={openCommand}
+            style={({ pressed }) => [
+              s.commandCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: commandTint + "30",
+                shadowColor: commandTint,
+                opacity: pressed ? 0.9 : 1,
+              },
+            ]}
+          >
+            <View style={s.commandTop}>
+              <View style={[s.commandIconWrap, { backgroundColor: commandTint + "18" }]}>
+                <PulseIcon name={todayCommand.primaryAction.icon} size={28} color={commandTint} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.commandEyebrow, { color: commandTint, fontFamily: "Inter_700Bold" }]}>
+                  NEXT BEST MOVE
+                </Text>
+                <Text style={[s.commandTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {todayCommand.primaryAction.kind === "sync" && isSyncing
+                    ? "Syncing care logs"
+                    : todayCommand.primaryAction.label}
+                </Text>
+                <Text style={[s.commandDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {todayCommand.primaryAction.detail}
+                </Text>
+              </View>
+              <View style={[s.commandArrow, { backgroundColor: commandTint + "16" }]}>
+                <Ionicons name="arrow-forward" size={18} color={commandTint} />
+              </View>
+            </View>
+
+            <View style={[s.commandMetaRow, { borderTopColor: colors.border }]}>
+              <View style={s.commandMetaItem}>
+                <Text style={[s.commandMetaLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Health</Text>
+                <Text numberOfLines={1} style={[s.commandMetaValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  {todayCommand.health.label}
+                </Text>
+              </View>
+              <View style={[s.commandMetaDivider, { backgroundColor: colors.border }]} />
+              <View style={s.commandMetaItem}>
+                <Text style={[s.commandMetaLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Handoff</Text>
+                <Text numberOfLines={1} style={[s.commandMetaValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  {todayCommand.handoff.caregiver ?? "Ready"}
+                </Text>
+              </View>
+              <View style={[s.commandMetaDivider, { backgroundColor: colors.border }]} />
+              <View style={s.commandMetaItem}>
+                <Text style={[s.commandMetaLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Sync</Text>
+                <Text numberOfLines={1} style={[s.commandMetaValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  {isSyncing ? "Syncing" : todayCommand.sync.label}
+                </Text>
+              </View>
+            </View>
+          </Pressable>
 
           {/* Living hero card */}
           <View style={[s.heroCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
@@ -556,6 +649,28 @@ const s = StyleSheet.create({
   onboardIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   onboardTitle: { fontSize: 15 },
   onboardSub: { fontSize: 12.5, marginTop: 2, lineHeight: 17 },
+
+  commandCard: {
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 18,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 4,
+  },
+  commandTop: { flexDirection: "row", alignItems: "center", gap: 12 },
+  commandIconWrap: { width: 52, height: 52, borderRadius: 17, alignItems: "center", justifyContent: "center" },
+  commandEyebrow: { fontSize: 10.5, letterSpacing: 0, marginBottom: 3 },
+  commandTitle: { fontSize: 18, lineHeight: 23 },
+  commandDetail: { fontSize: 13, lineHeight: 18, marginTop: 3 },
+  commandArrow: { width: 36, height: 36, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  commandMetaRow: { flexDirection: "row", alignItems: "center", marginTop: 15, paddingTop: 13, borderTopWidth: 1 },
+  commandMetaItem: { flex: 1, minWidth: 0 },
+  commandMetaLabel: { fontSize: 11, marginBottom: 2 },
+  commandMetaValue: { fontSize: 12.5 },
+  commandMetaDivider: { width: 1, height: 28, marginHorizontal: 10 },
 
   heroCard: { borderRadius: 28, overflow: "hidden", marginBottom: 20, shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.14, shadowRadius: 28, elevation: 7 },
   heroImageWrap: { width: "100%", aspectRatio: 0.96, position: "relative", backgroundColor: "#CFE3EF" },
