@@ -1,45 +1,70 @@
-# [Project name]
+# WoofWatcher
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+WoofWatcher is a mobile-first shared dog care OS for routines, logging, health
+patterns, records, caregiver handoff, and AI-assisted care.
 
-## Run & Operate
+## Run And Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/api-server run dev` - run the API server.
+- `pnpm --filter @workspace/woofwatcher-mobile run dev` - run the Expo mobile app.
+- `pnpm --filter @workspace/care-domain test` - run shared care-domain tests.
+- `pnpm run typecheck` - full TypeScript check across referenced packages.
+- `pnpm run build` - typecheck and build packages with build scripts.
+- `pnpm --filter @workspace/api-spec run codegen` - regenerate API hooks and Zod schemas.
+- `pnpm --filter @workspace/db run push` - push DB schema changes in development.
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Workspace: pnpm, Node 24, TypeScript 5.9.
+- Mobile: Expo, Expo Router, React Native, Clerk, React Query.
+- API: Express 5, Clerk auth, Gemini integration.
+- DB: PostgreSQL and Drizzle ORM.
+- Contracts: OpenAPI, Orval-generated API client, Zod validation.
+- Domain: `@workspace/care-domain` owns canonical care event types and care
+  status helpers.
 
-## Where things live
+## Where Things Live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/woofwatcher-mobile` - primary mobile app.
+- `artifacts/api-server` - backend API.
+- `artifacts/woofwatcher` - web prototype/dashboard surface.
+- `artifacts/mockup-sandbox` - design sandbox.
+- `lib/care-domain` - shared care vocabulary and status logic.
+- `lib/db` - Drizzle schema.
+- `lib/api-spec` - OpenAPI source.
+- `lib/api-client-react` - generated API hooks/client.
+- `lib/api-zod` - generated validation schemas.
+- `docs/superpowers/specs` - approved product/design specs.
+- `docs/superpowers/plans` - implementation plans.
+- `docs/operations/ENVIRONMENT.md` - env and deployment notes.
 
-## Architecture decisions
+## Architecture Decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The mobile app is the canonical product surface.
+- The web app is not the source of truth for product UX until intentionally
+  redesigned as a dashboard/admin surface.
+- Care logs live as `care_entries` rows so simultaneous caregivers do not
+  clobber each other.
+- Shared dog profile, routines, records, diet, and calendar data live in
+  `care_state`.
+- Event taxonomy belongs in `lib/care-domain`, not in individual screens.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+WoofWatcher should answer four questions quickly:
 
-## User preferences
+1. What does the dog need now?
+2. What already happened?
+3. What needs attention?
+4. What should the next caregiver know?
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+Every button, card, empty state, motion, and AI response should connect to a
+care action, explanation, handoff, record, insight, or assistant workflow.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Production API deployments must set `ALLOWED_ORIGINS`.
+- Missing Clerk publishable key breaks the mobile auth flow.
+- This repo currently requires pnpm; npm install is intentionally blocked.
+- The local Codex environment may have Node available without pnpm/npm.
+- Do not paste secrets into chat or commit env files.

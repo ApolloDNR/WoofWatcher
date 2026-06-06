@@ -98,6 +98,7 @@ export interface Entry {
   note?: string;
   dogInteractions?: number;
   food?: string;
+  details?: { [key: string]: unknown };
 }
 
 export interface DietProfile {
@@ -197,11 +198,12 @@ function toEntry(c: ApiCareEntry): Entry {
     dogInteractions:
       typeof d.dogInteractions === "number" ? d.dogInteractions : undefined,
     food: typeof d.food === "string" ? d.food : undefined,
+    details: d,
   };
 }
 
 function toCreateInput(e: Omit<Entry, "id">): CareEntryInput {
-  const details: { [key: string]: unknown } = {};
+  const details: { [key: string]: unknown } = { ...(e.details ?? {}) };
   if (e.title) details.title = e.title;
   if (e.durationMinutes != null) details.durationMinutes = e.durationMinutes;
   if (e.amount != null) details.amount = e.amount;
@@ -220,7 +222,7 @@ function toCreateInput(e: Omit<Entry, "id">): CareEntryInput {
 // Build a full update payload from a merged entry so a partial patch never
 // clobbers server-side details (PATCH replaces the details object wholesale).
 function toUpdateInput(e: Entry): CareEntryUpdate {
-  const details: { [key: string]: unknown } = {};
+  const details: { [key: string]: unknown } = { ...(e.details ?? {}) };
   if (e.title) details.title = e.title;
   if (e.durationMinutes != null) details.durationMinutes = e.durationMinutes;
   if (e.amount != null) details.amount = e.amount;

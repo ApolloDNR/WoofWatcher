@@ -40,7 +40,17 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",")
   .map((o) => o.trim())
   .filter(Boolean);
-app.use(cors({ credentials: true, origin: allowedOrigins?.length ? allowedOrigins : true }));
+if (process.env.NODE_ENV === "production" && !allowedOrigins?.length) {
+  throw new Error(
+    "ALLOWED_ORIGINS is required in production when CORS credentials are enabled.",
+  );
+}
+app.use(
+  cors({
+    credentials: true,
+    origin: allowedOrigins?.length ? allowedOrigins : true,
+  }),
+);
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 

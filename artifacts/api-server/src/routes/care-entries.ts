@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, desc, eq, gte } from "drizzle-orm";
 import { db, careEntriesTable } from "@workspace/db";
+import { normalizeCareEventType } from "@workspace/care-domain";
 import {
   ListCareEntriesResponse,
   ListCareEntriesResponseItem,
@@ -61,7 +62,7 @@ router.post("/care-entries", requireAuth, async (req, res): Promise<void> => {
     .values({
       householdId,
       petId: parsed.data.petId ?? null,
-      type: parsed.data.type,
+      type: normalizeCareEventType(parsed.data.type, parsed.data.details),
       occurredAt: parsed.data.occurredAt ?? new Date(),
       caregiverUserId: userId,
       caregiverName,
@@ -92,7 +93,9 @@ router.patch("/care-entries/:id", requireAuth, async (req, res): Promise<void> =
   const [updated] = await db
     .update(careEntriesTable)
     .set({
-      ...(parsed.data.type !== undefined ? { type: parsed.data.type } : {}),
+      ...(parsed.data.type !== undefined
+        ? { type: normalizeCareEventType(parsed.data.type, parsed.data.details) }
+        : {}),
       ...(parsed.data.occurredAt !== undefined
         ? { occurredAt: parsed.data.occurredAt }
         : {}),

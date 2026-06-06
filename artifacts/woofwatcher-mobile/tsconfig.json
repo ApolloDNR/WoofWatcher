@@ -19,6 +19,9 @@
   ],
   "references": [
     {
+      "path": "../../lib/care-domain"
+    },
+    {
       "path": "../../lib/api-client-react"
     }
   ]

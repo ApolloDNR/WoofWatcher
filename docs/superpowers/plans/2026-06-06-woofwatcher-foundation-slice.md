@@ -249,7 +249,7 @@ Expected: no unresolved placeholder language.
 - [ ] **Step 3: Run mojibake scan**
 
 ```powershell
-rg -n "â|ð|Ÿ|ï|€|œ|�" artifacts/woofwatcher-mobile README.md replit.md docs lib/care-domain
+   Use `rg` to scan for common mojibake markers in `artifacts/woofwatcher-mobile`, `README.md`, `replit.md`, `docs`, and `lib/care-domain`.
 ```
 
 Expected: no matches in touched user-visible text.
@@ -259,4 +259,3 @@ Expected: no matches in touched user-visible text.
 If `pnpm` is still unavailable locally, state that full workspace typecheck/build
 could not be run in this environment and give the exact command that should run
 after installing pnpm.
-

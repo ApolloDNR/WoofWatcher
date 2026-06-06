@@ -27,6 +27,7 @@ import {
   useUpdateMe,
   getGetMeQueryKey,
 } from "@workspace/api-client-react";
+import { getCareEventDefinition } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
 import { useAvatar } from "@/context/AvatarContext";
@@ -268,7 +269,13 @@ export default function MoreScreen() {
   const generateCarePass = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-    const recentLines = entries.slice(0, 5).map((e) => `  • ${e.type.toUpperCase()}: ${e.title}${e.note ? ` — ${e.note}` : ""}`).join("\n");
+    const recentLines = entries
+      .slice(0, 5)
+      .map((e) => {
+        const label = getCareEventDefinition(e.type, e.details).label.toUpperCase();
+        return `  • ${label}: ${e.title}${e.note ? ` — ${e.note}` : ""}`;
+      })
+      .join("\n");
     const routineLines = routines.map((r) => `  ${r.time} — ${r.label} (${r.owner})`).join("\n");
     const pass = [
       `WOOFWATCHER CARE PASS — ${today}`,

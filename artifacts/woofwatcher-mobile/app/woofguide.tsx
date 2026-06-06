@@ -16,6 +16,7 @@ import {
   Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { deriveCareDayStatus, normalizeCareEventType } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare, CareState } from "@/context/CareContext";
 
@@ -32,11 +33,14 @@ const BASE_URL = process.env.EXPO_PUBLIC_DOMAIN
 function buildAssistantContext(state: CareState) {
   const today = new Date().toISOString().slice(0, 10);
   const todayEntries = state.entries.filter((e) => e.occurredAt.startsWith(today));
-  const meals = state.entries.filter((e) => e.type === "meal");
-  const walks = state.entries.filter((e) => e.type === "walk");
-  const vomitIncidents = state.entries.filter((e) => e.type === "vomit");
+  const normalizedType = (entry: CareState["entries"][number]) =>
+    normalizeCareEventType(entry.type, entry.details);
+  const meals = state.entries.filter((e) => normalizedType(e) === "meal");
+  const walks = state.entries.filter((e) => normalizedType(e) === "walk");
+  const vomitIncidents = state.entries.filter((e) => normalizedType(e) === "vomit");
   const lastMeal = meals[0] ?? null;
   const lastWalk = walks[0] ?? null;
+  const dayStatus = deriveCareDayStatus(state.entries, state.routines);
 
   const now = Date.now();
   const nextRoutine = state.routines.find((r) => {
@@ -68,13 +72,13 @@ function buildAssistantContext(state: CareState) {
     summary: {
       totalEntries: state.entries.length,
       todayEntries: todayEntries.length,
-      meals: meals.length,
-      walks: walks.length,
-      vomitIncidents: vomitIncidents.length,
+      meals: dayStatus.counts.meals.done,
+      walks: dayStatus.counts.walks.done,
+      vomitIncidents: dayStatus.counts.vomit,
     },
     healthWatch: {
-      status: vomitIncidents.length > 2 ? "watch" : "normal",
-      label: vomitIncidents.length > 2 ? "Bile pattern present" : "No concerns",
+      status: dayStatus.healthAlert ? "watch" : "normal",
+      label: dayStatus.healthAlert ? "Bile or symptom pattern present" : "No concerns",
       signals: vomitIncidents.slice(0, 3).map((e) => e.note ?? e.title),
       redFlags: vomitIncidents.filter((e) => e.severity === "urgent").map((e) => e.title),
     },

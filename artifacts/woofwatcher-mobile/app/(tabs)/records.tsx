@@ -24,6 +24,7 @@ import Svg, {
   Stop,
   Text as SvgText,
 } from "react-native-svg";
+import { normalizeCareEventType } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
@@ -73,6 +74,10 @@ function relativeDay(iso: string, now: number): string {
   return shortDate(iso);
 }
 
+function entryType(entry: Entry): string {
+  return normalizeCareEventType(entry.type, entry.details);
+}
+
 export default function RecordsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -102,7 +107,7 @@ export default function RecordsScreen() {
 
   const { series, labels, isRealWeight } = useMemo(() => {
     const real = state.entries
-      .filter((e) => e.type === "weight" && e.amount && !Number.isNaN(parseFloat(e.amount)))
+      .filter((e) => entryType(e) === "weight" && e.amount && !Number.isNaN(parseFloat(e.amount)))
       .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime())
       .slice(-8);
     if (real.length >= 2) {
@@ -153,7 +158,7 @@ export default function RecordsScreen() {
   const incidents = useMemo(
     () =>
       state.entries
-        .filter((e) => e.type === "vomit" || e.type === "symptom")
+        .filter((e) => entryType(e) === "vomit" || entryType(e) === "symptom")
         .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()),
     [state.entries],
   );
@@ -164,9 +169,9 @@ export default function RecordsScreen() {
   // ---- Progress report (period-scoped, computed from real logs) ----
   const report = useMemo(() => {
     const within = state.entries.filter((e) => daysBetween(e.occurredAt, now) <= period);
-    const count = (types: string[]) => within.filter((e) => types.includes(e.type)).length;
+    const count = (types: string[]) => within.filter((e) => types.includes(entryType(e))).length;
     const walkMinutes = within
-      .filter((e) => e.type === "walk")
+      .filter((e) => entryType(e) === "walk")
       .reduce((sum, e) => sum + (e.durationMinutes ?? 0), 0);
     const byCaregiver: Record<string, number> = {};
     for (const e of within) {
@@ -189,7 +194,7 @@ export default function RecordsScreen() {
   const dietHistory = useMemo(
     () =>
       state.entries
-        .filter((e) => e.type === "meal" && e.note)
+        .filter((e) => entryType(e) === "meal" && e.note)
         .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
         .slice(0, 4),
     [state.entries],
@@ -436,8 +441,8 @@ export default function RecordsScreen() {
             </View>
             {incidents.slice(0, 4).map((e, i) => (
               <View key={e.id} style={[s.row, { borderTopWidth: 1, borderTopColor: colors.border }]}>
-                <View style={[s.rowIconWrap, { backgroundColor: PULSE_COLORS[HEALTH_ICON[e.type] ?? "vomit"] + "16" }]}>
-                  <PulseIcon name={HEALTH_ICON[e.type] ?? "vomit"} size={18} />
+                <View style={[s.rowIconWrap, { backgroundColor: PULSE_COLORS[HEALTH_ICON[entryType(e)] ?? "vomit"] + "16" }]}>
+                  <PulseIcon name={HEALTH_ICON[entryType(e)] ?? "vomit"} size={18} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text numberOfLines={1} style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{e.title}</Text>

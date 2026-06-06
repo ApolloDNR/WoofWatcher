@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
+import { normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
@@ -41,7 +42,7 @@ interface ChoiceGroup {
 }
 
 interface LogType {
-  type: string;
+  type: CareEventType;
   label: string;
   icon: PulseIconName;
   baseTitle: string;
@@ -149,7 +150,7 @@ const LOG_TYPES: LogType[] = [
     ],
   },
   {
-    type: "meds",
+    type: "medication",
     label: "Meds",
     icon: "pill",
     baseTitle: "Medication",
@@ -220,7 +221,8 @@ const TYPE_ICON: Record<string, PulseIconName> = {
   vomit: "vomit",
   health: "heart",
   vet: "heart",
-  medication: "drop",
+  medication: "pill",
+  meds: "pill",
 };
 
 export default function LogScreen() {
@@ -290,11 +292,13 @@ export default function LogScreen() {
   const buildEntry = useCallback((): Omit<Entry, "id"> | null => {
     if (!config) return null;
     const parts: string[] = [];
+    const details: { [key: string]: unknown } = {};
     let mood: string | undefined;
     let severity: Severity | undefined;
 
     config.groups?.forEach((g) => {
       const opt = g.options.find((o) => o.id === choices[g.key]) ?? g.options[0];
+      details[g.key] = opt.id;
       if (opt.suffix) parts.push(opt.suffix);
       if (opt.mood) mood = opt.mood;
       if (opt.severity && opt.severity !== "normal") severity = opt.severity;
@@ -317,9 +321,10 @@ export default function LogScreen() {
     const note = config.noteField ? noteText.trim() || undefined : undefined;
     if (durationMinutes) parts.push(`${durationMinutes} ${config.stepper!.unit}`);
     const title = parts.length ? `${config.baseTitle} · ${parts.join(", ")}` : config.baseTitle;
+    const type = normalizeCareEventType(config.type, details);
 
     return {
-      type: config.type,
+      type,
       title,
       caregiver,
       occurredAt: new Date().toISOString(),
@@ -328,6 +333,7 @@ export default function LogScreen() {
       ...(severity ? { severity } : {}),
       ...(durationMinutes ? { durationMinutes } : {}),
       ...(amount != null ? { amount } : {}),
+      ...(Object.keys(details).length ? { details } : {}),
     };
   }, [config, choices, stepIndex, numeric, noteText, caregiver, state.profile.weight.unit]);
 
@@ -409,7 +415,9 @@ export default function LogScreen() {
     const sorted = [...state.entries].sort(
       (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
     );
-    return filter ? sorted.filter((e) => e.type === filter) : sorted;
+    return filter
+      ? sorted.filter((e) => normalizeCareEventType(e.type, e.details) === filter)
+      : sorted;
   }, [state.entries, filter]);
 
   const grouped = useMemo(() => {
@@ -427,7 +435,9 @@ export default function LogScreen() {
   }, [filtered, now]);
 
   const presentTypes = useMemo(() => {
-    const set = new Set(state.entries.map((e) => e.type));
+    const set = new Set(
+      state.entries.map((e) => normalizeCareEventType(e.type, e.details)),
+    );
     return LOG_TYPES.filter((q) => set.has(q.type));
   }, [state.entries]);
 
@@ -437,7 +447,8 @@ export default function LogScreen() {
     const todayEntries = state.entries.filter((e) => e.occurredAt.startsWith(today));
     const counts: Record<string, number> = {};
     for (const e of todayEntries) {
-      counts[e.type] = (counts[e.type] ?? 0) + 1;
+      const type = normalizeCareEventType(e.type, e.details);
+      counts[type] = (counts[type] ?? 0) + 1;
     }
     // Top 5 types by count
     const top = Object.entries(counts)
@@ -700,7 +711,8 @@ export default function LogScreen() {
                 <Text style={[s.dayHeading, { color: colors.foreground, fontFamily: DISPLAY }]}>{g.label}</Text>
                 <View style={[s.dayCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
                   {g.entries.map((e, i) => {
-                    const icon = TYPE_ICON[e.type] ?? "paw";
+                    const normalizedType = normalizeCareEventType(e.type, e.details);
+                    const icon = TYPE_ICON[normalizedType] ?? "paw";
                     const cg = caregiverColor(e.caregiver);
                     const sev = e.severity && e.severity !== "normal" ? e.severity : null;
                     const sevColor = sev === "alert" ? colors.rose : colors.amber;

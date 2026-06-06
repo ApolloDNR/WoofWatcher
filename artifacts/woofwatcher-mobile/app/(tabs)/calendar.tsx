@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@clerk/expo";
+import { normalizeCareEventType } from "@workspace/care-domain";
 import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
@@ -149,13 +150,13 @@ export default function CalendarScreen() {
     return new Set(
       entries
         .filter((e) => e.occurredAt.startsWith(today))
-        .map((e) => e.type),
+        .map((e) => normalizeCareEventType(e.type, e.details)),
     );
   }, [entries, today]);
 
   // How many routines are completed today?
   const routinesDoneCount = useMemo(
-    () => sortedRoutines.filter((r) => todayLoggedTypes.has(r.type)).length,
+    () => sortedRoutines.filter((r) => todayLoggedTypes.has(normalizeCareEventType(r.type))).length,
     [sortedRoutines, todayLoggedTypes],
   );
 

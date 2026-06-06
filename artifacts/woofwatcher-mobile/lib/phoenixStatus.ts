@@ -1,4 +1,5 @@
 import type { CareState, Entry, Routine } from "@/context/CareContext";
+import { deriveCareDayStatus, normalizeCareEventType } from "@workspace/care-domain";
 
 export type Mood = "happy" | "excited" | "calm" | "anxious" | "unwell";
 
@@ -129,37 +130,36 @@ export function derivePhoenixStatus(
   now: number = Date.now(),
 ): PhoenixStatus {
   const todays = state.entries.filter((e) => isToday(e.occurredAt, now));
+  const dayStatus = deriveCareDayStatus(state.entries, state.routines, now);
 
   const countType = (types: string[]) =>
-    todays.filter((e) => types.includes(e.type)).length;
+    todays.filter((e) =>
+      types.includes(normalizeCareEventType(e.type, e.details)),
+    ).length;
 
-  const mealRoutines = state.routines.filter((r) => r.type === "meal").length;
-  const walkRoutines = state.routines.filter((r) => r.type === "walk").length;
+  const meals: CountStat = dayStatus.counts.meals;
+  const walks: CountStat = dayStatus.counts.walks;
+  const potty: CountStat = dayStatus.counts.potty;
+  const training = dayStatus.counts.training;
+  const walkMinutes = dayStatus.counts.walkMinutes;
 
-  const meals: CountStat = { done: countType(["meal"]), target: mealRoutines || 2 };
-  const walks: CountStat = { done: countType(["walk"]), target: walkRoutines || 2 };
-  const potty: CountStat = { done: countType(["potty", "pee", "poop"]), target: 3 };
-  const training = countType(["training"]);
-  const walkMinutes = todays
-    .filter((e) => e.type === "walk")
-    .reduce((sum, e) => sum + (e.durationMinutes ?? 0), 0);
+  const recentVomit = dayStatus.healthAlert;
+  const healthAlert = dayStatus.healthAlert;
 
-  const recentVomit = todays.some(
-    (e) =>
-      (e.type === "vomit" || e.type === "symptom") &&
-      (e.severity === "watch" || e.severity === "alert"),
-  );
-  const healthAlert = recentVomit;
+  const normalizedType = (entry: Entry) =>
+    normalizeCareEventType(entry.type, entry.details);
 
   const recentAnxious = state.entries.some(
     (e) =>
       hoursAgo(e.occurredAt, now) < 4 &&
-      (e.type === "alone" ||
+      (normalizedType(e) === "alone" ||
         (e.mood ?? "").toLowerCase().includes("anx") ||
         (e.mood ?? "").toLowerCase().includes("nerv")),
   );
   const recentActive = state.entries.some(
-    (e) => hoursAgo(e.occurredAt, now) < 3 && ["walk", "play", "training"].includes(e.type),
+    (e) =>
+      hoursAgo(e.occurredAt, now) < 3 &&
+      ["walk", "play", "training"].includes(normalizedType(e)),
   );
 
   // Next upcoming routine today — earliest by clock time, independent of array order
@@ -173,7 +173,7 @@ export function derivePhoenixStatus(
     : null;
 
   const walkSoon =
-    nextRoutine?.type === "walk" &&
+    normalizeCareEventType(nextRoutine?.type) === "walk" &&
     minutesUntilNext !== null &&
     minutesUntilNext <= 60;
   const noWalkYet = walks.done === 0 && new Date(now).getHours() >= 8;

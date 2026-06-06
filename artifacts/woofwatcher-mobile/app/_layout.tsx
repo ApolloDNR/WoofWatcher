@@ -21,6 +21,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
+import { Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -35,7 +36,7 @@ SplashScreen.preventAutoHideAsync();
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 const queryClient = new QueryClient();
@@ -85,6 +86,45 @@ function RootLayoutNav() {
   );
 }
 
+function MissingConfigScreen() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          backgroundColor: "#F7F5F1",
+        }}
+      >
+        <Text
+          style={{
+            color: "#0F1F33",
+            fontFamily: "Inter_700Bold",
+            fontSize: 22,
+            textAlign: "center",
+          }}
+        >
+          WoofWatcher configuration is missing
+        </Text>
+        <Text
+          style={{
+            color: "#566052",
+            fontFamily: "Inter_400Regular",
+            fontSize: 15,
+            lineHeight: 22,
+            marginTop: 10,
+            textAlign: "center",
+          }}
+        >
+          Set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY before starting the mobile app.
+        </Text>
+      </View>
+    </GestureHandlerRootView>
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -105,6 +145,7 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) return null;
+  if (!publishableKey) return <MissingConfigScreen />;
 
   return (
     <ClerkProvider

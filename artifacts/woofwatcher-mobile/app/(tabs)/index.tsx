@@ -22,6 +22,7 @@ import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import Svg, { Circle } from "react-native-svg";
+import { normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
 import { computeCareStreak, computeDayProgress, derivePhoenixStatus, getGreeting } from "@/lib/phoenixStatus";
 import { relativeTime } from "@/lib/time";
 
@@ -32,7 +33,7 @@ interface QuickLogItem {
   key: string;
   icon: PulseIconName;
   label: string;
-  type: string;
+  type: CareEventType;
   title: string;
   mood?: string;
   severity?: string;
@@ -109,7 +110,7 @@ export default function PhoenixScreen() {
     return new Set(
       state.entries
         .filter((e) => new Date(e.occurredAt).getTime() > cutoff)
-        .map((e) => e.type),
+        .map((e) => normalizeCareEventType(e.type, e.details)),
     );
   }, [state.entries, now]);
 
@@ -129,7 +130,7 @@ export default function PhoenixScreen() {
       const d = new Date(e.occurredAt);
       const t = new Date(now);
       const sameDay = d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
-      return sameDay && e.type === "treat" && /snack|bedtime/i.test(e.title);
+      return sameDay && normalizeCareEventType(e.type, e.details) === "treat" && /snack|bedtime/i.test(e.title);
     }),
     [state.entries, now],
   );
@@ -143,7 +144,7 @@ export default function PhoenixScreen() {
   // Weight trend: compare most recent two weight logs
   const weightTrend = useMemo(() => {
     const logs = state.entries
-      .filter((e) => e.type === "weight" && e.amount)
+      .filter((e) => normalizeCareEventType(e.type, e.details) === "weight" && e.amount)
       .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
     if (logs.length < 2) return null;
     const latest = parseFloat(logs[0].amount as string);
@@ -179,7 +180,7 @@ export default function PhoenixScreen() {
   const logQuick = (item: QuickLogItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     addEntry({
-      type: item.type, title: item.title, caregiver,
+      type: normalizeCareEventType(item.type), title: item.title, caregiver,
       occurredAt: new Date().toISOString(),
       ...(item.mood ? { mood: item.mood } : {}),
       ...(item.severity ? { severity: item.severity } : {}),
@@ -430,7 +431,7 @@ export default function PhoenixScreen() {
             ) : (
               recent.map((e, i) => {
                 const cg = caregiverColor(e.caregiver);
-                const icon = TYPE_ICON[e.type] ?? "paw";
+                const icon = TYPE_ICON[normalizeCareEventType(e.type, e.details)] ?? "paw";
                 const timeStr = new Date(e.occurredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
                 return (
                   <View key={e.id} style={[s.handoffRow, i < recent.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
