@@ -10,6 +10,10 @@ import {
   Fredoka_600SemiBold,
   Fredoka_700Bold,
 } from "@expo-google-fonts/fredoka";
+import {
+  Fraunces_600SemiBold,
+  Fraunces_700Bold,
+} from "@expo-google-fonts/fraunces";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
@@ -90,6 +94,8 @@ export default function RootLayout() {
     Fredoka_500Medium,
     Fredoka_600SemiBold,
     Fredoka_700Bold,
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
   });
 
   useEffect(() => {

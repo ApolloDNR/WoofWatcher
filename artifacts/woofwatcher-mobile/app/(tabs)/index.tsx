@@ -20,10 +20,9 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { AnimatedAvatar } from "@/components/AnimatedAvatar";
+import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import Svg, { Circle } from "react-native-svg";
 import { computeCareStreak, computeDayProgress, derivePhoenixStatus, getGreeting } from "@/lib/phoenixStatus";
-
-const BRAND_MARK = require("@/assets/brand/mark.png");
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -251,14 +250,7 @@ export default function PhoenixScreen() {
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           {/* Branded header */}
           <View style={s.brandRow}>
-            <View style={s.brandLeft}>
-              <View style={[s.brandMarkWrap, { backgroundColor: colors.primary + "12" }]}>
-                <Image source={BRAND_MARK} style={s.brandMark} resizeMode="contain" />
-              </View>
-              <Text style={[s.brandName, { color: colors.primary, fontFamily: DISPLAY }]}>
-                WoofWatcher
-              </Text>
-            </View>
+            <WoofWatcherLogo size={30} wordmarkSize={21} />
             <View style={[s.datePill, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Ionicons name="calendar-outline" size={13} color={colors.mutedForeground} />
               <Text style={[s.datePillText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
@@ -554,10 +546,6 @@ const s = StyleSheet.create({
   container: { flex: 1 },
 
   brandRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
-  brandLeft: { flexDirection: "row", alignItems: "center", gap: 9 },
-  brandMarkWrap: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  brandMark: { width: 26, height: 26 },
-  brandName: { fontSize: 21, letterSpacing: -0.2 },
   datePill: {
     flexDirection: "row",
     alignItems: "center",

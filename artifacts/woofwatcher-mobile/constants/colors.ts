@@ -33,6 +33,8 @@ const lightTheme = {
   ink: "#1F2D27",
   navy: "#0F1F33",
   midnight: "#0A131F",
+  brandNavy: "#1B3A5B",
+  cream: "#FCFAF6",
 };
 
 const colors = {

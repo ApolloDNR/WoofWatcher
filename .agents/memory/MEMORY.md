@@ -1,2 +1,3 @@
 - [WoofWatcher living avatar](woofwatcher-avatar.md) — dog stays STILL; swap emotion scene via cross-fade, animate only ambient bg; mood images via AvatarContext (custom set or default).
+- [WoofWatcher mobile brand](woofwatcher-brand.md) — navy+copper "Premium Playful" identity; husky logo viewBox is intentionally extended below the potrace crop so the copper heart isn't clipped.
 - [WoofWatcher mobile sync](woofwatcher-sync.md) — config in versioned care-state doc, log as append-only rows; 409 duck-typed; Clerk auth wiring; MOBILE ONLY.

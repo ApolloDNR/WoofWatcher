@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 
 export function AuthShell({
   title,
@@ -35,9 +36,7 @@ export function AuthShell({
       ]}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={[styles.logoWrap, { backgroundColor: colors.primary }]}>
-        <Ionicons name="paw" size={34} color="#FFFFFF" />
-      </View>
+      <WoofWatcherLogo layout="stacked" size={78} wordmarkSize={26} style={styles.logo} />
       <Text
         style={[
           styles.title,
@@ -217,18 +216,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: "center",
   },
-  logoWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-    shadowColor: "#2E5846",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 4,
+  logo: {
+    marginBottom: 26,
   },
   title: {
     fontSize: 30,
