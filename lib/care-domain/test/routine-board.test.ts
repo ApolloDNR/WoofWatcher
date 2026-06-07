@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 
 import { deriveRoutineBoard } from "../src/index.ts";
 
+process.env.TZ = "America/Los_Angeles";
+
 const NOW = new Date("2026-06-06T14:00:00-07:00").getTime();
 
 test("matches care logs to specific routines without completing every routine of the same type", () => {

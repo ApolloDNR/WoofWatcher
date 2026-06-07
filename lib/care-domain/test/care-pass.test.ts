@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 
 import { buildCarePass } from "../src/index.ts";
 
+process.env.TZ = "America/Los_Angeles";
+
 const NOW = new Date("2026-06-06T15:00:00-07:00").getTime();
 
 function baseInput() {
