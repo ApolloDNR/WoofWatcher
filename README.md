@@ -28,6 +28,8 @@ This repo is a pnpm workspace.
 ## Important Scripts
 
 - `pnpm run typecheck` checks workspace TypeScript.
+- `pnpm run test:focused` runs the zero-dependency mobile/domain behavior tests.
+- `pnpm run build:ci` runs TypeScript plus CI-safe API/web builds.
 - `pnpm run build` typechecks and builds packages with build scripts.
 - `pnpm --filter @workspace/api-server run dev` starts the API server.
 - `pnpm --filter @workspace/woofwatcher-mobile run dev` starts Expo.
