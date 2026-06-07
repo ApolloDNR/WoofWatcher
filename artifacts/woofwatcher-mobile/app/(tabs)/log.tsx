@@ -16,7 +16,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
-import { normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
+import {
+  appendStickyNote,
+  deriveDietProgress,
+  getStickyNotes,
+  normalizeCareEventType,
+  type CareEventType,
+  type StickyNoteColor,
+} from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
@@ -48,7 +55,7 @@ interface LogType {
   baseTitle: string;
   groups?: ChoiceGroup[];
   stepper?: { label: string; unit: string; values: number[] };
-  numeric?: { label: string; placeholder: string };
+  numeric?: { label: string; placeholder: string; unit: "diet" | "weight"; optional?: boolean };
   noteField?: { placeholder: string };
 }
 
@@ -70,6 +77,7 @@ const LOG_TYPES: LogType[] = [
         ],
       },
     ],
+    numeric: { label: "Amount fed", placeholder: "0.75", unit: "diet", optional: true },
   },
   {
     type: "water",
@@ -156,7 +164,7 @@ const LOG_TYPES: LogType[] = [
     baseTitle: "Medication",
     noteField: { placeholder: "Which medication & dose?" },
   },
-  { type: "weight", label: "Weight", icon: "scale", baseTitle: "Weight", numeric: { label: "Weight", placeholder: "0.0" } },
+  { type: "weight", label: "Weight", icon: "scale", baseTitle: "Weight", numeric: { label: "Weight", placeholder: "0.0", unit: "weight" } },
   {
     type: "symptom",
     label: "Symptom",
@@ -232,6 +240,18 @@ function syncLabel(status: Entry["syncStatus"]): string | null {
   return null;
 }
 
+function stickyNoteId(): string {
+  return `sticky_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function formatCareAmount(value: number | null, unit: string): string {
+  if (value == null) return "--";
+  const rounded = Math.round(value * 100) / 100;
+  const text = Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(/0+$/, "").replace(/\.$/, "");
+  const unitText = unit === "g" || unit === "oz" || rounded === 1 ? unit : `${unit}s`;
+  return `${text} ${unitText}`;
+}
+
 export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -273,6 +293,7 @@ export default function LogScreen() {
   const [promptId, setPromptId] = useState<string | null>(null);
   const [promptTitle, setPromptTitle] = useState("");
   const [promptNote, setPromptNote] = useState("");
+  const [promptMode, setPromptMode] = useState<"post-log" | "sticky">("post-log");
   const promptRef = useRef<TextInput>(null);
 
   // Entry editor
@@ -285,6 +306,24 @@ export default function LogScreen() {
     const idx = state.caregivers.findIndex((c) => c.name === name);
     return palette[(idx >= 0 ? idx : 0) % palette.length];
   };
+
+  const stickyColor = (color: StickyNoteColor) => {
+    if (color === "sun") return colors.amber;
+    if (color === "copper") return colors.copper;
+    if (color === "sky") return colors.secondary;
+    if (color === "rose") return colors.rose;
+    return colors.sage;
+  };
+
+  const dietProgress = useMemo(
+    () =>
+      deriveDietProgress({
+        dietProfile: state.dietProfile,
+        entries: state.entries,
+        now,
+      }),
+    [state.dietProfile, state.entries, now],
+  );
 
   // Mount animation
   const fade = useRef(new Animated.Value(0)).current;
@@ -299,9 +338,10 @@ export default function LogScreen() {
   const buildEntry = useCallback((): Omit<Entry, "id"> | null => {
     if (!config) return null;
     const parts: string[] = [];
-    const details: { [key: string]: unknown } = {};
+    let details: { [key: string]: unknown } = {};
     let mood: string | undefined;
     let severity: Severity | undefined;
+    const occurredAt = new Date().toISOString();
 
     config.groups?.forEach((g) => {
       const opt = g.options.find((o) => o.id === choices[g.key]) ?? g.options[0];
@@ -316,25 +356,41 @@ export default function LogScreen() {
 
     let amount: string | undefined;
     if (config.numeric) {
-      const n = parseFloat(numeric);
-      if (Number.isNaN(n) || n <= 0) {
+      const trimmed = numeric.trim();
+      const n = parseFloat(trimmed);
+      if (!trimmed && config.numeric.optional) {
+        amount = undefined;
+      } else if (Number.isNaN(n) || n <= 0) {
         Alert.alert("Add a value", `Enter a ${config.numeric.label.toLowerCase()} to log.`);
         return null;
+      } else {
+        const unit = config.numeric.unit === "diet" ? dietProgress.unit : state.profile.weight.unit;
+        amount = String(n);
+        details.servingAmount = n;
+        details.servingUnit = unit;
+        parts.push(`${n} ${unit}`);
       }
-      amount = String(n);
-      parts.push(`${n} ${state.profile.weight.unit}`);
     }
 
     const note = config.noteField ? noteText.trim() || undefined : undefined;
     if (durationMinutes) parts.push(`${durationMinutes} ${config.stepper!.unit}`);
-    const title = parts.length ? `${config.baseTitle} · ${parts.join(", ")}` : config.baseTitle;
+    if (note) {
+      details = appendStickyNote(details, {
+        id: stickyNoteId(),
+        text: note,
+        caregiver,
+        createdAt: occurredAt,
+        color: "sun",
+      });
+    }
+    const title = parts.length ? `${config.baseTitle} - ${parts.join(", ")}` : config.baseTitle;
     const type = normalizeCareEventType(config.type, details);
 
     return {
       type,
       title,
       caregiver,
-      occurredAt: new Date().toISOString(),
+      occurredAt,
       ...(note ? { note } : {}),
       ...(mood ? { mood } : {}),
       ...(severity ? { severity } : {}),
@@ -342,7 +398,7 @@ export default function LogScreen() {
       ...(amount != null ? { amount } : {}),
       ...(Object.keys(details).length ? { details } : {}),
     };
-  }, [config, choices, stepIndex, numeric, noteText, caregiver, state.profile.weight.unit]);
+  }, [config, choices, stepIndex, numeric, dietProgress.unit, noteText, caregiver, state.profile.weight.unit]);
 
   const handleLog = useCallback(() => {
     const entry = buildEntry();
@@ -370,6 +426,7 @@ export default function LogScreen() {
     setPromptId(id);
     setPromptTitle(entry.title);
     setPromptNote("");
+    setPromptMode("post-log");
     setTimeout(() => promptRef.current?.focus(), 250);
   }, [buildEntry, addEntry, updateCareDoc, config]);
 
@@ -377,11 +434,19 @@ export default function LogScreen() {
     const text = promptNote.trim();
     if (promptId && text) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(promptId, { note: text });
+      const entry = state.entries.find((item) => item.id === promptId);
+      const details = appendStickyNote(entry?.details ?? {}, {
+        id: stickyNoteId(),
+        text,
+        caregiver,
+        createdAt: new Date().toISOString(),
+        color: promptMode === "post-log" ? "sun" : "sage",
+      });
+      updateEntry(promptId, { note: entry?.note ?? text, details });
     }
     setPromptId(null);
     setPromptNote("");
-  }, [promptId, promptNote, updateEntry]);
+  }, [promptId, promptNote, promptMode, state.entries, caregiver, updateEntry]);
 
   const handleDelete = useCallback(
     (id: string, title: string) => {
@@ -405,6 +470,15 @@ export default function LogScreen() {
     setEditTitle(e.title);
     setEditNote(e.note ?? "");
     Haptics.selectionAsync();
+  }, []);
+
+  const openStickyPrompt = useCallback((e: Entry) => {
+    setPromptId(e.id);
+    setPromptTitle(e.title);
+    setPromptNote("");
+    setPromptMode("sticky");
+    Haptics.selectionAsync();
+    setTimeout(() => promptRef.current?.focus(), 250);
   }, []);
 
   const saveEditEntry = useCallback(() => {
@@ -465,6 +539,16 @@ export default function LogScreen() {
     return { total: todayEntries.length, top };
   }, [state.entries]);
 
+  const numericUnit = config?.numeric?.unit === "diet" ? dietProgress.unit : state.profile.weight.unit;
+  const dietPercentWidth = `${Math.min(Math.max(dietProgress.percent, 0), 100)}%`;
+  const dietProgressText =
+    dietProgress.targetAmount == null
+      ? "Set a normal portion in Plans to unlock exact daily targets."
+      : `${formatCareAmount(dietProgress.fedAmount, dietProgress.unit)} fed - ${formatCareAmount(
+          dietProgress.remainingAmount,
+          dietProgress.unit,
+        )} remaining`;
+
   const H_PAD = 20;
 
   return (
@@ -484,7 +568,7 @@ export default function LogScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[s.title, { color: colors.foreground, fontFamily: DISPLAY }]}>Activity Log</Text>
               <Text style={[s.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Logging as {caregiver} — every wag accounted for 🐾
+                Logging as {caregiver} - every care note stays connected
               </Text>
             </View>
             <Pressable
@@ -628,7 +712,7 @@ export default function LogScreen() {
             {config?.numeric && (
               <View style={s.fieldBlock}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  {config.numeric.label} ({state.profile.weight.unit})
+                  {config.numeric.label} ({numericUnit}{config.numeric.optional ? ", optional" : ""})
                 </Text>
                 <TextInput
                   placeholder={config.numeric.placeholder}
@@ -638,6 +722,30 @@ export default function LogScreen() {
                   keyboardType="decimal-pad"
                   style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                 />
+              </View>
+            )}
+
+            {selectedType === "meal" && (
+              <View style={[s.dietPanel, { backgroundColor: colors.sage + "12", borderColor: colors.sage + "33" }]}>
+                <View style={s.dietPanelTop}>
+                  <View>
+                    <Text style={[s.dietTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Daily food progress</Text>
+                    <Text style={[s.dietSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {dietProgress.summary}
+                    </Text>
+                  </View>
+                  <View style={[s.dietBadge, { backgroundColor: colors.sage + "18" }]}>
+                    <Text style={[s.dietBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                      {dietProgress.targetAmount == null ? "--" : `${dietProgress.percent}%`}
+                    </Text>
+                  </View>
+                </View>
+                <View style={[s.dietTrack, { backgroundColor: colors.background }]}>
+                  <View style={[s.dietFill, { backgroundColor: colors.sage, width: dietPercentWidth }]} />
+                </View>
+                <Text style={[s.dietHint, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {dietProgressText} Exact amount is optional; portion buttons still count toward the day.
+                </Text>
               </View>
             )}
 
@@ -741,6 +849,7 @@ export default function LogScreen() {
                     const sev = e.severity && e.severity !== "normal" ? e.severity : null;
                     const sevColor = sev === "alert" ? colors.rose : colors.amber;
                     const statusLabel = syncLabel(e.syncStatus);
+                    const stickyNotes = getStickyNotes(e.details);
                     return (
                       <View
                         key={e.id}
@@ -767,18 +876,35 @@ export default function LogScreen() {
                             )}
                           </View>
                           <Text style={[s.entryMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                            {e.caregiver} · {new Date(e.occurredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                            {statusLabel ? ` · ${statusLabel}` : ""}
+                            {e.caregiver} - {new Date(e.occurredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                            {statusLabel ? ` - ${statusLabel}` : ""}
                           </Text>
                           {e.syncStatus === "failed" && e.syncError ? (
                             <Text style={[s.entrySyncError, { color: colors.rose, fontFamily: "Inter_500Medium" }]}>
                               {e.syncError}
                             </Text>
                           ) : null}
-                          {e.note ? (
+                          {e.note && stickyNotes.length === 0 ? (
                             <Text numberOfLines={3} style={[s.entryNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                               {e.note}
                             </Text>
+                          ) : null}
+                          {stickyNotes.length > 0 ? (
+                            <View style={s.stickyStack}>
+                              {stickyNotes.map((note) => {
+                                const tone = stickyColor(note.color);
+                                return (
+                                  <View key={note.id} style={[s.stickyNote, { backgroundColor: tone + "12", borderLeftColor: tone }]}>
+                                    <Text style={[s.stickyNoteText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                                      {note.text}
+                                    </Text>
+                                    <Text style={[s.stickyNoteMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                                      {note.caregiver}
+                                    </Text>
+                                  </View>
+                                );
+                              })}
+                            </View>
                           ) : null}
                         </View>
                         <View style={s.entryRight}>
@@ -786,6 +912,9 @@ export default function LogScreen() {
                             {relativeTime(e.occurredAt, now)}
                           </Text>
                           <View style={s.entryActions}>
+                            <Pressable onPress={() => openStickyPrompt(e)} hitSlop={10} style={s.actionBtn}>
+                              <Ionicons name="document-text-outline" size={15} color={colors.mutedForeground} />
+                            </Pressable>
                             <Pressable onPress={() => openEditEntry(e)} hitSlop={10} style={s.actionBtn}>
                               <Ionicons name="pencil-outline" size={15} color={colors.mutedForeground} />
                             </Pressable>
@@ -821,7 +950,7 @@ export default function LogScreen() {
             <TextInput
               value={editNote}
               onChangeText={setEditNote}
-              placeholder="Add or update a note…"
+              placeholder="Add or update a note..."
               placeholderTextColor={colors.mutedForeground}
               multiline
               style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
@@ -846,14 +975,14 @@ export default function LogScreen() {
                 <Ionicons name="checkmark" size={22} color={colors.sage} />
               </View>
               <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                {promptTitle} logged
+                {promptMode === "post-log" ? `${promptTitle} logged` : "Add sticky note"}
               </Text>
               <Text style={[s.modalSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Add a quick note? (optional)
+                {promptMode === "post-log" ? "Add a quick sticky note? (optional)" : promptTitle}
               </Text>
               <TextInput
                 ref={promptRef}
-                placeholder="e.g. ate eagerly, left some kibble…"
+                placeholder="e.g. ate eagerly, left some kibble..."
                 placeholderTextColor={colors.mutedForeground}
                 value={promptNote}
                 onChangeText={setPromptNote}
@@ -877,7 +1006,7 @@ export default function LogScreen() {
                   onPress={saveQuickNote}
                   style={({ pressed }) => [s.modalSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <Text style={[s.modalSaveText, { fontFamily: "Inter_700Bold" }]}>Save note</Text>
+                  <Text style={[s.modalSaveText, { fontFamily: "Inter_700Bold" }]}>Save sticky</Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -929,6 +1058,16 @@ const s = StyleSheet.create({
 
   input: { borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15 },
   inputMulti: { minHeight: 64, textAlignVertical: "top" },
+
+  dietPanel: { marginTop: 14, borderRadius: 18, borderWidth: 1, padding: 14 },
+  dietPanelTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+  dietTitle: { fontSize: 15, letterSpacing: -0.1 },
+  dietSub: { fontSize: 12.5, marginTop: 2 },
+  dietBadge: { minWidth: 48, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
+  dietBadgeText: { fontSize: 12.5 },
+  dietTrack: { height: 8, borderRadius: 99, overflow: "hidden", marginTop: 12 },
+  dietFill: { height: "100%", borderRadius: 99 },
+  dietHint: { fontSize: 12.5, lineHeight: 17, marginTop: 10 },
 
   logBtn: {
     flexDirection: "row",
@@ -987,6 +1126,10 @@ const s = StyleSheet.create({
   entryMeta: { fontSize: 12, marginTop: 2 },
   entrySyncError: { fontSize: 12, marginTop: 4 },
   entryNote: { fontSize: 13, lineHeight: 18, marginTop: 4 },
+  stickyStack: { gap: 6, marginTop: 8 },
+  stickyNote: { borderLeftWidth: 3, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8 },
+  stickyNoteText: { fontSize: 12.5, lineHeight: 17 },
+  stickyNoteMeta: { fontSize: 11, marginTop: 4 },
   entryRight: { alignItems: "flex-end", gap: 4 },
   entryRelTime: { fontSize: 11.5 },
   entryActions: { flexDirection: "row", gap: 2 },

@@ -77,6 +77,8 @@ export interface Record {
   title: string;
   due: string;
   note: string;
+  attachmentUri?: string;
+  attachmentName?: string;
 }
 
 export interface CalendarEvent {
@@ -513,7 +515,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         }),
       );
       if (!signedInRef.current || !merged) return;
-      // Create still in flight — remember the patch and apply it on resolve.
+      // Create still in flight; remember the patch and apply it on resolve.
       if (realId.startsWith("temp_")) {
         pendingPatch.current.set(realId, {
           ...(pendingPatch.current.get(realId) ?? {}),
