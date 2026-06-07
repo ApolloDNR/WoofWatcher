@@ -17,7 +17,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@clerk/expo";
-import { normalizeCareEventType } from "@workspace/care-domain";
+import {
+  deriveRoutineBoard,
+  normalizeCareEventType,
+  type RoutineBoardItem,
+  type RoutineBoardStatus,
+} from "@workspace/care-domain";
 import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
@@ -93,6 +98,13 @@ function dayLabel(iso: string): string {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
+function routineStatusLabel(status: RoutineBoardStatus): string {
+  if (status === "done") return "Done";
+  if (status === "overdue") return "Overdue";
+  if (status === "due") return "Due now";
+  return "Upcoming";
+}
+
 interface SuggestedEvent {
   title: string;
   type: string;
@@ -106,10 +118,10 @@ export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, updateCareDoc } = useCare();
+  const { state, updateCareDoc, addEntry } = useCare();
 
   const { getToken } = useAuth();
-  const { routines, calendarEvents, profile, entries } = state;
+  const { routines, calendarEvents, profile, entries, caregivers } = state;
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
   const now = Date.now();
@@ -145,20 +157,11 @@ export default function CalendarScreen() {
     [routines],
   );
 
-  // Smart completion: which routine types have a matching log entry today?
-  const todayLoggedTypes = useMemo(() => {
-    return new Set(
-      entries
-        .filter((e) => e.occurredAt.startsWith(today))
-        .map((e) => normalizeCareEventType(e.type, e.details)),
-    );
-  }, [entries, today]);
-
-  // How many routines are completed today?
-  const routinesDoneCount = useMemo(
-    () => sortedRoutines.filter((r) => todayLoggedTypes.has(normalizeCareEventType(r.type))).length,
-    [sortedRoutines, todayLoggedTypes],
+  const routineBoard = useMemo(
+    () => deriveRoutineBoard({ routines: sortedRoutines, entries, caregivers, now }),
+    [sortedRoutines, entries, caregivers, now],
   );
+  const assignedOwnerLoads = routineBoard.ownerLoads.filter((load) => load.assigned > 0);
 
   // Group upcoming one-off events by date.
   const upcoming = useMemo(() => {
@@ -232,6 +235,17 @@ export default function CalendarScreen() {
     setRoutineOpen(true);
   };
 
+  const openBoardRoutine = (routine: RoutineBoardItem) => {
+    openEditRoutine({
+      id: routine.id,
+      label: routine.label,
+      type: routine.type,
+      time: routine.time,
+      owner: routine.owner,
+      note: routine.note ?? "",
+    });
+  };
+
   const deleteRoutine = (id: string) => {
     Alert.alert("Delete Routine", "Remove this routine from your schedule?", [
       { text: "Cancel", style: "cancel" },
@@ -272,6 +286,33 @@ export default function CalendarScreen() {
       }));
     }
     setRoutineOpen(false);
+  };
+
+  const logRoutineDone = (routine: {
+    id: string;
+    label: string;
+    type: string;
+    time: string;
+    owner?: string | null;
+    note?: string | null;
+  }) => {
+    const type = normalizeCareEventType(routine.type);
+    const owner = typeof routine.owner === "string" ? routine.owner.trim() : "";
+    const note = typeof routine.note === "string" ? routine.note.trim() : "";
+    const caregiver = owner || caregivers[0]?.name || "You";
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    addEntry({
+      type,
+      title: routine.label,
+      caregiver,
+      occurredAt: new Date().toISOString(),
+      ...(note ? { note } : {}),
+      details: {
+        routineId: routine.id,
+        routineLabel: routine.label,
+        routineTime: routine.time,
+      },
+    });
   };
 
   const discover = async () => {
@@ -391,7 +432,7 @@ export default function CalendarScreen() {
                 <View style={{ marginTop: 4 }}>
                   {discoverMode === "local" && (
                     <Text style={[s.discoverHint, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      Curated ideas to inspire outings — confirm details before you go.
+                      Curated ideas to inspire outings - confirm details before you go.
                     </Text>
                   )}
                   {suggestions.map((sug, i) => {
@@ -405,7 +446,7 @@ export default function CalendarScreen() {
                         <View style={{ flex: 1 }}>
                           <Text style={[s.sugTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{sug.title}</Text>
                           <Text style={[s.sugMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                            {dayLabel(sug.date)}{sug.time ? ` · ${sug.time}` : ""}
+                            {dayLabel(sug.date)}{sug.time ? ` - ${sug.time}` : ""}
                           </Text>
                           {sug.note ? (
                             <Text numberOfLines={2} style={[s.sugNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{sug.note}</Text>
@@ -462,7 +503,7 @@ export default function CalendarScreen() {
                           )}
                         </View>
                         <Text style={[s.eventMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          {[e.time, e.location].filter(Boolean).join(" · ") || "All day"}
+                          {[e.time, e.location].filter(Boolean).join(" - ") || "All day"}
                         </Text>
                         {e.note ? (
                           <Text numberOfLines={2} style={[s.eventNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{e.note}</Text>
@@ -482,9 +523,9 @@ export default function CalendarScreen() {
           <View style={[s.sectionHeader, { marginTop: 14 }]}>
             <View>
               <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Daily Routine</Text>
-              {sortedRoutines.length > 0 && (
+              {routineBoard.items.length > 0 && (
                 <Text style={[s.routineProgress, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {routinesDoneCount}/{sortedRoutines.length} done today
+                  {routineBoard.doneCount}/{routineBoard.items.length} done today
                 </Text>
               )}
             </View>
@@ -492,7 +533,7 @@ export default function CalendarScreen() {
               <Ionicons name="add" size={18} color="#fff" />
             </Pressable>
           </View>
-          {sortedRoutines.length === 0 ? (
+          {routineBoard.items.length === 0 ? (
             <Pressable onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }} style={[s.emptyCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
               <PulseIcon name="bowl" size={30} />
               <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
@@ -500,35 +541,107 @@ export default function CalendarScreen() {
               </Text>
             </Pressable>
           ) : (
-            <View style={s.timeline}>
-              {sortedRoutines.map((r, i) => {
-                const icon = ROUTINE_ICON[r.type] ?? "heart";
-                const tint = PULSE_COLORS[icon];
-                const last = i === sortedRoutines.length - 1;
-                const done = todayLoggedTypes.has(r.type);
-                return (
-                  <Pressable key={r.id} onPress={() => { Haptics.selectionAsync(); openEditRoutine(r); }} style={s.timelineRow}>
-                    <View style={s.rail}>
-                      <View style={[s.railDot, { backgroundColor: done ? colors.sage : tint, borderColor: done ? colors.sage : tint }]} />
-                      {!last && <View style={[s.railLine, { backgroundColor: colors.border }]} />}
-                    </View>
-                    <View style={[s.routineCard, { backgroundColor: colors.card, shadowColor: colors.primary, opacity: done ? 0.72 : 1 }]}>
-                      <View style={[s.routineIconWrap, { backgroundColor: (done ? colors.sage : tint) + "16" }]}>
-                        <PulseIcon name={icon} size={20} color={done ? colors.sage : undefined} />
+            <View>
+              {(assignedOwnerLoads.length > 0 || routineBoard.unassignedCount > 0) && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={s.ownerLoadStrip}
+                  style={{ marginBottom: 12 }}
+                >
+                  {assignedOwnerLoads.map((load) => (
+                    <View key={load.owner} style={[s.ownerLoadChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                      <View style={[s.ownerAvatar, { backgroundColor: colors.primary + "18" }]}>
+                        <Text style={[s.ownerAvatarText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                          {load.owner.slice(0, 1).toUpperCase()}
+                        </Text>
                       </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[s.routineLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{r.label}</Text>
-                        {r.owner ? <Text style={[s.routineOwner, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{r.owner}</Text> : null}
+                      <View>
+                        <Text style={[s.ownerLoadName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{load.owner}</Text>
+                        <Text style={[s.ownerLoadCount, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {load.done}/{load.assigned} done
+                        </Text>
                       </View>
-                      <Text style={[s.routineTime, { color: done ? colors.sage : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{r.time}</Text>
-                      {done
-                        ? <Ionicons name="checkmark-circle" size={18} color={colors.sage} />
-                        : <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
-                      }
                     </View>
-                  </Pressable>
-                );
-              })}
+                  ))}
+                  {routineBoard.unassignedCount > 0 && (
+                    <View style={[s.ownerLoadChip, { backgroundColor: colors.amber + "12", borderColor: colors.amber + "44" }]}>
+                      <Ionicons name="person-add-outline" size={18} color={colors.amber} />
+                      <View>
+                        <Text style={[s.ownerLoadName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Unassigned</Text>
+                        <Text style={[s.ownerLoadCount, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {routineBoard.unassignedCount} routine{routineBoard.unassignedCount === 1 ? "" : "s"}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </ScrollView>
+              )}
+
+              <View style={s.timeline}>
+                {routineBoard.items.map((r, i) => {
+                  const icon = ROUTINE_ICON[r.normalizedType] ?? "heart";
+                  const tint = PULSE_COLORS[icon];
+                  const last = i === routineBoard.items.length - 1;
+                  const done = r.status === "done";
+                  const statusColor =
+                    r.status === "done"
+                      ? colors.sage
+                      : r.status === "overdue"
+                        ? colors.rose
+                        : r.status === "due"
+                          ? colors.amber
+                          : tint;
+                  return (
+                    <Pressable key={r.id} onPress={() => { Haptics.selectionAsync(); openBoardRoutine(r); }} style={s.timelineRow}>
+                      <View style={s.rail}>
+                        <View style={[s.railDot, { backgroundColor: statusColor, borderColor: statusColor }]} />
+                        {!last && <View style={[s.railLine, { backgroundColor: colors.border }]} />}
+                      </View>
+                      <View style={[s.routineCard, { backgroundColor: colors.card, shadowColor: colors.primary, opacity: done ? 0.72 : 1 }]}>
+                        <View style={[s.routineIconWrap, { backgroundColor: statusColor + "16" }]}>
+                          <PulseIcon name={icon} size={20} color={done ? colors.sage : undefined} />
+                        </View>
+                        <View style={s.routineMain}>
+                          <Text style={[s.routineLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{r.label}</Text>
+                          <View style={s.routineMetaRow}>
+                            <Text style={[s.routineOwner, { color: r.owner ? colors.mutedForeground : colors.amber, fontFamily: "Inter_500Medium" }]}>
+                              {r.owner ? `Assigned to ${r.owner}` : "Tap to assign owner"}
+                            </Text>
+                            {r.completedBy ? (
+                              <Text style={[s.routineOwner, { color: colors.sage, fontFamily: "Inter_600SemiBold" }]}>Done by {r.completedBy}</Text>
+                            ) : null}
+                          </View>
+                          {r.note ? (
+                            <Text numberOfLines={1} style={[s.routineNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{r.note}</Text>
+                          ) : null}
+                        </View>
+                        <View style={s.routineActions}>
+                          <View style={[s.routineStatusPill, { backgroundColor: statusColor + "16" }]}>
+                            <Text style={[s.routineStatusText, { color: statusColor, fontFamily: "Inter_700Bold" }]}>
+                              {routineStatusLabel(r.status)}
+                            </Text>
+                          </View>
+                          <Text style={[s.routineTime, { color: done ? colors.sage : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{r.time}</Text>
+                          <Pressable
+                            onPress={(event) => {
+                              event.stopPropagation?.();
+                              if (!done) logRoutineDone(r);
+                            }}
+                            disabled={done}
+                            hitSlop={8}
+                            accessibilityRole="button"
+                            accessibilityLabel={done ? `${r.label} already logged` : `Log ${r.label} as done`}
+                            style={[s.routineDoneBtn, { backgroundColor: done ? colors.sage + "18" : colors.primary }]}
+                          >
+                            <Ionicons name={done ? "checkmark-circle" : "checkmark"} size={16} color={done ? colors.sage : "#fff"} />
+                          </Pressable>
+                        </View>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
           )}
         </Animated.View>
@@ -547,7 +660,7 @@ export default function CalendarScreen() {
             <TextInput
               value={rLabel}
               onChangeText={setRLabel}
-              placeholder="Morning walk, breakfast, bedtime snack…"
+              placeholder="Morning walk, breakfast, bedtime snack..."
               placeholderTextColor={colors.mutedForeground}
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
@@ -584,18 +697,37 @@ export default function CalendarScreen() {
                 <TextInput
                   value={rOwner}
                   onChangeText={setROwner}
-                  placeholder="Apollo, Maya…"
+                  placeholder="Apollo, Maya..."
                   placeholderTextColor={colors.mutedForeground}
                   style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
                 />
               </View>
             </View>
 
+            {caregivers.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ownerQuickRow}>
+                {caregivers.map((caregiver) => {
+                  const active = rOwner.trim().toLowerCase() === caregiver.name.trim().toLowerCase();
+                  return (
+                    <Pressable
+                      key={caregiver.name}
+                      onPress={() => { Haptics.selectionAsync(); setROwner(caregiver.name); }}
+                      style={[s.ownerQuickChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}
+                    >
+                      <Text style={[s.ownerQuickText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {caregiver.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NOTE (OPTIONAL)</Text>
             <TextInput
               value={rNote}
               onChangeText={setRNote}
-              placeholder="Any extra details…"
+              placeholder="Any extra details..."
               placeholderTextColor={colors.mutedForeground}
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
@@ -625,7 +757,7 @@ export default function CalendarScreen() {
             <TextInput
               value={evTitle}
               onChangeText={setEvTitle}
-              placeholder="Beach day, vet visit, hike…"
+              placeholder="Beach day, vet visit, hike..."
               placeholderTextColor={colors.mutedForeground}
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
@@ -650,7 +782,7 @@ export default function CalendarScreen() {
                   value={evDate}
                   onChangeText={(raw) => {
                     setDateError(null);
-                    // Auto-insert dashes: 2026 → 2026- → 2026-06- → 2026-06-15
+                    // Auto-insert dashes: 2026 -> 2026- -> 2026-06- -> 2026-06-15
                     const digits = raw.replace(/\D/g, "").slice(0, 8);
                     let fmt = digits;
                     if (digits.length > 4) fmt = `${digits.slice(0, 4)}-${digits.slice(4)}`;
@@ -768,6 +900,23 @@ const s = StyleSheet.create({
   eventNote: { fontSize: 12.5, lineHeight: 17, marginTop: 4 },
   removeBtn: { width: 28, height: 28, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 
+  ownerLoadStrip: { gap: 8, paddingRight: 20 },
+  ownerLoadChip: {
+    minWidth: 126,
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+  },
+  ownerAvatar: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  ownerAvatarText: { fontSize: 13 },
+  ownerLoadName: { fontSize: 12.5 },
+  ownerLoadCount: { fontSize: 11.5, marginTop: 1 },
+
   timeline: {},
   timelineRow: { flexDirection: "row", gap: 12 },
   rail: { width: 24, alignItems: "center" },
@@ -787,9 +936,16 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   routineIconWrap: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  routineMain: { flex: 1, minWidth: 0 },
   routineLabel: { fontSize: 15 },
   routineOwner: { fontSize: 12.5, marginTop: 2 },
+  routineMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  routineNote: { fontSize: 12, lineHeight: 16, marginTop: 3 },
+  routineActions: { width: 82, alignItems: "flex-end", gap: 5 },
+  routineStatusPill: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  routineStatusText: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
   routineTime: { fontSize: 13 },
+  routineDoneBtn: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
@@ -800,6 +956,9 @@ const s = StyleSheet.create({
   fieldRow: { flexDirection: "row", gap: 12 },
   typeChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 12, borderWidth: 1 },
   typeChipText: { fontSize: 13 },
+  ownerQuickRow: { gap: 8, paddingTop: 10, paddingRight: 20 },
+  ownerQuickChip: { borderWidth: 1, borderRadius: 11, paddingHorizontal: 12, paddingVertical: 8 },
+  ownerQuickText: { fontSize: 12.5 },
   saveBtn: { marginTop: 24, borderRadius: 15, paddingVertical: 15, alignItems: "center" },
   saveBtnText: { color: "#fff", fontSize: 15.5 },
   deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, paddingVertical: 10 },
