@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 
 import {
   isUnsyncedEntry,
+  shouldRetryCreate,
+  shouldRetryUpdate,
   mergeServerAndLocalEntries,
   withSyncedStatus,
 } from "./careSync.ts";
@@ -63,4 +65,47 @@ test("sorts merged entries newest first", () => {
     merged.map((entry) => entry.id),
     ["server_new", "temp_old"],
   );
+});
+
+test("keeps failed server edits without duplicating the matching server row", () => {
+  const merged = mergeServerAndLocalEntries(
+    [
+      {
+        id: "server_1",
+        occurredAt: "2026-06-06T12:00:00.000Z",
+        syncStatus: "failed",
+        syncError: "Saved locally. Refresh to retry sync.",
+      },
+    ],
+    [
+      {
+        id: "server_1",
+        occurredAt: "2026-06-06T10:00:00.000Z",
+      },
+      {
+        id: "server_2",
+        occurredAt: "2026-06-06T11:00:00.000Z",
+      },
+    ],
+  );
+
+  assert.deepEqual(
+    merged.map((entry) => [entry.id, entry.syncStatus]),
+    [
+      ["server_1", "failed"],
+      ["server_2", "synced"],
+    ],
+  );
+});
+
+test("separates create retries from update retries", () => {
+  assert.equal(shouldRetryCreate({ id: "temp_1", syncStatus: "failed" }), true);
+  assert.equal(shouldRetryCreate({ id: "local_1", syncStatus: "local" }), true);
+  assert.equal(shouldRetryCreate({ id: "server_1", syncStatus: "failed" }), false);
+  assert.equal(shouldRetryCreate({ id: "server_1", syncStatus: "local" }), false);
+
+  assert.equal(shouldRetryUpdate({ id: "server_1", syncStatus: "failed" }), true);
+  assert.equal(shouldRetryUpdate({ id: "server_1", syncStatus: "local" }), true);
+  assert.equal(shouldRetryUpdate({ id: "temp_1", syncStatus: "failed" }), false);
+  assert.equal(shouldRetryUpdate({ id: "server_2", syncStatus: "synced" }), false);
 });

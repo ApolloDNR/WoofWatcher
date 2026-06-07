@@ -28,6 +28,24 @@ export function isUnsyncedEntry(
   );
 }
 
+export function shouldRetryCreate(
+  entry: Pick<SyncableEntry, "id" | "syncStatus">,
+): boolean {
+  return (
+    entry.id.startsWith("temp_") ||
+    (entry.syncStatus === "local" && entry.id.startsWith("local_"))
+  );
+}
+
+export function shouldRetryUpdate(
+  entry: Pick<SyncableEntry, "id" | "syncStatus">,
+): boolean {
+  return (
+    (entry.syncStatus === "failed" || entry.syncStatus === "local") &&
+    !shouldRetryCreate(entry)
+  );
+}
+
 function timeValue(entry: SyncableEntry): number {
   const parsed = Date.parse(entry.occurredAt ?? "");
   return Number.isNaN(parsed) ? 0 : parsed;
@@ -38,7 +56,10 @@ export function mergeServerAndLocalEntries<T extends SyncableEntry>(
   serverEntries: readonly T[],
 ): T[] {
   const unsyncedLocal = localEntries.filter(isUnsyncedEntry);
-  const serverSynced = withSyncedStatus(serverEntries);
+  const localIds = new Set(unsyncedLocal.map((entry) => entry.id));
+  const serverSynced = withSyncedStatus(
+    serverEntries.filter((entry) => !localIds.has(entry.id)),
+  );
 
   return [...unsyncedLocal, ...serverSynced].sort(
     (a, b) => timeValue(b) - timeValue(a),

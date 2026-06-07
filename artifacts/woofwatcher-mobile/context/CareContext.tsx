@@ -24,8 +24,9 @@ import {
   type CareStateEnvelope,
 } from "@workspace/api-client-react";
 import {
-  isUnsyncedEntry,
   mergeServerAndLocalEntries,
+  shouldRetryCreate,
+  shouldRetryUpdate,
   type EntrySyncStatus,
 } from "@/lib/careSync";
 
@@ -417,6 +418,40 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     [queryClient],
   );
 
+  const persistEntryUpdate = useCallback(
+    (id: string, entry: Entry) => {
+      setEntries((prev) =>
+        prev.map((e) =>
+          e.id === id
+            ? { ...e, syncStatus: "pending", syncError: undefined }
+            : e,
+        ),
+      );
+      updateCareEntry(id, toUpdateInput(entry))
+        .then((updated) => {
+          const synced = toEntry(updated);
+          setEntries((prev) => prev.map((e) => (e.id === id ? synced : e)));
+          queryClient.invalidateQueries({
+            queryKey: getListCareEntriesQueryKey(),
+          });
+        })
+        .catch(() => {
+          setEntries((prev) =>
+            prev.map((e) =>
+              e.id === id
+                ? {
+                    ...e,
+                    syncStatus: "failed",
+                    syncError: "Saved locally. Refresh to retry sync.",
+                  }
+                : e,
+            ),
+          );
+        });
+    },
+    [queryClient],
+  );
+
   const syncFromServer = useCallback(async () => {
     if (!signedInRef.current || syncingRef.current) return;
     syncingRef.current = true;
@@ -441,12 +476,18 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
       const rows = await listCareEntries();
       const serverEntries = rows.map(toEntry);
-      const retryable = entriesRef.current.filter(
-        (entry) => isUnsyncedEntry(entry) && entry.syncStatus !== "pending",
+      const retryableCreates = entriesRef.current.filter(
+        (entry) => shouldRetryCreate(entry) && entry.syncStatus !== "pending",
+      );
+      const retryableUpdates = entriesRef.current.filter(
+        (entry) => shouldRetryUpdate(entry),
       );
       setEntries((prev) => mergeServerAndLocalEntries(prev, serverEntries));
-      retryable.forEach((entry) => {
+      retryableCreates.forEach((entry) => {
         persistEntryCreate(entry.id, entry);
+      });
+      retryableUpdates.forEach((entry) => {
+        persistEntryUpdate(entry.id, entry);
       });
     } catch {
       // Offline or transient failure: keep showing the cached state.
@@ -454,7 +495,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       syncingRef.current = false;
       setIsSyncing(false);
     }
-  }, [persistEntryCreate]);
+  }, [persistEntryCreate, persistEntryUpdate]);
 
   useEffect(() => {
     if (!clerkLoaded || !isSignedIn) return;
@@ -510,7 +551,20 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       setEntries((prev) =>
         prev.map((e) => {
           if (e.id !== realId) return e;
-          merged = { ...e, ...patch };
+          merged = {
+            ...e,
+            ...patch,
+            syncStatus: signedInRef.current
+              ? "pending"
+              : realId.startsWith("temp_")
+                ? e.syncStatus
+                : "local",
+            syncError: signedInRef.current
+              ? undefined
+              : realId.startsWith("temp_")
+                ? e.syncError
+                : "Saved offline. Sign in or refresh to sync.",
+          };
           return merged;
         }),
       );
@@ -523,9 +577,31 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         });
         return;
       }
-      updateCareEntry(realId, toUpdateInput(merged)).catch(() => {});
+      updateCareEntry(realId, toUpdateInput(merged))
+        .then((updated) => {
+          const synced = toEntry(updated);
+          setEntries((prev) =>
+            prev.map((e) => (e.id === realId ? synced : e)),
+          );
+          queryClient.invalidateQueries({
+            queryKey: getListCareEntriesQueryKey(),
+          });
+        })
+        .catch(() => {
+          setEntries((prev) =>
+            prev.map((e) =>
+              e.id === realId
+                ? {
+                    ...e,
+                    syncStatus: "failed",
+                    syncError: "Saved locally. Refresh to retry sync.",
+                  }
+                : e,
+            ),
+          );
+        });
     },
-    [],
+    [queryClient],
   );
 
   const updateCareDoc = useCallback(
