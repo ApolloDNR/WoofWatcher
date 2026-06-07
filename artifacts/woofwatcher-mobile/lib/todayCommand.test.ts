@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 
 import { deriveTodayCommand, type TodayCommandState } from "./todayCommand.ts";
 
+process.env.TZ = "America/Los_Angeles";
+
 const MORNING = new Date("2026-06-06T09:00:00-07:00").getTime();
 const AFTERNOON = new Date("2026-06-06T14:00:00-07:00").getTime();
 
