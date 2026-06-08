@@ -30,7 +30,7 @@ Passing means sitter, vet, trainer, and household reports are useful, previewabl
 
 Passing means free/paid packaging is clear, premium value is visible, reports and household workflows support subscription value, and payments are not enabled before privacy/support obligations are ready.
 
-Current gap, 2026-06-08: Subscription packaging exists in planning docs, but there is not yet an in-app premium/pricing surface or entitlement model.
+Current evidence, 2026-06-08: Subscription packaging exists in a tested care-domain premium model and an in-app WoofWatcher Plus preview surface. Payments are still disabled until privacy/support/refund/subscription-launch obligations are approved.
 
 ## Gate 8: Production Safety
 

@@ -1,0 +1,301 @@
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import * as Haptics from "expo-haptics";
+import { Stack, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useRef } from "react";
+import {
+  Alert,
+  Animated,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  deriveHealthWatch,
+  derivePremiumPreview,
+  type PremiumPlan,
+  type PremiumValueSignal,
+} from "@workspace/care-domain";
+import { useCare } from "@/context/CareContext";
+import { useColors } from "@/hooks/useColors";
+
+const DISPLAY = "Fredoka_700Bold";
+const DISPLAY_SEMI = "Fredoka_600SemiBold";
+
+function signalIcon(key: PremiumValueSignal["key"]): keyof typeof Ionicons.glyphMap {
+  if (key === "household") return "people-outline";
+  if (key === "health") return "heart-outline";
+  if (key === "reports") return "document-text-outline";
+  if (key === "records") return "folder-open-outline";
+  return "calendar-outline";
+}
+
+export default function PremiumScreen() {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { state } = useCare();
+  const now = Date.now();
+
+  const healthWatch = useMemo(
+    () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
+    [state.entries, state.routines, now],
+  );
+
+  const preview = useMemo(
+    () =>
+      derivePremiumPreview({
+        caregiverCount: Math.max(state.caregivers.length, 1),
+        routineCount: state.routines.length,
+        reportHistoryCount: state.reportArtifacts.length,
+        recordCount: state.records.length,
+        healthSignalCount: healthWatch.signals.length,
+      }),
+    [
+      state.caregivers.length,
+      state.routines.length,
+      state.reportArtifacts.length,
+      state.records.length,
+      healthWatch.signals.length,
+    ],
+  );
+
+  const recommendedPlan =
+    preview.plans.find((plan) => plan.id === preview.recommendedPlanId) ?? preview.plans[1];
+
+  const fade = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(18)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fade, { toValue: 1, duration: 420, useNativeDriver: Platform.OS !== "web" }),
+      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: Platform.OS !== "web" }),
+    ]).start();
+  }, [fade, slide]);
+
+  const showLaunchChecklist = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(
+      "Premium launch checklist",
+      "Payments stay disabled until privacy terms, support scope, refund workflow, subscription packaging, and app-store launch target are approved.",
+    );
+  };
+
+  const topInset = Platform.OS === "web" ? 18 : insets.top;
+
+  return (
+    <View style={[s.root, { backgroundColor: colors.background }]}>
+      <Stack.Screen options={{ title: "WoofWatcher Plus" }} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: topInset + 12, paddingHorizontal: 20, paddingBottom: insets.bottom + 40 }}
+      >
+        <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
+          <LinearGradient
+            colors={[colors.midnight, colors.primary, colors.sage]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={s.hero}
+          >
+            <View style={s.heroTop}>
+              <View style={s.heroMark}>
+                <Ionicons name="diamond-outline" size={21} color="#FFFFFF" />
+              </View>
+              <View style={[s.planBadge, { backgroundColor: "rgba(255,255,255,0.16)" }]}>
+                <Text style={[s.planBadgeText, { fontFamily: "Inter_700Bold" }]}>
+                  {recommendedPlan.badge}
+                </Text>
+              </View>
+            </View>
+            <Text style={[s.heroTitle, { fontFamily: DISPLAY }]}>WoofWatcher Plus</Text>
+            <Text style={[s.heroSub, { fontFamily: "Inter_500Medium" }]}>
+              Premium dog care built around advanced meals, Health Watch, shared household routines, records, and reports.
+            </Text>
+            <View style={s.recoRow}>
+              <Text style={[s.recoLabel, { fontFamily: "Inter_600SemiBold" }]}>Recommended</Text>
+              <Text style={[s.recoPlan, { fontFamily: DISPLAY_SEMI }]}>{recommendedPlan.name}</Text>
+              <Text style={[s.recoPrice, { fontFamily: "Inter_700Bold" }]}>{recommendedPlan.monthlyPrice}</Text>
+            </View>
+          </LinearGradient>
+
+          <View style={[s.notice, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "45" }]}>
+            <Ionicons name="lock-closed-outline" size={16} color={colors.amber} />
+            <Text style={[s.noticeText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+              {preview.launchNotice}
+            </Text>
+          </View>
+
+          <View style={s.sectionHeader}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Why upgrade</Text>
+          </View>
+          <View style={s.signalGrid}>
+            {preview.valueSignals.slice(0, 4).map((signal) => (
+              <View key={signal.key} style={[s.signalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[s.signalIcon, { backgroundColor: colors.sage + "16" }]}>
+                  <Ionicons name={signalIcon(signal.key)} size={18} color={colors.sage} />
+                </View>
+                <Text style={[s.signalLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  {signal.label}
+                </Text>
+                <Text style={[s.signalDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {signal.detail}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={s.sectionHeader}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Plans</Text>
+          </View>
+          <View style={s.planStack}>
+            {preview.plans.map((plan) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                recommended={plan.id === preview.recommendedPlanId}
+                colors={colors}
+              />
+            ))}
+          </View>
+
+          <View style={s.actionRow}>
+            <Pressable
+              onPress={showLaunchChecklist}
+              style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Ionicons name="clipboard-outline" size={18} color="#FFFFFF" />
+              <Text style={[s.primaryText, { fontFamily: "Inter_700Bold" }]}>Launch checklist</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.back();
+              }}
+              style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Text style={[s.secondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Back to care</Text>
+            </Pressable>
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function PlanCard({
+  plan,
+  recommended,
+  colors,
+}: {
+  plan: PremiumPlan;
+  recommended: boolean;
+  colors: ReturnType<typeof useColors>;
+}) {
+  return (
+    <View
+      style={[
+        s.planCard,
+        {
+          backgroundColor: colors.card,
+          borderColor: recommended ? colors.primary : colors.border,
+          shadowColor: colors.primary,
+        },
+      ]}
+    >
+      <View style={s.planTop}>
+        <View>
+          <Text style={[s.planName, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{plan.name}</Text>
+          <Text style={[s.planSummary, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            {plan.summary}
+          </Text>
+        </View>
+        <View style={[s.pricePill, { backgroundColor: recommended ? colors.primary : colors.background }]}>
+          <Text style={[s.priceText, { color: recommended ? "#FFFFFF" : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+            {plan.monthlyPrice}
+          </Text>
+        </View>
+      </View>
+      {recommended ? (
+        <View style={[s.recommendedPill, { backgroundColor: colors.sage + "14" }]}>
+          <Ionicons name="checkmark-circle" size={15} color={colors.sage} />
+          <Text style={[s.recommendedText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Recommended for your current care setup</Text>
+        </View>
+      ) : null}
+      <View style={s.featureList}>
+        {plan.features.map((feature) => (
+          <View key={feature} style={s.featureRow}>
+            <Ionicons name="checkmark" size={15} color={colors.sage} />
+            <Text style={[s.featureText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{feature}</Text>
+          </View>
+        ))}
+      </View>
+      <Text style={[s.annualText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+        Annual target: {plan.annualPrice}
+      </Text>
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  root: { flex: 1 },
+  hero: {
+    borderRadius: 26,
+    padding: 22,
+    minHeight: 260,
+    justifyContent: "space-between",
+    overflow: "hidden",
+  },
+  heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  heroMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  planBadge: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  planBadgeText: { color: "#FFFFFF", fontSize: 12 },
+  heroTitle: { color: "#FFFFFF", fontSize: 34, letterSpacing: 0, marginTop: 28 },
+  heroSub: { color: "rgba(255,255,255,0.84)", fontSize: 15, lineHeight: 22, marginTop: 10 },
+  recoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flexWrap: "wrap",
+    marginTop: 24,
+  },
+  recoLabel: { color: "rgba(255,255,255,0.72)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6 },
+  recoPlan: { color: "#FFFFFF", fontSize: 20 },
+  recoPrice: { color: "#FFFFFF", fontSize: 13 },
+  notice: { flexDirection: "row", gap: 9, borderWidth: 1, borderRadius: 17, padding: 14, marginTop: 14 },
+  noticeText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
+  sectionHeader: { marginTop: 28, marginBottom: 12 },
+  sectionTitle: { fontSize: 22, letterSpacing: 0 },
+  signalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  signalCard: { width: "48.5%", borderWidth: 1, borderRadius: 18, padding: 14 },
+  signalIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  signalLabel: { fontSize: 14 },
+  signalDetail: { fontSize: 12.5, lineHeight: 18, marginTop: 5 },
+  planStack: { gap: 12 },
+  planCard: { borderWidth: 1.5, borderRadius: 20, padding: 16, shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
+  planTop: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  planName: { fontSize: 20 },
+  planSummary: { fontSize: 13, lineHeight: 19, marginTop: 4, maxWidth: 220 },
+  pricePill: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
+  priceText: { fontSize: 12 },
+  recommendedPill: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, marginTop: 12, alignSelf: "flex-start" },
+  recommendedText: { fontSize: 11.5 },
+  featureList: { gap: 8, marginTop: 14 },
+  featureRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  featureText: { flex: 1, fontSize: 13.5, lineHeight: 18 },
+  annualText: { fontSize: 12, marginTop: 14 },
+  actionRow: { flexDirection: "row", gap: 10, marginTop: 22 },
+  primaryBtn: { flex: 1, height: 52, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  primaryText: { color: "#FFFFFF", fontSize: 14.5 },
+  secondaryBtn: { minWidth: 112, height: 52, borderRadius: 17, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 14 },
+  secondaryText: { fontSize: 14 },
+});

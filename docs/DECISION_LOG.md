@@ -192,6 +192,16 @@ Owner: Codex.
 
 Revisit trigger: Role-based household permissions or caregiver privacy controls move from local metadata into server-side authorization.
 
+### 2026-06-08: Premium Preview Ships Before Checkout
+
+Decision: WoofWatcher can show Free, Plus, and Family packaging in-app, but checkout remains disabled until privacy, support, refund, subscription, and launch obligations are approved.
+
+Reason: Apollo needs a revenue story and paid-value surface now. Real payments create operational and legal obligations that should not be activated before the product and company support model are ready.
+
+Owner: Codex.
+
+Revisit trigger: Entitlement rules, production pricing, app-store subscription setup, and customer support/refund policies are approved.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

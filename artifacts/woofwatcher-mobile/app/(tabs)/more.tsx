@@ -353,6 +353,16 @@ export default function MoreScreen() {
     },
     {
       icon: "star",
+      iconName: "diamond-outline",
+      label: "WoofWatcher Plus",
+      sub: "Preview Plus, Family, and paid-value packaging",
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push("/premium");
+      },
+    },
+    {
+      icon: "star",
       iconName: "color-palette",
       label: "Portrait Studio",
       sub: "Turn a photo into a hand-painted masterpiece",
@@ -459,6 +469,32 @@ export default function MoreScreen() {
               <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Logs today</Text>
             </View>
           </View>
+
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/premium");
+            }}
+            style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
+          >
+            <LinearGradient
+              colors={[colors.midnight, colors.primary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={s.premiumCard}
+            >
+              <View style={s.premiumIcon}>
+                <Ionicons name="diamond-outline" size={19} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.premiumTitle, { fontFamily: DISPLAY_SEMI }]}>WoofWatcher Plus</Text>
+                <Text style={[s.premiumSub, { fontFamily: "Inter_500Medium" }]}>
+                  Advanced meals, Health Watch, reports, records, and household care sync.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+            </LinearGradient>
+          </Pressable>
 
           {/* Care Team / Household */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
@@ -1147,6 +1183,10 @@ const s = StyleSheet.create({
   statusLabel: { fontSize: 11.5, marginTop: 3, textAlign: "center" },
   statusEnergyRow: { flexDirection: "row", gap: 4, marginBottom: 1 },
   statusEnergyDot: { width: 8, height: 8, borderRadius: 4 },
+  premiumCard: { flexDirection: "row", alignItems: "center", gap: 13, borderRadius: 22, padding: 16, marginTop: 12 },
+  premiumIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.15)" },
+  premiumTitle: { color: "#FFFFFF", fontSize: 17, letterSpacing: 0 },
+  premiumSub: { color: "rgba(255,255,255,0.78)", fontSize: 12.5, lineHeight: 18, marginTop: 2 },
 
   notice: { flexDirection: "row", gap: 10, borderRadius: 18, borderWidth: 1, padding: 16, marginTop: 24 },
   noticeText: { flex: 1, fontSize: 13, lineHeight: 19 },

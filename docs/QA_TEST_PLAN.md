@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-08:
 
-- PASS: 49 focused tests with the command above.
+- PASS: 52 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -29,6 +29,7 @@ Latest local evidence, 2026-06-08:
 - Sticky notes.
 - WoofGuide deterministic actions.
 - Setup wizard.
+- Premium plan packaging and checkout-disabled guard.
 
 ## Manual Mobile QA
 

@@ -90,6 +90,14 @@ function RootLayoutNav() {
           headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
+      <Stack.Screen
+        name="premium"
+        options={{
+          title: "WoofWatcher Plus",
+          presentation: "card",
+          headerStyle: { backgroundColor: "#F7F5F1" },
+        }}
+      />
     </Stack>
   );
 }

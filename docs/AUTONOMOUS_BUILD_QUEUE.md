@@ -8,8 +8,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 
 1. DONE 2026-06-08: Routines/logs relationship: logs satisfy/update matching routines.
 2. DONE 2026-06-08: Meal logging: expected portion, served amount, eaten amount, skipped/partial completion, notes, and household visibility.
-3. Next: Today Command: make next action obvious, route to the right workflow, explain why.
-4. Next revenue task: Subscription path: pricing screen, premium gates, and plan packaging.
+3. DONE 2026-06-08: Subscription path: pricing screen, premium preview, and plan packaging without live payments.
+4. Next: Today Command: make next action obvious, route to the right workflow, explain why.
 5. Quick Log: make common care logging instant without losing detail.
 6. Health Watch: symptom/vomit/stool/appetite pattern views with non-diagnostic boundaries.
 7. Handoff: make sitter/family/trainer/vet reports valuable enough to pay for.

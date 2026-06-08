@@ -42,6 +42,10 @@ WoofWatcher can become a meaningful niche subscription business if it becomes th
 
 Do not add real payment flows until privacy terms, support obligations, launch target, subscription packaging, and refund/support workflow are clear. It is acceptable to add pricing surfaces or a gated premium preview before payment wiring.
 
+## Premium Preview Surface
+
+Status, 2026-06-08: An in-app WoofWatcher Plus preview/paywall surface now packages Free, Plus, and Family without enabling real payments. It explains advanced meals, household care sync, Health Watch, reports, records, WoofGuide drafting, and stored report history as paid-value pillars.
+
 ## Next Money Task
 
-Build an in-app premium preview/paywall surface that packages Plus and Family value without enabling real payments. It should explain advanced meals, household care sync, Health Watch, reports, records, WoofGuide drafting, and stored report history as paid-value pillars.
+Define launch policy and entitlement enforcement: what exactly is limited on Free, what Plus unlocks, what Family unlocks, how grandfathering works, and what support/refund terms are required before checkout.
