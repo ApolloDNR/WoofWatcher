@@ -14,10 +14,11 @@ secrets, Vercel env vars, or the relevant deployment secret manager.
 
 - `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`: Clerk publishable key for Expo.
 
-## Required For Web Builds
+## Web Build Defaults
 
-- `PORT`: Vite dev or preview port.
-- `BASE_PATH`: Vite base path. Use `/` for normal local development.
+- `PORT`: Vite dev or preview port. If omitted by CI build jobs, the web app
+  defaults to `5173` and the mockup sandbox defaults to `5174`.
+- `BASE_PATH`: Vite base path. If omitted, builds default to `/`.
 
 ## Production Security
 

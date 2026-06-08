@@ -1,0 +1,162 @@
+# WoofWatcher Ultimate Release Plan
+
+## What The App Is
+
+WoofWatcher is a premium mobile-first dog care operating system for owners, households, caregivers, sitters, trainers, walkers, and vets. It coordinates a dog's daily care through shared routines, quick logging, health watch, records, handoffs, report exports, and WoofGuide AI assistance.
+
+It is not a generic pet tracker. The product is designed around a real dog with care quirks, anxiety context, eating patterns, health signals, household handoffs, and records that need to be trusted.
+
+## Full Premium Release Definition
+
+Full Premium Release means the app is credible enough for a dog owner to use every day, show publicly, and pay for. The release must satisfy these standards:
+
+- onboarding creates an account, household, dog profile, and baseline routine
+- Today Command clearly answers what the dog needs now
+- Quick Log and Full Log cover the core care categories without dead ends
+- meal, water, walk, potty, play, training, mood, medication, weight, vomit, symptoms, grooming, alone time, notes, and sticky notes are represented
+- routines and reminders can be assigned to household caregivers
+- records cover vaccines, vet visits, diet, insurance, microchip, documents, and pet credential data
+- handoff/report flows produce useful summaries for sitters, family, trainers, and vets
+- WoofGuide is grounded in dog context and respects the medical boundary
+- offline and sync state is visible and recoverable where architecture supports it
+- empty, loading, error, and failed-sync states are designed and useful
+- tests cover care-domain logic and key mobile behavior
+- deployment docs and production env/security expectations are clear
+- CI verifies install, behavior tests, typecheck, and CI-safe builds
+
+## Feature Map And Current Status
+
+| Area | Current status | Release gap |
+| --- | --- | --- |
+| Account/Auth | Mobile uses Clerk auth screens and provider guardrails. API uses Clerk auth helpers. | Confirm end-to-end account onboarding in Expo runtime and document provider setup. |
+| Household | API has household routes and provisioning logic. Mobile context supports shared state. | Improve household setup UI, roles, invites, and caregiver permissions. |
+| Dog Profile | Phoenix-focused profile exists in care state and screens. | Add first-run setup/edit flow, multiple-dog model, profile photo, microchip and credential fields. |
+| Today Command | Mobile has a Today Command model and home surface. | Add richer action routing, explanations, empty states, reminders, and interaction polish. |
+| Quick Log | Mobile log surface supports many care event types. | Improve progressive composer, sticky note attachment UX, validation, and post-save routing. |
+| Full Log | Care entries persist locally and through API sync. | Add detail views, edit/delete audit handling, filters, and timeline search. |
+| Meal/Diet | Domain has diet progress logic and mobile meal progress UI. | Add richer daily target setup, portion presets, feeding streaks, and appetite pattern explanations. |
+| Water | Event taxonomy includes water. | Add water-specific quick actions, daily hydration summary, and report language. |
+| Walk | Event taxonomy and status count walks. | Add distance/location where feasible, route notes, dog interaction outcomes, and streaks. |
+| Potty | Potty status and logs exist. | Add stool/pee detail capture, pattern summary, and clearer health watch connection. |
+| Play/Training | Event taxonomy supports play and training. | Add training goals, skills, progress history, and trainer handoff fields. |
+| Mood/Energy | Avatar and health screens use mood/energy signals. | Add structured mood/energy logging and trend charts. |
+| Medication | Canonical medication event type exists. | Add medication schedule, dose, due/upcoming state, and adherence summary. |
+| Weight | Records and log taxonomy support weight. | Add weight chart, goal range, and vet report summary. |
+| Vomit/Symptom | Health Watch detects yellow bile and urgent signals. | Add richer symptom composer, frequency views, red-flag checklist, and vet-note export. |
+| Grooming | Event taxonomy supports grooming. | Add grooming-specific fields and reminders. |
+| Alone Time | Event taxonomy supports alone time. | Add separation/anxiety pattern tracking and handoff notes. |
+| Sticky Notes | Domain tests cover sticky note append/sanitize behavior. | Upgrade UI to attach multiple sticky notes to any log and surface them in details/handoff. |
+| Routines/Reminders | Routine board domain logic exists; calendar UI has assignment/completion concepts. | Add reminder notifications, recurring rules, missed routine nudges, and owner load balancing. |
+| Records | Domain has record vault and pet credential summary. Mobile records screen exists. | Add document upload/storage, receipt capture, insurance, microchip, vaccine expiry alerts, and credential card export. |
+| Handoff/Reports | Domain supports care pass and handoff summaries. | Add in-app handoff/report generation, PDF/export flow, share targets, and audience templates. |
+| WoofGuide | API routes and mobile WoofGuide screen exist. | Add action cards, log drafts, reminder creation, vet note drafting, report drafting, and stronger source citations. |
+| Offline/Sync | Mobile care sync handles local/pending/failed status and retry separation. | Add durable outbox, conflict-safe state updates, sync dashboard, and recovery tests. |
+| Design | Warm brand assets and Phoenix art exist. | Need full premium design system, motion spec, high-end screen polish, accessibility pass, and Figma alignment. |
+| CI/QA | GitHub Actions verifies install, focused tests, typecheck, API/web builds. | Add mobile runtime smoke, API route tests, Playwright or Expo smoke, accessibility and visual regression where feasible. |
+
+## Missing Features
+
+1. First-run onboarding flow for account, household, dog profile, diet, and routine setup.
+2. Multiple dogs and dog switcher.
+3. Household invite flow and role-specific permissions.
+4. Durable offline outbox and conflict handling for care state edits.
+5. Full log detail view with edit/delete audit behavior.
+6. Sticky note UI attached to every log type.
+7. Records document upload/storage and credential card export.
+8. Report/PDF export for vet, sitter, trainer, and household review.
+9. WoofGuide action cards that can create structured logs, reminders, notes, and report drafts.
+10. Reminder notification flow.
+11. High-end motion, transitions, avatar state animation, and accessibility polish.
+12. Production deployment wiring and release runbook.
+
+## Design And Polish Gaps
+
+- Current mobile UI is functional but not yet a final premium visual system.
+- Need component inventory for buttons, chips, cards, tabs, status banners, forms, empty states, and report surfaces.
+- Need motion rules for log confirmation, sync recovery, avatar mood, routine completion, report generation, and assistant actions.
+- Need accessibility pass for contrast, touch target sizes, dynamic type, keyboard flow, and screen-reader labels.
+- Need visual hierarchy audit across Today, Log, Calendar, Records, More, WoofGuide, and auth screens.
+- Need Figma design system or equivalent component spec before major visual overhaul.
+
+## Data And Backend Gaps
+
+- Confirm database schema supports multiple dogs, household roles, record documents, report artifacts, and notification preferences.
+- Add storage provider for uploaded records and generated reports.
+- Add role-aware authorization checks beyond basic household membership.
+- Add audit trail for destructive changes and important medical/record edits.
+- Add API tests for care entries, care state, household provisioning, WoofGuide events, and rate limits.
+- Add background/retry strategy for mobile offline outbox.
+
+## Test And QA Gaps
+
+- Existing focused behavior tests cover care sync, Today Command, event taxonomy, day status, care pass, diet progress, health handoff, record vault, routine board, and sticky notes.
+- Missing API integration tests.
+- Missing Expo/mobile runtime smoke.
+- Missing auth onboarding smoke.
+- Missing visual regression or screenshot review for core screens.
+- Missing generated report snapshot tests.
+- Missing document upload/security tests.
+- Missing accessibility checks.
+
+## Security, Privacy, And Compliance Gaps
+
+- Do not commit secrets or env files.
+- Production API must set `ALLOWED_ORIGINS`.
+- Health and vet guidance must remain non-diagnostic.
+- Add privacy copy for pet records, health notes, household sharing, and AI usage.
+- Add data export/delete strategy before public launch.
+- Add role-based access control and audit log for shared households.
+- Add document storage rules for receipts, insurance, vaccine records, and medical documents.
+
+## Deployment And Production Gaps
+
+- CI is active and green on `main`.
+- Need production env matrix for API, mobile, web/dashboard, and storage.
+- Need deployment target decisions for API and web.
+- Need mobile release path: Expo/EAS, iOS bundle id, app icons, splash, privacy manifest, and app store metadata.
+- Need release runbook for migrations, smoke tests, rollback, and support triage.
+- Need monitoring/logging policy for API errors, assistant usage, sync failures, and app crashes.
+
+## Monetization Gaps
+
+Monetization is not implemented. Potential premium model:
+
+- Free: one dog, one household, basic logs, basic records.
+- Plus: multiple caregivers, reminders, reports, record documents, advanced health watch.
+- Pro: trainers/sitters/vets handoff templates, multi-dog, export history, priority AI actions.
+- Family/Team: household roles, multiple dogs, shared calendar, advanced reports.
+
+No payment implementation should start until product scope, privacy terms, and support obligations are clearer.
+
+## Autonomous Next-Task Queue
+
+1. Add release-control docs and keep them current.
+2. Add onboarding setup flow for household, dog profile, diet target, and starter routine.
+3. Add dog profile editor and pet credential card fields.
+4. Add sticky note UI to the mobile log composer and timeline/detail views.
+5. Add full log detail screen with edit, sticky notes, sync status, and handoff usage.
+6. Add records upgrade for vaccines, vet visits, insurance, receipts, microchip, and document placeholders.
+7. Add report generation surface using existing care pass domain logic.
+8. Add WoofGuide action-card model and tests.
+9. Add durable offline outbox tests and implementation.
+10. Add API integration tests for care state and entries.
+11. Add mobile runtime smoke or screenshot verification once local dependencies/browser support are available.
+12. Build visual system pass in Figma or code, then implement screen-by-screen.
+
+## Decisions Made Without Apollo
+
+- Mobile remains the canonical app surface.
+- Web app remains a prototype/dashboard surface until intentionally redesigned.
+- Shared care logic belongs in `lib/care-domain`.
+- `care_entries` is the append-style log record; `care_state` holds shared configuration.
+- CI should run focused behavior tests plus typecheck/build on every push to `main`.
+- Vite builds should not require `PORT` or `BASE_PATH` in CI; they default to local-safe values when absent.
+- Expo app typecheck excludes Node test files because root focused tests run them separately.
+
+## Blockers Requiring Apollo
+
+- Confirm whether the latest ChatGPT share link contains new canonical product direction. The link was provided, but Codex could not read it through the standard web fetch path.
+- Confirm preferred launch target: Expo preview only, TestFlight, public app store, or web dashboard first.
+- Provide or confirm production accounts for Clerk, database, storage, AI provider, deployment, and mobile release tooling.
+- Confirm privacy/legal requirements for storing dog medical records, vet notes, receipts, and AI-assisted health summaries.
+- Confirm monetization model before payment or subscription work.
