@@ -33,6 +33,7 @@ Passing evidence:
 - Log entries have a detail sheet with sticky notes, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Care Pass reports can be previewed by audience before sharing.
 - Records show expired, due-soon, current, and reference status for saved record rows.
+- WoofGuide shows deterministic suggested actions tied to health watch, record attention, diet setup, routines, meal logging, and Care Pass preview.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
 Current gaps:
@@ -47,7 +48,7 @@ Status: Partially passing.
 
 Passing evidence:
 
-- Focused tests cover event normalization, day status, care sync, Today Command, diet progress, health handoff, care pass, record vault, pet credential fallbacks, record due-status, routine board, and sticky notes.
+- Focused tests cover event normalization, day status, care sync, Today Command, diet progress, health handoff, care pass, record vault, pet credential fallbacks, record due-status, routine board, sticky notes, and WoofGuide action cards.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:
@@ -81,10 +82,11 @@ Passing evidence:
 - WoofGuide direction is documented.
 - Medical boundary is documented.
 - AI helper routes exist.
+- Deterministic WoofGuide action-card model and tests exist before action writes are enabled.
 
 Current gaps:
 
-- Need action-card schema and tests.
+- Need structured action execution for log drafts, reminders, vet notes, and report drafts.
 - Need assistant source/context display.
 - Need vet-note/report drafting flow.
 - Need hard checks that AI does not diagnose or claim emergency certainty.
@@ -181,7 +183,7 @@ Latest known passing CI:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27118194444`, completed success on 2026-06-08 UTC
+- Evidence: run `27118687877`, completed success on 2026-06-08 UTC
 
 ## Required Before Claiming Full Release
 

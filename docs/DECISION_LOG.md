@@ -132,6 +132,16 @@ Owner: Codex.
 
 Revisit trigger: Server-side reminders or storage-backed document records require stricter date schemas.
 
+### 2026-06-08: WoofGuide Action Cards Are Deterministic First
+
+Decision: WoofGuide suggested actions are derived as deterministic view-model cards before they perform structured writes.
+
+Reason: Owners should see useful next steps immediately, but writes to logs, reminders, vet notes, and reports need auditable handlers, permission checks, and safety boundaries before automation is enabled.
+
+Owner: Codex.
+
+Revisit trigger: Structured WoofGuide action handlers are implemented and tested for log drafts, reminders, notes, and reports.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
