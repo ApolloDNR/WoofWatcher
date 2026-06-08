@@ -59,6 +59,18 @@ export interface CarePass {
   message: string;
 }
 
+export interface CarePassArtifact {
+  id: string;
+  kind: "care_pass";
+  audience: CarePassAudience;
+  title: string;
+  generatedAt: string;
+  createdAt: string;
+  summary: string;
+  sectionTitles: string[];
+  message: string;
+}
+
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
   caregiver: "Caregiver",
   sitter: "Sitter",
@@ -219,5 +231,23 @@ export function buildCarePass(input: CarePassInput): CarePass {
   return {
     ...passWithoutMessage,
     message: renderMessage(passWithoutMessage),
+  };
+}
+
+export function createCarePassArtifact(
+  pass: CarePass,
+  createdAt: string = new Date().toISOString(),
+): CarePassArtifact {
+  const safeStamp = clean(createdAt).replace(/[^0-9A-Za-z]+/g, "-").replace(/^-|-$/g, "");
+  return {
+    id: `care_pass_${pass.audience}_${safeStamp}`,
+    kind: "care_pass",
+    audience: pass.audience,
+    title: pass.title,
+    generatedAt: pass.generatedAt,
+    createdAt,
+    summary: pass.summary,
+    sectionTitles: pass.sections.map((section) => section.title),
+    message: pass.message,
   };
 }

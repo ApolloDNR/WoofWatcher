@@ -29,6 +29,7 @@ import {
   shouldRetryUpdate,
   type EntrySyncStatus,
 } from "@/lib/careSync";
+import type { CarePassArtifact } from "@workspace/care-domain";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
 
@@ -98,6 +99,8 @@ export interface CalendarEvent {
   source: "manual" | "woofguide";
 }
 
+export type ReportArtifact = CarePassArtifact;
+
 export interface Entry {
   id: string;
   type: string;
@@ -144,6 +147,7 @@ export interface CareDoc {
   routines: Routine[];
   goals: Goal[];
   records: Record[];
+  reportArtifacts: ReportArtifact[];
   calendarEvents: CalendarEvent[];
 }
 
@@ -193,12 +197,17 @@ function getDefaultDoc(): CareDoc {
     routines: [],
     goals: [],
     records: [],
+    reportArtifacts: [],
     calendarEvents: [],
   };
 }
 
 function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
-  return { ...getDefaultDoc(), ...(partial ?? {}) };
+  const merged = { ...getDefaultDoc(), ...(partial ?? {}) };
+  return {
+    ...merged,
+    reportArtifacts: Array.isArray(merged.reportArtifacts) ? merged.reportArtifacts : [],
+  };
 }
 
 function toEntry(c: ApiCareEntry): Entry {
@@ -639,6 +648,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       routines: doc.routines,
       goals: doc.goals,
       records: doc.records,
+      reportArtifacts: doc.reportArtifacts,
       calendarEvents: doc.calendarEvents,
       entries,
     }),

@@ -31,12 +31,14 @@ import Svg, {
 import {
   buildPetCredential,
   buildCarePass,
+  createCarePassArtifact,
   deriveHealthWatch,
   getRecordDueStatus,
   normalizeCareEventType,
   summarizeRecordVault,
   type CarePass,
   type CarePassAudience,
+  type CarePassArtifact,
   type RecordKind,
 } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
@@ -403,10 +405,33 @@ export default function RecordsScreen() {
     setCarePassPreview(buildCarePassFor(audience));
   };
 
+  const reportArtifacts = useMemo(
+    () =>
+      [...state.reportArtifacts]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5),
+    [state.reportArtifacts],
+  );
+
   const shareCarePass = (pass: CarePass) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const artifact = createCarePassArtifact(pass);
+    updateCareDoc((doc) => ({
+      ...doc,
+      reportArtifacts: [
+        artifact,
+        ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
+      ].slice(0, 12),
+    }));
     Share.share({ message: pass.message, title: pass.title }).catch(() =>
       Alert.alert(pass.title, pass.message),
+    );
+  };
+
+  const shareReportArtifact = (artifact: CarePassArtifact) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Share.share({ message: artifact.message, title: artifact.title }).catch(() =>
+      Alert.alert(artifact.title, artifact.message),
     );
   };
 
@@ -796,6 +821,49 @@ export default function RecordsScreen() {
             ))}
           </View>
 
+          <View style={[s.sectionHeader, { marginTop: 18 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Report History</Text>
+            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+              {reportArtifacts.length ? `${reportArtifacts.length} saved` : "No saved"}
+            </Text>
+          </View>
+          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            {reportArtifacts.length === 0 ? (
+              <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Shared Care Passes will appear here for quick resend.
+              </Text>
+            ) : (
+              reportArtifacts.map((artifact, index) => (
+                <Pressable
+                  key={artifact.id}
+                  onPress={() => shareReportArtifact(artifact)}
+                  style={({ pressed }) => [
+                    s.reportArtifactRow,
+                    index < reportArtifacts.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                    { opacity: pressed ? 0.75 : 1 },
+                  ]}
+                >
+                  <View style={[s.rowIconWrap, { backgroundColor: colors.primary + "14" }]}>
+                    <Ionicons name="document-text-outline" size={18} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text numberOfLines={1} style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                      {artifact.title}
+                    </Text>
+                    <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {shortDate(artifact.createdAt)} - {artifact.sectionTitles.length} sections
+                    </Text>
+                  </View>
+                  <View style={[s.artifactBadge, { backgroundColor: colors.sage + "14" }]}>
+                    <Text style={[s.artifactBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                      {artifact.audience}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))
+            )}
+          </View>
+
           {/* Progress report */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Progress Report</Text>
@@ -1001,7 +1069,7 @@ export default function RecordsScreen() {
                       onPress={() => shareCarePass(carePassPreview)}
                       style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                     >
-                      <Text style={[s.sheetSaveText, { fontFamily: "Inter_700Bold" }]}>Share pass</Text>
+                      <Text style={[s.sheetSaveText, { fontFamily: "Inter_700Bold" }]}>Save & share</Text>
                     </Pressable>
                   </View>
                 </>
@@ -1219,6 +1287,9 @@ const s = StyleSheet.create({
   carePassIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 9 },
   carePassLabel: { fontSize: 15 },
   carePassDetail: { fontSize: 12, lineHeight: 16, marginTop: 2, paddingRight: 14 },
+  reportArtifactRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13 },
+  artifactBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
+  artifactBadgeText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
 
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
   rowIconWrap: { width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center" },

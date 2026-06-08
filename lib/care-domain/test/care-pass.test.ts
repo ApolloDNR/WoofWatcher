@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildCarePass } from "../src/index.ts";
+import { buildCarePass, createCarePassArtifact } from "../src/index.ts";
 
 process.env.TZ = "America/Los_Angeles";
 
@@ -94,4 +94,17 @@ test("trainer care pass emphasizes behavior and activity context", () => {
   assert.match(pass.message, /Training focus/);
   assert.match(pass.message, /Morning walk/);
   assert.match(pass.message, /Eats better when the house is calm/);
+});
+
+test("creates a stable report artifact snapshot from a care pass", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "vet" });
+  const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
+
+  assert.equal(artifact.id, "care_pass_vet_2026-06-08T06-30-00-000Z");
+  assert.equal(artifact.audience, "vet");
+  assert.equal(artifact.title, pass.title);
+  assert.equal(artifact.createdAt, "2026-06-08T06:30:00.000Z");
+  assert.equal(artifact.summary, pass.summary);
+  assert.equal(artifact.message, pass.message);
+  assert.deepEqual(artifact.sectionTitles, pass.sections.map((section) => section.title));
 });
