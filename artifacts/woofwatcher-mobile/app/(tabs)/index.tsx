@@ -22,7 +22,7 @@ import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import Svg, { Circle } from "react-native-svg";
-import { normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
+import { deriveOnboardingStatus, normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
 import { computeCareStreak, computeDayProgress, derivePhoenixStatus, getGreeting } from "@/lib/phoenixStatus";
 import { deriveTodayCommand } from "@/lib/todayCommand";
 import { relativeTime } from "@/lib/time";
@@ -255,7 +255,17 @@ export default function PhoenixScreen() {
     { label: "Appetite", value: appetiteOk ? "Good" : "Low", tint: appetiteOk ? colors.sage : colors.amber },
   ];
 
-  const isNewUser = !state.profile.name || state.profile.name === "My Dog";
+  const onboarding = useMemo(
+    () =>
+      deriveOnboardingStatus({
+        profile: state.profile,
+        dietProfile: state.dietProfile,
+        routines: state.routines,
+        caregivers: state.caregivers,
+      }),
+    [state.profile, state.dietProfile, state.routines, state.caregivers],
+  );
+  const setupStep = onboarding.nextStep;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -286,18 +296,21 @@ export default function PhoenixScreen() {
           </View>
 
           {/* Onboarding nudge */}
-          {isNewUser && (
+          {setupStep && (
             <Pressable
-              onPress={() => router.push("/more")}
+              onPress={() => router.push(setupStep.route)}
               style={({ pressed }) => [s.onboardCard, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "28", opacity: pressed ? 0.85 : 1 }]}
             >
               <View style={[s.onboardIcon, { backgroundColor: colors.primary + "18" }]}>
                 <Ionicons name="paw" size={22} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.onboardTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Set up your dog's profile</Text>
+                <Text style={[s.onboardTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{setupStep.title}</Text>
                 <Text style={[s.onboardSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  Add a name, breed, and weight to get personalised insights.
+                  {setupStep.detail}
+                </Text>
+                <Text style={[s.onboardProgress, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                  {onboarding.completedCount}/{onboarding.totalCount} setup steps complete
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.primary} />
@@ -649,6 +662,7 @@ const s = StyleSheet.create({
   onboardIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   onboardTitle: { fontSize: 15 },
   onboardSub: { fontSize: 12.5, marginTop: 2, lineHeight: 17 },
+  onboardProgress: { fontSize: 11.5, marginTop: 7, letterSpacing: 0 },
 
   commandCard: {
     borderRadius: 22,
