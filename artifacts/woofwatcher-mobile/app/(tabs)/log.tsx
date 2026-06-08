@@ -9,6 +9,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -240,6 +241,97 @@ function syncLabel(status: Entry["syncStatus"]): string | null {
   return null;
 }
 
+const DETAIL_SKIP_KEYS = new Set([
+  "stickyNotes",
+  "title",
+  "durationMinutes",
+  "amount",
+  "food",
+  "dogInteractions",
+  "servingAmount",
+  "servingUnit",
+]);
+
+const DETAIL_LABELS: Record<string, string> = {
+  amount: "Amount",
+  condition: "Condition",
+  kind: "Kind",
+  portion: "Portion",
+  severity: "Severity",
+  serving: "Serving",
+  what: "Symptom",
+};
+
+function isDetailRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === "object" && !Array.isArray(value);
+}
+
+function humanizeKey(key: string): string {
+  return DETAIL_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function detailValue(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === "string") return value.trim() || null;
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : null;
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  return null;
+}
+
+function entryTypeLabel(type: string): string {
+  const config = TYPE_BY_ID[type as CareEventType];
+  return config?.label ?? humanizeKey(type);
+}
+
+function buildEntryDetailRows(entry: Entry): { label: string; value: string }[] {
+  const rows: { label: string; value: string }[] = [];
+  const details = isDetailRecord(entry.details) ? entry.details : {};
+  const servingAmount = detailValue(details.servingAmount);
+  const servingUnit = detailValue(details.servingUnit);
+  const status = syncLabel(entry.syncStatus);
+
+  if (entry.durationMinutes != null) rows.push({ label: "Duration", value: `${entry.durationMinutes} min` });
+  if (entry.amount) rows.push({ label: "Amount", value: servingUnit ? `${entry.amount} ${servingUnit}` : entry.amount });
+  if (!entry.amount && servingAmount) rows.push({ label: "Serving", value: servingUnit ? `${servingAmount} ${servingUnit}` : servingAmount });
+  if (entry.food) rows.push({ label: "Food", value: entry.food });
+  if (entry.mood) rows.push({ label: "Mood", value: humanizeKey(entry.mood) });
+  if (entry.severity) rows.push({ label: "Severity", value: humanizeKey(entry.severity) });
+  if (entry.dogInteractions != null) rows.push({ label: "Dog interactions", value: String(entry.dogInteractions) });
+  if (status) rows.push({ label: "Sync", value: status });
+
+  Object.entries(details).forEach(([key, value]) => {
+    if (DETAIL_SKIP_KEYS.has(key)) return;
+    const text = detailValue(value);
+    if (!text) return;
+    rows.push({ label: humanizeKey(key), value: humanizeKey(text) });
+  });
+
+  return rows;
+}
+
+function buildEntryHandoffMessage(entry: Entry): string {
+  const type = entryTypeLabel(normalizeCareEventType(entry.type, entry.details));
+  const rows = buildEntryDetailRows(entry);
+  const stickyNotes = getStickyNotes(entry.details);
+  return [
+    "WOOFWATCHER LOG HANDOFF",
+    "",
+    entry.title,
+    `Type: ${type}`,
+    `Caregiver: ${entry.caregiver || "Care team"}`,
+    `When: ${new Date(entry.occurredAt).toLocaleString("en-US")}`,
+    entry.note ? `Note: ${entry.note}` : null,
+    rows.length ? "" : null,
+    rows.length ? "Details" : null,
+    ...rows.map((row) => `- ${row.label}: ${row.value}`),
+    stickyNotes.length ? "" : null,
+    stickyNotes.length ? "Sticky notes" : null,
+    ...stickyNotes.map((note) => `- ${note.text} (${note.caregiver})`),
+  ]
+    .filter((line): line is string => line != null)
+    .join("\n");
+}
+
 function stickyNoteId(): string {
   return `sticky_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -297,6 +389,7 @@ export default function LogScreen() {
   const promptRef = useRef<TextInput>(null);
 
   // Entry editor
+  const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
   const [editEntry, setEditEntry] = useState<Entry | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editNote, setEditNote] = useState("");
@@ -324,6 +417,22 @@ export default function LogScreen() {
       }),
     [state.dietProfile, state.entries, now],
   );
+
+  const detailEntry = useMemo(
+    () => state.entries.find((entry) => entry.id === detailEntryId) ?? null,
+    [state.entries, detailEntryId],
+  );
+  const detailRows = useMemo(
+    () => (detailEntry ? buildEntryDetailRows(detailEntry) : []),
+    [detailEntry],
+  );
+  const detailStickyNotes = useMemo(
+    () => (detailEntry ? getStickyNotes(detailEntry.details) : []),
+    [detailEntry],
+  );
+  const detailType = detailEntry ? normalizeCareEventType(detailEntry.type, detailEntry.details) : null;
+  const detailIcon = detailType ? TYPE_ICON[detailType] ?? "paw" : "paw";
+  const detailTypeText = detailType ? entryTypeLabel(detailType) : "";
 
   // Mount animation
   const fade = useRef(new Animated.Value(0)).current;
@@ -449,7 +558,7 @@ export default function LogScreen() {
   }, [promptId, promptNote, promptMode, state.entries, caregiver, updateEntry]);
 
   const handleDelete = useCallback(
-    (id: string, title: string) => {
+    (id: string, title: string, onDeleted?: () => void) => {
       Alert.alert("Delete entry", `Remove "${title}"?`, [
         { text: "Cancel", style: "cancel" },
         {
@@ -458,6 +567,7 @@ export default function LogScreen() {
           onPress: () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             deleteEntry(id);
+            onDeleted?.();
           },
         },
       ]);
@@ -491,6 +601,19 @@ export default function LogScreen() {
     }
     setEditEntry(null);
   }, [editEntry, editTitle, editNote, updateEntry]);
+
+  const openEntryDetail = useCallback((e: Entry) => {
+    setDetailEntryId(e.id);
+    Haptics.selectionAsync();
+  }, []);
+
+  const shareEntryHandoff = useCallback((e: Entry) => {
+    const message = buildEntryHandoffMessage(e);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Share.share({ message, title: `${e.title} handoff` }).catch(() =>
+      Alert.alert("Entry handoff", message),
+    );
+  }, []);
 
   const filtered = useMemo(() => {
     const sorted = [...state.entries].sort(
@@ -912,6 +1035,9 @@ export default function LogScreen() {
                             {relativeTime(e.occurredAt, now)}
                           </Text>
                           <View style={s.entryActions}>
+                            <Pressable onPress={() => openEntryDetail(e)} hitSlop={10} style={s.actionBtn}>
+                              <Ionicons name="information-circle-outline" size={15} color={colors.mutedForeground} />
+                            </Pressable>
                             <Pressable onPress={() => openStickyPrompt(e)} hitSlop={10} style={s.actionBtn}>
                               <Ionicons name="document-text-outline" size={15} color={colors.mutedForeground} />
                             </Pressable>
@@ -932,6 +1058,120 @@ export default function LogScreen() {
           )}
         </Animated.View>
       </ScrollView>
+
+      {/* Entry detail modal */}
+      <Modal visible={detailEntry !== null} transparent animationType="slide" onRequestClose={() => setDetailEntryId(null)}>
+        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
+          <Pressable style={[s.detailSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]} onPress={(e) => e.stopPropagation()}>
+            <View style={s.editHandle} />
+            {detailEntry ? (
+              <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+                <View style={s.detailHeader}>
+                  <View style={[s.detailIcon, { backgroundColor: PULSE_COLORS[detailIcon] + "18" }]}>
+                    <PulseIcon name={detailIcon} size={22} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.detailType, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{detailTypeText}</Text>
+                    <Text style={[s.detailTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{detailEntry.title}</Text>
+                    <Text style={[s.detailMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {detailEntry.caregiver || "Care team"} - {new Date(detailEntry.occurredAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                    </Text>
+                  </View>
+                </View>
+
+                {detailEntry.syncStatus === "failed" && detailEntry.syncError ? (
+                  <View style={[s.detailNotice, { backgroundColor: colors.rose + "12", borderColor: colors.rose + "44" }]}>
+                    <Ionicons name="warning-outline" size={16} color={colors.rose} />
+                    <Text style={[s.detailNoticeText, { color: colors.rose, fontFamily: "Inter_500Medium" }]}>{detailEntry.syncError}</Text>
+                  </View>
+                ) : null}
+
+                <View style={s.detailGrid}>
+                  {detailRows.length > 0 ? (
+                    detailRows.map((row) => (
+                      <View key={`${row.label}:${row.value}`} style={[s.detailField, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <Text style={[s.detailFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{row.label}</Text>
+                        <Text style={[s.detailFieldValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{row.value}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={[s.detailFieldWide, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>No extra detail fields yet.</Text>
+                    </View>
+                  )}
+                </View>
+
+                {detailEntry.note ? (
+                  <View style={[s.detailNote, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Text style={[s.detailSectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Note</Text>
+                    <Text style={[s.detailBodyText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>{detailEntry.note}</Text>
+                  </View>
+                ) : null}
+
+                <View style={s.detailSectionHeader}>
+                  <Text style={[s.detailSectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Sticky notes</Text>
+                  <Text style={[s.detailSectionCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{detailStickyNotes.length}</Text>
+                </View>
+                {detailStickyNotes.length > 0 ? (
+                  <View style={s.stickyStack}>
+                    {detailStickyNotes.map((note) => {
+                      const tone = stickyColor(note.color);
+                      return (
+                        <View key={note.id} style={[s.stickyNote, { backgroundColor: tone + "12", borderLeftColor: tone }]}>
+                          <Text style={[s.stickyNoteText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{note.text}</Text>
+                          <Text style={[s.stickyNoteMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                            {note.caregiver} - {new Date(note.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <View style={[s.detailFieldWide, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>No sticky notes attached.</Text>
+                  </View>
+                )}
+
+                <View style={s.detailActions}>
+                  <Pressable
+                    onPress={() => shareEntryHandoff(detailEntry)}
+                    style={({ pressed }) => [s.detailPrimaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                  >
+                    <Ionicons name="share-outline" size={17} color="#fff" />
+                    <Text style={[s.detailPrimaryText, { fontFamily: "Inter_700Bold" }]}>Share handoff</Text>
+                  </Pressable>
+                  <View style={s.detailIconActions}>
+                    <Pressable
+                      onPress={() => {
+                        setDetailEntryId(null);
+                        openStickyPrompt(detailEntry);
+                      }}
+                      style={[s.detailIconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    >
+                      <Ionicons name="document-text-outline" size={17} color={colors.primary} />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        setDetailEntryId(null);
+                        openEditEntry(detailEntry);
+                      }}
+                      style={[s.detailIconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    >
+                      <Ionicons name="pencil-outline" size={17} color={colors.primary} />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleDelete(detailEntry.id, detailEntry.title, () => setDetailEntryId(null))}
+                      style={[s.detailIconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    >
+                      <Ionicons name="trash-outline" size={17} color={colors.rose} />
+                    </Pressable>
+                  </View>
+                </View>
+              </ScrollView>
+            ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Entry editor modal */}
       <Modal visible={editEntry !== null} transparent animationType="slide" onRequestClose={() => setEditEntry(null)}>
@@ -1134,6 +1374,30 @@ const s = StyleSheet.create({
   entryRelTime: { fontSize: 11.5 },
   entryActions: { flexDirection: "row", gap: 2 },
   actionBtn: { padding: 4 },
+  detailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", padding: 22 },
+  detailHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
+  detailIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  detailType: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 },
+  detailTitle: { fontSize: 21, marginTop: 2 },
+  detailMeta: { fontSize: 12.5, marginTop: 3 },
+  detailNotice: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 15, padding: 11, marginBottom: 12 },
+  detailNoticeText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
+  detailGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 4 },
+  detailField: { width: "48%", borderWidth: 1, borderRadius: 15, padding: 12 },
+  detailFieldWide: { width: "100%", borderWidth: 1, borderRadius: 15, padding: 12 },
+  detailFieldLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  detailFieldValue: { fontSize: 13.5, lineHeight: 18 },
+  detailNote: { borderWidth: 1, borderRadius: 16, padding: 13, marginTop: 12 },
+  detailSectionLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  detailBodyText: { fontSize: 13.5, lineHeight: 19 },
+  detailSectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 8 },
+  detailSectionTitle: { fontSize: 16 },
+  detailSectionCount: { fontSize: 12 },
+  detailActions: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 18 },
+  detailPrimaryBtn: { flex: 1, height: 48, borderRadius: 15, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
+  detailPrimaryText: { color: "#fff", fontSize: 14.5 },
+  detailIconActions: { flexDirection: "row", gap: 7 },
+  detailIconBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   editSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
   editHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   editSheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
