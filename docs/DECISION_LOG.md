@@ -12,6 +12,26 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-08: Apollo Shared Thread Is Product Vision Source
+
+Decision: Apollo's ChatGPT shared thread `https://chatgpt.com/share/6a2650b3-82f8-83e8-be54-55d68cea34a4` is treated as the current WoofWatcher product vision source.
+
+Reason: Apollo explicitly directed Codex to extract the shared thread into durable docs and use it to guide autonomous development.
+
+Owner: Apollo.
+
+Revisit trigger: Apollo provides a newer canonical vision source or contradicts this thread in writing.
+
+### 2026-06-08: Routines And Logs Are The First Product Spine
+
+Decision: Routines define expected care, logs record actual care, and matching logs should satisfy or update routines when they correspond.
+
+Reason: This is the clearest operational backbone for household trust and premium daily usefulness. Meal logs are the first detailed implementation target because they connect diet baseline, routine completion, caregiver visibility, and health patterns.
+
+Owner: Apollo.
+
+Revisit trigger: A future event-sourcing or scheduling model changes how expected care and actual care are reconciled.
+
 ### 2026-06-06: Mobile Is The Canonical Product Surface
 
 Decision: `artifacts/woofwatcher-mobile` is the primary product experience.
