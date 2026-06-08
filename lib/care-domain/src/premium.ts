@@ -109,7 +109,8 @@ export function derivePremiumPreview(input: PremiumPreviewInput = {}): PremiumPr
       detail: routineCount > 0 ? `${routineCount} routine${routineCount === 1 ? "" : "s"} can drive reminders, logs, and handoffs.` : "Create recurring care plans before adding reminders.",
       score: routineCount > 0 ? 50 + routineCount : 10,
     },
-  ].sort((a, b) => b.score - a.score);
+  ];
+  signals.sort((a, b) => b.score - a.score);
 
   const recommendedPlanId: PremiumPlanId = caregiverCount > 1 ? "family" : "plus";
   const checkoutEnabled = PREMIUM_PLANS.some((plan) => plan.checkoutEnabled);
