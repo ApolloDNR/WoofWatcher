@@ -540,7 +540,7 @@ export default function LogScreen() {
   }, [state.entries]);
 
   const numericUnit = config?.numeric?.unit === "diet" ? dietProgress.unit : state.profile.weight.unit;
-  const dietPercentWidth = `${Math.min(Math.max(dietProgress.percent, 0), 100)}%`;
+  const dietPercentWidth = `${Math.min(Math.max(dietProgress.percent, 0), 100)}%` as `${number}%`;
   const dietProgressText =
     dietProgress.targetAmount == null
       ? "Set a normal portion in Plans to unlock exact daily targets."
