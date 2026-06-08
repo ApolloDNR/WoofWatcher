@@ -232,6 +232,16 @@ Owner: Codex.
 
 Revisit trigger: Expo runtime smoke, simulator screenshot checks, accessibility automation, or visual regression tests are available in CI.
 
+### 2026-06-08: CI Runs Mobile Expo Web Export Smoke
+
+Decision: `build:ci` runs the mobile app's `smoke:web` script, which performs an Expo web export and verifies HTML and JavaScript assets are emitted.
+
+Reason: This is stronger than static route checks and proves the Expo mobile project can bundle in CI. It still does not replace native simulator/device rendering, but it catches bundling and asset failures before release.
+
+Owner: Codex.
+
+Revisit trigger: Native simulator/device smoke or screenshot automation becomes available in CI.
+
 ### 2026-06-08: Today Command Uses Routine Board Truth
 
 Decision: Today Command uses `deriveRoutineBoard` for open routine selection instead of independently guessing from raw day counts.

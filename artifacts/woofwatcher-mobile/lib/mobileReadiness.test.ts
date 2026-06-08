@@ -78,3 +78,24 @@ test("keeps launch-blocking safety copy on premium, privacy, and WoofGuide surfa
   assert.match(privacySurface, /document storage/i);
   assert.match(woofGuide, /Owner review required/);
 });
+
+test("keeps Expo web export smoke wired into CI", () => {
+  const rootPackage = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"));
+  const mobilePackage = JSON.parse(
+    readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "package.json"), "utf8"),
+  );
+  const smokeScript = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "scripts", "smoke-web-export.js"),
+    "utf8",
+  );
+  const mobileGitignore = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", ".gitignore"),
+    "utf8",
+  );
+
+  assert.equal(mobilePackage.scripts["smoke:web"], "node scripts/smoke-web-export.js");
+  assert.match(rootPackage.scripts["build:ci"], /woofwatcher-mobile run smoke:web/);
+  assert.match(smokeScript, /expo", "export"/);
+  assert.match(smokeScript, /EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY/);
+  assert.match(mobileGitignore, /\.expo-smoke\//);
+});

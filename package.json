@@ -5,7 +5,7 @@
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "test:focused": "node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts",
-    "build:ci": "pnpm run typecheck && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/woofwatcher run build && pnpm --filter @workspace/mockup-sandbox run build",
+    "build:ci": "pnpm run typecheck && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/woofwatcher run build && pnpm --filter @workspace/mockup-sandbox run build && pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"

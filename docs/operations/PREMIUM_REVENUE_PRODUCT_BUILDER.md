@@ -100,4 +100,4 @@ Stop only for:
 
 ## Current Next Slice
 
-As of 2026-06-08, the current queue points to mobile runtime QA: Expo runtime smoke, accessibility, visual regression, and App Store prep. A CI-safe static route/safety smoke exists, but simulator or browser-backed rendering is still needed.
+As of 2026-06-08, the current queue points to mobile runtime QA: native simulator/device smoke, accessibility, visual regression, and App Store prep. CI-safe static route/safety smoke and Expo web export smoke exist, but native rendering and screenshots are still needed.
