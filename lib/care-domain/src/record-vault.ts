@@ -37,6 +37,11 @@ export interface PetCredentialProfile {
   breed?: string;
   careFocus?: string;
   vetBoundary?: string;
+  microchipNumber?: string;
+  insuranceProvider?: string;
+  insurancePolicy?: string;
+  primaryVet?: string;
+  emergencyContact?: string;
   weight?: {
     current?: number;
     unit?: string;
@@ -61,6 +66,8 @@ export interface PetCredential {
   weight: string;
   careFocus: string;
   primaryCaregiver: string;
+  primaryVet: string;
+  emergencyContact: string;
   microchip: string;
   insurance: string;
   vaccines: string;
@@ -164,8 +171,13 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
       : "Not on file";
   const primaryCaregiver =
     input.caregivers?.map((caregiver) => clean(caregiver.name)).find(Boolean) ?? "Household";
-  const microchip = recordValue(records.find((record) => recordKind(record.type) === "microchip"));
-  const insurance = recordValue(records.find((record) => recordKind(record.type) === "insurance"));
+  const microchipRecord = records.find((record) => recordKind(record.type) === "microchip");
+  const insuranceRecord = records.find((record) => recordKind(record.type) === "insurance");
+  const microchip = microchipRecord ? recordValue(microchipRecord) : clean(profile.microchipNumber) || "Not on file";
+  const insurance =
+    insuranceRecord
+      ? recordValue(insuranceRecord)
+      : [clean(profile.insuranceProvider), clean(profile.insurancePolicy)].filter(Boolean).join(" - ") || "Not on file";
   const vaccines =
     records
       .filter((record) => recordKind(record.type) === "vaccine")
@@ -173,6 +185,8 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
       .map((record) => recordValue(record))
       .join("; ") || "Not on file";
   const careFocus = clean(profile.careFocus) || "Routine care";
+  const primaryVet = clean(profile.primaryVet) || "Not on file";
+  const emergencyContact = clean(profile.emergencyContact) || "Not on file";
   const boundary = clean(profile.vetBoundary);
 
   const message = [
@@ -184,6 +198,8 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
     `Weight: ${weight}`,
     `Care focus: ${careFocus}`,
     `Primary caregiver: ${primaryCaregiver}`,
+    `Primary vet: ${primaryVet}`,
+    `Emergency contact: ${emergencyContact}`,
     "",
     `Microchip: ${microchip}`,
     `Insurance: ${insurance}`,
@@ -200,6 +216,8 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
     weight,
     careFocus,
     primaryCaregiver,
+    primaryVet,
+    emergencyContact,
     microchip,
     insurance,
     vaccines,

@@ -44,6 +44,11 @@ export interface Profile {
   breed: string;
   background: string;
   careFocus: string;
+  microchipNumber?: string;
+  insuranceProvider?: string;
+  insurancePolicy?: string;
+  primaryVet?: string;
+  emergencyContact?: string;
   weight: WeightInfo;
   vetBoundary: string;
 }
@@ -158,6 +163,11 @@ function getDefaultDoc(): CareDoc {
       breed: "",
       background: "",
       careFocus: "",
+      microchipNumber: "",
+      insuranceProvider: "",
+      insurancePolicy: "",
+      primaryVet: "",
+      emergencyContact: "",
       weight: {
         current: 0,
         goal: "",

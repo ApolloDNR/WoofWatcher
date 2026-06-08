@@ -48,3 +48,25 @@ test("builds a shareable pet credential from profile and records", () => {
   assert.match(credential.message, /Rabies/);
   assert.match(credential.message, /Apollo/);
 });
+
+test("uses dog profile credential fields when records are not uploaded yet", () => {
+  const credential = buildPetCredential({
+    profile: {
+      name: "Phoenix",
+      breed: "German Shepherd Mix",
+      microchipNumber: "985112003004551",
+      insuranceProvider: "Lemonade",
+      insurancePolicy: "WW-1042",
+      primaryVet: "Alameda Wellness Vet",
+      emergencyContact: "Apollo - 555-0100",
+    },
+    generatedAt: "2026-06-06T18:00:00.000Z",
+  });
+
+  assert.equal(credential.microchip, "985112003004551");
+  assert.equal(credential.insurance, "Lemonade - WW-1042");
+  assert.equal(credential.primaryVet, "Alameda Wellness Vet");
+  assert.equal(credential.emergencyContact, "Apollo - 555-0100");
+  assert.match(credential.message, /Primary vet: Alameda Wellness Vet/);
+  assert.match(credential.message, /Emergency contact: Apollo - 555-0100/);
+});

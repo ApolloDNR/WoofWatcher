@@ -525,6 +525,8 @@ export default function RecordsScreen() {
                 { label: "Weight", value: credential.weight },
                 { label: "Microchip", value: credential.microchip },
                 { label: "Insurance", value: credential.insurance },
+                { label: "Primary vet", value: credential.primaryVet },
+                { label: "Emergency", value: credential.emergencyContact },
               ].map((item) => (
                 <View key={item.label} style={s.idField}>
                   <Text style={[s.idFieldLabel, { color: colors.cream, fontFamily: "Inter_600SemiBold" }]}>{item.label}</Text>

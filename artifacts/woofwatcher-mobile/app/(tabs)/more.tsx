@@ -94,6 +94,11 @@ export default function MoreScreen() {
   const [pWeight, setPWeight] = useState("");
   const [pWeightUnit, setPWeightUnit] = useState<"lb" | "kg">("lb");
   const [pFocus, setPFocus] = useState("");
+  const [pMicrochip, setPMicrochip] = useState("");
+  const [pPrimaryVet, setPPrimaryVet] = useState("");
+  const [pEmergencyContact, setPEmergencyContact] = useState("");
+  const [pInsuranceProvider, setPInsuranceProvider] = useState("");
+  const [pInsurancePolicy, setPInsurancePolicy] = useState("");
 
   const [dietEditOpen, setDietEditOpen] = useState(false);
   const [dPrimaryFood, setDPrimaryFood] = useState("");
@@ -180,6 +185,11 @@ export default function MoreScreen() {
     setPWeight(profile.weight.current > 0 ? String(profile.weight.current) : "");
     setPWeightUnit((profile.weight.unit as "lb" | "kg") || "lb");
     setPFocus(profile.careFocus);
+    setPMicrochip(profile.microchipNumber ?? "");
+    setPPrimaryVet(profile.primaryVet ?? "");
+    setPEmergencyContact(profile.emergencyContact ?? "");
+    setPInsuranceProvider(profile.insuranceProvider ?? "");
+    setPInsurancePolicy(profile.insurancePolicy ?? "");
     setProfileOpen(true);
   };
 
@@ -195,6 +205,11 @@ export default function MoreScreen() {
         publicLabel: name,
         breed: pBreed.trim(),
         careFocus: pFocus.trim(),
+        microchipNumber: pMicrochip.trim(),
+        primaryVet: pPrimaryVet.trim(),
+        emergencyContact: pEmergencyContact.trim(),
+        insuranceProvider: pInsuranceProvider.trim(),
+        insurancePolicy: pInsurancePolicy.trim(),
         weight: {
           ...doc.profile.weight,
           current: Number.isFinite(w) && w > 0 ? w : doc.profile.weight.current,
@@ -825,6 +840,59 @@ export default function MoreScreen() {
               multiline
               style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_400Regular", minHeight: 60, textAlignVertical: "top" }]}
             />
+
+            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>MICROCHIP NUMBER</Text>
+            <TextInput
+              value={pMicrochip}
+              onChangeText={setPMicrochip}
+              placeholder="985112..."
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="none"
+              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+            />
+
+            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>PRIMARY VET</Text>
+            <TextInput
+              value={pPrimaryVet}
+              onChangeText={setPPrimaryVet}
+              placeholder="Clinic or veterinarian"
+              placeholderTextColor={colors.mutedForeground}
+              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+            />
+
+            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>EMERGENCY CONTACT</Text>
+            <TextInput
+              value={pEmergencyContact}
+              onChangeText={setPEmergencyContact}
+              placeholder="Name and phone"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="phone-pad"
+              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+            />
+
+            <View style={s.profWeightRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>INSURANCE</Text>
+                <TextInput
+                  value={pInsuranceProvider}
+                  onChangeText={setPInsuranceProvider}
+                  placeholder="Provider"
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>POLICY</Text>
+                <TextInput
+                  value={pInsurancePolicy}
+                  onChangeText={setPInsurancePolicy}
+                  placeholder="Policy #"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="characters"
+                  style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                />
+              </View>
+            </View>
 
             <Pressable
               onPress={saveProfile}
