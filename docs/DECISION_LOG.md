@@ -222,6 +222,16 @@ Owner: Codex.
 
 Revisit trigger: The Log composer gains deep-linked presets or a server-side write pipeline becomes the canonical entry builder.
 
+### 2026-06-08: Health Watch Uses Non-Diagnostic Pattern Cards
+
+Decision: Health Watch exposes reusable pattern cards with kind, status, evidence, review window, owner next step, and entry ids.
+
+Reason: Owners, sitters, trainers, vets, reports, and WoofGuide need the same safe interpretation layer. Health Watch should organize vomit, appetite, stool, anxiety, and steady-state context without diagnosing or implying certainty.
+
+Owner: Codex.
+
+Revisit trigger: Vet-note drafting, notification rules, or clinician-reviewed language requires a stricter medical-safety template.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

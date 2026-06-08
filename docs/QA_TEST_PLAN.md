@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-08:
 
-- PASS: 57 focused tests with the command above.
+- PASS: 59 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -24,6 +24,7 @@ Latest local evidence, 2026-06-08:
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
 - Home Quick Log routine matching and meal detail enrichment.
 - Health Watch signals and medical boundary.
+- Health Watch pattern cards with evidence, owner next steps, and steady-state behavior.
 - Care Pass generation and report artifacts.
 - Record vault and due status.
 - Pet credential fallbacks.
@@ -46,7 +47,8 @@ Latest local evidence, 2026-06-08:
 10. Preview and share sitter/vet/trainer/caregiver Care Pass.
 11. Confirm report history stores shared Care Pass.
 12. Ask WoofGuide about recent changes and verify non-diagnostic wording.
-13. Force offline or failed sync state and confirm visibility.
+13. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
+14. Force offline or failed sync state and confirm visibility.
 
 ## Missing QA
 

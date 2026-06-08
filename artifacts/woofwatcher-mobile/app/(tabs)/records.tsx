@@ -737,14 +737,33 @@ export default function RecordsScreen() {
                 </Text>
               </View>
             </View>
-            {healthWatch.signals.slice(0, 2).map((signal) => (
-              <View key={signal.kind} style={s.watchSignalRow}>
-                <View style={[s.watchSignalDot, { backgroundColor: signal.urgency === "alert" ? colors.rose : colors.amber }]} />
-                <Text style={[s.watchSignalText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                  {signal.label}: {signal.detail}
-                </Text>
-              </View>
-            ))}
+            {healthWatch.patterns.slice(0, 3).map((pattern) => {
+              const tone = pattern.status === "alert" ? colors.rose : pattern.status === "watch" ? colors.amber : colors.sage;
+              return (
+                <View key={pattern.kind} style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
+                  <View style={[s.watchSignalDot, { backgroundColor: tone }]} />
+                  <View style={{ flex: 1 }}>
+                    <View style={s.watchPatternTop}>
+                      <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {pattern.label}
+                      </Text>
+                      <Text style={[s.watchPatternWindow, { color: tone, fontFamily: "Inter_700Bold" }]}>
+                        {pattern.window}
+                      </Text>
+                    </View>
+                    <Text style={[s.watchPatternEvidence, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                      {pattern.evidence}
+                    </Text>
+                    <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {pattern.nextStep}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+            <Text style={[s.watchBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {healthWatch.vetBoundary}
+            </Text>
             <View style={s.incidentRow}>
               {[
                 { label: "7 days", value: incident7 },
@@ -1263,9 +1282,14 @@ const s = StyleSheet.create({
   watchSummaryIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   watchSummaryTitle: { fontSize: 15 },
   watchSummaryDetail: { fontSize: 12.5, lineHeight: 18, marginTop: 2 },
-  watchSignalRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 10 },
   watchSignalDot: { width: 7, height: 7, borderRadius: 4, marginTop: 6 },
-  watchSignalText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
+  watchPatternRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, paddingTop: 10, marginTop: 10, borderTopWidth: 1 },
+  watchPatternTop: { flexDirection: "row", justifyContent: "space-between", gap: 10, alignItems: "center" },
+  watchPatternLabel: { fontSize: 12.5, flex: 1 },
+  watchPatternWindow: { fontSize: 10.5 },
+  watchPatternEvidence: { fontSize: 12.5, lineHeight: 18, marginTop: 3 },
+  watchPatternNext: { fontSize: 12, lineHeight: 17, marginTop: 4 },
+  watchBoundary: { fontSize: 11.5, lineHeight: 16, marginTop: 12, marginBottom: 10 },
   incidentCol: { flex: 1, alignItems: "center", paddingHorizontal: 10, paddingBottom: 14 },
   incidentValue: { fontSize: 26, letterSpacing: -0.4 },
   incidentLabel: { fontSize: 12, marginTop: 1 },

@@ -102,6 +102,76 @@ test("surfaces appetite and stool watch signals", () => {
   assert.equal(health.status, "watch");
 });
 
+test("builds non-diagnostic health pattern cards with owner next steps", () => {
+  const health = deriveHealthWatch({
+    now: NOW,
+    entries: [
+      {
+        id: "vomit_1",
+        type: "vomit",
+        title: "Yellow bile",
+        note: "Foam before breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T13:00:00.000Z",
+        severity: "watch",
+      },
+      {
+        id: "vomit_2",
+        type: "symptom",
+        title: "Throw up",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-05T13:00:00.000Z",
+        details: { what: "vomit" },
+      },
+      {
+        id: "meal_1",
+        type: "meal",
+        title: "Breakfast partial",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T07:00:00.000Z",
+        details: { mealCompletion: "partial" },
+      },
+      {
+        id: "meal_2",
+        type: "meal",
+        title: "Dinner skipped",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-05T18:00:00.000Z",
+        details: { mealCompletion: "skipped" },
+      },
+    ],
+  });
+
+  assert.equal(health.patterns[0].kind, "vomit-pattern");
+  assert.match(health.patterns[0].evidence, /2 vomit/i);
+  assert.match(health.patterns[0].nextStep, /Track/i);
+  assert.match(health.patterns[0].nextStep, /vet/i);
+  assert.doesNotMatch(health.patterns[0].nextStep, /diagnos/i);
+
+  const appetite = health.patterns.find((pattern) => pattern.kind === "appetite-watch");
+  assert.ok(appetite);
+  assert.match(appetite.nextStep, /meal/i);
+});
+
+test("adds a steady health pattern card when no signals are active", () => {
+  const health = deriveHealthWatch({
+    now: NOW,
+    entries: [
+      {
+        id: "walk_1",
+        type: "walk",
+        title: "Walk",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T12:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(health.status, "good");
+  assert.equal(health.patterns[0].kind, "steady");
+  assert.match(health.patterns[0].nextStep, /Keep logging/i);
+});
+
 test("builds a caregiver handoff with done, watch, next, and load", () => {
   const handoff = deriveCareHandoff({
     now: NOW,

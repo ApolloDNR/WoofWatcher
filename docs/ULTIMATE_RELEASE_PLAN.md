@@ -42,7 +42,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Mood/Energy | Avatar and health screens use mood/energy signals. | Add structured mood/energy logging and trend charts. |
 | Medication | Canonical medication event type exists. | Add medication schedule, dose, due/upcoming state, and adherence summary. |
 | Weight | Records and log taxonomy support weight. | Add weight chart, goal range, and vet report summary. |
-| Vomit/Symptom | Health Watch detects yellow bile and urgent signals. | Add richer symptom composer, frequency views, red-flag checklist, and vet-note export. |
+| Vomit/Symptom | Health Watch detects yellow bile, urgent signals, and non-diagnostic pattern cards with evidence and owner next steps. | Add richer symptom composer, frequency views, red-flag checklist, and vet-note export. |
 | Grooming | Event taxonomy supports grooming. | Add grooming-specific fields and reminders. |
 | Alone Time | Event taxonomy supports alone time. | Add separation/anxiety pattern tracking and handoff notes. |
 | Sticky Notes | Domain tests cover sticky note append/sanitize behavior. Mobile Log can attach multiple sticky notes to existing logs, show them in timeline/detail views, and include them in entry handoff text. | Add richer sticky-note colors, pinning, and report filtering. |
@@ -88,7 +88,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 ## Test And QA Gaps
 
-- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, event taxonomy, day status, care pass, diet progress, health handoff, record vault, routine board, and sticky notes.
+- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, event taxonomy, day status, care pass, diet progress, Health Watch pattern cards, health handoff, record vault, routine board, and sticky notes.
 - Missing API integration tests.
 - Missing Expo/mobile runtime smoke.
 - Missing auth onboarding smoke.

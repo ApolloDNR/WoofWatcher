@@ -9,6 +9,8 @@ export type CareHealthSignalKind =
   | "stool-watch"
   | "anxiety-watch";
 
+export type CareHealthPatternKind = CareHealthSignalKind | "steady";
+
 export interface CareHealthEntry {
   id?: string;
   type: string;
@@ -43,10 +45,21 @@ export interface CareHealthRedFlag {
   entryId: string | null;
 }
 
+export interface CareHealthPattern {
+  kind: CareHealthPatternKind;
+  label: string;
+  status: CareHealthStatus;
+  window: string;
+  evidence: string;
+  nextStep: string;
+  entryIds: string[];
+}
+
 export interface CareHealthWatch {
   status: CareHealthStatus;
   summary: string;
   signals: CareHealthSignal[];
+  patterns: CareHealthPattern[];
   redFlags: CareHealthRedFlag[];
   counts: {
     vomit7: number;
@@ -146,6 +159,43 @@ function isHealthUrgent(entry: CareHealthEntry): boolean {
   return ["alert", "urgent"].includes((entry.severity ?? "").toLowerCase());
 }
 
+function patternNextStep(signal: CareHealthSignal): string {
+  if (signal.kind === "vomit-pattern") {
+    return "Track timing, color, meals, energy, and hydration. Contact a vet promptly if vomiting repeats, blood appears, belly pain, lethargy, dehydration, or appetite loss show up.";
+  }
+  if (signal.kind === "appetite-watch") {
+    return "Compare meal notes, portion served, amount eaten, treats, anxiety context, and energy. Share the pattern with a vet if skipped or partial meals continue.";
+  }
+  if (signal.kind === "stool-watch") {
+    return "Log stool detail, hydration, food changes, and energy. Contact a vet if diarrhea repeats, blood appears, or Phoenix seems painful, weak, or dehydrated.";
+  }
+  return "Capture alone-time length, triggers, recovery time, exercise, and calming supports so the household can adjust the routine together.";
+}
+
+function patternForSignal(signal: CareHealthSignal): CareHealthPattern {
+  return {
+    kind: signal.kind,
+    label: signal.label,
+    status: signal.urgency,
+    window: signal.kind === "vomit-pattern" ? "7-30 day pattern" : "7 day pattern",
+    evidence: signal.detail,
+    nextStep: patternNextStep(signal),
+    entryIds: signal.entryIds,
+  };
+}
+
+function steadyPattern(): CareHealthPattern {
+  return {
+    kind: "steady",
+    label: "Health steady",
+    status: "good",
+    window: "7 day pattern",
+    evidence: "No Health Watch signals are active in the selected window.",
+    nextStep: "Keep logging meals, stool, vomit, mood, energy, and medication so future changes are easier to review.",
+    entryIds: [],
+  };
+}
+
 export function deriveHealthWatch(input: CareHealthInput): CareHealthWatch {
   const now = input.now ?? Date.now();
   const entries = input.entries ?? [];
@@ -236,11 +286,13 @@ export function deriveHealthWatch(input: CareHealthInput): CareHealthWatch {
       : signals.length > 0
         ? signals[0].detail
         : "No health watch signals logged in the selected window.";
+  const patterns = signals.length > 0 ? signals.map(patternForSignal) : [steadyPattern()];
 
   return {
     status,
     summary,
     signals,
+    patterns,
     redFlags,
     counts: {
       vomit7: vomit7.length,
