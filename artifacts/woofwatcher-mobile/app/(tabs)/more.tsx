@@ -419,6 +419,8 @@ export default function MoreScreen() {
             <Pressable
               onPress={openProfileEdit}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Edit dog profile"
               style={[s.profileEditBtn, { backgroundColor: "rgba(255,255,255,0.9)" }]}
             >
               <Ionicons name="pencil" size={14} color={colors.primary} />
@@ -485,6 +487,8 @@ export default function MoreScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push("/premium");
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Open WoofWatcher Plus"
             style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
           >
             <LinearGradient
@@ -651,6 +655,8 @@ export default function MoreScreen() {
               <Pressable
                 key={l.label}
                 onPress={l.onPress}
+                accessibilityRole="button"
+                accessibilityLabel={`${l.label}. ${l.sub}`}
                 style={({ pressed }) => [s.linkRow, i < links.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }, { opacity: pressed ? 0.6 : 1 }]}
               >
                 <View style={[s.linkIconWrap, { backgroundColor: PULSE_COLORS[l.icon] + "16" }]}>
@@ -717,6 +723,8 @@ export default function MoreScreen() {
           {/* Sign out */}
           <Pressable
             onPress={confirmSignOut}
+            accessibilityRole="button"
+            accessibilityLabel="Sign out of WoofWatcher"
             style={({ pressed }) => [s.signOut, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
           >
             <Ionicons name="log-out-outline" size={19} color={colors.rose} />

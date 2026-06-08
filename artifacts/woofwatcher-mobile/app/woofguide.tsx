@@ -294,6 +294,8 @@ export default function WoofGuideScreen() {
                     <Pressable
                       key={q}
                       onPress={() => sendMessage(q)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Ask WoofGuide: ${q}`}
                       style={({pressed}) => [s.quickChip, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
                     >
                       <Text style={[s.quickText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>{q}</Text>
@@ -313,6 +315,8 @@ export default function WoofGuideScreen() {
                       <Pressable
                         key={action.id}
                         onPress={() => runAction(action)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Review WoofGuide action: ${action.label}. ${action.detail}${action.draft ? ". Owner review required." : ""}`}
                         style={({ pressed }) => [
                           s.actionCard,
                           {
@@ -371,6 +375,8 @@ export default function WoofGuideScreen() {
           <Pressable
             onPress={() => sendMessage(input)}
             disabled={!input.trim() || loading}
+            accessibilityRole="button"
+            accessibilityLabel="Send WoofGuide message"
             style={[s.sendBtn, { backgroundColor: input.trim() && !loading ? colors.primary : colors.card, borderColor: colors.border }]}
           >
             {loading
@@ -381,8 +387,16 @@ export default function WoofGuideScreen() {
         </View>
       </KeyboardAvoidingView>
       <Modal visible={reviewAction !== null} transparent animationType="slide" onRequestClose={() => setReviewAction(null)}>
-        <Pressable style={s.reviewBackdrop} onPress={() => setReviewAction(null)}>
-          <Pressable style={[s.reviewSheet, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={(event) => event.stopPropagation()}>
+        <Pressable
+          style={s.reviewBackdrop}
+          onPress={() => setReviewAction(null)}
+          accessibilityRole="button"
+          accessibilityLabel="Close owner review"
+        >
+          <Pressable
+            style={[s.reviewSheet, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={(event) => event.stopPropagation()}
+          >
             {reviewAction?.draft ? (
               <>
                 <View style={s.reviewHeader}>
@@ -393,7 +407,12 @@ export default function WoofGuideScreen() {
                     <Text style={[s.reviewEyebrow, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>OWNER REVIEW</Text>
                     <Text style={[s.reviewTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{reviewAction.draft.title}</Text>
                   </View>
-                  <Pressable onPress={() => setReviewAction(null)} hitSlop={10}>
+                  <Pressable
+                    onPress={() => setReviewAction(null)}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close owner review"
+                  >
                     <Ionicons name="close" size={22} color={colors.mutedForeground} />
                   </Pressable>
                 </View>
@@ -408,10 +427,20 @@ export default function WoofGuideScreen() {
                   ) : null}
                 </ScrollView>
                 <View style={s.reviewActions}>
-                  <Pressable onPress={() => setReviewAction(null)} style={[s.reviewCancel, { borderColor: colors.border }]}>
+                  <Pressable
+                    onPress={() => setReviewAction(null)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancel owner review"
+                    style={[s.reviewCancel, { borderColor: colors.border }]}
+                  >
                     <Text style={[s.reviewCancelText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Cancel</Text>
                   </Pressable>
-                  <Pressable onPress={applyDraft} style={[s.reviewApply, { backgroundColor: colors.primary }]}>
+                  <Pressable
+                    onPress={applyDraft}
+                    accessibilityRole="button"
+                    accessibilityLabel="Apply reviewed WoofGuide draft"
+                    style={[s.reviewApply, { backgroundColor: colors.primary }]}
+                  >
                     <Text style={[s.reviewApplyText, { fontFamily: "Inter_700Bold" }]}>{reviewAction.draft.cta}</Text>
                   </Pressable>
                 </View>

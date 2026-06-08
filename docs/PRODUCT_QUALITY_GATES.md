@@ -107,7 +107,7 @@ Current gaps:
 - Need design system.
 - Need screen-by-screen polish.
 - Need motion spec and implementation.
-- Need accessibility pass.
+- Need full accessibility pass. Critical action screen-reader labels are covered by focused static smoke, but contrast, dynamic type, keyboard flow, touch targets, and native screen-reader traversal still need QA.
 - Need visual regression or screenshot review.
 - Need Figma alignment if Figma becomes the canonical design source.
 
@@ -126,6 +126,7 @@ Current gaps:
 - Local environment does not currently have pnpm/node_modules installed in this Codex checkout.
 - Need API integration tests.
 - Need mobile runtime smoke.
+- Critical mobile action accessibility labels are covered by focused static smoke.
 - Need report/export tests.
 - Need release smoke checklist.
 
@@ -145,8 +146,7 @@ Current gaps:
 - Need role-based access control.
 - Need audit trail.
 - Need document storage access rules.
-- Need AI usage disclosure.
-- Need data export/delete plan.
+- AI usage disclosure, owner care-data export, and non-destructive deletion request preparation exist in mobile; provider-backed policy and destructive deletion still need approval.
 
 ## Gate 9: Deployment And Operations
 

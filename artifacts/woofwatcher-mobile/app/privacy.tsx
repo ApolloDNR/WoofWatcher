@@ -115,7 +115,12 @@ export default function PrivacyScreen() {
             <View style={s.heroIcon}>
               <Ionicons name="shield-checkmark-outline" size={22} color="#FFFFFF" />
             </View>
-            <Pressable onPress={() => router.back()} hitSlop={10}>
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Close Privacy and Safety"
+            >
               <Ionicons name="close" size={24} color="rgba(255,255,255,0.82)" />
             </Pressable>
           </View>
@@ -135,6 +140,8 @@ export default function PrivacyScreen() {
         <View style={s.actionRow}>
           <Pressable
             onPress={shareExport}
+            accessibilityRole="button"
+            accessibilityLabel="Export WoofWatcher care data"
             style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
           >
             <Ionicons name="download-outline" size={18} color="#FFFFFF" />
@@ -142,6 +149,8 @@ export default function PrivacyScreen() {
           </Pressable>
           <Pressable
             onPress={shareDeletionRequest}
+            accessibilityRole="button"
+            accessibilityLabel="Prepare account deletion request"
             style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.75 : 1 }]}
           >
             <Ionicons name="trash-outline" size={17} color={colors.rose} />

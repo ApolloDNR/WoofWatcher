@@ -164,6 +164,8 @@ export default function PremiumScreen() {
           <View style={s.actionRow}>
             <Pressable
               onPress={showLaunchChecklist}
+              accessibilityRole="button"
+              accessibilityLabel="Open premium launch checklist"
               style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
             >
               <Ionicons name="clipboard-outline" size={18} color="#FFFFFF" />
@@ -174,6 +176,8 @@ export default function PremiumScreen() {
                 Haptics.selectionAsync();
                 router.back();
               }}
+              accessibilityRole="button"
+              accessibilityLabel="Back to care"
               style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 }]}
             >
               <Text style={[s.secondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Back to care</Text>

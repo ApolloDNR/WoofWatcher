@@ -242,6 +242,16 @@ Owner: Codex.
 
 Revisit trigger: Native simulator/device smoke or screenshot automation becomes available in CI.
 
+### 2026-06-08: Critical Mobile Actions Need Screen Reader Labels
+
+Decision: Critical mobile actions on Privacy, Premium, WoofGuide, and More must expose explicit screen-reader labels and stay covered by focused static smoke.
+
+Reason: These surfaces include privacy export, deletion request preparation, premium launch gating, owner-reviewed WoofGuide actions, assistant sending, profile editing, Plus entry, sharing tools, and sign out. They are release-critical actions, so they should not depend only on visible icon or card text.
+
+Owner: Codex.
+
+Revisit trigger: Native accessibility automation, simulator screen-reader traversal, or a formal design-system accessibility audit becomes available.
+
 ### 2026-06-08: Today Command Uses Routine Board Truth
 
 Decision: Today Command uses `deriveRoutineBoard` for open routine selection instead of independently guessing from raw day counts.

@@ -51,8 +51,8 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Handoff/Reports | Domain supports care pass and handoff summaries. Mobile Records previews sitter, vet, trainer, and caregiver Care Pass sections before sharing, stores shared Care Pass artifacts in report history, and Care Pass exports include audience checklists plus Health Pattern Review next steps. | Add generated PDF artifacts, print layout, server-backed report storage, and richer audience templates. |
 | WoofGuide | API routes and mobile WoofGuide screen exist. Mobile now shows deterministic suggested action cards and owner-reviewed drafts for missing meal logs, record reminders, vet notes, and Care Pass review. | Add provider-backed source citations, report-draft persistence, permission-aware assistant writes, and stronger audit history. |
 | Offline/Sync | Mobile care sync handles local/pending/failed status and retry separation. | Add durable outbox, conflict-safe state updates, sync dashboard, and recovery tests. |
-| Design | Warm brand assets and Phoenix art exist. | Need full premium design system, motion spec, high-end screen polish, accessibility pass, and Figma alignment. |
-| CI/QA | GitHub Actions verifies install, focused tests, typecheck, API/web builds, mobile Expo web export smoke, and can be manually dispatched if a push hook misses. Focused tests include static mobile readiness smoke for route registration, tabs, router links, launch-blocking safety copy, and CI smoke wiring. | Add native simulator/device smoke, API route tests, Playwright or simulator screenshot checks, accessibility, and visual regression where feasible. |
+| Design | Warm brand assets and Phoenix art exist. Critical mobile actions now have screen-reader labels on Privacy, Premium, WoofGuide, and More. | Need full premium design system, motion spec, high-end screen polish, full accessibility pass, and Figma alignment. |
+| CI/QA | GitHub Actions verifies install, focused tests, typecheck, API/web builds, mobile Expo web export smoke, and can be manually dispatched if a push hook misses. Focused tests include static mobile readiness smoke for route registration, tabs, router links, launch-blocking safety copy, CI smoke wiring, and critical action accessibility labels. | Add native simulator/device smoke, API route tests, Playwright or simulator screenshot checks, full accessibility traversal, and visual regression where feasible. |
 
 ## Missing Features
 
@@ -73,7 +73,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 - Current mobile UI is functional but not yet a final premium visual system.
 - Need component inventory for buttons, chips, cards, tabs, status banners, forms, empty states, and report surfaces.
 - Need motion rules for log confirmation, sync recovery, avatar mood, routine completion, report generation, and assistant actions.
-- Need accessibility pass for contrast, touch target sizes, dynamic type, keyboard flow, and screen-reader labels.
+- Need full accessibility pass for contrast, touch target sizes, dynamic type, keyboard flow, and native screen-reader traversal. Critical mobile action labels are now statically protected.
 - Need visual hierarchy audit across Today, Log, Calendar, Records, More, WoofGuide, and auth screens.
 - Need Figma design system or equivalent component spec before major visual overhaul.
 
@@ -88,14 +88,14 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 ## Test And QA Gaps
 
-- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, event taxonomy, day status, care pass audience checklists, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, privacy/account safety export gates, static mobile route readiness, and mobile export-smoke CI wiring.
+- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, event taxonomy, day status, care pass audience checklists, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, privacy/account safety export gates, static mobile route readiness, critical mobile action accessibility labels, and mobile export-smoke CI wiring.
 - Missing API integration tests.
 - Missing native simulator/device runtime smoke. Static mobile route smoke and CI Expo web export smoke exist, but they do not replace native runtime rendering.
 - Missing auth onboarding smoke.
 - Missing visual regression or screenshot review for core screens.
 - Missing generated report snapshot tests.
 - Missing document upload/security tests.
-- Missing accessibility checks.
+- Missing full accessibility checks beyond static critical-action labels.
 
 ## Security, Privacy, And Compliance Gaps
 

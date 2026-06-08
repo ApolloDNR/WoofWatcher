@@ -99,3 +99,24 @@ test("keeps Expo web export smoke wired into CI", () => {
   assert.match(smokeScript, /EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY/);
   assert.match(mobileGitignore, /\.expo-smoke\//);
 });
+
+test("keeps critical mobile actions accessible to screen readers", () => {
+  const privacy = readAppFile("privacy.tsx");
+  const premium = readAppFile("premium.tsx");
+  const woofGuide = readAppFile("woofguide.tsx");
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  assert.match(privacy, /accessibilityLabel="Close Privacy and Safety"/);
+  assert.match(privacy, /accessibilityLabel="Export WoofWatcher care data"/);
+  assert.match(privacy, /accessibilityLabel="Prepare account deletion request"/);
+  assert.match(premium, /accessibilityLabel="Open premium launch checklist"/);
+  assert.match(premium, /accessibilityLabel="Back to care"/);
+  assert.match(woofGuide, /accessibilityLabel=\{`Ask WoofGuide: \$\{q\}`\}/);
+  assert.match(woofGuide, /accessibilityLabel=\{`Review WoofGuide action: \$\{action\.label\}/);
+  assert.match(woofGuide, /accessibilityLabel="Close owner review"/);
+  assert.match(woofGuide, /accessibilityLabel="Send WoofGuide message"/);
+  assert.match(more, /accessibilityLabel="Edit dog profile"/);
+  assert.match(more, /accessibilityLabel="Open WoofWatcher Plus"/);
+  assert.match(more, /accessibilityLabel=\{`\$\{l\.label\}\. \$\{l\.sub\}`\}/);
+  assert.match(more, /accessibilityLabel="Sign out of WoofWatcher"/);
+});
