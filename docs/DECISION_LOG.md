@@ -142,6 +142,16 @@ Owner: Codex.
 
 Revisit trigger: Structured WoofGuide action handlers are implemented and tested for log drafts, reminders, notes, and reports.
 
+### 2026-06-08: Care Foundation Setup Uses A Dedicated Route
+
+Decision: First-run dog profile, diet baseline, starter routine, and caregiver basics are saved through a dedicated mobile Setup route.
+
+Reason: The setup checklist should create usable care context in one pass. Scattering these fields across Today, More, and Calendar creates dead ends and makes onboarding feel incomplete.
+
+Owner: Codex.
+
+Revisit trigger: Auth-connected household onboarding, invite/join flow, multiple dogs, or a native onboarding stack requires splitting setup into staged screens.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

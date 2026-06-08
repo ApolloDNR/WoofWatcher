@@ -30,6 +30,7 @@ Passing evidence:
 - Calendar/routines can be assigned and completed.
 - Records, handoff, reports, and WoofGuide route to useful workflows.
 - Dog profile credential fields feed the Records ID card and share text.
+- Dedicated Setup route can save dog profile, diet baseline, starter routine, and household caregiver basics in one flow.
 - Log entries have a detail sheet with sticky notes, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Care Pass reports can be previewed by audience before sharing.
 - Records show expired, due-soon, current, and reference status for saved record rows.
@@ -38,7 +39,7 @@ Passing evidence:
 
 Current gaps:
 
-- Shared onboarding readiness exists and is used by the Today setup nudge, but full first-run onboarding is incomplete.
+- Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning and household invite/join onboarding remain incomplete.
 - Multiple dogs, roles, invites, generated PDF/report artifacts, record document storage, server reminders for expiring records, credential image/PDF export, and log audit policy need implementation.
 - Runtime smoke has not been added.
 
@@ -48,7 +49,7 @@ Status: Partially passing.
 
 Passing evidence:
 
-- Focused tests cover event normalization, day status, care sync, Today Command, diet progress, health handoff, care pass, record vault, pet credential fallbacks, record due-status, routine board, sticky notes, and WoofGuide action cards.
+- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, health handoff, care pass, record vault, pet credential fallbacks, record due-status, routine board, sticky notes, and WoofGuide action cards.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:
@@ -183,7 +184,7 @@ Latest known passing CI:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27118687877`, completed success on 2026-06-08 UTC
+- Evidence: run `27119751752`, completed success on 2026-06-08 UTC
 
 ## Required Before Claiming Full Release
 
