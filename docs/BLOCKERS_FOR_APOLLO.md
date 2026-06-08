@@ -12,7 +12,7 @@
 - Clerk production configuration.
 - Database/Supabase production configuration.
 - Storage provider for records and generated reports.
-- Document upload/storage rules for real record files; local metadata and reminders exist, but production file storage is not approved/configured.
+- Document upload/storage rules for real record files; local metadata, reminders, and visible storage gates exist, but production file storage is not approved/configured.
 - AI provider key and model policy.
 - Provider-backed WoofGuide generation, source citations, and permission-aware assistant writes require the AI provider key/model policy plus privacy/account safety rules. Current WoofGuide actions are deterministic owner-reviewed drafts only.
 - Expo/EAS/App Store accounts.
@@ -26,7 +26,7 @@
 
 - Privacy policy for pet health notes, documents, AI usage, and household sharing.
 - Terms and support scope before subscriptions.
-- Data export and account deletion policy.
+- Provider-backed account deletion policy; mobile can export owner care data and prepare a non-destructive deletion request, but self-serve destructive deletion is not enabled.
 - Veterinary disclaimer language.
 - Document storage access rules.
 

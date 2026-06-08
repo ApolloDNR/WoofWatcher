@@ -98,6 +98,14 @@ function RootLayoutNav() {
           headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
+      <Stack.Screen
+        name="privacy"
+        options={{
+          title: "Privacy & Safety",
+          presentation: "card",
+          headerStyle: { backgroundColor: "#F7F5F1" },
+        }}
+      />
     </Stack>
   );
 }

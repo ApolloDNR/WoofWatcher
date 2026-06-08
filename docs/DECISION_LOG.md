@@ -212,6 +212,16 @@ Owner: Codex.
 
 Revisit trigger: Entitlement rules, production pricing, app-store subscription setup, and customer support/refund policies are approved.
 
+### 2026-06-08: Privacy Safety Ships As Export And Request First
+
+Decision: WoofWatcher can provide owner care-data export, AI disclosure, document storage gates, and account deletion request preparation before implementing destructive self-serve deletion.
+
+Reason: Owners need transparency and portability now, but deleting account, household, medical record, document, and generated artifact data requires provider-backed deletion rules, retention policy, audit behavior, and legal approval. The app should not pretend a destructive backend flow exists.
+
+Owner: Codex.
+
+Revisit trigger: Clerk/database/storage providers, retention rules, support workflow, and legal privacy policy are approved for self-serve deletion.
+
 ### 2026-06-08: Today Command Uses Routine Board Truth
 
 Decision: Today Command uses `deriveRoutineBoard` for open routine selection instead of independently guessing from raw day counts.

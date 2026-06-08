@@ -100,4 +100,4 @@ Stop only for:
 
 ## Current Next Slice
 
-As of 2026-06-08, the current queue points to privacy/account safety: data export, account deletion, AI disclosure, and document storage rules.
+As of 2026-06-08, the current queue points to mobile runtime QA: Expo smoke, accessibility, visual regression, and App Store prep.

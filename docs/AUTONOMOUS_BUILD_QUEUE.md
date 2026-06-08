@@ -15,8 +15,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 7. DONE 2026-06-08: Care Pass handoffs now include audience-specific checklists and Health Pattern Review next steps for sitter, caregiver, trainer, and vet exports.
 8. DONE 2026-06-08: Records now derives and displays expired, due-soon, and missing-critical record reminders; real document storage remains blocked on provider rules.
 9. DONE 2026-06-08: WoofGuide now creates owner-reviewed drafts for missing meal logs, record reminders, vet notes, and Care Pass review.
-10. Next: Privacy/account safety: data export, account deletion, AI disclosure, document storage rules.
-11. Mobile runtime QA: Expo smoke, accessibility, visual regression, App Store prep.
+10. DONE 2026-06-08: Privacy/account safety first pass now includes owner data export, deletion request preparation, AI disclosure, and document/payment safety gates.
+11. Next: Mobile runtime QA: Expo smoke, accessibility, visual regression, App Store prep.
 12. Premium design system and motion pass.
 
 ## Cadence

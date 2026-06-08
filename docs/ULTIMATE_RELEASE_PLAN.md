@@ -28,7 +28,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 | Area | Current status | Release gap |
 | --- | --- | --- |
-| Account/Auth | Mobile uses Clerk auth screens and provider guardrails. API uses Clerk auth helpers. | Confirm end-to-end account onboarding in Expo runtime and document provider setup. |
+| Account/Auth | Mobile uses Clerk auth screens and provider guardrails. API uses Clerk auth helpers. Privacy & Safety now exposes owner data export, deletion request preparation, and launch safety gates. | Confirm end-to-end account onboarding in Expo runtime, provider-backed self-serve deletion, and document provider setup. |
 | Household | API has household routes and provisioning logic. Mobile context supports shared state. First-run setup captures a household caregiver baseline. | Improve auth-connected household setup UI, roles, invites, and caregiver permissions. |
 | Dog Profile | Profile exists in care state/screens, shared onboarding readiness detects missing profile setup, mobile editor captures credential fields, and first-run setup can save the core dog profile. | Add multiple-dog model, profile photo, and richer credential polish. |
 | Today Command | Mobile has a Today Command model, home surface, setup nudge, action routing, sync/health context, and routine-board alignment for partial meals plus overdue assigned routines. | Add reminder notifications, richer empty states, and interaction polish. |
@@ -47,12 +47,12 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Alone Time | Event taxonomy supports alone time. | Add separation/anxiety pattern tracking and handoff notes. |
 | Sticky Notes | Domain tests cover sticky note append/sanitize behavior. Mobile Log can attach multiple sticky notes to existing logs, show them in timeline/detail views, and include them in entry handoff text. | Add richer sticky-note colors, pinning, and report filtering. |
 | Routines/Reminders | Routine board domain logic exists; calendar UI has assignment/completion concepts; first-run setup can create a starter routine with owner assignment. | Add reminder notifications, recurring rules, missed routine nudges, recurring setup polish, and owner load balancing. |
-| Records | Domain has record vault, pet credential summary, due-status logic, and record reminders for expired, due-soon, and missing-critical records. Mobile Records includes a dog ID card, due/current/reference badges, reminder rows, and profile-level microchip, insurance, vet, and emergency-contact fallbacks before uploaded records exist. | Add document upload/storage, richer receipt capture, server reminders for expiring records, and credential card image/PDF export. |
+| Records | Domain has record vault, pet credential summary, due-status logic, and record reminders for expired, due-soon, and missing-critical records. Mobile Records includes a dog ID card, due/current/reference badges, reminder rows, and profile-level microchip, insurance, vet, and emergency-contact fallbacks before uploaded records exist. Privacy & Safety makes document storage rules visible before upload is enabled. | Add document upload/storage, richer receipt capture, server reminders for expiring records, and credential card image/PDF export. |
 | Handoff/Reports | Domain supports care pass and handoff summaries. Mobile Records previews sitter, vet, trainer, and caregiver Care Pass sections before sharing, stores shared Care Pass artifacts in report history, and Care Pass exports include audience checklists plus Health Pattern Review next steps. | Add generated PDF artifacts, print layout, server-backed report storage, and richer audience templates. |
 | WoofGuide | API routes and mobile WoofGuide screen exist. Mobile now shows deterministic suggested action cards and owner-reviewed drafts for missing meal logs, record reminders, vet notes, and Care Pass review. | Add provider-backed source citations, report-draft persistence, permission-aware assistant writes, and stronger audit history. |
 | Offline/Sync | Mobile care sync handles local/pending/failed status and retry separation. | Add durable outbox, conflict-safe state updates, sync dashboard, and recovery tests. |
 | Design | Warm brand assets and Phoenix art exist. | Need full premium design system, motion spec, high-end screen polish, accessibility pass, and Figma alignment. |
-| CI/QA | GitHub Actions verifies install, focused tests, typecheck, API/web builds. | Add mobile runtime smoke, API route tests, Playwright or Expo smoke, accessibility and visual regression where feasible. |
+| CI/QA | GitHub Actions verifies install, focused tests, typecheck, API/web builds, and can be manually dispatched if a push hook misses. | Add mobile runtime smoke, API route tests, Playwright or Expo smoke, accessibility and visual regression where feasible. |
 
 ## Missing Features
 
@@ -88,7 +88,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 ## Test And QA Gaps
 
-- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, event taxonomy, day status, care pass audience checklists, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, and WoofGuide owner-reviewed draft payloads.
+- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, event taxonomy, day status, care pass audience checklists, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, and privacy/account safety export gates.
 - Missing API integration tests.
 - Missing Expo/mobile runtime smoke.
 - Missing auth onboarding smoke.
@@ -103,7 +103,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 - Production API must set `ALLOWED_ORIGINS`.
 - Health and vet guidance must remain non-diagnostic.
 - Add privacy copy for pet records, health notes, household sharing, and AI usage.
-- Add data export/delete strategy before public launch.
+- Data export and manual deletion request preparation exist in mobile. Provider-backed self-serve deletion, retention rules, and audit policy still need approval before public launch.
 - Add role-based access control and audit log for shared households.
 - Add document storage rules for receipts, insurance, vaccine records, and medical documents.
 
@@ -135,9 +135,9 @@ No payment implementation should start until product scope, privacy terms, and s
 4. Add generated PDF artifacts, print layout, and server-backed report storage.
 5. Add durable offline outbox tests and implementation.
 6. Add API integration tests for care state and entries.
-7. Add privacy/account safety: export, deletion, AI disclosure, and document storage rules.
-8. Add provider-backed WoofGuide source citations, permission-aware writes, and persisted report drafts.
-9. Add mobile runtime smoke or screenshot verification once local dependencies/browser support are available.
+7. Add mobile runtime smoke or screenshot verification once local dependencies/browser support are available.
+8. Add provider-backed self-serve account deletion, document storage rules, and retention/audit policy after Apollo approves providers/legal scope.
+9. Add provider-backed WoofGuide source citations, permission-aware writes, and persisted report drafts.
 10. Build visual system pass in Figma or code, then implement screen-by-screen.
 
 ## Decisions Made Without Apollo
@@ -156,6 +156,7 @@ No payment implementation should start until product scope, privacy terms, and s
 - WoofGuide suggested actions are deterministic view-model cards with owner-reviewed draft handlers first; provider-backed generation, permission-aware writes, and durable report drafts stay gated until privacy/account safety and AI policy are ready.
 - First-run care foundation setup belongs on a dedicated mobile route so profile, diet, starter routine, and caregiver basics can be saved together instead of scattered across separate screens.
 - Care Pass report history stores shared report snapshots in the care document; generated PDFs and server-backed artifact storage remain separate production work.
+- Privacy & Safety can export owner care data and prepare deletion requests now; actual destructive account deletion and storage-backed document deletion remain provider-gated.
 
 ## Blockers Requiring Apollo
 

@@ -36,11 +36,11 @@ WoofWatcher can become a meaningful niche subscription business if it becomes th
 7. IN PROGRESS, core draft-action slice shipped 2026-06-08: WoofGuide bounded action drafting.
 8. Multiple dogs.
 9. Report history and PDF artifacts.
-10. App Store-ready privacy, export, account deletion, and support.
+10. IN PROGRESS, first pass shipped 2026-06-08: App Store-ready privacy, export, account deletion, and support.
 
 ## Do Not Monetize Yet
 
-Do not add real payment flows until privacy terms, support obligations, launch target, subscription packaging, and refund/support workflow are clear. It is acceptable to add pricing surfaces or a gated premium preview before payment wiring.
+Do not add real payment flows until privacy terms, provider-backed account deletion, support obligations, launch target, subscription packaging, and refund/support workflow are clear. It is acceptable to add pricing surfaces or a gated premium preview before payment wiring.
 
 ## Premium Preview Surface
 
@@ -49,3 +49,5 @@ Status, 2026-06-08: An in-app WoofWatcher Plus preview/paywall surface now packa
 ## Next Money Task
 
 Define launch policy and entitlement enforcement: what exactly is limited on Free, what Plus unlocks, what Family unlocks, how grandfathering works, and what support/refund terms are required before checkout.
+
+Privacy status, 2026-06-08: Mobile now has owner care-data export and non-destructive deletion request preparation. Real checkout still waits for provider-backed deletion, storage retention rules, support/refund policy, and app-store subscription approval.

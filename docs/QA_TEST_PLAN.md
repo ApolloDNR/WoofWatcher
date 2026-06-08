@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-08:
 
-- PASS: 64 focused tests with the command above.
+- PASS: 68 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -34,6 +34,7 @@ Latest local evidence, 2026-06-08:
 - WoofGuide deterministic actions and owner-reviewed draft payloads for meal logs, record reminders, vet notes, and Care Pass review.
 - Setup wizard.
 - Premium plan packaging and checkout-disabled guard.
+- Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
 
 ## Manual Mobile QA
 
@@ -52,8 +53,11 @@ Latest local evidence, 2026-06-08:
 13. Confirm report history stores shared Care Pass.
 14. Ask WoofGuide about recent changes and verify non-diagnostic wording.
 15. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
-16. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
-17. Force offline or failed sync state and confirm visibility.
+16. Open Privacy & Safety from More, share the care-data export, and confirm it includes care data counts without auth/session tokens.
+17. Prepare an account deletion request and confirm it is non-destructive and says manual review/export first.
+18. Confirm AI disclosure, document storage rules, and payment launch blockers are visible.
+19. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
+20. Force offline or failed sync state and confirm visibility.
 
 ## Missing QA
 
@@ -63,4 +67,5 @@ Latest local evidence, 2026-06-08:
 - Visual regression or screenshot review.
 - Accessibility pass.
 - Document upload/security tests.
+- Self-serve provider-backed account deletion tests.
 - Payment/paywall tests when monetization is enabled.

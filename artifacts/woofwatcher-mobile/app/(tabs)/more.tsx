@@ -362,6 +362,16 @@ export default function MoreScreen() {
       },
     },
     {
+      icon: "heart",
+      iconName: "shield-checkmark-outline",
+      label: "Privacy & Safety",
+      sub: "Export data, deletion request, AI disclosure, and storage gates",
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push("/privacy");
+      },
+    },
+    {
       icon: "star",
       iconName: "color-palette",
       label: "Portrait Studio",
