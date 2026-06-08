@@ -15,10 +15,11 @@ When working in this repo, use this order:
 9. `docs/PRODUCT_QUALITY_GATES.md`
 10. `docs/DECISION_LOG.md`
 11. `docs/BLOCKERS_FOR_APOLLO.md`
-12. `README.md` and `replit.md`
-13. Product specs and implementation plans in `docs/superpowers`
-14. Current app, API, package, test, CI, schema, and migration state
-15. Brand/design screenshots and external references Apollo provides
+12. `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+13. `README.md` and `replit.md`
+14. Product specs and implementation plans in `docs/superpowers`
+15. Current app, API, package, test, CI, schema, and migration state
+16. Brand/design screenshots and external references Apollo provides
 
 ## Product Identity
 
@@ -77,14 +78,15 @@ WoofGuide must not diagnose, replace a veterinarian, claim emergency certainty, 
 Before each implementation slice:
 
 1. Inspect `git status --short --branch`.
-2. Read `docs/ULTIMATE_RELEASE_PLAN.md`.
-3. Choose the highest-impact unfinished task that moves the app toward Full Premium Release.
-4. Write or update tests for the behavior when practical.
-5. Implement the smallest coherent product slice.
-6. Run focused tests locally.
-7. Commit and push when the slice is ready.
-8. Check GitHub Actions for `WoofWatcher Verify`.
-9. Update release docs when scope, decisions, blockers, or status changes.
+2. Read `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`.
+3. Read `docs/ULTIMATE_RELEASE_PLAN.md`.
+4. Choose the highest-impact unfinished task that moves the app toward Full Premium Release.
+5. Write or update tests for the behavior when practical.
+6. Implement the smallest coherent product slice.
+7. Run focused tests locally.
+8. Commit and push when the slice is ready.
+9. Check GitHub Actions for `WoofWatcher Verify`.
+10. Update release docs when scope, decisions, blockers, or status changes.
 
 Default autonomous priority:
 

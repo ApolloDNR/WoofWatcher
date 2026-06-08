@@ -31,6 +31,37 @@ test("missed meal in the morning creates a log-meal primary action", () => {
   assert.match(command.primaryAction.detail, /Breakfast/i);
 });
 
+test("partial meal log satisfies the meal routine and moves command to the next open care item", () => {
+  const command = deriveTodayCommand(
+    state({
+      entries: [
+        {
+          id: "meal_partial",
+          type: "meal",
+          title: "Breakfast - partial",
+          caregiver: "Emma",
+          occurredAt: "2026-06-06T07:38:00-07:00",
+          details: {
+            routineId: "breakfast",
+            mealCompletion: "partial",
+            expectedPortion: "1 cup",
+            servedAmount: 1,
+            servedUnit: "cup",
+            eatenAmount: 0.5,
+            eatenUnit: "cup",
+            householdVisible: true,
+          },
+        },
+      ],
+    }),
+    MORNING,
+  );
+
+  assert.equal(command.primaryAction.kind, "log-walk");
+  assert.equal(command.primaryAction.route, "/log");
+  assert.match(command.primaryAction.detail, /Walk/i);
+});
+
 test("vomit watch event creates health watch urgency", () => {
   const command = deriveTodayCommand(
     state({
@@ -78,6 +109,33 @@ test("next routine produces a routine action when core care is caught up", () =>
   assert.equal(command.primaryAction.route, "/calendar");
   assert.equal(command.primaryAction.icon, "star");
   assert.match(command.primaryAction.label, /Training/i);
+});
+
+test("overdue assigned routine becomes the primary command when core care is handled", () => {
+  const command = deriveTodayCommand(
+    state({
+      entries: [
+        { id: "meal_1", type: "meal", title: "Breakfast", caregiver: "Emma", occurredAt: "2026-06-06T07:35:00-07:00", details: { routineId: "breakfast" } },
+        { id: "walk_1", type: "walk", title: "Morning walk", caregiver: "Apollo", occurredAt: "2026-06-06T08:45:00-07:00", details: { routineId: "walk" } },
+        { id: "potty_1", type: "potty", title: "Potty", caregiver: "Emma", occurredAt: "2026-06-06T07:20:00-07:00" },
+        { id: "potty_2", type: "potty", title: "Potty", caregiver: "Apollo", occurredAt: "2026-06-06T10:20:00-07:00" },
+        { id: "potty_3", type: "potty", title: "Potty", caregiver: "Emma", occurredAt: "2026-06-06T12:20:00-07:00" },
+      ],
+      routines: [
+        { id: "breakfast", label: "Breakfast", type: "meal", time: "7:30 AM", owner: "Emma" },
+        { id: "walk", label: "Morning walk", type: "walk", time: "8:30 AM", owner: "Apollo" },
+        { id: "meds", label: "Medication", type: "medication", time: "9:00 AM", owner: "Apollo" },
+        { id: "training", label: "Training", type: "training", time: "3:00 PM", owner: "Emma" },
+      ],
+    }),
+    AFTERNOON,
+  );
+
+  assert.equal(command.primaryAction.kind, "routine");
+  assert.equal(command.primaryAction.route, "/calendar");
+  assert.equal(command.primaryAction.urgency, "watch");
+  assert.match(command.primaryAction.label, /Medication/i);
+  assert.match(command.primaryAction.detail, /Apollo/i);
 });
 
 test("recent failed sync creates a sync action", () => {

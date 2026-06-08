@@ -1,7 +1,9 @@
 import {
   deriveCareDayStatus,
+  deriveRoutineBoard,
   normalizeCareEventType,
   type CareEventType,
+  type RoutineBoardItem,
 } from "../../../lib/care-domain/src/index.ts";
 
 export type TodayCommandUrgency = "normal" | "watch" | "alert";
@@ -159,18 +161,6 @@ function routineDateMs(routine: TodayCommandRoutine, now: number): number {
   return d.getTime();
 }
 
-function getNextRoutine(
-  routines: readonly TodayCommandRoutine[],
-  now: number,
-): TodayCommandRoutine | null {
-  return (
-    routines
-      .map((routine) => ({ routine, ms: routineDateMs(routine, now) }))
-      .filter(({ ms }) => ms > now)
-      .sort((a, b) => a.ms - b.ms)[0]?.routine ?? null
-  );
-}
-
 function getRelevantRoutineOfType(
   routines: readonly TodayCommandRoutine[],
   type: CareEventType,
@@ -189,6 +179,31 @@ function getRelevantRoutineOfType(
       .sort((a, b) => a.ms - b.ms)[0]?.routine ??
     null
   );
+}
+
+function routineActionDetail(routine: RoutineBoardItem): string {
+  const owner = routine.owner ? `${routine.owner} is assigned.` : "No caregiver assigned yet.";
+  if (routine.status === "overdue") return `${routine.label}: ${owner} It was due at ${routine.time}.`;
+  if (routine.status === "due") return `${routine.label}: ${owner} It is due now.`;
+  return routine.owner ? `${routine.label}: ${routine.owner} is on deck.` : `${routine.label}: open the day plan.`;
+}
+
+function nextOpenRoutine(items: readonly RoutineBoardItem[]): RoutineBoardItem | null {
+  const open = items.filter((item) => item.status !== "done");
+  return (
+    open.find((item) => item.status === "overdue") ??
+    open.find((item) => item.status === "due") ??
+    open.find((item) => item.status === "upcoming") ??
+    null
+  );
+}
+
+function openRoutineOfType(
+  items: readonly RoutineBoardItem[],
+  type: CareEventType,
+): RoutineBoardItem | null {
+  const open = items.filter((item) => item.normalizedType === type && item.status !== "done");
+  return nextOpenRoutine(open);
 }
 
 function getHealthUrgency(entries: readonly TodayCommandEntry[]): TodayCommandUrgency {
@@ -231,6 +246,12 @@ export function deriveTodayCommand(
   const todays = entries.filter((entry) => isSameLocalDay(entry.occurredAt, now));
   const sortedEntries = sortNewestFirst(entries);
   const dayStatus = deriveCareDayStatus(entries, routines, now);
+  const routineBoard = deriveRoutineBoard({
+    routines,
+    entries,
+    caregivers: state.caregivers,
+    now,
+  });
 
   const sync = {
     pending: entries.filter((entry) => entry.syncStatus === "pending").length,
@@ -312,19 +333,24 @@ export function deriveTodayCommand(
   }
 
   const hour = new Date(now).getHours();
-  const mealRoutine = getRelevantRoutineOfType(routines, "meal", now);
-  const walkRoutine = getRelevantRoutineOfType(routines, "walk", now);
+  const mealRoutine = openRoutineOfType(routineBoard.items, "meal");
+  const walkRoutine = openRoutineOfType(routineBoard.items, "walk");
 
-  if (dayStatus.counts.meals.done < dayStatus.counts.meals.target && hour >= 6) {
+  if ((mealRoutine || dayStatus.counts.meals.done < dayStatus.counts.meals.target) && hour >= 6) {
+    const fallbackMealRoutine = getRelevantRoutineOfType(routines, "meal", now);
     return {
       primaryAction: {
         kind: "log-meal",
-        label: mealRoutine ? `Log ${mealRoutine.label.toLowerCase()}` : "Log meal",
+        label: mealRoutine
+          ? `Log ${mealRoutine.label.toLowerCase()}`
+          : fallbackMealRoutine
+            ? `Log ${fallbackMealRoutine.label.toLowerCase()}`
+            : "Log meal",
         detail: mealRoutine
-          ? `${mealRoutine.label} is still open from ${mealRoutine.time}.`
+          ? routineActionDetail(mealRoutine)
           : `${dayStatus.counts.meals.done}/${dayStatus.counts.meals.target} meals logged today.`,
         route: "/log",
-        urgency: "normal",
+        urgency: mealRoutine?.status === "overdue" ? "watch" : "normal",
         icon: "bowl",
       },
       health,
@@ -333,16 +359,21 @@ export function deriveTodayCommand(
     };
   }
 
-  if (dayStatus.counts.walks.done < dayStatus.counts.walks.target && hour >= 8) {
+  if ((walkRoutine || dayStatus.counts.walks.done < dayStatus.counts.walks.target) && hour >= 8) {
+    const fallbackWalkRoutine = getRelevantRoutineOfType(routines, "walk", now);
     return {
       primaryAction: {
         kind: "log-walk",
-        label: walkRoutine ? `Log ${walkRoutine.label.toLowerCase()}` : "Log walk",
+        label: walkRoutine
+          ? `Log ${walkRoutine.label.toLowerCase()}`
+          : fallbackWalkRoutine
+            ? `Log ${fallbackWalkRoutine.label.toLowerCase()}`
+            : "Log walk",
         detail: walkRoutine
-          ? `${walkRoutine.label} is still open from ${walkRoutine.time}.`
+          ? routineActionDetail(walkRoutine)
           : `${dayStatus.counts.walks.done}/${dayStatus.counts.walks.target} walks logged today.`,
         route: "/log",
-        urgency: "normal",
+        urgency: walkRoutine?.status === "overdue" ? "watch" : "normal",
         icon: "paw",
       },
       health,
@@ -367,19 +398,19 @@ export function deriveTodayCommand(
     };
   }
 
-  const nextRoutine = getNextRoutine(routines, now);
+  const nextRoutine = nextOpenRoutine(routineBoard.items);
   if (nextRoutine) {
-    const type = normalizeCareEventType(nextRoutine.type);
     return {
       primaryAction: {
         kind: "routine",
-        label: `${nextRoutine.label} at ${nextRoutine.time}`,
-        detail: nextRoutine.owner
-          ? `${nextRoutine.owner} is on deck.`
-          : "Open the day plan.",
+        label:
+          nextRoutine.status === "overdue"
+            ? `${nextRoutine.label} overdue`
+            : `${nextRoutine.label} at ${nextRoutine.time}`,
+        detail: routineActionDetail(nextRoutine),
         route: "/calendar",
-        urgency: "normal",
-        icon: TYPE_ICON[type],
+        urgency: nextRoutine.status === "overdue" ? "watch" : "normal",
+        icon: TYPE_ICON[nextRoutine.normalizedType],
       },
       health,
       handoff,

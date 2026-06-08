@@ -202,6 +202,16 @@ Owner: Codex.
 
 Revisit trigger: Entitlement rules, production pricing, app-store subscription setup, and customer support/refund policies are approved.
 
+### 2026-06-08: Today Command Uses Routine Board Truth
+
+Decision: Today Command uses `deriveRoutineBoard` for open routine selection instead of independently guessing from raw day counts.
+
+Reason: Home and Calendar must agree about what is due, overdue, completed, partial, skipped, assigned, and private. One routine-board source prevents duplicate prompts after partial meals and lets overdue assigned routines become the primary next action.
+
+Owner: Codex.
+
+Revisit trigger: Reminder notifications or recurring-rule scheduling introduce a stricter due-state source.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
