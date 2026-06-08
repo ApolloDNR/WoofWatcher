@@ -298,7 +298,7 @@ export default function PhoenixScreen() {
           {/* Onboarding nudge */}
           {setupStep && (
             <Pressable
-              onPress={() => router.push(setupStep.route)}
+              onPress={() => router.push("/setup")}
               style={({ pressed }) => [s.onboardCard, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "28", opacity: pressed ? 0.85 : 1 }]}
             >
               <View style={[s.onboardIcon, { backgroundColor: colors.primary + "18" }]}>

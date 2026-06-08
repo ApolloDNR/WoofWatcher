@@ -1,0 +1,157 @@
+export interface SetupWizardWeightInfo {
+  current: number;
+  goal?: string;
+  unit: string;
+}
+
+export interface SetupWizardProfile {
+  name: string;
+  publicLabel: string;
+  breed: string;
+  background?: string;
+  careFocus?: string;
+  weight: SetupWizardWeightInfo;
+  [key: string]: unknown;
+}
+
+export interface SetupWizardCaregiver {
+  name: string;
+  role: string;
+}
+
+export interface SetupWizardRoutine {
+  id: string;
+  label: string;
+  type: string;
+  time: string;
+  owner: string;
+  note: string;
+}
+
+export interface SetupWizardDietProfile {
+  primaryFood: string;
+  normalPortion: string;
+  mealSchedule: string;
+  [key: string]: unknown;
+}
+
+export interface SetupWizardCareDoc {
+  createdAt: string;
+  updatedAt: string;
+  profile: SetupWizardProfile;
+  caregivers: SetupWizardCaregiver[];
+  dietProfile: SetupWizardDietProfile;
+  routines: SetupWizardRoutine[];
+  [key: string]: unknown;
+}
+
+export interface SetupWizardDraft {
+  dogName: string;
+  breed: string;
+  weight: string;
+  weightUnit: string;
+  careFocus: string;
+  caregiverName: string;
+  caregiverRole: string;
+  primaryFood: string;
+  normalPortion: string;
+  mealSchedule: string;
+  routineType: string;
+  routineLabel: string;
+  routineTime: string;
+}
+
+function clean(value: unknown): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function isPlaceholderDogName(name: string): boolean {
+  const normalized = clean(name).toLowerCase();
+  return normalized === "" || normalized === "my dog" || normalized === "dog";
+}
+
+function safeRoutineId(type: string, nowIso: string): string {
+  const stamp = Date.parse(nowIso);
+  const suffix = Number.isFinite(stamp) ? stamp : 0;
+  return `routine_${clean(type).toLowerCase() || "care"}_${suffix}`;
+}
+
+export function createSetupWizardDraft(doc: SetupWizardCareDoc): SetupWizardDraft {
+  const caregiver = doc.caregivers[0];
+  const routine = doc.routines[0];
+  return {
+    dogName: isPlaceholderDogName(doc.profile.name) ? "" : clean(doc.profile.name),
+    breed: clean(doc.profile.breed),
+    weight: doc.profile.weight.current > 0 ? String(doc.profile.weight.current) : "",
+    weightUnit: clean(doc.profile.weight.unit) || "lb",
+    careFocus: clean(doc.profile.careFocus),
+    caregiverName: clean(caregiver?.name),
+    caregiverRole: clean(caregiver?.role) || "Primary caregiver",
+    primaryFood: clean(doc.dietProfile.primaryFood),
+    normalPortion: clean(doc.dietProfile.normalPortion),
+    mealSchedule: clean(doc.dietProfile.mealSchedule),
+    routineType: clean(routine?.type) || "meal",
+    routineLabel: clean(routine?.label),
+    routineTime: clean(routine?.time),
+  };
+}
+
+export function applySetupWizardDraft<TDoc extends SetupWizardCareDoc>(
+  doc: TDoc,
+  draft: SetupWizardDraft,
+  nowIso: string = new Date().toISOString(),
+): TDoc {
+  const dogName = clean(draft.dogName) || doc.profile.name;
+  const weight = Number.parseFloat(clean(draft.weight));
+  const caregiverName = clean(draft.caregiverName);
+  const caregiverRole = clean(draft.caregiverRole) || "Caregiver";
+  const routineType = clean(draft.routineType) || "meal";
+  const routineLabel = clean(draft.routineLabel);
+  const routineTime = clean(draft.routineTime);
+  const existingRoutine = doc.routines[0];
+  const nextCaregivers = caregiverName
+    ? [
+        { name: caregiverName, role: caregiverRole },
+        ...doc.caregivers.filter((caregiver) => clean(caregiver.name).toLowerCase() !== caregiverName.toLowerCase()),
+      ]
+    : doc.caregivers;
+  const nextRoutines =
+    routineLabel && routineTime
+      ? [
+          {
+            id: existingRoutine?.id || safeRoutineId(routineType, nowIso),
+            label: routineLabel,
+            type: routineType,
+            time: routineTime,
+            owner: caregiverName || existingRoutine?.owner || doc.caregivers[0]?.name || "",
+            note: existingRoutine?.note || "",
+          },
+          ...doc.routines.slice(1),
+        ]
+      : doc.routines;
+
+  return {
+    ...doc,
+    updatedAt: nowIso,
+    profile: {
+      ...doc.profile,
+      name: dogName,
+      publicLabel: dogName,
+      breed: clean(draft.breed),
+      careFocus: clean(draft.careFocus),
+      weight: {
+        ...doc.profile.weight,
+        current: Number.isFinite(weight) && weight > 0 ? weight : doc.profile.weight.current,
+        unit: clean(draft.weightUnit) || doc.profile.weight.unit,
+      },
+    },
+    caregivers: nextCaregivers,
+    dietProfile: {
+      ...doc.dietProfile,
+      primaryFood: clean(draft.primaryFood),
+      normalPortion: clean(draft.normalPortion),
+      mealSchedule: clean(draft.mealSchedule),
+    },
+    routines: nextRoutines,
+  } as TDoc;
+}

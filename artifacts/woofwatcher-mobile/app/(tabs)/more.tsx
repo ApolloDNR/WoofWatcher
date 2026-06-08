@@ -332,6 +332,16 @@ export default function MoreScreen() {
 
   const links: { icon: PulseIconName; iconName: keyof typeof Ionicons.glyphMap; label: string; sub: string; onPress: () => void }[] = [
     {
+      icon: "paw",
+      iconName: "sparkles",
+      label: "Setup Checklist",
+      sub: "Profile, diet, starter routine, and household basics",
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push("/setup");
+      },
+    },
+    {
       icon: "heart",
       iconName: "chatbubbles",
       label: "WoofGuide Assistant",

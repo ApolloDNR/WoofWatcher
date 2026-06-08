@@ -75,6 +75,14 @@ function RootLayoutNav() {
         options={{ headerShown: false, presentation: "card" }}
       />
       <Stack.Screen
+        name="setup"
+        options={{
+          title: "Setup",
+          presentation: "card",
+          headerStyle: { backgroundColor: "#F7F5F1" },
+        }}
+      />
+      <Stack.Screen
         name="woofguide"
         options={{
           title: "WoofGuide",
