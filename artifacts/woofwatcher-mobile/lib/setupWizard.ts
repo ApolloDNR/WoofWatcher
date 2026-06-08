@@ -11,7 +11,6 @@ export interface SetupWizardProfile {
   background?: string;
   careFocus?: string;
   weight: SetupWizardWeightInfo;
-  [key: string]: unknown;
 }
 
 export interface SetupWizardCaregiver {
@@ -32,7 +31,6 @@ export interface SetupWizardDietProfile {
   primaryFood: string;
   normalPortion: string;
   mealSchedule: string;
-  [key: string]: unknown;
 }
 
 export interface SetupWizardCareDoc {
@@ -42,7 +40,6 @@ export interface SetupWizardCareDoc {
   caregivers: SetupWizardCaregiver[];
   dietProfile: SetupWizardDietProfile;
   routines: SetupWizardRoutine[];
-  [key: string]: unknown;
 }
 
 export interface SetupWizardDraft {
