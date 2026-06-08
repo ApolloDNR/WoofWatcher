@@ -33,6 +33,7 @@ import {
   buildCarePass,
   createCarePassArtifact,
   deriveHealthWatch,
+  deriveRecordReminders,
   getRecordDueStatus,
   normalizeCareEventType,
   summarizeRecordVault,
@@ -273,6 +274,10 @@ export default function RecordsScreen() {
   );
 
   const recordVault = useMemo(() => summarizeRecordVault(state.records), [state.records]);
+  const recordReminders = useMemo(
+    () => deriveRecordReminders(state.records, { now }).slice(0, 4),
+    [state.records, now],
+  );
   const credential = useMemo(
     () =>
       buildPetCredential({
@@ -619,6 +624,34 @@ export default function RecordsScreen() {
               <Text style={[s.vaultNoticeText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
                 Missing: {recordVault.missingCritical.join(", ")}
               </Text>
+            </View>
+          ) : null}
+          {recordReminders.length > 0 ? (
+            <View style={[s.reminderList, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {recordReminders.map((reminder, index) => {
+                const tone = reminder.urgency === "alert" ? colors.rose : colors.amber;
+                return (
+                  <View
+                    key={`${reminder.kind}_${reminder.recordId ?? reminder.label}`}
+                    style={[s.reminderRow, index > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}
+                  >
+                    <View style={[s.reminderIcon, { backgroundColor: tone + "16" }]}>
+                      <Ionicons name={reminder.urgency === "alert" ? "alert-circle" : "time-outline"} size={16} color={tone} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.reminderTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {reminder.label}
+                      </Text>
+                      <Text style={[s.reminderDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                        {reminder.detail}
+                      </Text>
+                      <Text style={[s.reminderAction, { color: tone, fontFamily: "Inter_700Bold" }]}>
+                        {reminder.action}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           ) : null}
 
@@ -1244,6 +1277,12 @@ const s = StyleSheet.create({
   vaultMeta: { fontSize: 12.5, marginTop: 3 },
   vaultNotice: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 16, padding: 12, marginTop: 10 },
   vaultNoticeText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
+  reminderList: { borderWidth: 1, borderRadius: 18, marginTop: 12, overflow: "hidden" },
+  reminderRow: { flexDirection: "row", gap: 10, padding: 12 },
+  reminderIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  reminderTitle: { fontSize: 13.5 },
+  reminderDetail: { fontSize: 12, lineHeight: 17, marginTop: 2 },
+  reminderAction: { fontSize: 11.5, lineHeight: 16, marginTop: 4 },
 
   chartCard: {
     borderRadius: 24,

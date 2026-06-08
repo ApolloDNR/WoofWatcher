@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildPetCredential, getRecordDueStatus, summarizeRecordVault } from "../src/index.ts";
+import { buildPetCredential, deriveRecordReminders, getRecordDueStatus, summarizeRecordVault } from "../src/index.ts";
 
 const records = [
   { id: "rabies", type: "vaccine", title: "Rabies", due: "Due May 2027", note: "Certificate on file" },
@@ -109,4 +109,34 @@ test("treats non-date record references as reference values", () => {
     status: "reference",
     label: "Reference",
   });
+});
+
+test("derives record reminders for expired, due-soon, and missing critical records", () => {
+  const now = new Date("2026-06-06T12:00:00.000Z").getTime();
+  const reminders = deriveRecordReminders(
+    [
+      { id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2026", note: "Certificate on file" },
+      { id: "insurance", type: "insurance", title: "Insurance renewal", due: "Jul 1, 2026" },
+    ],
+    { now },
+  );
+
+  assert.equal(reminders[0].kind, "expired");
+  assert.equal(reminders[0].recordId, "rabies");
+  assert.match(reminders[0].detail, /expired/i);
+  assert.equal(reminders[1].kind, "due_soon");
+  assert.equal(reminders[1].recordId, "insurance");
+  assert.match(reminders[1].detail, /25 days/i);
+  assert.ok(reminders.some((reminder) => reminder.kind === "missing" && /Microchip/i.test(reminder.label)));
+});
+
+test("record reminders ignore reference-only record values", () => {
+  const reminders = deriveRecordReminders([
+    { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
+    { id: "insurance", type: "insurance", title: "Lemonade", due: "Policy WW-1042" },
+    { id: "rabies", type: "vaccine", title: "Rabies", due: "May 2028" },
+  ]);
+
+  assert.ok(reminders.every((reminder) => reminder.kind !== "expired" && reminder.kind !== "due_soon"));
+  assert.ok(!reminders.some((reminder) => /Microchip|Insurance/i.test(reminder.label)));
 });

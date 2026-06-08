@@ -33,12 +33,30 @@ export interface RecordVaultSummary {
 }
 
 export type RecordDueStatusKind = "expired" | "due_soon" | "current" | "reference";
+export type RecordReminderKind = "expired" | "due_soon" | "missing";
 
 export interface RecordDueStatus {
   status: RecordDueStatusKind;
   label: string;
   daysUntil?: number;
   date?: string;
+}
+
+export interface RecordReminder {
+  kind: RecordReminderKind;
+  label: string;
+  detail: string;
+  urgency: "alert" | "watch";
+  action: string;
+  recordId?: string;
+  section?: RecordKind;
+  daysUntil?: number;
+  dueDate?: string;
+}
+
+export interface RecordReminderOptions {
+  now?: number;
+  dueSoonDays?: number;
 }
 
 export interface PetCredentialProfile {
@@ -267,6 +285,66 @@ export function summarizeRecordVault(records: readonly CareRecord[] = []): Recor
     missingCritical,
     priorityRecords,
   };
+}
+
+export function deriveRecordReminders(
+  records: readonly CareRecord[] = [],
+  options: RecordReminderOptions = {},
+): RecordReminder[] {
+  const now = options.now ?? Date.now();
+  const dueSoonDays = options.dueSoonDays ?? 45;
+  const dueReminders = records.flatMap((record): RecordReminder[] => {
+    const dueStatus = getRecordDueStatus(record, now, dueSoonDays);
+    const kind = recordKind(record.type);
+    const title = clean(record.title) || "Record";
+    if (dueStatus.status === "expired") {
+      return [
+        {
+          kind: "expired",
+          label: `${title} expired`,
+          detail: dueStatus.date ? `${title} expired on ${dueStatus.date}.` : `${title} is expired.`,
+          urgency: "alert",
+          action: "Upload or update the current record before sharing credentials.",
+          recordId: record.id,
+          section: kind,
+          daysUntil: dueStatus.daysUntil,
+          dueDate: dueStatus.date,
+        },
+      ];
+    }
+    if (dueStatus.status === "due_soon") {
+      const days = dueStatus.daysUntil ?? 0;
+      return [
+        {
+          kind: "due_soon",
+          label: `${title} due soon`,
+          detail: dueStatus.date ? `${title} is due in ${days} days (${dueStatus.date}).` : `${title} is due soon.`,
+          urgency: "watch",
+          action: "Schedule the renewal or add the updated document when ready.",
+          recordId: record.id,
+          section: kind,
+          daysUntil: dueStatus.daysUntil,
+          dueDate: dueStatus.date,
+        },
+      ];
+    }
+    return [];
+  });
+
+  const vault = summarizeRecordVault(records);
+  const missing = vault.missingCritical.map((label): RecordReminder => ({
+    kind: "missing",
+    label: `Missing ${label}`,
+    detail: `Add ${label.toLowerCase()} so the dog ID and care reports are ready to share.`,
+    urgency: "watch",
+    action: "Add the record or profile fallback details.",
+    section: SECTION_DEFS.find((def) => def.label === label)?.kind,
+  }));
+
+  const rank: Record<RecordReminderKind, number> = { expired: 0, due_soon: 1, missing: 2 };
+  return [...dueReminders, ...missing].sort(
+    (a, b) => rank[a.kind] - rank[b.kind] || (a.daysUntil ?? 9999) - (b.daysUntil ?? 9999),
+  );
 }
 
 export function buildPetCredential(input: PetCredentialInput = {}): PetCredential {

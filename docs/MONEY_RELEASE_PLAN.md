@@ -32,7 +32,7 @@ WoofWatcher can become a meaningful niche subscription business if it becomes th
 3. IN PROGRESS, core slice shipped 2026-06-08: Advanced meal/diet tracking.
 4. IN PROGRESS, core slice shipped 2026-06-08: Health Watch pattern summaries.
 5. IN PROGRESS, core slice shipped 2026-06-08: Vet/sitter/trainer Care Pass exports.
-6. Records vault and credential card export.
+6. IN PROGRESS, core reminder slice shipped 2026-06-08: Records vault and credential card export.
 7. WoofGuide bounded action drafting.
 8. Multiple dogs.
 9. Report history and PDF artifacts.

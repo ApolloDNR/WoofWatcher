@@ -242,6 +242,16 @@ Owner: Codex.
 
 Revisit trigger: PDF generation, clinician-reviewed wording, or paid report templates require stricter template versioning.
 
+### 2026-06-08: Records Reminders Stay Date-Aware And Reference-Safe
+
+Decision: Record reminders are derived from date-backed records and missing credential-critical sections, while reference-only values such as microchip numbers and policy numbers remain non-date references.
+
+Reason: Owners need proactive vaccine, insurance, and document follow-up without false alarms on credential identifiers. This keeps the dog ID card and Care Pass exports more trustworthy while storage provider work remains separate.
+
+Owner: Codex.
+
+Revisit trigger: Server-side reminders, push notifications, or document storage make backend reminder scheduling authoritative.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

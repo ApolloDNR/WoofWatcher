@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-08:
 
-- PASS: 61 focused tests with the command above.
+- PASS: 63 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -28,6 +28,7 @@ Latest local evidence, 2026-06-08:
 - Care Pass generation and report artifacts.
 - Care Pass audience checklists and Health Pattern Review next steps.
 - Record vault and due status.
+- Record reminders for expired, due-soon, missing-critical, and reference-only records.
 - Pet credential fallbacks.
 - Sticky notes.
 - WoofGuide deterministic actions.
@@ -45,12 +46,13 @@ Latest local evidence, 2026-06-08:
 7. Confirm a private meal log stays out of shared household routine status.
 8. Add sticky note to a log.
 9. Add vaccine, insurance, microchip, vet, receipt, and document records.
-10. Preview and share sitter/vet/trainer/caregiver Care Pass.
-11. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
-12. Confirm report history stores shared Care Pass.
-13. Ask WoofGuide about recent changes and verify non-diagnostic wording.
-14. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
-15. Force offline or failed sync state and confirm visibility.
+10. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values.
+11. Preview and share sitter/vet/trainer/caregiver Care Pass.
+12. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
+13. Confirm report history stores shared Care Pass.
+14. Ask WoofGuide about recent changes and verify non-diagnostic wording.
+15. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
+16. Force offline or failed sync state and confirm visibility.
 
 ## Missing QA
 

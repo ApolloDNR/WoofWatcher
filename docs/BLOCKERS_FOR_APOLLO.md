@@ -12,6 +12,7 @@
 - Clerk production configuration.
 - Database/Supabase production configuration.
 - Storage provider for records and generated reports.
+- Document upload/storage rules for real record files; local metadata and reminders exist, but production file storage is not approved/configured.
 - AI provider key and model policy.
 - Expo/EAS/App Store accounts.
 - Vercel/API deployment target if applicable.
