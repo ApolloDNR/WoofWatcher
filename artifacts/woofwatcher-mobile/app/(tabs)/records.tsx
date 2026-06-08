@@ -34,6 +34,7 @@ import {
   deriveHealthWatch,
   normalizeCareEventType,
   summarizeRecordVault,
+  type CarePass,
   type CarePassAudience,
   type RecordKind,
 } from "@workspace/care-domain";
@@ -150,6 +151,7 @@ export default function RecordsScreen() {
   const [recordDue, setRecordDue] = useState("");
   const [recordNote, setRecordNote] = useState("");
   const [recordAttachmentUri, setRecordAttachmentUri] = useState("");
+  const [carePassPreview, setCarePassPreview] = useState<CarePass | null>(null);
 
   const recordOption = RECORD_OPTIONS.find((option) => option.kind === recordType) ?? RECORD_OPTIONS[0];
 
@@ -383,9 +385,8 @@ export default function RecordsScreen() {
     );
   };
 
-  const shareCarePass = (audience: CarePassAudience) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const pass = buildCarePass({
+  const buildCarePassFor = (audience: CarePassAudience) =>
+    buildCarePass({
       audience,
       profile: state.profile,
       dietProfile: state.dietProfile,
@@ -395,6 +396,14 @@ export default function RecordsScreen() {
       records: state.records,
       now,
     });
+
+  const openCarePassPreview = (audience: CarePassAudience) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCarePassPreview(buildCarePassFor(audience));
+  };
+
+  const shareCarePass = (pass: CarePass) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Share.share({ message: pass.message, title: pass.title }).catch(() =>
       Alert.alert(pass.title, pass.message),
     );
@@ -753,13 +762,13 @@ export default function RecordsScreen() {
           {/* Care pass */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Care Pass</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
+            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Preview</Text>
           </View>
           <View style={s.carePassGrid}>
             {CARE_PASS_OPTIONS.map((option) => (
               <Pressable
                 key={option.audience}
-                onPress={() => shareCarePass(option.audience)}
+                onPress={() => openCarePassPreview(option.audience)}
                 style={({ pressed }) => [
                   s.carePassCard,
                   {
@@ -938,6 +947,54 @@ export default function RecordsScreen() {
           </View>
         </Animated.View>
       </ScrollView>
+
+      <Modal visible={carePassPreview !== null} transparent animationType="slide" onRequestClose={() => setCarePassPreview(null)}>
+        <Pressable style={s.modalBackdrop} onPress={() => setCarePassPreview(null)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={s.modalDock}>
+            <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 18 }]} onPress={(e) => e.stopPropagation()}>
+              <View style={s.sheetHandle} />
+              {carePassPreview ? (
+                <>
+                  <View style={s.sheetHeader}>
+                    <View style={[s.rowIconWrap, { backgroundColor: colors.primary + "14" }]}>
+                      <Ionicons name="newspaper-outline" size={19} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{carePassPreview.title}</Text>
+                      <Text style={[s.sheetSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{carePassPreview.generatedAt}</Text>
+                    </View>
+                  </View>
+                  <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={s.passPreviewScroll}>
+                    <Text style={[s.passSummary, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{carePassPreview.summary}</Text>
+                    {carePassPreview.sections.map((section) => (
+                      <View key={section.title} style={[s.passSection, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <Text style={[s.passSectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{section.title}</Text>
+                        {section.lines.map((line) => (
+                          <View key={line} style={s.passLineRow}>
+                            <View style={[s.passDot, { backgroundColor: colors.primary }]} />
+                            <Text style={[s.passLine, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{line}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ))}
+                  </ScrollView>
+                  <View style={s.sheetActions}>
+                    <Pressable onPress={() => setCarePassPreview(null)} style={s.sheetCancel}>
+                      <Text style={[s.sheetCancelText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Close</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => shareCarePass(carePassPreview)}
+                      style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                    >
+                      <Text style={[s.sheetSaveText, { fontFamily: "Inter_700Bold" }]}>Share pass</Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : null}
+            </Pressable>
+          </KeyboardAvoidingView>
+        </Pressable>
+      </Modal>
 
       <Modal visible={recordOpen} transparent animationType="slide" onRequestClose={() => setRecordOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setRecordOpen(false)}>
@@ -1221,6 +1278,13 @@ const s = StyleSheet.create({
   sheetHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   sheetTitle: { fontSize: 20, letterSpacing: -0.2 },
   sheetSub: { fontSize: 13, marginTop: 2 },
+  passPreviewScroll: { maxHeight: 420 },
+  passSummary: { fontSize: 14, lineHeight: 20, marginBottom: 12 },
+  passSection: { borderWidth: 1, borderRadius: 16, padding: 13, marginBottom: 10 },
+  passSectionTitle: { fontSize: 15, marginBottom: 8 },
+  passLineRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 6 },
+  passDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7 },
+  passLine: { flex: 1, fontSize: 12.8, lineHeight: 18 },
   recordTypeRow: { gap: 8, paddingVertical: 4 },
   recordTypePill: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8 },
   recordTypeText: { fontSize: 12.5 },
