@@ -32,6 +32,15 @@ export interface RecordVaultSummary {
   priorityRecords: CareRecord[];
 }
 
+export type RecordDueStatusKind = "expired" | "due_soon" | "current" | "reference";
+
+export interface RecordDueStatus {
+  status: RecordDueStatusKind;
+  label: string;
+  daysUntil?: number;
+  date?: string;
+}
+
 export interface PetCredentialProfile {
   name?: string;
   breed?: string;
@@ -118,6 +127,107 @@ function shortDate(iso: string): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+const MONTH_INDEX: Record<string, number> = {
+  jan: 0,
+  january: 0,
+  feb: 1,
+  february: 1,
+  mar: 2,
+  march: 2,
+  apr: 3,
+  april: 3,
+  may: 4,
+  jun: 5,
+  june: 5,
+  jul: 6,
+  july: 6,
+  aug: 7,
+  august: 7,
+  sep: 8,
+  sept: 8,
+  september: 8,
+  oct: 9,
+  october: 9,
+  nov: 10,
+  november: 10,
+  dec: 11,
+  december: 11,
+};
+
+function parseDueDateMs(value: unknown): number | null {
+  const text = clean(value).replace(/^(due|expires?|expiry|renewal)\s*:?\s*/i, "");
+  if (!text || !/\d{4}/.test(text)) return null;
+
+  const iso = text.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
+  if (iso) {
+    const [, year, month, day] = iso;
+    return Date.UTC(Number(year), Number(month) - 1, Number(day));
+  }
+
+  const monthDayYear = text.match(/\b([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?[,]?\s+(\d{4})\b/);
+  if (monthDayYear) {
+    const [, monthName, day, year] = monthDayYear;
+    const month = MONTH_INDEX[monthName.toLowerCase()];
+    if (month != null) return Date.UTC(Number(year), month, Number(day));
+  }
+
+  const monthYear = text.match(/\b([A-Za-z]{3,9})\.?\s+(\d{4})\b/);
+  if (monthYear) {
+    const [, monthName, year] = monthYear;
+    const month = MONTH_INDEX[monthName.toLowerCase()];
+    if (month != null) return Date.UTC(Number(year), month, 1);
+  }
+
+  return null;
+}
+
+function formatDueDate(ms: number): string {
+  return new Date(ms).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+export function getRecordDueStatus(
+  record: CareRecord | Pick<CareRecord, "due">,
+  now: number = Date.now(),
+  dueSoonDays = 45,
+): RecordDueStatus {
+  const dueMs = parseDueDateMs(record.due);
+  if (dueMs == null) {
+    return {
+      status: "reference",
+      label: "Reference",
+    };
+  }
+
+  const daysUntil = Math.ceil((dueMs - now) / 86400000);
+  if (daysUntil < 0) {
+    return {
+      status: "expired",
+      label: "Expired",
+      daysUntil,
+      date: formatDueDate(dueMs),
+    };
+  }
+  if (daysUntil <= dueSoonDays) {
+    return {
+      status: "due_soon",
+      label: "Due soon",
+      daysUntil,
+      date: formatDueDate(dueMs),
+    };
+  }
+  return {
+    status: "current",
+    label: "Current",
+    daysUntil,
+    date: formatDueDate(dueMs),
+  };
 }
 
 export function summarizeRecordVault(records: readonly CareRecord[] = []): RecordVaultSummary {

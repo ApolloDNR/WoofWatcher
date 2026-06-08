@@ -32,6 +32,7 @@ import {
   buildPetCredential,
   buildCarePass,
   deriveHealthWatch,
+  getRecordDueStatus,
   normalizeCareEventType,
   summarizeRecordVault,
   type CarePass,
@@ -912,6 +913,15 @@ export default function RecordsScreen() {
               recordList.map((r, i) => {
                 const option = RECORD_OPTIONS.find((item) => item.kind === r.type) ?? RECORD_OPTIONS[7];
                 const tone = r.type === "receipt" ? colors.copper : r.type === "insurance" || r.type === "microchip" ? colors.primary : colors.sage;
+                const dueStatus = getRecordDueStatus(r, now);
+                const statusTone =
+                  dueStatus.status === "expired"
+                    ? colors.rose
+                    : dueStatus.status === "due_soon"
+                      ? colors.amber
+                      : dueStatus.status === "current"
+                        ? colors.sage
+                        : colors.mutedForeground;
                 return (
                   <View key={r.id ?? `${r.type}-${i}`} style={[s.row, i < recordList.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
                     <View style={[s.rowIconWrap, { backgroundColor: tone + "16" }]}>
@@ -926,11 +936,16 @@ export default function RecordsScreen() {
                         <Text style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Attachment saved</Text>
                       ) : null}
                     </View>
-                    {r.due ? (
-                      <View style={[s.duePill, { backgroundColor: colors.background }]}>
-                        <Text numberOfLines={1} style={[s.dueText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{r.due}</Text>
+                    <View style={s.recordStatusStack}>
+                      <View style={[s.duePill, { backgroundColor: statusTone + "16" }]}>
+                        <Text numberOfLines={1} style={[s.dueText, { color: statusTone, fontFamily: "Inter_700Bold" }]}>{dueStatus.label}</Text>
                       </View>
-                    ) : null}
+                      {r.due ? (
+                        <Text numberOfLines={1} style={[s.recordDueRef, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {dueStatus.date ?? r.due}
+                        </Text>
+                      ) : null}
+                    </View>
                     <Pressable onPress={() => deleteRecord(r.id, r.title)} hitSlop={10} style={s.deleteRecordBtn}>
                       <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
                     </Pressable>
@@ -1212,8 +1227,10 @@ const s = StyleSheet.create({
   rowMeta: { fontSize: 12, marginTop: 4 },
   sevBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
   sevText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  recordStatusStack: { alignItems: "flex-end", maxWidth: 96, gap: 4 },
   duePill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   dueText: { fontSize: 11.5 },
+  recordDueRef: { fontSize: 10.5, maxWidth: 96 },
   deleteRecordBtn: { padding: 4 },
   recordEmpty: { alignItems: "center", gap: 8, paddingVertical: 10 },
   emptyAddBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },

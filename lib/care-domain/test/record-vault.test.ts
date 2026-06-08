@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildPetCredential, summarizeRecordVault } from "../src/index.ts";
+import { buildPetCredential, getRecordDueStatus, summarizeRecordVault } from "../src/index.ts";
 
 const records = [
   { id: "rabies", type: "vaccine", title: "Rabies", due: "Due May 2027", note: "Certificate on file" },
@@ -69,4 +69,44 @@ test("uses dog profile credential fields when records are not uploaded yet", () 
   assert.equal(credential.emergencyContact, "Apollo - 555-0100");
   assert.match(credential.message, /Primary vet: Alameda Wellness Vet/);
   assert.match(credential.message, /Emergency contact: Apollo - 555-0100/);
+});
+
+test("classifies date-backed records by due status", () => {
+  const now = new Date("2026-06-06T12:00:00.000Z").getTime();
+
+  assert.deepEqual(
+    getRecordDueStatus({ type: "vaccine", title: "Rabies", due: "May 20, 2026" }, now),
+    {
+      status: "expired",
+      label: "Expired",
+      daysUntil: -17,
+      date: "May 20, 2026",
+    },
+  );
+  assert.deepEqual(
+    getRecordDueStatus({ type: "vaccine", title: "Bordetella", due: "Jul 1, 2026" }, now),
+    {
+      status: "due_soon",
+      label: "Due soon",
+      daysUntil: 25,
+      date: "Jul 1, 2026",
+    },
+  );
+  assert.equal(
+    getRecordDueStatus({ type: "insurance", title: "Lemonade", due: "2027-06-01" }, now).status,
+    "current",
+  );
+});
+
+test("treats non-date record references as reference values", () => {
+  const status = getRecordDueStatus({
+    type: "microchip",
+    title: "HomeAgain",
+    due: "985112003004551",
+  });
+
+  assert.deepEqual(status, {
+    status: "reference",
+    label: "Reference",
+  });
 });
