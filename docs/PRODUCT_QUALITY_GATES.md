@@ -29,12 +29,13 @@ Passing evidence:
 - Quick Log and Full Log cover all required care event types.
 - Calendar/routines can be assigned and completed.
 - Records, handoff, reports, and WoofGuide route to useful workflows.
+- Dog profile credential fields feed the Records ID card and share text.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
 Current gaps:
 
 - Shared onboarding readiness exists and is used by the Today setup nudge, but full first-run onboarding is incomplete.
-- Multiple dogs, roles, invites, report export, record document storage, and sticky note UI need implementation.
+- Multiple dogs, roles, invites, report export, record document storage, credential image/PDF export, and sticky note UI need implementation.
 - Runtime smoke has not been added.
 
 ## Gate 3: Care Domain Correctness
@@ -43,7 +44,7 @@ Status: Partially passing.
 
 Passing evidence:
 
-- Focused tests cover event normalization, day status, care sync, Today Command, diet progress, health handoff, care pass, record vault, routine board, and sticky notes.
+- Focused tests cover event normalization, day status, care sync, Today Command, diet progress, health handoff, care pass, record vault, pet credential fallbacks, routine board, and sticky notes.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:
@@ -177,7 +178,7 @@ Latest known passing CI:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27116074649`, completed success on 2026-06-08 UTC
+- Evidence: run `27117066844`, completed success on 2026-06-08 UTC
 
 ## Required Before Claiming Full Release
 

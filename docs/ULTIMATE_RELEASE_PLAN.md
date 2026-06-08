@@ -30,7 +30,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | --- | --- | --- |
 | Account/Auth | Mobile uses Clerk auth screens and provider guardrails. API uses Clerk auth helpers. | Confirm end-to-end account onboarding in Expo runtime and document provider setup. |
 | Household | API has household routes and provisioning logic. Mobile context supports shared state. | Improve household setup UI, roles, invites, and caregiver permissions. |
-| Dog Profile | Profile exists in care state/screens, and shared onboarding readiness now detects missing profile setup. | Add first-run setup flow, multiple-dog model, profile photo, microchip and credential fields. |
+| Dog Profile | Profile exists in care state/screens, shared onboarding readiness detects missing profile setup, and the mobile editor captures microchip, primary vet, emergency contact, and insurance fields. | Add first-run setup flow, multiple-dog model, profile photo, and richer credential polish. |
 | Today Command | Mobile has a Today Command model, home surface, and setup nudge driven by shared onboarding readiness. | Add richer action routing, explanations, empty states, reminders, and interaction polish. |
 | Quick Log | Mobile log surface supports many care event types. | Improve progressive composer, sticky note attachment UX, validation, and post-save routing. |
 | Full Log | Care entries persist locally and through API sync. | Add detail views, edit/delete audit handling, filters, and timeline search. |
@@ -47,7 +47,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Alone Time | Event taxonomy supports alone time. | Add separation/anxiety pattern tracking and handoff notes. |
 | Sticky Notes | Domain tests cover sticky note append/sanitize behavior. | Upgrade UI to attach multiple sticky notes to any log and surface them in details/handoff. |
 | Routines/Reminders | Routine board domain logic exists; calendar UI has assignment/completion concepts. | Add reminder notifications, recurring rules, missed routine nudges, and owner load balancing. |
-| Records | Domain has record vault and pet credential summary. Mobile records screen exists. | Add document upload/storage, receipt capture, insurance, microchip, vaccine expiry alerts, and credential card export. |
+| Records | Domain has record vault and pet credential summary. Mobile Records includes a dog ID card that can use profile-level microchip, insurance, vet, and emergency-contact fallbacks before uploaded records exist. | Add document upload/storage, receipt capture, vaccine expiry alerts, and credential card image/PDF export. |
 | Handoff/Reports | Domain supports care pass and handoff summaries. | Add in-app handoff/report generation, PDF/export flow, share targets, and audience templates. |
 | WoofGuide | API routes and mobile WoofGuide screen exist. | Add action cards, log drafts, reminder creation, vet note drafting, report drafting, and stronger source citations. |
 | Offline/Sync | Mobile care sync handles local/pending/failed status and retry separation. | Add durable outbox, conflict-safe state updates, sync dashboard, and recovery tests. |
@@ -62,7 +62,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 4. Durable offline outbox and conflict handling for care state edits.
 5. Full log detail view with edit/delete audit behavior.
 6. Sticky note UI attached to every log type.
-7. Records document upload/storage and credential card export.
+7. Records document upload/storage and credential card image/PDF export.
 8. Report/PDF export for vet, sitter, trainer, and household review.
 9. WoofGuide action cards that can create structured logs, reminders, notes, and report drafts.
 10. Reminder notification flow.
@@ -132,16 +132,15 @@ No payment implementation should start until product scope, privacy terms, and s
 
 1. Add release-control docs and keep them current.
 2. Add full onboarding setup flow for household, dog profile, diet target, and starter routine using the shared onboarding readiness model.
-3. Add dog profile editor upgrades and pet credential card fields.
-4. Add sticky note UI to the mobile log composer and timeline/detail views.
-5. Add full log detail screen with edit, sticky notes, sync status, and handoff usage.
-6. Add records upgrade for vaccines, vet visits, insurance, receipts, microchip, and document placeholders.
-7. Add report generation surface using existing care pass domain logic.
-8. Add WoofGuide action-card model and tests.
-9. Add durable offline outbox tests and implementation.
-10. Add API integration tests for care state and entries.
-11. Add mobile runtime smoke or screenshot verification once local dependencies/browser support are available.
-12. Build visual system pass in Figma or code, then implement screen-by-screen.
+3. Add sticky note UI to the mobile log composer and timeline/detail views.
+4. Add full log detail screen with edit, sticky notes, sync status, and handoff usage.
+5. Add records upgrade for vaccines, vet visits, receipts, document placeholders, and credential export.
+6. Add report generation surface using existing care pass domain logic.
+7. Add WoofGuide action-card model and tests.
+8. Add durable offline outbox tests and implementation.
+9. Add API integration tests for care state and entries.
+10. Add mobile runtime smoke or screenshot verification once local dependencies/browser support are available.
+11. Build visual system pass in Figma or code, then implement screen-by-screen.
 
 ## Decisions Made Without Apollo
 
@@ -152,6 +151,7 @@ No payment implementation should start until product scope, privacy terms, and s
 - CI should run focused behavior tests plus typecheck/build on every push to `main`.
 - Vite builds should not require `PORT` or `BASE_PATH` in CI; they default to local-safe values when absent.
 - Expo app typecheck excludes Node test files because root focused tests run them separately.
+- Pet credential fields can live on the dog profile as practical fallbacks before formal record documents are uploaded.
 
 ## Blockers Requiring Apollo
 

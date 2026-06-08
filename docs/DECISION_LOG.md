@@ -92,6 +92,16 @@ Owner: Codex.
 
 Revisit trigger: First-run onboarding adds account-provider-specific requirements that do not belong in shared care logic.
 
+### 2026-06-08: Pet Credential Uses Profile Fallback Fields
+
+Decision: Microchip number, insurance provider/policy, primary vet, and emergency contact can live on the dog profile and feed the Records ID card before formal uploaded records exist.
+
+Reason: Owners need a useful dog credential immediately. Uploaded records should improve proof, but the ID card should not stay empty until every document is captured.
+
+Owner: Codex.
+
+Revisit trigger: Record storage becomes authoritative enough to require verified document-backed credential fields.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
