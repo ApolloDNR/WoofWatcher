@@ -30,8 +30,8 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | --- | --- | --- |
 | Account/Auth | Mobile uses Clerk auth screens and provider guardrails. API uses Clerk auth helpers. | Confirm end-to-end account onboarding in Expo runtime and document provider setup. |
 | Household | API has household routes and provisioning logic. Mobile context supports shared state. | Improve household setup UI, roles, invites, and caregiver permissions. |
-| Dog Profile | Phoenix-focused profile exists in care state and screens. | Add first-run setup/edit flow, multiple-dog model, profile photo, microchip and credential fields. |
-| Today Command | Mobile has a Today Command model and home surface. | Add richer action routing, explanations, empty states, reminders, and interaction polish. |
+| Dog Profile | Profile exists in care state/screens, and shared onboarding readiness now detects missing profile setup. | Add first-run setup flow, multiple-dog model, profile photo, microchip and credential fields. |
+| Today Command | Mobile has a Today Command model, home surface, and setup nudge driven by shared onboarding readiness. | Add richer action routing, explanations, empty states, reminders, and interaction polish. |
 | Quick Log | Mobile log surface supports many care event types. | Improve progressive composer, sticky note attachment UX, validation, and post-save routing. |
 | Full Log | Care entries persist locally and through API sync. | Add detail views, edit/delete audit handling, filters, and timeline search. |
 | Meal/Diet | Domain has diet progress logic and mobile meal progress UI. | Add richer daily target setup, portion presets, feeding streaks, and appetite pattern explanations. |
@@ -56,7 +56,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 ## Missing Features
 
-1. First-run onboarding flow for account, household, dog profile, diet, and routine setup.
+1. Full first-run onboarding flow for account, household, dog profile, diet, and routine setup.
 2. Multiple dogs and dog switcher.
 3. Household invite flow and role-specific permissions.
 4. Durable offline outbox and conflict handling for care state edits.
@@ -131,8 +131,8 @@ No payment implementation should start until product scope, privacy terms, and s
 ## Autonomous Next-Task Queue
 
 1. Add release-control docs and keep them current.
-2. Add onboarding setup flow for household, dog profile, diet target, and starter routine.
-3. Add dog profile editor and pet credential card fields.
+2. Add full onboarding setup flow for household, dog profile, diet target, and starter routine using the shared onboarding readiness model.
+3. Add dog profile editor upgrades and pet credential card fields.
 4. Add sticky note UI to the mobile log composer and timeline/detail views.
 5. Add full log detail screen with edit, sticky notes, sync status, and handoff usage.
 6. Add records upgrade for vaccines, vet visits, insurance, receipts, microchip, and document placeholders.

@@ -33,7 +33,7 @@ Passing evidence:
 
 Current gaps:
 
-- First-run onboarding is incomplete.
+- Shared onboarding readiness exists and is used by the Today setup nudge, but full first-run onboarding is incomplete.
 - Multiple dogs, roles, invites, report export, record document storage, and sticky note UI need implementation.
 - Runtime smoke has not been added.
 

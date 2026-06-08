@@ -82,6 +82,16 @@ Owner: Codex.
 
 Revisit trigger: Add a separate test tsconfig with Node types.
 
+### 2026-06-08: Onboarding Readiness Belongs In Care Domain
+
+Decision: Setup readiness for dog profile, diet baseline, starter routines, and household caregivers is derived in `lib/care-domain`.
+
+Reason: Today, onboarding, reports, and WoofGuide all need the same definition of whether a household care foundation is ready.
+
+Owner: Codex.
+
+Revisit trigger: First-run onboarding adds account-provider-specific requirements that do not belong in shared care logic.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
