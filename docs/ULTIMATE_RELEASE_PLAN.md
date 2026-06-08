@@ -48,7 +48,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Sticky Notes | Domain tests cover sticky note append/sanitize behavior. Mobile Log can attach multiple sticky notes to existing logs, show them in timeline/detail views, and include them in entry handoff text. | Add richer sticky-note colors, pinning, and report filtering. |
 | Routines/Reminders | Routine board domain logic exists; calendar UI has assignment/completion concepts. | Add reminder notifications, recurring rules, missed routine nudges, and owner load balancing. |
 | Records | Domain has record vault and pet credential summary. Mobile Records includes a dog ID card that can use profile-level microchip, insurance, vet, and emergency-contact fallbacks before uploaded records exist. | Add document upload/storage, receipt capture, vaccine expiry alerts, and credential card image/PDF export. |
-| Handoff/Reports | Domain supports care pass and handoff summaries. | Add in-app handoff/report generation, PDF/export flow, share targets, and audience templates. |
+| Handoff/Reports | Domain supports care pass and handoff summaries. Mobile Records now previews sitter, vet, trainer, and caregiver Care Pass sections before sharing, and Progress Report can be shared by period. | Add generated PDF/report artifacts, storage history, print layout, and richer audience templates. |
 | WoofGuide | API routes and mobile WoofGuide screen exist. | Add action cards, log drafts, reminder creation, vet note drafting, report drafting, and stronger source citations. |
 | Offline/Sync | Mobile care sync handles local/pending/failed status and retry separation. | Add durable outbox, conflict-safe state updates, sync dashboard, and recovery tests. |
 | Design | Warm brand assets and Phoenix art exist. | Need full premium design system, motion spec, high-end screen polish, accessibility pass, and Figma alignment. |
@@ -62,7 +62,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 4. Durable offline outbox and conflict handling for care state edits.
 5. Edit/delete audit policy for care logs.
 6. Records document upload/storage and credential card image/PDF export.
-7. Report/PDF export for vet, sitter, trainer, and household review.
+7. Generated PDF/report artifacts and stored report history for vet, sitter, trainer, and household review.
 8. WoofGuide action cards that can create structured logs, reminders, notes, and report drafts.
 9. Reminder notification flow.
 10. High-end motion, transitions, avatar state animation, and accessibility polish.
@@ -132,8 +132,8 @@ No payment implementation should start until product scope, privacy terms, and s
 1. Add release-control docs and keep them current.
 2. Add full onboarding setup flow for household, dog profile, diet target, and starter routine using the shared onboarding readiness model.
 3. Add records upgrade for vaccines, vet visits, receipts, document placeholders, and credential export.
-4. Add report generation surface using existing care pass domain logic.
-5. Add WoofGuide action-card model and tests.
+4. Add WoofGuide action-card model and tests.
+5. Add generated PDF/report artifacts and stored report history.
 6. Add durable offline outbox tests and implementation.
 7. Add API integration tests for care state and entries.
 8. Add mobile runtime smoke or screenshot verification once local dependencies/browser support are available.

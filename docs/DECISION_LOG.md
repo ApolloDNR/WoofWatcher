@@ -112,6 +112,16 @@ Owner: Codex.
 
 Revisit trigger: Log search/history, audit trails, or deep links require a routed entry-detail screen.
 
+### 2026-06-08: Care Pass Reports Preview Before Sharing
+
+Decision: Sitter, vet, trainer, and caregiver Care Passes are previewed inside Records before invoking the native share sheet.
+
+Reason: Owners need to verify what they are sending to a sitter, vet, trainer, or household member. Preview-first sharing is useful now, while generated PDF artifacts and storage history require a separate document/export architecture.
+
+Owner: Codex.
+
+Revisit trigger: Server-side report artifacts, print/PDF layout, or stored report history are implemented.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
