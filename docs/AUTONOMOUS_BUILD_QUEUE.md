@@ -14,8 +14,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 6. DONE 2026-06-08: Health Watch now produces non-diagnostic pattern cards with evidence, owner next steps, and visible vet boundary language.
 7. DONE 2026-06-08: Care Pass handoffs now include audience-specific checklists and Health Pattern Review next steps for sitter, caregiver, trainer, and vet exports.
 8. DONE 2026-06-08: Records now derives and displays expired, due-soon, and missing-critical record reminders; real document storage remains blocked on provider rules.
-9. Next: WoofGuide: structured owner-reviewed actions for log drafts, reminders, vet notes, and reports.
-10. Privacy/account safety: data export, account deletion, AI disclosure, document storage rules.
+9. DONE 2026-06-08: WoofGuide now creates owner-reviewed drafts for missing meal logs, record reminders, vet notes, and Care Pass review.
+10. Next: Privacy/account safety: data export, account deletion, AI disclosure, document storage rules.
 11. Mobile runtime QA: Expo smoke, accessibility, visual regression, App Store prep.
 12. Premium design system and motion pass.
 

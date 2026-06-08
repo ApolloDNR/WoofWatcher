@@ -7,8 +7,10 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -139,11 +141,12 @@ export default function WoofGuideScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state } = useCare();
+  const { state, addEntry, updateCareDoc } = useCare();
   const { getToken } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [reviewAction, setReviewAction] = useState<WoofGuideActionCard | null>(null);
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
   const name = state.profile.name || "your dog";
 
@@ -192,6 +195,10 @@ export default function WoofGuideScreen() {
 
   const runAction = useCallback((action: WoofGuideActionCard) => {
     Haptics.selectionAsync();
+    if (action.draft) {
+      setReviewAction(action);
+      return;
+    }
     if (action.route) {
       router.push(action.route);
       return;
@@ -200,6 +207,56 @@ export default function WoofGuideScreen() {
       void sendMessage(action.prompt);
     }
   }, [router, sendMessage]);
+
+  const applyDraft = useCallback(() => {
+    const draft = reviewAction?.draft;
+    if (!draft) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (draft.kind === "log_entry" && draft.entry) {
+      addEntry(draft.entry);
+      setMessages((prev) => [
+        { id: `draft_${Date.now()}`, role: "assistant", content: `${draft.title}\n\nAdded reviewed log draft to the household timeline.` },
+        ...prev,
+      ]);
+      setReviewAction(null);
+      return;
+    }
+
+    if (draft.kind === "reminder" && draft.calendarEvent) {
+      const event = {
+        id: `woofguide_${Date.now()}`,
+        ...draft.calendarEvent,
+      };
+      updateCareDoc((doc) => ({
+        ...doc,
+        calendarEvents: [
+          event,
+          ...doc.calendarEvents.filter((item) => item.id !== event.id),
+        ],
+      }));
+      setMessages((prev) => [
+        { id: `draft_${Date.now()}`, role: "assistant", content: `${draft.title}\n\nReminder added to Calendar for review.` },
+        ...prev,
+      ]);
+      setReviewAction(null);
+      return;
+    }
+
+    if (draft.kind === "vet_note") {
+      setMessages((prev) => [
+        { id: `draft_${Date.now()}`, role: "assistant", content: draft.body },
+        ...prev,
+      ]);
+      setReviewAction(null);
+      return;
+    }
+
+    if (draft.kind === "care_pass") {
+      setReviewAction(null);
+      router.push("/records");
+    }
+  }, [reviewAction, addEntry, updateCareDoc, router]);
 
   return (
     <>
@@ -218,7 +275,7 @@ export default function WoofGuideScreen() {
             loading ? (
               <View style={[s.typingBubble, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <ActivityIndicator size="small" color={colors.copper} />
-                <Text style={[s.typingText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Thinking…</Text>
+                <Text style={[s.typingText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Thinking...</Text>
               </View>
             ) : null
           }
@@ -271,8 +328,13 @@ export default function WoofGuideScreen() {
                         <View style={{ flex: 1 }}>
                           <Text style={[s.actionLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{action.label}</Text>
                           <Text style={[s.actionDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{action.detail}</Text>
+                          {action.draft ? (
+                            <Text style={[s.actionDraftLabel, { color: tone, fontFamily: "Inter_700Bold" }]}>
+                              Owner review required
+                            </Text>
+                          ) : null}
                         </View>
-                        <Ionicons name={action.route ? "chevron-forward" : "arrow-up"} size={17} color={tone} />
+                        <Ionicons name={action.draft ? "create-outline" : action.route ? "chevron-forward" : "arrow-up"} size={17} color={tone} />
                       </Pressable>
                     );
                   })}
@@ -298,7 +360,7 @@ export default function WoofGuideScreen() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder={`Ask about ${state.profile.name}…`}
+            placeholder={`Ask about ${state.profile.name}...`}
             placeholderTextColor={colors.mutedForeground}
             style={[s.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
             multiline
@@ -318,6 +380,46 @@ export default function WoofGuideScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+      <Modal visible={reviewAction !== null} transparent animationType="slide" onRequestClose={() => setReviewAction(null)}>
+        <Pressable style={s.reviewBackdrop} onPress={() => setReviewAction(null)}>
+          <Pressable style={[s.reviewSheet, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={(event) => event.stopPropagation()}>
+            {reviewAction?.draft ? (
+              <>
+                <View style={s.reviewHeader}>
+                  <View style={[s.reviewIcon, { backgroundColor: colors.primary + "16" }]}>
+                    <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.reviewEyebrow, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>OWNER REVIEW</Text>
+                    <Text style={[s.reviewTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{reviewAction.draft.title}</Text>
+                  </View>
+                  <Pressable onPress={() => setReviewAction(null)} hitSlop={10}>
+                    <Ionicons name="close" size={22} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+                <ScrollView style={s.reviewBodyWrap} showsVerticalScrollIndicator={false}>
+                  <Text style={[s.reviewBody, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>
+                    {reviewAction.draft.body}
+                  </Text>
+                  {reviewAction.draft.safety ? (
+                    <Text style={[s.reviewSafety, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {reviewAction.draft.safety}
+                    </Text>
+                  ) : null}
+                </ScrollView>
+                <View style={s.reviewActions}>
+                  <Pressable onPress={() => setReviewAction(null)} style={[s.reviewCancel, { borderColor: colors.border }]}>
+                    <Text style={[s.reviewCancelText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Cancel</Text>
+                  </Pressable>
+                  <Pressable onPress={applyDraft} style={[s.reviewApply, { backgroundColor: colors.primary }]}>
+                    <Text style={[s.reviewApplyText, { fontFamily: "Inter_700Bold" }]}>{reviewAction.draft.cta}</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </>
   );
 }
@@ -338,6 +440,7 @@ const s = StyleSheet.create({
   actionIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   actionLabel: { fontSize: 14.5 },
   actionDetail: { fontSize: 12.5, lineHeight: 17, marginTop: 2 },
+  actionDraftLabel: { fontSize: 11.5, marginTop: 5 },
   bubble: { maxWidth: "86%", borderRadius: 20, padding: 14, shadowColor: "#2E5846", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
   userBubble: { alignSelf: "flex-end", borderBottomRightRadius: 6 },
   assistantBubble: { alignSelf: "flex-start", borderBottomLeftRadius: 6, borderWidth: 1 },
@@ -347,4 +450,18 @@ const s = StyleSheet.create({
   inputArea: { flexDirection: "row", alignItems: "flex-end", gap: 10, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1 },
   input: { flex: 1, borderRadius: 20, borderWidth: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, fontSize: 15, maxHeight: 120, minHeight: 48 },
   sendBtn: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  reviewBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(10, 16, 24, 0.42)" },
+  reviewSheet: { borderTopLeftRadius: 26, borderTopRightRadius: 26, borderWidth: 1, padding: 18, maxHeight: "78%" },
+  reviewHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  reviewIcon: { width: 38, height: 38, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  reviewEyebrow: { fontSize: 10.5, letterSpacing: 0.7 },
+  reviewTitle: { fontSize: 17, marginTop: 2 },
+  reviewBodyWrap: { marginTop: 16 },
+  reviewBody: { fontSize: 14, lineHeight: 21 },
+  reviewSafety: { fontSize: 12, lineHeight: 17, marginTop: 14 },
+  reviewActions: { flexDirection: "row", gap: 10, marginTop: 16 },
+  reviewCancel: { flex: 1, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", minHeight: 48 },
+  reviewCancelText: { fontSize: 14 },
+  reviewApply: { flex: 1.4, borderRadius: 16, alignItems: "center", justifyContent: "center", minHeight: 48 },
+  reviewApplyText: { color: "#fff", fontSize: 14 },
 });

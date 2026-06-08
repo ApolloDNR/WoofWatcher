@@ -33,7 +33,7 @@ WoofWatcher can become a meaningful niche subscription business if it becomes th
 4. IN PROGRESS, core slice shipped 2026-06-08: Health Watch pattern summaries.
 5. IN PROGRESS, core slice shipped 2026-06-08: Vet/sitter/trainer Care Pass exports.
 6. IN PROGRESS, core reminder slice shipped 2026-06-08: Records vault and credential card export.
-7. WoofGuide bounded action drafting.
+7. IN PROGRESS, core draft-action slice shipped 2026-06-08: WoofGuide bounded action drafting.
 8. Multiple dogs.
 9. Report history and PDF artifacts.
 10. App Store-ready privacy, export, account deletion, and support.
@@ -44,7 +44,7 @@ Do not add real payment flows until privacy terms, support obligations, launch t
 
 ## Premium Preview Surface
 
-Status, 2026-06-08: An in-app WoofWatcher Plus preview/paywall surface now packages Free, Plus, and Family without enabling real payments. It explains advanced meals, household care sync, Health Watch, reports, records, WoofGuide drafting, and stored report history as paid-value pillars.
+Status, 2026-06-08: An in-app WoofWatcher Plus preview/paywall surface now packages Free, Plus, and Family without enabling real payments. It explains advanced meals, household care sync, Health Watch, reports, records, WoofGuide drafting, and stored report history as paid-value pillars. WoofGuide now demonstrates that value through owner-reviewed meal log, reminder, vet-note, and Care Pass draft actions.
 
 ## Next Money Task
 

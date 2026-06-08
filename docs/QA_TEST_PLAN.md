@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-08:
 
-- PASS: 63 focused tests with the command above.
+- PASS: 64 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -31,7 +31,7 @@ Latest local evidence, 2026-06-08:
 - Record reminders for expired, due-soon, missing-critical, and reference-only records.
 - Pet credential fallbacks.
 - Sticky notes.
-- WoofGuide deterministic actions.
+- WoofGuide deterministic actions and owner-reviewed draft payloads for meal logs, record reminders, vet notes, and Care Pass review.
 - Setup wizard.
 - Premium plan packaging and checkout-disabled guard.
 
@@ -51,8 +51,9 @@ Latest local evidence, 2026-06-08:
 12. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
 13. Confirm report history stores shared Care Pass.
 14. Ask WoofGuide about recent changes and verify non-diagnostic wording.
-15. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
-16. Force offline or failed sync state and confirm visibility.
+15. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
+16. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
+17. Force offline or failed sync state and confirm visibility.
 
 ## Missing QA
 

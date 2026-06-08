@@ -162,6 +162,16 @@ Owner: Codex.
 
 Revisit trigger: Structured WoofGuide action handlers are implemented and tested for log drafts, reminders, notes, and reports.
 
+### 2026-06-08: WoofGuide Actions Are Owner-Reviewed Drafts First
+
+Decision: WoofGuide action cards can create structured drafts for meal logs, record reminders, vet notes, and Care Pass review, but the owner must review before the app writes or routes the action.
+
+Reason: This preserves trust and safety while making WoofGuide useful now. Assistant actions can speed up care work, but health notes, household logs, reminders, and shared reports should remain owner-confirmed until provider-backed source citations, permissions, and audit history are implemented.
+
+Owner: Codex.
+
+Revisit trigger: AI provider policy, privacy rules, role-aware permissions, and durable audit history are ready for permission-aware assistant writes.
+
 ### 2026-06-08: Care Foundation Setup Uses A Dedicated Route
 
 Decision: First-run dog profile, diet baseline, starter routine, and caregiver basics are saved through a dedicated mobile Setup route.

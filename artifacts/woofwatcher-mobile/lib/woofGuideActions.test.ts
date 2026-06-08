@@ -38,6 +38,10 @@ test("prioritizes a vet-note action for active health watch signals", () => {
   assert.equal(actions[0].id, "vet-note");
   assert.equal(actions[0].urgency, "watch");
   assert.match(actions[0].prompt ?? "", /Phoenix/);
+  assert.equal(actions[0].draft?.kind, "vet_note");
+  assert.match(actions[0].draft?.body ?? "", /Health Pattern Review/i);
+  assert.match(actions[0].draft?.body ?? "", /not a diagnosis/i);
+  assert.deepEqual(actions[0].draft?.sourceEntryIds, ["vomit"]);
 });
 
 test("surfaces records review for missing or expired credential records", () => {
@@ -59,6 +63,9 @@ test("surfaces records review for missing or expired credential records", () => 
   const recordAction = actions.find((action) => action.id === "records-review");
   assert.equal(recordAction?.route, "/records");
   assert.equal(recordAction?.urgency, "alert");
+  assert.equal(recordAction?.draft?.kind, "reminder");
+  assert.match(recordAction?.draft?.body ?? "", /Rabies/i);
+  assert.equal(recordAction?.draft?.calendarEvent?.source, "woofguide");
 });
 
 test("guides setup when diet and routines are missing", () => {
@@ -77,4 +84,32 @@ test("guides setup when diet and routines are missing", () => {
     actions.map((action) => action.id),
     ["records-review", "diet-baseline", "routine-setup", "care-pass"],
   );
+});
+
+test("creates an owner-reviewed meal log draft when the first meal is missing", () => {
+  const actions = deriveWoofGuideActions(
+    {
+      profile: { name: "Phoenix" },
+      dietProfile: {
+        primaryFood: "Sensitive kibble",
+        normalPortion: "1 cup",
+        mealSchedule: "7 AM and 6 PM",
+      },
+      routines: [{ id: "breakfast", type: "meal", label: "Breakfast", time: "7:00 AM", owner: "Emma" }],
+      records: [
+        { id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" },
+        { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
+        { id: "insurance", type: "insurance", title: "Lemonade", due: "Policy WW-1042" },
+      ],
+      entries: [],
+    },
+    NOW,
+  );
+
+  const mealAction = actions.find((action) => action.id === "log-meal");
+  assert.equal(mealAction?.draft?.kind, "log_entry");
+  assert.equal(mealAction?.draft?.entry?.type, "meal");
+  assert.equal(mealAction?.draft?.entry?.details?.expectedPortion, "1 cup");
+  assert.equal(mealAction?.draft?.entry?.details?.mealCompletion, "complete");
+  assert.equal(mealAction?.draft?.entry?.details?.householdVisible, true);
 });

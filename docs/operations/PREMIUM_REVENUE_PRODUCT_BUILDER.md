@@ -94,4 +94,4 @@ Stop only for:
 
 ## Current Next Slice
 
-As of 2026-06-08, the current queue points to WoofGuide improvement: structured owner-reviewed actions for log drafts, reminders, vet notes, and reports.
+As of 2026-06-08, the current queue points to privacy/account safety: data export, account deletion, AI disclosure, and document storage rules.
