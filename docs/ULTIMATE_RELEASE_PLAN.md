@@ -47,7 +47,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Alone Time | Event taxonomy supports alone time. | Add separation/anxiety pattern tracking and handoff notes. |
 | Sticky Notes | Domain tests cover sticky note append/sanitize behavior. Mobile Log can attach multiple sticky notes to existing logs, show them in timeline/detail views, and include them in entry handoff text. | Add richer sticky-note colors, pinning, and report filtering. |
 | Routines/Reminders | Routine board domain logic exists; calendar UI has assignment/completion concepts. | Add reminder notifications, recurring rules, missed routine nudges, and owner load balancing. |
-| Records | Domain has record vault and pet credential summary. Mobile Records includes a dog ID card that can use profile-level microchip, insurance, vet, and emergency-contact fallbacks before uploaded records exist. | Add document upload/storage, receipt capture, vaccine expiry alerts, and credential card image/PDF export. |
+| Records | Domain has record vault, pet credential summary, and due-status logic for date-backed records. Mobile Records includes a dog ID card, due/current/reference badges, and profile-level microchip, insurance, vet, and emergency-contact fallbacks before uploaded records exist. | Add document upload/storage, richer receipt capture, server reminders for expiring records, and credential card image/PDF export. |
 | Handoff/Reports | Domain supports care pass and handoff summaries. Mobile Records now previews sitter, vet, trainer, and caregiver Care Pass sections before sharing, and Progress Report can be shared by period. | Add generated PDF/report artifacts, storage history, print layout, and richer audience templates. |
 | WoofGuide | API routes and mobile WoofGuide screen exist. | Add action cards, log drafts, reminder creation, vet note drafting, report drafting, and stronger source citations. |
 | Offline/Sync | Mobile care sync handles local/pending/failed status and retry separation. | Add durable outbox, conflict-safe state updates, sync dashboard, and recovery tests. |
@@ -61,7 +61,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 3. Household invite flow and role-specific permissions.
 4. Durable offline outbox and conflict handling for care state edits.
 5. Edit/delete audit policy for care logs.
-6. Records document upload/storage and credential card image/PDF export.
+6. Records document upload/storage, server reminders for expiring records, and credential card image/PDF export.
 7. Generated PDF/report artifacts and stored report history for vet, sitter, trainer, and household review.
 8. WoofGuide action cards that can create structured logs, reminders, notes, and report drafts.
 9. Reminder notification flow.
@@ -131,7 +131,7 @@ No payment implementation should start until product scope, privacy terms, and s
 
 1. Add release-control docs and keep them current.
 2. Add full onboarding setup flow for household, dog profile, diet target, and starter routine using the shared onboarding readiness model.
-3. Add records upgrade for vaccines, vet visits, receipts, document placeholders, and credential export.
+3. Add records document storage, richer receipt capture, server reminders for expiring records, and credential export.
 4. Add WoofGuide action-card model and tests.
 5. Add generated PDF/report artifacts and stored report history.
 6. Add durable offline outbox tests and implementation.
@@ -150,6 +150,8 @@ No payment implementation should start until product scope, privacy terms, and s
 - Expo app typecheck excludes Node test files because root focused tests run them separately.
 - Pet credential fields can live on the dog profile as practical fallbacks before formal record documents are uploaded.
 - Log details remain inside the Log workflow as a bottom sheet instead of a separate route until search/history needs justify a route.
+- Care Pass reports preview before sharing; generated PDF artifacts and storage history remain separate production work.
+- Record due-status belongs in `lib/care-domain` so Records UI, reminders, reports, and WoofGuide can classify expired, due-soon, current, and reference records consistently.
 
 ## Blockers Requiring Apollo
 

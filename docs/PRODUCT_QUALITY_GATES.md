@@ -32,12 +32,13 @@ Passing evidence:
 - Dog profile credential fields feed the Records ID card and share text.
 - Log entries have a detail sheet with sticky notes, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Care Pass reports can be previewed by audience before sharing.
+- Records show expired, due-soon, current, and reference status for saved record rows.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
 Current gaps:
 
 - Shared onboarding readiness exists and is used by the Today setup nudge, but full first-run onboarding is incomplete.
-- Multiple dogs, roles, invites, generated PDF/report artifacts, record document storage, credential image/PDF export, and log audit policy need implementation.
+- Multiple dogs, roles, invites, generated PDF/report artifacts, record document storage, server reminders for expiring records, credential image/PDF export, and log audit policy need implementation.
 - Runtime smoke has not been added.
 
 ## Gate 3: Care Domain Correctness
@@ -46,7 +47,7 @@ Status: Partially passing.
 
 Passing evidence:
 
-- Focused tests cover event normalization, day status, care sync, Today Command, diet progress, health handoff, care pass, record vault, pet credential fallbacks, routine board, and sticky notes.
+- Focused tests cover event normalization, day status, care sync, Today Command, diet progress, health handoff, care pass, record vault, pet credential fallbacks, record due-status, routine board, and sticky notes.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:
@@ -180,7 +181,7 @@ Latest known passing CI:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27117825418`, completed success on 2026-06-08 UTC
+- Evidence: run `27118194444`, completed success on 2026-06-08 UTC
 
 ## Required Before Claiming Full Release
 

@@ -122,6 +122,16 @@ Owner: Codex.
 
 Revisit trigger: Server-side report artifacts, print/PDF layout, or stored report history are implemented.
 
+### 2026-06-08: Record Due Status Belongs In Care Domain
+
+Decision: Expired, due-soon, current, and reference record status is derived by `lib/care-domain` and surfaced in the mobile Records cabinet.
+
+Reason: Vaccines, insurance renewals, medication refills, receipts, and microchip references need consistent interpretation across Records, reminders, reports, and WoofGuide.
+
+Owner: Codex.
+
+Revisit trigger: Server-side reminders or storage-backed document records require stricter date schemas.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
