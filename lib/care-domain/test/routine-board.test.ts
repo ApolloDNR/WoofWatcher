@@ -108,3 +108,88 @@ test("id-less routine logs still match exactly and only count once", () => {
   assert.equal(board.items.find((item) => item.id === "breakfast")?.status, "overdue");
   assert.equal(board.items.find((item) => item.id === "snack")?.status, "done");
 });
+
+test("meal logs record partial and skipped completion while satisfying the matching routine", () => {
+  const board = deriveRoutineBoard({
+    now: NOW,
+    routines: [
+      { id: "breakfast", label: "Breakfast", type: "meal", time: "7:30 AM", owner: "Emma" },
+      { id: "dinner", label: "Dinner", type: "meal", time: "6:00 PM", owner: "Apollo" },
+    ],
+    entries: [
+      {
+        id: "meal_partial",
+        type: "meal",
+        title: "Breakfast - partial",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T07:38:00-07:00",
+        details: {
+          routineId: "breakfast",
+          mealCompletion: "partial",
+          expectedPortion: "1 cup",
+          servedAmount: 1,
+          servedUnit: "cup",
+          eatenAmount: 0.5,
+          eatenUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "meal_skipped",
+        type: "meal",
+        title: "Dinner - skipped",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T17:55:00-07:00",
+        details: {
+          routineId: "dinner",
+          mealCompletion: "skipped",
+          expectedPortion: "1 cup",
+          servedAmount: 0,
+          servedUnit: "cup",
+          eatenAmount: 0,
+          eatenUnit: "cup",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  const breakfast = board.items.find((item) => item.id === "breakfast");
+  const dinner = board.items.find((item) => item.id === "dinner");
+
+  assert.equal(board.doneCount, 2);
+  assert.equal(board.openCount, 0);
+  assert.equal(breakfast?.status, "done");
+  assert.equal(breakfast?.completion, "partial");
+  assert.equal(breakfast?.completionLabel, "Partial");
+  assert.equal(dinner?.status, "done");
+  assert.equal(dinner?.completion, "skipped");
+  assert.equal(dinner?.completionLabel, "Skipped");
+});
+
+test("private logs do not satisfy household routines", () => {
+  const board = deriveRoutineBoard({
+    now: NOW,
+    routines: [
+      { id: "breakfast", label: "Breakfast", type: "meal", time: "7:30 AM", owner: "Emma" },
+    ],
+    entries: [
+      {
+        id: "meal_private",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T07:38:00-07:00",
+        details: {
+          routineId: "breakfast",
+          mealCompletion: "complete",
+          householdVisible: false,
+        },
+      },
+    ],
+  });
+
+  assert.equal(board.doneCount, 0);
+  assert.equal(board.openCount, 1);
+  assert.equal(board.items.find((item) => item.id === "breakfast")?.status, "overdue");
+});

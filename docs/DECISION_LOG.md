@@ -182,6 +182,16 @@ Owner: Codex.
 
 Revisit trigger: PDF generation, report storage backend, or audit/export requirements become active release work.
 
+### 2026-06-08: Household-Visible Logs Drive Routine Status
+
+Decision: Routine status is satisfied by matching household-visible logs. Meal logs can record complete, partial, or skipped outcomes, and private logs stay out of shared household routine status.
+
+Reason: The household needs one trusted board for what still needs care. A partial or skipped meal should update the board without pretending the full meal was eaten, while private notes should not silently clear a shared responsibility.
+
+Owner: Codex.
+
+Revisit trigger: Role-based household permissions or caregiver privacy controls move from local metadata into server-side authorization.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

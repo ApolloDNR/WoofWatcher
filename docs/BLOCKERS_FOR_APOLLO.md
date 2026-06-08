@@ -16,6 +16,10 @@
 - Expo/EAS/App Store accounts.
 - Vercel/API deployment target if applicable.
 
+## Development Environment
+
+- Local Windows shell currently lacks `pnpm`, `npm`, `corepack`, and `node_modules`, so `pnpm run typecheck` cannot run locally even though zero-install Node behavior tests pass.
+
 ## Legal, Privacy, And Safety
 
 - Privacy policy for pet health notes, documents, AI usage, and household sharing.

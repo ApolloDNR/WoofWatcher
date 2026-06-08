@@ -10,6 +10,11 @@ Run focused behavior tests:
 
 CI must pass `WoofWatcher Verify` on `main`.
 
+Latest local evidence, 2026-06-08:
+
+- PASS: 49 focused tests with the command above.
+- BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
+
 ## Required Automated Coverage
 
 - Event taxonomy and normalization.
@@ -31,13 +36,14 @@ CI must pass `WoofWatcher Verify` on `main`.
 2. Complete setup: dog profile, diet, routine, caregiver.
 3. Confirm Today shows next needed care.
 4. Log a meal with expected, served, eaten, skipped/partial, note, and caregiver visibility.
-5. Confirm matching routine changes from due/missed to completed.
-6. Add sticky note to a log.
-7. Add vaccine, insurance, microchip, vet, receipt, and document records.
-8. Preview and share sitter/vet/trainer/caregiver Care Pass.
-9. Confirm report history stores shared Care Pass.
-10. Ask WoofGuide about recent changes and verify non-diagnostic wording.
-11. Force offline or failed sync state and confirm visibility.
+5. Confirm a visible matching meal log changes the routine from due/missed to handled and shows complete/partial/skipped status.
+6. Confirm a private meal log stays out of shared household routine status.
+7. Add sticky note to a log.
+8. Add vaccine, insurance, microchip, vet, receipt, and document records.
+9. Preview and share sitter/vet/trainer/caregiver Care Pass.
+10. Confirm report history stores shared Care Pass.
+11. Ask WoofGuide about recent changes and verify non-diagnostic wording.
+12. Force offline or failed sync state and confirm visibility.
 
 ## Missing QA
 

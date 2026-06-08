@@ -44,6 +44,7 @@ const PORTION_FACTORS: Record<string, number> = {
   half: 0.5,
   light: 0.75,
   snack: 0.25,
+  skipped: 0,
 };
 
 function asObject(value: unknown): Record<string, unknown> {
@@ -52,11 +53,13 @@ function asObject(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function numberFromUnknown(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+function numberFromUnknown(value: unknown, options?: { allowZero?: boolean }): number | null {
+  const min = options?.allowZero ? 0 : Number.MIN_VALUE;
+  if (typeof value === "number" && Number.isFinite(value) && value >= min) {
     return value;
   }
   if (typeof value !== "string") return null;
+  if (options?.allowZero && value.trim() === "0") return 0;
   return parseAmount(value)?.amount ?? null;
 }
 
@@ -140,6 +143,16 @@ function sameDay(occurredAt: string | null | undefined, now: number): boolean {
 
 function mealAmount(entry: DietProgressEntry, perMealAmount: number | null): number | null {
   const details = asObject(entry.details);
+  const completion = typeof details.mealCompletion === "string" ? details.mealCompletion.toLowerCase().trim() : "";
+  const portion = typeof details.portion === "string" ? details.portion.toLowerCase().trim() : "";
+  if (completion === "skipped" || portion === "skipped") return 0;
+
+  const eatenAmount = numberFromUnknown(details.eatenAmount, { allowZero: true });
+  if (eatenAmount != null) return eatenAmount;
+
+  const servedAmount = numberFromUnknown(details.servedAmount);
+  if (servedAmount != null) return servedAmount;
+
   const servingAmount = numberFromUnknown(details.servingAmount);
   if (servingAmount != null) return servingAmount;
 
@@ -149,13 +162,18 @@ function mealAmount(entry: DietProgressEntry, perMealAmount: number | null): num
   const entryAmount = numberFromUnknown(entry.amount);
   if (entryAmount != null) return entryAmount;
 
-  const portion = typeof details.portion === "string" ? details.portion.toLowerCase() : "";
   const factor = PORTION_FACTORS[portion];
   return factor != null && perMealAmount != null ? roundAmount(perMealAmount * factor) : null;
 }
 
 function entryUnit(entry: DietProgressEntry): string | null {
   const details = asObject(entry.details);
+  if (typeof details.eatenUnit === "string" && details.eatenUnit.trim()) {
+    return details.eatenUnit.trim().toLowerCase();
+  }
+  if (typeof details.servedUnit === "string" && details.servedUnit.trim()) {
+    return details.servedUnit.trim().toLowerCase();
+  }
   if (typeof details.servingUnit === "string" && details.servingUnit.trim()) {
     return details.servingUnit.trim().toLowerCase();
   }

@@ -71,6 +71,46 @@ test("uses portion presets when a meal log does not include a numeric serving", 
   assert.equal(progress.summary, "1.5 of 2 cups today");
 });
 
+test("uses eaten amount for partial meals and treats skipped meals as zero intake", () => {
+  const progress = deriveDietProgress({
+    now: NOW,
+    dietProfile: {
+      normalPortion: "1 cup twice daily",
+      mealSchedule: "Breakfast and dinner",
+    },
+    entries: [
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T14:00:00.000Z",
+        details: {
+          mealCompletion: "partial",
+          servedAmount: 1,
+          servedUnit: "cup",
+          eatenAmount: 0.5,
+          eatenUnit: "cup",
+        },
+      },
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T17:30:00.000Z",
+        details: {
+          mealCompletion: "skipped",
+          servedAmount: 1,
+          servedUnit: "cup",
+          eatenAmount: 0,
+          eatenUnit: "cup",
+        },
+      },
+    ],
+  });
+
+  assert.equal(progress.mealCount, 2);
+  assert.equal(progress.fedAmount, 0.5);
+  assert.equal(progress.remainingAmount, 1.5);
+  assert.equal(progress.percent, 25);
+  assert.equal(progress.summary, "0.5 of 2 cups today");
+});
+
 test("falls back gracefully when the diet profile has no parseable portion", () => {
   const progress = deriveDietProgress({
     now: NOW,

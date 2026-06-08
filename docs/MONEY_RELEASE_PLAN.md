@@ -29,7 +29,7 @@ WoofWatcher can become a meaningful niche subscription business if it becomes th
 
 1. Household care sync and caregiver roles.
 2. Rich routines and reminders.
-3. Advanced meal/diet tracking.
+3. IN PROGRESS, core slice shipped 2026-06-08: Advanced meal/diet tracking.
 4. Health Watch pattern summaries.
 5. Vet/sitter/trainer Care Pass exports.
 6. Records vault and credential card export.
@@ -41,3 +41,7 @@ WoofWatcher can become a meaningful niche subscription business if it becomes th
 ## Do Not Monetize Yet
 
 Do not add real payment flows until privacy terms, support obligations, launch target, subscription packaging, and refund/support workflow are clear. It is acceptable to add pricing surfaces or a gated premium preview before payment wiring.
+
+## Next Money Task
+
+Build an in-app premium preview/paywall surface that packages Plus and Family value without enabling real payments. It should explain advanced meals, household care sync, Health Watch, reports, records, WoofGuide drafting, and stored report history as paid-value pillars.

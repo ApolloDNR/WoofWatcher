@@ -77,8 +77,18 @@ const LOG_TYPES: LogType[] = [
           { id: "snack", label: "Snack", suffix: "snack" },
         ],
       },
+      {
+        key: "mealCompletion",
+        label: "Completion",
+        options: [
+          { id: "complete", label: "Ate it", suffix: "complete" },
+          { id: "partial", label: "Partial", suffix: "partial", severity: "watch" },
+          { id: "skipped", label: "Skipped", suffix: "skipped", severity: "watch" },
+        ],
+      },
     ],
-    numeric: { label: "Amount fed", placeholder: "0.75", unit: "diet", optional: true },
+    numeric: { label: "Served amount", placeholder: "0.75", unit: "diet", optional: true },
+    noteField: { placeholder: "Sticky note: appetite, anxiety, toppers, what changed..." },
   },
   {
     type: "water",
@@ -250,6 +260,15 @@ const DETAIL_SKIP_KEYS = new Set([
   "dogInteractions",
   "servingAmount",
   "servingUnit",
+  "servedAmount",
+  "servedUnit",
+  "eatenAmount",
+  "eatenUnit",
+  "expectedPortion",
+  "mealCompletion",
+  "householdVisible",
+  "routineId",
+  "routineTime",
 ]);
 
 const DETAIL_LABELS: Record<string, string> = {
@@ -259,6 +278,7 @@ const DETAIL_LABELS: Record<string, string> = {
   portion: "Portion",
   severity: "Severity",
   serving: "Serving",
+  routineLabel: "Routine",
   what: "Symptom",
 };
 
@@ -288,11 +308,24 @@ function buildEntryDetailRows(entry: Entry): { label: string; value: string }[] 
   const details = isDetailRecord(entry.details) ? entry.details : {};
   const servingAmount = detailValue(details.servingAmount);
   const servingUnit = detailValue(details.servingUnit);
+  const servedAmount = detailValue(details.servedAmount);
+  const servedUnit = detailValue(details.servedUnit) ?? servingUnit;
+  const eatenAmount = detailValue(details.eatenAmount);
+  const eatenUnit = detailValue(details.eatenUnit) ?? servedUnit;
+  const expectedPortion = detailValue(details.expectedPortion);
+  const mealCompletion = detailValue(details.mealCompletion);
   const status = syncLabel(entry.syncStatus);
 
   if (entry.durationMinutes != null) rows.push({ label: "Duration", value: `${entry.durationMinutes} min` });
-  if (entry.amount) rows.push({ label: "Amount", value: servingUnit ? `${entry.amount} ${servingUnit}` : entry.amount });
+  if (entry.amount && !eatenAmount) rows.push({ label: "Amount", value: servingUnit ? `${entry.amount} ${servingUnit}` : entry.amount });
   if (!entry.amount && servingAmount) rows.push({ label: "Serving", value: servingUnit ? `${servingAmount} ${servingUnit}` : servingAmount });
+  if (mealCompletion) rows.push({ label: "Completion", value: humanizeKey(mealCompletion) });
+  if (expectedPortion) rows.push({ label: "Expected", value: expectedPortion });
+  if (servedAmount) rows.push({ label: "Served", value: servedUnit ? `${servedAmount} ${servedUnit}` : servedAmount });
+  if (eatenAmount) rows.push({ label: "Eaten", value: eatenUnit ? `${eatenAmount} ${eatenUnit}` : eatenAmount });
+  if (typeof details.householdVisible === "boolean") {
+    rows.push({ label: "Household", value: details.householdVisible ? "Visible" : "Private" });
+  }
   if (entry.food) rows.push({ label: "Food", value: entry.food });
   if (entry.mood) rows.push({ label: "Mood", value: humanizeKey(entry.mood) });
   if (entry.severity) rows.push({ label: "Severity", value: humanizeKey(entry.severity) });
@@ -344,6 +377,19 @@ function formatCareAmount(value: number | null, unit: string): string {
   return `${text} ${unitText}`;
 }
 
+function parseNonNegativeNumber(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number.parseFloat(trimmed);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function mealCompletionLabel(value: string): string {
+  if (value === "skipped") return "skipped";
+  if (value === "partial") return "partial";
+  return "complete";
+}
+
 export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -364,6 +410,9 @@ export default function LogScreen() {
   const [choices, setChoices] = useState<Record<string, string>>({});
   const [stepIndex, setStepIndex] = useState(0);
   const [numeric, setNumeric] = useState("");
+  const [expectedPortion, setExpectedPortion] = useState("");
+  const [eatenAmount, setEatenAmount] = useState("");
+  const [householdVisible, setHouseholdVisible] = useState(true);
   const [noteText, setNoteText] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
 
@@ -378,8 +427,17 @@ export default function LogScreen() {
     setChoices(init);
     setStepIndex(config?.stepper ? Math.min(2, config.stepper.values.length - 1) : 0);
     setNumeric(selectedType === "weight" ? String(state.profile.weight.current ?? "") : "");
+    setExpectedPortion(selectedType === "meal" ? state.dietProfile.normalPortion : "");
+    setEatenAmount("");
+    setHouseholdVisible(true);
     setNoteText("");
   }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (selectedType === "meal" && choices.mealCompletion === "skipped") {
+      setEatenAmount("");
+    }
+  }, [selectedType, choices.mealCompletion]);
 
   // Post-log quick-note prompt
   const [promptId, setPromptId] = useState<string | null>(null);
@@ -464,20 +522,70 @@ export default function LogScreen() {
     if (config.stepper) durationMinutes = config.stepper.values[stepIndex];
 
     let amount: string | undefined;
+    let numericValue: number | null = null;
     if (config.numeric) {
       const trimmed = numeric.trim();
-      const n = parseFloat(trimmed);
+      const n = parseNonNegativeNumber(trimmed);
       if (!trimmed && config.numeric.optional) {
         amount = undefined;
-      } else if (Number.isNaN(n) || n <= 0) {
+      } else if (n == null || (n <= 0 && config.type !== "meal")) {
         Alert.alert("Add a value", `Enter a ${config.numeric.label.toLowerCase()} to log.`);
         return null;
       } else {
         const unit = config.numeric.unit === "diet" ? dietProgress.unit : state.profile.weight.unit;
+        numericValue = n;
         amount = String(n);
         details.servingAmount = n;
         details.servingUnit = unit;
-        parts.push(`${n} ${unit}`);
+        if (config.type !== "meal") parts.push(`${n} ${unit}`);
+      }
+    }
+
+    if (config.type === "meal") {
+      const unit = dietProgress.unit;
+      const completion = choices.mealCompletion ?? "complete";
+      const expected = expectedPortion.trim() || state.dietProfile.normalPortion.trim();
+      const eaten = parseNonNegativeNumber(eatenAmount);
+
+      if (eatenAmount.trim() && eaten == null) {
+        Alert.alert("Check eaten amount", "Enter a valid eaten amount, or leave it blank.");
+        return null;
+      }
+
+      if (completion === "partial" && eaten == null) {
+        Alert.alert("Add eaten amount", "For a partial meal, enter how much Phoenix actually ate.");
+        return null;
+      }
+
+      details.mealCompletion = completion;
+      details.householdVisible = householdVisible;
+      if (expected) details.expectedPortion = expected;
+
+      if (numericValue != null) {
+        details.servedAmount = numericValue;
+        details.servedUnit = unit;
+      }
+
+      if (completion === "skipped") {
+        details.servedAmount = numericValue ?? 0;
+        details.servedUnit = unit;
+        details.eatenAmount = 0;
+        details.eatenUnit = unit;
+        amount = "0";
+        if (numericValue != null && numericValue > 0) parts.push(`served ${numericValue} ${unit}`);
+        parts.push("skipped");
+      } else {
+        const finalEaten = eaten ?? (completion === "complete" && numericValue != null ? numericValue : null);
+        if (finalEaten != null) {
+          details.eatenAmount = finalEaten;
+          details.eatenUnit = unit;
+          amount = String(finalEaten);
+        }
+        if (completion !== "complete") parts.push(mealCompletionLabel(completion));
+        if (numericValue != null && numericValue > 0) parts.push(`served ${numericValue} ${unit}`);
+        if (finalEaten != null && (completion === "partial" || finalEaten !== numericValue)) {
+          parts.push(`ate ${finalEaten} ${unit}`);
+        }
       }
     }
 
@@ -507,7 +615,20 @@ export default function LogScreen() {
       ...(amount != null ? { amount } : {}),
       ...(Object.keys(details).length ? { details } : {}),
     };
-  }, [config, choices, stepIndex, numeric, dietProgress.unit, noteText, caregiver, state.profile.weight.unit]);
+  }, [
+    config,
+    choices,
+    stepIndex,
+    numeric,
+    expectedPortion,
+    eatenAmount,
+    householdVisible,
+    dietProgress.unit,
+    noteText,
+    caregiver,
+    state.dietProfile.normalPortion,
+    state.profile.weight.unit,
+  ]);
 
   const handleLog = useCallback(() => {
     const entry = buildEntry();
@@ -527,6 +648,11 @@ export default function LogScreen() {
     }
 
     setNumeric(entry.type === "weight" ? (entry.amount ?? "") : "");
+    if (entry.type === "meal") {
+      setExpectedPortion(state.dietProfile.normalPortion);
+      setEatenAmount("");
+      setHouseholdVisible(true);
+    }
     setNoteText("");
 
     // If a note was already captured inline, skip the prompt.
@@ -537,7 +663,7 @@ export default function LogScreen() {
     setPromptNote("");
     setPromptMode("post-log");
     setTimeout(() => promptRef.current?.focus(), 250);
-  }, [buildEntry, addEntry, updateCareDoc, config]);
+  }, [buildEntry, addEntry, updateCareDoc, config, state.dietProfile.normalPortion]);
 
   const saveQuickNote = useCallback(() => {
     const text = promptNote.trim();
@@ -663,6 +789,7 @@ export default function LogScreen() {
   }, [state.entries]);
 
   const numericUnit = config?.numeric?.unit === "diet" ? dietProgress.unit : state.profile.weight.unit;
+  const selectedMealCompletion = choices.mealCompletion ?? "complete";
   const dietPercentWidth = `${Math.min(Math.max(dietProgress.percent, 0), 100)}%` as `${number}%`;
   const dietProgressText =
     dietProgress.targetAmount == null
@@ -845,6 +972,71 @@ export default function LogScreen() {
                   keyboardType="decimal-pad"
                   style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                 />
+              </View>
+            )}
+
+            {selectedType === "meal" && (
+              <View style={s.mealFields}>
+                <View style={s.mealFieldRow}>
+                  <View style={s.mealField}>
+                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      Expected portion
+                    </Text>
+                    <TextInput
+                      placeholder={state.dietProfile.normalPortion || "1 cup"}
+                      placeholderTextColor={colors.mutedForeground}
+                      value={expectedPortion}
+                      onChangeText={setExpectedPortion}
+                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    />
+                  </View>
+                  <View style={s.mealField}>
+                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      Eaten amount {selectedMealCompletion === "partial" ? "(required)" : "(optional)"}
+                    </Text>
+                    <TextInput
+                      placeholder={selectedMealCompletion === "skipped" ? "0" : "0.5"}
+                      placeholderTextColor={colors.mutedForeground}
+                      value={eatenAmount}
+                      onChangeText={setEatenAmount}
+                      keyboardType="decimal-pad"
+                      editable={selectedMealCompletion !== "skipped"}
+                      style={[
+                        s.input,
+                        {
+                          backgroundColor: colors.background,
+                          color: colors.foreground,
+                          borderColor: colors.border,
+                          fontFamily: "Inter_500Medium",
+                          opacity: selectedMealCompletion === "skipped" ? 0.62 : 1,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setHouseholdVisible((prev) => !prev);
+                  }}
+                  style={[
+                    s.visibilityToggle,
+                    {
+                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
+                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {householdVisible ? "Visible to household" : "Private log"}
+                    </Text>
+                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {householdVisible ? "Shared logs update the household routine board." : "Private notes stay out of shared routine status."}
+                    </Text>
+                  </View>
+                </Pressable>
               </View>
             )}
 
@@ -1298,6 +1490,20 @@ const s = StyleSheet.create({
 
   input: { borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15 },
   inputMulti: { minHeight: 64, textAlignVertical: "top" },
+  mealFields: { marginTop: 2, gap: 12 },
+  mealFieldRow: { flexDirection: "row", gap: 10 },
+  mealField: { flex: 1, minWidth: 0 },
+  visibilityToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  visibilityTitle: { fontSize: 13.5 },
+  visibilitySub: { fontSize: 12, lineHeight: 16, marginTop: 2 },
 
   dietPanel: { marginTop: 14, borderRadius: 18, borderWidth: 1, padding: 14 },
   dietPanelTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },

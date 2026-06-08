@@ -101,8 +101,10 @@ function isYellowBile(entry: CareHealthEntry): boolean {
 function isReducedMeal(entry: CareHealthEntry): boolean {
   if (normalizeCareEventType(entry.type, entry.details) !== "meal") return false;
   const portion = detailString(entry, "portion");
+  const completion = detailString(entry, "mealCompletion");
   const text = entryText(entry);
   return (
+    ["partial", "skipped"].includes(completion) ||
     ["half", "light", "small", "snack", "skipped"].includes(portion) ||
     text.includes("half") ||
     text.includes("light") ||

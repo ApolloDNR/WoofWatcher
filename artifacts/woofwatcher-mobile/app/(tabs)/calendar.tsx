@@ -300,6 +300,15 @@ export default function CalendarScreen() {
     const owner = typeof routine.owner === "string" ? routine.owner.trim() : "";
     const note = typeof routine.note === "string" ? routine.note.trim() : "";
     const caregiver = owner || caregivers[0]?.name || "You";
+    const details: { [key: string]: unknown } = {
+      routineId: routine.id,
+      routineLabel: routine.label,
+      routineTime: routine.time,
+    };
+    if (type === "meal") {
+      details.mealCompletion = "complete";
+      details.householdVisible = true;
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addEntry({
       type,
@@ -307,11 +316,7 @@ export default function CalendarScreen() {
       caregiver,
       occurredAt: new Date().toISOString(),
       ...(note ? { note } : {}),
-      details: {
-        routineId: routine.id,
-        routineLabel: routine.label,
-        routineTime: routine.time,
-      },
+      details,
     });
   };
 
@@ -610,6 +615,9 @@ export default function CalendarScreen() {
                             </Text>
                             {r.completedBy ? (
                               <Text style={[s.routineOwner, { color: colors.sage, fontFamily: "Inter_600SemiBold" }]}>Done by {r.completedBy}</Text>
+                            ) : null}
+                            {r.completion && r.completion !== "complete" ? (
+                              <Text style={[s.routineOwner, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>{r.completionLabel}</Text>
                             ) : null}
                           </View>
                           {r.note ? (

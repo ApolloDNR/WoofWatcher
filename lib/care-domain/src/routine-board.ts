@@ -1,6 +1,7 @@
 import { normalizeCareEventType, type CareEventDetails, type CareEventType } from "./events.ts";
 
 export type RoutineBoardStatus = "done" | "overdue" | "due" | "upcoming";
+export type RoutineCompletion = "complete" | "partial" | "skipped";
 
 export interface RoutineBoardRoutine {
   id?: string;
@@ -37,6 +38,8 @@ export interface RoutineBoardItem extends RoutineBoardRoutine {
   normalizedType: CareEventType;
   owner: string;
   status: RoutineBoardStatus;
+  completion: RoutineCompletion | null;
+  completionLabel: string | null;
   completedBy: string | null;
   completedAt: string | null;
   minutesFromNow: number;
@@ -95,6 +98,32 @@ function entryRoutineId(entry: RoutineBoardEntry): string {
   return typeof id === "string" ? id : "";
 }
 
+function entryIsHouseholdVisible(entry: RoutineBoardEntry): boolean {
+  return entry.details?.householdVisible !== false;
+}
+
+function detailText(details: CareEventDetails, key: string): string {
+  const value = details?.[key];
+  return typeof value === "string" ? clean(value).toLowerCase() : "";
+}
+
+function entryCompletion(entry: RoutineBoardEntry, normalizedType: CareEventType): RoutineCompletion {
+  if (normalizedType !== "meal") return "complete";
+  const mealCompletion = detailText(entry.details, "mealCompletion");
+  const completion = detailText(entry.details, "completion");
+  const portion = detailText(entry.details, "portion");
+  const outcome = mealCompletion || completion || portion;
+  if (["skipped", "skip", "none", "no"].includes(outcome)) return "skipped";
+  if (["partial", "partially eaten", "half", "light", "small", "some"].includes(outcome)) return "partial";
+  return "complete";
+}
+
+function completionLabel(completion: RoutineCompletion): string {
+  if (completion === "skipped") return "Skipped";
+  if (completion === "partial") return "Partial";
+  return "Complete";
+}
+
 function entryTitleMatches(entry: RoutineBoardEntry, routine: RoutineBoardRoutine): boolean {
   const title = clean(entry.title).toLowerCase();
   const label = clean(routine.label).toLowerCase();
@@ -112,7 +141,7 @@ function statusFor(routineMs: number, completed: boolean, now: number): RoutineB
 export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
   const now = input.now ?? Date.now();
   const todays = input.entries
-    .filter((entry) => isSameLocalDay(entry.occurredAt, now))
+    .filter((entry) => isSameLocalDay(entry.occurredAt, now) && entryIsHouseholdVisible(entry))
     .map((entry, index) => ({
       entry,
       key: entry.id ? `id:${entry.id}` : `index:${index}`,
@@ -154,12 +183,15 @@ export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
     if (fuzzy) usedEntryKeys.add(fuzzy.key);
 
     const owner = clean(routine.owner);
+    const completion = fuzzy ? entryCompletion(fuzzy.entry, normalizedType) : null;
     return {
       ...routine,
       id,
       owner,
       normalizedType,
       status: statusFor(routineMs, Boolean(fuzzy), now),
+      completion,
+      completionLabel: completion ? completionLabel(completion) : null,
       completedBy: fuzzy ? clean(fuzzy.entry.caregiver) || null : null,
       completedAt: fuzzy?.entry.occurredAt ?? null,
       minutesFromNow: Math.round((routineMs - now) / 60000),
