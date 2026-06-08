@@ -30,12 +30,13 @@ Passing evidence:
 - Calendar/routines can be assigned and completed.
 - Records, handoff, reports, and WoofGuide route to useful workflows.
 - Dog profile credential fields feed the Records ID card and share text.
+- Log entries have a detail sheet with sticky notes, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
 Current gaps:
 
 - Shared onboarding readiness exists and is used by the Today setup nudge, but full first-run onboarding is incomplete.
-- Multiple dogs, roles, invites, report export, record document storage, credential image/PDF export, and sticky note UI need implementation.
+- Multiple dogs, roles, invites, report export, record document storage, credential image/PDF export, and log audit policy need implementation.
 - Runtime smoke has not been added.
 
 ## Gate 3: Care Domain Correctness
@@ -178,7 +179,7 @@ Latest known passing CI:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27117066844`, completed success on 2026-06-08 UTC
+- Evidence: run `27117459833`, completed success on 2026-06-08 UTC
 
 ## Required Before Claiming Full Release
 

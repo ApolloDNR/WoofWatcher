@@ -102,6 +102,16 @@ Owner: Codex.
 
 Revisit trigger: Record storage becomes authoritative enough to require verified document-backed credential fields.
 
+### 2026-06-08: Log Details Stay In The Log Workflow
+
+Decision: Entry details, sticky notes, sync state, edit/delete actions, and entry-level handoff sharing are implemented as a Log screen bottom sheet rather than a separate route.
+
+Reason: The user needs fast review and action from the timeline. A separate route would add navigation cost before the app has search, long-history, or audit requirements that justify it.
+
+Owner: Codex.
+
+Revisit trigger: Log search/history, audit trails, or deep links require a routed entry-detail screen.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
