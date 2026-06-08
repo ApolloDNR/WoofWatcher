@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useAuth } from "@clerk/expo";
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -24,6 +24,22 @@ import {
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare, CareState } from "@/context/CareContext";
+import {
+  deriveWoofGuideActions,
+  type WoofGuideActionCard,
+  type WoofGuideActionIcon,
+} from "@/lib/woofGuideActions";
+
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+const ACTION_ICON: Record<WoofGuideActionIcon, IoniconName> = {
+  bowl: "restaurant-outline",
+  calendar: "calendar-outline",
+  heart: "medkit-outline",
+  paw: "paw-outline",
+  records: "folder-open-outline",
+  spark: "sparkles-outline",
+};
 
 interface Message {
   id: string;
@@ -122,6 +138,7 @@ function buildAssistantContext(state: CareState) {
 export default function WoofGuideScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { state } = useCare();
   const { getToken } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -136,6 +153,8 @@ export default function WoofGuideScreen() {
     "Tips for food anxiety in dogs",
     "How to help a nervous eater",
   ], [name]);
+
+  const actionCards = useMemo(() => deriveWoofGuideActions(state), [state]);
 
   const sendMessage = useCallback(async (text: string) => {
     const q = text.trim();
@@ -170,6 +189,17 @@ export default function WoofGuideScreen() {
       setLoading(false);
     }
   }, [loading, state, getToken]);
+
+  const runAction = useCallback((action: WoofGuideActionCard) => {
+    Haptics.selectionAsync();
+    if (action.route) {
+      router.push(action.route);
+      return;
+    }
+    if (action.prompt) {
+      void sendMessage(action.prompt);
+    }
+  }, [router, sendMessage]);
 
   return (
     <>
@@ -212,6 +242,40 @@ export default function WoofGuideScreen() {
                       <Text style={[s.quickText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>{q}</Text>
                     </Pressable>
                   ))}
+                </View>
+                <View style={s.actionArea}>
+                  <Text style={[s.actionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Suggested actions</Text>
+                  {actionCards.map((action) => {
+                    const tone =
+                      action.urgency === "alert"
+                        ? colors.rose
+                        : action.urgency === "watch"
+                          ? colors.amber
+                          : colors.primary;
+                    return (
+                      <Pressable
+                        key={action.id}
+                        onPress={() => runAction(action)}
+                        style={({ pressed }) => [
+                          s.actionCard,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: action.urgency === "normal" ? colors.border : tone + "66",
+                            opacity: pressed ? 0.75 : 1,
+                          },
+                        ]}
+                      >
+                        <View style={[s.actionIcon, { backgroundColor: tone + "16" }]}>
+                          <Ionicons name={ACTION_ICON[action.icon]} size={17} color={tone} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[s.actionLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{action.label}</Text>
+                          <Text style={[s.actionDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{action.detail}</Text>
+                        </View>
+                        <Ionicons name={action.route ? "chevron-forward" : "arrow-up"} size={17} color={tone} />
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </View>
             ) : null
@@ -268,6 +332,12 @@ const s = StyleSheet.create({
   quickRow: { width: "100%", gap: 10, paddingHorizontal: 12, marginTop: 16 },
   quickChip: { borderRadius: 14, borderWidth: 1, padding: 14, shadowColor: "#2E5846", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8 },
   quickText: { fontSize: 14, lineHeight: 20 },
+  actionArea: { width: "100%", gap: 10, paddingHorizontal: 12, marginTop: 14 },
+  actionTitle: { fontSize: 15, marginLeft: 2 },
+  actionCard: { flexDirection: "row", alignItems: "center", gap: 11, borderRadius: 16, borderWidth: 1, padding: 13, shadowColor: "#2E5846", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8 },
+  actionIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  actionLabel: { fontSize: 14.5 },
+  actionDetail: { fontSize: 12.5, lineHeight: 17, marginTop: 2 },
   bubble: { maxWidth: "86%", borderRadius: 20, padding: 14, shadowColor: "#2E5846", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
   userBubble: { alignSelf: "flex-end", borderBottomRightRadius: 6 },
   assistantBubble: { alignSelf: "flex-start", borderBottomLeftRadius: 6, borderWidth: 1 },
