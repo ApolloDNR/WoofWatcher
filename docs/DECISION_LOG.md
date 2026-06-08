@@ -222,6 +222,16 @@ Owner: Codex.
 
 Revisit trigger: Clerk/database/storage providers, retention rules, support workflow, and legal privacy policy are approved for self-serve deletion.
 
+### 2026-06-08: Static Mobile Readiness Smoke Runs In Focused Tests
+
+Decision: Until local Expo runtime/simulator tooling is available, the focused test suite should include static mobile readiness checks for critical route registration, tab coverage, string router links, and launch-blocking safety copy.
+
+Reason: This does not prove runtime rendering, but it catches dead route links and missing release-critical surfaces in the zero-dependency test path that runs locally and in CI.
+
+Owner: Codex.
+
+Revisit trigger: Expo runtime smoke, simulator screenshot checks, accessibility automation, or visual regression tests are available in CI.
+
 ### 2026-06-08: Today Command Uses Routine Board Truth
 
 Decision: Today Command uses `deriveRoutineBoard` for open routine selection instead of independently guessing from raw day counts.

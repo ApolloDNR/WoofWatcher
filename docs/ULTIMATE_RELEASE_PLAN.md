@@ -52,7 +52,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | WoofGuide | API routes and mobile WoofGuide screen exist. Mobile now shows deterministic suggested action cards and owner-reviewed drafts for missing meal logs, record reminders, vet notes, and Care Pass review. | Add provider-backed source citations, report-draft persistence, permission-aware assistant writes, and stronger audit history. |
 | Offline/Sync | Mobile care sync handles local/pending/failed status and retry separation. | Add durable outbox, conflict-safe state updates, sync dashboard, and recovery tests. |
 | Design | Warm brand assets and Phoenix art exist. | Need full premium design system, motion spec, high-end screen polish, accessibility pass, and Figma alignment. |
-| CI/QA | GitHub Actions verifies install, focused tests, typecheck, API/web builds, and can be manually dispatched if a push hook misses. | Add mobile runtime smoke, API route tests, Playwright or Expo smoke, accessibility and visual regression where feasible. |
+| CI/QA | GitHub Actions verifies install, focused tests, typecheck, API/web builds, and can be manually dispatched if a push hook misses. Focused tests now include static mobile readiness smoke for route registration, tabs, router links, and launch-blocking safety copy. | Add Expo runtime smoke, API route tests, Playwright or simulator screenshot checks, accessibility, and visual regression where feasible. |
 
 ## Missing Features
 
@@ -88,9 +88,9 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 ## Test And QA Gaps
 
-- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, event taxonomy, day status, care pass audience checklists, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, and privacy/account safety export gates.
+- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, event taxonomy, day status, care pass audience checklists, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, privacy/account safety export gates, and static mobile route readiness.
 - Missing API integration tests.
-- Missing Expo/mobile runtime smoke.
+- Missing Expo/mobile runtime smoke. Static mobile route smoke exists, but it does not replace runtime rendering.
 - Missing auth onboarding smoke.
 - Missing visual regression or screenshot review for core screens.
 - Missing generated report snapshot tests.
@@ -135,7 +135,7 @@ No payment implementation should start until product scope, privacy terms, and s
 4. Add generated PDF artifacts, print layout, and server-backed report storage.
 5. Add durable offline outbox tests and implementation.
 6. Add API integration tests for care state and entries.
-7. Add mobile runtime smoke or screenshot verification once local dependencies/browser support are available.
+7. Add Expo runtime smoke or screenshot verification once local dependencies/browser support are available.
 8. Add provider-backed self-serve account deletion, document storage rules, and retention/audit policy after Apollo approves providers/legal scope.
 9. Add provider-backed WoofGuide source citations, permission-aware writes, and persisted report drafts.
 10. Build visual system pass in Figma or code, then implement screen-by-screen.
