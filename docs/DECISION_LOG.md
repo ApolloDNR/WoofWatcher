@@ -212,6 +212,16 @@ Owner: Codex.
 
 Revisit trigger: Reminder notifications or recurring-rule scheduling introduce a stricter due-state source.
 
+### 2026-06-08: Home Quick Log Enriches Entries Before Saving
+
+Decision: Home Quick Log uses a tested entry builder that reads the routine board and diet profile before creating care entries.
+
+Reason: One-tap logging should stay fast, but it must not create thin history rows that lose routine identity, meal completion, portion, eaten amount, or household visibility. Routine-aware quick entries keep Home, Log, Calendar, diet progress, and household status connected, while far-future routines stay open until they are actually due.
+
+Owner: Codex.
+
+Revisit trigger: The Log composer gains deep-linked presets or a server-side write pipeline becomes the canonical entry builder.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

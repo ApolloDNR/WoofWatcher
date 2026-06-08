@@ -32,7 +32,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Household | API has household routes and provisioning logic. Mobile context supports shared state. First-run setup captures a household caregiver baseline. | Improve auth-connected household setup UI, roles, invites, and caregiver permissions. |
 | Dog Profile | Profile exists in care state/screens, shared onboarding readiness detects missing profile setup, mobile editor captures credential fields, and first-run setup can save the core dog profile. | Add multiple-dog model, profile photo, and richer credential polish. |
 | Today Command | Mobile has a Today Command model, home surface, setup nudge, action routing, sync/health context, and routine-board alignment for partial meals plus overdue assigned routines. | Add reminder notifications, richer empty states, and interaction polish. |
-| Quick Log | Mobile log surface supports many care event types, inline notes, and post-log sticky note capture. | Improve progressive composer validation, type-specific fields, and post-save routing. |
+| Quick Log | Mobile log surface supports many care event types, inline notes, post-log sticky note capture, and Home one-tap routine-aware meal/walk logs with rich meal detail. | Improve progressive composer validation, deep-linked composer defaults, and post-save routing. |
 | Full Log | Care entries persist locally and through API sync. Mobile Log has filters, entry editing, sticky-note actions, a detail sheet, sync/error visibility, and shareable entry handoff text. | Add audit policy for edits/deletes, richer search, and dedicated log history views. |
 | Meal/Diet | Domain has diet progress logic, mobile meal progress UI, and first-run setup for food, normal portion, and meal schedule. | Add richer daily target setup, portion presets, feeding streaks, and appetite pattern explanations. |
 | Water | Event taxonomy includes water. | Add water-specific quick actions, daily hydration summary, and report language. |
@@ -88,7 +88,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 ## Test And QA Gaps
 
-- Existing focused behavior tests cover care sync, Today Command, event taxonomy, day status, care pass, diet progress, health handoff, record vault, routine board, and sticky notes.
+- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, event taxonomy, day status, care pass, diet progress, health handoff, record vault, routine board, and sticky notes.
 - Missing API integration tests.
 - Missing Expo/mobile runtime smoke.
 - Missing auth onboarding smoke.

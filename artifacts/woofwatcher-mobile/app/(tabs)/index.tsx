@@ -24,6 +24,7 @@ import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import Svg, { Circle } from "react-native-svg";
 import { deriveOnboardingStatus, normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
 import { computeCareStreak, computeDayProgress, derivePhoenixStatus, getGreeting } from "@/lib/phoenixStatus";
+import { buildQuickLogEntry } from "@/lib/quickLogEntry";
 import { deriveTodayCommand } from "@/lib/todayCommand";
 import { relativeTime } from "@/lib/time";
 
@@ -187,13 +188,9 @@ export default function PhoenixScreen() {
 
   const logQuick = (item: QuickLogItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    addEntry({
-      type: normalizeCareEventType(item.type), title: item.title, caregiver,
-      occurredAt: new Date().toISOString(),
-      ...(item.mood ? { mood: item.mood } : {}),
-      ...(item.severity ? { severity: item.severity } : {}),
-    });
-    showToast(`${item.label} logged`);
+    const entry = buildQuickLogEntry(item, state, { caregiver, now: Date.now() });
+    addEntry(entry);
+    showToast(`${entry.title} logged`);
   };
 
   const logBedtimeSnack = () => {

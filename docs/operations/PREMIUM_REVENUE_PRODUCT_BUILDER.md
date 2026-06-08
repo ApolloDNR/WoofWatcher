@@ -94,4 +94,4 @@ Stop only for:
 
 ## Current Next Slice
 
-As of 2026-06-08, the current queue points to Quick Log improvement: make common care logging instant without losing detail.
+As of 2026-06-08, the current queue points to Health Watch improvement: symptom/vomit/stool/appetite pattern views with non-diagnostic boundaries.

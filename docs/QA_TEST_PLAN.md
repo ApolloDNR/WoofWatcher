@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-08:
 
-- PASS: 54 focused tests with the command above.
+- PASS: 57 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -22,6 +22,7 @@ Latest local evidence, 2026-06-08:
 - Meal progress and meal completion fields.
 - Care sync local/pending/failed/retry behavior.
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
+- Home Quick Log routine matching and meal detail enrichment.
 - Health Watch signals and medical boundary.
 - Care Pass generation and report artifacts.
 - Record vault and due status.
@@ -37,14 +38,15 @@ Latest local evidence, 2026-06-08:
 2. Complete setup: dog profile, diet, routine, caregiver.
 3. Confirm Today shows next needed care.
 4. Log a meal with expected, served, eaten, skipped/partial, note, and caregiver visibility.
-5. Confirm a visible matching meal log changes the routine from due/missed to handled and shows complete/partial/skipped status.
-6. Confirm a private meal log stays out of shared household routine status.
-7. Add sticky note to a log.
-8. Add vaccine, insurance, microchip, vet, receipt, and document records.
-9. Preview and share sitter/vet/trainer/caregiver Care Pass.
-10. Confirm report history stores shared Care Pass.
-11. Ask WoofGuide about recent changes and verify non-diagnostic wording.
-12. Force offline or failed sync state and confirm visibility.
+5. Use Home Quick Log for a meal and confirm it records the open routine, expected portion, served amount, eaten amount, complete status, and household visibility.
+6. Confirm a visible matching meal log changes the routine from due/missed to handled and shows complete/partial/skipped status.
+7. Confirm a private meal log stays out of shared household routine status.
+8. Add sticky note to a log.
+9. Add vaccine, insurance, microchip, vet, receipt, and document records.
+10. Preview and share sitter/vet/trainer/caregiver Care Pass.
+11. Confirm report history stores shared Care Pass.
+12. Ask WoofGuide about recent changes and verify non-diagnostic wording.
+13. Force offline or failed sync state and confirm visibility.
 
 ## Missing QA
 

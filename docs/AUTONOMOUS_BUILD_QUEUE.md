@@ -10,8 +10,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 2. DONE 2026-06-08: Meal logging: expected portion, served amount, eaten amount, skipped/partial completion, notes, and household visibility.
 3. DONE 2026-06-08: Subscription path: pricing screen, premium preview, and plan packaging without live payments.
 4. DONE 2026-06-08: Today Command uses routine-board truth for partial meals, overdue assigned routines, routes, urgency, and explanation text.
-5. Next: Quick Log: make common care logging instant without losing detail.
-6. Health Watch: symptom/vomit/stool/appetite pattern views with non-diagnostic boundaries.
+5. DONE 2026-06-08: Home Quick Log now creates routine-aware meal and walk logs with meal portion, completion, eaten amount, and household visibility detail.
+6. Next: Health Watch: symptom/vomit/stool/appetite pattern views with non-diagnostic boundaries.
 7. Handoff: make sitter/family/trainer/vet reports valuable enough to pay for.
 8. Records: document upload/storage, credential export, expiring-record reminders.
 9. WoofGuide: structured owner-reviewed actions for log drafts, reminders, vet notes, and reports.
