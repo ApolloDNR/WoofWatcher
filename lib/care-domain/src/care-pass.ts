@@ -123,6 +123,35 @@ function section(title: string, lines: string[]): CarePassSection | null {
   return cleaned.length ? { title, lines: cleaned } : null;
 }
 
+function audienceChecklist(audience: CarePassAudience, name: string): string[] {
+  if (audience === "vet") {
+    return [
+      "Review Health Watch patterns as owner-reported context, not a diagnosis.",
+      "Compare appetite, stool, vomit, weight, medication, and record history.",
+      "Tell the household what to monitor next and when to seek follow-up care.",
+    ];
+  }
+  if (audience === "trainer") {
+    return [
+      "Review routine, activity, appetite, anxiety, and recovery context before the session.",
+      "Log training wins, triggers, dog interactions, and next practice notes.",
+      "Flag any behavior, energy, or health change for the household before leaving.",
+    ];
+  }
+  if (audience === "caregiver") {
+    return [
+      "Check the next routine and owner assignment before starting care.",
+      "Log what happened with notes so the next household member has context.",
+      "Review Health Watch if appetite, stool, vomit, energy, or mood changes.",
+    ];
+  }
+  return [
+    `Confirm the next routine for ${name} before leaving.`,
+    "Log meals with expected portion, served amount, eaten amount, completion, and notes.",
+    "Review Health Watch and contact the owner if appetite, stool, vomit, energy, or mood changes.",
+  ];
+}
+
 function renderMessage(pass: Omit<CarePass, "message">): string {
   const parts = [
     pass.title,
@@ -186,6 +215,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
       handoff.sections.needsAttention.map((item) => `${item.label}: ${item.detail}`).join("; "),
       handoff.message,
     ]),
+    section("Handoff Checklist", audienceChecklist(input.audience, name)),
     section("Diet", [
       diet.primaryFood ? `Food: ${diet.primaryFood}` : "",
       diet.normalPortion ? `Portion: ${diet.normalPortion}` : "",
@@ -195,6 +225,12 @@ export function buildCarePass(input: CarePassInput): CarePass {
       diet.sensitivities ? `Sensitivities: ${diet.sensitivities}` : "",
       diet.appetiteQuirks ? `Appetite notes: ${diet.appetiteQuirks}` : "",
     ]),
+    section(
+      "Health Pattern Review",
+      health.patterns.slice(0, 4).map((pattern) => (
+        `${pattern.label} (${pattern.window}): ${pattern.evidence} Next: ${pattern.nextStep}`
+      )),
+    ),
     section("Health Watch", [
       `${health.status === "good" ? "Health steady" : health.status === "alert" ? "Health alert" : "Health watch"}: ${health.summary}`,
       ...health.signals.slice(0, 4).map((signal) => `${signal.label}: ${signal.detail}`),

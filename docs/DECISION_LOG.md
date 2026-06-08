@@ -232,6 +232,16 @@ Owner: Codex.
 
 Revisit trigger: Vet-note drafting, notification rules, or clinician-reviewed language requires a stricter medical-safety template.
 
+### 2026-06-08: Care Pass Exports Include Audience Checklists
+
+Decision: Care Pass generation includes audience-specific Handoff Checklist sections and Health Pattern Review lines.
+
+Reason: Reports are a premium revenue pillar only if they are immediately useful to sitters, caregivers, trainers, and vets. A shareable report should say what to do, what to watch, what evidence exists, and where medical certainty stops.
+
+Owner: Codex.
+
+Revisit trigger: PDF generation, clinician-reviewed wording, or paid report templates require stricter template versioning.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

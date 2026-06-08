@@ -94,4 +94,4 @@ Stop only for:
 
 ## Current Next Slice
 
-As of 2026-06-08, the current queue points to Handoff improvement: make sitter, family, trainer, and vet reports valuable enough to pay for.
+As of 2026-06-08, the current queue points to Records improvement: document upload/storage, credential export, and expiring-record reminders.

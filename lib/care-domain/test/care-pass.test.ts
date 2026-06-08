@@ -78,6 +78,15 @@ test("builds a sitter care pass with routine, diet, and next action context", ()
   assert.match(pass.message, /Keep meals calm/);
 });
 
+test("sitter care pass includes a practical handoff checklist", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "sitter" });
+
+  assert.ok(pass.sections.some((section) => section.title === "Handoff Checklist"));
+  assert.match(pass.message, /Confirm the next routine/i);
+  assert.match(pass.message, /served amount/i);
+  assert.match(pass.message, /Health Watch/i);
+});
+
 test("builds a vet care pass with health signals and records", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
 
@@ -86,6 +95,15 @@ test("builds a vet care pass with health signals and records", () => {
   assert.match(pass.message, /Health watch/);
   assert.match(pass.message, /Rabies/);
   assert.match(pass.message, /not a diagnosis/i);
+});
+
+test("vet care pass includes health pattern review next steps", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "vet" });
+
+  assert.ok(pass.sections.some((section) => section.title === "Health Pattern Review"));
+  assert.match(pass.message, /Yellow bile/i);
+  assert.match(pass.message, /Track timing/i);
+  assert.match(pass.message, /vet promptly/i);
 });
 
 test("trainer care pass emphasizes behavior and activity context", () => {
