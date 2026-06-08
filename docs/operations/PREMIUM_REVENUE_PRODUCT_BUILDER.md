@@ -70,6 +70,12 @@ GitHub Actions:
 & "C:\Users\Apoll\OneDrive\Documentos\New project\tools\gh\bin\gh.exe" run list --repo ApolloDNR/WoofWatcher --limit 3
 ```
 
+Manual verification trigger if a push updates `main` without creating an Actions run:
+
+```powershell
+& "C:\Users\Apoll\OneDrive\Documentos\New project\tools\gh\bin\gh.exe" workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref main
+```
+
 ## Normal Decisions The Automation May Make
 
 - Implementation order within the active queue.
