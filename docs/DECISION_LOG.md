@@ -152,6 +152,16 @@ Owner: Codex.
 
 Revisit trigger: Auth-connected household onboarding, invite/join flow, multiple dogs, or a native onboarding stack requires splitting setup into staged screens.
 
+### 2026-06-08: Care Pass Report History Stores Snapshots First
+
+Decision: Shared Care Passes are stored as care-document report artifacts containing the generated message and section titles.
+
+Reason: Owners need quick resend history now, while true PDFs, print layout, and server-backed artifact storage require a larger document pipeline.
+
+Owner: Codex.
+
+Revisit trigger: PDF generation, report storage backend, or audit/export requirements become active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

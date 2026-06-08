@@ -33,6 +33,7 @@ Passing evidence:
 - Dedicated Setup route can save dog profile, diet baseline, starter routine, and household caregiver basics in one flow.
 - Log entries have a detail sheet with sticky notes, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Care Pass reports can be previewed by audience before sharing.
+- Shared Care Passes are stored as report-history artifacts for quick resend.
 - Records show expired, due-soon, current, and reference status for saved record rows.
 - WoofGuide shows deterministic suggested actions tied to health watch, record attention, diet setup, routines, meal logging, and Care Pass preview.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
@@ -40,7 +41,7 @@ Passing evidence:
 Current gaps:
 
 - Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning and household invite/join onboarding remain incomplete.
-- Multiple dogs, roles, invites, generated PDF/report artifacts, record document storage, server reminders for expiring records, credential image/PDF export, and log audit policy need implementation.
+- Multiple dogs, roles, invites, generated PDF artifacts, server-backed report storage, record document storage, server reminders for expiring records, credential image/PDF export, and log audit policy need implementation.
 - Runtime smoke has not been added.
 
 ## Gate 3: Care Domain Correctness
@@ -49,7 +50,7 @@ Status: Partially passing.
 
 Passing evidence:
 
-- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, health handoff, care pass, record vault, pet credential fallbacks, record due-status, routine board, sticky notes, and WoofGuide action cards.
+- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, health handoff, care pass, Care Pass artifact snapshots, record vault, pet credential fallbacks, record due-status, routine board, sticky notes, and WoofGuide action cards.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:
@@ -184,7 +185,7 @@ Latest known passing CI:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27119751752`, completed success on 2026-06-08 UTC
+- Evidence: run `27120202026`, completed success on 2026-06-08 UTC
 
 ## Required Before Claiming Full Release
 

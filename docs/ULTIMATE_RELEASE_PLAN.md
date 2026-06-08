@@ -48,7 +48,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Sticky Notes | Domain tests cover sticky note append/sanitize behavior. Mobile Log can attach multiple sticky notes to existing logs, show them in timeline/detail views, and include them in entry handoff text. | Add richer sticky-note colors, pinning, and report filtering. |
 | Routines/Reminders | Routine board domain logic exists; calendar UI has assignment/completion concepts; first-run setup can create a starter routine with owner assignment. | Add reminder notifications, recurring rules, missed routine nudges, recurring setup polish, and owner load balancing. |
 | Records | Domain has record vault, pet credential summary, and due-status logic for date-backed records. Mobile Records includes a dog ID card, due/current/reference badges, and profile-level microchip, insurance, vet, and emergency-contact fallbacks before uploaded records exist. | Add document upload/storage, richer receipt capture, server reminders for expiring records, and credential card image/PDF export. |
-| Handoff/Reports | Domain supports care pass and handoff summaries. Mobile Records now previews sitter, vet, trainer, and caregiver Care Pass sections before sharing, and Progress Report can be shared by period. | Add generated PDF/report artifacts, storage history, print layout, and richer audience templates. |
+| Handoff/Reports | Domain supports care pass and handoff summaries. Mobile Records previews sitter, vet, trainer, and caregiver Care Pass sections before sharing, stores shared Care Pass artifacts in report history, and Progress Report can be shared by period. | Add generated PDF artifacts, print layout, server-backed report storage, and richer audience templates. |
 | WoofGuide | API routes and mobile WoofGuide screen exist. Mobile now shows deterministic suggested action cards for health watch, records, diet setup, routines, meal logging, and Care Pass preview. | Add structured writes from action cards, log drafts, reminder creation, vet note/report drafting flows, and stronger source citations. |
 | Offline/Sync | Mobile care sync handles local/pending/failed status and retry separation. | Add durable outbox, conflict-safe state updates, sync dashboard, and recovery tests. |
 | Design | Warm brand assets and Phoenix art exist. | Need full premium design system, motion spec, high-end screen polish, accessibility pass, and Figma alignment. |
@@ -62,7 +62,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 4. Durable offline outbox and conflict handling for care state edits.
 5. Edit/delete audit policy for care logs.
 6. Records document upload/storage, server reminders for expiring records, and credential card image/PDF export.
-7. Generated PDF/report artifacts and stored report history for vet, sitter, trainer, and household review.
+7. Generated PDF artifacts, print layout, and server-backed report storage for vet, sitter, trainer, and household review.
 8. WoofGuide action-card writes that can create structured logs, reminders, notes, vet notes, and report drafts.
 9. Reminder notification flow.
 10. High-end motion, transitions, avatar state animation, and accessibility polish.
@@ -132,7 +132,7 @@ No payment implementation should start until product scope, privacy terms, and s
 1. Add release-control docs and keep them current.
 2. Extend setup into auth-connected household onboarding, invite/join decisions, and post-setup confirmation.
 3. Add records document storage, richer receipt capture, server reminders for expiring records, and credential export.
-4. Add generated PDF/report artifacts and stored report history.
+4. Add generated PDF artifacts, print layout, and server-backed report storage.
 5. Add durable offline outbox tests and implementation.
 6. Add API integration tests for care state and entries.
 7. Add structured WoofGuide action writes for log drafts, reminders, vet notes, and report drafts.
@@ -154,6 +154,7 @@ No payment implementation should start until product scope, privacy terms, and s
 - Record due-status belongs in `lib/care-domain` so Records UI, reminders, reports, and WoofGuide can classify expired, due-soon, current, and reference records consistently.
 - WoofGuide suggested actions are deterministic view-model cards first; actual writes to logs, reminders, notes, and reports stay gated until audited action handlers exist.
 - First-run care foundation setup belongs on a dedicated mobile route so profile, diet, starter routine, and caregiver basics can be saved together instead of scattered across separate screens.
+- Care Pass report history stores shared report snapshots in the care document; generated PDFs and server-backed artifact storage remain separate production work.
 
 ## Blockers Requiring Apollo
 
