@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildCarePass, createCarePassArtifact, renderCarePassPrintHtml } from "../src/index.ts";
+import {
+  buildCarePass,
+  createCarePassArtifact,
+  getCarePassArtifactPrintView,
+  renderCarePassPrintHtml,
+} from "../src/index.ts";
 
 process.env.TZ = "America/Los_Angeles";
 
@@ -148,4 +153,36 @@ test("renders a print-ready care pass document with escaped care content", () =>
   assert.match(html, /This is not a diagnosis/);
   assert.equal(artifact.printFileName, "phoenix-script-vet-care-pass-2026-06-08.html");
   assert.equal(artifact.printHtml, html);
+});
+
+test("returns stored print source for current care pass artifacts", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "sitter" });
+  const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
+  const printable = getCarePassArtifactPrintView(artifact);
+
+  assert.equal(printable.status, "ready");
+  assert.equal(printable.fileName, "phoenix-sitter-care-pass-2026-06-08.html");
+  assert.equal(printable.html, artifact.printHtml);
+});
+
+test("restores escaped print source for older care pass artifacts", () => {
+  const printable = getCarePassArtifactPrintView({
+    id: "care_pass_sitter_legacy",
+    kind: "care_pass",
+    audience: "sitter",
+    title: "Phoenix <script> Sitter Care Pass",
+    generatedAt: "Jun 8, 7:30 AM",
+    createdAt: "2026-06-08T06:30:00.000Z",
+    summary: "Imported report text for a saved Care Pass.",
+    sectionTitles: ["Dog", "Next Care"],
+    message: "Phoenix <script>\nDog\n- Needs breakfast reviewed",
+  });
+
+  assert.equal(printable.status, "restored");
+  assert.equal(printable.fileName, "phoenix-script-sitter-care-pass-2026-06-08.html");
+  assert.match(printable.html, /^<!doctype html>/i);
+  assert.match(printable.html, /Phoenix &lt;script&gt; Sitter Care Pass/);
+  assert.match(printable.html, /Imported report text/);
+  assert.match(printable.html, /Needs breakfast reviewed/);
+  assert.doesNotMatch(printable.html, /Phoenix <script>/);
 });

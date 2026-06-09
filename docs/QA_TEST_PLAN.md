@@ -10,9 +10,9 @@ Run focused behavior tests:
 
 CI must pass `WoofWatcher Verify` on `main`.
 
-Latest local evidence, 2026-06-08:
+Latest local evidence, 2026-06-09:
 
-- PASS: 85 focused tests with the command above.
+- PASS: 88 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -25,7 +25,7 @@ Latest local evidence, 2026-06-08:
 - Home Quick Log routine matching and meal detail enrichment.
 - Health Watch signals and medical boundary.
 - Health Watch pattern cards with evidence, owner next steps, and steady-state behavior.
-- Care Pass generation, report artifacts, and print-ready escaped HTML payloads for future PDF/export flows.
+- Care Pass generation, report artifacts, print-ready escaped HTML payloads, legacy artifact print recovery, and Records print-source sharing for future PDF/export flows.
 - Care Pass audience checklists and Health Pattern Review next steps.
 - Record vault and due status.
 - Record reminders for expired, due-soon, missing-critical, and reference-only records.
@@ -37,7 +37,7 @@ Latest local evidence, 2026-06-08:
 - Premium entitlement policy for Free, Plus, and Family feature gates before checkout is enabled.
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
-- Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
+- Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, Records printable report actions, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
 - Expo app identity smoke for release-grade slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
 - CI `build:ci` runs a mobile Expo web export smoke and verifies emitted HTML/JavaScript assets.
 
@@ -55,7 +55,7 @@ Latest local evidence, 2026-06-08:
 10. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values.
 11. Preview and share sitter/vet/trainer/caregiver Care Pass.
 12. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
-13. Confirm report history stores shared Care Pass with printable export metadata.
+13. Confirm report history stores shared Care Pass with printable export metadata, separate resend action, and printable-source share action.
 14. Ask WoofGuide about recent changes and verify non-diagnostic wording.
 15. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
 16. Open Privacy & Safety from More, share the care-data export, and confirm it includes care data counts without auth/session tokens.

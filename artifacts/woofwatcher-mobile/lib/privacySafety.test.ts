@@ -25,7 +25,17 @@ const state = {
     { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
   ],
   calendarEvents: [{ id: "renewal", title: "Renew insurance", date: "2026-07-01", type: "insurance" }],
-  reportArtifacts: [{ id: "sitter", audience: "sitter", message: "Care pass" }],
+  reportArtifacts: [
+    {
+      id: "sitter",
+      kind: "care_pass",
+      audience: "sitter",
+      title: "Phoenix Sitter Care Pass",
+      message: "Care pass",
+      printFileName: "phoenix-sitter-care-pass-2026-06-08.html",
+      printHtml: "<!doctype html><html><body>Care pass</body></html>",
+    },
+  ],
   entries: [
     {
       id: "meal_1",
@@ -59,6 +69,7 @@ test("builds an owner export bundle with counts and care data", () => {
   });
   assert.equal(bundle.care.profile?.name, "Phoenix");
   assert.equal(bundle.care.entries[0]?.id, "meal_1");
+  assert.deepEqual(bundle.care.reportArtifacts[0], state.reportArtifacts[0]);
   assert.match(bundle.disclosures.ai, /not a veterinary diagnosis/i);
 });
 

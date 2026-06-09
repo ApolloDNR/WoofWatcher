@@ -69,8 +69,14 @@ export interface CarePassArtifact {
   summary: string;
   sectionTitles: string[];
   message: string;
-  printFileName: string;
-  printHtml: string;
+  printFileName?: string;
+  printHtml?: string;
+}
+
+export interface CarePassArtifactPrintView {
+  fileName: string;
+  html: string;
+  status: "ready" | "restored";
 }
 
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
@@ -86,6 +92,19 @@ function clean(value: unknown): string {
 
 function escapeHtml(value: unknown): string {
   return clean(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeHtmlBlock(value: unknown): string {
+  return String(value ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -112,6 +131,12 @@ function formatDateTime(ms: number): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function printDateStamp(createdAt: string): string {
+  const parsed = new Date(createdAt);
+  if (Number.isNaN(parsed.getTime())) return "saved";
+  return parsed.toISOString().slice(0, 10);
 }
 
 function entryLabel(entry: CareHealthEntry): string {
@@ -304,6 +329,139 @@ ${sections}
   </main>
 </body>
 </html>`;
+}
+
+function renderLegacyArtifactPrintHtml(artifact: CarePassArtifact): string {
+  const sectionTitles = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles : [];
+  const sections = sectionTitles
+    .map(clean)
+    .filter(notEmpty)
+    .map((title) => `
+      <section class="section">
+        <h2>${escapeHtml(title)}</h2>
+      </section>`)
+    .join("\n");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(artifact.title)}</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1a2332;
+      --muted: #5f6f63;
+      --line: #d4cfc4;
+      --wash: #f7f5f1;
+      --accent: #2e5846;
+      --copper: #c87a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--wash);
+      color: var(--ink);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.48;
+    }
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 40px 32px;
+      background: #ffffff;
+      min-height: 100vh;
+    }
+    header {
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+    .brand {
+      color: var(--copper);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 34px;
+      line-height: 1.08;
+      margin: 0;
+    }
+    .summary {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 10px 0 0;
+    }
+    .generated {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 6px;
+    }
+    .section {
+      break-inside: avoid;
+      border-bottom: 1px solid var(--line);
+      padding: 16px 0;
+    }
+    h2 {
+      color: var(--accent);
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      margin: 0;
+    }
+    pre {
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--wash);
+      padding: 16px;
+      font: 13.5px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 11.5px;
+      padding-top: 18px;
+    }
+    @media print {
+      body { background: #ffffff; }
+      main { max-width: none; padding: 24px; }
+      header { margin-bottom: 16px; }
+      .section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">WoofWatcher Care Pass</div>
+      <h1>${escapeHtml(artifact.title)}</h1>
+      <p class="summary">${escapeHtml(artifact.summary || "Saved Care Pass report.")}</p>
+      <div class="generated">Generated ${escapeHtml(artifact.generatedAt)}</div>
+    </header>
+${sections}
+    <section class="section">
+      <h2>Saved Report Text</h2>
+      <pre>${escapeHtmlBlock(artifact.message)}</pre>
+    </section>
+    <footer>
+      WoofWatcher organizes owner-reported care context for handoff and veterinarian review. It does not diagnose or replace veterinary care.
+    </footer>
+  </main>
+</body>
+</html>`;
+}
+
+export function getCarePassArtifactPrintView(artifact: CarePassArtifact): CarePassArtifactPrintView {
+  const storedHtml = typeof artifact.printHtml === "string" && artifact.printHtml.trim().length > 0;
+  return {
+    fileName: clean(artifact.printFileName) || `${slugify(artifact.title)}-${printDateStamp(artifact.createdAt)}.html`,
+    html: storedHtml ? artifact.printHtml as string : renderLegacyArtifactPrintHtml(artifact),
+    status: storedHtml ? "ready" : "restored",
+  };
 }
 
 export function buildCarePass(input: CarePassInput): CarePass {

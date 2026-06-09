@@ -212,6 +212,16 @@ Owner: Codex.
 
 Revisit trigger: Native PDF generation, Vercel/server rendering, or storage-backed report artifacts become active release work.
 
+### 2026-06-09: Records Exposes Printable Care Pass Source Before PDF Storage
+
+Decision: Records Report History shows print-ready or restored Care Pass metadata and gives owners separate actions for resending the human-readable handoff and sharing the printable HTML source.
+
+Reason: A saved report is not premium enough if the owner cannot find or reuse the print artifact. Exposing the print source now improves sitter/vet/trainer workflow while keeping binary PDF generation and server-backed storage explicitly gated.
+
+Owner: Codex.
+
+Revisit trigger: Native PDF generation, document storage, or server-backed report artifacts become active release work.
+
 ### 2026-06-08: Household-Visible Logs Drive Routine Status
 
 Decision: Routine status is satisfied by matching household-visible logs. Meal logs can record complete, partial, or skipped outcomes, and private logs stay out of shared household routine status.

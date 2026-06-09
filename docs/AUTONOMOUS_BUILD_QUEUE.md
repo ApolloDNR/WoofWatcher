@@ -22,6 +22,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 14. IN PROGRESS, avatar motion foundation shipped 2026-06-08: Home now derives a deterministic avatar motion state from health signals, recent care logs, routine due/overdue state, quiet hours, and energy. Next: Rive/Lottie/Reanimated asset pipeline, Figma/code design system, full screen-by-screen visual polish, and visual regression.
 15. Premium design system and motion pass: component tokens, high-end screen polish, avatar state assets, transition rules, and accessibility review.
 16. DONE 2026-06-09: Care Pass report artifacts now include escaped print-ready HTML and stable file names for future PDF generation, native sharing, and server-backed storage.
+17. DONE 2026-06-09: Records Report History now shows print-ready/restored Care Pass metadata, exposes separate resend and printable-source share actions, and keeps older saved report artifacts printable through escaped fallback HTML.
 
 ## Cadence
 

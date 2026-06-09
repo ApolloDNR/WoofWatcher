@@ -152,3 +152,13 @@ test("wires Home to the avatar motion state model", () => {
   assert.match(home, /avatarMotion\.route/);
   assert.match(home, /avatarMotion\.line/);
 });
+
+test("keeps Records report history wired for printable Care Pass artifacts", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /getCarePassArtifactPrintView/);
+  assert.match(records, /sharePrintableReportArtifact/);
+  assert.match(records, /Print-ready/);
+  assert.match(records, /accessibilityLabel=\{`Resend \$\{artifact\.title\}`\}/);
+  assert.match(records, /accessibilityLabel=\{`Share printable report source for \$\{artifact\.title\}`\}/);
+});

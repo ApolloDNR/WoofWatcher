@@ -34,6 +34,7 @@ import {
   createCarePassArtifact,
   deriveHealthWatch,
   deriveRecordReminders,
+  getCarePassArtifactPrintView,
   getRecordDueStatus,
   normalizeCareEventType,
   summarizeRecordVault,
@@ -437,6 +438,14 @@ export default function RecordsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Share.share({ message: artifact.message, title: artifact.title }).catch(() =>
       Alert.alert(artifact.title, artifact.message),
+    );
+  };
+
+  const sharePrintableReportArtifact = (artifact: CarePassArtifact) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const printable = getCarePassArtifactPrintView(artifact);
+    Share.share({ message: printable.html, title: printable.fileName }).catch(() =>
+      Alert.alert(printable.fileName, printable.html),
     );
   };
 
@@ -885,34 +894,67 @@ export default function RecordsScreen() {
                 Shared Care Passes will appear here for quick resend.
               </Text>
             ) : (
-              reportArtifacts.map((artifact, index) => (
-                <Pressable
-                  key={artifact.id}
-                  onPress={() => shareReportArtifact(artifact)}
-                  style={({ pressed }) => [
-                    s.reportArtifactRow,
-                    index < reportArtifacts.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-                    { opacity: pressed ? 0.75 : 1 },
-                  ]}
-                >
-                  <View style={[s.rowIconWrap, { backgroundColor: colors.primary + "14" }]}>
-                    <Ionicons name="document-text-outline" size={18} color={colors.primary} />
+              reportArtifacts.map((artifact, index) => {
+                const printable = getCarePassArtifactPrintView(artifact);
+                const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
+                return (
+                  <View
+                    key={artifact.id}
+                    style={[
+                      s.reportArtifactRow,
+                      index < reportArtifacts.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                    ]}
+                  >
+                    <View style={[s.rowIconWrap, { backgroundColor: colors.primary + "14" }]}>
+                      <Ionicons name="document-text-outline" size={18} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text numberOfLines={1} style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                        {artifact.title}
+                      </Text>
+                      <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {shortDate(artifact.createdAt)} - {sectionCount} sections - {printable.status === "ready" ? "Print-ready" : "Print restored"}
+                      </Text>
+                      <Text numberOfLines={1} style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+                        {printable.fileName}
+                      </Text>
+                    </View>
+                    <View style={s.reportArtifactActions}>
+                      <View style={[s.artifactBadge, { backgroundColor: colors.sage + "14" }]}>
+                        <Text style={[s.artifactBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                          {artifact.audience}
+                        </Text>
+                      </View>
+                      <View style={s.reportArtifactButtonRow}>
+                        <Pressable
+                          onPress={() => shareReportArtifact(artifact)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Resend ${artifact.title}`}
+                          hitSlop={8}
+                          style={({ pressed }) => [
+                            s.artifactIconButton,
+                            { backgroundColor: colors.primary + "12", opacity: pressed ? 0.75 : 1 },
+                          ]}
+                        >
+                          <Ionicons name="share-outline" size={15} color={colors.primary} />
+                        </Pressable>
+                        <Pressable
+                          onPress={() => sharePrintableReportArtifact(artifact)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Share printable report source for ${artifact.title}`}
+                          hitSlop={8}
+                          style={({ pressed }) => [
+                            s.artifactIconButton,
+                            { backgroundColor: colors.copper + "14", opacity: pressed ? 0.75 : 1 },
+                          ]}
+                        >
+                          <Ionicons name="print-outline" size={15} color={colors.copper} />
+                        </Pressable>
+                      </View>
+                    </View>
                   </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text numberOfLines={1} style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                      {artifact.title}
-                    </Text>
-                    <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {shortDate(artifact.createdAt)} - {artifact.sectionTitles.length} sections
-                    </Text>
-                  </View>
-                  <View style={[s.artifactBadge, { backgroundColor: colors.sage + "14" }]}>
-                    <Text style={[s.artifactBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                      {artifact.audience}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))
+                );
+              })
             )}
           </View>
 
@@ -1351,6 +1393,9 @@ const s = StyleSheet.create({
   carePassLabel: { fontSize: 15 },
   carePassDetail: { fontSize: 12, lineHeight: 16, marginTop: 2, paddingRight: 14 },
   reportArtifactRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13 },
+  reportArtifactActions: { alignItems: "flex-end", gap: 8 },
+  reportArtifactButtonRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  artifactIconButton: { width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center" },
   artifactBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
   artifactBadgeText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
 
