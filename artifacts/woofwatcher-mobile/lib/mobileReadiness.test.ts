@@ -120,3 +120,12 @@ test("keeps critical mobile actions accessible to screen readers", () => {
   assert.match(more, /accessibilityLabel=\{`\$\{l\.label\}\. \$\{l\.sub\}`\}/);
   assert.match(more, /accessibilityLabel="Sign out of WoofWatcher"/);
 });
+
+test("shows premium entitlement policy before checkout is enabled", () => {
+  const premium = readAppFile("premium.tsx");
+
+  assert.match(premium, /preview\.entitlements/);
+  assert.match(premium, /Launch entitlements/);
+  assert.match(premium, /Current plan: Free/);
+  assert.match(premium, /Locked until upgrade/);
+});

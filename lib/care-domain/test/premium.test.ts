@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { derivePremiumPreview, PREMIUM_PLANS } from "../src/index.ts";
+import {
+  derivePremiumEntitlements,
+  derivePremiumPreview,
+  isPremiumFeatureUnlocked,
+  PREMIUM_PLANS,
+} from "../src/index.ts";
 
 test("defines free, plus, and family premium packaging without checkout enabled", () => {
   assert.deepEqual(
@@ -40,4 +45,24 @@ test("recommends plus when advanced care is valuable but household size is small
 
   assert.equal(preview.recommendedPlanId, "plus");
   assert.equal(preview.valueSignals[0].key, "health");
+});
+
+test("defines deterministic free, plus, and family entitlement gates", () => {
+  const free = derivePremiumEntitlements("free");
+  const plus = derivePremiumEntitlements("plus");
+  const family = derivePremiumEntitlements("family");
+
+  assert.ok(free.included.some((feature) => feature.key === "dog_profile"));
+  assert.ok(free.locked.some((feature) => feature.key === "health_watch" && feature.requiredPlanId === "plus"));
+  assert.ok(plus.included.some((feature) => feature.key === "health_watch"));
+  assert.ok(plus.locked.some((feature) => feature.key === "household_roles" && feature.requiredPlanId === "family"));
+  assert.equal(family.locked.length, 0);
+});
+
+test("answers whether a premium feature is unlocked for a plan", () => {
+  assert.equal(isPremiumFeatureUnlocked("free", "basic_logs"), true);
+  assert.equal(isPremiumFeatureUnlocked("free", "care_reports"), false);
+  assert.equal(isPremiumFeatureUnlocked("plus", "care_reports"), true);
+  assert.equal(isPremiumFeatureUnlocked("plus", "household_roles"), false);
+  assert.equal(isPremiumFeatureUnlocked("family", "household_roles"), true);
 });

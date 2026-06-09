@@ -212,6 +212,16 @@ Owner: Codex.
 
 Revisit trigger: Entitlement rules, production pricing, app-store subscription setup, and customer support/refund policies are approved.
 
+### 2026-06-08: Entitlement Policy Lives In Care Domain Before Checkout
+
+Decision: Free, Plus, and Family feature gates are defined in `lib/care-domain` and surfaced on the mobile Plus screen before payment integration begins.
+
+Reason: Checkout should enforce a product policy that already exists, not invent revenue rules inside payment code. Free covers dog profile, basic logs, starter routines, and local history. Plus covers advanced meals, Health Watch, records, reports, WoofGuide drafts, and report history. Family covers household roles, shared routines, caregiver handoffs, and family calendar.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves final pricing, grandfathering, trial rules, support/refund terms, or App Store subscription packaging.
+
 ### 2026-06-08: Privacy Safety Ships As Export And Request First
 
 Decision: WoofWatcher can provide owner care-data export, AI disclosure, document storage gates, and account deletion request preparation before implementing destructive self-serve deletion.

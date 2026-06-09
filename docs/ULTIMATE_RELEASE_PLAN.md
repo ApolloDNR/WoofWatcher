@@ -50,6 +50,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Records | Domain has record vault, pet credential summary, due-status logic, and record reminders for expired, due-soon, and missing-critical records. Mobile Records includes a dog ID card, due/current/reference badges, reminder rows, and profile-level microchip, insurance, vet, and emergency-contact fallbacks before uploaded records exist. Privacy & Safety makes document storage rules visible before upload is enabled. | Add document upload/storage, richer receipt capture, server reminders for expiring records, and credential card image/PDF export. |
 | Handoff/Reports | Domain supports care pass and handoff summaries. Mobile Records previews sitter, vet, trainer, and caregiver Care Pass sections before sharing, stores shared Care Pass artifacts in report history, and Care Pass exports include audience checklists plus Health Pattern Review next steps. | Add generated PDF artifacts, print layout, server-backed report storage, and richer audience templates. |
 | WoofGuide | API routes and mobile WoofGuide screen exist. Mobile now shows deterministic suggested action cards and owner-reviewed drafts for missing meal logs, record reminders, vet notes, and Care Pass review. | Add provider-backed source citations, report-draft persistence, permission-aware assistant writes, and stronger audit history. |
+| Monetization | Free, Plus, and Family pricing preview exists. Shared care-domain logic now defines Free/Plus/Family entitlement gates, and the mobile Plus screen shows included and locked features before checkout. | Add provider-backed checkout, entitlement enforcement at API/UI boundaries, grandfathering/trial policy, support/refund terms, and App Store subscription approval. |
 | Offline/Sync | Mobile care sync handles local/pending/failed status and retry separation. | Add durable outbox, conflict-safe state updates, sync dashboard, and recovery tests. |
 | Design | Warm brand assets and Phoenix art exist. Critical mobile actions now have screen-reader labels on Privacy, Premium, WoofGuide, and More. | Need full premium design system, motion spec, high-end screen polish, full accessibility pass, and Figma alignment. |
 | CI/QA | GitHub Actions verifies install, focused tests, typecheck, API/web builds, mobile Expo web export smoke, and can be manually dispatched if a push hook misses. Focused tests include static mobile readiness smoke for route registration, tabs, router links, launch-blocking safety copy, CI smoke wiring, and critical action accessibility labels. | Add native simulator/device smoke, API route tests, Playwright or simulator screenshot checks, full accessibility traversal, and visual regression where feasible. |
@@ -118,14 +119,14 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 ## Monetization Gaps
 
-Monetization is not implemented. Potential premium model:
+Monetization is not live because checkout is intentionally disabled. The current premium model and entitlement policy are:
 
-- Free: one dog, one household, basic logs, basic records.
-- Plus: multiple caregivers, reminders, reports, record documents, advanced health watch.
-- Pro: trainers/sitters/vets handoff templates, multi-dog, export history, priority AI actions.
-- Family/Team: household roles, multiple dogs, shared calendar, advanced reports.
+- Free: dog profile, basic logs, starter routines, and local care history.
+- Plus: advanced meal/diet tracking, Health Watch, records vault, Care Pass reports, WoofGuide reviewed drafts, and stored report history.
+- Family: household roles, shared routine board, caregiver handoffs, and family calendar.
+- Later add-ons: multiple dogs, generated PDFs, document storage, trainer/vet packs, priority AI actions, and partnerships.
 
-No payment implementation should start until product scope, privacy terms, and support obligations are clearer.
+No payment implementation should start until product scope, privacy terms, support/refund obligations, provider-backed deletion, and App Store subscription requirements are clearer. The current entitlement policy exists so checkout work can later enforce the same Free, Plus, and Family boundaries instead of inventing them in payment code.
 
 ## Autonomous Next-Task Queue
 

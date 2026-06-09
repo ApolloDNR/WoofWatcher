@@ -37,6 +37,7 @@ WoofWatcher can become a meaningful niche subscription business if it becomes th
 8. Multiple dogs.
 9. Report history and PDF artifacts.
 10. IN PROGRESS, first pass shipped 2026-06-08: App Store-ready privacy, export, account deletion, and support.
+11. DONE 2026-06-08: Free, Plus, and Family entitlement policy for current feature gates, visible in the mobile Plus screen while checkout remains disabled.
 
 ## Do Not Monetize Yet
 
@@ -44,10 +45,10 @@ Do not add real payment flows until privacy terms, provider-backed account delet
 
 ## Premium Preview Surface
 
-Status, 2026-06-08: An in-app WoofWatcher Plus preview/paywall surface now packages Free, Plus, and Family without enabling real payments. It explains advanced meals, household care sync, Health Watch, reports, records, WoofGuide drafting, and stored report history as paid-value pillars. WoofGuide now demonstrates that value through owner-reviewed meal log, reminder, vet-note, and Care Pass draft actions.
+Status, 2026-06-08: An in-app WoofWatcher Plus preview/paywall surface now packages Free, Plus, and Family without enabling real payments. It explains advanced meals, household care sync, Health Watch, reports, records, WoofGuide drafting, and stored report history as paid-value pillars. WoofGuide now demonstrates that value through owner-reviewed meal log, reminder, vet-note, and Care Pass draft actions. The Plus screen also shows the launch entitlement policy: what Free includes now and what stays locked until Plus or Family.
 
 ## Next Money Task
 
-Define launch policy and entitlement enforcement: what exactly is limited on Free, what Plus unlocks, what Family unlocks, how grandfathering works, and what support/refund terms are required before checkout.
+Next: decide grandfathering, trial rules, support/refund terms, and the exact checkout provider before enabling payment or subscription enforcement.
 
 Privacy status, 2026-06-08: Mobile now has owner care-data export and non-destructive deletion request preparation. Real checkout still waits for provider-backed deletion, storage retention rules, support/refund policy, and app-store subscription approval.

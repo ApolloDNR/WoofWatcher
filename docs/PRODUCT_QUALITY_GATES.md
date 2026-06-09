@@ -168,15 +168,16 @@ Current gaps:
 
 ## Gate 10: Business Readiness
 
-Status: Not passing.
+Status: In progress.
 
 Passing evidence:
 
 - Monetization options are documented in the release plan.
+- Free, Plus, and Family entitlement gates are defined in shared domain logic and visible on the mobile Plus screen before checkout is enabled.
 
 Current gaps:
 
-- Need Apollo decision on pricing, packaging, free tier, paid tier, and support scope.
+- Need Apollo decision on final pricing, grandfathering, trial rules, support scope, refund terms, and launch target.
 - Need legal/privacy terms before paid launch.
 
 ## Current CI Baseline

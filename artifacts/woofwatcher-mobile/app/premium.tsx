@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   deriveHealthWatch,
   derivePremiumPreview,
+  type PremiumFeatureGate,
   type PremiumPlan,
   type PremiumValueSignal,
 } from "@workspace/care-domain";
@@ -66,6 +67,8 @@ export default function PremiumScreen() {
 
   const recommendedPlan =
     preview.plans.find((plan) => plan.id === preview.recommendedPlanId) ?? preview.plans[1];
+  const includedEntitlements = preview.entitlements.included.slice(0, 3);
+  const lockedEntitlements = preview.entitlements.locked.slice(0, 5);
 
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(18)).current;
@@ -161,6 +164,39 @@ export default function PremiumScreen() {
             ))}
           </View>
 
+          <View style={[s.entitlementCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={s.entitlementTop}>
+              <View>
+                <Text style={[s.entitlementTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Launch entitlements</Text>
+                <Text style={[s.entitlementSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Current plan: Free
+                </Text>
+              </View>
+              <View style={[s.currentPlanPill, { backgroundColor: colors.background }]}>
+                <Text style={[s.currentPlanText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                  Policy
+                </Text>
+              </View>
+            </View>
+            <Text style={[s.entitlementNote, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+              {preview.entitlements.upgradeHeadline}
+            </Text>
+            <View style={s.entitlementColumns}>
+              <EntitlementList
+                title="Included now"
+                features={includedEntitlements}
+                locked={false}
+                colors={colors}
+              />
+              <EntitlementList
+                title="Locked until upgrade"
+                features={lockedEntitlements}
+                locked
+                colors={colors}
+              />
+            </View>
+          </View>
+
           <View style={s.actionRow}>
             <Pressable
               onPress={showLaunchChecklist}
@@ -185,6 +221,45 @@ export default function PremiumScreen() {
           </View>
         </Animated.View>
       </ScrollView>
+    </View>
+  );
+}
+
+function EntitlementList({
+  title,
+  features,
+  locked,
+  colors,
+}: {
+  title: string;
+  features: readonly PremiumFeatureGate[];
+  locked: boolean;
+  colors: ReturnType<typeof useColors>;
+}) {
+  return (
+    <View style={s.entitlementColumn}>
+      <Text style={[s.entitlementColumnTitle, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+        {title}
+      </Text>
+      {features.map((feature) => (
+        <View key={feature.key} style={s.entitlementRow}>
+          <View style={[s.entitlementIcon, { backgroundColor: locked ? colors.amber + "16" : colors.sage + "16" }]}>
+            <Ionicons
+              name={locked ? "lock-closed-outline" : "checkmark"}
+              size={14}
+              color={locked ? colors.amber : colors.sage}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.entitlementLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+              {feature.label}
+            </Text>
+            <Text style={[s.entitlementDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              {locked ? `${feature.requiredPlanId.toUpperCase()} - ${feature.detail}` : feature.detail}
+            </Text>
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
@@ -297,6 +372,20 @@ const s = StyleSheet.create({
   featureRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   featureText: { flex: 1, fontSize: 13.5, lineHeight: 18 },
   annualText: { fontSize: 12, marginTop: 14 },
+  entitlementCard: { borderWidth: 1, borderRadius: 20, padding: 16, marginTop: 14 },
+  entitlementTop: { flexDirection: "row", justifyContent: "space-between", gap: 12, alignItems: "flex-start" },
+  entitlementTitle: { fontSize: 22, letterSpacing: 0 },
+  entitlementSub: { fontSize: 12.5, marginTop: 3 },
+  currentPlanPill: { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
+  currentPlanText: { fontSize: 11.5, textTransform: "uppercase" },
+  entitlementNote: { fontSize: 13, lineHeight: 19, marginTop: 12 },
+  entitlementColumns: { gap: 14, marginTop: 16 },
+  entitlementColumn: { gap: 10 },
+  entitlementColumnTitle: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0.5 },
+  entitlementRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
+  entitlementIcon: { width: 27, height: 27, borderRadius: 10, alignItems: "center", justifyContent: "center", marginTop: 1 },
+  entitlementLabel: { fontSize: 13.5 },
+  entitlementDetail: { fontSize: 12, lineHeight: 17, marginTop: 2 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 22 },
   primaryBtn: { flex: 1, height: 52, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   primaryText: { color: "#FFFFFF", fontSize: 14.5 },

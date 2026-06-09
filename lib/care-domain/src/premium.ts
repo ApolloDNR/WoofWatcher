@@ -1,5 +1,21 @@
 export type PremiumPlanId = "free" | "plus" | "family";
 
+export type PremiumFeatureKey =
+  | "dog_profile"
+  | "basic_logs"
+  | "starter_routines"
+  | "local_history"
+  | "advanced_meals"
+  | "health_watch"
+  | "records_vault"
+  | "care_reports"
+  | "woofguide_drafts"
+  | "report_history"
+  | "household_roles"
+  | "shared_routines"
+  | "caregiver_handoffs"
+  | "family_calendar";
+
 export interface PremiumPlan {
   id: PremiumPlanId;
   name: string;
@@ -12,6 +28,7 @@ export interface PremiumPlan {
 }
 
 export interface PremiumPreviewInput {
+  activePlanId?: PremiumPlanId | null;
   caregiverCount?: number | null;
   routineCount?: number | null;
   reportHistoryCount?: number | null;
@@ -30,8 +47,28 @@ export interface PremiumPreview {
   plans: readonly PremiumPlan[];
   recommendedPlanId: PremiumPlanId;
   valueSignals: PremiumValueSignal[];
+  entitlements: PremiumEntitlementSummary;
   checkoutEnabled: boolean;
   launchNotice: string;
+}
+
+export interface PremiumFeatureEntitlement {
+  key: PremiumFeatureKey;
+  label: string;
+  detail: string;
+  requiredPlanId: PremiumPlanId;
+}
+
+export interface PremiumFeatureGate extends PremiumFeatureEntitlement {
+  unlocked: boolean;
+}
+
+export interface PremiumEntitlementSummary {
+  activePlanId: PremiumPlanId;
+  included: readonly PremiumFeatureGate[];
+  locked: readonly PremiumFeatureGate[];
+  nextPlanId: PremiumPlanId | null;
+  upgradeHeadline: string;
 }
 
 export const PREMIUM_PLANS: readonly PremiumPlan[] = [
@@ -67,11 +104,145 @@ export const PREMIUM_PLANS: readonly PremiumPlan[] = [
   },
 ];
 
+export const PREMIUM_FEATURES: readonly PremiumFeatureEntitlement[] = [
+  {
+    key: "dog_profile",
+    label: "Dog profile",
+    detail: "Core dog identity, care focus, weight, vet boundary, and credential fallback fields.",
+    requiredPlanId: "free",
+  },
+  {
+    key: "basic_logs",
+    label: "Basic care logs",
+    detail: "Meal, walk, potty, training, symptoms, medication, grooming, notes, and sticky notes.",
+    requiredPlanId: "free",
+  },
+  {
+    key: "starter_routines",
+    label: "Starter routines",
+    detail: "Basic expected-care routines that logs can satisfy.",
+    requiredPlanId: "free",
+  },
+  {
+    key: "local_history",
+    label: "Local care history",
+    detail: "Local-first timeline history and owner-controlled export.",
+    requiredPlanId: "free",
+  },
+  {
+    key: "advanced_meals",
+    label: "Advanced meal and diet tracking",
+    detail: "Expected, served, eaten, skipped, partial, and daily diet progress.",
+    requiredPlanId: "plus",
+  },
+  {
+    key: "health_watch",
+    label: "Health Watch pattern summaries",
+    detail: "Non-diagnostic appetite, stool, vomit, anxiety, and red-flag organization.",
+    requiredPlanId: "plus",
+  },
+  {
+    key: "records_vault",
+    label: "Records vault",
+    detail: "Vaccine, vet, insurance, microchip, receipt, and document metadata.",
+    requiredPlanId: "plus",
+  },
+  {
+    key: "care_reports",
+    label: "Care Pass reports",
+    detail: "Sitter, trainer, caregiver, and vet handoff reports with health pattern context.",
+    requiredPlanId: "plus",
+  },
+  {
+    key: "woofguide_drafts",
+    label: "WoofGuide reviewed drafts",
+    detail: "Owner-reviewed meal logs, reminders, vet notes, and Care Pass next steps.",
+    requiredPlanId: "plus",
+  },
+  {
+    key: "report_history",
+    label: "Stored report history",
+    detail: "Saved Care Pass snapshots for resend and household review.",
+    requiredPlanId: "plus",
+  },
+  {
+    key: "household_roles",
+    label: "Household roles",
+    detail: "Owner and caregiver roles with clearer responsibility boundaries.",
+    requiredPlanId: "family",
+  },
+  {
+    key: "shared_routines",
+    label: "Shared routine board",
+    detail: "Household-wide routine ownership, completion, skipped, and partial state.",
+    requiredPlanId: "family",
+  },
+  {
+    key: "caregiver_handoffs",
+    label: "Caregiver handoffs",
+    detail: "Shared sitter, family, trainer, and walker handoff workflows.",
+    requiredPlanId: "family",
+  },
+  {
+    key: "family_calendar",
+    label: "Family calendar",
+    detail: "Shared care calendar for multiple caregivers and upcoming obligations.",
+    requiredPlanId: "family",
+  },
+];
+
+const PLAN_RANK: Record<PremiumPlanId, number> = {
+  free: 0,
+  plus: 1,
+  family: 2,
+};
+
+function normalizePlanId(planId: PremiumPlanId | null | undefined): PremiumPlanId {
+  return planId === "plus" || planId === "family" ? planId : "free";
+}
+
+function planAllows(activePlanId: PremiumPlanId, requiredPlanId: PremiumPlanId): boolean {
+  return PLAN_RANK[activePlanId] >= PLAN_RANK[requiredPlanId];
+}
+
+export function isPremiumFeatureUnlocked(
+  activePlanId: PremiumPlanId | null | undefined,
+  featureKey: PremiumFeatureKey,
+): boolean {
+  const feature = PREMIUM_FEATURES.find((item) => item.key === featureKey);
+  return feature ? planAllows(normalizePlanId(activePlanId), feature.requiredPlanId) : false;
+}
+
+export function derivePremiumEntitlements(
+  activePlanId: PremiumPlanId | null | undefined = "free",
+): PremiumEntitlementSummary {
+  const planId = normalizePlanId(activePlanId);
+  const gates = PREMIUM_FEATURES.map((feature) => ({
+    ...feature,
+    unlocked: planAllows(planId, feature.requiredPlanId),
+  }));
+  const included = gates.filter((feature) => feature.unlocked);
+  const locked = gates.filter((feature) => !feature.unlocked);
+  const nextPlanId: PremiumPlanId | null =
+    planId === "free" ? "plus" : planId === "plus" ? "family" : null;
+
+  return {
+    activePlanId: planId,
+    included,
+    locked,
+    nextPlanId,
+    upgradeHeadline: nextPlanId
+      ? `Upgrade to ${PREMIUM_PLANS.find((plan) => plan.id === nextPlanId)?.name ?? nextPlanId} to unlock ${locked.length} more care tools.`
+      : "All current premium care tools are unlocked for this plan.",
+  };
+}
+
 function count(value: number | null | undefined): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0;
 }
 
 export function derivePremiumPreview(input: PremiumPreviewInput = {}): PremiumPreview {
+  const activePlanId = normalizePlanId(input.activePlanId);
   const caregiverCount = count(input.caregiverCount);
   const routineCount = count(input.routineCount);
   const reportHistoryCount = count(input.reportHistoryCount);
@@ -119,6 +290,7 @@ export function derivePremiumPreview(input: PremiumPreviewInput = {}): PremiumPr
     plans: PREMIUM_PLANS,
     recommendedPlanId,
     valueSignals: signals,
+    entitlements: derivePremiumEntitlements(activePlanId),
     checkoutEnabled,
     launchNotice:
       "Preview only: payments stay disabled until privacy, support, refund, and subscription-launch obligations are ready.",
