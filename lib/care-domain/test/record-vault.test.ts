@@ -1,7 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildPetCredential, deriveRecordReminders, getRecordDueStatus, summarizeRecordVault } from "../src/index.ts";
+import {
+  buildPetCredential,
+  deriveRecordReminders,
+  getPetCredentialPrintView,
+  getRecordDueStatus,
+  summarizeRecordVault,
+} from "../src/index.ts";
 
 const records = [
   { id: "rabies", type: "vaccine", title: "Rabies", due: "Due May 2027", note: "Certificate on file" },
@@ -69,6 +75,36 @@ test("uses dog profile credential fields when records are not uploaded yet", () 
   assert.equal(credential.emergencyContact, "Apollo - 555-0100");
   assert.match(credential.message, /Primary vet: Alameda Wellness Vet/);
   assert.match(credential.message, /Emergency contact: Apollo - 555-0100/);
+});
+
+test("renders a print-ready dog ID credential with escaped details", () => {
+  const credential = buildPetCredential({
+    profile: {
+      name: "Phoenix <script>",
+      breed: "German Shepherd Mix",
+      careFocus: "Anxiety-aware feeding",
+      weight: { current: 68, unit: "lb" },
+      microchipNumber: "985112003004551",
+      insuranceProvider: "Lemonade",
+      insurancePolicy: "WW-1042",
+      primaryVet: "Alameda Wellness Vet",
+      emergencyContact: "Apollo - 555-0100",
+      vetBoundary: "For caregiver and veterinarian review.",
+    },
+    caregivers: [{ name: "Apollo", role: "Owner" }],
+    generatedAt: "2026-06-06T18:00:00.000Z",
+  });
+
+  const printable = getPetCredentialPrintView(credential);
+
+  assert.equal(printable.fileName, "phoenix-script-dog-id-2026-06-06.html");
+  assert.match(printable.html, /^<!doctype html>/i);
+  assert.match(printable.html, /@media print/);
+  assert.match(printable.html, /Phoenix &lt;script&gt; Dog ID/);
+  assert.match(printable.html, /985112003004551/);
+  assert.match(printable.html, /Lemonade - WW-1042/);
+  assert.match(printable.html, /For caregiver and veterinarian review/);
+  assert.doesNotMatch(printable.html, /Phoenix <script>/);
 });
 
 test("classifies date-backed records by due status", () => {

@@ -35,6 +35,7 @@ import {
   deriveHealthWatch,
   deriveRecordReminders,
   getCarePassArtifactPrintView,
+  getPetCredentialPrintView,
   getRecordDueStatus,
   normalizeCareEventType,
   summarizeRecordVault,
@@ -394,6 +395,14 @@ export default function RecordsScreen() {
     );
   };
 
+  const sharePrintableCredential = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const printable = getPetCredentialPrintView(credential);
+    Share.share({ message: printable.html, title: printable.fileName }).catch(() =>
+      Alert.alert(printable.fileName, printable.html),
+    );
+  };
+
   const buildCarePassFor = (audience: CarePassAudience) =>
     buildCarePass({
       audience,
@@ -553,10 +562,28 @@ export default function RecordsScreen() {
           {/* Dog ID card */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{credential.name} ID Card</Text>
-            <Pressable onPress={shareCredential} hitSlop={8} style={s.shareInline}>
-              <Ionicons name="share-outline" size={15} color={colors.copper} />
-              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
-            </Pressable>
+            <View style={s.shareInlineGroup}>
+              <Pressable
+                onPress={shareCredential}
+                accessibilityRole="button"
+                accessibilityLabel="Share dog ID card"
+                hitSlop={8}
+                style={s.shareInline}
+              >
+                <Ionicons name="share-outline" size={15} color={colors.copper} />
+                <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
+              </Pressable>
+              <Pressable
+                onPress={sharePrintableCredential}
+                accessibilityRole="button"
+                accessibilityLabel="Share printable dog ID source"
+                hitSlop={8}
+                style={s.shareInline}
+              >
+                <Ionicons name="print-outline" size={15} color={colors.copper} />
+                <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Print</Text>
+              </Pressable>
+            </View>
           </View>
           <View style={[s.idCard, { backgroundColor: colors.navy, shadowColor: colors.midnight }]}>
             <View style={s.idCardTop}>
@@ -1282,6 +1309,7 @@ const s = StyleSheet.create({
   sectionTitle: { fontSize: 20, letterSpacing: -0.2 },
   sectionLink: { fontSize: 14 },
   shareInline: { flexDirection: "row", alignItems: "center", gap: 4 },
+  shareInlineGroup: { flexDirection: "row", alignItems: "center", gap: 14 },
 
   idCard: {
     borderRadius: 22,

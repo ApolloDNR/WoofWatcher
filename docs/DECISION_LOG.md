@@ -132,6 +132,16 @@ Owner: Codex.
 
 Revisit trigger: Record storage becomes authoritative enough to require verified document-backed credential fields.
 
+### 2026-06-09: Dog ID Credentials Produce Printable Source Before Image/PDF Export
+
+Decision: The Records Dog ID can produce escaped print-ready HTML with a stable file name and separate share action before WoofWatcher adds image or PDF credential export.
+
+Reason: Apollo wanted a useful credential/certificate for Phoenix. Printable HTML gives the household a safe portable credential source now, while real image/PDF generation and document storage remain larger production tasks.
+
+Owner: Codex.
+
+Revisit trigger: Credential image export, native PDF generation, or storage-backed official record verification becomes active release work.
+
 ### 2026-06-08: Log Details Stay In The Log Workflow
 
 Decision: Entry details, sticky notes, sync state, edit/delete actions, and entry-level handoff sharing are implemented as a Log screen bottom sheet rather than a separate route.

@@ -102,6 +102,11 @@ export interface PetCredential {
   message: string;
 }
 
+export interface PetCredentialPrintView {
+  fileName: string;
+  html: string;
+}
+
 const SECTION_DEFS: { kind: RecordKind; label: string; critical?: boolean }[] = [
   { kind: "vaccine", label: "Vaccines", critical: true },
   { kind: "vet", label: "Vet Visits" },
@@ -115,6 +120,42 @@ const SECTION_DEFS: { kind: RecordKind; label: string; critical?: boolean }[] = 
 
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function escapeHtml(value: unknown): string {
+  return clean(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeHtmlBlock(value: unknown): string {
+  return String(value ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function slugify(value: string): string {
+  return clean(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "dog";
+}
+
+function dateStamp(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "saved";
+  return parsed.toISOString().slice(0, 10);
 }
 
 function recordKind(type: string): RecordKind {
@@ -411,5 +452,161 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
     vaccines,
     generatedAt,
     message,
+  };
+}
+
+export function getPetCredentialPrintView(credential: PetCredential): PetCredentialPrintView {
+  const rows = [
+    ["Breed", credential.breed],
+    ["Weight", credential.weight],
+    ["Care focus", credential.careFocus],
+    ["Primary caregiver", credential.primaryCaregiver],
+    ["Primary vet", credential.primaryVet],
+    ["Emergency contact", credential.emergencyContact],
+    ["Microchip", credential.microchip],
+    ["Insurance", credential.insurance],
+    ["Vaccines", credential.vaccines],
+  ];
+
+  const rowHtml = rows
+    .map(([label, value]) => `
+        <div class="field">
+          <div class="label">${escapeHtml(label)}</div>
+          <div class="value">${escapeHtml(value)}</div>
+        </div>`)
+    .join("\n");
+
+  return {
+    fileName: `${slugify(credential.name)}-dog-id-${dateStamp(credential.generatedAt)}.html`,
+    html: `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(credential.name)} Dog ID</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1a2332;
+      --muted: #5f6f63;
+      --line: #d4cfc4;
+      --wash: #f7f5f1;
+      --navy: #0f1f33;
+      --accent: #2e5846;
+      --copper: #c87a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--wash);
+      color: var(--ink);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 40px 28px;
+    }
+    .card {
+      overflow: hidden;
+      border-radius: 24px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 50px rgba(26, 35, 50, 0.12);
+    }
+    header {
+      background: var(--navy);
+      color: #ffffff;
+      padding: 28px;
+    }
+    .brand {
+      color: var(--copper);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 34px;
+      line-height: 1.08;
+      margin: 0;
+    }
+    .generated {
+      color: #d4cfc4;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+    }
+    .field {
+      min-height: 86px;
+      padding: 16px;
+      background: #ffffff;
+    }
+    .label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .value {
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 650;
+    }
+    .notes {
+      padding: 18px;
+      background: #ffffff;
+      border-top: 1px solid var(--line);
+    }
+    pre {
+      white-space: pre-wrap;
+      margin: 0;
+      color: var(--muted);
+      font: 12.5px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 11.5px;
+      padding: 18px 0 0;
+    }
+    @media print {
+      body { background: #ffffff; }
+      main { max-width: none; padding: 18px; }
+      .card { box-shadow: none; border-radius: 16px; }
+      .field { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <header>
+        <div class="brand">WoofWatcher Dog ID</div>
+        <h1>${escapeHtml(credential.name)} Dog ID</h1>
+        <div class="generated">Generated ${escapeHtml(shortDate(credential.generatedAt))}</div>
+      </header>
+      <section class="grid">
+${rowHtml}
+      </section>
+      <section class="notes">
+        <pre>${escapeHtmlBlock(credential.message)}</pre>
+      </section>
+    </section>
+    <footer>
+      WoofWatcher organizes owner-reported credential context for handoff and veterinarian review. It does not replace veterinary care or official records.
+    </footer>
+  </main>
+</body>
+</html>`,
   };
 }

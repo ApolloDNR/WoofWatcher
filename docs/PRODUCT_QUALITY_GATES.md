@@ -29,7 +29,7 @@ Passing evidence:
 - Quick Log and Full Log cover all required care event types.
 - Calendar/routines can be assigned and completed.
 - Records, handoff, reports, and WoofGuide route to useful workflows.
-- Dog profile credential fields feed the Records ID card and share text.
+- Dog profile credential fields feed the Records ID card, share text, and escaped print-ready source.
 - Dedicated Setup route can save dog profile, diet baseline, starter routine, and household caregiver basics in one flow.
 - Log entries have a detail sheet with sticky notes, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Care Pass reports can be previewed by audience before sharing.
@@ -50,7 +50,7 @@ Status: Partially passing.
 
 Passing evidence:
 
-- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, record due-status, routine board, sticky notes, and WoofGuide action cards.
+- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:

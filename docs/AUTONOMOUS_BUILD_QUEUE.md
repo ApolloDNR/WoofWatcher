@@ -23,6 +23,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 15. Premium design system and motion pass: component tokens, high-end screen polish, avatar state assets, transition rules, and accessibility review.
 16. DONE 2026-06-09: Care Pass report artifacts now include escaped print-ready HTML and stable file names for future PDF generation, native sharing, and server-backed storage.
 17. DONE 2026-06-09: Records Report History now shows print-ready/restored Care Pass metadata, exposes separate resend and printable-source share actions, and keeps older saved report artifacts printable through escaped fallback HTML.
+18. DONE 2026-06-09: Dog ID credentials now have escaped print-ready HTML, stable file names, and separate Records actions for sharing the normal ID card text or printable source.
 
 ## Cadence
 

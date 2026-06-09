@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-09:
 
-- PASS: 88 focused tests with the command above.
+- PASS: 90 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -29,7 +29,7 @@ Latest local evidence, 2026-06-09:
 - Care Pass audience checklists and Health Pattern Review next steps.
 - Record vault and due status.
 - Record reminders for expired, due-soon, missing-critical, and reference-only records.
-- Pet credential fallbacks.
+- Pet credential fallbacks, escaped print-ready Dog ID credential HTML, and Records printable Dog ID sharing.
 - Sticky notes.
 - WoofGuide deterministic actions and owner-reviewed draft payloads for meal logs, record reminders, vet notes, and Care Pass review.
 - Setup wizard.
@@ -37,7 +37,7 @@ Latest local evidence, 2026-06-09:
 - Premium entitlement policy for Free, Plus, and Family feature gates before checkout is enabled.
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
-- Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, Records printable report actions, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
+- Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, Records printable report and Dog ID actions, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
 - Expo app identity smoke for release-grade slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
 - CI `build:ci` runs a mobile Expo web export smoke and verifies emitted HTML/JavaScript assets.
 
@@ -52,7 +52,7 @@ Latest local evidence, 2026-06-09:
 7. Confirm a private meal log stays out of shared household routine status.
 8. Add sticky note to a log.
 9. Add vaccine, insurance, microchip, vet, receipt, and document records.
-10. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values.
+10. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.
 11. Preview and share sitter/vet/trainer/caregiver Care Pass.
 12. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
 13. Confirm report history stores shared Care Pass with printable export metadata, separate resend action, and printable-source share action.
