@@ -129,3 +129,17 @@ test("shows premium entitlement policy before checkout is enabled", () => {
   assert.match(premium, /Current plan: Free/);
   assert.match(premium, /Locked until upgrade/);
 });
+
+test("keeps Expo app identity release-grade", () => {
+  const appConfig = JSON.parse(
+    readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "app.json"), "utf8"),
+  );
+  const expo = appConfig.expo;
+
+  assert.equal(expo.name, "WoofWatcher");
+  assert.equal(expo.slug, "woofwatcher");
+  assert.equal(expo.scheme, "woofwatcher");
+  assert.equal(expo.ios.bundleIdentifier, "com.pegasusdreamscapes.woofwatcher");
+  assert.equal(expo.android.package, "com.pegasusdreamscapes.woofwatcher");
+  assert.doesNotMatch(JSON.stringify(expo), /replit/i);
+});

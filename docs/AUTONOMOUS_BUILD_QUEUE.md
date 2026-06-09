@@ -18,7 +18,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 10. DONE 2026-06-08: Privacy/account safety first pass now includes owner data export, deletion request preparation, AI disclosure, and document/payment safety gates.
 11. IN PROGRESS, CI Expo web export smoke and critical accessibility label smoke shipped 2026-06-08: Mobile QA now checks route registration, tabs, router links, launch-blocking safety copy, an Expo web export bundle, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions. Next: simulator/device smoke, full accessibility pass, visual regression, App Store prep.
 12. DONE 2026-06-08: Premium entitlement policy now defines Free, Plus, and Family feature gates in shared domain logic, keeps checkout disabled, and shows the policy on the mobile Plus screen before payments are enabled.
-13. Premium design system and motion pass.
+13. DONE 2026-06-08: Expo app identity now uses release-grade WoofWatcher slug/scheme plus Pegasus Dreamscapes iOS bundle and Android package ids instead of Replit placeholders.
+14. Premium design system and motion pass.
 
 ## Cadence
 

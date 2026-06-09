@@ -150,12 +150,13 @@ Current gaps:
 
 ## Gate 9: Deployment And Operations
 
-Status: Not passing.
+Status: In progress.
 
 Passing evidence:
 
 - Environment docs exist.
 - CI exists.
+- Expo app identity uses release-grade WoofWatcher slug/scheme and Pegasus Dreamscapes native package identifiers instead of generated Replit placeholders.
 
 Current gaps:
 

@@ -252,6 +252,16 @@ Owner: Codex.
 
 Revisit trigger: Native simulator/device smoke or screenshot automation becomes available in CI.
 
+### 2026-06-08: Mobile App Identity Uses Pegasus Dreamscapes Package IDs
+
+Decision: Expo app identity uses `woofwatcher` for slug and URL scheme, `com.pegasusdreamscapes.woofwatcher` for iOS bundle identifier, and `com.pegasusdreamscapes.woofwatcher` for Android package.
+
+Reason: Replit-generated placeholders are not release-grade for App Store or Play Store preparation. The app identity should be stable, brand-owned, and protected by static readiness tests before EAS or store submission work begins.
+
+Owner: Codex, pending Apollo confirmation before actual store submission.
+
+Revisit trigger: Apollo chooses a different legal publisher, domain, app-store account, or bundle/package naming convention before submission.
+
 ### 2026-06-08: Critical Mobile Actions Need Screen Reader Labels
 
 Decision: Critical mobile actions on Privacy, Premium, WoofGuide, and More must expose explicit screen-reader labels and stay covered by focused static smoke.

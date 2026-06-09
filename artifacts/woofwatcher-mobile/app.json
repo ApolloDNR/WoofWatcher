@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "WoofWatcher",
-    "slug": "woofwatcher-mobile",
+    "slug": "woofwatcher",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
-    "scheme": "woofwatcher-mobile",
+    "scheme": "woofwatcher",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -15,21 +15,16 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.replit.woofwatchermobile"
+      "bundleIdentifier": "com.pegasusdreamscapes.woofwatcher"
     },
     "android": {
-      "package": "com.replit.woofwatchermobile"
+      "package": "com.pegasusdreamscapes.woofwatcher"
     },
     "web": {
       "favicon": "./assets/images/app-icon.png"
     },
     "plugins": [
-      [
-        "expo-router",
-        {
-          "origin": "https://replit.com/"
-        }
-      ],
+      "expo-router",
       "expo-font",
       "expo-web-browser"
     ],

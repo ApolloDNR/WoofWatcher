@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-08:
 
-- PASS: 76 focused tests with the command above.
+- PASS: 77 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -37,6 +37,7 @@ Latest local evidence, 2026-06-08:
 - Premium entitlement policy for Free, Plus, and Family feature gates before checkout is enabled.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
 - Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
+- Expo app identity smoke for release-grade slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
 - CI `build:ci` runs a mobile Expo web export smoke and verifies emitted HTML/JavaScript assets.
 
 ## Manual Mobile QA

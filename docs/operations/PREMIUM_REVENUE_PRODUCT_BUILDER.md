@@ -100,4 +100,4 @@ Stop only for:
 
 ## Current Next Slice
 
-As of 2026-06-08, the current queue points to mobile runtime QA and premium polish: native simulator/device smoke, full accessibility pass, visual regression, App Store prep, and premium design/motion. CI-safe static route/safety smoke, critical action screen-reader label smoke, Expo web export smoke, and Free/Plus/Family entitlement policy exist, but native rendering, screen-reader traversal, screenshots, and real checkout remain blocked.
+As of 2026-06-08, the current queue points to mobile runtime QA and premium polish: native simulator/device smoke, full accessibility pass, visual regression, App Store prep, and premium design/motion. CI-safe static route/safety smoke, critical action screen-reader label smoke, Expo web export smoke, Free/Plus/Family entitlement policy, and release-grade Expo app identity exist, but native rendering, screen-reader traversal, screenshots, EAS/App Store credentials, and real checkout remain blocked.
