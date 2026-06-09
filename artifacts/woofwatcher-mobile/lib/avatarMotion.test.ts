@@ -2,7 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { deriveAvatarMotion } from "./avatarMotion.ts";
 
-const NOW = new Date("2026-06-08T15:00:00.000Z").getTime();
+function localTime(hour: number, minute = 0): number {
+  return new Date(2026, 5, 8, hour, minute, 0, 0).getTime();
+}
+
+const NOW = localTime(8);
 
 function iso(minutesOffset: number): string {
   return new Date(NOW + minutesOffset * 60_000).toISOString();
@@ -68,7 +72,7 @@ test("turns a recent visible meal log into eating motion", () => {
 
 test("perks up when a walk routine is coming soon", () => {
   const motion = deriveAvatarMotion({
-    now: new Date("2026-06-08T15:45:00.000Z").getTime(),
+    now: localTime(8, 45),
     entries: [],
     routines: [
       { id: "walk", label: "Morning walk", type: "walk", time: "9:00 AM", owner: "Emma" },
@@ -83,7 +87,7 @@ test("perks up when a walk routine is coming soon", () => {
 
 test("shows bored attention motion for overdue activity routines", () => {
   const motion = deriveAvatarMotion({
-    now: new Date("2026-06-08T17:45:00.000Z").getTime(),
+    now: localTime(10, 45),
     entries: [],
     routines: [
       { id: "walk", label: "Morning walk", type: "walk", time: "9:00 AM", owner: "Emma" },
@@ -98,7 +102,7 @@ test("shows bored attention motion for overdue activity routines", () => {
 
 test("uses sleeping motion during quiet hours when no health signal is active", () => {
   const motion = deriveAvatarMotion({
-    now: new Date("2026-06-08T06:30:00.000Z").getTime(),
+    now: localTime(23, 30),
     entries: [],
     routines: [],
   });
