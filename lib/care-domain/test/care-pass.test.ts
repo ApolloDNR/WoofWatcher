@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildCarePass, createCarePassArtifact } from "../src/index.ts";
+import { buildCarePass, createCarePassArtifact, renderCarePassPrintHtml } from "../src/index.ts";
 
 process.env.TZ = "America/Los_Angeles";
 
@@ -125,4 +125,27 @@ test("creates a stable report artifact snapshot from a care pass", () => {
   assert.equal(artifact.summary, pass.summary);
   assert.equal(artifact.message, pass.message);
   assert.deepEqual(artifact.sectionTitles, pass.sections.map((section) => section.title));
+});
+
+test("renders a print-ready care pass document with escaped care content", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "vet",
+    profile: {
+      ...baseInput().profile,
+      name: "Phoenix <script>",
+    },
+  });
+
+  const html = renderCarePassPrintHtml(pass);
+  const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
+
+  assert.match(html, /^<!doctype html>/i);
+  assert.match(html, /@media print/);
+  assert.match(html, /Phoenix &lt;script&gt; Vet Care Pass/);
+  assert.doesNotMatch(html, /Phoenix <script>/);
+  assert.match(html, /Health Pattern Review/);
+  assert.match(html, /This is not a diagnosis/);
+  assert.equal(artifact.printFileName, "phoenix-script-vet-care-pass-2026-06-08.html");
+  assert.equal(artifact.printHtml, html);
 });

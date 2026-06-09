@@ -69,6 +69,8 @@ export interface CarePassArtifact {
   summary: string;
   sectionTitles: string[];
   message: string;
+  printFileName: string;
+  printHtml: string;
 }
 
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
@@ -80,6 +82,23 @@ const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
 
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function escapeHtml(value: unknown): string {
+  return clean(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function slugify(value: string): string {
+  return clean(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "care-pass";
 }
 
 function notEmpty(value: string): boolean {
@@ -165,6 +184,126 @@ function renderMessage(pass: Omit<CarePass, "message">): string {
     ]),
   ];
   return parts.join("\n").trim();
+}
+
+export function renderCarePassPrintHtml(pass: CarePass): string {
+  const sections = pass.sections
+    .map((item) => `
+      <section class="section">
+        <h2>${escapeHtml(item.title)}</h2>
+        <ul>
+          ${item.lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("\n          ")}
+        </ul>
+      </section>`)
+    .join("\n");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(pass.title)}</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1a2332;
+      --muted: #5f6f63;
+      --line: #d4cfc4;
+      --wash: #f7f5f1;
+      --accent: #2e5846;
+      --copper: #c87a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--wash);
+      color: var(--ink);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.48;
+    }
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 40px 32px;
+      background: #ffffff;
+      min-height: 100vh;
+    }
+    header {
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+    .brand {
+      color: var(--copper);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 34px;
+      line-height: 1.08;
+      margin: 0;
+    }
+    .summary {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 10px 0 0;
+    }
+    .generated {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 6px;
+    }
+    .section {
+      break-inside: avoid;
+      border-bottom: 1px solid var(--line);
+      padding: 16px 0;
+    }
+    h2 {
+      color: var(--accent);
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      margin: 0 0 8px;
+    }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    li {
+      margin: 5px 0;
+      font-size: 13.5px;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 11.5px;
+      padding-top: 18px;
+    }
+    @media print {
+      body { background: #ffffff; }
+      main { max-width: none; padding: 24px; }
+      header { margin-bottom: 16px; }
+      .section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">WoofWatcher Care Pass</div>
+      <h1>${escapeHtml(pass.title)}</h1>
+      <p class="summary">${escapeHtml(pass.summary)}</p>
+      <div class="generated">Generated ${escapeHtml(pass.generatedAt)}</div>
+    </header>
+${sections}
+    <footer>
+      WoofWatcher organizes owner-reported care context for handoff and veterinarian review. It does not diagnose or replace veterinary care.
+    </footer>
+  </main>
+</body>
+</html>`;
 }
 
 export function buildCarePass(input: CarePassInput): CarePass {
@@ -275,6 +414,7 @@ export function createCarePassArtifact(
   createdAt: string = new Date().toISOString(),
 ): CarePassArtifact {
   const safeStamp = clean(createdAt).replace(/[^0-9A-Za-z]+/g, "-").replace(/^-|-$/g, "");
+  const dateStamp = new Date(createdAt).toISOString().slice(0, 10);
   return {
     id: `care_pass_${pass.audience}_${safeStamp}`,
     kind: "care_pass",
@@ -285,5 +425,7 @@ export function createCarePassArtifact(
     summary: pass.summary,
     sectionTitles: pass.sections.map((section) => section.title),
     message: pass.message,
+    printFileName: `${slugify(pass.title)}-${dateStamp}.html`,
+    printHtml: renderCarePassPrintHtml(pass),
   };
 }

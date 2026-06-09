@@ -202,6 +202,16 @@ Owner: Codex.
 
 Revisit trigger: PDF generation, report storage backend, or audit/export requirements become active release work.
 
+### 2026-06-09: Care Pass Artifacts Store Print-Ready HTML Before Binary PDFs
+
+Decision: Care Pass artifacts include escaped print-ready HTML and a stable file name before WoofWatcher adds binary PDF generation.
+
+Reason: Owners need reports that can become printable or downloadable artifacts, but native PDF generation and server-backed storage require a larger export pipeline. HTML gives the app a tested, safe, portable source payload now.
+
+Owner: Codex.
+
+Revisit trigger: Native PDF generation, Vercel/server rendering, or storage-backed report artifacts become active release work.
+
 ### 2026-06-08: Household-Visible Logs Drive Routine Status
 
 Decision: Routine status is satisfied by matching household-visible logs. Meal logs can record complete, partial, or skipped outcomes, and private logs stay out of shared household routine status.

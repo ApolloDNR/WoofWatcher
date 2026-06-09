@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-08:
 
-- PASS: 84 focused tests with the command above.
+- PASS: 85 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -25,7 +25,7 @@ Latest local evidence, 2026-06-08:
 - Home Quick Log routine matching and meal detail enrichment.
 - Health Watch signals and medical boundary.
 - Health Watch pattern cards with evidence, owner next steps, and steady-state behavior.
-- Care Pass generation and report artifacts.
+- Care Pass generation, report artifacts, and print-ready escaped HTML payloads for future PDF/export flows.
 - Care Pass audience checklists and Health Pattern Review next steps.
 - Record vault and due status.
 - Record reminders for expired, due-soon, missing-critical, and reference-only records.
@@ -55,7 +55,7 @@ Latest local evidence, 2026-06-08:
 10. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values.
 11. Preview and share sitter/vet/trainer/caregiver Care Pass.
 12. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
-13. Confirm report history stores shared Care Pass.
+13. Confirm report history stores shared Care Pass with printable export metadata.
 14. Ask WoofGuide about recent changes and verify non-diagnostic wording.
 15. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
 16. Open Privacy & Safety from More, share the care-data export, and confirm it includes care data counts without auth/session tokens.

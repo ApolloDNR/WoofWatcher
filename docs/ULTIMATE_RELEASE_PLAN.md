@@ -48,7 +48,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Sticky Notes | Domain tests cover sticky note append/sanitize behavior. Mobile Log can attach multiple sticky notes to existing logs, show them in timeline/detail views, and include them in entry handoff text. | Add richer sticky-note colors, pinning, and report filtering. |
 | Routines/Reminders | Routine board domain logic exists; calendar UI has assignment/completion concepts; first-run setup can create a starter routine with owner assignment. | Add reminder notifications, recurring rules, missed routine nudges, recurring setup polish, and owner load balancing. |
 | Records | Domain has record vault, pet credential summary, due-status logic, and record reminders for expired, due-soon, and missing-critical records. Mobile Records includes a dog ID card, due/current/reference badges, reminder rows, and profile-level microchip, insurance, vet, and emergency-contact fallbacks before uploaded records exist. Privacy & Safety makes document storage rules visible before upload is enabled. | Add document upload/storage, richer receipt capture, server reminders for expiring records, and credential card image/PDF export. |
-| Handoff/Reports | Domain supports care pass and handoff summaries. Mobile Records previews sitter, vet, trainer, and caregiver Care Pass sections before sharing, stores shared Care Pass artifacts in report history, and Care Pass exports include audience checklists plus Health Pattern Review next steps. | Add generated PDF artifacts, print layout, server-backed report storage, and richer audience templates. |
+| Handoff/Reports | Domain supports care pass and handoff summaries. Mobile Records previews sitter, vet, trainer, and caregiver Care Pass sections before sharing, stores shared Care Pass artifacts in report history, and Care Pass exports include audience checklists plus Health Pattern Review next steps. Care Pass artifacts now include escaped print-ready HTML and stable file names for future PDF/export flows. | Add binary PDF generation, native export/download, server-backed report storage, and richer audience templates. |
 | WoofGuide | API routes and mobile WoofGuide screen exist. Mobile now shows deterministic suggested action cards and owner-reviewed drafts for missing meal logs, record reminders, vet notes, and Care Pass review. | Add provider-backed source citations, report-draft persistence, permission-aware assistant writes, and stronger audit history. |
 | Monetization | Free, Plus, and Family pricing preview exists. Shared care-domain logic now defines Free/Plus/Family entitlement gates, and the mobile Plus screen shows included and locked features before checkout. | Add provider-backed checkout, entitlement enforcement at API/UI boundaries, grandfathering/trial policy, support/refund terms, and App Store subscription approval. |
 | Offline/Sync | Mobile care sync handles local/pending/failed status and retry separation. | Add durable outbox, conflict-safe state updates, sync dashboard, and recovery tests. |
@@ -63,7 +63,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 4. Durable offline outbox and conflict handling for care state edits.
 5. Edit/delete audit policy for care logs.
 6. Records document upload/storage, server reminders for expiring records, and credential card image/PDF export.
-7. Generated PDF artifacts, print layout, and server-backed report storage for vet, sitter, trainer, and household review.
+7. Binary PDF artifacts, native export/download, and server-backed report storage for vet, sitter, trainer, and household review.
 8. WoofGuide provider-backed actions with source citations, persisted report drafts, permission checks, and audit history.
 9. Reminder notification flow.
 10. High-end motion, transitions, avatar state animation, and accessibility polish.
@@ -89,7 +89,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 ## Test And QA Gaps
 
-- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, avatar motion states, event taxonomy, day status, care pass audience checklists, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, privacy/account safety export gates, static mobile route readiness, critical mobile action accessibility labels, and mobile export-smoke CI wiring.
+- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, avatar motion states, event taxonomy, day status, care pass audience checklists, print-ready Care Pass HTML artifacts, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, privacy/account safety export gates, static mobile route readiness, critical mobile action accessibility labels, and mobile export-smoke CI wiring.
 - Focused mobile readiness checks also protect the release-grade Expo app identity: slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
 - Missing API integration tests.
 - Missing native simulator/device runtime smoke. Static mobile route smoke and CI Expo web export smoke exist, but they do not replace native runtime rendering.
@@ -134,7 +134,7 @@ No payment implementation should start until product scope, privacy terms, suppo
 1. Add release-control docs and keep them current.
 2. Extend setup into auth-connected household onboarding, invite/join decisions, and post-setup confirmation.
 3. Add records document storage, richer receipt capture, server reminders for expiring records, and credential export.
-4. Add generated PDF artifacts, print layout, and server-backed report storage.
+4. Add binary PDF artifacts, native export/download, and server-backed report storage.
 5. Add durable offline outbox tests and implementation.
 6. Add API integration tests for care state and entries.
 7. Add native simulator/device smoke or screenshot verification once local dependencies/browser support are available.
@@ -153,11 +153,11 @@ No payment implementation should start until product scope, privacy terms, suppo
 - Expo app typecheck excludes Node test files because root focused tests run them separately.
 - Pet credential fields can live on the dog profile as practical fallbacks before formal record documents are uploaded.
 - Log details remain inside the Log workflow as a bottom sheet instead of a separate route until search/history needs justify a route.
-- Care Pass reports preview before sharing; generated PDF artifacts and storage history remain separate production work.
+- Care Pass reports preview before sharing; print-ready HTML now exists on stored artifacts, while binary PDF generation and server-backed report storage remain separate production work.
 - Record due-status belongs in `lib/care-domain` so Records UI, reminders, reports, and WoofGuide can classify expired, due-soon, current, and reference records consistently.
 - WoofGuide suggested actions are deterministic view-model cards with owner-reviewed draft handlers first; provider-backed generation, permission-aware writes, and durable report drafts stay gated until privacy/account safety and AI policy are ready.
 - First-run care foundation setup belongs on a dedicated mobile route so profile, diet, starter routine, and caregiver basics can be saved together instead of scattered across separate screens.
-- Care Pass report history stores shared report snapshots in the care document; generated PDFs and server-backed artifact storage remain separate production work.
+- Care Pass report history stores shared report snapshots in the care document with print-ready HTML payloads; generated binary PDFs and server-backed artifact storage remain separate production work.
 - Privacy & Safety can export owner care data and prepare deletion requests now; actual destructive account deletion and storage-backed document deletion remain provider-gated.
 
 ## Blockers Requiring Apollo
