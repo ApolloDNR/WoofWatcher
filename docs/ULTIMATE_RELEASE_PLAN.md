@@ -39,7 +39,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Walk | Event taxonomy and status count walks. | Add distance/location where feasible, route notes, dog interaction outcomes, and streaks. |
 | Potty | Potty status and logs exist. | Add stool/pee detail capture, pattern summary, and clearer health watch connection. |
 | Play/Training | Event taxonomy supports play and training. | Add training goals, skills, progress history, and trainer handoff fields. |
-| Mood/Energy | Avatar and health screens use mood/energy signals. | Add structured mood/energy logging and trend charts. |
+| Mood/Energy | Avatar and health screens use mood/energy signals. Home now derives tested avatar motion states from health watch, recent care logs, routine status, quiet hours, and low energy. | Add structured mood/energy logging, trend charts, Rive/Lottie/Reanimated state assets, and runtime animation QA. |
 | Medication | Canonical medication event type exists. | Add medication schedule, dose, due/upcoming state, and adherence summary. |
 | Weight | Records and log taxonomy support weight. | Add weight chart, goal range, and vet report summary. |
 | Vomit/Symptom | Health Watch detects yellow bile, urgent signals, and non-diagnostic pattern cards with evidence and owner next steps. | Add richer symptom composer, frequency views, red-flag checklist, and vet-note export. |
@@ -52,8 +52,8 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | WoofGuide | API routes and mobile WoofGuide screen exist. Mobile now shows deterministic suggested action cards and owner-reviewed drafts for missing meal logs, record reminders, vet notes, and Care Pass review. | Add provider-backed source citations, report-draft persistence, permission-aware assistant writes, and stronger audit history. |
 | Monetization | Free, Plus, and Family pricing preview exists. Shared care-domain logic now defines Free/Plus/Family entitlement gates, and the mobile Plus screen shows included and locked features before checkout. | Add provider-backed checkout, entitlement enforcement at API/UI boundaries, grandfathering/trial policy, support/refund terms, and App Store subscription approval. |
 | Offline/Sync | Mobile care sync handles local/pending/failed status and retry separation. | Add durable outbox, conflict-safe state updates, sync dashboard, and recovery tests. |
-| Design | Warm brand assets and Phoenix art exist. Critical mobile actions now have screen-reader labels on Privacy, Premium, WoofGuide, and More. | Need full premium design system, motion spec, high-end screen polish, full accessibility pass, and Figma alignment. |
-| CI/QA | GitHub Actions verifies install, focused tests, typecheck, API/web builds, mobile Expo web export smoke, and can be manually dispatched if a push hook misses. Focused tests include static mobile readiness smoke for route registration, tabs, router links, launch-blocking safety copy, CI smoke wiring, critical action accessibility labels, and release-grade app identity. | Add native simulator/device smoke, API route tests, Playwright or simulator screenshot checks, full accessibility traversal, and visual regression where feasible. |
+| Design | Warm brand assets and Phoenix art exist. Critical mobile actions now have screen-reader labels on Privacy, Premium, WoofGuide, and More. Home has a tested avatar motion state model and actionable motion row. | Need full premium design system, Rive/Lottie/Reanimated motion assets, high-end screen polish, full accessibility pass, visual regression, and Figma alignment. |
+| CI/QA | GitHub Actions verifies install, focused tests, typecheck, API/web builds, mobile Expo web export smoke, and can be manually dispatched if a push hook misses. Focused tests include static mobile readiness smoke for route registration, tabs, router links, launch-blocking safety copy, CI smoke wiring, critical action accessibility labels, release-grade app identity, and Home avatar motion wiring. | Add native simulator/device smoke, API route tests, Playwright or simulator screenshot checks, full accessibility traversal, and visual regression where feasible. |
 
 ## Missing Features
 
@@ -73,7 +73,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 - Current mobile UI is functional but not yet a final premium visual system.
 - Need component inventory for buttons, chips, cards, tabs, status banners, forms, empty states, and report surfaces.
-- Need motion rules for log confirmation, sync recovery, avatar mood, routine completion, report generation, and assistant actions.
+- Need motion rules for log confirmation, sync recovery, routine completion, report generation, and assistant actions. Avatar state rules now exist as a tested foundation, but the final art/animation pipeline is not complete.
 - Need full accessibility pass for contrast, touch target sizes, dynamic type, keyboard flow, and native screen-reader traversal. Critical mobile action labels are now statically protected.
 - Need visual hierarchy audit across Today, Log, Calendar, Records, More, WoofGuide, and auth screens.
 - Need Figma design system or equivalent component spec before major visual overhaul.
@@ -89,7 +89,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 ## Test And QA Gaps
 
-- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, event taxonomy, day status, care pass audience checklists, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, privacy/account safety export gates, static mobile route readiness, critical mobile action accessibility labels, and mobile export-smoke CI wiring.
+- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, avatar motion states, event taxonomy, day status, care pass audience checklists, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, privacy/account safety export gates, static mobile route readiness, critical mobile action accessibility labels, and mobile export-smoke CI wiring.
 - Focused mobile readiness checks also protect the release-grade Expo app identity: slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
 - Missing API integration tests.
 - Missing native simulator/device runtime smoke. Static mobile route smoke and CI Expo web export smoke exist, but they do not replace native runtime rendering.

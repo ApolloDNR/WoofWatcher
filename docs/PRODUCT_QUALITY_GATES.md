@@ -95,18 +95,19 @@ Current gaps:
 
 ## Gate 6: Premium UI, Motion, And Accessibility
 
-Status: Not passing.
+Status: In progress.
 
 Passing evidence:
 
 - Warm brand assets and Phoenix art exist.
 - Mobile screens have functional product surfaces.
+- Home has a tested avatar motion state model and visible motion row that connects avatar state to Health Watch, recent logs, routine status, quiet hours, and low energy.
 
 Current gaps:
 
 - Need design system.
 - Need screen-by-screen polish.
-- Need motion spec and implementation.
+- Need full motion spec, Rive/Lottie/Reanimated asset pipeline, transition rules, and runtime animation QA.
 - Need full accessibility pass. Critical action screen-reader labels are covered by focused static smoke, but contrast, dynamic type, keyboard flow, touch targets, and native screen-reader traversal still need QA.
 - Need visual regression or screenshot review.
 - Need Figma alignment if Figma becomes the canonical design source.
@@ -127,6 +128,7 @@ Current gaps:
 - Need API integration tests.
 - Need mobile runtime smoke.
 - Critical mobile action accessibility labels are covered by focused static smoke.
+- Home avatar motion state and wiring are covered by focused tests.
 - Need report/export tests.
 - Need release smoke checklist.
 

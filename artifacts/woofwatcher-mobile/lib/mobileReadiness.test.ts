@@ -143,3 +143,12 @@ test("keeps Expo app identity release-grade", () => {
   assert.equal(expo.android.package, "com.pegasusdreamscapes.woofwatcher");
   assert.doesNotMatch(JSON.stringify(expo), /replit/i);
 });
+
+test("wires Home to the avatar motion state model", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  assert.match(home, /deriveAvatarMotion/);
+  assert.match(home, /avatarMotion\.avatarMood/);
+  assert.match(home, /avatarMotion\.route/);
+  assert.match(home, /avatarMotion\.line/);
+});

@@ -6,6 +6,7 @@
 - Confirm subscription packaging and exact paid tiers.
 - Confirm whether WoofWatcher should support multiple dogs before paid launch.
 - Confirm whether Figma is the canonical visual design source.
+- Confirm final high-end animation asset pipeline: code-only Reanimated first, Rive/Lottie assets, Figma-to-code design source, or hired illustrator/motion designer support.
 
 ## Accounts And Secrets
 

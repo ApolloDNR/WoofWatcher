@@ -23,6 +23,7 @@ import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import Svg, { Circle } from "react-native-svg";
 import { deriveOnboardingStatus, normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
+import { deriveAvatarMotion, type AvatarMotionState } from "@/lib/avatarMotion";
 import { computeCareStreak, computeDayProgress, derivePhoenixStatus, getGreeting } from "@/lib/phoenixStatus";
 import { buildQuickLogEntry } from "@/lib/quickLogEntry";
 import { deriveTodayCommand } from "@/lib/todayCommand";
@@ -58,6 +59,21 @@ const TYPE_ICON: Record<string, PulseIconName> = {
   meal: "bowl", treat: "bone", walk: "paw", potty: "drop", pee: "drop",
   poop: "drop", play: "candy", training: "star", vomit: "vomit", alone: "house",
   mood: "heart", weight: "scale", meds: "pill", medication: "pill", symptom: "vomit",
+};
+
+const MOTION_ICON: Record<AvatarMotionState, PulseIconName> = {
+  happy: "heart",
+  sad: "sad",
+  bored: "paw",
+  annoyed: "bowl",
+  tired: "house",
+  excited: "bolt",
+  eating: "bowl",
+  drinking: "drop",
+  walking: "paw",
+  sleeping: "house",
+  treat: "bone",
+  sick: "vomit",
 };
 
 function ProgressRing({ progress, color, track }: { progress: number; color: string; track: string }) {
@@ -96,6 +112,17 @@ export default function PhoenixScreen() {
   }, []);
 
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const avatarMotion = useMemo(
+    () =>
+      deriveAvatarMotion({
+        entries: state.entries,
+        routines: state.routines,
+        caregivers: state.caregivers,
+        energy: status.energy,
+        now,
+      }),
+    [state.entries, state.routines, state.caregivers, status.energy, now],
+  );
   const todayCommand = useMemo(() => deriveTodayCommand(state, now), [state, now]);
   const greeting = useMemo(() => getGreeting(now), [now]);
   const careStreak = useMemo(() => computeCareStreak(state, now), [state, now]);
@@ -230,6 +257,8 @@ export default function PhoenixScreen() {
   const colW = (width - H_PAD * 2 - GAP * 4) / 5;
 
   const c = status.counts;
+  const motionIcon = MOTION_ICON[avatarMotion.state];
+  const motionTint = PULSE_COLORS[motionIcon];
   const pulse = [
     { icon: "bowl" as PulseIconName, label: "Meals", value: `${c.meals.done}/${c.meals.target}`, done: c.meals.done >= c.meals.target },
     { icon: "paw" as PulseIconName, label: "Walks", value: `${c.walks.done}/${c.walks.target}`, done: c.walks.done >= c.walks.target },
@@ -376,7 +405,7 @@ export default function PhoenixScreen() {
           {/* Living hero card */}
           <View style={[s.heroCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             <View style={s.heroImageWrap}>
-              <AnimatedAvatar mood={status.mood} speech={status.meta.speech} />
+              <AnimatedAvatar mood={avatarMotion.avatarMood} speech={avatarMotion.speech} />
               <LinearGradient
                 colors={["rgba(20,30,24,0.08)", "transparent", "rgba(10,20,16,0.65)"]}
                 locations={[0, 0.42, 1]}
@@ -409,6 +438,35 @@ export default function PhoenixScreen() {
                 </View>
               </View>
             </View>
+
+            {/* Avatar motion row */}
+            <Pressable
+              onPress={() => router.push(avatarMotion.route)}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${avatarMotion.label} avatar care context. ${avatarMotion.line}`}
+              style={({ pressed }) => [
+                s.motionRow,
+                { borderBottomColor: colors.border, opacity: pressed ? 0.72 : 1 },
+              ]}
+            >
+              <View style={[s.motionIcon, { backgroundColor: motionTint + "18" }]}>
+                <PulseIcon name={motionIcon} size={20} color={motionTint} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={s.motionTitleRow}>
+                  <Text style={[s.motionLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {avatarMotion.label}
+                  </Text>
+                  <Text style={[s.motionState, { color: motionTint, fontFamily: "Inter_700Bold" }]}>
+                    {avatarMotion.state}
+                  </Text>
+                </View>
+                <Text numberOfLines={2} style={[s.motionLine, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {avatarMotion.line}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={17} color={colors.mutedForeground} />
+            </Pressable>
 
             {/* Next up row */}
             <Pressable onPress={() => router.push("/calendar")} style={({ pressed }) => [s.nextUpRow, { opacity: pressed ? 0.6 : 1 }]}>
@@ -709,6 +767,12 @@ const s = StyleSheet.create({
   energyChipText: { fontSize: 12, color: "#FFFFFF" },
   energyTrack: { height: 7, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.28)", overflow: "hidden" },
   energyFill: { height: "100%", borderRadius: 4 },
+  motionRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 13, borderBottomWidth: 1 },
+  motionIcon: { width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  motionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 },
+  motionLabel: { fontSize: 15 },
+  motionState: { fontSize: 10.5, letterSpacing: 0, textTransform: "uppercase" },
+  motionLine: { fontSize: 12.5, lineHeight: 17 },
   nextUpRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
   nextUpIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   nextUpLabel: { fontSize: 10.5, letterSpacing: 0.8 },

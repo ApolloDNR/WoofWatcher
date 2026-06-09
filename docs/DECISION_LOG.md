@@ -102,6 +102,16 @@ Owner: Codex.
 
 Revisit trigger: Add a separate test tsconfig with Node types.
 
+### 2026-06-08: Avatar Motion Uses A Care-State Model Before Final Animation Assets
+
+Decision: Phoenix's animated avatar state is derived through a deterministic mobile motion model before adding final Rive, Lottie, or Reanimated asset pipelines.
+
+Reason: The app needs an avatar that reacts to real care context instead of decorative animation. Health Watch, recent meals/treats/water/walks/play/training, due or overdue routines, quiet hours, and low energy should map to consistent avatar states that screens and future animation assets can share.
+
+Owner: Codex.
+
+Revisit trigger: Final Rive/Lottie/Reanimated assets introduce a stricter animation state machine or require new states.
+
 ### 2026-06-08: Onboarding Readiness Belongs In Care Domain
 
 Decision: Setup readiness for dog profile, diet baseline, starter routines, and household caregivers is derived in `lib/care-domain`.

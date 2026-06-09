@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-08:
 
-- PASS: 77 focused tests with the command above.
+- PASS: 84 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -35,6 +35,7 @@ Latest local evidence, 2026-06-08:
 - Setup wizard.
 - Premium plan packaging and checkout-disabled guard.
 - Premium entitlement policy for Free, Plus, and Family feature gates before checkout is enabled.
+- Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
 - Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
 - Expo app identity smoke for release-grade slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
@@ -61,7 +62,8 @@ Latest local evidence, 2026-06-08:
 17. Prepare an account deletion request and confirm it is non-destructive and says manual review/export first.
 18. Confirm AI disclosure, document storage rules, and payment launch blockers are visible.
 19. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
-20. Force offline or failed sync state and confirm visibility.
+20. Confirm the Home avatar motion row changes for a recent meal, upcoming walk, overdue routine, quiet hours, low energy, and Health Watch signal.
+21. Force offline or failed sync state and confirm visibility.
 
 ## Missing QA
 
@@ -69,6 +71,7 @@ Latest local evidence, 2026-06-08:
 - API integration tests.
 - Auth onboarding smoke.
 - Visual regression or screenshot review.
+- Rive/Lottie/Reanimated avatar asset runtime checks.
 - Full accessibility pass for contrast, dynamic type, keyboard flow, touch targets, and native screen-reader traversal. Static labels for critical mobile actions are now covered.
 - Document upload/security tests.
 - Self-serve provider-backed account deletion tests.
