@@ -14,6 +14,7 @@ Latest local evidence, 2026-06-11:
 
 - PASS: 106 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
+- PASS: GitHub Actions `WoofWatcher Verify` run `27324281243` completed successfully for `feat: add hydration care summary`.
 
 ## Required Automated Coverage
 
