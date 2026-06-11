@@ -532,6 +532,16 @@ Owner: Codex.
 
 Revisit trigger: Vet-reviewed weight-plan language, long-range charting, weight-goal reminders, diet automation, or clinical interpretation becomes active release work.
 
+### 2026-06-11: Household Access Is Readiness Before Enforcement
+
+Decision: Household Access derives synced account members, local-only caregivers, routine-only owners, invite readiness, and practical permission labels before adding provider-backed role enforcement.
+
+Reason: Apollo wants the household to know who is actually connected, who only exists locally in the care plan, and who owns routines without account access. Showing that readiness now creates Family-tier value without pretending invite approval, auth roles, or enforcement are complete.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed role enforcement, invite approval, caregiver editing, household admin tools, or account audit policy becomes active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

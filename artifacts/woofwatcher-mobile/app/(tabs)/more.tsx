@@ -27,7 +27,7 @@ import {
   useUpdateMe,
   getGetMeQueryKey,
 } from "@workspace/api-client-react";
-import { deriveHouseholdResponsibility, getCareEventDefinition } from "@workspace/care-domain";
+import { deriveHouseholdAccessPlan, deriveHouseholdResponsibility, getCareEventDefinition } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
 import { useAvatar } from "@/context/AvatarContext";
@@ -146,6 +146,16 @@ export default function MoreScreen() {
     () => deriveHouseholdResponsibility({ routines, entries, caregivers: responsibilityCaregivers, now }),
     [routines, entries, responsibilityCaregivers, now],
   );
+  const householdAccess = useMemo(
+    () =>
+      deriveHouseholdAccessPlan({
+        household: household ? { name: household.name, inviteCode: household.inviteCode } : null,
+        members,
+        caregivers,
+        routines,
+      }),
+    [household, members, caregivers, routines],
+  );
   const responsibilityTone =
     householdResponsibility.status === "needs-care"
       ? colors.rose
@@ -154,6 +164,12 @@ export default function MoreScreen() {
         : householdResponsibility.status === "needs-setup"
           ? colors.primary
           : colors.sage;
+  const accessTone =
+    householdAccess.status === "needs-household" || householdAccess.status === "needs-invites"
+      ? colors.amber
+      : householdAccess.status === "needs-roles"
+        ? colors.copper
+        : colors.sage;
 
   const energyDots = Math.round(((status.energy - 35) / (96 - 35)) * 4) + 1;
 
@@ -612,10 +628,10 @@ export default function MoreScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.inviteHousehold, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {household?.name ?? "Your household"}
+                  {householdAccess.householdName}
                 </Text>
                 <Text style={[s.inviteSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {members.length} {members.length === 1 ? "member" : "members"} syncing care
+                  {householdAccess.summary}
                 </Text>
               </View>
             </View>
@@ -623,12 +639,14 @@ export default function MoreScreen() {
               <View>
                 <Text style={[s.codeLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>INVITE CODE</Text>
                 <Text style={[s.codeValue, { color: colors.foreground, fontFamily: DISPLAY }]}>
-                  {household?.inviteCode ?? "—"}
+                  {householdAccess.inviteCode || "—"}
                 </Text>
               </View>
               <Pressable
                 onPress={shareInvite}
-                disabled={!household}
+                disabled={!householdAccess.canShareInvite}
+                accessibilityRole="button"
+                accessibilityLabel="Share household invite"
                 style={({ pressed }) => [s.shareBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
                 <Ionicons name="share-outline" size={16} color="#fff" />
@@ -639,46 +657,102 @@ export default function MoreScreen() {
 
           {/* Members */}
           <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
-            {members.length === 0 ? (
+            {householdAccess.people.length === 0 ? (
               <View style={s.teamRow}>
                 <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Loading members…
+                  Add the first caregiver to build household access.
                 </Text>
               </View>
             ) : (
-              members.map((m, i) => {
+              householdAccess.people.map((person, i) => {
                 const cg = memberColor(i);
-                const name = m.displayName?.trim() || m.email?.split("@")[0] || "Member";
-                const logCount = entries.filter((e) => e.caregiver === name).length;
+                const logCount = entries.filter((e) => e.caregiver.trim().toLowerCase() === person.name.toLowerCase()).length;
                 return (
                   <View
-                    key={m.id}
-                    style={[s.teamRow, i < members.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+                    key={person.id}
+                    style={[s.teamRow, i < householdAccess.people.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
                   >
                     <View style={[s.teamAvatar, { backgroundColor: cg + "1A" }]}>
                       <Text style={[s.teamInitial, { color: cg, fontFamily: "Inter_700Bold" }]}>
-                        {name.charAt(0).toUpperCase()}
+                        {person.name.charAt(0).toUpperCase()}
                       </Text>
                     </View>
                     <View style={{ flex: 1 }}>
                       <View style={s.teamNameLine}>
-                        <Text style={[s.teamName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{name}</Text>
-                        {m.isSelf && (
+                        <Text style={[s.teamName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{person.name}</Text>
+                        {myName && person.name.toLowerCase() === myName.toLowerCase() && (
                           <View style={[s.youBadge, { backgroundColor: colors.primary + "1A" }]}>
                             <Text style={[s.youBadgeText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>You</Text>
                           </View>
                         )}
                       </View>
                       <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {m.role === "owner" ? "Owner" : "Caregiver"}
+                        {person.role} - {person.needsInvite ? "Invite needed" : "Synced"}
                       </Text>
                     </View>
-                    <View style={[s.logBadge, { backgroundColor: colors.background }]}>
-                      <Text style={[s.logBadgeText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{logCount} logs</Text>
+                    <View style={[s.logBadge, { backgroundColor: person.needsInvite ? colors.amber + "18" : colors.background }]}>
+                      <Text style={[s.logBadgeText, { color: person.needsInvite ? colors.amber : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        {person.needsInvite ? "Invite" : `${logCount} logs`}
+                      </Text>
                     </View>
                   </View>
                 );
               })
+            )}
+          </View>
+
+          <View style={[s.sectionHeader, { marginTop: 18 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Household Access</Text>
+            <Pressable
+              onPress={shareInvite}
+              disabled={!householdAccess.canShareInvite}
+              accessibilityRole="button"
+              accessibilityLabel="Share household invite"
+              hitSlop={8}
+            >
+              <Text style={[s.sectionLink, { color: accessTone, fontFamily: "Inter_600SemiBold", opacity: householdAccess.canShareInvite ? 1 : 0.55 }]}>Invite</Text>
+            </Pressable>
+          </View>
+          <View style={[s.responsibilityCard, { backgroundColor: colors.card, borderColor: accessTone + "44", shadowColor: accessTone }]}>
+            <View style={s.responsibilityTop}>
+              <View style={[s.responsibilityIcon, { backgroundColor: accessTone + "18" }]}>
+                <Ionicons name="key-outline" size={21} color={accessTone} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {householdAccess.status === "ready" ? "Access is aligned" : "Access needs review"}
+                </Text>
+                <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {householdAccess.summary}
+                </Text>
+              </View>
+            </View>
+            <View style={s.responsibilityMetrics}>
+              {[
+                { label: "Synced", value: householdAccess.syncedMembers },
+                { label: "Invites", value: householdAccess.localOnlyCaregivers },
+                { label: "Routine-only", value: householdAccess.routineOnlyOwners },
+              ].map((metric) => (
+                <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
+                  <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
+                  <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              {householdAccess.nextStep}
+            </Text>
+            {householdAccess.people.length > 0 && (
+              <View style={[s.responsibilityRoster, { borderTopColor: colors.border }]}>
+                {householdAccess.people.slice(0, 4).map((person) => (
+                  <View key={`access-${person.id}`} style={s.responsibilityMember}>
+                    <Text style={[s.responsibilityMemberName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{person.name}</Text>
+                    <Text style={[s.responsibilityMemberMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {person.permissions.slice(0, 2).join(", ")}
+                    </Text>
+                  </View>
+                ))}
+              </View>
             )}
           </View>
 

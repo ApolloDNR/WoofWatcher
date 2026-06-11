@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 155 focused tests with the command above.
+- PASS: 159 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
 - LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27365313142` completed successfully for `feat: add weight trend reports`.
 
@@ -38,6 +38,7 @@ Latest local evidence, 2026-06-11:
 - Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
 - Household Responsibility derivation for care-team routine ownership, open/overdue/unassigned routines, visible today log counts, next household action copy, and Calendar/More mobile wiring.
+- Household Access derivation for synced members, local-only caregivers, routine-only owners, invite readiness, permission labels, next-step copy, and More mobile wiring.
 - Care log audit trail creation, sanitization, sticky-note/edit/delete audit events, non-health deletion audit notes, and mobile Log detail wiring.
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
 - Home Quick Log routine matching and meal detail enrichment.
@@ -117,6 +118,9 @@ Latest local evidence, 2026-06-11:
 54. Add two visible Weight logs and one private Weight log; confirm Records Weight Trend uses only visible weigh-ins for the chart and goal distance.
 55. Update the weight goal and confirm Records shows the correct to-go/over-goal copy.
 56. Preview a vet Care Pass and confirm Weight Trend includes current weight, goal, latest weigh-in, and owner-reported context language.
+57. Open More and confirm Household Access shows synced members, invite-needed caregivers, routine-only owners, and the correct invite code state.
+58. Add a local caregiver and assign a routine to someone not in the synced account member list; confirm Household Access marks them as invite needed instead of silently treating them as synced.
+59. Confirm the Household Access invite action is disabled without an invite code and uses the share action when a household invite code exists.
 
 ## Missing QA
 

@@ -359,6 +359,17 @@ test("keeps household responsibility visible in Calendar and More", () => {
   assert.match(more, /Open routine board/);
 });
 
+test("keeps household access readiness visible from More", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  assert.match(more, /deriveHouseholdAccessPlan/);
+  assert.match(more, /householdAccess/);
+  assert.match(more, /Household Access/);
+  assert.match(more, /localOnlyCaregivers/);
+  assert.match(more, /routineOnlyOwners/);
+  assert.match(more, /accessibilityLabel="Share household invite"/);
+});
+
 test("keeps care document refresh conflict-safe in CareContext", () => {
   const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
 

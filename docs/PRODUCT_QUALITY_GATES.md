@@ -46,6 +46,7 @@ Passing evidence:
 - Log exposes a durable Offline Outbox banner for local, pending, and failed care-entry changes with retryable create/update counts and a Retry sync action.
 - More exposes household Sync Health with healthy/loading/syncing/attention status, care-log count, household member count, outbox count, and retry/refresh guidance.
 - Calendar and More expose Household Responsibility derived from routine-board truth, including care-team routine ownership, open/overdue/unassigned counts, visible today log activity, and a next household action.
+- More exposes Household Access derived from synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step copy.
 - Care document refresh keeps newer local/offline profile, routine, record, and report changes when server care-state data is older, then pushes the newer doc back to the household.
 - Care Pass reports can be previewed by audience before sharing.
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
@@ -55,8 +56,8 @@ Passing evidence:
 
 Current gaps:
 
-- Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning and household invite/join onboarding remain incomplete.
-- Multiple dogs, roles, invites, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, medication search/filters, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
+- Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning, invite approval, and post-setup confirmation remain incomplete.
+- Multiple dogs, provider-backed role enforcement, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, medication search/filters, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
 - Runtime smoke has not been added.
 
 ## Gate 3: Care Domain Correctness
@@ -65,7 +66,7 @@ Status: Partially passing.
 
 Passing evidence:
 
-- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, medication quick-log defaults, medication composer wiring, medication adherence, medication follow-ups, medication history, water quick-log defaults, hydration summaries, hydration Care Pass language, mobile Records hydration wiring, walk quick-log visibility, walk activity summaries, saved walk route templates, walk activity and Saved Routes Care Pass language, mobile Records walk activity wiring, full Log walk route fields, potty quick-log visibility, potty composer detail fields, Potty Health summaries, Potty Health color/context review evidence, Potty Health Care Pass language, mobile Records Potty Health wiring, Weekly Care Trends derivation, Care Pass trend language, mobile Records trend wiring, Training Progress derivation, Log composer training fields, trainer Care Pass training language, mobile Records training wiring, Alone Time derivation, Log composer Alone Time fields, Care Pass Alone Time language, mobile Records Alone Time wiring, Weight Trend derivation, Care Pass Weight Trend language, mobile Records Weight Trend wiring, Household Responsibility derivation, Calendar/More responsibility wiring, Care Log Audit Trail derivation and mobile Log wiring, Care Pass medication language, mobile Records medication wiring, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
+- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, medication quick-log defaults, medication composer wiring, medication adherence, medication follow-ups, medication history, water quick-log defaults, hydration summaries, hydration Care Pass language, mobile Records hydration wiring, walk quick-log visibility, walk activity summaries, saved walk route templates, walk activity and Saved Routes Care Pass language, mobile Records walk activity wiring, full Log walk route fields, potty quick-log visibility, potty composer detail fields, Potty Health summaries, Potty Health color/context review evidence, Potty Health Care Pass language, mobile Records Potty Health wiring, Weekly Care Trends derivation, Care Pass trend language, mobile Records trend wiring, Training Progress derivation, Log composer training fields, trainer Care Pass training language, mobile Records training wiring, Alone Time derivation, Log composer Alone Time fields, Care Pass Alone Time language, mobile Records Alone Time wiring, Weight Trend derivation, Care Pass Weight Trend language, mobile Records Weight Trend wiring, Household Responsibility derivation, Calendar/More responsibility wiring, Household Access derivation and More wiring, Care Log Audit Trail derivation and mobile Log wiring, Care Pass medication language, mobile Records medication wiring, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:
@@ -153,6 +154,7 @@ Current gaps:
 - Alone Time derivation, private-log exclusion, Log composer duration/return-state/trigger/support/recovery fields, Care Pass handoff language, and Records Alone Time wiring are covered by focused tests.
 - Weight Trend derivation, private-log exclusion, profile baseline fallback, goal parsing, Care Pass report language, and Records chart wiring are covered by focused tests.
 - Household Responsibility derivation and Calendar/More responsibility wiring are covered by focused tests.
+- Household Access derivation and More wiring are covered by focused tests.
 - Care Log Audit Trail derivation and Log edit/sticky/delete/detail wiring are covered by focused tests.
 - Durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, and mobile Log/More/CareContext wiring are covered by focused tests.
 - Need report/export tests.
