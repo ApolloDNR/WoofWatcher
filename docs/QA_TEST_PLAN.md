@@ -12,9 +12,9 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 159 focused tests with the command above.
+- PASS: 164 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
-- LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27366047790` completed successfully for `feat: add household access readiness`.
+- LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27366293330` completed successfully for the Household Access docs evidence slice.
 
 ## Required Automated Coverage
 
@@ -34,6 +34,7 @@ Latest local evidence, 2026-06-11:
 - Training Progress derived from household-visible training logs, including skill/cue, outcome, duration, next-practice notes, private-log exclusion, Records mobile wiring, Log composer fields, and trainer Care Pass report language.
 - Alone Time derivation from household-visible departure logs, including duration, return state, trigger/context, calming support, recovery minutes, private-log exclusion, Records mobile wiring, Log composer fields, and Care Pass handoff language.
 - Weight Trend derivation from household-visible weigh-ins, including goal parsing, profile fallback, private-log exclusion, current/previous change, Records chart wiring, and Care Pass report language.
+- Grooming Care derivation from household-visible grooming logs, including duration, type, coat/skin notes, products/groomer context, next due date, private-log exclusion, Records mobile wiring, Log composer fields, and Care Pass report language.
 - Potty quick-log defaults for household-visible potty evidence.
 - Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
@@ -121,6 +122,9 @@ Latest local evidence, 2026-06-11:
 57. Open More and confirm Household Access shows synced members, invite-needed caregivers, routine-only owners, and the correct invite code state.
 58. Add a local caregiver and assign a routine to someone not in the synced account member list; confirm Household Access marks them as invite needed instead of silently treating them as synced.
 59. Confirm the Household Access invite action is disabled without an invite code and uses the share action when a household invite code exists.
+60. Add a Grooming log with type, duration, coat/skin note, product or groomer context, next due date, sticky note, and household visibility.
+61. Confirm Records Grooming Care updates status, minutes, type counts, products, next due date, latest context, and next-step copy while private grooming logs stay out.
+62. Preview a sitter or vet Care Pass and confirm Grooming Care summarizes latest grooming, product context, next due date, and owner-reported/non-diagnostic boundary language.
 
 ## Missing QA
 

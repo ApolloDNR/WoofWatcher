@@ -292,6 +292,24 @@ test("keeps weight trend shared between Records and Care Pass reports", () => {
   assert.match(carePass, /Weight Trend/);
 });
 
+test("keeps grooming care visible from Log composer to Records and Care Pass reports", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const carePass = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"), "utf8");
+
+  assert.match(log, /type: "grooming"/);
+  assert.match(log, /groomingCondition/);
+  assert.match(log, /groomingProducts/);
+  assert.match(log, /groomingNextDue/);
+  assert.match(log, /Shared grooming logs update Grooming Care and handoffs/);
+  assert.match(records, /deriveGroomingCare/);
+  assert.match(records, /groomingCare/);
+  assert.match(records, /Grooming Care/);
+  assert.match(records, /groomingCare\.products/);
+  assert.match(carePass, /deriveGroomingCare/);
+  assert.match(carePass, /Grooming Care/);
+});
+
 test("keeps potty health visible from Log composer to Records", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const records = readAppFile(join("(tabs)", "records.tsx"));

@@ -43,6 +43,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 35. DONE 2026-06-11: Alone Time now captures departure duration, return state, trigger/context, calming support, recovery minutes, sticky notes, and household visibility in the Log composer, derives 30-day separation/anxiety patterns in shared care-domain logic, and carries status, triggers, supports, latest context, Records UI, and Care Pass handoff language into household workflows.
 36. DONE 2026-06-11: Weight Trend now derives visible recent weigh-ins, current weight, goal distance, previous-change, caregiver participation, Records chart inputs, and Care Pass report language from shared care-domain logic while preserving owner-reported/vet-review boundaries.
 37. DONE 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance in shared care-domain logic, then surfaces that access plan in More without pretending provider-backed role enforcement is complete.
+38. DONE 2026-06-11: Grooming Care now captures grooming duration, type, coat/skin notes, products/groomer context, next due date, sticky notes, and household visibility in the Log composer, derives shared grooming summaries in care-domain logic, and carries status, products, latest context, Records UI, and Care Pass language into sitter/vet handoffs.
 
 ## Cadence
 

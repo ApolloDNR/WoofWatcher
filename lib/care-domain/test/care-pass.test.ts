@@ -426,6 +426,40 @@ test("care pass includes weight trend context for vet review", () => {
   assert.match(pass.message, /owner-reported context/i);
 });
 
+test("care pass includes grooming care context for sitter and groomer handoff", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    now: new Date("2026-06-11T12:00:00-07:00").getTime(),
+    entries: [
+      ...baseInput().entries,
+      {
+        id: "grooming-brush",
+        type: "grooming",
+        title: "Grooming - Brush",
+        caregiver: "Emma",
+        occurredAt: "2026-06-10T18:00:00-07:00",
+        durationMinutes: 15,
+        details: {
+          kind: "brush",
+          groomingCondition: "Light shedding",
+          groomingProducts: "Slicker brush",
+          groomingNextDue: "2026-06-18",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  const section = pass.sections.find((item) => item.title === "Grooming Care");
+  assert.ok(section);
+  assert.match(pass.message, /1 grooming log in the last 45 days/);
+  assert.match(pass.message, /Latest: Grooming - Brush - brush with Emma/);
+  assert.match(pass.message, /Products: Slicker brush/);
+  assert.match(pass.message, /Next due: 2026-06-18/);
+  assert.match(pass.message, /owner-reported coat and grooming context/i);
+});
+
 test("creates a stable report artifact snapshot from a care pass", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
   const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");

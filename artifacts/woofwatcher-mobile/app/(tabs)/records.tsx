@@ -34,6 +34,7 @@ import {
   createCarePassArtifact,
   deriveAloneTime,
   deriveCareTrends,
+  deriveGroomingCare,
   deriveHealthWatch,
   deriveMedicationAdherence,
   deriveMedicationFollowUps,
@@ -213,6 +214,10 @@ export default function RecordsScreen() {
   );
   const aloneTime = useMemo(
     () => deriveAloneTime({ entries: state.entries, now, lookbackDays: 30 }),
+    [state.entries, now],
+  );
+  const groomingCare = useMemo(
+    () => deriveGroomingCare({ entries: state.entries, now, lookbackDays: 45 }),
     [state.entries, now],
   );
   const weightTrend = useMemo(
@@ -1187,6 +1192,78 @@ export default function RecordsScreen() {
                       Support: {aloneTime.latest.calmingSupport}
                     </Text>
                   ) : null}
+                </View>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Grooming care */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Grooming Care</Text>
+            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+              {groomingCare.totalSessions ? `${groomingCare.totalSessions} logs` : "No logs"}
+            </Text>
+          </View>
+          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <View style={s.hydrationSummary}>
+              <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
+                <Ionicons name="sparkles-outline" size={18} color={colors.sage} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {groomingCare.status === "watch"
+                    ? "Coat watch"
+                    : groomingCare.status === "due-soon"
+                      ? "Grooming due soon"
+                      : groomingCare.status === "steady"
+                        ? "Grooming steady"
+                        : "Build grooming baseline"}
+                </Text>
+                <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {groomingCare.summary}
+                </Text>
+              </View>
+            </View>
+            <View style={s.hydrationStats}>
+              {[
+                { label: "Brush", value: String(groomingCare.brushCount) },
+                { label: "Bath", value: String(groomingCare.bathCount) },
+                { label: "Nails", value: String(groomingCare.nailCount) },
+              ].map((item, index) => (
+                <View key={item.label} style={[s.hydrationStat, index < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
+                  <Text style={[s.hydrationValue, { color: colors.foreground, fontFamily: DISPLAY }]}>{item.value}</Text>
+                  <Text style={[s.hydrationLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+            {groomingCare.products.length ? (
+              <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Products: {groomingCare.products.slice(0, 4).join(", ")}
+              </Text>
+            ) : null}
+            {groomingCare.nextDue ? (
+              <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular", marginTop: groomingCare.products.length ? 5 : 0 }]}>
+                Next due: {groomingCare.nextDue}
+              </Text>
+            ) : null}
+            <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular", marginTop: groomingCare.products.length || groomingCare.nextDue ? 5 : 0 }]}>
+              {groomingCare.nextStep}
+            </Text>
+            {groomingCare.latest ? (
+              <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
+                <View style={[s.watchSignalDot, { backgroundColor: groomingCare.watchCount ? colors.amber : colors.sage }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Latest: {groomingCare.latest.kindLabel}
+                  </Text>
+                  <Text style={[s.watchPatternEvidence, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {[
+                      groomingCare.latest.condition,
+                      groomingCare.latest.caregiver,
+                      groomingCare.latest.durationMinutes ? `${groomingCare.latest.durationMinutes} min` : "",
+                      relativeDay(groomingCare.latest.occurredAt, now),
+                    ].filter(Boolean).join(" - ")}
+                  </Text>
                 </View>
               </View>
             ) : null}

@@ -32,6 +32,8 @@ Current evidence, 2026-06-11: Potty logging now captures stool color and routine
 
 Current evidence, 2026-06-11: Alone Time logging now captures departure duration, return state, trigger/context, calming support, recovery minutes, sticky notes, and household visibility. Shared Alone Time logic derives 30-day visible departure patterns, status, latest context, triggers, supports, and Care Pass handoff language.
 
+Current evidence, 2026-06-11: Grooming logging now captures grooming type, duration, coat/skin notes, products/groomer context, next due date, sticky notes, and household visibility. Shared Grooming Care derives visible 45-day grooming status, products, caregivers, next due date, Records UI, and Care Pass report language.
+
 ## Gate 3: Household Trust
 
 Passing means owners and caregivers can see who did what, what is pending, what failed to sync, what was skipped, and what needs follow-up.
@@ -106,6 +108,8 @@ Current evidence, 2026-06-11: Alone Time is framed as owner-reported separation 
 
 Current evidence, 2026-06-11: Weight Trend is framed as owner-reported weigh-in context for caregiver and veterinarian review. It summarizes current weight, goal distance, and change from previous without diagnosing weight or recommending medical changes.
 
+Current evidence, 2026-06-11: Grooming Care is framed as owner-reported coat and grooming context for handoff and veterinarian review. It summarizes coat/skin notes, products, and due dates without diagnosing skin or coat conditions.
+
 ## Gate 6: Reports And Records
 
 Passing means sitter, vet, trainer, and household reports are useful, previewable, shareable, and eventually exportable as durable artifacts. Records must cover vaccines, vet visits, diet, insurance, microchip, documents, receipts, and credential data.
@@ -142,6 +146,8 @@ Current evidence, 2026-06-11: Care Pass reports now include an Alone Time sectio
 
 Current evidence, 2026-06-11: Care Pass reports now include a Weight Trend section with recent weigh-in count, current weight, goal, change from previous, latest caregiver context, and owner-reported/vet-review boundary language.
 
+Current evidence, 2026-06-11: Care Pass reports now include a Grooming Care section with recent grooming count, type counts, latest grooming context, products, next due date, and owner-reported/non-diagnostic boundary language.
+
 ## Gate 7: Revenue Readiness
 
 Passing means free/paid packaging is clear, premium value is visible, reports and household workflows support subscription value, and payments are not enabled before privacy/support obligations are ready.
@@ -172,6 +178,8 @@ Current evidence, 2026-06-11: Alone Time strengthens the Family and trainer/sitt
 
 Current evidence, 2026-06-11: Weight Trend strengthens the Health Watch and vet-report wedge by turning weigh-ins and goals into shared Records and Care Pass context without requiring document storage or clinical interpretation.
 
+Current evidence, 2026-06-11: Grooming Care strengthens the sitter/vet/report wedge by turning brushing, bathing, nails, teeth, coat notes, product context, and next due dates into shared Records and Care Pass context before groomer contacts or reminders exist.
+
 Current evidence, 2026-06-11: Household Access strengthens the Family-tier wedge by making synced members, pending invites, routine-only owners, and practical permission labels visible before real provider-backed role enforcement is enabled.
 
 ## Gate 8: Production Safety
@@ -192,4 +200,4 @@ Current evidence, 2026-06-08: Expo app identity no longer uses Replit placeholde
 
 Current evidence, 2026-06-08: Focused tests now cover the Home avatar motion state model and static wiring check. Native animation runtime verification, Rive/Lottie/Reanimated asset QA, and screenshot review remain open.
 
-Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, Household Responsibility derivation/mobile wiring, Household Access derivation/mobile wiring, Care Log Audit Trail derivation/mobile wiring, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, Alone Time derivation/report/mobile wiring, Weight Trend derivation/report/mobile wiring, and static mobile wiring. Local focused tests pass at 159 tests. Last remote GitHub Actions `WoofWatcher Verify` evidence is run `27366047790` for the Household Access slice. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.
+Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, Household Responsibility derivation/mobile wiring, Household Access derivation/mobile wiring, Care Log Audit Trail derivation/mobile wiring, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, Alone Time derivation/report/mobile wiring, Weight Trend derivation/report/mobile wiring, Grooming Care derivation/report/mobile wiring, and static mobile wiring. Local focused tests pass at 164 tests. Last remote GitHub Actions `WoofWatcher Verify` evidence is run `27366293330` for the Household Access docs slice. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.

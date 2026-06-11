@@ -532,6 +532,16 @@ Owner: Codex.
 
 Revisit trigger: Vet-reviewed weight-plan language, long-range charting, weight-goal reminders, diet automation, or clinical interpretation becomes active release work.
 
+### 2026-06-11: Grooming Care Uses Owner-Reported Grooming Evidence First
+
+Decision: Grooming Care derives from household-visible grooming logs with type, duration, coat/skin notes, products/groomer context, next due date, caregiver, and latest context before adding groomer contacts, recurring reminders, or clinical coat/skin interpretation.
+
+Reason: Apollo wants every daily-care category to become useful household evidence and report context. Grooming matters for sitter handoffs, vet review, and future groomer partnerships, but the app should summarize owner-entered context without diagnosing skin or coat issues.
+
+Owner: Codex.
+
+Revisit trigger: Grooming reminders, groomer collaboration, coat/skin follow-up workflows, document-backed grooming receipts, or clinician-reviewed language become active release work.
+
 ### 2026-06-11: Household Access Is Readiness Before Enforcement
 
 Decision: Household Access derives synced account members, local-only caregivers, routine-only owners, invite readiness, and practical permission labels before adding provider-backed role enforcement.

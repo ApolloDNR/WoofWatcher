@@ -41,6 +41,7 @@ Passing evidence:
 - The Log composer captures structured training skill/cue, win/practice/struggle outcome, duration, next-practice notes, and household visibility, and Records includes Training Progress derived from visible training logs.
 - The Log composer captures Alone Time duration, return state, trigger/context, calming support, recovery minutes, sticky notes, and household visibility, and Records includes Alone Time patterns derived from visible departure logs.
 - Records Weight Trend now uses shared care-domain logic for visible weigh-ins, profile fallback, goal distance, and chart inputs, and Care Pass reports include the same Weight Trend context.
+- The Log composer captures Grooming Care type, duration, coat/skin notes, products/groomer context, next due date, sticky notes, and household visibility, and Records includes Grooming Care derived from visible grooming logs.
 - Dedicated Setup route can save dog profile, diet baseline, starter routine, and household caregiver basics in one flow.
 - Log entries have a detail sheet with sticky notes, audit trail history, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Log exposes a durable Offline Outbox banner for local, pending, and failed care-entry changes with retryable create/update counts and a Retry sync action.
@@ -66,7 +67,7 @@ Status: Partially passing.
 
 Passing evidence:
 
-- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, medication quick-log defaults, medication composer wiring, medication adherence, medication follow-ups, medication history, water quick-log defaults, hydration summaries, hydration Care Pass language, mobile Records hydration wiring, walk quick-log visibility, walk activity summaries, saved walk route templates, walk activity and Saved Routes Care Pass language, mobile Records walk activity wiring, full Log walk route fields, potty quick-log visibility, potty composer detail fields, Potty Health summaries, Potty Health color/context review evidence, Potty Health Care Pass language, mobile Records Potty Health wiring, Weekly Care Trends derivation, Care Pass trend language, mobile Records trend wiring, Training Progress derivation, Log composer training fields, trainer Care Pass training language, mobile Records training wiring, Alone Time derivation, Log composer Alone Time fields, Care Pass Alone Time language, mobile Records Alone Time wiring, Weight Trend derivation, Care Pass Weight Trend language, mobile Records Weight Trend wiring, Household Responsibility derivation, Calendar/More responsibility wiring, Household Access derivation and More wiring, Care Log Audit Trail derivation and mobile Log wiring, Care Pass medication language, mobile Records medication wiring, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
+- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, medication quick-log defaults, medication composer wiring, medication adherence, medication follow-ups, medication history, water quick-log defaults, hydration summaries, hydration Care Pass language, mobile Records hydration wiring, walk quick-log visibility, walk activity summaries, saved walk route templates, walk activity and Saved Routes Care Pass language, mobile Records walk activity wiring, full Log walk route fields, potty quick-log visibility, potty composer detail fields, Potty Health summaries, Potty Health color/context review evidence, Potty Health Care Pass language, mobile Records Potty Health wiring, Weekly Care Trends derivation, Care Pass trend language, mobile Records trend wiring, Training Progress derivation, Log composer training fields, trainer Care Pass training language, mobile Records training wiring, Alone Time derivation, Log composer Alone Time fields, Care Pass Alone Time language, mobile Records Alone Time wiring, Weight Trend derivation, Care Pass Weight Trend language, mobile Records Weight Trend wiring, Grooming Care derivation, Log composer grooming fields, Care Pass Grooming Care language, mobile Records Grooming Care wiring, Household Responsibility derivation, Calendar/More responsibility wiring, Household Access derivation and More wiring, Care Log Audit Trail derivation and mobile Log wiring, Care Pass medication language, mobile Records medication wiring, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:
@@ -153,6 +154,7 @@ Current gaps:
 - Training Progress derivation, private-log exclusion, Log composer skill/outcome/next-practice fields, trainer Care Pass language, and Records training wiring are covered by focused tests.
 - Alone Time derivation, private-log exclusion, Log composer duration/return-state/trigger/support/recovery fields, Care Pass handoff language, and Records Alone Time wiring are covered by focused tests.
 - Weight Trend derivation, private-log exclusion, profile baseline fallback, goal parsing, Care Pass report language, and Records chart wiring are covered by focused tests.
+- Grooming Care derivation, private-log exclusion, Log composer type/duration/coat/products/next-due fields, Care Pass report language, and Records Grooming Care wiring are covered by focused tests.
 - Household Responsibility derivation and Calendar/More responsibility wiring are covered by focused tests.
 - Household Access derivation and More wiring are covered by focused tests.
 - Care Log Audit Trail derivation and Log edit/sticky/delete/detail wiring are covered by focused tests.
@@ -213,11 +215,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI after the Household Access slice:
+Latest known passing CI after the Household Access docs slice:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27366047790`, completed success on 2026-06-11 UTC
+- Evidence: run `27366293330`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 

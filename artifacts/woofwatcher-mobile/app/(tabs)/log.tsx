@@ -282,6 +282,7 @@ const LOG_TYPES: LogType[] = [
     label: "Grooming",
     icon: "star",
     baseTitle: "Grooming",
+    stepper: { label: "Duration", unit: "min", values: [5, 10, 15, 20, 30, 45] },
     groups: [
       {
         key: "kind",
@@ -294,6 +295,7 @@ const LOG_TYPES: LogType[] = [
         ],
       },
     ],
+    noteField: { placeholder: "Sticky note: coat, paws, ears, products, groomer notes, or what changed..." },
   },
   { type: "note", label: "Note", icon: "star", baseTitle: "Note", noteField: { placeholder: "What's on your mind?" } },
 ];
@@ -365,6 +367,9 @@ const DETAIL_LABELS: Record<string, string> = {
   aloneTrigger: "Trigger",
   calmingSupport: "Calming support",
   recoveryMinutes: "Recovery",
+  groomingCondition: "Coat/skin",
+  groomingProducts: "Products/groomer",
+  groomingNextDue: "Next due",
   routineLabel: "Routine",
   what: "Symptom",
 };
@@ -534,6 +539,9 @@ export default function LogScreen() {
   const [aloneTrigger, setAloneTrigger] = useState("");
   const [calmingSupport, setCalmingSupport] = useState("");
   const [recoveryMinutes, setRecoveryMinutes] = useState("");
+  const [groomingCondition, setGroomingCondition] = useState("");
+  const [groomingProducts, setGroomingProducts] = useState("");
+  const [groomingNextDue, setGroomingNextDue] = useState("");
   const [householdVisible, setHouseholdVisible] = useState(true);
   const [noteText, setNoteText] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
@@ -576,6 +584,9 @@ export default function LogScreen() {
     setAloneTrigger("");
     setCalmingSupport("");
     setRecoveryMinutes("");
+    setGroomingCondition("");
+    setGroomingProducts("");
+    setGroomingNextDue("");
     setHouseholdVisible(true);
     setNoteText("");
   }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -824,6 +835,23 @@ export default function LogScreen() {
       if (recovery != null) details.recoveryMinutes = Math.round(recovery);
     }
 
+    if (config.type === "grooming") {
+      const condition = groomingCondition.trim();
+      const products = groomingProducts.trim();
+      const nextDue = groomingNextDue.trim();
+
+      details.householdVisible = householdVisible;
+      if (condition) {
+        details.groomingCondition = condition;
+        parts.push(condition);
+      }
+      if (products) details.groomingProducts = products;
+      if (nextDue) details.groomingNextDue = nextDue;
+      if (/(itch|red|sore|hot spot|mat|odor|ear|rash|pain|blood)/i.test(condition)) {
+        severity = "watch";
+      }
+    }
+
     if (config.type === "potty") {
       details.householdVisible = householdVisible;
     }
@@ -880,6 +908,9 @@ export default function LogScreen() {
     aloneTrigger,
     calmingSupport,
     recoveryMinutes,
+    groomingCondition,
+    groomingProducts,
+    groomingNextDue,
     householdVisible,
     dietProgress.unit,
     noteText,
@@ -1556,6 +1587,66 @@ export default function LogScreen() {
                     </Text>
                     <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                       {householdVisible ? "Shared alone logs update Alone Time patterns and handoffs." : "Private alone logs stay out of shared anxiety patterns."}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            )}
+
+            {selectedType === "grooming" && (
+              <View style={s.mealFields}>
+                <View>
+                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Coat or skin note</Text>
+                  <TextInput
+                    placeholder="Light shedding, mats behind ears, paws looked good..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={groomingCondition}
+                    onChangeText={setGroomingCondition}
+                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                  />
+                </View>
+                <View style={s.mealFieldRow}>
+                  <View style={s.mealField}>
+                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Products</Text>
+                    <TextInput
+                      placeholder="Slicker brush"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={groomingProducts}
+                      onChangeText={setGroomingProducts}
+                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    />
+                  </View>
+                  <View style={s.mealField}>
+                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Next due</Text>
+                    <TextInput
+                      placeholder="2026-06-18"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={groomingNextDue}
+                      onChangeText={setGroomingNextDue}
+                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    />
+                  </View>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setHouseholdVisible((prev) => !prev);
+                  }}
+                  style={[
+                    s.visibilityToggle,
+                    {
+                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
+                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {householdVisible ? "Visible to household" : "Private log"}
+                    </Text>
+                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {householdVisible ? "Shared grooming logs update Grooming Care and handoffs." : "Private grooming stays out of shared grooming reports."}
                     </Text>
                   </View>
                 </Pressable>

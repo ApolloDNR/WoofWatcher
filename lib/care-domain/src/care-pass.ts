@@ -3,6 +3,7 @@ import { deriveAloneTime, type AloneTimeItem } from "./alone-time.ts";
 import { deriveCareTrends, type CareTrendSignal } from "./care-trends.ts";
 import { deriveCareHandoff, type CareHandoffCaregiver, type CareHandoffRoutine } from "./handoff.ts";
 import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
+import { deriveGroomingCare, type GroomingCareItem } from "./grooming-care.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
 import { derivePottyHealth } from "./potty-health.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
@@ -216,6 +217,11 @@ function aloneLatestLine(item: AloneTimeItem | null): string {
 function weightLatestLine(item: WeightTrendItem | null): string {
   if (!item) return "";
   return `Latest: ${item.weight} ${item.unit} by ${item.caregiver}`;
+}
+
+function groomingLatestLine(item: GroomingCareItem | null): string {
+  if (!item) return "";
+  return `Latest: ${item.label} - ${item.kindLabel} with ${item.caregiver}`;
 }
 
 function audienceChecklist(audience: CarePassAudience, name: string): string[] {
@@ -542,6 +548,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const trainingProgress = deriveTrainingProgress({ entries, now, lookbackDays: 30 });
   const aloneTime = deriveAloneTime({ entries, now, lookbackDays: 30 });
   const weightTrend = deriveWeightTrend({ entries, profile, goals: input.goals ?? [], now, lookbackDays: 90 });
+  const groomingCare = deriveGroomingCare({ entries, now, lookbackDays: 45 });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -639,6 +646,18 @@ export function buildCarePass(input: CarePassInput): CarePass {
       aloneTime.averageRecoveryMinutes ? `Average recovery: ${aloneTime.averageRecoveryMinutes} minutes` : "",
       aloneLatestLine(aloneTime.latest),
       aloneTime.nextStep,
+    ]),
+    section("Grooming Care", [
+      groomingCare.summary,
+      groomingCare.totalSessions
+        ? `Types: ${groomingCare.brushCount} brush, ${groomingCare.bathCount} bath, ${groomingCare.nailCount} nails, ${groomingCare.teethCount} teeth`
+        : "",
+      groomingLatestLine(groomingCare.latest),
+      groomingCare.latest?.condition ? `Coat note: ${groomingCare.latest.condition}` : "",
+      groomingCare.products.length ? `Products: ${groomingCare.products.slice(0, 5).join(", ")}` : "",
+      groomingCare.nextDue ? `Next due: ${groomingCare.nextDue}` : "",
+      groomingCare.nextStep,
+      "Grooming is owner-reported coat and grooming context for handoff and veterinarian review, not a diagnosis.",
     ]),
     section("Potty Health", [
       pottyHealth.summary,
