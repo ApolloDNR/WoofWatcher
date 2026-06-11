@@ -28,6 +28,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 20. DONE 2026-06-10: Medication logging now has Home quick-log access, routine-aware dose/outcome/visibility defaults, a Log composer Medication routine panel, and skipped-medication handling that does not count as taken.
 21. DONE 2026-06-11: Medication follow-ups now derive missed, due-now, and refill due-soon/overdue actions from routines, logs, and medication records; Records shows Medication Follow-ups and Care Pass report language includes adherence plus refill next steps.
 22. DONE 2026-06-11: Medication history now derives recent household-visible medication logs with dose, taken/skipped/missed outcome, caregiver, routine id, note, and Records Medication History UI.
+23. DONE 2026-06-11: Water care now has Home quick-log access, household-visible refill defaults, shared daily hydration summary logic, Records Hydration UI, and Care Pass report language.
 
 ## Cadence
 

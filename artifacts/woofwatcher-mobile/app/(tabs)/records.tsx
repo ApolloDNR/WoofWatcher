@@ -37,6 +37,7 @@ import {
   deriveMedicationFollowUps,
   deriveMedicationHistory,
   deriveRecordReminders,
+  deriveWaterHydration,
   getCarePassArtifactPrintView,
   getPetCredentialPrintView,
   getRecordDueStatus,
@@ -178,6 +179,10 @@ export default function RecordsScreen() {
   );
   const medicationHistory = useMemo(
     () => deriveMedicationHistory({ entries: state.entries, now, limit: 4 }),
+    [state.entries, now],
+  );
+  const waterHydration = useMemo(
+    () => deriveWaterHydration({ entries: state.entries, now }),
     [state.entries, now],
   );
 
@@ -793,6 +798,60 @@ export default function RecordsScreen() {
                 );
               })
             )}
+          </View>
+
+          {/* Hydration */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Hydration</Text>
+            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+              {waterHydration.total ? `${waterHydration.total} logs` : "No logs"}
+            </Text>
+          </View>
+          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <View style={s.hydrationSummary}>
+              <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "18" }]}>
+                <Ionicons name="water-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {waterHydration.status === "logged" ? "Fresh water logged" : "Water watch"}
+                </Text>
+                <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {waterHydration.summary}
+                </Text>
+              </View>
+            </View>
+            <View style={[s.hydrationMeter, { backgroundColor: colors.background }]}>
+              <View style={[s.hydrationMeterFill, { backgroundColor: colors.primary, width: `${waterHydration.percent}%` }]} />
+            </View>
+            <View style={s.hydrationStats}>
+              {[
+                { label: "Bowl refills", value: String(waterHydration.refillEquivalent) },
+                { label: "Goal", value: `${waterHydration.targetRefills}` },
+                { label: "Caregivers", value: String(waterHydration.caregivers.length) },
+              ].map((item, index) => (
+                <View key={item.label} style={[s.hydrationStat, index < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
+                  <Text style={[s.hydrationValue, { color: colors.foreground, fontFamily: DISPLAY }]}>{item.value}</Text>
+                  <Text style={[s.hydrationLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              {waterHydration.nextStep}
+            </Text>
+            {waterHydration.last ? (
+              <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
+                <View style={[s.watchSignalDot, { backgroundColor: colors.primary }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Latest: {waterHydration.last.amountLabel}
+                  </Text>
+                  <Text style={[s.watchPatternEvidence, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {waterHydration.last.caregiver} - {relativeDay(waterHydration.last.occurredAt, now)}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
           </View>
 
           {/* Incident lookback */}
@@ -1599,6 +1658,15 @@ const s = StyleSheet.create({
   moodFill: { height: "100%", borderRadius: 6 },
   moodPct: { fontSize: 12.5, width: 34, textAlign: "right" },
   moodCount: { fontSize: 12, width: 28 },
+
+  hydrationSummary: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
+  hydrationMeter: { height: 8, borderRadius: 4, overflow: "hidden", marginBottom: 12 },
+  hydrationMeterFill: { height: "100%", borderRadius: 4 },
+  hydrationStats: { flexDirection: "row", borderRadius: 8, overflow: "hidden", marginBottom: 10 },
+  hydrationStat: { flex: 1, alignItems: "center", paddingVertical: 8, paddingHorizontal: 6 },
+  hydrationValue: { fontSize: 21, letterSpacing: 0 },
+  hydrationLabel: { fontSize: 10.5, marginTop: 2, textAlign: "center" },
+  hydrationNext: { fontSize: 12.5, lineHeight: 18 },
 
   incidentRow: { flexDirection: "row", marginBottom: 4 },
   watchSummary: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },

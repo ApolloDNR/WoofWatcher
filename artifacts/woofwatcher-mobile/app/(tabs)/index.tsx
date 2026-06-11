@@ -45,6 +45,7 @@ interface QuickLogItem {
 const QUICK_LOG: QuickLogItem[] = [
   { key: "meal", icon: "bowl", label: "Meal", type: "meal", title: "Meal" },
   { key: "treat", icon: "bone", label: "Treat", type: "treat", title: "Treat" },
+  { key: "water", icon: "drop", label: "Water", type: "water", title: "Water" },
   { key: "walk", icon: "paw", label: "Walk", type: "walk", title: "Walk" },
   { key: "potty", icon: "drop", label: "Potty", type: "potty", title: "Potty break" },
   { key: "meds", icon: "pill", label: "Meds", type: "medication", title: "Medication" },
@@ -57,7 +58,7 @@ const QUICK_LOG: QuickLogItem[] = [
 ];
 
 const TYPE_ICON: Record<string, PulseIconName> = {
-  meal: "bowl", treat: "bone", walk: "paw", potty: "drop", pee: "drop",
+  meal: "bowl", treat: "bone", water: "drop", walk: "paw", potty: "drop", pee: "drop",
   poop: "drop", play: "candy", training: "star", vomit: "vomit", alone: "house",
   mood: "heart", weight: "scale", meds: "pill", medication: "pill", symptom: "vomit",
 };

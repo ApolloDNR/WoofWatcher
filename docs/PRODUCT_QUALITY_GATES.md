@@ -34,6 +34,7 @@ Passing evidence:
 - Home quick log and the Log composer can create medication logs with routine identity, dose, taken/skipped outcome, and household visibility.
 - Records includes Medication Follow-ups that derive missed-dose, due-now, and refill due-soon/overdue owner actions from routines, logs, and medication records.
 - Records includes Medication History for recent household-visible medication logs with dose, outcome, caregiver, routine id, and notes.
+- Home quick log can record household-visible water refills, and Records includes Hydration status derived from visible water logs.
 - Dedicated Setup route can save dog profile, diet baseline, starter routine, and household caregiver basics in one flow.
 - Log entries have a detail sheet with sticky notes, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Care Pass reports can be previewed by audience before sharing.
@@ -54,7 +55,7 @@ Status: Partially passing.
 
 Passing evidence:
 
-- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, medication quick-log defaults, medication composer wiring, medication adherence, medication follow-ups, medication history, Care Pass medication language, mobile Records medication wiring, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
+- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, medication quick-log defaults, medication composer wiring, medication adherence, medication follow-ups, medication history, water quick-log defaults, hydration summaries, hydration Care Pass language, mobile Records hydration wiring, Care Pass medication language, mobile Records medication wiring, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:
@@ -134,6 +135,7 @@ Current gaps:
 - Critical mobile action accessibility labels are covered by focused static smoke.
 - Home avatar motion state and wiring are covered by focused tests.
 - Medication adherence, medication follow-ups, medication history, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
+- Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.
 - Need report/export tests.
 - Need release smoke checklist.
 

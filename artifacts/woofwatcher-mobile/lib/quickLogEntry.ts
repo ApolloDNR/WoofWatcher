@@ -150,6 +150,11 @@ export function buildQuickLogEntry(
     if (dose) details.dose = dose;
   }
 
+  if (normalizedType === "water") {
+    details.waterAmount = "refill";
+    details.householdVisible = true;
+  }
+
   return {
     type: normalizedType,
     title: routine?.label ?? item.title,

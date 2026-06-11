@@ -172,6 +172,16 @@ Owner: Codex.
 
 Revisit trigger: The app adds role-based permissions, medication search/filtering, audit history, or provider-backed medication reports.
 
+### 2026-06-11: Hydration Is Daily Care Evidence, Not Medical Diagnosis
+
+Decision: Daily hydration is derived in `lib/care-domain` from household-visible water logs and surfaced in Records and Care Passes as care coordination evidence.
+
+Reason: Owners and sitters need to know whether fresh water was offered and who logged it. The app can summarize water refills and visible caregiver participation without implying medical certainty about hydration status or unusual drinking causes.
+
+Owner: Codex.
+
+Revisit trigger: Configurable water goals, vet-reviewed hydration language, unusual-drinking Health Watch rules, or provider-backed reminder delivery become active release work.
+
 ### 2026-06-08: Log Details Stay In The Log Workflow
 
 Decision: Entry details, sticky notes, sync state, edit/delete actions, and entry-level handoff sharing are implemented as a Log screen bottom sheet rather than a separate route.

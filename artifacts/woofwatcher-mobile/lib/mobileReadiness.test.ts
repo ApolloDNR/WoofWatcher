@@ -208,3 +208,15 @@ test("keeps Records wired to medication history", () => {
   assert.match(records, /Medication History/);
   assert.match(records, /statusLabel/);
 });
+
+test("keeps hydration visible from Home quick log to Records", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(home, /type: "water"/);
+  assert.match(home, /label: "Water"/);
+  assert.match(records, /deriveWaterHydration/);
+  assert.match(records, /waterHydration/);
+  assert.match(records, /Hydration/);
+  assert.match(records, /Bowl refills/);
+});

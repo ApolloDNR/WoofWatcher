@@ -145,6 +145,38 @@ test("care pass includes medication adherence and follow-up language", () => {
   assert.match(pass.message, /Apoquel refill due soon/);
 });
 
+test("care pass includes daily hydration language", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    now: new Date("2026-06-06T20:00:00-07:00").getTime(),
+    entries: [
+      ...baseInput().entries,
+      {
+        id: "water_1",
+        type: "water",
+        title: "Fresh water refill",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T10:00:00-07:00",
+        details: { waterAmount: "refill", householdVisible: true },
+      },
+      {
+        id: "water_2",
+        type: "water",
+        title: "A sip",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T18:00:00-07:00",
+        details: { amount: "sip", householdVisible: true },
+      },
+    ],
+  });
+
+  assert.ok(pass.sections.some((section) => section.title === "Hydration"));
+  assert.match(pass.message, /2 water logs today/);
+  assert.match(pass.message, /1.25 bowl refills tracked/);
+  assert.match(pass.message, /Keep logging fresh water/i);
+});
+
 test("trainer care pass emphasizes behavior and activity context", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "trainer" });
 

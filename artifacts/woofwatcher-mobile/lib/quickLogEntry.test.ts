@@ -19,6 +19,7 @@ function state(overrides: Partial<QuickLogState> = {}): QuickLogState {
     routines: [
       { id: "breakfast", label: "Breakfast", type: "meal", time: "7:30 AM", owner: "Emma" },
       { id: "walk", label: "Morning walk", type: "walk", time: "8:30 AM", owner: "Apollo" },
+      { id: "water", label: "Fresh water", type: "water", time: "8:45 AM", owner: "Apollo" },
       { id: "meds", label: "Apoquel", type: "medication", time: "9:00 AM", owner: "Apollo", note: "1 tablet with breakfast" },
     ],
     entries: [],
@@ -113,6 +114,43 @@ test("walk quick log attaches the open walk routine after breakfast is handled",
     routineId: "walk",
     routineLabel: "Morning walk",
     routineTime: "8:30 AM",
+  });
+});
+
+test("water quick log records a household-visible fresh water refill", () => {
+  const entry = buildQuickLogEntry(
+    { type: "water", title: "Water" },
+    state({
+      entries: [
+        {
+          id: "meal_1",
+          type: "meal",
+          title: "Breakfast",
+          caregiver: "Emma",
+          occurredAt: "2026-06-06T07:34:00-07:00",
+          details: { routineId: "breakfast", mealCompletion: "complete", householdVisible: true },
+        },
+        {
+          id: "walk_1",
+          type: "walk",
+          title: "Morning walk",
+          caregiver: "Apollo",
+          occurredAt: "2026-06-06T08:42:00-07:00",
+          details: { routineId: "walk" },
+        },
+      ],
+    }),
+    { caregiver: "Apollo", now: NOW },
+  );
+
+  assert.equal(entry.type, "water");
+  assert.equal(entry.title, "Fresh water");
+  assert.deepEqual(entry.details, {
+    routineId: "water",
+    routineLabel: "Fresh water",
+    routineTime: "8:45 AM",
+    waterAmount: "refill",
+    householdVisible: true,
   });
 });
 

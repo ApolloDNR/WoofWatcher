@@ -2,6 +2,7 @@ import { normalizeCareEventType } from "./events.ts";
 import { deriveCareHandoff, type CareHandoffCaregiver, type CareHandoffRoutine } from "./handoff.ts";
 import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
+import { deriveWaterHydration } from "./water.ts";
 
 export type CarePassAudience = "caregiver" | "sitter" | "vet" | "trainer";
 
@@ -484,6 +485,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   });
   const medication = deriveMedicationAdherence({ entries, routines, now });
   const medicationFollowUps = deriveMedicationFollowUps({ entries, routines, records, now }).slice(0, 4);
+  const hydration = deriveWaterHydration({ entries, now });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -524,6 +526,11 @@ export function buildCarePass(input: CarePassInput): CarePass {
       diet.avoid ? `Avoid: ${diet.avoid}` : "",
       diet.sensitivities ? `Sensitivities: ${diet.sensitivities}` : "",
       diet.appetiteQuirks ? `Appetite notes: ${diet.appetiteQuirks}` : "",
+    ]),
+    section("Hydration", [
+      hydration.summary,
+      hydration.last ? `Latest: ${hydration.last.amountLabel} by ${hydration.last.caregiver}` : "",
+      hydration.nextStep,
     ]),
     section("Medication", [
       medication.total > 0 ? medication.summary : "",
