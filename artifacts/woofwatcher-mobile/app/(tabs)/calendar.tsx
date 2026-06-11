@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@clerk/expo";
 import {
+  deriveCareReminderCenter,
   deriveHouseholdResponsibility,
   deriveRoutineBoard,
   normalizeCareEventType,
@@ -75,6 +76,13 @@ const EVENT_TYPES = [
   { key: "training", label: "Training" },
 ] as const;
 
+const REMINDER_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  routine: "alarm-outline",
+  medication: "medkit-outline",
+  record: "folder-open-outline",
+  grooming: "sparkles-outline",
+};
+
 const BASE_URL = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
 
 function routineMinutes(time: string): number {
@@ -106,6 +114,12 @@ function routineStatusLabel(status: RoutineBoardStatus): string {
   return "Upcoming";
 }
 
+function reminderUrgencyLabel(urgency: string): string {
+  if (urgency === "alert") return "Urgent";
+  if (urgency === "watch") return "Watch";
+  return "Heads up";
+}
+
 interface SuggestedEvent {
   title: string;
   type: string;
@@ -122,7 +136,7 @@ export default function CalendarScreen() {
   const { state, updateCareDoc, addEntry } = useCare();
 
   const { getToken } = useAuth();
-  const { routines, calendarEvents, profile, entries, caregivers } = state;
+  const { routines, calendarEvents, profile, entries, caregivers, records } = state;
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
   const now = Date.now();
@@ -166,6 +180,17 @@ export default function CalendarScreen() {
     () => deriveHouseholdResponsibility({ routines: sortedRoutines, entries, caregivers, now }),
     [sortedRoutines, entries, caregivers, now],
   );
+  const careReminderCenter = useMemo(
+    () => deriveCareReminderCenter({ routines: sortedRoutines, entries, records, caregivers, now, limit: 4 }),
+    [sortedRoutines, entries, records, caregivers, now],
+  );
+  const reminderCount = careReminderCenter.total;
+  const reminderTone =
+    careReminderCenter.status === "attention"
+      ? colors.rose
+      : careReminderCenter.status === "watch"
+        ? colors.amber
+        : colors.sage;
   const responsibility = householdResponsibility;
   const assignedOwnerLoads = responsibility.members.filter((member) => member.assigned > 0);
   const responsibilityTone =
@@ -535,6 +560,80 @@ export default function CalendarScreen() {
               </View>
             ))
           )}
+
+          {/* Reminder Center */}
+          <View style={[s.sectionHeader, { marginTop: 14 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Reminder Center</Text>
+            <Text style={[s.sectionLink, { color: reminderTone, fontFamily: "Inter_700Bold" }]}>
+              {reminderCount === 0 ? "Clear" : `${reminderCount} active`}
+            </Text>
+          </View>
+          <View style={[s.reminderCard, { backgroundColor: colors.card, borderColor: reminderTone + "44", shadowColor: reminderTone }]}>
+            <View style={s.responsibilityTop}>
+              <View style={[s.responsibilityIcon, { backgroundColor: reminderTone + "18" }]}>
+                <Ionicons name="notifications-outline" size={18} color={reminderTone} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Owner Action List</Text>
+                <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {careReminderCenter.summary}
+                </Text>
+              </View>
+            </View>
+            <View style={s.responsibilityMetrics}>
+              {[
+                { label: "Urgent", value: careReminderCenter.alertCount },
+                { label: "Watch", value: careReminderCenter.watchCount },
+                { label: "Total", value: careReminderCenter.total },
+              ].map((metric) => (
+                <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
+                  <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
+                  <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            {careReminderCenter.items.length === 0 ? (
+              <View style={[s.reminderEmpty, { backgroundColor: colors.background }]}>
+                <Ionicons name="checkmark-circle-outline" size={19} color={colors.sage} />
+                <Text style={[s.reminderEmptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  No owner reminders need attention right now.
+                </Text>
+              </View>
+            ) : (
+              <View style={s.reminderList}>
+                {careReminderCenter.items.map((item, index) => {
+                  const rowTone = item.urgency === "alert" ? colors.rose : item.urgency === "watch" ? colors.amber : colors.sage;
+                  return (
+                    <View key={item.id} style={[s.reminderRow, index < careReminderCenter.items.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
+                      <View style={[s.reminderIcon, { backgroundColor: rowTone + "16" }]}>
+                        <Ionicons name={REMINDER_ICON[item.kind] ?? "alarm-outline"} size={17} color={rowTone} />
+                      </View>
+                      <View style={s.reminderMain}>
+                        <View style={s.reminderTitleLine}>
+                          <Text style={[s.reminderTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
+                          <View style={[s.reminderPill, { backgroundColor: rowTone + "16" }]}>
+                            <Text style={[s.reminderPillText, { color: rowTone, fontFamily: "Inter_700Bold" }]}>{reminderUrgencyLabel(item.urgency)}</Text>
+                          </View>
+                        </View>
+                        <Text numberOfLines={2} style={[s.reminderDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
+                        <Text numberOfLines={2} style={[s.reminderAction, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{item.action}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+                {careReminderCenter.total > careReminderCenter.items.length ? (
+                  <Text style={[s.reminderMore, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    + {careReminderCenter.total - careReminderCenter.items.length} more reminder candidate{careReminderCenter.total - careReminderCenter.items.length === 1 ? "" : "s"} in records and routines.
+                  </Text>
+                ) : null}
+              </View>
+            )}
+            <Text style={[s.reminderNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{careReminderCenter.nextStep}</Text>
+            <Text style={[s.reminderReadiness, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {careReminderCenter.notificationReadiness}
+            </Text>
+          </View>
 
           {/* Daily routine */}
           <View style={[s.sectionHeader, { marginTop: 14 }]}>
@@ -948,6 +1047,32 @@ const s = StyleSheet.create({
   eventMeta: { fontSize: 12.5, marginTop: 3 },
   eventNote: { fontSize: 12.5, lineHeight: 17, marginTop: 4 },
   removeBtn: { width: 28, height: 28, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+
+  reminderCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 12,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  reminderList: { marginTop: 8 },
+  reminderRow: { flexDirection: "row", gap: 11, paddingVertical: 11 },
+  reminderIcon: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  reminderMain: { flex: 1, minWidth: 0 },
+  reminderTitleLine: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  reminderTitle: { fontSize: 14.5, flexShrink: 1 },
+  reminderPill: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  reminderPillText: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  reminderDetail: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
+  reminderAction: { fontSize: 12.5, lineHeight: 18, marginTop: 4 },
+  reminderMore: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
+  reminderNext: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
+  reminderReadiness: { fontSize: 11.5, lineHeight: 16, marginTop: 7 },
+  reminderEmpty: { flexDirection: "row", alignItems: "center", gap: 9, borderRadius: 14, padding: 12, marginTop: 12 },
+  reminderEmptyText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
 
   responsibilityCard: {
     borderRadius: 20,

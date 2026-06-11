@@ -12,9 +12,9 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 164 focused tests with the command above.
-- BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
-- LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27367190757` completed successfully for `feat: add grooming care tracking`.
+- PASS: 168 focused tests with the command above.
+- BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell. Direct `tsc --noEmit --pretty false` is also blocked because `tsc` is unavailable in the current Windows shell.
+- LAST REMOTE PASS BEFORE THIS SLICE: GitHub Actions `WoofWatcher Verify` run `27367395109` completed successfully after the Grooming Care evidence update.
 
 ## Required Automated Coverage
 
@@ -40,6 +40,7 @@ Latest local evidence, 2026-06-11:
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
 - Household Responsibility derivation for care-team routine ownership, open/overdue/unassigned routines, visible today log counts, next household action copy, and Calendar/More mobile wiring.
 - Household Access derivation for synced members, local-only caregivers, routine-only owners, invite readiness, permission labels, next-step copy, and More mobile wiring.
+- Reminder Center derivation for routine reminders, missed/due medication follow-ups, expiring/missing records, grooming due dates, private-log exclusion, urgency sorting, display limits, notification-readiness copy, and Calendar mobile wiring.
 - Care log audit trail creation, sanitization, sticky-note/edit/delete audit events, non-health deletion audit notes, and mobile Log detail wiring.
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
 - Home Quick Log routine matching and meal detail enrichment.
@@ -125,6 +126,7 @@ Latest local evidence, 2026-06-11:
 60. Add a Grooming log with type, duration, coat/skin note, product or groomer context, next due date, sticky note, and household visibility.
 61. Confirm Records Grooming Care updates status, minutes, type counts, products, next due date, latest context, and next-step copy while private grooming logs stay out.
 62. Preview a sitter or vet Care Pass and confirm Grooming Care summarizes latest grooming, product context, next due date, and owner-reported/non-diagnostic boundary language.
+63. Open Calendar and confirm Reminder Center combines overdue routines, missed/due medication follow-ups, due-soon records, and grooming due dates into one owner action list with urgent/watch/total counts and no claim that real push notifications are enabled.
 
 ## Missing QA
 

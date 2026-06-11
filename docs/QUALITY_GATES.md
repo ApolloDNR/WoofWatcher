@@ -78,6 +78,8 @@ Current evidence, 2026-06-11: Care Log Audit Trail now records create, edit, sti
 
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
+Current evidence, 2026-06-11: Reminder Center now combines routine-board status, medication follow-ups, record reminders, and grooming due dates into one Calendar action list with urgent/watch/total counts, private-log exclusion through the underlying domain helpers, and explicit notification-readiness copy before real push delivery exists.
+
 ## Gate 4: Premium Mobile UX
 
 Passing means the mobile app feels warm, polished, clear, fast, and useful every day. No dead buttons, fake screens, or decorative-only workflows.
@@ -182,6 +184,8 @@ Current evidence, 2026-06-11: Grooming Care strengthens the sitter/vet/report we
 
 Current evidence, 2026-06-11: Household Access strengthens the Family-tier wedge by making synced members, pending invites, routine-only owners, and practical permission labels visible before real provider-backed role enforcement is enabled.
 
+Current evidence, 2026-06-11: Reminder Center strengthens the Plus/Family reminders wedge by making existing routine, medication, record, and grooming follow-up candidates visible in Calendar without enabling checkout, push notifications, or automatic care writes.
+
 ## Gate 8: Production Safety
 
 Passing means CI is green, API auth is household-scoped, secrets are absent, privacy/export/delete are planned, sync failures are visible, and release docs are accurate.
@@ -200,4 +204,4 @@ Current evidence, 2026-06-08: Expo app identity no longer uses Replit placeholde
 
 Current evidence, 2026-06-08: Focused tests now cover the Home avatar motion state model and static wiring check. Native animation runtime verification, Rive/Lottie/Reanimated asset QA, and screenshot review remain open.
 
-Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, Household Responsibility derivation/mobile wiring, Household Access derivation/mobile wiring, Care Log Audit Trail derivation/mobile wiring, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, Alone Time derivation/report/mobile wiring, Weight Trend derivation/report/mobile wiring, Grooming Care derivation/report/mobile wiring, and static mobile wiring. Local focused tests pass at 164 tests. Last remote GitHub Actions `WoofWatcher Verify` evidence is run `27367190757` for the Grooming Care slice. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.
+Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, Household Responsibility derivation/mobile wiring, Household Access derivation/mobile wiring, Care Log Audit Trail derivation/mobile wiring, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, Alone Time derivation/report/mobile wiring, Weight Trend derivation/report/mobile wiring, Grooming Care derivation/report/mobile wiring, Reminder Center derivation/mobile wiring, and static mobile wiring. Local focused tests pass at 168 tests. Last remote GitHub Actions `WoofWatcher Verify` evidence before this slice is run `27367395109` after the Grooming Care evidence update. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.

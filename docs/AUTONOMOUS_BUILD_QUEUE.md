@@ -44,6 +44,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 36. DONE 2026-06-11: Weight Trend now derives visible recent weigh-ins, current weight, goal distance, previous-change, caregiver participation, Records chart inputs, and Care Pass report language from shared care-domain logic while preserving owner-reported/vet-review boundaries.
 37. DONE 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance in shared care-domain logic, then surfaces that access plan in More without pretending provider-backed role enforcement is complete.
 38. DONE 2026-06-11: Grooming Care now captures grooming duration, type, coat/skin notes, products/groomer context, next due date, sticky notes, and household visibility in the Log composer, derives shared grooming summaries in care-domain logic, and carries status, products, latest context, Records UI, and Care Pass language into sitter/vet handoffs.
+39. DONE 2026-06-11: Reminder Center now derives one owner-visible action list from routine-board status, medication follow-ups, record reminders, and grooming due dates, then surfaces urgent/watch/total counts and notification-readiness copy in Calendar before provider-backed push delivery exists.
 
 ## Cadence
 

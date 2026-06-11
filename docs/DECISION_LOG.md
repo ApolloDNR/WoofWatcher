@@ -552,6 +552,16 @@ Owner: Codex.
 
 Revisit trigger: Provider-backed role enforcement, invite approval, caregiver editing, household admin tools, or account audit policy becomes active release work.
 
+### 2026-06-11: Reminder Center Is A Candidate Layer Before Push Delivery
+
+Decision: Reminder Center derives owner action candidates from routine-board status, medication follow-ups, record reminders, and grooming due dates before adding real push notifications, runtime permissions, reminder preferences, or automatic care writes.
+
+Reason: Apollo wants reminders to feel useful and household-aware now, but the app should not imply provider-backed notification delivery until account/device permissions, scheduling rules, user preferences, and safety policy exist. Calendar can show the actionable truth today while push delivery remains a separate production slice.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed notification delivery, reminder preferences, recurring-rule scheduling, medication-specific delivery policy, or automatic assistant writes become active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

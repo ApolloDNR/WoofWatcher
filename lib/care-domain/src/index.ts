@@ -17,6 +17,7 @@ export * from "./training-progress.ts";
 export * from "./alone-time.ts";
 export * from "./weight-trend.ts";
 export * from "./grooming-care.ts";
+export * from "./care-reminders.ts";
 export * from "./household-access.ts";
 export * from "./household-responsibility.ts";
 export * from "./onboarding.ts";

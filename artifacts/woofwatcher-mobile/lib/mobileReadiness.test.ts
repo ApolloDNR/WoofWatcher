@@ -377,6 +377,16 @@ test("keeps household responsibility visible in Calendar and More", () => {
   assert.match(more, /Open routine board/);
 });
 
+test("keeps Reminder Center visible in Calendar before push notifications are enabled", () => {
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+
+  assert.match(calendar, /deriveCareReminderCenter/);
+  assert.match(calendar, /careReminderCenter/);
+  assert.match(calendar, /Reminder Center/);
+  assert.match(calendar, /notificationReadiness/);
+  assert.match(calendar, /reminderCount/);
+});
+
 test("keeps household access readiness visible from More", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 
