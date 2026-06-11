@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+.neo-retro-container {
+  font-family: 'VT323', monospace;
+  background-color: #FDFCDC;
+  color: #1A2238;
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.neo-retro-pixel-font {
+  font-family: 'Press Start 2P', cursive;
+  text-transform: uppercase;
+}
+
+.neo-retro-box {
+  background-color: #FDFCDC;
+  border: 4px solid #1A2238;
+  box-shadow: 4px 4px 0px #E36414;
+  border-radius: 0;
+}
+
+.neo-retro-box-blue {
+  background-color: #A2D2FF;
+  border: 4px solid #1A2238;
+  box-shadow: 4px 4px 0px #1A2238;
+}
+
+.neo-retro-box-mint {
+  background-color: #8FE388;
+  border: 4px solid #1A2238;
+  box-shadow: 4px 4px 0px #1A2238;
+}
+
+.neo-retro-box-navy {
+  background-color: #1A2238;
+  color: #FDFCDC;
+  border: 4px solid #E36414;
+  box-shadow: 4px 4px 0px #A2D2FF;
+}
+
+.pixel-art {
+  image-rendering: pixelated;
+}
+
+.neo-retro-button {
+  background-color: #E36414;
+  color: #FDFCDC;
+  border: 4px solid #1A2238;
+  box-shadow: 4px 4px 0px #1A2238;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.neo-retro-button:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px #1A2238;
+}
+
+.stat-block {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #1A2238;
+  margin-right: 2px;
+}
+
+.stat-block.filled-orange {
+  background-color: #E36414;
+}
+
+.stat-block.filled-mint {
+  background-color: #8FE388;
+}
+
+.stat-block.empty {
+  background-color: rgba(26, 34, 56, 0.1);
+}
+
+.tab-bar-retro {
+  background-color: #FDFCDC;
+  border-top: 4px solid #1A2238;
+}

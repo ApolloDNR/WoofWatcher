@@ -1,0 +1,65 @@
+.storybook-app {
+  --navy: #0E1B2D;
+  --copper: #C66A2E;
+  --sage: #8DA48E;
+  --sky: #DCE9EF;
+  --meadow: #BFD6B1;
+  --poppy: #F47A45;
+  --cream: #F9F8F6;
+  --white: #FFFFFF;
+  
+  font-family: "Inter", sans-serif;
+  background-color: var(--cream);
+  color: var(--navy);
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  overflow-x: hidden;
+  padding-bottom: 80px; /* space for tab bar */
+}
+
+.storybook-font-serif {
+  font-family: "Playfair Display", serif;
+}
+
+.storybook-bg-hero {
+  background: linear-gradient(to bottom, var(--sky) 0%, var(--cream) 100%);
+}
+
+.storybook-card {
+  background: var(--white);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(14, 27, 45, 0.04);
+}
+
+.storybook-quick-log-btn {
+  background: var(--white);
+  border: 1px solid rgba(14, 27, 45, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(14, 27, 45, 0.02);
+  transition: transform 0.2s;
+}
+.storybook-quick-log-btn:active {
+  transform: scale(0.96);
+}
+
+.storybook-fab {
+  background-color: var(--copper);
+  color: var(--white);
+  box-shadow: 0 4px 12px rgba(198, 106, 46, 0.3);
+}
+
+.storybook-bottom-bar {
+  background: var(--white);
+  border-top: 1px solid rgba(14, 27, 45, 0.05);
+}
+
+.storybook-progress-bar {
+  background: rgba(14, 27, 45, 0.05);
+  overflow: hidden;
+}
+
+.storybook-progress-fill {
+  background: var(--sage);
+  border-radius: 99px;
+}

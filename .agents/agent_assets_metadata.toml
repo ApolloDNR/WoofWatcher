@@ -66,3 +66,15 @@ id = "AT2aZE4qjw5gyhkpFeiLm"
 uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/scene.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "17Ami504XIVNq0X0xrTqA"
+uri = "file://artifacts/mockup-sandbox/public/images/dog-pixel.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "lBcoP9U4Fc6Bqr53X4bW2"
+uri = "file://artifacts/mockup-sandbox/public/images/dog-storybook.png"
+type = "image"
+title = "generated_image"
