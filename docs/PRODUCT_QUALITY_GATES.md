@@ -207,11 +207,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI for the Household Responsibility implementation:
+Latest known passing CI for the Care Log Audit Trail implementation:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27338286039`, completed success on 2026-06-11 UTC
+- Evidence: run `27362966353`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 
