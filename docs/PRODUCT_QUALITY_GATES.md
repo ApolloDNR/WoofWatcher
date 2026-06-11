@@ -194,11 +194,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI for the hydration implementation:
+Latest known passing CI for the walk activity implementation:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27324281243`, completed success on 2026-06-11 UTC
+- Evidence: run `27324754112`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 
