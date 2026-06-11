@@ -28,7 +28,7 @@ WoofWatcher can become a meaningful niche subscription business if it becomes th
 ## Paid Feature Priorities
 
 1. Household care sync and caregiver roles.
-2. Rich routines and reminders.
+2. IN PROGRESS, medication adherence slice shipped 2026-06-10: Rich routines and reminders.
 3. IN PROGRESS, core slice shipped 2026-06-08: Advanced meal/diet tracking.
 4. IN PROGRESS, core slice shipped 2026-06-08: Health Watch pattern summaries.
 5. IN PROGRESS, core slice shipped 2026-06-08: Vet/sitter/trainer Care Pass exports.

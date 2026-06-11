@@ -171,3 +171,12 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
   assert.match(records, /accessibilityLabel="Share dog ID card"/);
   assert.match(records, /accessibilityLabel="Share printable dog ID source"/);
 });
+
+test("keeps Records wired to medication adherence status", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /deriveMedicationAdherence/);
+  assert.match(records, /medicationAdherence/);
+  assert.match(records, /Medication Plan/);
+  assert.match(records, /medicationAdherence\.adherencePercent/);
+});

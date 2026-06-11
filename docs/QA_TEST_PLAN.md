@@ -10,9 +10,9 @@ Run focused behavior tests:
 
 CI must pass `WoofWatcher Verify` on `main`.
 
-Latest local evidence, 2026-06-09:
+Latest local evidence, 2026-06-10:
 
-- PASS: 90 focused tests with the command above.
+- PASS: 93 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run typecheck` could not run because `pnpm`, `npm`, `corepack`, and `node_modules` were unavailable in the current Windows shell.
 
 ## Required Automated Coverage
@@ -20,6 +20,7 @@ Latest local evidence, 2026-06-09:
 - Event taxonomy and normalization.
 - Routine board matching.
 - Meal progress and meal completion fields.
+- Medication adherence for taken, due, missed, and upcoming medication routines, including private-log exclusion and Records mobile wiring.
 - Care sync local/pending/failed/retry behavior.
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
 - Home Quick Log routine matching and meal detail enrichment.
@@ -50,20 +51,22 @@ Latest local evidence, 2026-06-09:
 5. Use Home Quick Log for a meal and confirm it records the open routine, expected portion, served amount, eaten amount, complete status, and household visibility.
 6. Confirm a visible matching meal log changes the routine from due/missed to handled and shows complete/partial/skipped status.
 7. Confirm a private meal log stays out of shared household routine status.
-8. Add sticky note to a log.
-9. Add vaccine, insurance, microchip, vet, receipt, and document records.
-10. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.
-11. Preview and share sitter/vet/trainer/caregiver Care Pass.
-12. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
-13. Confirm report history stores shared Care Pass with printable export metadata, separate resend action, and printable-source share action.
-14. Ask WoofGuide about recent changes and verify non-diagnostic wording.
-15. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
-16. Open Privacy & Safety from More, share the care-data export, and confirm it includes care data counts without auth/session tokens.
-17. Prepare an account deletion request and confirm it is non-destructive and says manual review/export first.
-18. Confirm AI disclosure, document storage rules, and payment launch blockers are visible.
-19. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
-20. Confirm the Home avatar motion row changes for a recent meal, upcoming walk, overdue routine, quiet hours, low energy, and Health Watch signal.
-21. Force offline or failed sync state and confirm visibility.
+8. Add a medication routine, log the matching medication, and confirm Records Medication Plan shows taken status, dose, logged-by context, and adherence percentage.
+9. Confirm a private medication log does not satisfy the household Medication Plan and an overdue unlogged medication becomes missed.
+10. Add sticky note to a log.
+11. Add vaccine, insurance, microchip, vet, receipt, and document records.
+12. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.
+13. Preview and share sitter/vet/trainer/caregiver Care Pass.
+14. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
+15. Confirm report history stores shared Care Pass with printable export metadata, separate resend action, and printable-source share action.
+16. Ask WoofGuide about recent changes and verify non-diagnostic wording.
+17. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
+18. Open Privacy & Safety from More, share the care-data export, and confirm it includes care data counts without auth/session tokens.
+19. Prepare an account deletion request and confirm it is non-destructive and says manual review/export first.
+20. Confirm AI disclosure, document storage rules, and payment launch blockers are visible.
+21. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
+22. Confirm the Home avatar motion row changes for a recent meal, upcoming walk, overdue routine, quiet hours, low energy, and Health Watch signal.
+23. Force offline or failed sync state and confirm visibility.
 
 ## Missing QA
 

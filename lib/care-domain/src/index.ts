@@ -7,5 +7,6 @@ export * from "./diet-progress.ts";
 export * from "./sticky-notes.ts";
 export * from "./record-vault.ts";
 export * from "./routine-board.ts";
+export * from "./medication.ts";
 export * from "./onboarding.ts";
 export * from "./premium.ts";

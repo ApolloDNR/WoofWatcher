@@ -33,6 +33,7 @@ import {
   buildCarePass,
   createCarePassArtifact,
   deriveHealthWatch,
+  deriveMedicationAdherence,
   deriveRecordReminders,
   getCarePassArtifactPrintView,
   getPetCredentialPrintView,
@@ -163,6 +164,10 @@ export default function RecordsScreen() {
 
   const healthWatch = useMemo(
     () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
+    [state.entries, state.routines, now],
+  );
+  const medicationAdherence = useMemo(
+    () => deriveMedicationAdherence({ entries: state.entries, routines: state.routines, now }),
     [state.entries, state.routines, now],
   );
 
@@ -873,6 +878,102 @@ export default function RecordsScreen() {
             )}
           </View>
 
+          {/* Medication plan */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Medication Plan</Text>
+            <Pressable
+              onPress={() => router.push("/calendar")}
+              accessibilityRole="button"
+              accessibilityLabel="Open calendar medication routines"
+              hitSlop={8}
+              style={s.shareInline}
+            >
+              <Ionicons name="calendar-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Routines</Text>
+            </Pressable>
+          </View>
+          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <View style={[s.medSummaryRow, { borderBottomColor: colors.border }]}>
+              {[
+                { value: `${medicationAdherence.adherencePercent}%`, label: "Logged", color: medicationAdherence.missedCount > 0 ? colors.rose : colors.sage },
+                { value: String(medicationAdherence.dueCount), label: "Due now", color: medicationAdherence.dueCount > 0 ? colors.amber : colors.sage },
+                { value: String(medicationAdherence.missedCount), label: "Missed", color: medicationAdherence.missedCount > 0 ? colors.rose : colors.sage },
+              ].map((item, index) => (
+                <View key={item.label} style={[s.medSummaryCell, index < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
+                  <Text style={[s.medSummaryValue, { color: item.color, fontFamily: DISPLAY }]}>{item.value}</Text>
+                  <Text style={[s.medSummaryLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+            {medicationAdherence.next ? (
+              <View style={[s.medNext, { borderBottomColor: colors.border }]}>
+                <Ionicons
+                  name={medicationAdherence.next.status === "missed" ? "alert-circle" : "time"}
+                  size={16}
+                  color={medicationAdherence.next.status === "missed" ? colors.rose : colors.amber}
+                />
+                <Text style={[s.medNextText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  Next: {medicationAdherence.next.label} at {medicationAdherence.next.time}
+                </Text>
+              </View>
+            ) : null}
+            {medicationAdherence.total === 0 ? (
+              <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Add medication routines in Calendar, then medication logs will show what was taken, missed, or still coming up.
+              </Text>
+            ) : (
+              medicationAdherence.items.slice(0, 5).map((item, index) => {
+                const tone =
+                  item.status === "taken"
+                    ? colors.sage
+                    : item.status === "missed"
+                      ? colors.rose
+                      : item.status === "due"
+                        ? colors.amber
+                        : colors.primary;
+                const statusLabel =
+                  item.status === "taken"
+                    ? "Taken"
+                    : item.status === "missed"
+                      ? "Missed"
+                      : item.status === "due"
+                        ? "Due now"
+                        : "Upcoming";
+                const iconName =
+                  item.status === "taken"
+                    ? "checkmark-circle"
+                    : item.status === "missed"
+                      ? "alert-circle"
+                      : item.status === "due"
+                        ? "time"
+                        : "time-outline";
+                return (
+                  <View key={item.id} style={[s.row, index > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}>
+                    <View style={[s.rowIconWrap, { backgroundColor: tone + "16" }]}>
+                      <Ionicons name={iconName} size={18} color={tone} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text numberOfLines={1} style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {item.label}
+                      </Text>
+                      <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {item.dose} - {item.time}{item.owner ? ` - ${item.owner}` : ""}
+                      </Text>
+                      {item.takenBy && item.takenAt ? (
+                        <Text numberOfLines={1} style={[s.rowMeta, { color: colors.sage, fontFamily: "Inter_600SemiBold" }]}>
+                          Logged by {item.takenBy} - {relativeDay(item.takenAt, now)}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <View style={[s.medStatusPill, { backgroundColor: tone + "16" }]}>
+                      <Text style={[s.medStatusText, { color: tone, fontFamily: "Inter_700Bold" }]}>{statusLabel}</Text>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
+
           {/* Care pass */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Care Pass</Text>
@@ -1404,6 +1505,15 @@ const s = StyleSheet.create({
   incidentLabel: { fontSize: 12, marginTop: 1 },
   incidentBarTrack: { height: 5, borderRadius: 3, width: "70%", marginTop: 8, overflow: "hidden" },
   incidentBarFill: { height: "100%", borderRadius: 3 },
+
+  medSummaryRow: { flexDirection: "row", borderBottomWidth: 1, paddingBottom: 12, marginBottom: 4 },
+  medSummaryCell: { flex: 1, minHeight: 58, alignItems: "center", justifyContent: "center", paddingHorizontal: 6 },
+  medSummaryValue: { fontSize: 24, letterSpacing: -0.3 },
+  medSummaryLabel: { fontSize: 11.5, marginTop: 2, textAlign: "center" },
+  medNext: { flexDirection: "row", alignItems: "center", gap: 8, borderBottomWidth: 1, paddingVertical: 12 },
+  medNextText: { flex: 1, fontSize: 12.8, lineHeight: 18 },
+  medStatusPill: { minWidth: 76, alignItems: "center", borderRadius: 11, paddingHorizontal: 9, paddingVertical: 6 },
+  medStatusText: { fontSize: 10.8, textTransform: "uppercase", letterSpacing: 0.4 },
 
   carePassGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   carePassCard: {

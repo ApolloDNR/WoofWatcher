@@ -142,6 +142,16 @@ Owner: Codex.
 
 Revisit trigger: Credential image export, native PDF generation, or storage-backed official record verification becomes active release work.
 
+### 2026-06-10: Medication Adherence Derives From Routines And Logs First
+
+Decision: Medication adherence is derived in `lib/care-domain` from medication routines plus household-visible medication logs before adding notification, refill, pharmacy, or AI medication workflows.
+
+Reason: Medication is safety-sensitive household care. Owners need one trusted shared view of what was expected, what was logged, what is due, what was missed, and who handled it before the app adds proactive nudges or assistant suggestions.
+
+Owner: Codex.
+
+Revisit trigger: Medication reminders, refill tracking, role-based permissions, or vet/pharmacy integrations require stricter schedule and dosage schemas.
+
 ### 2026-06-08: Log Details Stay In The Log Workflow
 
 Decision: Entry details, sticky notes, sync state, edit/delete actions, and entry-level handoff sharing are implemented as a Log screen bottom sheet rather than a separate route.
