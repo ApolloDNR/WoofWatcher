@@ -68,7 +68,6 @@ export interface CareSyncDashboard {
 
 export interface SyncableCareDoc {
   updatedAt?: string;
-  [key: string]: unknown;
 }
 
 export type CareDocRefreshStatus =
