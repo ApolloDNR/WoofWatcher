@@ -23,6 +23,7 @@ import {
   appendStickyNote,
   buildCareLogDeletionAuditEntry,
   getCareAuditTrail,
+  deriveCareLogSearch,
   deriveDietProgress,
   deriveMedicationAdherence,
   getStickyNotes,
@@ -552,6 +553,7 @@ export default function LogScreen() {
   const [groomingNextDue, setGroomingNextDue] = useState("");
   const [householdVisible, setHouseholdVisible] = useState(true);
   const [noteText, setNoteText] = useState("");
+  const [searchText, setSearchText] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
 
   const config = TYPE_BY_ID[selectedType];
@@ -1091,14 +1093,11 @@ export default function LogScreen() {
     );
   }, []);
 
-  const filtered = useMemo(() => {
-    const sorted = [...state.entries].sort(
-      (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
-    );
-    return filter
-      ? sorted.filter((e) => normalizeCareEventType(e.type, e.details) === filter)
-      : sorted;
-  }, [state.entries, filter]);
+  const logSearch = useMemo(
+    () => deriveCareLogSearch({ entries: state.entries, query: searchText, type: filter }),
+    [state.entries, searchText, filter],
+  );
+  const filtered = logSearch.entries;
 
   const grouped = useMemo(() => {
     const groups: { key: string; label: string; entries: Entry[] }[] = [];
@@ -1854,6 +1853,36 @@ export default function LogScreen() {
             </View>
           )}
 
+          <View style={[s.searchCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+            <Ionicons name="search" size={18} color={colors.mutedForeground} />
+            <TextInput
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder="Search notes, caregivers, routes, meds..."
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={[s.searchInput, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+            />
+            {searchText.trim() ? (
+              <Pressable
+                accessibilityLabel="Clear log search"
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setSearchText("");
+                }}
+                style={[s.searchClear, { backgroundColor: colors.background }]}
+              >
+                <Ionicons name="close" size={16} color={colors.mutedForeground} />
+              </Pressable>
+            ) : null}
+          </View>
+          {logSearch.hasActiveFilters ? (
+            <Text style={[s.searchSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+              {logSearch.summary}
+            </Text>
+          ) : null}
+
           {/* Filter chips */}
           {presentTypes.length > 0 && (
             <ScrollView
@@ -1896,7 +1925,7 @@ export default function LogScreen() {
             <View style={[s.empty, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
               <Ionicons name="clipboard-outline" size={32} color={colors.mutedForeground} />
               <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                {filter ? "Nothing logged for this filter yet." : "No entries logged yet."}
+                {logSearch.emptyMessage}
               </Text>
             </View>
           ) : (
@@ -2339,6 +2368,24 @@ const s = StyleSheet.create({
     elevation: 3,
   },
   logBtnText: { color: "#fff", fontSize: 15.5 },
+
+  searchCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    marginTop: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
+  },
+  searchInput: { flex: 1, fontSize: 14.5, minHeight: 28, paddingVertical: 0 },
+  searchClear: { width: 28, height: 28, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  searchSummary: { fontSize: 12.5, lineHeight: 18, marginTop: 8, marginLeft: 2 },
 
   filterRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 6 },
   filterChip: {

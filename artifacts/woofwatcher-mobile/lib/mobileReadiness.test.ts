@@ -401,6 +401,17 @@ test("routes Reminder Center rows to concrete care workflows", () => {
   assert.match(log, /routeSelectedType/);
 });
 
+test("keeps Log search wired across text query and type filters", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(log, /deriveCareLogSearch/);
+  assert.match(log, /searchText/);
+  assert.match(log, /logSearch/);
+  assert.match(log, /Search notes, caregivers, routes, meds/);
+  assert.match(log, /logSearch\.summary/);
+  assert.match(log, /logSearch\.emptyMessage/);
+});
+
 test("keeps household access readiness visible from More", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

@@ -92,6 +92,8 @@ Current evidence, 2026-06-08: Home now uses a deterministic avatar motion model 
 
 Current evidence, 2026-06-11: Reminder Center rows route to concrete care workflows instead of acting as static status rows: routines open the routine editor, medication routine reminders open the Medication log composer, record reminders open Records, and grooming reminders open the Grooming log composer.
 
+Current evidence, 2026-06-11: Full Log now has text search backed by shared care-domain logic. The search combines query terms with type chips across titles, notes, caregivers, nested care details, route/place fields, medication fields, and sticky notes, then shows active-filter summary and empty-state copy.
+
 ## Gate 5: Health Safety
 
 Passing means health features organize patterns without diagnosis. Urgent red flags direct users to veterinary care. WoofGuide stays bounded.
@@ -188,6 +190,8 @@ Current evidence, 2026-06-11: Household Access strengthens the Family-tier wedge
 
 Current evidence, 2026-06-11: Reminder Center strengthens the Plus/Family reminders wedge by making existing routine, medication, record, and grooming follow-up candidates visible in Calendar without enabling checkout, push notifications, or automatic care writes.
 
+Current evidence, 2026-06-11: Full Log search strengthens the paid history/trust wedge by making rich care evidence findable across notes, caregivers, routes, medication details, and sticky notes before server search indexes or long-history retention policy exist.
+
 ## Gate 8: Production Safety
 
 Passing means CI is green, API auth is household-scoped, secrets are absent, privacy/export/delete are planned, sync failures are visible, and release docs are accurate.
@@ -206,4 +210,4 @@ Current evidence, 2026-06-08: Expo app identity no longer uses Replit placeholde
 
 Current evidence, 2026-06-08: Focused tests now cover the Home avatar motion state model and static wiring check. Native animation runtime verification, Rive/Lottie/Reanimated asset QA, and screenshot review remain open.
 
-Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, Household Responsibility derivation/mobile wiring, Household Access derivation/mobile wiring, Care Log Audit Trail derivation/mobile wiring, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, Alone Time derivation/report/mobile wiring, Weight Trend derivation/report/mobile wiring, Grooming Care derivation/report/mobile wiring, Reminder Center derivation/mobile wiring/action routing, and static mobile wiring. Local focused tests pass at 169 tests. Last remote GitHub Actions `WoofWatcher Verify` evidence is run `27369154562` for the Reminder Center action-routing slice. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.
+Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, Household Responsibility derivation/mobile wiring, Household Access derivation/mobile wiring, Care Log Audit Trail derivation/mobile wiring, Full Log search derivation/mobile wiring, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, Alone Time derivation/report/mobile wiring, Weight Trend derivation/report/mobile wiring, Grooming Care derivation/report/mobile wiring, Reminder Center derivation/mobile wiring/action routing, and static mobile wiring. Local focused tests pass at 173 tests. Last remote GitHub Actions `WoofWatcher Verify` evidence is run `27369154562` for the Reminder Center action-routing slice. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.

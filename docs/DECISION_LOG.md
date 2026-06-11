@@ -232,6 +232,16 @@ Owner: Codex.
 
 Revisit trigger: Server-backed retention, role-based permissions, legal deletion policy, or routed long-history/audit views require a stricter audit architecture.
 
+### 2026-06-11: Full Log Search Uses Shared Care Evidence
+
+Decision: Full Log search belongs in shared care-domain logic before adding routed history views, server search indexes, or retention policy.
+
+Reason: The same search rules should work for mobile Log, future history screens, reports, WoofGuide context, and API-backed search. Search must cover rich owner-entered evidence such as notes, caregivers, route/place fields, medication details, nested details, and sticky notes instead of only filtering by event type.
+
+Owner: Codex.
+
+Revisit trigger: Server-backed search, multi-dog search, long-retention history views, or role-scoped audit/search permissions become active release work.
+
 ### 2026-06-08: Care Pass Reports Preview Before Sharing
 
 Decision: Sitter, vet, trainer, and caregiver Care Passes are previewed inside Records before invoking the native share sheet.
