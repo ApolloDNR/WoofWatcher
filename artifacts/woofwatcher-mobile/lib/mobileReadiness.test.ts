@@ -220,3 +220,12 @@ test("keeps hydration visible from Home quick log to Records", () => {
   assert.match(records, /Hydration/);
   assert.match(records, /Bowl refills/);
 });
+
+test("keeps walk activity insights visible in Records", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /deriveWalkActivity/);
+  assert.match(records, /walkActivity/);
+  assert.match(records, /Walk Activity/);
+  assert.match(records, /dog interactions/);
+});

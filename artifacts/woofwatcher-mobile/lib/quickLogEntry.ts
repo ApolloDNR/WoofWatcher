@@ -155,6 +155,10 @@ export function buildQuickLogEntry(
     details.householdVisible = true;
   }
 
+  if (normalizedType === "walk") {
+    details.householdVisible = true;
+  }
+
   return {
     type: normalizedType,
     title: routine?.label ?? item.title,

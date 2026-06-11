@@ -177,6 +177,44 @@ test("care pass includes daily hydration language", () => {
   assert.match(pass.message, /Keep logging fresh water/i);
 });
 
+test("care pass includes walk activity and dog interaction context", () => {
+  const pass = buildCarePass({
+    audience: "trainer",
+    profile: {
+      name: "Phoenix",
+      breed: "German Shepherd Mix",
+      careFocus: "Practice calm greetings.",
+      vetBoundary: "Owner-reported context only.",
+    },
+    dietProfile: {},
+    routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:30 AM", owner: "Apollo" }],
+    caregivers: [{ name: "Apollo", role: "Owner" }],
+    records: [],
+    now: new Date("2026-06-06T20:00:00-07:00").getTime(),
+    entries: [
+      {
+        id: "walk-park",
+        type: "walk",
+        title: "Dog park visit",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T17:20:00-07:00",
+        details: {
+          durationMinutes: 35,
+          location: "Dog park",
+          dogInteractions: 2,
+          socialOutcome: "Calm greeting, one bark near the gate",
+        },
+      },
+    ],
+  });
+
+  const activity = pass.sections.find((section) => section.title === "Walk Activity");
+  assert.ok(activity);
+  assert.match(pass.message, /1 walk today - 35 minutes, 2 dog interactions noted/);
+  assert.match(pass.message, /Places: Dog park/);
+  assert.match(pass.message, /Latest: Dog park visit at Dog park/);
+});
+
 test("trainer care pass emphasizes behavior and activity context", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "trainer" });
 

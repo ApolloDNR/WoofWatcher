@@ -3,6 +3,7 @@ import { deriveCareHandoff, type CareHandoffCaregiver, type CareHandoffRoutine }
 import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
 import { deriveWaterHydration } from "./water.ts";
+import { deriveWalkActivity } from "./walk-activity.ts";
 
 export type CarePassAudience = "caregiver" | "sitter" | "vet" | "trainer";
 
@@ -486,6 +487,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const medication = deriveMedicationAdherence({ entries, routines, now });
   const medicationFollowUps = deriveMedicationFollowUps({ entries, routines, records, now }).slice(0, 4);
   const hydration = deriveWaterHydration({ entries, now });
+  const walkActivity = deriveWalkActivity({ entries, now });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -531,6 +533,13 @@ export function buildCarePass(input: CarePassInput): CarePass {
       hydration.summary,
       hydration.last ? `Latest: ${hydration.last.amountLabel} by ${hydration.last.caregiver}` : "",
       hydration.nextStep,
+    ]),
+    section("Walk Activity", [
+      walkActivity.summary,
+      walkActivity.places.length ? `Places: ${walkActivity.places.join(", ")}` : "",
+      walkActivity.last ? `Latest: ${walkActivity.last.label}${walkActivity.last.place ? ` at ${walkActivity.last.place}` : ""} by ${walkActivity.last.caregiver}` : "",
+      walkActivity.last?.socialOutcome ? `Social notes: ${walkActivity.last.socialOutcome}` : "",
+      walkActivity.nextStep,
     ]),
     section("Medication", [
       medication.total > 0 ? medication.summary : "",

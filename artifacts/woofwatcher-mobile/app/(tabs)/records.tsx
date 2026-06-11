@@ -37,6 +37,7 @@ import {
   deriveMedicationFollowUps,
   deriveMedicationHistory,
   deriveRecordReminders,
+  deriveWalkActivity,
   deriveWaterHydration,
   getCarePassArtifactPrintView,
   getPetCredentialPrintView,
@@ -183,6 +184,10 @@ export default function RecordsScreen() {
   );
   const waterHydration = useMemo(
     () => deriveWaterHydration({ entries: state.entries, now }),
+    [state.entries, now],
+  );
+  const walkActivity = useMemo(
+    () => deriveWalkActivity({ entries: state.entries, now }),
     [state.entries, now],
   );
 
@@ -849,6 +854,69 @@ export default function RecordsScreen() {
                   <Text style={[s.watchPatternEvidence, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                     {waterHydration.last.caregiver} - {relativeDay(waterHydration.last.occurredAt, now)}
                   </Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Walk activity */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Walk Activity</Text>
+            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+              {walkActivity.total ? `${walkActivity.total} walks` : "No walks"}
+            </Text>
+          </View>
+          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <View style={s.hydrationSummary}>
+              <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
+                <Ionicons name="walk-outline" size={18} color={colors.sage} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {walkActivity.status === "active" ? "Activity steady" : walkActivity.status === "light" ? "Light activity" : "Walk check"}
+                </Text>
+                <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {walkActivity.summary}
+                </Text>
+              </View>
+            </View>
+            <View style={[s.hydrationMeter, { backgroundColor: colors.background }]}>
+              <View style={[s.hydrationMeterFill, { backgroundColor: colors.sage, width: `${walkActivity.percent}%` }]} />
+            </View>
+            <View style={s.hydrationStats}>
+              {[
+                { label: "Minutes", value: String(walkActivity.totalMinutes) },
+                { label: "dog interactions", value: String(walkActivity.dogInteractions) },
+                { label: "Places", value: String(walkActivity.places.length) },
+              ].map((item, index) => (
+                <View key={item.label} style={[s.hydrationStat, index < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
+                  <Text style={[s.hydrationValue, { color: colors.foreground, fontFamily: DISPLAY }]}>{item.value}</Text>
+                  <Text style={[s.hydrationLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              {walkActivity.nextStep}
+            </Text>
+            {walkActivity.last ? (
+              <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
+                <View style={[s.watchSignalDot, { backgroundColor: colors.sage }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Latest: {walkActivity.last.label}
+                  </Text>
+                  <Text style={[s.watchPatternEvidence, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {[
+                      walkActivity.last.place,
+                      walkActivity.last.caregiver,
+                      relativeDay(walkActivity.last.occurredAt, now),
+                    ].filter(Boolean).join(" - ")}
+                  </Text>
+                  {walkActivity.last.socialOutcome ? (
+                    <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {walkActivity.last.socialOutcome}
+                    </Text>
+                  ) : null}
                 </View>
               </View>
             ) : null}

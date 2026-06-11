@@ -182,6 +182,16 @@ Owner: Codex.
 
 Revisit trigger: Configurable water goals, vet-reviewed hydration language, unusual-drinking Health Watch rules, or provider-backed reminder delivery become active release work.
 
+### 2026-06-11: Walk Activity Is Shared Household Evidence
+
+Decision: Walk Activity is derived in `lib/care-domain` from household-visible walk logs and surfaced in Records and Care Passes as daily activity, route/place, dog interaction, and social outcome context.
+
+Reason: Apollo specifically wants walks, dog park visits, and other-dog interactions to be easy to track and share. The first durable layer should make those logs useful to owners, sitters, walkers, and trainers before adding maps, GPS routes, or partner workflows.
+
+Owner: Codex.
+
+Revisit trigger: Saved route maps, location permissions, dog park templates, walker partnerships, or richer behavior/training programs become active release work.
+
 ### 2026-06-08: Log Details Stay In The Log Workflow
 
 Decision: Entry details, sticky notes, sync state, edit/delete actions, and entry-level handoff sharing are implemented as a Log screen bottom sheet rather than a separate route.

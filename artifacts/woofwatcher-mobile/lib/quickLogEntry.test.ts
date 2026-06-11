@@ -114,6 +114,7 @@ test("walk quick log attaches the open walk routine after breakfast is handled",
     routineId: "walk",
     routineLabel: "Morning walk",
     routineTime: "8:30 AM",
+    householdVisible: true,
   });
 });
 
