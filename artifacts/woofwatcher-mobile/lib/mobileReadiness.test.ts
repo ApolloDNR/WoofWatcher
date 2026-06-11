@@ -180,3 +180,13 @@ test("keeps Records wired to medication adherence status", () => {
   assert.match(records, /Medication Plan/);
   assert.match(records, /medicationAdherence\.adherencePercent/);
 });
+
+test("keeps Log composer wired to medication routine defaults", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(log, /deriveMedicationAdherence/);
+  assert.match(log, /medicationDose/);
+  assert.match(log, /medicationOutcome/);
+  assert.match(log, /Medication routine/);
+  assert.match(log, /Shared medication logs update the Medication Plan/);
+});

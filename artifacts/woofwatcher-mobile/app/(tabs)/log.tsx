@@ -20,6 +20,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import {
   appendStickyNote,
   deriveDietProgress,
+  deriveMedicationAdherence,
   getStickyNotes,
   normalizeCareEventType,
   type CareEventType,
@@ -173,7 +174,17 @@ const LOG_TYPES: LogType[] = [
     label: "Meds",
     icon: "pill",
     baseTitle: "Medication",
-    noteField: { placeholder: "Which medication & dose?" },
+    groups: [
+      {
+        key: "medicationOutcome",
+        label: "Status",
+        options: [
+          { id: "taken", label: "Taken", suffix: "taken" },
+          { id: "skipped", label: "Skipped", suffix: "skipped", severity: "watch" },
+        ],
+      },
+    ],
+    noteField: { placeholder: "Sticky note: side effects, refill note, or anything unusual..." },
   },
   { type: "weight", label: "Weight", icon: "scale", baseTitle: "Weight", numeric: { label: "Weight", placeholder: "0.0", unit: "weight" } },
   {
@@ -412,11 +423,23 @@ export default function LogScreen() {
   const [numeric, setNumeric] = useState("");
   const [expectedPortion, setExpectedPortion] = useState("");
   const [eatenAmount, setEatenAmount] = useState("");
+  const [medicationDose, setMedicationDose] = useState("");
   const [householdVisible, setHouseholdVisible] = useState(true);
   const [noteText, setNoteText] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
 
   const config = TYPE_BY_ID[selectedType];
+  const medicationAdherence = useMemo(
+    () => deriveMedicationAdherence({ entries: state.entries, routines: state.routines, now }),
+    [state.entries, state.routines, now],
+  );
+  const medicationDefault = useMemo(
+    () =>
+      medicationAdherence.items.find((item) => item.status === "missed" || item.status === "due") ??
+      medicationAdherence.items.find((item) => item.status === "upcoming") ??
+      null,
+    [medicationAdherence.items],
+  );
 
   // Reset contextual controls whenever the type changes.
   useEffect(() => {
@@ -429,6 +452,11 @@ export default function LogScreen() {
     setNumeric(selectedType === "weight" ? String(state.profile.weight.current ?? "") : "");
     setExpectedPortion(selectedType === "meal" ? state.dietProfile.normalPortion : "");
     setEatenAmount("");
+    setMedicationDose(
+      selectedType === "medication" && medicationDefault?.dose && medicationDefault.dose !== "Dose not set"
+        ? medicationDefault.dose
+        : "",
+    );
     setHouseholdVisible(true);
     setNoteText("");
   }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -589,6 +617,26 @@ export default function LogScreen() {
       }
     }
 
+    if (config.type === "medication") {
+      const outcome = choices.medicationOutcome ?? "taken";
+      const defaultDose = medicationDefault?.dose && medicationDefault.dose !== "Dose not set" ? medicationDefault.dose : "";
+      const dose = medicationDose.trim() || defaultDose;
+
+      details.medicationOutcome = outcome;
+      details.householdVisible = householdVisible;
+      if (medicationDefault) {
+        details.routineId = medicationDefault.id;
+        details.routineLabel = medicationDefault.label;
+        details.routineTime = medicationDefault.time;
+        if (medicationDefault.label) parts.unshift(medicationDefault.label);
+      }
+      if (dose) {
+        details.dose = dose;
+        parts.splice(medicationDefault?.label ? 1 : 0, 0, dose);
+      }
+      if (outcome === "skipped") severity = "watch";
+    }
+
     const note = config.noteField ? noteText.trim() || undefined : undefined;
     if (durationMinutes) parts.push(`${durationMinutes} ${config.stepper!.unit}`);
     if (note) {
@@ -622,6 +670,8 @@ export default function LogScreen() {
     numeric,
     expectedPortion,
     eatenAmount,
+    medicationDefault,
+    medicationDose,
     householdVisible,
     dietProgress.unit,
     noteText,
@@ -1034,6 +1084,60 @@ export default function LogScreen() {
                     </Text>
                     <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                       {householdVisible ? "Shared logs update the household routine board." : "Private notes stay out of shared routine status."}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            )}
+
+            {selectedType === "medication" && (
+              <View style={s.mealFields}>
+                {medicationDefault ? (
+                  <View style={[s.medRoutinePanel, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "2E" }]}>
+                    <View style={[s.medRoutineIcon, { backgroundColor: colors.primary + "14" }]}>
+                      <Ionicons name="medical-outline" size={16} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={[s.medRoutineLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Medication routine</Text>
+                      <Text numberOfLines={1} style={[s.medRoutineTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                        {medicationDefault.label}
+                      </Text>
+                      <Text numberOfLines={1} style={[s.medRoutineMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {medicationDefault.time}{medicationDefault.owner ? ` - ${medicationDefault.owner}` : ""} - {medicationDefault.status}
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
+                <View>
+                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Dose</Text>
+                  <TextInput
+                    placeholder={medicationDefault?.dose && medicationDefault.dose !== "Dose not set" ? medicationDefault.dose : "1 tablet"}
+                    placeholderTextColor={colors.mutedForeground}
+                    value={medicationDose}
+                    onChangeText={setMedicationDose}
+                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                  />
+                </View>
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setHouseholdVisible((prev) => !prev);
+                  }}
+                  style={[
+                    s.visibilityToggle,
+                    {
+                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
+                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {householdVisible ? "Visible to household" : "Private log"}
+                    </Text>
+                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {householdVisible ? "Shared medication logs update the Medication Plan." : "Private medication notes stay out of shared adherence."}
                     </Text>
                   </View>
                 </Pressable>
@@ -1504,6 +1608,12 @@ const s = StyleSheet.create({
   },
   visibilityTitle: { fontSize: 13.5 },
   visibilitySub: { fontSize: 12, lineHeight: 16, marginTop: 2 },
+
+  medRoutinePanel: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderRadius: 16, padding: 13 },
+  medRoutineIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  medRoutineLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5 },
+  medRoutineTitle: { fontSize: 15.5, marginTop: 2 },
+  medRoutineMeta: { fontSize: 12.5, marginTop: 2 },
 
   dietPanel: { marginTop: 14, borderRadius: 18, borderWidth: 1, padding: 14 },
   dietPanelTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },

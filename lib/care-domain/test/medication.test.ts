@@ -66,3 +66,29 @@ test("marks overdue medication as missed and ignores private logs", () => {
   assert.equal(adherence.next?.status, "missed");
   assert.equal(adherence.summary, "0/1 medication doses logged today");
 });
+
+test("does not count skipped medication logs as taken", () => {
+  const adherence = deriveMedicationAdherence({
+    now: new Date("2026-06-06T11:00:00-07:00").getTime(),
+    routines: [
+      { id: "am-meds", label: "Apoquel", type: "medication", time: "8:00 AM", owner: "Apollo", note: "1 tablet" },
+    ],
+    entries: [
+      {
+        id: "skipped-log",
+        type: "medication",
+        title: "Apoquel skipped",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T08:05:00-07:00",
+        details: { routineId: "am-meds", dose: "1 tablet", medicationOutcome: "skipped", householdVisible: true },
+      },
+    ],
+  });
+
+  assert.equal(adherence.total, 1);
+  assert.equal(adherence.takenCount, 0);
+  assert.equal(adherence.missedCount, 1);
+  assert.equal(adherence.items[0].entryId, "skipped-log");
+  assert.equal(adherence.items[0].status, "missed");
+  assert.equal(adherence.items[0].dose, "1 tablet");
+});

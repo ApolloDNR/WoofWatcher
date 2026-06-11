@@ -14,6 +14,8 @@ Current evidence, 2026-06-08: Home Quick Log now uses a tested entry builder tha
 
 Current evidence, 2026-06-10: Medication adherence now derives taken, due, missed, and upcoming status from medication routines and household-visible medication logs. Records shows a Medication Plan with adherence percentage, due/missed counts, dose, assigned owner, logged-by context, and next medication action.
 
+Current evidence, 2026-06-10: Home and the full Log composer now create medication logs with routine identity, dose, taken/skipped outcome, and household visibility so the Medication Plan is fed by richer medication evidence.
+
 ## Gate 3: Household Trust
 
 Passing means owners and caregivers can see who did what, what is pending, what failed to sync, what was skipped, and what needs follow-up.
@@ -23,6 +25,8 @@ Current evidence, 2026-06-08: Today Command now reads the routine board used by 
 Current evidence, 2026-06-08: One-tap Home Quick Logs for routine-backed care now create entries that the routine board can reconcile, so fast logging still updates household obligations.
 
 Current evidence, 2026-06-10: Private medication logs do not satisfy the shared Medication Plan, preserving household trust for medication obligations.
+
+Current evidence, 2026-06-10: Skipped medication logs keep the entry attached to the routine but do not count as taken, so households can see what happened without false adherence.
 
 ## Gate 4: Premium Mobile UX
 

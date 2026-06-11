@@ -47,6 +47,7 @@ const QUICK_LOG: QuickLogItem[] = [
   { key: "treat", icon: "bone", label: "Treat", type: "treat", title: "Treat" },
   { key: "walk", icon: "paw", label: "Walk", type: "walk", title: "Walk" },
   { key: "potty", icon: "drop", label: "Potty", type: "potty", title: "Potty break" },
+  { key: "meds", icon: "pill", label: "Meds", type: "medication", title: "Medication" },
   { key: "play", icon: "candy", label: "Play", type: "play", title: "Play session" },
   { key: "win", icon: "star", label: "Training", type: "training", title: "Training win" },
   { key: "zoomies", icon: "bolt", label: "Zoomies", type: "mood", title: "Zoomies", mood: "excited" },

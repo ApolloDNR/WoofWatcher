@@ -19,6 +19,7 @@ function state(overrides: Partial<QuickLogState> = {}): QuickLogState {
     routines: [
       { id: "breakfast", label: "Breakfast", type: "meal", time: "7:30 AM", owner: "Emma" },
       { id: "walk", label: "Morning walk", type: "walk", time: "8:30 AM", owner: "Apollo" },
+      { id: "meds", label: "Apoquel", type: "medication", time: "9:00 AM", owner: "Apollo", note: "1 tablet with breakfast" },
     ],
     entries: [],
     ...overrides,
@@ -47,6 +48,44 @@ test("meal quick log attaches the open meal routine and full portion detail", ()
     servedUnit: "cup",
     eatenAmount: 1,
     eatenUnit: "cup",
+  });
+});
+
+test("medication quick log attaches the open medication routine and dose detail", () => {
+  const entry = buildQuickLogEntry(
+    { type: "medication", title: "Medication" },
+    state({
+      entries: [
+        {
+          id: "meal_1",
+          type: "meal",
+          title: "Breakfast",
+          caregiver: "Emma",
+          occurredAt: "2026-06-06T07:34:00-07:00",
+          details: { routineId: "breakfast", mealCompletion: "complete", householdVisible: true },
+        },
+        {
+          id: "walk_1",
+          type: "walk",
+          title: "Morning walk",
+          caregiver: "Apollo",
+          occurredAt: "2026-06-06T08:42:00-07:00",
+          details: { routineId: "walk" },
+        },
+      ],
+    }),
+    { caregiver: "Apollo", now: NOW },
+  );
+
+  assert.equal(entry.type, "medication");
+  assert.equal(entry.title, "Apoquel");
+  assert.deepEqual(entry.details, {
+    routineId: "meds",
+    routineLabel: "Apoquel",
+    routineTime: "9:00 AM",
+    dose: "1 tablet with breakfast",
+    medicationOutcome: "taken",
+    householdVisible: true,
   });
 });
 

@@ -106,8 +106,14 @@ function titleMatches(entry: MedicationEntry, routine: MedicationRoutine): boole
   return Boolean(title && label && (title.includes(label) || label.includes(title)));
 }
 
-function statusFor(minutesFromNow: number, taken: boolean): MedicationAdherenceStatus {
+function entryTaken(entry: MedicationEntry): boolean {
+  const outcome = clean(entry.details?.medicationOutcome ?? entry.details?.outcome ?? entry.details?.status).toLowerCase();
+  return !["skip", "skipped", "missed", "not taken", "held"].includes(outcome);
+}
+
+function statusFor(minutesFromNow: number, taken: boolean, skipped: boolean): MedicationAdherenceStatus {
   if (taken) return "taken";
+  if (skipped) return "missed";
   if (minutesFromNow < -DUE_WINDOW_MINUTES) return "missed";
   if (Math.abs(minutesFromNow) <= DUE_WINDOW_MINUTES) return "due";
   return "upcoming";
@@ -157,6 +163,8 @@ export function deriveMedicationAdherence(input: MedicationAdherenceInput): Medi
     if (fuzzy) used.add(fuzzy.key);
 
     const minutesFromNow = Math.round((routineMs - now) / 60000);
+    const taken = fuzzy ? entryTaken(fuzzy.entry) : false;
+    const skipped = Boolean(fuzzy && !taken);
     const dose = fuzzy ? entryDose(fuzzy.entry) || routineDose(routine) : routineDose(routine);
     return {
       id,
@@ -164,7 +172,7 @@ export function deriveMedicationAdherence(input: MedicationAdherenceInput): Medi
       time: clean(routine.time) || "Time not set",
       owner: clean(routine.owner),
       dose,
-      status: statusFor(minutesFromNow, Boolean(fuzzy)),
+      status: statusFor(minutesFromNow, taken, skipped),
       minutesFromNow,
       takenBy: fuzzy ? clean(fuzzy.entry.caregiver) || null : null,
       takenAt: fuzzy?.entry.occurredAt ?? null,

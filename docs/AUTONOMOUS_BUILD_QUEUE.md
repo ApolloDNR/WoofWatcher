@@ -25,6 +25,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 17. DONE 2026-06-09: Records Report History now shows print-ready/restored Care Pass metadata, exposes separate resend and printable-source share actions, and keeps older saved report artifacts printable through escaped fallback HTML.
 18. DONE 2026-06-09: Dog ID credentials now have escaped print-ready HTML, stable file names, and separate Records actions for sharing the normal ID card text or printable source.
 19. DONE 2026-06-10: Medication routines now derive taken, due, missed, and upcoming adherence status from household-visible medication logs, including dose, owner, logged-by context, next action, and a mobile Records Medication Plan surface.
+20. DONE 2026-06-10: Medication logging now has Home quick-log access, routine-aware dose/outcome/visibility defaults, a Log composer Medication routine panel, and skipped-medication handling that does not count as taken.
 
 ## Cadence
 

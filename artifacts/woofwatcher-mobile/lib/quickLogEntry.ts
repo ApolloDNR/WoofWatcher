@@ -112,6 +112,10 @@ function routineDetails(routine: RoutineBoardItem | null): Record<string, unknow
   };
 }
 
+function clean(value: unknown): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
 export function buildQuickLogEntry(
   item: QuickLogConfig,
   state: QuickLogState,
@@ -137,6 +141,13 @@ export function buildQuickLogEntry(
       details.eatenUnit = parsed.unit;
       amount = portionAmountText(parsed.amount);
     }
+  }
+
+  if (normalizedType === "medication") {
+    details.medicationOutcome = "taken";
+    details.householdVisible = true;
+    const dose = clean(routine?.note);
+    if (dose) details.dose = dose;
   }
 
   return {
