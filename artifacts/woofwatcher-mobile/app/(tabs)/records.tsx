@@ -35,6 +35,7 @@ import {
   deriveHealthWatch,
   deriveMedicationAdherence,
   deriveMedicationFollowUps,
+  deriveMedicationHistory,
   deriveRecordReminders,
   getCarePassArtifactPrintView,
   getPetCredentialPrintView,
@@ -174,6 +175,10 @@ export default function RecordsScreen() {
   const medicationFollowUps = useMemo(
     () => deriveMedicationFollowUps({ entries: state.entries, routines: state.routines, records: state.records, now }).slice(0, 3),
     [state.entries, state.routines, state.records, now],
+  );
+  const medicationHistory = useMemo(
+    () => deriveMedicationHistory({ entries: state.entries, now, limit: 4 }),
+    [state.entries, now],
   );
 
   // ---- Weight trend (prefer real weight logs, fall back to gentle synthesis) ----
@@ -1020,6 +1025,66 @@ export default function RecordsScreen() {
                 })
               )}
             </View>
+            <View style={[s.medHistory, { borderTopColor: colors.border }]}>
+              <View style={s.medFollowUpHeader}>
+                <Text style={[s.medFollowUpTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  Medication History
+                </Text>
+                <Text style={[s.medFollowUpCount, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                  {medicationHistory.total ? `${medicationHistory.total} logs` : "No logs"}
+                </Text>
+              </View>
+              {medicationHistory.items.length === 0 ? (
+                <Text style={[s.medFollowUpEmpty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  Visible medication logs will appear here with dose, outcome, caregiver, and notes.
+                </Text>
+              ) : (
+                medicationHistory.items.map((item, index) => {
+                  const tone =
+                    item.outcome === "taken"
+                      ? colors.sage
+                      : item.outcome === "skipped" || item.outcome === "missed"
+                        ? colors.rose
+                        : colors.primary;
+                  const iconName =
+                    item.outcome === "taken"
+                      ? "checkmark-circle"
+                      : item.outcome === "missed"
+                        ? "alert-circle"
+                        : item.outcome === "skipped"
+                          ? "remove-circle"
+                          : "document-text-outline";
+                  return (
+                    <View
+                      key={item.id}
+                      style={[s.medHistoryRow, index > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}
+                    >
+                      <View style={[s.rowIconWrap, { backgroundColor: tone + "16" }]}>
+                        <Ionicons name={iconName} size={18} color={tone} />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <View style={s.medHistoryTop}>
+                          <Text numberOfLines={1} style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                            {item.label}
+                          </Text>
+                          <View style={[s.medStatusPill, { backgroundColor: tone + "16" }]}>
+                            <Text style={[s.medStatusText, { color: tone, fontFamily: "Inter_700Bold" }]}>{item.statusLabel}</Text>
+                          </View>
+                        </View>
+                        <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {item.dose} - {item.caregiver} - {relativeDay(item.occurredAt, now)}
+                        </Text>
+                        {item.note ? (
+                          <Text style={[s.medHistoryNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                            {item.note}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
           </View>
 
           {/* Care pass */}
@@ -1570,6 +1635,10 @@ const s = StyleSheet.create({
   medFollowUpRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12 },
   medFollowUpAction: { fontSize: 12, lineHeight: 17, marginTop: 5 },
   medFollowUpRule: { fontSize: 11.2, lineHeight: 16, marginTop: 4 },
+  medHistory: { borderTopWidth: 1, marginTop: 4, paddingTop: 14 },
+  medHistoryRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12 },
+  medHistoryTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  medHistoryNote: { fontSize: 12.2, lineHeight: 17, marginTop: 5 },
 
   carePassGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   carePassCard: {

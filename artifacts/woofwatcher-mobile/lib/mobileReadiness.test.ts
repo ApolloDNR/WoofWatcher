@@ -199,3 +199,12 @@ test("keeps Records wired to medication follow-up reminders", () => {
   assert.match(records, /Medication Follow-ups/);
   assert.match(records, /notificationRule/);
 });
+
+test("keeps Records wired to medication history", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /deriveMedicationHistory/);
+  assert.match(records, /medicationHistory/);
+  assert.match(records, /Medication History/);
+  assert.match(records, /statusLabel/);
+});

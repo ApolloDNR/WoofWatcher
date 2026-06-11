@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { deriveMedicationAdherence, deriveMedicationFollowUps } from "../src/index.ts";
+import { deriveMedicationAdherence, deriveMedicationFollowUps, deriveMedicationHistory } from "../src/index.ts";
 
 process.env.TZ = "America/Los_Angeles";
 
@@ -119,4 +119,58 @@ test("derives medication follow-ups for missed doses and refill records", () => 
   assert.equal(followUps[2].recordId, "apoquel-refill");
   assert.equal(followUps[2].daysUntil, 4);
   assert.match(followUps[2].action, /refill/i);
+});
+
+test("derives visible medication history with dose, outcome, caregiver, and notes", () => {
+  const history = deriveMedicationHistory({
+    now: new Date("2026-06-06T20:00:00-07:00").getTime(),
+    entries: [
+      {
+        id: "old-log",
+        type: "medication",
+        title: "Apoquel",
+        caregiver: "Apollo",
+        occurredAt: "2026-04-20T08:05:00-07:00",
+        details: { routineId: "am-meds", dose: "1 tablet", medicationOutcome: "taken", householdVisible: true },
+      },
+      {
+        id: "private-log",
+        type: "medication",
+        title: "Apoquel",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T08:05:00-07:00",
+        details: { routineId: "am-meds", dose: "1 tablet", medicationOutcome: "taken", householdVisible: false },
+      },
+      {
+        id: "am-log",
+        type: "meds",
+        title: "Apoquel",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T08:05:00-07:00",
+        details: { routineId: "am-meds", dose: "1 tablet", medicationOutcome: "taken", householdVisible: true },
+      },
+      {
+        id: "pm-log",
+        type: "medicine",
+        title: "Probiotic",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T19:55:00-07:00",
+        note: "Held after soft stool.",
+        details: { routineId: "pm-meds", dose: "1 capsule", medicationOutcome: "skipped", householdVisible: true },
+      },
+    ],
+  });
+
+  assert.equal(history.total, 2);
+  assert.equal(history.takenCount, 1);
+  assert.equal(history.skippedCount, 1);
+  assert.equal(history.summary, "2 visible medication logs in 30 days");
+  assert.deepEqual(history.items.map((item) => item.id), ["pm-log", "am-log"]);
+  assert.equal(history.items[0].label, "Probiotic");
+  assert.equal(history.items[0].outcome, "skipped");
+  assert.equal(history.items[0].statusLabel, "Skipped");
+  assert.equal(history.items[0].dose, "1 capsule");
+  assert.equal(history.items[0].caregiver, "Emma");
+  assert.equal(history.items[0].routineId, "pm-meds");
+  assert.equal(history.items[0].note, "Held after soft stool.");
 });

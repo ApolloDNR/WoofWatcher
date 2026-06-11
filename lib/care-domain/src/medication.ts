@@ -4,6 +4,7 @@ import { getRecordDueStatus, type CareRecord } from "./record-vault.ts";
 export type MedicationAdherenceStatus = "taken" | "missed" | "due" | "upcoming";
 export type MedicationFollowUpKind = "missed" | "due" | "refill";
 export type MedicationFollowUpUrgency = "alert" | "watch" | "info";
+export type MedicationHistoryOutcome = "taken" | "skipped" | "missed" | "logged";
 
 export interface MedicationRoutine {
   id?: string;
@@ -21,6 +22,7 @@ export interface MedicationEntry {
   title?: string | null;
   caregiver?: string | null;
   occurredAt: string;
+  note?: string | null;
   details?: CareEventDetails;
 }
 
@@ -33,6 +35,13 @@ export interface MedicationAdherenceInput {
 export interface MedicationFollowUpInput extends MedicationAdherenceInput {
   records?: readonly MedicationRecord[];
   refillDueSoonDays?: number;
+}
+
+export interface MedicationHistoryInput {
+  entries: readonly MedicationEntry[];
+  now?: number;
+  days?: number;
+  limit?: number;
 }
 
 export interface MedicationAdherenceItem {
@@ -74,6 +83,27 @@ export interface MedicationFollowUp {
   recordId?: string;
   daysUntil?: number;
   dueDate?: string;
+}
+
+export interface MedicationHistoryItem {
+  id: string;
+  label: string;
+  outcome: MedicationHistoryOutcome;
+  statusLabel: string;
+  dose: string;
+  caregiver: string;
+  occurredAt: string;
+  routineId: string;
+  note: string;
+}
+
+export interface MedicationHistory {
+  items: MedicationHistoryItem[];
+  total: number;
+  takenCount: number;
+  skippedCount: number;
+  missedCount: number;
+  summary: string;
 }
 
 const DUE_WINDOW_MINUTES = 30;
@@ -133,6 +163,27 @@ function titleMatches(entry: MedicationEntry, routine: MedicationRoutine): boole
 function entryTaken(entry: MedicationEntry): boolean {
   const outcome = clean(entry.details?.medicationOutcome ?? entry.details?.outcome ?? entry.details?.status).toLowerCase();
   return !["skip", "skipped", "missed", "not taken", "held"].includes(outcome);
+}
+
+function entryOutcome(entry: MedicationEntry): MedicationHistoryOutcome {
+  const outcome = clean(entry.details?.medicationOutcome ?? entry.details?.outcome ?? entry.details?.status).toLowerCase();
+  if (["missed"].includes(outcome)) return "missed";
+  if (["skip", "skipped", "not taken", "held"].includes(outcome)) return "skipped";
+  if (outcome === "logged") return "logged";
+  if (["", "taken", "complete", "completed"].includes(outcome)) return entryTaken(entry) ? "taken" : "logged";
+  return "logged";
+}
+
+function statusLabel(outcome: MedicationHistoryOutcome): string {
+  if (outcome === "taken") return "Taken";
+  if (outcome === "skipped") return "Skipped";
+  if (outcome === "missed") return "Missed";
+  return "Logged";
+}
+
+function entryNote(entry: MedicationEntry): string {
+  const detailNote = entry.details?.note ?? entry.details?.notes ?? entry.details?.stickyNote;
+  return clean(detailNote) || clean(entry.note);
 }
 
 function medicationRecord(record: MedicationRecord): boolean {
@@ -327,4 +378,54 @@ export function deriveMedicationFollowUps(input: MedicationFollowUpInput): Medic
       (a.daysUntil ?? 9999) - (b.daysUntil ?? 9999) ||
       a.label.localeCompare(b.label),
   );
+}
+
+export function deriveMedicationHistory(input: MedicationHistoryInput): MedicationHistory {
+  const now = input.now ?? Date.now();
+  const days = input.days ?? 30;
+  const limit = input.limit ?? 6;
+  const entries = input.entries
+    .filter(entryVisible)
+    .map((entry, index) => ({
+      entry,
+      id: clean(entry.id) || `medication_history_${index}`,
+      ms: new Date(entry.occurredAt).getTime(),
+      normalizedType: normalizeCareEventType(entry.type, entry.details),
+    }))
+    .filter((candidate) => candidate.normalizedType === "medication")
+    .filter((candidate) => Number.isFinite(candidate.ms))
+    .filter((candidate) => {
+      const ageDays = (now - candidate.ms) / 86400000;
+      return ageDays >= 0 && ageDays <= days;
+    })
+    .sort((a, b) => b.ms - a.ms)
+    .slice(0, limit)
+    .map((candidate): MedicationHistoryItem => {
+      const outcome = entryOutcome(candidate.entry);
+      return {
+        id: candidate.id,
+        label: clean(candidate.entry.title) || "Medication",
+        outcome,
+        statusLabel: statusLabel(outcome),
+        dose: entryDose(candidate.entry) || "Dose not set",
+        caregiver: clean(candidate.entry.caregiver) || "Household",
+        occurredAt: candidate.entry.occurredAt,
+        routineId: entryRoutineId(candidate.entry),
+        note: entryNote(candidate.entry),
+      };
+    });
+
+  const takenCount = entries.filter((entry) => entry.outcome === "taken").length;
+  const skippedCount = entries.filter((entry) => entry.outcome === "skipped").length;
+  const missedCount = entries.filter((entry) => entry.outcome === "missed").length;
+  const total = entries.length;
+
+  return {
+    items: entries,
+    total,
+    takenCount,
+    skippedCount,
+    missedCount,
+    summary: `${total} visible medication ${total === 1 ? "log" : "logs"} in ${days} days`,
+  };
 }

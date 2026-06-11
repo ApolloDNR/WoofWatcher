@@ -162,6 +162,16 @@ Owner: Codex.
 
 Revisit trigger: Notification delivery, calendar recurrence, pharmacy/vet integrations, or stricter medication schedule schemas become active release work.
 
+### 2026-06-11: Medication History Shows Shared Evidence Only
+
+Decision: Medication history is derived from household-visible medication logs and shown in Records as recent evidence for owners, not as a separate private timeline.
+
+Reason: Owners need to review dose, outcome, caregiver, routine, and notes without searching the full log, but private medication entries should preserve the same household boundary as routine satisfaction and adherence.
+
+Owner: Codex.
+
+Revisit trigger: The app adds role-based permissions, medication search/filtering, audit history, or provider-backed medication reports.
+
 ### 2026-06-08: Log Details Stay In The Log Workflow
 
 Decision: Entry details, sticky notes, sync state, edit/delete actions, and entry-level handoff sharing are implemented as a Log screen bottom sheet rather than a separate route.
