@@ -440,7 +440,17 @@ Reason: Household trust depends on knowing whether care was saved, syncing, fail
 
 Owner: Codex.
 
-Revisit trigger: Conflict-safe state mutation, background sync workers, native offline runtime QA, or a richer sync dashboard becomes active release work.
+Revisit trigger: Conflict-safe state mutation, background sync workers, native offline runtime QA, or conflict-resolution UI becomes active release work.
+
+### 2026-06-11: Household Sync Health Belongs In More
+
+Decision: Household-level sync health is summarized on the More screen, while the Log screen remains the tactical place to inspect and retry specific outbox changes.
+
+Reason: Main owners need a calm trust signal that says whether the shared household record is current, syncing, loading, or needs attention. That belongs next to household/team controls, not hidden inside the event timeline.
+
+Owner: Codex.
+
+Revisit trigger: Role permissions, background sync workers, native offline runtime QA, or conflict-resolution UI requires a dedicated sync center.
 
 ## Open Decisions For Apollo
 
