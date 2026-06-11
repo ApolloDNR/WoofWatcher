@@ -1,0 +1,28 @@
+/* WoofWatcher mobile brand tokens — pulled from the real app (constants/colors.ts).
+   Every variant in this group imports this file. Do NOT edit index.css. */
+:root {
+  --ww-bg: #F4F1EC;          /* ivory app background */
+  --ww-cream: #FCFAF6;       /* warm card cream */
+  --ww-card: #FFFFFF;
+  --ww-ink: #1A2820;         /* near-black ink */
+  --ww-text: #1F2D27;
+  --ww-muted: #6B7A6E;       /* muted sage-grey */
+  --ww-border: #E4E0D9;      /* stone border */
+
+  --ww-primary: #2E5846;     /* forest green */
+  --ww-sage: #3B7854;        /* brighter sage */
+  --ww-sage-soft: #DCE6D9;   /* pale sage fill */
+  --ww-copper: #B85E2A;      /* copper accent */
+  --ww-copper-bright: #BB602D;
+  --ww-amber: #CC9630;
+  --ww-rose: #C0604A;
+  --ww-navy: #0F1F33;        /* logo navy */
+  --ww-brand-navy: #1B3A5B;  /* wordmark navy */
+  --ww-midnight: #0A131F;
+
+  --ww-radius: 18px;
+
+  --ww-serif: 'Fraunces', 'Playfair Display', Georgia, serif;
+  --ww-round: 'Fredoka', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --ww-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
