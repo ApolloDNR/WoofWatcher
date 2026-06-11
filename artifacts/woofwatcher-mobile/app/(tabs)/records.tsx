@@ -963,6 +963,16 @@ export default function RecordsScreen() {
             <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
               {pottyHealth.nextStep}
             </Text>
+            {pottyHealth.stoolColors.length ? (
+              <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular", marginTop: 6 }]}>
+                Colors: {pottyHealth.stoolColors.join(", ")}
+              </Text>
+            ) : null}
+            {pottyHealth.contexts.length ? (
+              <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular", marginTop: 4 }]}>
+                Context: {pottyHealth.contexts.join(", ")}
+              </Text>
+            ) : null}
             {pottyHealth.last ? (
               <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
                 <View style={[s.watchSignalDot, { backgroundColor: pottyHealth.watchCount ? colors.amber : colors.sage }]} />
@@ -974,6 +984,7 @@ export default function RecordsScreen() {
                     {[
                       pottyHealth.last.condition !== "not logged" ? pottyHealth.last.condition : "",
                       pottyHealth.last.stoolColor ? `${pottyHealth.last.stoolColor} stool detail` : "",
+                      pottyHealth.last.context,
                       pottyHealth.last.caregiver,
                       relativeDay(pottyHealth.last.occurredAt, now),
                     ].filter(Boolean).join(" - ")}

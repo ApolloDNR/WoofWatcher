@@ -26,6 +26,7 @@ export interface PottyHealthItem {
   kindLabel: string;
   condition: string;
   stoolColor: string;
+  context: string;
   caregiver: string;
   occurredAt: string;
   note: string;
@@ -43,9 +44,26 @@ export interface PottyHealth {
   summary: string;
   nextStep: string;
   conditions: string[];
+  stoolColors: string[];
+  contexts: string[];
   caregivers: string[];
   last: PottyHealthItem | null;
 }
+
+const REVIEW_STOOL_COLORS = new Set([
+  "yellow",
+  "red",
+  "red-black",
+  "red/black",
+  "black",
+  "black-tarry",
+  "black tarry",
+  "gray",
+  "grey",
+  "white",
+]);
+
+const REVIEW_CONTEXTS = new Set(["accident", "urgent", "straining"]);
 
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
@@ -121,11 +139,20 @@ function conditionFor(entry: PottyHealthEntry): string {
 
 function stoolColorFor(entry: PottyHealthEntry): string {
   const details = asObject(entry.details);
-  return clean(details.stoolColor ?? details.color).toLowerCase();
+  const color = clean(details.stoolColor ?? details.color).toLowerCase();
+  return color === "not-logged" || color === "none" ? "" : color;
 }
 
-function needsReview(condition: string, severity: string): boolean {
+function contextFor(entry: PottyHealthEntry): string {
+  const details = asObject(entry.details);
+  const context = clean(details.pottyContext ?? details.context).toLowerCase();
+  return context === "not-logged" ? "" : context;
+}
+
+function needsReview(condition: string, severity: string, stoolColor: string, context: string): boolean {
   if (["alert", "urgent", "watch"].includes(severity)) return true;
+  if (REVIEW_STOOL_COLORS.has(stoolColor)) return true;
+  if (REVIEW_CONTEXTS.has(context)) return true;
   return Boolean(condition && !["normal", "not logged"].includes(condition));
 }
 
@@ -151,6 +178,8 @@ export function derivePottyHealth(input: PottyHealthInput): PottyHealth {
       const details = asObject(entry.details);
       const kind = kindFor(entry);
       const condition = conditionFor(entry);
+      const stoolColor = stoolColorFor(entry);
+      const context = contextFor(entry);
       const severity = clean(entry.severity).toLowerCase();
       return {
         id: clean(entry.id) || `potty_${index}`,
@@ -158,12 +187,13 @@ export function derivePottyHealth(input: PottyHealthInput): PottyHealth {
         kind,
         kindLabel: kindLabel(kind),
         condition,
-        stoolColor: stoolColorFor(entry),
+        stoolColor,
+        context,
         caregiver: clean(entry.caregiver) || "Household",
         occurredAt: clean(entry.occurredAt),
         note: clean(details.note) || clean(entry.note),
         severity,
-        needsReview: needsReview(condition, severity),
+        needsReview: needsReview(condition, severity, stoolColor, context),
       };
     })
     .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
@@ -174,7 +204,11 @@ export function derivePottyHealth(input: PottyHealthInput): PottyHealth {
   const watchItems = items.filter((item) => item.needsReview);
   const watchCount = watchItems.length;
   const status: PottyHealthStatus = total === 0 ? "missing" : watchCount > 0 ? "watch" : "steady";
-  const conditions = Array.from(new Set(watchItems.map((item) => item.condition).filter(Boolean)));
+  const conditions = Array.from(
+    new Set(watchItems.map((item) => item.condition).filter((condition) => Boolean(condition) && !["normal", "not logged"].includes(condition))),
+  );
+  const stoolColors = Array.from(new Set(items.map((item) => item.stoolColor).filter(Boolean)));
+  const contexts = Array.from(new Set(items.map((item) => item.context).filter(Boolean)));
   const caregivers = Array.from(new Set(items.map((item) => item.caregiver).filter(Boolean)));
 
   const summary =
@@ -201,6 +235,8 @@ export function derivePottyHealth(input: PottyHealthInput): PottyHealth {
     summary,
     nextStep,
     conditions,
+    stoolColors,
+    contexts,
     caregivers,
     last: items[0] ?? null,
   };

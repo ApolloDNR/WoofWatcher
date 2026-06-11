@@ -200,7 +200,17 @@ Reason: Apollo wants vomit, stool, and health changes to be trackable and sharea
 
 Owner: Codex.
 
-Revisit trigger: Explicit stool color fields, accident/urgency workflows, longer-range vet reports, clinician-reviewed wording, or provider-backed health summaries become active release work.
+Revisit trigger: Accident follow-up workflows, longer-range vet reports, clinician-reviewed wording, or provider-backed health summaries become active release work.
+
+### 2026-06-11: Potty Detail Fields Feed Shared Review Context
+
+Decision: Potty logs capture stool color and routine/accident/urgent/straining context in the mobile Log composer, and shared Potty Health carries those fields into Records and Care Pass reports.
+
+Reason: Stool color and potty context are high-signal owner observations. They should be structured enough for household and vet/sitter review while still framed as owner-reported evidence, not diagnosis.
+
+Owner: Codex.
+
+Revisit trigger: Longer-range stool pattern reports, clinician-reviewed red-flag wording, accident follow-up workflows, or provider-backed health summaries become active release work.
 
 ### 2026-06-08: Log Details Stay In The Log Workflow
 

@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 115 focused tests with the command above.
+- PASS: 116 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
 - PASS: GitHub Actions `WoofWatcher Verify` run `27325326721` completed successfully for `feat: add potty health summary`.
 
@@ -30,7 +30,7 @@ Latest local evidence, 2026-06-11:
 - Walk quick-log defaults for household-visible activity evidence.
 - Walk Activity derivation for visible walk logs, duration, distance when logged, dog interactions, social outcomes, places/routes, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Potty quick-log defaults for household-visible potty evidence.
-- Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, caregiver participation, Records mobile wiring, and Care Pass report language.
+- Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior.
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
 - Home Quick Log routine matching and meal detail enrichment.
@@ -75,8 +75,8 @@ Latest local evidence, 2026-06-11:
 19. Add a walk with duration, place/route, dog interactions, and social outcome notes; confirm Records Walk Activity updates minutes, places, latest walk, and next-step copy.
 20. Preview a trainer or sitter Care Pass and confirm Walk Activity includes route/place and dog interaction context.
 21. Use Home Quick Log for Potty and confirm it records household-visible potty routine evidence.
-22. Add a potty log with pee/poop kind, soft/off condition, and a sticky note; confirm Records Potty Health updates pee, poop, review count, latest detail, and stool detail next-step copy.
-23. Preview a vet or sitter Care Pass and confirm Potty Health summarizes today without making medical claims.
+22. Add a potty log with pee/poop kind, soft/off condition, stool color, accident/urgent/straining context, and a sticky note; confirm Records Potty Health updates pee, poop, review count, color/context detail, latest detail, and stool detail next-step copy.
+23. Preview a vet or sitter Care Pass and confirm Potty Health summarizes stool color and potty context without making medical claims.
 24. Add sticky note to a log.
 25. Add vaccine, insurance, microchip, vet, receipt, and document records.
 26. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.

@@ -227,7 +227,7 @@ test("care pass includes potty health context for sitter and vet review", () => 
         title: "Potty - pee & poop",
         caregiver: "Emma",
         occurredAt: "2026-06-06T12:30:00-07:00",
-        details: { kind: "both", condition: "soft", note: "Soft but no blood." },
+        details: { kind: "both", condition: "soft", stoolColor: "yellow", pottyContext: "accident", note: "Soft but no blood." },
       },
       {
         id: "potty-normal",
@@ -244,6 +244,8 @@ test("care pass includes potty health context for sitter and vet review", () => 
   assert.ok(section);
   assert.match(pass.message, /2 potty logs today - 2 pee, 1 poop, 1 needs stool review/);
   assert.match(pass.message, /Conditions: soft/);
+  assert.match(pass.message, /Colors: yellow/);
+  assert.match(pass.message, /Context: accident/);
   assert.match(pass.message, /Latest: Potty - pee & poop - pee & poop, soft/);
 });
 

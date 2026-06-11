@@ -546,8 +546,15 @@ export function buildCarePass(input: CarePassInput): CarePass {
     section("Potty Health", [
       pottyHealth.summary,
       pottyHealth.conditions.length ? `Conditions: ${pottyHealth.conditions.join(", ")}` : "",
+      pottyHealth.stoolColors.length ? `Colors: ${pottyHealth.stoolColors.join(", ")}` : "",
+      pottyHealth.contexts.length ? `Context: ${pottyHealth.contexts.join(", ")}` : "",
       pottyHealth.last
-        ? `Latest: ${pottyHealth.last.label} - ${pottyHealth.last.kindLabel}${pottyHealth.last.condition ? `, ${pottyHealth.last.condition}` : ""}`
+        ? `Latest: ${pottyHealth.last.label} - ${[
+            pottyHealth.last.kindLabel,
+            pottyHealth.last.condition,
+            pottyHealth.last.stoolColor,
+            pottyHealth.last.context,
+          ].filter(Boolean).join(", ")}`
         : "",
       pottyHealth.nextStep,
     ]),

@@ -107,7 +107,6 @@ const LOG_TYPES: LogType[] = [
         ],
       },
     ],
-    noteField: { placeholder: "Sticky note: stool detail, color, accident, urgency, or anything unusual..." },
   },
   { type: "treat", label: "Treat", icon: "bone", baseTitle: "Treat" },
   {
@@ -141,7 +140,28 @@ const LOG_TYPES: LogType[] = [
           { id: "off", label: "Off", severity: "alert" },
         ],
       },
+      {
+        key: "stoolColor",
+        label: "Stool color",
+        options: [
+          { id: "not-logged", label: "Not logged" },
+          { id: "brown", label: "Brown" },
+          { id: "yellow", label: "Yellow", suffix: "yellow stool", severity: "watch" },
+          { id: "red-black", label: "Red/black", suffix: "red/black stool", severity: "alert" },
+        ],
+      },
+      {
+        key: "pottyContext",
+        label: "Context",
+        options: [
+          { id: "routine", label: "Routine" },
+          { id: "accident", label: "Accident", suffix: "accident", severity: "watch" },
+          { id: "urgent", label: "Urgent", suffix: "urgent", severity: "watch" },
+          { id: "straining", label: "Straining", suffix: "straining", severity: "alert" },
+        ],
+      },
     ],
+    noteField: { placeholder: "Sticky note: stool detail, color, accident, urgency, or anything unusual..." },
   },
   {
     type: "play",
@@ -290,6 +310,8 @@ const DETAIL_LABELS: Record<string, string> = {
   portion: "Portion",
   severity: "Severity",
   serving: "Serving",
+  stoolColor: "Stool color",
+  pottyContext: "Context",
   routineLabel: "Routine",
   what: "Symptom",
 };

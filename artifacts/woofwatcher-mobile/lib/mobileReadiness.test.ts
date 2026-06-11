@@ -237,8 +237,14 @@ test("keeps potty health visible from Log composer to Records", () => {
   assert.match(log, /type: "potty"/);
   assert.match(log, /label: "Condition"/);
   assert.match(log, /soft/);
+  assert.match(log, /stoolColor/);
+  assert.match(log, /pottyContext/);
+  assert.match(log, /red-black/);
+  assert.match(log, /straining/);
   assert.match(records, /derivePottyHealth/);
   assert.match(records, /pottyHealth/);
+  assert.match(records, /pottyHealth\.stoolColors/);
+  assert.match(records, /pottyHealth\.contexts/);
   assert.match(records, /Potty Health/);
   assert.match(records, /stool detail/);
 });
