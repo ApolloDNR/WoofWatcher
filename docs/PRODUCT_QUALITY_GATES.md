@@ -211,11 +211,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI before the current Weight Trend local slice:
+Latest known passing CI after the Weight Trend report slice:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27364253713`, completed success on 2026-06-11 UTC
+- Evidence: run `27365313142`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 
