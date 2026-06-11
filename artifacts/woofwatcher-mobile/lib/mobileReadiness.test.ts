@@ -295,6 +295,19 @@ test("keeps the durable sync outbox visible in care context and Log", () => {
   assert.match(log, /syncOutbox\.retryable/);
 });
 
+test("keeps care log audit trails wired into Log edit, sticky note, delete, and detail flows", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(log, /appendCareAuditEvent/);
+  assert.match(log, /buildCareLogDeletionAuditEntry/);
+  assert.match(log, /getCareAuditTrail/);
+  assert.match(log, /detailAuditTrail/);
+  assert.match(log, /Audit trail/);
+  assert.match(log, /sticky-note-added/);
+  assert.match(log, /updated/);
+  assert.match(log, /Delete failed/);
+});
+
 test("keeps household sync health visible from More", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

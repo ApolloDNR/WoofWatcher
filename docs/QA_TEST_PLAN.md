@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 141 focused tests with the command above.
+- PASS: 145 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
 - PASS: GitHub Actions `WoofWatcher Verify` run `27338286039` completed successfully for `feat: add household responsibility center`.
 
@@ -36,6 +36,7 @@ Latest local evidence, 2026-06-11:
 - Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
 - Household Responsibility derivation for care-team routine ownership, open/overdue/unassigned routines, visible today log counts, next household action copy, and Calendar/More mobile wiring.
+- Care log audit trail creation, sanitization, sticky-note/edit/delete audit events, non-health deletion audit notes, and mobile Log detail wiring.
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
 - Home Quick Log routine matching and meal detail enrichment.
 - Health Watch signals and medical boundary.
@@ -106,6 +107,8 @@ Latest local evidence, 2026-06-11:
 46. Edit profile, routine, record, or report state offline or during a stale refresh; confirm the newer local care document is kept and pushed back instead of overwritten by older server data.
 47. Open Calendar and confirm Household Responsibility shows handled/open/overdue/unassigned routine counts plus the next household step.
 48. Open More and confirm Responsibility Center shows the same household next step, member routine loads, visible log counts, and routes to Calendar.
+49. Create a log, add a sticky note, edit its title or note, open details, and confirm Audit trail shows create, sticky-note, and edit evidence.
+50. Delete a log and confirm a separate deleted-log audit note appears without counting as a health or routine-completion event.
 
 ## Missing QA
 

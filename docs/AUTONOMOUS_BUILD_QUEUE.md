@@ -39,6 +39,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 31. DONE 2026-06-11: Weekly Care Trends now derive from household-visible logs, compare the current 7-day window against the previous window, and carry meal completion, walk minutes, water refills, potty/medication/health watch signals, top caregivers, Records UI, and Care Pass report language.
 32. DONE 2026-06-11: Training Progress now captures structured training outcomes, skill/cue, duration, next-practice notes, and household visibility in the Log composer, derives visible 30-day training progress in shared domain logic, and carries sessions, wins, skills, latest context, Records UI, and Care Pass report language into trainer-ready workflows.
 33. DONE 2026-06-11: Household Responsibility Center now derives care-team routine ownership, open/overdue/unassigned counts, visible today log activity, and the next household action from routine-board truth, then surfaces it in Calendar and More.
+34. DONE 2026-06-11: Care Log Audit Trail now records create/edit/sticky-note/delete evidence in shared care-domain logic, shows audit history in Log detail sheets, includes audit summaries in entry handoffs, and creates a non-health audit note only after deletes succeed.
 
 ## Cadence
 

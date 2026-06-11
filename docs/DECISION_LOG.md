@@ -222,6 +222,16 @@ Owner: Codex.
 
 Revisit trigger: Log search/history, audit trails, or deep links require a routed entry-detail screen.
 
+### 2026-06-11: Care Log Audit Trails Preserve Household Trust
+
+Decision: Care log create, edit, sticky-note, and successful delete actions use a shared care-domain audit trail. Existing entries carry their own audit history, and successful deletes create a separate non-health note entry so deleted care does not silently satisfy routines or distort health patterns.
+
+Reason: Household care logs are trusted evidence. Owners need to see when a log changed or disappeared without letting deleted meals, walks, medications, or health events keep affecting routine status and reports.
+
+Owner: Codex.
+
+Revisit trigger: Server-backed retention, role-based permissions, legal deletion policy, or routed long-history/audit views require a stricter audit architecture.
+
 ### 2026-06-08: Care Pass Reports Preview Before Sharing
 
 Decision: Sitter, vet, trainer, and caregiver Care Passes are previewed inside Records before invoking the native share sheet.

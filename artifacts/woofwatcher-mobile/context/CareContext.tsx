@@ -282,7 +282,7 @@ function isConflict(err: unknown): err is { status: number; data: unknown } {
 interface CareContextValue {
   state: CareState;
   addEntry: (entry: Omit<Entry, "id">) => string;
-  deleteEntry: (id: string) => void;
+  deleteEntry: (id: string) => Promise<boolean>;
   updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => void;
   updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => void;
   refresh: () => void;
@@ -547,25 +547,26 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   );
 
   const deleteEntry = useCallback(
-    (id: string) => {
+    async (id: string) => {
       let removed: Entry | undefined;
       setEntries((prev) => {
         removed = prev.find((e) => e.id === id);
         return prev.filter((e) => e.id !== id);
       });
-      if (!signedInRef.current || id.startsWith("temp_")) return;
-      deleteCareEntry(id)
-        .then(() => {
-          queryClient.invalidateQueries({
-            queryKey: getListCareEntriesQueryKey(),
-          });
-        })
-        .catch(() => {
-          if (removed) {
-            const restored = removed;
-            setEntries((prev) => [restored, ...prev]);
-          }
+      if (!signedInRef.current || id.startsWith("temp_")) return true;
+      try {
+        await deleteCareEntry(id);
+        queryClient.invalidateQueries({
+          queryKey: getListCareEntriesQueryKey(),
         });
+        return true;
+      } catch {
+        if (removed) {
+          const restored = removed;
+          setEntries((prev) => [restored, ...prev]);
+        }
+        return false;
+      }
     },
     [queryClient],
   );

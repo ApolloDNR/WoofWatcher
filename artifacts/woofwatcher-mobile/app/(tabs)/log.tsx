@@ -18,11 +18,15 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
 import {
+  appendCareAuditEvent,
   appendStickyNote,
+  buildCareLogDeletionAuditEntry,
+  getCareAuditTrail,
   deriveDietProgress,
   deriveMedicationAdherence,
   getStickyNotes,
   normalizeCareEventType,
+  type CareAuditEvent,
   type CareEventType,
   type StickyNoteColor,
 } from "@workspace/care-domain";
@@ -302,6 +306,10 @@ function syncLabel(status: Entry["syncStatus"]): string | null {
 }
 
 const DETAIL_SKIP_KEYS = new Set([
+  "auditAction",
+  "auditSubjectId",
+  "auditTrail",
+  "deletedEntrySnapshot",
   "stickyNotes",
   "title",
   "durationMinutes",
@@ -401,6 +409,7 @@ function buildEntryHandoffMessage(entry: Entry): string {
   const type = entryTypeLabel(normalizeCareEventType(entry.type, entry.details));
   const rows = buildEntryDetailRows(entry);
   const stickyNotes = getStickyNotes(entry.details);
+  const auditTrail = getCareAuditTrail(entry.details);
   return [
     "WOOFWATCHER LOG HANDOFF",
     "",
@@ -415,6 +424,9 @@ function buildEntryHandoffMessage(entry: Entry): string {
     stickyNotes.length ? "" : null,
     stickyNotes.length ? "Sticky notes" : null,
     ...stickyNotes.map((note) => `- ${note.text} (${note.caregiver})`),
+    auditTrail.length ? "" : null,
+    auditTrail.length ? "Audit trail" : null,
+    ...auditTrail.map((event) => `- ${event.summary}`),
   ]
     .filter((line): line is string => line != null)
     .join("\n");
@@ -422,6 +434,27 @@ function buildEntryHandoffMessage(entry: Entry): string {
 
 function stickyNoteId(): string {
   return `sticky_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function auditId(): string {
+  return `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function auditActionLabel(action: CareAuditEvent["action"]): string {
+  if (action === "sticky-note-added") return "Sticky note";
+  if (action === "updated") return "Edited";
+  if (action === "deleted") return "Deleted";
+  return "Created";
+}
+
+function auditMeta(event: CareAuditEvent): string {
+  const when = new Date(event.occurredAt).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${auditActionLabel(event.action)} - ${event.caregiver} - ${when}`;
 }
 
 function formatCareAmount(value: number | null, unit: string): string {
@@ -570,6 +603,10 @@ export default function LogScreen() {
   );
   const detailStickyNotes = useMemo(
     () => (detailEntry ? getStickyNotes(detailEntry.details) : []),
+    [detailEntry],
+  );
+  const detailAuditTrail = useMemo(
+    () => (detailEntry ? getCareAuditTrail(detailEntry.details) : []),
     [detailEntry],
   );
   const detailType = detailEntry ? normalizeCareEventType(detailEntry.type, detailEntry.details) : null;
@@ -758,6 +795,13 @@ export default function LogScreen() {
     }
     const title = parts.length ? `${config.baseTitle} - ${parts.join(", ")}` : config.baseTitle;
     const type = normalizeCareEventType(config.type, details);
+    details = appendCareAuditEvent(details, {
+      id: auditId(),
+      action: "created",
+      caregiver,
+      occurredAt,
+      summary: `${caregiver} created "${title}" in the shared care log.`,
+    });
 
     return {
       type,
@@ -835,12 +879,21 @@ export default function LogScreen() {
     if (promptId && text) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const entry = state.entries.find((item) => item.id === promptId);
-      const details = appendStickyNote(entry?.details ?? {}, {
+      const occurredAt = new Date().toISOString();
+      const detailsWithNote = appendStickyNote(entry?.details ?? {}, {
         id: stickyNoteId(),
         text,
         caregiver,
-        createdAt: new Date().toISOString(),
+        createdAt: occurredAt,
         color: promptMode === "post-log" ? "sun" : "sage",
+      });
+      const details = appendCareAuditEvent(detailsWithNote, {
+        id: auditId(),
+        action: "sticky-note-added",
+        caregiver,
+        occurredAt,
+        summary: `${caregiver} added a sticky note to "${entry?.title ?? "this log"}".`,
+        changes: ["stickyNotes"],
       });
       updateEntry(promptId, { note: entry?.note ?? text, details });
     }
@@ -855,15 +908,30 @@ export default function LogScreen() {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
+          onPress: async () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            deleteEntry(id);
+            const entry = state.entries.find((item) => item.id === id);
+            const deleted = await deleteEntry(id);
+            if (!deleted) {
+              Alert.alert("Delete failed", "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.");
+              return;
+            }
+            if (entry) {
+              addEntry(
+                buildCareLogDeletionAuditEntry({
+                  id: auditId(),
+                  caregiver,
+                  occurredAt: new Date().toISOString(),
+                  entry,
+                }),
+              );
+            }
             onDeleted?.();
           },
         },
       ]);
     },
-    [deleteEntry],
+    [addEntry, caregiver, deleteEntry, state.entries],
   );
 
   const openEditEntry = useCallback((e: Entry) => {
@@ -885,13 +953,29 @@ export default function LogScreen() {
   const saveEditEntry = useCallback(() => {
     if (!editEntry) return;
     const title = editTitle.trim() || editEntry.title;
+    const note = editNote.trim() || undefined;
+    const changes: string[] = [];
+    if (title !== editEntry.title) changes.push("title");
+    if ((note ?? "") !== (editEntry.note ?? "")) changes.push("note");
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateEntry(editEntry.id, { note: editNote.trim() || undefined });
-    if (title !== editEntry.title) {
-      updateEntry(editEntry.id, { title });
+    if (changes.length) {
+      const details = appendCareAuditEvent(editEntry.details ?? {}, {
+        id: auditId(),
+        action: "updated",
+        caregiver,
+        occurredAt: new Date().toISOString(),
+        summary: `${caregiver} updated ${changes.join(" and ")} on "${editEntry.title}".`,
+        changes,
+      });
+      updateEntry(editEntry.id, {
+        ...(title !== editEntry.title ? { title } : {}),
+        ...((note ?? "") !== (editEntry.note ?? "") ? { note } : {}),
+        details,
+      });
     }
     setEditEntry(null);
-  }, [editEntry, editTitle, editNote, updateEntry]);
+  }, [caregiver, editEntry, editTitle, editNote, updateEntry]);
 
   const openEntryDetail = useCallback((e: Entry) => {
     setDetailEntryId(e.id);
@@ -1765,6 +1849,35 @@ export default function LogScreen() {
                   </View>
                 )}
 
+                <View style={s.detailSectionHeader}>
+                  <Text style={[s.detailSectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Audit trail</Text>
+                  <Text style={[s.detailSectionCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{detailAuditTrail.length}</Text>
+                </View>
+                {detailAuditTrail.length > 0 ? (
+                  <View style={s.auditStack}>
+                    {detailAuditTrail.map((event) => (
+                      <View key={event.id} style={[s.auditRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <View style={[s.auditDot, { backgroundColor: event.action === "deleted" ? colors.rose : colors.copper }]} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[s.auditSummary, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{event.summary}</Text>
+                          <Text style={[s.auditMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{auditMeta(event)}</Text>
+                          {event.changes?.length ? (
+                            <Text style={[s.auditChanges, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                              Changed: {event.changes.join(", ")}
+                            </Text>
+                          ) : null}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <View style={[s.detailFieldWide, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      Original log, no later changes recorded.
+                    </Text>
+                  </View>
+                )}
+
                 <View style={s.detailActions}>
                   <Pressable
                     onPress={() => shareEntryHandoff(detailEntry)}
@@ -2073,6 +2186,12 @@ const s = StyleSheet.create({
   detailSectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 8 },
   detailSectionTitle: { fontSize: 16 },
   detailSectionCount: { fontSize: 12 },
+  auditStack: { gap: 8 },
+  auditRow: { flexDirection: "row", gap: 10, borderWidth: 1, borderRadius: 15, padding: 12 },
+  auditDot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
+  auditSummary: { fontSize: 13, lineHeight: 18 },
+  auditMeta: { fontSize: 11.5, marginTop: 3 },
+  auditChanges: { fontSize: 12, marginTop: 4, lineHeight: 17 },
   detailActions: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 18 },
   detailPrimaryBtn: { flex: 1, height: 48, borderRadius: 15, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   detailPrimaryText: { color: "#fff", fontSize: 14.5 },
