@@ -213,11 +213,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI after the Weight Trend report slice:
+Latest known passing CI after the Household Access slice:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27365313142`, completed success on 2026-06-11 UTC
+- Evidence: run `27366047790`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 

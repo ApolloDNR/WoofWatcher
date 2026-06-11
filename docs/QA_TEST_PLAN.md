@@ -14,7 +14,7 @@ Latest local evidence, 2026-06-11:
 
 - PASS: 159 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
-- LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27365313142` completed successfully for `feat: add weight trend reports`.
+- LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27366047790` completed successfully for `feat: add household access readiness`.
 
 ## Required Automated Coverage
 
