@@ -206,11 +206,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI for the Training Progress implementation:
+Latest known passing CI for the Household Responsibility implementation:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27337269250`, completed success on 2026-06-11 UTC
+- Evidence: run `27338286039`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 
