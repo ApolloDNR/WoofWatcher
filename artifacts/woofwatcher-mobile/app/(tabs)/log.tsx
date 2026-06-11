@@ -447,6 +447,10 @@ export default function LogScreen() {
   const [expectedPortion, setExpectedPortion] = useState("");
   const [eatenAmount, setEatenAmount] = useState("");
   const [medicationDose, setMedicationDose] = useState("");
+  const [walkRouteName, setWalkRouteName] = useState("");
+  const [walkDistanceMiles, setWalkDistanceMiles] = useState("");
+  const [walkDogInteractions, setWalkDogInteractions] = useState("");
+  const [walkSocialOutcome, setWalkSocialOutcome] = useState("");
   const [householdVisible, setHouseholdVisible] = useState(true);
   const [noteText, setNoteText] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
@@ -480,6 +484,10 @@ export default function LogScreen() {
         ? medicationDefault.dose
         : "",
     );
+    setWalkRouteName("");
+    setWalkDistanceMiles("");
+    setWalkDogInteractions("");
+    setWalkSocialOutcome("");
     setHouseholdVisible(true);
     setNoteText("");
   }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -559,6 +567,7 @@ export default function LogScreen() {
     let details: { [key: string]: unknown } = {};
     let mood: string | undefined;
     let severity: Severity | undefined;
+    let dogInteractions: number | undefined;
     const occurredAt = new Date().toISOString();
 
     config.groups?.forEach((g) => {
@@ -660,6 +669,38 @@ export default function LogScreen() {
       if (outcome === "skipped") severity = "watch";
     }
 
+    if (config.type === "walk") {
+      const routeName = walkRouteName.trim();
+      const socialOutcome = walkSocialOutcome.trim();
+      const distance = parseNonNegativeNumber(walkDistanceMiles);
+      const interactionCount = parseNonNegativeNumber(walkDogInteractions);
+
+      if (walkDistanceMiles.trim() && distance == null) {
+        Alert.alert("Check distance", "Enter a valid distance, or leave it blank.");
+        return null;
+      }
+
+      if (walkDogInteractions.trim() && interactionCount == null) {
+        Alert.alert("Check dog interactions", "Enter a valid dog interaction count, or leave it blank.");
+        return null;
+      }
+
+      details.householdVisible = householdVisible;
+      if (routeName) {
+        details.routeName = routeName;
+        parts.unshift(routeName);
+      }
+      if (distance != null) details.distanceMiles = distance;
+      if (interactionCount != null) {
+        dogInteractions = Math.round(interactionCount);
+        details.dogInteractions = dogInteractions;
+        if (dogInteractions > 0) {
+          parts.push(`${dogInteractions} dog ${dogInteractions === 1 ? "interaction" : "interactions"}`);
+        }
+      }
+      if (socialOutcome) details.socialOutcome = socialOutcome;
+    }
+
     if (config.type === "potty") {
       details.householdVisible = householdVisible;
     }
@@ -688,6 +729,7 @@ export default function LogScreen() {
       ...(severity ? { severity } : {}),
       ...(durationMinutes ? { durationMinutes } : {}),
       ...(amount != null ? { amount } : {}),
+      ...(dogInteractions != null ? { dogInteractions } : {}),
       ...(Object.keys(details).length ? { details } : {}),
     };
   }, [
@@ -699,6 +741,10 @@ export default function LogScreen() {
     eatenAmount,
     medicationDefault,
     medicationDose,
+    walkRouteName,
+    walkDistanceMiles,
+    walkDogInteractions,
+    walkSocialOutcome,
     householdVisible,
     dietProgress.unit,
     noteText,
@@ -1149,6 +1195,79 @@ export default function LogScreen() {
                   keyboardType="decimal-pad"
                   style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                 />
+              </View>
+            )}
+
+            {selectedType === "walk" && (
+              <View style={s.mealFields}>
+                <View>
+                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Route or place</Text>
+                  <TextInput
+                    placeholder="Neighborhood Loop, Dog park, River trail..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={walkRouteName}
+                    onChangeText={setWalkRouteName}
+                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                  />
+                </View>
+                <View style={s.mealFieldRow}>
+                  <View style={s.mealField}>
+                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Distance mi</Text>
+                    <TextInput
+                      placeholder="1.2"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={walkDistanceMiles}
+                      onChangeText={setWalkDistanceMiles}
+                      keyboardType="decimal-pad"
+                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    />
+                  </View>
+                  <View style={s.mealField}>
+                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Dog interactions</Text>
+                    <TextInput
+                      placeholder="0"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={walkDogInteractions}
+                      onChangeText={setWalkDogInteractions}
+                      keyboardType="number-pad"
+                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    />
+                  </View>
+                </View>
+                <View>
+                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Social outcome</Text>
+                  <TextInput
+                    placeholder="Calm greeting, no dogs seen, barked near the gate..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={walkSocialOutcome}
+                    onChangeText={setWalkSocialOutcome}
+                    multiline
+                    style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
+                  />
+                </View>
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setHouseholdVisible((prev) => !prev);
+                  }}
+                  style={[
+                    s.visibilityToggle,
+                    {
+                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
+                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {householdVisible ? "Visible to household" : "Private log"}
+                    </Text>
+                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {householdVisible ? "Shared walk logs update route templates and handoffs." : "Private walks stay out of household route templates."}
+                    </Text>
+                  </View>
+                </Pressable>
               </View>
             )}
 

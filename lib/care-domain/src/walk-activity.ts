@@ -20,6 +20,13 @@ export interface WalkActivityInput {
   targetMinutes?: number;
 }
 
+export interface WalkRouteTemplateInput {
+  entries: readonly WalkActivityEntry[];
+  now?: number;
+  lookbackDays?: number;
+  limit?: number;
+}
+
 export interface WalkActivityItem {
   id: string;
   label: string;
@@ -47,6 +54,30 @@ export interface WalkActivity {
   caregivers: string[];
   places: string[];
   last: WalkActivityItem | null;
+}
+
+export type WalkRouteSuggestedUse =
+  | "Reliable routine route"
+  | "Social practice route"
+  | "Long reset route"
+  | "Saved route";
+
+export interface WalkRouteTemplate {
+  id: string;
+  name: string;
+  visits: number;
+  totalMinutes: number;
+  averageMinutes: number;
+  distanceMiles: number;
+  averageDistanceMiles: number;
+  dogInteractions: number;
+  latestAt: string;
+  latestCaregiver: string;
+  caregivers: string[];
+  socialOutcomes: string[];
+  notes: string[];
+  suggestedUse: WalkRouteSuggestedUse;
+  handoff: string;
 }
 
 function clean(value: unknown): string {
@@ -78,6 +109,13 @@ function sameLocalDay(iso: string | null | undefined, now: number): boolean {
     entry.getMonth() === current.getMonth() &&
     entry.getDate() === current.getDate()
   );
+}
+
+function isInLookback(iso: string | null | undefined, now: number, lookbackDays: number): boolean {
+  if (!iso) return false;
+  const time = new Date(iso).getTime();
+  if (!Number.isFinite(time) || time > now) return false;
+  return now - time <= lookbackDays * 86400000;
 }
 
 function isVisible(entry: WalkActivityEntry): boolean {
@@ -114,6 +152,33 @@ function minutesLabel(minutes: number): string {
 
 function interactionsLabel(count: number): string {
   return `${count} dog ${count === 1 ? "interaction" : "interactions"} noted`;
+}
+
+function dogInteractionCountLabel(count: number): string {
+  return `${count} dog ${count === 1 ? "interaction" : "interactions"}`;
+}
+
+function routeId(name: string): string {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug ? `route_${slug}` : "route_saved";
+}
+
+function visitLabel(count: number): string {
+  return `${count} ${count === 1 ? "visit" : "visits"}`;
+}
+
+function addUnique(list: string[], value: string): void {
+  if (value && !list.includes(value)) list.push(value);
+}
+
+function routeSuggestedUse(template: Pick<WalkRouteTemplate, "visits" | "averageMinutes" | "dogInteractions" | "socialOutcomes">): WalkRouteSuggestedUse {
+  if (template.dogInteractions >= 3 || (template.dogInteractions >= 2 && template.socialOutcomes.length > 0)) return "Social practice route";
+  if (template.visits >= 2) return "Reliable routine route";
+  if (template.averageMinutes >= 35) return "Long reset route";
+  return "Saved route";
 }
 
 export function deriveWalkActivity(input: WalkActivityInput): WalkActivity {
@@ -172,4 +237,111 @@ export function deriveWalkActivity(input: WalkActivityInput): WalkActivity {
     places,
     last: items[0] ?? null,
   };
+}
+
+export function deriveWalkRouteTemplates(input: WalkRouteTemplateInput): WalkRouteTemplate[] {
+  const now = input.now ?? Date.now();
+  const lookbackDays = input.lookbackDays ?? 90;
+  const limit = input.limit ?? 4;
+  const candidates = input.entries
+    .filter(isWalk)
+    .filter(isVisible)
+    .filter((entry) => isInLookback(entry.occurredAt, now, lookbackDays))
+    .map((entry, index) => {
+      const details = asObject(entry.details);
+      return {
+        id: clean(entry.id) || `walk_${index}`,
+        name: placeFor(entry),
+        caregiver: clean(entry.caregiver) || "Household",
+        occurredAt: clean(entry.occurredAt),
+        occurredTime: new Date(clean(entry.occurredAt)).getTime(),
+        durationMinutes: Math.max(0, Math.round(asNumber(entry.durationMinutes ?? details.durationMinutes))),
+        distanceMiles: roundDistance(Math.max(0, asNumber(details.distanceMiles ?? details.distance ?? details.miles))),
+        dogInteractions: Math.max(0, Math.round(asNumber(entry.dogInteractions ?? details.dogInteractions))),
+        socialOutcome: socialOutcomeFor(entry),
+        note: clean(details.note) || clean(entry.note),
+      };
+    })
+    .filter((item) => item.name)
+    .sort((a, b) => b.occurredTime - a.occurredTime);
+
+  const groups = new Map<
+    string,
+    {
+      name: string;
+      visits: number;
+      totalMinutes: number;
+      distanceMiles: number;
+      dogInteractions: number;
+      latestAt: string;
+      latestCaregiver: string;
+      latestTime: number;
+      caregivers: string[];
+      socialOutcomes: string[];
+      notes: string[];
+    }
+  >();
+
+  for (const item of candidates) {
+    const key = item.name.toLowerCase();
+    const group =
+      groups.get(key) ??
+      {
+        name: item.name,
+        visits: 0,
+        totalMinutes: 0,
+        distanceMiles: 0,
+        dogInteractions: 0,
+        latestAt: item.occurredAt,
+        latestCaregiver: item.caregiver,
+        latestTime: item.occurredTime,
+        caregivers: [],
+        socialOutcomes: [],
+        notes: [],
+      };
+
+    group.visits += 1;
+    group.totalMinutes += item.durationMinutes;
+    group.distanceMiles = roundDistance(group.distanceMiles + item.distanceMiles);
+    group.dogInteractions += item.dogInteractions;
+    if (item.occurredTime >= group.latestTime) {
+      group.latestAt = item.occurredAt;
+      group.latestCaregiver = item.caregiver;
+      group.latestTime = item.occurredTime;
+      group.name = item.name;
+    }
+    addUnique(group.caregivers, item.caregiver);
+    addUnique(group.socialOutcomes, item.socialOutcome);
+    addUnique(group.notes, item.note);
+    groups.set(key, group);
+  }
+
+  return Array.from(groups.values())
+    .map((group): WalkRouteTemplate => {
+      const averageMinutes = group.visits > 0 ? Math.round(group.totalMinutes / group.visits) : 0;
+      const averageDistanceMiles = group.visits > 0 ? roundDistance(group.distanceMiles / group.visits) : 0;
+      const base = {
+        id: routeId(group.name),
+        name: group.name,
+        visits: group.visits,
+        totalMinutes: group.totalMinutes,
+        averageMinutes,
+        distanceMiles: roundDistance(group.distanceMiles),
+        averageDistanceMiles,
+        dogInteractions: group.dogInteractions,
+        latestAt: group.latestAt,
+        latestCaregiver: group.latestCaregiver,
+        caregivers: group.caregivers,
+        socialOutcomes: group.socialOutcomes.slice(0, 3),
+        notes: group.notes.slice(0, 3),
+      };
+      const suggestedUse = routeSuggestedUse(base);
+      return {
+        ...base,
+        suggestedUse,
+        handoff: `${group.name}: ${visitLabel(group.visits)}, ${averageMinutes}m avg, ${dogInteractionCountLabel(group.dogInteractions)}. ${suggestedUse}.`,
+      };
+    })
+    .sort((a, b) => b.visits - a.visits || new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime() || a.name.localeCompare(b.name))
+    .slice(0, Math.max(0, limit));
 }

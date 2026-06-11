@@ -213,6 +213,7 @@ test("care pass includes walk activity and dog interaction context", () => {
   assert.match(pass.message, /1 walk today - 35 minutes, 2 dog interactions noted/);
   assert.match(pass.message, /Places: Dog park/);
   assert.match(pass.message, /Latest: Dog park visit at Dog park/);
+  assert.match(pass.message, /Saved routes: Dog park \(1 visit, 35m avg, 2 dog interactions\) - Social practice route/);
 });
 
 test("care pass includes potty health context for sitter and vet review", () => {

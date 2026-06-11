@@ -223,11 +223,20 @@ test("keeps hydration visible from Home quick log to Records", () => {
 
 test("keeps walk activity insights visible in Records", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
+  const log = readAppFile(join("(tabs)", "log.tsx"));
 
   assert.match(records, /deriveWalkActivity/);
+  assert.match(records, /deriveWalkRouteTemplates/);
   assert.match(records, /walkActivity/);
+  assert.match(records, /walkRouteTemplates/);
   assert.match(records, /Walk Activity/);
+  assert.match(records, /Saved Routes/);
+  assert.match(records, /suggestedUse/);
   assert.match(records, /dog interactions/);
+  assert.match(log, /walkRouteName/);
+  assert.match(log, /walkSocialOutcome/);
+  assert.match(log, /routeName/);
+  assert.match(log, /dogInteractions/);
 });
 
 test("keeps potty health visible from Log composer to Records", () => {

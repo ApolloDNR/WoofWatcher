@@ -462,6 +462,16 @@ Owner: Codex.
 
 Revisit trigger: Multi-device field-level conflict UI, delete/edit audit trails, background sync workers, or native offline runtime QA require a stricter conflict model.
 
+### 2026-06-11: Walk Routes Are Derived Templates Before GPS Maps
+
+Decision: Saved walk routes are currently derived from household-visible walk logs that include route/place names, duration, distance, dog interactions, and social outcomes. Private walk logs and stale route evidence stay out of shared route templates.
+
+Reason: Apollo wants walks, dog parks, social encounters, sitters, trainers, and reports to connect. Deriving templates from owner-entered logs gives the app useful repeat-route intelligence now without requiring GPS, map providers, location permissions, or privacy policy decisions that are not ready.
+
+Owner: Codex.
+
+Revisit trigger: GPS recording, map previews, walker partnerships, location retention policy, or route-sharing permissions become active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

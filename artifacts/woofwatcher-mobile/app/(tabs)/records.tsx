@@ -39,6 +39,7 @@ import {
   derivePottyHealth,
   deriveRecordReminders,
   deriveWalkActivity,
+  deriveWalkRouteTemplates,
   deriveWaterHydration,
   getCarePassArtifactPrintView,
   getPetCredentialPrintView,
@@ -189,6 +190,10 @@ export default function RecordsScreen() {
   );
   const walkActivity = useMemo(
     () => deriveWalkActivity({ entries: state.entries, now }),
+    [state.entries, now],
+  );
+  const walkRouteTemplates = useMemo(
+    () => deriveWalkRouteTemplates({ entries: state.entries, now, limit: 3 }),
     [state.entries, now],
   );
   const pottyHealth = useMemo(
@@ -923,6 +928,43 @@ export default function RecordsScreen() {
                     </Text>
                   ) : null}
                 </View>
+              </View>
+            ) : null}
+            {walkRouteTemplates.length > 0 ? (
+              <View style={[s.routeTemplateList, { borderTopColor: colors.border }]}>
+                <View style={s.routeTemplateHeader}>
+                  <Text style={[s.routeTemplateTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Saved Routes</Text>
+                  <Text style={[s.routeTemplateCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {walkRouteTemplates.length} templates
+                  </Text>
+                </View>
+                {walkRouteTemplates.map((template, index) => (
+                  <View
+                    key={template.id}
+                    style={[s.routeTemplateRow, index > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}
+                  >
+                    <View style={[s.routeTemplateIcon, { backgroundColor: colors.sage + "14" }]}>
+                      <Ionicons name="map-outline" size={16} color={colors.sage} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text numberOfLines={1} style={[s.routeTemplateName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {template.name}
+                      </Text>
+                      <Text style={[s.routeTemplateMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {template.suggestedUse} - {template.visits} {template.visits === 1 ? "visit" : "visits"} - {template.averageMinutes}m avg
+                      </Text>
+                      {template.socialOutcomes[0] ? (
+                        <Text numberOfLines={2} style={[s.routeTemplateNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                          {template.socialOutcomes[0]}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <View style={[s.routeTemplateMetric, { backgroundColor: colors.background }]}>
+                      <Text style={[s.routeTemplateMetricValue, { color: colors.sage, fontFamily: DISPLAY_SEMI }]}>{template.dogInteractions}</Text>
+                      <Text style={[s.routeTemplateMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>dogs</Text>
+                    </View>
+                  </View>
+                ))}
               </View>
             ) : null}
           </View>
@@ -1807,6 +1849,18 @@ const s = StyleSheet.create({
   hydrationValue: { fontSize: 21, letterSpacing: 0 },
   hydrationLabel: { fontSize: 10.5, marginTop: 2, textAlign: "center" },
   hydrationNext: { fontSize: 12.5, lineHeight: 18 },
+  routeTemplateList: { borderTopWidth: 1, marginTop: 14, paddingTop: 13 },
+  routeTemplateHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 4 },
+  routeTemplateTitle: { fontSize: 15.5 },
+  routeTemplateCount: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  routeTemplateRow: { flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 11 },
+  routeTemplateIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  routeTemplateName: { fontSize: 14.5 },
+  routeTemplateMeta: { fontSize: 12.2, lineHeight: 17, marginTop: 2 },
+  routeTemplateNote: { fontSize: 12, lineHeight: 16, marginTop: 4 },
+  routeTemplateMetric: { minWidth: 48, borderRadius: 13, alignItems: "center", paddingHorizontal: 8, paddingVertical: 7 },
+  routeTemplateMetricValue: { fontSize: 18, letterSpacing: -0.2 },
+  routeTemplateMetricLabel: { fontSize: 10.2, marginTop: 1 },
 
   incidentRow: { flexDirection: "row", marginBottom: 4 },
   watchSummary: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },

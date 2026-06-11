@@ -4,7 +4,7 @@ import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
 import { derivePottyHealth } from "./potty-health.ts";
 import { deriveWaterHydration } from "./water.ts";
-import { deriveWalkActivity } from "./walk-activity.ts";
+import { deriveWalkActivity, deriveWalkRouteTemplates, type WalkRouteTemplate } from "./walk-activity.ts";
 
 export type CarePassAudience = "caregiver" | "sitter" | "vet" | "trainer";
 
@@ -169,6 +169,12 @@ function latestEntries(
 function section(title: string, lines: string[]): CarePassSection | null {
   const cleaned = lines.map(clean).filter(notEmpty);
   return cleaned.length ? { title, lines: cleaned } : null;
+}
+
+function walkRouteTemplateLine(template: WalkRouteTemplate): string {
+  const visits = `${template.visits} ${template.visits === 1 ? "visit" : "visits"}`;
+  const dogInteractions = `${template.dogInteractions} dog ${template.dogInteractions === 1 ? "interaction" : "interactions"}`;
+  return `${template.name} (${visits}, ${template.averageMinutes}m avg, ${dogInteractions}) - ${template.suggestedUse}`;
 }
 
 function audienceChecklist(audience: CarePassAudience, name: string): string[] {
@@ -489,6 +495,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const medicationFollowUps = deriveMedicationFollowUps({ entries, routines, records, now }).slice(0, 4);
   const hydration = deriveWaterHydration({ entries, now });
   const walkActivity = deriveWalkActivity({ entries, now });
+  const walkRouteTemplates = deriveWalkRouteTemplates({ entries, now, limit: 3 });
   const pottyHealth = derivePottyHealth({ entries, now });
 
   const latestMeals = latestEntries(entries, "meal", 2);
@@ -541,6 +548,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
       walkActivity.places.length ? `Places: ${walkActivity.places.join(", ")}` : "",
       walkActivity.last ? `Latest: ${walkActivity.last.label}${walkActivity.last.place ? ` at ${walkActivity.last.place}` : ""} by ${walkActivity.last.caregiver}` : "",
       walkActivity.last?.socialOutcome ? `Social notes: ${walkActivity.last.socialOutcome}` : "",
+      walkRouteTemplates.length ? `Saved routes: ${walkRouteTemplates.map(walkRouteTemplateLine).join("; ")}` : "",
       walkActivity.nextStep,
     ]),
     section("Potty Health", [

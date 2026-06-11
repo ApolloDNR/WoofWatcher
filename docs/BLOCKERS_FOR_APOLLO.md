@@ -7,6 +7,7 @@
 - Confirm whether WoofWatcher should support multiple dogs before paid launch.
 - Confirm whether Figma is the canonical visual design source.
 - Confirm final high-end animation asset pipeline: code-only Reanimated first, Rive/Lottie assets, Figma-to-code design source, or hired illustrator/motion designer support.
+- Confirm if/when saved walk routes should move from owner-entered route/place templates to GPS route recording, map previews, and location retention policy.
 
 ## Accounts And Secrets
 

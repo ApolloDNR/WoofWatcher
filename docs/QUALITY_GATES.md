@@ -24,6 +24,8 @@ Current evidence, 2026-06-11: Water quick logs now record household-visible fres
 
 Current evidence, 2026-06-11: Walk quick logs now explicitly record household-visible activity evidence, and shared Walk Activity logic derives duration, places/routes, dog interactions, social outcomes, last log, caregiver participation, and next-step copy from visible walk logs.
 
+Current evidence, 2026-06-11: The full Log composer now captures walk route/place, distance, dog interactions, social outcome notes, and household visibility. Shared Saved Routes logic derives repeat route templates from visible route logs, while private walks stay out of shared route status.
+
 Current evidence, 2026-06-11: Potty quick logs now record household-visible potty evidence, the Log composer captures pee/poop kind and condition with sticky notes, and shared Potty Health logic derives pee/poop counts, stool review signals, conditions, last log, caregiver participation, and next-step copy from visible potty logs.
 
 Current evidence, 2026-06-11: Potty logging now captures stool color and routine/accident/urgent/straining context. Potty Health uses those fields as review evidence and carries color/context detail into Records and Care Pass reports.
@@ -47,6 +49,8 @@ Current evidence, 2026-06-11: Medication History excludes private medication log
 Current evidence, 2026-06-11: Hydration status ignores private water logs and shows caregiver participation in Records, keeping daily water care visible as household evidence.
 
 Current evidence, 2026-06-11: Walk Activity ignores private walk logs and shows caregiver participation, places, and social outcome notes in Records, keeping dog park and walker context visible to the household.
+
+Current evidence, 2026-06-11: Saved Routes ignores private walk logs and stale route evidence, grouping only visible route/place logs into shared route templates for household and report context.
 
 Current evidence, 2026-06-11: Potty Health ignores private potty logs and shows caregiver participation, latest detail, and stool review count in Records, keeping bathroom and stool context visible to the household without exposing private notes.
 
@@ -106,6 +110,8 @@ Current evidence, 2026-06-11: Care Pass reports now include a Hydration section 
 
 Current evidence, 2026-06-11: Care Pass reports now include a Walk Activity section with today's walk minutes, places/routes, dog interaction counts, latest walk context, and social outcome notes for sitter/trainer review.
 
+Current evidence, 2026-06-11: Care Pass Walk Activity now includes Saved Routes, giving sitters and trainers repeat-route context with visits, average duration, dog interactions, and suggested use before PDF generation is added.
+
 Current evidence, 2026-06-11: Care Pass reports now include a Potty Health section with today's pee/poop counts, stool review count, conditions, latest potty detail, and safe next-step language for sitter/vet review.
 
 Current evidence, 2026-06-11: Care Pass Potty Health now includes stool colors and potty context, so sitters and vets can see accident, urgency, straining, and color context in the same printable report flow.
@@ -125,6 +131,8 @@ Current evidence, 2026-06-11: Medication Follow-ups and Care Pass medication lan
 Current evidence, 2026-06-11: Hydration summaries strengthen Plus-value daily care reports by turning simple water logs into owner-readable Records and Care Pass context without claiming medical hydration analysis.
 
 Current evidence, 2026-06-11: Walk Activity strengthens the household and trainer/sitter report wedge by turning walk and dog-interaction logs into Records and Care Pass context before saved route maps or walker integrations exist.
+
+Current evidence, 2026-06-11: Saved Routes strengthen the Family and report-export wedge by turning repeated walk places into reusable, report-ready templates without requiring GPS or location-provider approval.
 
 Current evidence, 2026-06-11: Potty Health strengthens the Health Watch and vet/sitter report wedge by turning simple potty logs into shared stool-review context before longer-range medical pattern reports or explicit stool-color workflows exist.
 
@@ -148,4 +156,4 @@ Current evidence, 2026-06-08: Expo app identity no longer uses Replit placeholde
 
 Current evidence, 2026-06-08: Focused tests now cover the Home avatar motion state model and static wiring check. Native animation runtime verification, Rive/Lottie/Reanimated asset QA, and screenshot review remain open.
 
-Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, and static mobile wiring, and GitHub Actions `WoofWatcher Verify` run `27334039567` passed after the conflict-safe care doc refresh feature and typecheck repair. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.
+Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, and static mobile wiring, and GitHub Actions `WoofWatcher Verify` run `27334039567` passed after the conflict-safe care doc refresh feature and typecheck repair. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.
