@@ -196,11 +196,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI for the walk activity implementation:
+Latest known passing CI for the potty health implementation:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27324754112`, completed success on 2026-06-11 UTC
+- Evidence: run `27325326721`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 
