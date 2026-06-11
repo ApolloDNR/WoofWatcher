@@ -787,6 +787,8 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
 
+  lib/care-domain: {}
+
   lib/db:
     dependencies:
       drizzle-orm:
