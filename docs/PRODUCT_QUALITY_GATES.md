@@ -215,11 +215,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI after the Household Access docs slice:
+Latest known passing CI after the Grooming Care slice:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27366293330`, completed success on 2026-06-11 UTC
+- Evidence: run `27367190757`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 
