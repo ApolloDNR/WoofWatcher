@@ -22,6 +22,7 @@ import {
   deriveHouseholdResponsibility,
   deriveRoutineBoard,
   normalizeCareEventType,
+  type CareReminderItem,
   type RoutineBoardItem,
   type RoutineBoardStatus,
 } from "@workspace/care-domain";
@@ -281,6 +282,26 @@ export default function CalendarScreen() {
       owner: routine.owner,
       note: routine.note ?? "",
     });
+  };
+
+  const openReminderAction = (item: CareReminderItem) => {
+    Haptics.selectionAsync();
+    const routine = item.sourceId ? routineBoard.items.find((candidate) => candidate.id === item.sourceId) : null;
+    if (item.kind === "routine" && routine) {
+      openBoardRoutine(routine);
+      return;
+    }
+    if (item.kind === "medication" && routine) {
+      router.push({ pathname: "/log", params: { type: "medication" } });
+      return;
+    }
+    if (item.kind === "grooming") {
+      router.push({ pathname: "/log", params: { type: "grooming" } });
+      return;
+    }
+    if (item.kind === "record" || item.kind === "medication") {
+      router.push("/records");
+    }
   };
 
   const deleteRoutine = (id: string) => {
@@ -605,7 +626,17 @@ export default function CalendarScreen() {
                 {careReminderCenter.items.map((item, index) => {
                   const rowTone = item.urgency === "alert" ? colors.rose : item.urgency === "watch" ? colors.amber : colors.sage;
                   return (
-                    <View key={item.id} style={[s.reminderRow, index < careReminderCenter.items.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
+                    <Pressable
+                      key={item.id}
+                      onPress={() => openReminderAction(item)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open reminder action: ${item.label}`}
+                      style={({ pressed }) => [
+                        s.reminderRow,
+                        index < careReminderCenter.items.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
+                        { opacity: pressed ? 0.72 : 1 },
+                      ]}
+                    >
                       <View style={[s.reminderIcon, { backgroundColor: rowTone + "16" }]}>
                         <Ionicons name={REMINDER_ICON[item.kind] ?? "alarm-outline"} size={17} color={rowTone} />
                       </View>
@@ -619,7 +650,7 @@ export default function CalendarScreen() {
                         <Text numberOfLines={2} style={[s.reminderDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
                         <Text numberOfLines={2} style={[s.reminderAction, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{item.action}</Text>
                       </View>
-                    </View>
+                    </Pressable>
                   );
                 })}
                 {careReminderCenter.total > careReminderCenter.items.length ? (

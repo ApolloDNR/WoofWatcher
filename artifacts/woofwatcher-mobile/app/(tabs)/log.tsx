@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -512,6 +513,13 @@ export default function LogScreen() {
   const insets = useSafeAreaInsets();
   const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
   const me = useGetMe();
+  const routeParams = useLocalSearchParams<{ type?: string | string[] }>();
+  const routeSelectedType = useMemo(() => {
+    const rawType = Array.isArray(routeParams.type) ? routeParams.type[0] : routeParams.type;
+    const normalized = normalizeCareEventType(rawType);
+    return TYPE_BY_ID[normalized] ? normalized : null;
+  }, [routeParams.type]);
+  const lastRouteSelectedType = useRef<string | null>(null);
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
   const [now, setNow] = useState(() => Date.now());
@@ -523,7 +531,7 @@ export default function LogScreen() {
   const caregiver =
     me.data?.user.displayName?.trim() || state.caregivers[0]?.name || "You";
 
-  const [selectedType, setSelectedType] = useState<string>("meal");
+  const [selectedType, setSelectedType] = useState<string>(() => routeSelectedType ?? "meal");
   const [choices, setChoices] = useState<Record<string, string>>({});
   const [stepIndex, setStepIndex] = useState(0);
   const [numeric, setNumeric] = useState("");
@@ -558,6 +566,13 @@ export default function LogScreen() {
       null,
     [medicationAdherence.items],
   );
+
+  useEffect(() => {
+    if (routeSelectedType && routeSelectedType !== lastRouteSelectedType.current) {
+      setSelectedType(routeSelectedType);
+      lastRouteSelectedType.current = routeSelectedType;
+    }
+  }, [routeSelectedType]);
 
   // Reset contextual controls whenever the type changes.
   useEffect(() => {

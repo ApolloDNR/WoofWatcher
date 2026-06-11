@@ -387,6 +387,20 @@ test("keeps Reminder Center visible in Calendar before push notifications are en
   assert.match(calendar, /reminderCount/);
 });
 
+test("routes Reminder Center rows to concrete care workflows", () => {
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(calendar, /openReminderAction/);
+  assert.match(calendar, /openBoardRoutine\(routine\)/);
+  assert.match(calendar, /router\.push\("\/records"\)/);
+  assert.match(calendar, /pathname: "\/log"/);
+  assert.match(calendar, /type: "grooming"/);
+  assert.match(calendar, /accessibilityLabel=\{`Open reminder action: \$\{item\.label\}`\}/);
+  assert.match(log, /useLocalSearchParams/);
+  assert.match(log, /routeSelectedType/);
+});
+
 test("keeps household access readiness visible from More", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

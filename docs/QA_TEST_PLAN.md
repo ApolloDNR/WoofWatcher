@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 168 focused tests with the command above.
+- PASS: 169 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell. Direct `tsc --noEmit --pretty false` is also blocked because `tsc` is unavailable in the current Windows shell.
 - LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27368370380` completed successfully for `feat: add care reminder center`.
 
@@ -41,6 +41,7 @@ Latest local evidence, 2026-06-11:
 - Household Responsibility derivation for care-team routine ownership, open/overdue/unassigned routines, visible today log counts, next household action copy, and Calendar/More mobile wiring.
 - Household Access derivation for synced members, local-only caregivers, routine-only owners, invite readiness, permission labels, next-step copy, and More mobile wiring.
 - Reminder Center derivation for routine reminders, missed/due medication follow-ups, expiring/missing records, grooming due dates, private-log exclusion, urgency sorting, display limits, notification-readiness copy, and Calendar mobile wiring.
+- Reminder Center action routing for routine edit, Records review, Medication log preselection, Grooming log preselection, and accessible row labels.
 - Care log audit trail creation, sanitization, sticky-note/edit/delete audit events, non-health deletion audit notes, and mobile Log detail wiring.
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
 - Home Quick Log routine matching and meal detail enrichment.
@@ -127,6 +128,7 @@ Latest local evidence, 2026-06-11:
 61. Confirm Records Grooming Care updates status, minutes, type counts, products, next due date, latest context, and next-step copy while private grooming logs stay out.
 62. Preview a sitter or vet Care Pass and confirm Grooming Care summarizes latest grooming, product context, next due date, and owner-reported/non-diagnostic boundary language.
 63. Open Calendar and confirm Reminder Center combines overdue routines, missed/due medication follow-ups, due-soon records, and grooming due dates into one owner action list with urgent/watch/total counts and no claim that real push notifications are enabled.
+64. Tap Reminder Center rows and confirm they route to the expected concrete workflow: routine edit, Records, Medication log, or Grooming log with the composer type preselected.
 
 ## Missing QA
 
