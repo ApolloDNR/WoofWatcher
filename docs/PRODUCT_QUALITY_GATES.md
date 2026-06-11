@@ -217,11 +217,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI before the Reminder Center slice:
+Latest known passing CI after the Reminder Center slice:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27367395109`, completed success on 2026-06-11 UTC
+- Evidence: run `27368370380`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 
