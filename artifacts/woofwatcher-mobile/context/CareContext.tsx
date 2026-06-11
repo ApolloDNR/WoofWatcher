@@ -24,9 +24,11 @@ import {
   type CareStateEnvelope,
 } from "@workspace/api-client-react";
 import {
+  deriveCareSyncOutbox,
   mergeServerAndLocalEntries,
   shouldRetryCreate,
   shouldRetryUpdate,
+  type CareSyncOutbox,
   type EntrySyncStatus,
 } from "@/lib/careSync";
 import type { CarePassArtifact } from "@workspace/care-domain";
@@ -283,6 +285,7 @@ interface CareContextValue {
   updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => void;
   updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => void;
   refresh: () => void;
+  syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
 }
@@ -655,6 +658,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     [doc, entries, serverVersion],
   );
 
+  const syncOutbox = useMemo(() => deriveCareSyncOutbox(entries), [entries]);
+
   const value = useMemo<CareContextValue>(
     () => ({
       state,
@@ -663,6 +668,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       updateEntry,
       updateCareDoc,
       refresh: () => void syncFromServer(),
+      syncOutbox,
       isLoaded: hydrated,
       isSyncing,
     }),
@@ -673,6 +679,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       updateEntry,
       updateCareDoc,
       syncFromServer,
+      syncOutbox,
       hydrated,
       isSyncing,
     ],

@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  deriveCareSyncOutbox,
   isUnsyncedEntry,
   shouldRetryCreate,
   shouldRetryUpdate,
@@ -108,4 +109,76 @@ test("separates create retries from update retries", () => {
   assert.equal(shouldRetryUpdate({ id: "server_1", syncStatus: "local" }), true);
   assert.equal(shouldRetryUpdate({ id: "temp_1", syncStatus: "failed" }), false);
   assert.equal(shouldRetryUpdate({ id: "server_2", syncStatus: "synced" }), false);
+});
+
+test("derives a durable outbox from unsynced care entries", () => {
+  const outbox = deriveCareSyncOutbox([
+    {
+      id: "server_synced",
+      title: "Synced walk",
+      occurredAt: "2026-06-06T08:00:00.000Z",
+      syncStatus: "synced",
+    },
+    {
+      id: "temp_create",
+      title: "Breakfast",
+      occurredAt: "2026-06-06T12:00:00.000Z",
+      syncStatus: "failed",
+      syncError: "Network failed",
+    },
+    {
+      id: "local_create",
+      title: "Water refill",
+      occurredAt: "2026-06-06T11:00:00.000Z",
+      syncStatus: "local",
+    },
+    {
+      id: "server_update",
+      title: "Medication note",
+      occurredAt: "2026-06-06T10:00:00.000Z",
+      syncStatus: "failed",
+    },
+    {
+      id: "temp_pending",
+      title: "Potty",
+      occurredAt: "2026-06-06T09:00:00.000Z",
+      syncStatus: "pending",
+    },
+  ]);
+
+  assert.equal(outbox.status, "needs-retry");
+  assert.equal(outbox.total, 4);
+  assert.equal(outbox.pending, 1);
+  assert.equal(outbox.failed, 2);
+  assert.equal(outbox.local, 1);
+  assert.deepEqual(outbox.retryableCreateIds, ["temp_create", "local_create"]);
+  assert.deepEqual(outbox.retryableUpdateIds, ["server_update"]);
+  assert.deepEqual(
+    outbox.items.map((item) => [item.id, item.operation, item.retryable]),
+    [
+      ["temp_create", "create", true],
+      ["local_create", "create", true],
+      ["server_update", "update", true],
+      ["temp_pending", "create", false],
+    ],
+  );
+  assert.equal(outbox.message, "3 care changes need retry. 1 is still syncing.");
+  assert.equal(outbox.actionLabel, "Retry sync");
+});
+
+test("derives an idle outbox when all entries are synced", () => {
+  const outbox = deriveCareSyncOutbox([
+    {
+      id: "server_synced",
+      title: "Synced walk",
+      occurredAt: "2026-06-06T08:00:00.000Z",
+      syncStatus: "synced",
+    },
+  ]);
+
+  assert.equal(outbox.status, "idle");
+  assert.equal(outbox.total, 0);
+  assert.deepEqual(outbox.items, []);
+  assert.equal(outbox.message, "All care changes are synced.");
+  assert.equal(outbox.actionLabel, "Synced");
 });

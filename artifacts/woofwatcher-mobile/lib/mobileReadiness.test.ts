@@ -248,3 +248,14 @@ test("keeps potty health visible from Log composer to Records", () => {
   assert.match(records, /Potty Health/);
   assert.match(records, /stool detail/);
 });
+
+test("keeps the durable sync outbox visible in care context and Log", () => {
+  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(careContext, /deriveCareSyncOutbox/);
+  assert.match(careContext, /syncOutbox/);
+  assert.match(log, /syncOutbox\.message/);
+  assert.match(log, /Retry sync/);
+  assert.match(log, /syncOutbox\.retryable/);
+});

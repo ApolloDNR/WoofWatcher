@@ -427,7 +427,7 @@ function mealCompletionLabel(value: string): string {
 export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, isSyncing } = useCare();
+  const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
   const me = useGetMe();
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
@@ -916,6 +916,106 @@ export default function LogScreen() {
               <Ionicons name={isSyncing ? "sync" : "cloud-upload-outline"} size={18} color={colors.primary} />
             </Pressable>
           </View>
+
+          {syncOutbox.total > 0 ? (
+            <View
+              style={[
+                s.outboxCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor:
+                    syncOutbox.status === "needs-retry"
+                      ? colors.amber + "55"
+                      : colors.primary + "33",
+                  shadowColor:
+                    syncOutbox.status === "needs-retry" ? colors.amber : colors.primary,
+                },
+              ]}
+            >
+              <View style={s.outboxTop}>
+                <View
+                  style={[
+                    s.outboxIcon,
+                    {
+                      backgroundColor:
+                        syncOutbox.status === "needs-retry"
+                          ? colors.amber + "18"
+                          : colors.primary + "14",
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      syncOutbox.status === "needs-retry"
+                        ? "cloud-offline-outline"
+                        : "cloud-upload-outline"
+                    }
+                    size={18}
+                    color={
+                      syncOutbox.status === "needs-retry" ? colors.amber : colors.primary
+                    }
+                  />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[s.outboxEyebrow, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    OFFLINE OUTBOX
+                  </Text>
+                  <Text style={[s.outboxTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    Care changes are protected
+                  </Text>
+                  <Text style={[s.outboxMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {syncOutbox.message}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry sync outbox"
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    refresh();
+                  }}
+                  disabled={isSyncing || syncOutbox.retryable === 0}
+                  style={({ pressed }) => [
+                    s.outboxButton,
+                    {
+                      backgroundColor:
+                        syncOutbox.retryable > 0 ? colors.primary : colors.background,
+                      opacity: pressed || isSyncing || syncOutbox.retryable === 0 ? 0.66 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.outboxButtonText,
+                      {
+                        color: syncOutbox.retryable > 0 ? "#FFFFFF" : colors.mutedForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
+                    {isSyncing ? "Syncing" : "Retry sync"}
+                  </Text>
+                </Pressable>
+              </View>
+              <View style={s.outboxMetrics}>
+                <View style={[s.outboxMetric, { backgroundColor: colors.background }]}>
+                  <Text style={[s.outboxMetricText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    {syncOutbox.retryableCreateIds.length} creates
+                  </Text>
+                </View>
+                <View style={[s.outboxMetric, { backgroundColor: colors.background }]}>
+                  <Text style={[s.outboxMetricText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    {syncOutbox.retryableUpdateIds.length} updates
+                  </Text>
+                </View>
+                <View style={[s.outboxMetric, { backgroundColor: colors.background }]}>
+                  <Text style={[s.outboxMetricText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    {syncOutbox.pending} syncing
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : null}
 
           {/* Composer card */}
           <View style={[s.loggerCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
@@ -1589,6 +1689,33 @@ const s = StyleSheet.create({
   syncBtn: { width: 40, height: 40, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
+
+  outboxCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 14,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 2,
+  },
+  outboxTop: { flexDirection: "row", alignItems: "center", gap: 10 },
+  outboxIcon: { width: 38, height: 38, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  outboxEyebrow: { fontSize: 10.5 },
+  outboxTitle: { fontSize: 15.5, marginTop: 2 },
+  outboxMessage: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
+  outboxButton: {
+    minHeight: 36,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  outboxButtonText: { fontSize: 12.5 },
+  outboxMetrics: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 12 },
+  outboxMetric: { borderRadius: 11, paddingHorizontal: 10, paddingVertical: 6 },
+  outboxMetricText: { fontSize: 11.5 },
 
   loggerCard: {
     borderRadius: 24,
