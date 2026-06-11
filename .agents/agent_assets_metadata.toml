@@ -90,6 +90,18 @@ uri = "file://artifacts/mockup-sandbox/public/images/phoenix-emote-sheet.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "D4JB4LVp1t6xat79o_NNq"
+uri = "file://artifacts/mockup-sandbox/public/images/phoenix-portrait.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "uTqRMqARmlzjRXGxpFrLx"
+uri = "file://artifacts/mockup-sandbox/public/images/phoenix-expressions.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "MyqJSU1BnOoEGFRPC3DcD"
 uri = "file://artifacts/mockup-sandbox/public/images/woof-dog.png"
@@ -113,3 +125,15 @@ id = "-XlaKl5auPvEK9Ybzeniv"
 uri = "file://artifacts/mockup-sandbox/public/images/dog-storybook.png"
 type = "image"
 title = "4. Storybook portrait — the hybrid hero shot"
+
+[[outputs]]
+id = "oX22Gf4rjRXNrwd46UZN7"
+uri = "file://artifacts/mockup-sandbox/public/images/phoenix-portrait.png"
+type = "image"
+title = "Phoenix — hero portrait (painted, green bandana) matching your reference"
+
+[[outputs]]
+id = "8lNB6wp9dHxr2KYTzIKli"
+uri = "file://artifacts/mockup-sandbox/public/images/phoenix-expressions.png"
+type = "image"
+title = "Phoenix — 6 painted expressions (status-driven) matching Option C"
