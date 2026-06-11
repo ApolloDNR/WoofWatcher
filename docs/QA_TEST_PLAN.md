@@ -14,7 +14,7 @@ Latest local evidence, 2026-06-11:
 
 - PASS: 169 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell. Direct `tsc --noEmit --pretty false` is also blocked because `tsc` is unavailable in the current Windows shell.
-- LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27368370380` completed successfully for `feat: add care reminder center`.
+- LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27369154562` completed successfully for `feat: route reminder center actions`.
 
 ## Required Automated Coverage
 
