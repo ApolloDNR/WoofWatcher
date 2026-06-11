@@ -259,3 +259,13 @@ test("keeps the durable sync outbox visible in care context and Log", () => {
   assert.match(log, /Retry sync/);
   assert.match(log, /syncOutbox\.retryable/);
 });
+
+test("keeps household sync health visible from More", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  assert.match(more, /deriveCareSyncDashboard/);
+  assert.match(more, /syncDashboard/);
+  assert.match(more, /Sync Health/);
+  assert.match(more, /syncDashboard\.metrics/);
+  assert.match(more, /accessibilityLabel="Refresh household sync"/);
+});

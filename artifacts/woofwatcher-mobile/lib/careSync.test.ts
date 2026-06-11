@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   deriveCareSyncOutbox,
+  deriveCareSyncDashboard,
   isUnsyncedEntry,
   shouldRetryCreate,
   shouldRetryUpdate,
@@ -181,4 +182,62 @@ test("derives an idle outbox when all entries are synced", () => {
   assert.deepEqual(outbox.items, []);
   assert.equal(outbox.message, "All care changes are synced.");
   assert.equal(outbox.actionLabel, "Synced");
+});
+
+test("derives a household sync dashboard for healthy synced care", () => {
+  const outbox = deriveCareSyncOutbox([
+    {
+      id: "server_synced",
+      title: "Synced walk",
+      occurredAt: "2026-06-06T08:00:00.000Z",
+      syncStatus: "synced",
+    },
+  ]);
+  const dashboard = deriveCareSyncDashboard({
+    outbox,
+    isLoaded: true,
+    isSyncing: false,
+    lastUpdatedAt: "2026-06-06T08:30:00.000Z",
+    householdMemberCount: 3,
+    totalEntries: 12,
+  });
+
+  assert.equal(dashboard.status, "healthy");
+  assert.equal(dashboard.title, "Household sync is current");
+  assert.equal(dashboard.actionLabel, "Refresh");
+  assert.equal(dashboard.metrics[0].label, "Care log");
+  assert.equal(dashboard.metrics[0].value, "12 entries");
+  assert.equal(dashboard.metrics[1].value, "3 members");
+  assert.equal(dashboard.metrics[2].value, "0 waiting");
+  assert.equal(dashboard.nextStep, "Last care update: Jun 6, 8:30 AM.");
+});
+
+test("derives a household sync dashboard with retry guidance", () => {
+  const outbox = deriveCareSyncOutbox([
+    {
+      id: "temp_create",
+      title: "Breakfast",
+      occurredAt: "2026-06-06T12:00:00.000Z",
+      syncStatus: "failed",
+    },
+    {
+      id: "server_update",
+      title: "Medication note",
+      occurredAt: "2026-06-06T10:00:00.000Z",
+      syncStatus: "failed",
+    },
+  ]);
+  const dashboard = deriveCareSyncDashboard({
+    outbox,
+    isLoaded: true,
+    isSyncing: false,
+    householdMemberCount: 2,
+    totalEntries: 6,
+  });
+
+  assert.equal(dashboard.status, "attention");
+  assert.equal(dashboard.title, "Sync needs attention");
+  assert.equal(dashboard.actionLabel, "Retry sync");
+  assert.equal(dashboard.metrics[2].value, "2 waiting");
+  assert.equal(dashboard.nextStep, "Retry sync so every caregiver sees the latest care.");
 });

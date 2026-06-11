@@ -36,6 +36,36 @@ export interface CareSyncOutbox {
   actionLabel: string;
 }
 
+export type CareSyncDashboardStatus =
+  | "loading"
+  | "syncing"
+  | "attention"
+  | "healthy";
+
+export interface CareSyncDashboardMetric {
+  label: string;
+  value: string;
+  detail: string;
+}
+
+export interface CareSyncDashboardInput {
+  outbox: CareSyncOutbox;
+  isLoaded: boolean;
+  isSyncing: boolean;
+  lastUpdatedAt?: string;
+  householdMemberCount: number;
+  totalEntries: number;
+}
+
+export interface CareSyncDashboard {
+  status: CareSyncDashboardStatus;
+  title: string;
+  message: string;
+  nextStep: string;
+  actionLabel: string;
+  metrics: CareSyncDashboardMetric[];
+}
+
 export function withSyncedStatus<T extends SyncableEntry>(
   entries: readonly T[],
 ): Array<T & { syncStatus: "synced"; syncError: undefined }> {
@@ -107,6 +137,19 @@ function outboxItemMessage(entry: SyncableEntry, retryable: boolean): string {
   return "Waiting for sync.";
 }
 
+function formatCareSyncTime(value?: string): string | null {
+  if (!value) return null;
+  const time = Date.parse(value);
+  if (Number.isNaN(time)) return null;
+  return new Date(time).toLocaleString("en-US", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function deriveCareSyncOutbox<T extends SyncableEntry>(
   entries: readonly T[],
 ): CareSyncOutbox {
@@ -154,6 +197,81 @@ export function deriveCareSyncOutbox<T extends SyncableEntry>(
     retryableUpdateIds,
     message: outboxMessage(retryable, pending),
     actionLabel: status === "idle" ? "Synced" : retryable > 0 ? "Retry sync" : "Syncing",
+  };
+}
+
+export function deriveCareSyncDashboard({
+  outbox,
+  isLoaded,
+  isSyncing,
+  lastUpdatedAt,
+  householdMemberCount,
+  totalEntries,
+}: CareSyncDashboardInput): CareSyncDashboard {
+  const metrics: CareSyncDashboardMetric[] = [
+    {
+      label: "Care log",
+      value: `${totalEntries} ${plural(totalEntries, "entry", "entries")}`,
+      detail: "Visible care history",
+    },
+    {
+      label: "Care team",
+      value: `${householdMemberCount} ${plural(
+        householdMemberCount,
+        "member",
+      )}`,
+      detail: "Household sync scope",
+    },
+    {
+      label: "Outbox",
+      value: `${outbox.total} waiting`,
+      detail: `${outbox.retryable} retryable`,
+    },
+  ];
+
+  if (!isLoaded) {
+    return {
+      status: "loading",
+      title: "Opening care cache",
+      message: "Checking saved care before household sync starts.",
+      nextStep: "WoofWatcher will show retry options if anything needs attention.",
+      actionLabel: "Refresh",
+      metrics,
+    };
+  }
+
+  if (outbox.retryable > 0) {
+    return {
+      status: "attention",
+      title: "Sync needs attention",
+      message: outbox.message,
+      nextStep: "Retry sync so every caregiver sees the latest care.",
+      actionLabel: "Retry sync",
+      metrics,
+    };
+  }
+
+  if (isSyncing || outbox.pending > 0) {
+    return {
+      status: "syncing",
+      title: "Syncing household care",
+      message: outbox.message,
+      nextStep: "Keep WoofWatcher open while the latest care reaches the household.",
+      actionLabel: "Syncing",
+      metrics,
+    };
+  }
+
+  const formatted = formatCareSyncTime(lastUpdatedAt);
+  return {
+    status: "healthy",
+    title: "Household sync is current",
+    message: "Every visible care log is available to the household.",
+    nextStep: formatted
+      ? `Last care update: ${formatted}.`
+      : "No care entries are waiting to sync.",
+    actionLabel: "Refresh",
+    metrics,
   };
 }
 

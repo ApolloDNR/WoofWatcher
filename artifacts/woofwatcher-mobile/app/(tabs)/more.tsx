@@ -32,6 +32,7 @@ import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
 import { useAvatar } from "@/context/AvatarContext";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
+import { deriveCareSyncDashboard } from "@/lib/careSync";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -41,7 +42,7 @@ export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, refresh, updateCareDoc } = useCare();
+  const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
   const { dietProfile, profile, entries, routines } = state;
   const { getAvatarSource } = useAvatar();
 
@@ -76,6 +77,52 @@ export default function MoreScreen() {
     const today = new Date(now).toISOString().slice(0, 10);
     return entries.filter((e) => e.occurredAt.startsWith(today)).length;
   }, [entries, now]);
+
+  const latestCareUpdate = useMemo(
+    () =>
+      entries.reduce<string | undefined>((latest, entry) => {
+        if (!latest) return entry.occurredAt;
+        return Date.parse(entry.occurredAt) > Date.parse(latest)
+          ? entry.occurredAt
+          : latest;
+      }, undefined),
+    [entries],
+  );
+
+  const syncDashboard = useMemo(
+    () =>
+      deriveCareSyncDashboard({
+        outbox: syncOutbox,
+        isLoaded,
+        isSyncing,
+        lastUpdatedAt: latestCareUpdate ?? state.updatedAt,
+        householdMemberCount: members.length || (household ? 1 : 0),
+        totalEntries: entries.length,
+      }),
+    [
+      syncOutbox,
+      isLoaded,
+      isSyncing,
+      latestCareUpdate,
+      state.updatedAt,
+      members.length,
+      household,
+      entries.length,
+    ],
+  );
+
+  const syncTone =
+    syncDashboard.status === "attention"
+      ? colors.amber
+      : syncDashboard.status === "syncing" || syncDashboard.status === "loading"
+        ? colors.primary
+        : colors.sage;
+  const syncIcon: keyof typeof Ionicons.glyphMap =
+    syncDashboard.status === "attention"
+      ? "cloud-offline-outline"
+      : syncDashboard.status === "syncing" || syncDashboard.status === "loading"
+        ? "cloud-upload-outline"
+        : "cloud-done-outline";
 
   const energyDots = Math.round(((status.energy - 35) / (96 - 35)) * 4) + 1;
 
@@ -604,6 +651,55 @@ export default function MoreScreen() {
             )}
           </View>
 
+          {/* Sync health */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Sync Health</Text>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                refresh();
+              }}
+              disabled={isSyncing}
+              accessibilityRole="button"
+              accessibilityLabel="Refresh household sync"
+              hitSlop={8}
+            >
+              <Text style={[s.sectionLink, { color: syncTone, fontFamily: "Inter_600SemiBold", opacity: isSyncing ? 0.65 : 1 }]}>
+                {syncDashboard.actionLabel}
+              </Text>
+            </Pressable>
+          </View>
+          <View style={[s.syncCard, { backgroundColor: colors.card, borderColor: syncTone + "44", shadowColor: syncTone }]}>
+            <View style={s.syncTop}>
+              <View style={[s.syncIcon, { backgroundColor: syncTone + "18" }]}>
+                <Ionicons name={syncIcon} size={20} color={syncTone} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.syncTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {syncDashboard.title}
+                </Text>
+                <Text style={[s.syncMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {syncDashboard.message}
+                </Text>
+              </View>
+            </View>
+            <View style={s.syncMetrics}>
+              {syncDashboard.metrics.map((metric) => (
+                <View key={metric.label} style={[s.syncMetric, { backgroundColor: colors.background }]}>
+                  <Text style={[s.syncMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {metric.value}
+                  </Text>
+                  <Text style={[s.syncMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {metric.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <Text style={[s.syncNextStep, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {syncDashboard.nextStep}
+            </Text>
+          </View>
+
           {/* Household actions */}
           <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
             <Pressable
@@ -1103,6 +1199,25 @@ const s = StyleSheet.create({
   youBadgeText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
   logBadge: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 11 },
   logBadgeText: { fontSize: 12 },
+
+  syncCard: {
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  syncTop: { flexDirection: "row", alignItems: "center", gap: 12 },
+  syncIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  syncTitle: { fontSize: 16, letterSpacing: 0 },
+  syncMessage: { fontSize: 13, lineHeight: 18, marginTop: 3 },
+  syncMetrics: { flexDirection: "row", gap: 8, marginTop: 14 },
+  syncMetric: { flex: 1, minHeight: 66, borderRadius: 15, paddingHorizontal: 9, paddingVertical: 10, justifyContent: "center" },
+  syncMetricValue: { fontSize: 14, textAlign: "center" },
+  syncMetricLabel: { fontSize: 10.5, textAlign: "center", marginTop: 3 },
+  syncNextStep: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
 
   inviteCard: {
     borderRadius: 22,
