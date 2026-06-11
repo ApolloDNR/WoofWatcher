@@ -34,6 +34,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 26. DONE 2026-06-11: Potty logging now captures stool color and routine/accident/urgent/straining context, and Potty Health carries those details into Records and Care Pass reports.
 27. DONE 2026-06-11: Durable sync outbox now derives retryable create/update work from local, pending, and failed care entries, exposes it through CareContext, and shows a Log screen recovery banner with retry counts and a retry action.
 28. DONE 2026-06-11: Household Sync Health now derives healthy/loading/syncing/attention dashboard state from the durable outbox, household size, and care history, and More shows the household sync status, retry/refresh action, care-log count, team count, outbox count, and next-step guidance.
+29. DONE 2026-06-11: Care document refresh is now conflict-safer: mobile reconciles server care-state refreshes against the local doc timestamp, keeps newer offline/local profile, routine, record, and report changes instead of clobbering them with stale server data, and pushes the newer doc back to the household.
 
 ## Cadence
 

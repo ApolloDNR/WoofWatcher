@@ -12,9 +12,9 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 122 focused tests with the command above.
+- PASS: 126 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
-- PASS: GitHub Actions `WoofWatcher Verify` run `27333193218` completed successfully for `feat: add household sync dashboard`.
+- PASS: GitHub Actions `WoofWatcher Verify` run `27334039567` completed successfully for `fix: loosen care doc refresh constraint`, after the conflict-safe care doc refresh feature and typecheck repair.
 
 ## Required Automated Coverage
 
@@ -31,7 +31,7 @@ Latest local evidence, 2026-06-11:
 - Walk Activity derivation for visible walk logs, duration, distance when logged, dog interactions, social outcomes, places/routes, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Potty quick-log defaults for household-visible potty evidence.
 - Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
-- Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, and More Sync Health visibility.
+- Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
 - Home Quick Log routine matching and meal detail enrichment.
 - Health Watch signals and medical boundary.
@@ -92,6 +92,7 @@ Latest local evidence, 2026-06-11:
 36. Confirm the Home avatar motion row changes for a recent meal, upcoming walk, overdue routine, quiet hours, low energy, and Health Watch signal.
 37. Force offline or failed sync state and confirm the Log shows the Offline Outbox banner, retryable create/update counts, pending count, failed-sync message, and Retry sync action.
 38. Open More and confirm Sync Health shows household status, care-log count, care-team count, outbox waiting count, next-step guidance, and a refresh/retry action with accessible label.
+39. Edit profile, routine, record, or report state offline or during a stale refresh; confirm the newer local care document is kept and pushed back instead of overwritten by older server data.
 
 ## Missing QA
 

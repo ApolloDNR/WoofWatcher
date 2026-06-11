@@ -56,6 +56,8 @@ Current evidence, 2026-06-11: Durable sync outbox derives local, pending, and fa
 
 Current evidence, 2026-06-11: Household Sync Health derives loading, syncing, attention, and healthy dashboard states from the durable outbox, household member count, and care history, then shows More screen status, metrics, and retry/refresh guidance so owners can understand household sync health without opening the Log.
 
+Current evidence, 2026-06-11: Care document refresh now reconciles local and server timestamps, keeps newer local/offline profile, routine, record, and report changes when a stale server refresh arrives, and pushes the newer care document back to the household.
+
 ## Gate 4: Premium Mobile UX
 
 Passing means the mobile app feels warm, polished, clear, fast, and useful every day. No dead buttons, fake screens, or decorative-only workflows.
@@ -146,4 +148,4 @@ Current evidence, 2026-06-08: Expo app identity no longer uses Replit placeholde
 
 Current evidence, 2026-06-08: Focused tests now cover the Home avatar motion state model and static wiring check. Native animation runtime verification, Rive/Lottie/Reanimated asset QA, and screenshot review remain open.
 
-Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, and static mobile wiring, and GitHub Actions `WoofWatcher Verify` run `27333193218` passed for `feat: add household sync dashboard`. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.
+Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, and static mobile wiring, and GitHub Actions `WoofWatcher Verify` run `27334039567` passed after the conflict-safe care doc refresh feature and typecheck repair. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.

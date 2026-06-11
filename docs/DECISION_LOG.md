@@ -452,6 +452,16 @@ Owner: Codex.
 
 Revisit trigger: Role permissions, background sync workers, native offline runtime QA, or conflict-resolution UI requires a dedicated sync center.
 
+### 2026-06-11: Care Document Refresh Preserves Newer Local State
+
+Decision: Mobile care-state refreshes reconcile server data against the local care document timestamp. If local profile, routine, record, or report state is newer than the server document, the app keeps the local document and pushes it back using the server's current version.
+
+Reason: Household sync cannot silently overwrite newer offline or fast local edits with stale server state. This protects the dog profile and shared care plan while deeper per-field conflict resolution and audit policy remain future production work.
+
+Owner: Codex.
+
+Revisit trigger: Multi-device field-level conflict UI, delete/edit audit trails, background sync workers, or native offline runtime QA require a stricter conflict model.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

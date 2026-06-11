@@ -41,6 +41,7 @@ Passing evidence:
 - Log entries have a detail sheet with sticky notes, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Log exposes a durable Offline Outbox banner for local, pending, and failed care-entry changes with retryable create/update counts and a Retry sync action.
 - More exposes household Sync Health with healthy/loading/syncing/attention status, care-log count, household member count, outbox count, and retry/refresh guidance.
+- Care document refresh keeps newer local/offline profile, routine, record, and report changes when server care-state data is older, then pushes the newer doc back to the household.
 - Care Pass reports can be previewed by audience before sharing.
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
 - Records show expired, due-soon, current, and reference status for saved record rows.
@@ -82,7 +83,7 @@ Current gaps:
 - Need integration tests for authenticated household-scoped routes.
 - Need storage for record documents and generated reports.
 - Need role-aware permissions, audit trail, and data export/delete paths.
-- Need conflict-safe care state mutation strategy, deeper conflict policy, and native offline recovery QA.
+- Need deeper multi-device conflict policy, delete/edit audit behavior, and native offline recovery QA.
 
 ## Gate 5: AI Safety And Usefulness
 
@@ -142,7 +143,7 @@ Current gaps:
 - Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.
 - Walk quick-log visibility, Walk Activity summary logic, Care Pass walk activity language, and Records walk activity wiring are covered by focused tests.
 - Potty quick-log visibility, potty composer stool color/context fields, Potty Health summary logic, color/context review evidence, Care Pass potty health language, and Records Potty Health wiring are covered by focused tests.
-- Durable sync outbox derivation, household Sync Health derivation, and mobile Log/More/CareContext wiring are covered by focused tests.
+- Durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, and mobile Log/More/CareContext wiring are covered by focused tests.
 - Need report/export tests.
 - Need release smoke checklist.
 
@@ -199,11 +200,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI for the household Sync Health implementation:
+Latest known passing CI for the conflict-safe care document refresh implementation:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27333193218`, completed success on 2026-06-11 UTC
+- Evidence: run `27334039567`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 
