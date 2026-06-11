@@ -389,6 +389,43 @@ test("care pass includes alone-time anxiety context", () => {
   assert.match(pass.message, /Latest: Alone time - anxious - anxious with Apollo/);
 });
 
+test("care pass includes weight trend context for vet review", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "vet",
+    now: new Date("2026-06-11T12:00:00-07:00").getTime(),
+    goals: [{ id: "weight-goal", category: "weight", title: "Reach 70 lb", target: "70 lb", status: "active", due: "", note: "" }],
+    entries: [
+      ...baseInput().entries,
+      {
+        id: "weight-1",
+        type: "weight",
+        title: "Weight",
+        caregiver: "Emma",
+        occurredAt: "2026-05-20T09:00:00-07:00",
+        amount: "67",
+        details: { householdVisible: true },
+      },
+      {
+        id: "weight-2",
+        type: "weight",
+        title: "Weight",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-10T09:00:00-07:00",
+        amount: "68",
+        details: { householdVisible: true },
+      },
+    ],
+  });
+
+  const section = pass.sections.find((item) => item.title === "Weight Trend");
+  assert.ok(section);
+  assert.match(pass.message, /2 weigh-ins in the last 90 days/);
+  assert.match(pass.message, /Goal: 70 lb/);
+  assert.match(pass.message, /Latest: 68 lb by Apollo/);
+  assert.match(pass.message, /owner-reported context/i);
+});
+
 test("creates a stable report artifact snapshot from a care pass", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
   const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");

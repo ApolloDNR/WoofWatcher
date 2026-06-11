@@ -8,6 +8,7 @@ import { derivePottyHealth } from "./potty-health.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
 import { deriveWaterHydration } from "./water.ts";
 import { deriveWalkActivity, deriveWalkRouteTemplates, type WalkRouteTemplate } from "./walk-activity.ts";
+import { deriveWeightTrend, type WeightTrendItem } from "./weight-trend.ts";
 
 export type CarePassAudience = "caregiver" | "sitter" | "vet" | "trainer";
 
@@ -18,8 +19,19 @@ export interface CarePassProfile {
   vetBoundary?: string;
   weight?: {
     current?: number;
+    goal?: string;
     unit?: string;
   };
+}
+
+export interface CarePassGoal {
+  id?: string;
+  category?: string;
+  title?: string;
+  target?: string;
+  status?: string;
+  due?: string;
+  note?: string;
 }
 
 export interface CarePassDietProfile {
@@ -49,6 +61,7 @@ export interface CarePassInput {
   routines?: readonly CareHandoffRoutine[];
   caregivers?: readonly CareHandoffCaregiver[];
   records?: readonly CarePassRecord[];
+  goals?: readonly CarePassGoal[];
   now?: number;
 }
 
@@ -198,6 +211,11 @@ function aloneLatestLine(item: AloneTimeItem | null): string {
     item.recoveryMinutes ? `${item.recoveryMinutes}m recovery` : "",
   ].filter(Boolean);
   return `Latest: ${item.label} - ${parts.join(", ")}`;
+}
+
+function weightLatestLine(item: WeightTrendItem | null): string {
+  if (!item) return "";
+  return `Latest: ${item.weight} ${item.unit} by ${item.caregiver}`;
 }
 
 function audienceChecklist(audience: CarePassAudience, name: string): string[] {
@@ -523,6 +541,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const careTrends = deriveCareTrends({ entries, now, windowDays: 7 });
   const trainingProgress = deriveTrainingProgress({ entries, now, lookbackDays: 30 });
   const aloneTime = deriveAloneTime({ entries, now, lookbackDays: 30 });
+  const weightTrend = deriveWeightTrend({ entries, profile, goals: input.goals ?? [], now, lookbackDays: 90 });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -577,6 +596,14 @@ export function buildCarePass(input: CarePassInput): CarePass {
       diet.avoid ? `Avoid: ${diet.avoid}` : "",
       diet.sensitivities ? `Sensitivities: ${diet.sensitivities}` : "",
       diet.appetiteQuirks ? `Appetite notes: ${diet.appetiteQuirks}` : "",
+    ]),
+    section("Weight Trend", [
+      weightTrend.summary,
+      weightTrend.goalWeight ? `Goal: ${weightTrend.goalWeight} ${weightTrend.unit}` : "",
+      weightTrend.changeFromPrevious ? `Change: ${weightTrend.changeFromPrevious > 0 ? "+" : ""}${weightTrend.changeFromPrevious} ${weightTrend.unit} from previous weigh-in` : "",
+      weightLatestLine(weightTrend.latest),
+      weightTrend.nextStep,
+      "Weight is owner-reported context for caregiver and veterinarian review, not a diagnosis.",
     ]),
     section("Hydration", [
       hydration.summary,

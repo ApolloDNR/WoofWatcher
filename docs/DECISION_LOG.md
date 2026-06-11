@@ -522,6 +522,16 @@ Owner: Codex.
 
 Revisit trigger: Formal Alone Time plans, behavior trigger taxonomy, trainer collaboration, vet-reviewed language, or AI behavior interpretation become active release work.
 
+### 2026-06-11: Weight Trend Uses Owner-Reported Weigh-Ins First
+
+Decision: Weight Trend derives from household-visible weight logs, profile fallback weight, and owner-entered weight goals before adding vet-reviewed weight plans, long-range charts, or reminder automation.
+
+Reason: Apollo wants Phoenix's weight, milestones, and reports to be useful to the household and vet. The app can organize dated owner-reported weigh-ins and goal distance now, while avoiding medical claims or automatic diet changes.
+
+Owner: Codex.
+
+Revisit trigger: Vet-reviewed weight-plan language, long-range charting, weight-goal reminders, diet automation, or clinical interpretation becomes active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

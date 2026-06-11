@@ -44,6 +44,7 @@ import {
   deriveWalkActivity,
   deriveWalkRouteTemplates,
   deriveWaterHydration,
+  deriveWeightTrend,
   getCarePassArtifactPrintView,
   getPetCredentialPrintView,
   getRecordDueStatus,
@@ -157,7 +158,6 @@ export default function RecordsScreen() {
     return () => clearInterval(id);
   }, []);
 
-  const current = state.profile.weight.current;
   const unit = state.profile.weight.unit;
 
   const [period, setPeriod] = useState<number>(30);
@@ -215,24 +215,21 @@ export default function RecordsScreen() {
     () => deriveAloneTime({ entries: state.entries, now, lookbackDays: 30 }),
     [state.entries, now],
   );
+  const weightTrend = useMemo(
+    () => deriveWeightTrend({ entries: state.entries, profile: state.profile, goals: state.goals, now, lookbackDays: 90, limit: 8 }),
+    [state.entries, state.profile, state.goals, now],
+  );
+  const current = weightTrend.currentWeight || state.profile.weight.current;
 
   // ---- Weight trend (prefer real weight logs, fall back to gentle synthesis) ----
-  const goalWeight = useMemo(() => {
-    const g = state.goals.find((x) => x.category === "weight");
-    const m = g?.target.match(/(\d+(\.\d+)?)/);
-    const parsed = m ? parseFloat(m[1]) : NaN;
-    return Number.isFinite(parsed) ? parsed : Math.round(current) + 2;
-  }, [state.goals, current]);
+  const goalWeight = weightTrend.goalWeight || Math.round(current) + 2;
 
   const { series, labels, isRealWeight } = useMemo(() => {
-    const real = state.entries
-      .filter((e) => entryType(e) === "weight" && e.amount && !Number.isNaN(parseFloat(e.amount)))
-      .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime())
-      .slice(-8);
+    const real = weightTrend.items;
     if (real.length >= 2) {
       return {
-        series: real.map((e) => parseFloat(e.amount as string)),
-        labels: real.map((e, i) => (i === real.length - 1 ? "Now" : shortDate(e.occurredAt))),
+        series: real.map((item) => item.weight),
+        labels: real.map((item, i) => (i === real.length - 1 ? "Now" : shortDate(item.occurredAt))),
         isRealWeight: true,
       };
     }
@@ -250,7 +247,7 @@ export default function RecordsScreen() {
       labels: arr.map((_, i) => (i === n - 1 ? "Now" : `${n - 1 - i}w`)),
       isRealWeight: false,
     };
-  }, [state.entries, current]);
+  }, [weightTrend.items, current]);
 
   // ---- Mood distribution (last 30 days) ----
   const moodStats = useMemo(() => {
@@ -462,6 +459,7 @@ export default function RecordsScreen() {
       routines: state.routines,
       caregivers: state.caregivers,
       records: state.records,
+      goals: state.goals,
       now,
     });
 
@@ -538,7 +536,7 @@ export default function RecordsScreen() {
   const linePath = series.map((v, i) => `${i === 0 ? "M" : "L"} ${xAt(i).toFixed(1)} ${yAt(v).toFixed(1)}`).join(" ");
   const areaPath = `${linePath} L ${xAt(series.length - 1).toFixed(1)} ${(padT + plotH).toFixed(1)} L ${xAt(0).toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
   const goalY = yAt(goalWeight);
-  const remaining = Math.max(0, goalWeight - current);
+  const remaining = weightTrend.goalWeight ? weightTrend.remainingToGoal : Math.max(0, goalWeight - current);
   const maxBar = Math.max(1, ...moodStats.bars.map((b) => b.count));
   const incidentMax = Math.max(1, incident7, incident30, incident90);
 
@@ -805,7 +803,7 @@ export default function RecordsScreen() {
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
             <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Weight Trend</Text>
             <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-              {remaining > 0 ? `${remaining.toFixed(1)} ${unit} to go` : "Goal reached"}
+              {remaining > 0 ? `${remaining.toFixed(1)} ${unit} ${weightTrend.direction === "reduce" ? "over goal" : "to go"}` : "Goal reached"}
             </Text>
           </View>
           <View style={[s.chartCard, { backgroundColor: colors.card, shadowColor: colors.primary, padding: cardPad }]}>
@@ -854,7 +852,7 @@ export default function RecordsScreen() {
               ))}
             </Svg>
             <Text style={[s.chartNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              {isRealWeight ? "Log weight from the Log tab to extend this trend." : "Gentle, vet-guided pacing - slow and steady."}
+              {isRealWeight ? weightTrend.nextStep : "Gentle, vet-guided pacing - slow and steady."}
             </Text>
           </View>
 

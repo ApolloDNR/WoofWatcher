@@ -12,9 +12,9 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 150 focused tests with the command above.
+- PASS: 155 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
-- PASS: GitHub Actions `WoofWatcher Verify` run `27364253713` completed successfully for `feat: add alone time tracking`.
+- LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27364253713` completed successfully for `feat: add alone time tracking`.
 
 ## Required Automated Coverage
 
@@ -33,6 +33,7 @@ Latest local evidence, 2026-06-11:
 - Weekly Care Trends derived from household-visible logs, including current-versus-previous 7-day windows, meal completion, walk minutes, water refills, potty/medication/health watch signals, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Training Progress derived from household-visible training logs, including skill/cue, outcome, duration, next-practice notes, private-log exclusion, Records mobile wiring, Log composer fields, and trainer Care Pass report language.
 - Alone Time derivation from household-visible departure logs, including duration, return state, trigger/context, calming support, recovery minutes, private-log exclusion, Records mobile wiring, Log composer fields, and Care Pass handoff language.
+- Weight Trend derivation from household-visible weigh-ins, including goal parsing, profile fallback, private-log exclusion, current/previous change, Records chart wiring, and Care Pass report language.
 - Potty quick-log defaults for household-visible potty evidence.
 - Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
@@ -113,6 +114,9 @@ Latest local evidence, 2026-06-11:
 51. Add an Alone Time log with duration, return state, trigger/context, calming support, recovery minutes, sticky note, and household visibility.
 52. Confirm Records Alone Time updates status, minutes, anxious/distress counts, triggers, supports, latest context, and next-step copy while private alone logs stay out.
 53. Preview a sitter/trainer Care Pass and confirm Alone Time summarizes the latest return state, recovery, trigger, and calming support without diagnosing anxiety.
+54. Add two visible Weight logs and one private Weight log; confirm Records Weight Trend uses only visible weigh-ins for the chart and goal distance.
+55. Update the weight goal and confirm Records shows the correct to-go/over-goal copy.
+56. Preview a vet Care Pass and confirm Weight Trend includes current weight, goal, latest weigh-in, and owner-reported context language.
 
 ## Missing QA
 

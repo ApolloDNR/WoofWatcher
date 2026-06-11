@@ -281,6 +281,17 @@ test("keeps alone-time anxiety tracking visible from Log composer to Records", (
   assert.match(records, /distressedCount/);
 });
 
+test("keeps weight trend shared between Records and Care Pass reports", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const carePass = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"), "utf8");
+
+  assert.match(records, /deriveWeightTrend/);
+  assert.match(records, /weightTrend/);
+  assert.match(records, /Weight Trend/);
+  assert.match(carePass, /deriveWeightTrend/);
+  assert.match(carePass, /Weight Trend/);
+});
+
 test("keeps potty health visible from Log composer to Records", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const records = readAppFile(join("(tabs)", "records.tsx"));
