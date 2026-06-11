@@ -452,6 +452,16 @@ Owner: Codex.
 
 Revisit trigger: Role permissions, background sync workers, native offline runtime QA, or conflict-resolution UI requires a dedicated sync center.
 
+### 2026-06-11: Household Responsibility Uses Routine Board Truth
+
+Decision: Household Responsibility is derived from the same routine-board truth that reconciles routines and visible logs, then surfaced in Calendar and More as owner loads, open/overdue/unassigned counts, visible today log activity, and one next household action.
+
+Reason: Family-tier value depends on the household knowing who owns what, what still needs care, and what should happen next. A shared derivation prevents Calendar, More, Today, and future role permissions from inventing conflicting responsibility states.
+
+Owner: Codex.
+
+Revisit trigger: Auth-connected role permissions, caregiver editing, invite approval, reminder delivery, or formal shift handoffs require stricter permission-aware ownership rules.
+
 ### 2026-06-11: Care Document Refresh Preserves Newer Local State
 
 Decision: Mobile care-state refreshes reconcile server data against the local care document timestamp. If local profile, routine, record, or report state is newer than the server document, the app keeps the local document and pushes it back using the server's current version.

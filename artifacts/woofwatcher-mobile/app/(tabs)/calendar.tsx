@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@clerk/expo";
 import {
+  deriveHouseholdResponsibility,
   deriveRoutineBoard,
   normalizeCareEventType,
   type RoutineBoardItem,
@@ -161,7 +162,18 @@ export default function CalendarScreen() {
     () => deriveRoutineBoard({ routines: sortedRoutines, entries, caregivers, now }),
     [sortedRoutines, entries, caregivers, now],
   );
-  const assignedOwnerLoads = routineBoard.ownerLoads.filter((load) => load.assigned > 0);
+  const householdResponsibility = useMemo(
+    () => deriveHouseholdResponsibility({ routines: sortedRoutines, entries, caregivers, now }),
+    [sortedRoutines, entries, caregivers, now],
+  );
+  const responsibility = householdResponsibility;
+  const assignedOwnerLoads = responsibility.members.filter((member) => member.assigned > 0);
+  const responsibilityTone =
+    responsibility.status === "needs-care"
+      ? colors.rose
+      : responsibility.status === "needs-assignment"
+        ? colors.amber
+        : colors.sage;
 
   // Group upcoming one-off events by date.
   const upcoming = useMemo(() => {
@@ -547,6 +559,35 @@ export default function CalendarScreen() {
             </Pressable>
           ) : (
             <View>
+              <View style={[s.responsibilityCard, { backgroundColor: colors.card, borderColor: responsibilityTone + "44", shadowColor: responsibilityTone }]}>
+                <View style={s.responsibilityTop}>
+                  <View style={[s.responsibilityIcon, { backgroundColor: responsibilityTone + "18" }]}>
+                    <Ionicons name="people-outline" size={18} color={responsibilityTone} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Household Responsibility</Text>
+                    <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {householdResponsibility.summary}
+                    </Text>
+                  </View>
+                </View>
+                <View style={s.responsibilityMetrics}>
+                  {[
+                    { label: "Open", value: responsibility.openRoutines },
+                    { label: "Overdue", value: responsibility.overdueRoutines },
+                    { label: "Unassigned", value: responsibility.unassignedRoutines },
+                  ].map((metric) => (
+                    <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
+                      <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
+                      <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
+                    </View>
+                  ))}
+                </View>
+                <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  {responsibility.nextStep}
+                </Text>
+              </View>
+
               {(assignedOwnerLoads.length > 0 || routineBoard.unassignedCount > 0) && (
                 <ScrollView
                   horizontal
@@ -555,14 +596,14 @@ export default function CalendarScreen() {
                   style={{ marginBottom: 12 }}
                 >
                   {assignedOwnerLoads.map((load) => (
-                    <View key={load.owner} style={[s.ownerLoadChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <View key={load.name} style={[s.ownerLoadChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
                       <View style={[s.ownerAvatar, { backgroundColor: colors.primary + "18" }]}>
                         <Text style={[s.ownerAvatarText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
-                          {load.owner.slice(0, 1).toUpperCase()}
+                          {load.name.slice(0, 1).toUpperCase()}
                         </Text>
                       </View>
                       <View>
-                        <Text style={[s.ownerLoadName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{load.owner}</Text>
+                        <Text style={[s.ownerLoadName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{load.name}</Text>
                         <Text style={[s.ownerLoadCount, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                           {load.done}/{load.assigned} done
                         </Text>
@@ -907,6 +948,26 @@ const s = StyleSheet.create({
   eventMeta: { fontSize: 12.5, marginTop: 3 },
   eventNote: { fontSize: 12.5, lineHeight: 17, marginTop: 4 },
   removeBtn: { width: 28, height: 28, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+
+  responsibilityCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 12,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  responsibilityTop: { flexDirection: "row", alignItems: "center", gap: 10 },
+  responsibilityIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  responsibilityTitle: { fontSize: 15.5 },
+  responsibilitySummary: { fontSize: 12.5, lineHeight: 18, marginTop: 2 },
+  responsibilityMetrics: { flexDirection: "row", gap: 8, marginTop: 12 },
+  responsibilityMetric: { flex: 1, minHeight: 58, borderRadius: 14, alignItems: "center", justifyContent: "center", padding: 8 },
+  responsibilityMetricValue: { fontSize: 16 },
+  responsibilityMetricLabel: { fontSize: 10.5, marginTop: 2 },
+  responsibilityNext: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
 
   ownerLoadStrip: { gap: 8, paddingRight: 20 },
   ownerLoadChip: {

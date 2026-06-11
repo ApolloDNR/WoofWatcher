@@ -305,6 +305,20 @@ test("keeps household sync health visible from More", () => {
   assert.match(more, /accessibilityLabel="Refresh household sync"/);
 });
 
+test("keeps household responsibility visible in Calendar and More", () => {
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  assert.match(calendar, /deriveHouseholdResponsibility/);
+  assert.match(calendar, /householdResponsibility/);
+  assert.match(calendar, /Household Responsibility/);
+  assert.match(calendar, /responsibility\.nextStep/);
+  assert.match(more, /deriveHouseholdResponsibility/);
+  assert.match(more, /householdResponsibility/);
+  assert.match(more, /Responsibility Center/);
+  assert.match(more, /Open routine board/);
+});
+
 test("keeps care document refresh conflict-safe in CareContext", () => {
   const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
 

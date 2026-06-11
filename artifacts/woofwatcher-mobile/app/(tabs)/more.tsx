@@ -27,7 +27,7 @@ import {
   useUpdateMe,
   getGetMeQueryKey,
 } from "@workspace/api-client-react";
-import { getCareEventDefinition } from "@workspace/care-domain";
+import { deriveHouseholdResponsibility, getCareEventDefinition } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
 import { useAvatar } from "@/context/AvatarContext";
@@ -43,7 +43,7 @@ export default function MoreScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
-  const { dietProfile, profile, entries, routines } = state;
+  const { dietProfile, profile, entries, routines, caregivers } = state;
   const { getAvatarSource } = useAvatar();
 
   const { signOut } = useAuth();
@@ -123,6 +123,37 @@ export default function MoreScreen() {
       : syncDashboard.status === "syncing" || syncDashboard.status === "loading"
         ? "cloud-upload-outline"
         : "cloud-done-outline";
+
+  const responsibilityCaregivers = useMemo(() => {
+    const byName = new Map<string, { name: string; role: string }>();
+    const add = (name: string, role: string) => {
+      const cleaned = name.trim();
+      if (!cleaned) return;
+      const key = cleaned.toLowerCase();
+      if (!byName.has(key)) byName.set(key, { name: cleaned, role: role.trim() || "Caregiver" });
+    };
+
+    caregivers.forEach((caregiver) => add(caregiver.name, caregiver.role));
+    members.forEach((member) => {
+      const name = member.displayName?.trim() || member.email?.split("@")[0] || "";
+      add(name, member.role === "owner" ? "Owner" : "Caregiver");
+    });
+
+    return [...byName.values()];
+  }, [caregivers, members]);
+
+  const householdResponsibility = useMemo(
+    () => deriveHouseholdResponsibility({ routines, entries, caregivers: responsibilityCaregivers, now }),
+    [routines, entries, responsibilityCaregivers, now],
+  );
+  const responsibilityTone =
+    householdResponsibility.status === "needs-care"
+      ? colors.rose
+      : householdResponsibility.status === "needs-assignment"
+        ? colors.amber
+        : householdResponsibility.status === "needs-setup"
+          ? colors.primary
+          : colors.sage;
 
   const energyDots = Math.round(((status.energy - 35) / (96 - 35)) * 4) + 1;
 
@@ -650,6 +681,73 @@ export default function MoreScreen() {
               })
             )}
           </View>
+
+          {/* Household responsibility */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Responsibility Center</Text>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push("/calendar");
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Open routine board"
+              hitSlop={8}
+            >
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Open routine board</Text>
+            </Pressable>
+          </View>
+          <Pressable
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push("/calendar");
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Open routine board"
+            style={[s.responsibilityCard, { backgroundColor: colors.card, borderColor: responsibilityTone + "44", shadowColor: responsibilityTone }]}
+          >
+            <View style={s.responsibilityTop}>
+              <View style={[s.responsibilityIcon, { backgroundColor: responsibilityTone + "18" }]}>
+                <Ionicons name="people-circle-outline" size={22} color={responsibilityTone} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {householdResponsibility.title}
+                </Text>
+                <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {householdResponsibility.summary}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+            </View>
+            <View style={s.responsibilityMetrics}>
+              {[
+                { label: "Open", value: householdResponsibility.openRoutines },
+                { label: "Overdue", value: householdResponsibility.overdueRoutines },
+                { label: "Unassigned", value: householdResponsibility.unassignedRoutines },
+              ].map((metric) => (
+                <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
+                  <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
+                  <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              {householdResponsibility.nextStep}
+            </Text>
+            {householdResponsibility.members.length > 0 && (
+              <View style={[s.responsibilityRoster, { borderTopColor: colors.border }]}>
+                {householdResponsibility.members.slice(0, 3).map((member) => (
+                  <View key={member.name} style={s.responsibilityMember}>
+                    <Text style={[s.responsibilityMemberName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{member.name}</Text>
+                    <Text style={[s.responsibilityMemberMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {member.done}/{member.assigned} routines - {member.todayLogs} logs
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </Pressable>
 
           {/* Sync health */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
@@ -1199,6 +1297,29 @@ const s = StyleSheet.create({
   youBadgeText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
   logBadge: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 11 },
   logBadgeText: { fontSize: 12 },
+
+  responsibilityCard: {
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  responsibilityTop: { flexDirection: "row", alignItems: "center", gap: 12 },
+  responsibilityIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  responsibilityTitle: { fontSize: 16, letterSpacing: 0 },
+  responsibilitySummary: { fontSize: 13, lineHeight: 18, marginTop: 3 },
+  responsibilityMetrics: { flexDirection: "row", gap: 8, marginTop: 14 },
+  responsibilityMetric: { flex: 1, minHeight: 64, borderRadius: 15, alignItems: "center", justifyContent: "center", padding: 8 },
+  responsibilityMetricValue: { fontSize: 16, textAlign: "center" },
+  responsibilityMetricLabel: { fontSize: 10.5, textAlign: "center", marginTop: 3 },
+  responsibilityNext: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
+  responsibilityRoster: { borderTopWidth: 1, marginTop: 14, paddingTop: 12, gap: 8 },
+  responsibilityMember: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
+  responsibilityMemberName: { fontSize: 12.5, flex: 1 },
+  responsibilityMemberMeta: { fontSize: 12, textAlign: "right" },
 
   syncCard: {
     borderRadius: 22,

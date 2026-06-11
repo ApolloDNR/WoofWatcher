@@ -13,5 +13,6 @@ export * from "./water.ts";
 export * from "./walk-activity.ts";
 export * from "./potty-health.ts";
 export * from "./training-progress.ts";
+export * from "./household-responsibility.ts";
 export * from "./onboarding.ts";
 export * from "./premium.ts";
