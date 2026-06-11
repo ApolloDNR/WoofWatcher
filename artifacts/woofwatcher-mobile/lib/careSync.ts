@@ -66,6 +66,32 @@ export interface CareSyncDashboard {
   metrics: CareSyncDashboardMetric[];
 }
 
+export interface SyncableCareDoc {
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+export type CareDocRefreshStatus =
+  | "seed-server"
+  | "accept-server"
+  | "keep-local-newer";
+
+export interface CareDocRefreshInput<T extends SyncableCareDoc> {
+  localDoc: T;
+  localVersion: number;
+  serverDoc?: Partial<T> | null;
+  serverVersion: number;
+  serverUpdatedAt?: string | Date | null;
+}
+
+export interface CareDocRefreshPlan<T extends SyncableCareDoc> {
+  status: CareDocRefreshStatus;
+  doc: T | Partial<T>;
+  version: number;
+  shouldPushLocal: boolean;
+  message: string;
+}
+
 export function withSyncedStatus<T extends SyncableEntry>(
   entries: readonly T[],
 ): Array<T & { syncStatus: "synced"; syncError: undefined }> {
@@ -148,6 +174,65 @@ function formatCareSyncTime(value?: string): string | null {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function dateValue(value: unknown): number {
+  if (value instanceof Date) return value.getTime();
+  if (typeof value !== "string" || !value.trim()) return Number.NaN;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? Number.NaN : parsed;
+}
+
+function careDocTime(
+  doc: Partial<SyncableCareDoc> | null | undefined,
+  fallback?: string | Date | null,
+): number {
+  const docTime = dateValue(doc?.updatedAt);
+  return Number.isNaN(docTime) ? dateValue(fallback) : docTime;
+}
+
+export function reconcileCareDocFromServer<T extends SyncableCareDoc>({
+  localDoc,
+  localVersion,
+  serverDoc,
+  serverVersion,
+  serverUpdatedAt,
+}: CareDocRefreshInput<T>): CareDocRefreshPlan<T> {
+  if (!serverDoc || Object.keys(serverDoc).length === 0) {
+    return {
+      status: "seed-server",
+      doc: localDoc,
+      version: serverVersion,
+      shouldPushLocal: true,
+      message: "Seeding household care from this device.",
+    };
+  }
+
+  const localTime = careDocTime(localDoc);
+  const serverTime = careDocTime(serverDoc, serverUpdatedAt);
+  const localIsNewer =
+    !Number.isNaN(localTime) &&
+    (Number.isNaN(serverTime) || localTime > serverTime);
+  const localVersionIsAhead = localVersion > serverVersion;
+
+  if (localIsNewer || localVersionIsAhead) {
+    return {
+      status: "keep-local-newer",
+      doc: localDoc,
+      version: serverVersion,
+      shouldPushLocal: true,
+      message:
+        "Keeping newer offline care changes and sending them back to the household.",
+    };
+  }
+
+  return {
+    status: "accept-server",
+    doc: serverDoc,
+    version: serverVersion,
+    shouldPushLocal: false,
+    message: "Using the latest household care from the server.",
+  };
 }
 
 export function deriveCareSyncOutbox<T extends SyncableEntry>(

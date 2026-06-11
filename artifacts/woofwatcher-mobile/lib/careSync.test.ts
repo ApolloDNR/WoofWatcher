@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   deriveCareSyncOutbox,
   deriveCareSyncDashboard,
+  reconcileCareDocFromServer,
   isUnsyncedEntry,
   shouldRetryCreate,
   shouldRetryUpdate,
@@ -240,4 +241,76 @@ test("derives a household sync dashboard with retry guidance", () => {
   assert.equal(dashboard.actionLabel, "Retry sync");
   assert.equal(dashboard.metrics[2].value, "2 waiting");
   assert.equal(dashboard.nextStep, "Retry sync so every caregiver sees the latest care.");
+});
+
+test("keeps a newer local care document when a stale server refresh arrives", () => {
+  const plan = reconcileCareDocFromServer({
+    localDoc: {
+      updatedAt: "2026-06-11T09:00:00.000Z",
+      profile: { name: "Phoenix" },
+    },
+    localVersion: 4,
+    serverDoc: {
+      updatedAt: "2026-06-11T08:00:00.000Z",
+      profile: { name: "Old Phoenix" },
+    },
+    serverVersion: 5,
+    serverUpdatedAt: "2026-06-11T08:00:00.000Z",
+  });
+
+  assert.equal(plan.status, "keep-local-newer");
+  assert.equal(plan.shouldPushLocal, true);
+  assert.equal(plan.version, 5);
+  assert.deepEqual(plan.doc, {
+    updatedAt: "2026-06-11T09:00:00.000Z",
+    profile: { name: "Phoenix" },
+  });
+  assert.equal(
+    plan.message,
+    "Keeping newer offline care changes and sending them back to the household.",
+  );
+});
+
+test("accepts server care document when it is newer than local cache", () => {
+  const plan = reconcileCareDocFromServer({
+    localDoc: {
+      updatedAt: "2026-06-11T08:00:00.000Z",
+      profile: { name: "Old Phoenix" },
+    },
+    localVersion: 4,
+    serverDoc: {
+      updatedAt: "2026-06-11T09:00:00.000Z",
+      profile: { name: "Phoenix" },
+    },
+    serverVersion: 5,
+    serverUpdatedAt: "2026-06-11T09:00:00.000Z",
+  });
+
+  assert.equal(plan.status, "accept-server");
+  assert.equal(plan.shouldPushLocal, false);
+  assert.equal(plan.version, 5);
+  assert.deepEqual(plan.doc, {
+    updatedAt: "2026-06-11T09:00:00.000Z",
+    profile: { name: "Phoenix" },
+  });
+});
+
+test("seeds an empty server care document from the local cache", () => {
+  const plan = reconcileCareDocFromServer({
+    localDoc: {
+      updatedAt: "2026-06-11T09:00:00.000Z",
+      profile: { name: "Phoenix" },
+    },
+    localVersion: 0,
+    serverDoc: {},
+    serverVersion: 0,
+  });
+
+  assert.equal(plan.status, "seed-server");
+  assert.equal(plan.shouldPushLocal, true);
+  assert.equal(plan.version, 0);
+  assert.deepEqual(plan.doc, {
+    updatedAt: "2026-06-11T09:00:00.000Z",
+    profile: { name: "Phoenix" },
+  });
 });

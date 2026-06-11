@@ -26,6 +26,7 @@ import {
 import {
   deriveCareSyncOutbox,
   mergeServerAndLocalEntries,
+  reconcileCareDocFromServer,
   shouldRetryCreate,
   shouldRetryUpdate,
   type CareSyncOutbox,
@@ -480,20 +481,23 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     setIsSyncing(true);
     try {
       const envelope = await getCareState();
-      const serverDoc = envelope.doc as Partial<CareDoc>;
-      const isEmpty = !serverDoc || Object.keys(serverDoc).length === 0;
-      if (isEmpty) {
-        // Fresh household: seed it with whatever the device currently has.
-        const seed = docRef.current;
+      const plan = reconcileCareDocFromServer<CareDoc>({
+        localDoc: docRef.current,
+        localVersion: versionRef.current,
+        serverDoc: envelope.doc as Partial<CareDoc>,
+        serverVersion: envelope.version,
+        serverUpdatedAt: envelope.updatedAt,
+      });
+      if (plan.shouldPushLocal) {
         const res = await putCareState({
-          version: envelope.version,
-          doc: seed as unknown as CareStateEnvelope["doc"],
+          version: plan.version,
+          doc: plan.doc as unknown as CareStateEnvelope["doc"],
         });
         setDoc(mergeDoc(res.doc as Partial<CareDoc>));
         setServerVersion(res.version);
       } else {
-        setDoc(mergeDoc(serverDoc));
-        setServerVersion(envelope.version);
+        setDoc(mergeDoc(plan.doc as Partial<CareDoc>));
+        setServerVersion(plan.version);
       }
 
       const rows = await listCareEntries();

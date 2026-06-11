@@ -269,3 +269,11 @@ test("keeps household sync health visible from More", () => {
   assert.match(more, /syncDashboard\.metrics/);
   assert.match(more, /accessibilityLabel="Refresh household sync"/);
 });
+
+test("keeps care document refresh conflict-safe in CareContext", () => {
+  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
+
+  assert.match(careContext, /reconcileCareDocFromServer/);
+  assert.match(careContext, /shouldPushLocal/);
+  assert.match(careContext, /putCareState\(\{\s*version: plan\.version/);
+});
