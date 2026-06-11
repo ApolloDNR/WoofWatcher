@@ -472,6 +472,16 @@ Owner: Codex.
 
 Revisit trigger: GPS recording, map previews, walker partnerships, location retention policy, or route-sharing permissions become active release work.
 
+### 2026-06-11: Care Trends Are Derived From Visible Logs Before Predictive AI
+
+Decision: Weekly Care Trends derive from household-visible care logs and compare the current 7-day window with the previous 7-day window before adding predictive AI, clinical interpretation, or long-range charting.
+
+Reason: Owners need useful week-over-week context now across meals, walks, water, potty, medication, health watch, and caregiver participation. The app should turn logged care into premium insight while preserving the same household visibility and medical-safety boundaries used by Records and Care Pass.
+
+Owner: Codex.
+
+Revisit trigger: Long-range trend charts, predictive assistant nudges, clinician-reviewed language, paid report templates, or provider-backed analytics become active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

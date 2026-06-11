@@ -1,4 +1,5 @@
 import { normalizeCareEventType } from "./events.ts";
+import { deriveCareTrends, type CareTrendSignal } from "./care-trends.ts";
 import { deriveCareHandoff, type CareHandoffCaregiver, type CareHandoffRoutine } from "./handoff.ts";
 import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
@@ -175,6 +176,10 @@ function walkRouteTemplateLine(template: WalkRouteTemplate): string {
   const visits = `${template.visits} ${template.visits === 1 ? "visit" : "visits"}`;
   const dogInteractions = `${template.dogInteractions} dog ${template.dogInteractions === 1 ? "interaction" : "interactions"}`;
   return `${template.name} (${visits}, ${template.averageMinutes}m avg, ${dogInteractions}) - ${template.suggestedUse}`;
+}
+
+function careTrendSignalLine(signal: CareTrendSignal): string {
+  return `Watch: ${signal.label} - ${signal.detail} Action: ${signal.action}`;
 }
 
 function audienceChecklist(audience: CarePassAudience, name: string): string[] {
@@ -497,6 +502,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const walkActivity = deriveWalkActivity({ entries, now });
   const walkRouteTemplates = deriveWalkRouteTemplates({ entries, now, limit: 3 });
   const pottyHealth = derivePottyHealth({ entries, now });
+  const careTrends = deriveCareTrends({ entries, now, windowDays: 7 });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -529,6 +535,20 @@ export function buildCarePass(input: CarePassInput): CarePass {
       handoff.message,
     ]),
     section("Handoff Checklist", audienceChecklist(input.audience, name)),
+    section("Care Trends", [
+      `${careTrends.windowDays}-day trends`,
+      careTrends.summary,
+      careTrends.current.meals.total
+        ? `Meals: ${careTrends.current.meals.complete} complete, ${careTrends.current.meals.partial} partial, ${careTrends.current.meals.skipped} skipped`
+        : "",
+      careTrends.current.walks.count
+        ? `Walks: ${careTrends.current.walks.totalMinutes} min${careTrends.deltas.walkMinutes ? ` (${careTrends.deltas.walkMinutes > 0 ? "+" : ""}${careTrends.deltas.walkMinutes} vs prior window)` : ""}`
+        : "",
+      careTrends.current.water.logs ? `Water: ${careTrends.current.water.refillEquivalent} bowl refills` : "",
+      careTrends.current.potty.total ? `Potty: ${careTrends.current.potty.watchCount} review logs` : "",
+      ...careTrends.signals.slice(0, 3).map(careTrendSignalLine),
+      careTrends.nextStep,
+    ]),
     section("Diet", [
       diet.primaryFood ? `Food: ${diet.primaryFood}` : "",
       diet.normalPortion ? `Portion: ${diet.normalPortion}` : "",

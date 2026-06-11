@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 128 focused tests with the command above.
+- PASS: 132 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
 - PASS: GitHub Actions `WoofWatcher Verify` run `27335275872` completed successfully for `feat: add saved walk route templates`.
 
@@ -30,6 +30,7 @@ Latest local evidence, 2026-06-11:
 - Walk quick-log defaults for household-visible activity evidence.
 - Walk Activity derivation for visible walk logs, duration, distance when logged, dog interactions, social outcomes, places/routes, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Saved walk route templates derived from household-visible route/place logs, including private-log exclusion, stale-log exclusion, repeat-route grouping, visits, average duration, distance, dog interactions, caregiver list, social outcome snippets, Records mobile wiring, walk composer fields, and Care Pass report language.
+- Weekly Care Trends derived from household-visible logs, including current-versus-previous 7-day windows, meal completion, walk minutes, water refills, potty/medication/health watch signals, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Potty quick-log defaults for household-visible potty evidence.
 - Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
@@ -77,25 +78,27 @@ Latest local evidence, 2026-06-11:
 20. Log the same route more than once and confirm Records Saved Routes groups the route, shows visits, average duration, dog interactions, suggested use, and the latest social note.
 21. Mark a walk private and confirm it stays out of shared Walk Activity, Saved Routes, routine status, and Care Pass route context.
 22. Preview a trainer or sitter Care Pass and confirm Walk Activity includes route/place, dog interaction context, and Saved Routes.
-23. Use Home Quick Log for Potty and confirm it records household-visible potty routine evidence.
-24. Add a potty log with pee/poop kind, soft/off condition, stool color, accident/urgent/straining context, and a sticky note; confirm Records Potty Health updates pee, poop, review count, color/context detail, latest detail, and stool detail next-step copy.
-25. Preview a vet or sitter Care Pass and confirm Potty Health summarizes stool color and potty context without making medical claims.
-26. Add sticky note to a log.
-27. Add vaccine, insurance, microchip, vet, receipt, and document records.
-28. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.
-29. Preview and share sitter/vet/trainer/caregiver Care Pass.
-30. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
-31. Confirm report history stores shared Care Pass with printable export metadata, separate resend action, and printable-source share action.
-32. Ask WoofGuide about recent changes and verify non-diagnostic wording.
-33. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
-34. Open Privacy & Safety from More, share the care-data export, and confirm it includes care data counts without auth/session tokens.
-35. Prepare an account deletion request and confirm it is non-destructive and says manual review/export first.
-36. Confirm AI disclosure, document storage rules, and payment launch blockers are visible.
-37. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
-38. Confirm the Home avatar motion row changes for a recent meal, upcoming walk, overdue routine, quiet hours, low energy, and Health Watch signal.
-39. Force offline or failed sync state and confirm the Log shows the Offline Outbox banner, retryable create/update counts, pending count, failed-sync message, and Retry sync action.
-40. Open More and confirm Sync Health shows household status, care-log count, care-team count, outbox waiting count, next-step guidance, and a refresh/retry action with accessible label.
-41. Edit profile, routine, record, or report state offline or during a stale refresh; confirm the newer local care document is kept and pushed back instead of overwritten by older server data.
+23. Confirm Records Care Trends summarizes the last 7 days, meal completion, walk minutes, and review signals while ignoring private logs.
+24. Preview a Care Pass and confirm Care Trends adds weekly context without making medical claims.
+25. Use Home Quick Log for Potty and confirm it records household-visible potty routine evidence.
+26. Add a potty log with pee/poop kind, soft/off condition, stool color, accident/urgent/straining context, and a sticky note; confirm Records Potty Health updates pee, poop, review count, color/context detail, latest detail, and stool detail next-step copy.
+27. Preview a vet or sitter Care Pass and confirm Potty Health summarizes stool color and potty context without making medical claims.
+28. Add sticky note to a log.
+29. Add vaccine, insurance, microchip, vet, receipt, and document records.
+30. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.
+31. Preview and share sitter/vet/trainer/caregiver Care Pass.
+32. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
+33. Confirm report history stores shared Care Pass with printable export metadata, separate resend action, and printable-source share action.
+34. Ask WoofGuide about recent changes and verify non-diagnostic wording.
+35. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
+36. Open Privacy & Safety from More, share the care-data export, and confirm it includes care data counts without auth/session tokens.
+37. Prepare an account deletion request and confirm it is non-destructive and says manual review/export first.
+38. Confirm AI disclosure, document storage rules, and payment launch blockers are visible.
+39. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
+40. Confirm the Home avatar motion row changes for a recent meal, upcoming walk, overdue routine, quiet hours, low energy, and Health Watch signal.
+41. Force offline or failed sync state and confirm the Log shows the Offline Outbox banner, retryable create/update counts, pending count, failed-sync message, and Retry sync action.
+42. Open More and confirm Sync Health shows household status, care-log count, care-team count, outbox waiting count, next-step guidance, and a refresh/retry action with accessible label.
+43. Edit profile, routine, record, or report state offline or during a stale refresh; confirm the newer local care document is kept and pushed back instead of overwritten by older server data.
 
 ## Missing QA
 

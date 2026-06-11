@@ -3,6 +3,7 @@ export * from "./status.ts";
 export * from "./health.ts";
 export * from "./handoff.ts";
 export * from "./care-pass.ts";
+export * from "./care-trends.ts";
 export * from "./diet-progress.ts";
 export * from "./sticky-notes.ts";
 export * from "./record-vault.ts";

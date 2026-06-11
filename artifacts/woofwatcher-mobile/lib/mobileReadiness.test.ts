@@ -239,6 +239,17 @@ test("keeps walk activity insights visible in Records", () => {
   assert.match(log, /dogInteractions/);
 });
 
+test("keeps weekly care trends visible in Records", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /deriveCareTrends/);
+  assert.match(records, /careTrends/);
+  assert.match(records, /Care Trends/);
+  assert.match(records, /trendSignals/);
+  assert.match(records, /walkMinutes/);
+  assert.match(records, /mealCompletion/);
+});
+
 test("keeps potty health visible from Log composer to Records", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const records = readAppFile(join("(tabs)", "records.tsx"));

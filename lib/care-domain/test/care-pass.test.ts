@@ -216,6 +216,56 @@ test("care pass includes walk activity and dog interaction context", () => {
   assert.match(pass.message, /Saved routes: Dog park \(1 visit, 35m avg, 2 dog interactions\) - Social practice route/);
 });
 
+test("care pass includes weekly care trend context", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    now: new Date("2026-06-08T12:00:00-07:00").getTime(),
+    entries: [
+      {
+        id: "meal-complete",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-08T07:00:00-07:00",
+        details: { mealCompletion: "complete", householdVisible: true },
+      },
+      {
+        id: "meal-partial",
+        type: "meal",
+        title: "Dinner",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-07T18:00:00-07:00",
+        details: { mealCompletion: "partial", householdVisible: true },
+      },
+      {
+        id: "walk",
+        type: "walk",
+        title: "Neighborhood walk",
+        caregiver: "Emma",
+        occurredAt: "2026-06-08T08:30:00-07:00",
+        durationMinutes: 35,
+        details: { routeName: "Neighborhood Loop", distanceMiles: 1.4 },
+      },
+      {
+        id: "potty-watch",
+        type: "potty",
+        title: "Potty - poop",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-08T10:00:00-07:00",
+        details: { kind: "poop", condition: "soft", householdVisible: true },
+      },
+    ],
+  });
+
+  assert.ok(pass.sections.some((section) => section.title === "Care Trends"));
+  assert.match(pass.message, /7-day trends/);
+  assert.match(pass.message, /4 visible care logs over 2 days/);
+  assert.match(pass.message, /Meals: 1 complete, 1 partial, 0 skipped/);
+  assert.match(pass.message, /Walks: 35 min/);
+  assert.match(pass.message, /Watch: Potty watch/);
+});
+
 test("care pass includes potty health context for sitter and vet review", () => {
   const pass = buildCarePass({
     ...baseInput(),

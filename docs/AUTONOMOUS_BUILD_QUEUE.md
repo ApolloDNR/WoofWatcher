@@ -36,6 +36,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 28. DONE 2026-06-11: Household Sync Health now derives healthy/loading/syncing/attention dashboard state from the durable outbox, household size, and care history, and More shows the household sync status, retry/refresh action, care-log count, team count, outbox count, and next-step guidance.
 29. DONE 2026-06-11: Care document refresh is now conflict-safer: mobile reconciles server care-state refreshes against the local doc timestamp, keeps newer offline/local profile, routine, record, and report changes instead of clobbering them with stale server data, and pushes the newer doc back to the household.
 30. DONE 2026-06-11: Saved walk route templates now derive from household-visible route/place logs, ignoring private and stale walks, grouping repeat routes by name, and carrying visits, average duration, distance, dog interactions, caregivers, social outcomes, and suggested use into Records and Care Pass reports.
+31. DONE 2026-06-11: Weekly Care Trends now derive from household-visible logs, compare the current 7-day window against the previous window, and carry meal completion, walk minutes, water refills, potty/medication/health watch signals, top caregivers, Records UI, and Care Pass report language.
 
 ## Cadence
 

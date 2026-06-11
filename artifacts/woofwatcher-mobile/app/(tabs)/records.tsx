@@ -32,6 +32,7 @@ import {
   buildPetCredential,
   buildCarePass,
   createCarePassArtifact,
+  deriveCareTrends,
   deriveHealthWatch,
   deriveMedicationAdherence,
   deriveMedicationFollowUps,
@@ -171,6 +172,10 @@ export default function RecordsScreen() {
   const healthWatch = useMemo(
     () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
     [state.entries, state.routines, now],
+  );
+  const careTrends = useMemo(
+    () => deriveCareTrends({ entries: state.entries, now, windowDays: 7 }),
+    [state.entries, now],
   );
   const medicationAdherence = useMemo(
     () => deriveMedicationAdherence({ entries: state.entries, routines: state.routines, now }),
@@ -553,6 +558,9 @@ export default function RecordsScreen() {
     { icon: "bone", label: "Treats", value: String(report.treats) },
     { icon: "vomit", label: "Incidents", value: String(report.incidents) },
   ];
+  const trendSignals = careTrends.signals.slice(0, 3);
+  const walkMinutes = careTrends.current.walks.totalMinutes;
+  const mealCompletion = careTrends.current.meals.completionPercent;
 
   const recordSections = recordVault.sections.filter((section) =>
     ["vaccine", "vet", "receipt", "insurance", "microchip", "document"].includes(section.kind),
@@ -592,6 +600,63 @@ export default function RecordsScreen() {
                 <Text style={[s.highlightLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{h.label}</Text>
               </View>
             ))}
+          </View>
+
+          {/* Care trends */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Care Trends</Text>
+            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>7 days</Text>
+          </View>
+          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <View style={s.trendHeroRow}>
+              <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "14" }]}>
+                <Ionicons name="analytics-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {careTrends.current.totalLogs ? "Weekly pattern" : "Build a trend baseline"}
+                </Text>
+                <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {careTrends.summary}
+                </Text>
+              </View>
+            </View>
+            <View style={s.trendStatGrid}>
+              {[
+                { label: "Logs", value: String(careTrends.current.totalLogs), color: colors.primary },
+                { label: "Meal %", value: careTrends.current.meals.total ? `${mealCompletion}%` : "--", color: colors.copper },
+                { label: "Walk min", value: String(walkMinutes), color: colors.sage },
+              ].map((item) => (
+                <View key={item.label} style={s.trendStatCell}>
+                  <Text style={[s.trendStatValue, { color: item.color, fontFamily: DISPLAY_SEMI }]}>{item.value}</Text>
+                  <Text style={[s.trendStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+            {trendSignals.length ? (
+              <View style={s.trendSignalStack}>
+                {trendSignals.map((signal) => {
+                  const tone =
+                    signal.tone === "alert"
+                      ? colors.rose
+                      : signal.tone === "watch"
+                        ? colors.amber
+                        : signal.tone === "good"
+                          ? colors.sage
+                          : colors.primary;
+                  return (
+                    <View key={signal.kind} style={[s.trendSignalRow, { borderTopColor: colors.border }]}>
+                      <View style={[s.watchSignalDot, { backgroundColor: tone }]} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.trendSignalTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{signal.label}</Text>
+                        <Text style={[s.trendSignalDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{signal.detail}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
+            <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{careTrends.nextStep}</Text>
           </View>
 
           {/* Dog ID card */}
@@ -1833,6 +1898,15 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   empty: { fontSize: 14, paddingVertical: 16, textAlign: "center" },
+  trendHeroRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 12 },
+  trendStatGrid: { flexDirection: "row", gap: 9, marginBottom: 8 },
+  trendStatCell: { flex: 1, paddingVertical: 9, paddingHorizontal: 4, alignItems: "center" },
+  trendStatValue: { fontSize: 21, letterSpacing: 0 },
+  trendStatLabel: { fontSize: 10.5, marginTop: 2, textAlign: "center" },
+  trendSignalStack: { marginTop: 2, marginBottom: 10 },
+  trendSignalRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderTopWidth: 1, paddingTop: 10, marginTop: 10 },
+  trendSignalTitle: { fontSize: 12.8 },
+  trendSignalDetail: { fontSize: 12.3, lineHeight: 17, marginTop: 3 },
 
   moodRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   moodLabel: { fontSize: 14, width: 64 },
