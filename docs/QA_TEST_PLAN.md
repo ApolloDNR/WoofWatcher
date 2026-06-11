@@ -14,7 +14,7 @@ Latest local evidence, 2026-06-11:
 
 - PASS: 116 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
-- PASS: GitHub Actions `WoofWatcher Verify` run `27325326721` completed successfully for `feat: add potty health summary`.
+- PASS: GitHub Actions `WoofWatcher Verify` run `27325741344` completed successfully for `feat: enrich potty detail capture`.
 
 ## Required Automated Coverage
 
