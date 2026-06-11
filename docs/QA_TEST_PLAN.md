@@ -12,9 +12,9 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 116 focused tests with the command above.
+- PASS: 119 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
-- PASS: GitHub Actions `WoofWatcher Verify` run `27325741344` completed successfully for `feat: enrich potty detail capture`.
+- PASS: GitHub Actions `WoofWatcher Verify` run `27330233134` completed successfully for `feat: add durable sync outbox`.
 
 ## Required Automated Coverage
 
@@ -31,7 +31,7 @@ Latest local evidence, 2026-06-11:
 - Walk Activity derivation for visible walk logs, duration, distance when logged, dog interactions, social outcomes, places/routes, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Potty quick-log defaults for household-visible potty evidence.
 - Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
-- Care sync local/pending/failed/retry behavior.
+- Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, and mobile Log outbox visibility.
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
 - Home Quick Log routine matching and meal detail enrichment.
 - Health Watch signals and medical boundary.
@@ -90,7 +90,7 @@ Latest local evidence, 2026-06-11:
 34. Confirm AI disclosure, document storage rules, and payment launch blockers are visible.
 35. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
 36. Confirm the Home avatar motion row changes for a recent meal, upcoming walk, overdue routine, quiet hours, low energy, and Health Watch signal.
-37. Force offline or failed sync state and confirm visibility.
+37. Force offline or failed sync state and confirm the Log shows the Offline Outbox banner, retryable create/update counts, pending count, failed-sync message, and Retry sync action.
 
 ## Missing QA
 

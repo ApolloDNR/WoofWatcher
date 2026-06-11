@@ -32,6 +32,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 24. DONE 2026-06-11: Walk activity now derives daily duration, places/routes, dog interactions, social outcome notes, caregiver participation, Records Walk Activity UI, and Care Pass report language from household-visible walk logs.
 25. DONE 2026-06-11: Potty Health now derives daily pee/poop counts, stool review signals, conditions, latest detail, caregiver participation, Records Potty Health UI, and Care Pass report language from household-visible potty logs.
 26. DONE 2026-06-11: Potty logging now captures stool color and routine/accident/urgent/straining context, and Potty Health carries those details into Records and Care Pass reports.
+27. DONE 2026-06-11: Durable sync outbox now derives retryable create/update work from local, pending, and failed care entries, exposes it through CareContext, and shows a Log screen recovery banner with retry counts and a retry action.
 
 ## Cadence
 

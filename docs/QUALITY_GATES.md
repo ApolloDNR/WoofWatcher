@@ -52,6 +52,8 @@ Current evidence, 2026-06-11: Potty Health ignores private potty logs and shows 
 
 Current evidence, 2026-06-11: Records Potty Health now shows stool colors and context labels from visible logs, making accident, urgency, and straining details visible to the household without requiring timeline search.
 
+Current evidence, 2026-06-11: Durable sync outbox derives local, pending, and failed care entries into visible retryable create/update counts, exposes that state through CareContext, and shows a Log screen Offline Outbox banner with a Retry sync action so owners can recover care changes instead of trusting hidden sync internals.
+
 ## Gate 4: Premium Mobile UX
 
 Passing means the mobile app feels warm, polished, clear, fast, and useful every day. No dead buttons, fake screens, or decorative-only workflows.
@@ -141,3 +143,5 @@ Current evidence, 2026-06-08: Focused tests now verify screen-reader labels on c
 Current evidence, 2026-06-08: Expo app identity no longer uses Replit placeholders. Static readiness checks protect the WoofWatcher slug/scheme plus Pegasus Dreamscapes iOS bundle id and Android package id. Store submission still requires Expo/EAS/App Store accounts and approval.
 
 Current evidence, 2026-06-08: Focused tests now cover the Home avatar motion state model and static wiring check. Native animation runtime verification, Rive/Lottie/Reanimated asset QA, and screenshot review remain open.
+
+Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation and static mobile wiring, and GitHub Actions `WoofWatcher Verify` run `27330233134` passed for `feat: add durable sync outbox`. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.

@@ -432,6 +432,16 @@ Owner: Codex.
 
 Revisit trigger: Server-side reminders, push notifications, or document storage make backend reminder scheduling authoritative.
 
+### 2026-06-11: Sync Recovery Must Be Owner-Visible
+
+Decision: Local, pending, and failed care-entry changes are summarized as a durable sync outbox and exposed in the Log workflow through CareContext instead of remaining only inside refresh/retry internals.
+
+Reason: Household trust depends on knowing whether care was saved, syncing, failed, or ready to retry. A visible outbox makes offline and failed-sync recovery understandable without requiring owners to inspect individual timeline rows.
+
+Owner: Codex.
+
+Revisit trigger: Conflict-safe state mutation, background sync workers, native offline runtime QA, or a richer sync dashboard becomes active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
