@@ -250,6 +250,21 @@ test("keeps weekly care trends visible in Records", () => {
   assert.match(records, /mealCompletion/);
 });
 
+test("keeps training progress visible from Log composer to Records", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(log, /type: "training"/);
+  assert.match(log, /trainingOutcome/);
+  assert.match(log, /trainingSkill/);
+  assert.match(log, /nextPractice/);
+  assert.match(records, /deriveTrainingProgress/);
+  assert.match(records, /trainingProgress/);
+  assert.match(records, /Training Progress/);
+  assert.match(records, /focusSkills/);
+  assert.match(records, /winCount/);
+});
+
 test("keeps potty health visible from Log composer to Records", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const records = readAppFile(join("(tabs)", "records.tsx"));

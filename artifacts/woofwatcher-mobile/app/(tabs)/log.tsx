@@ -170,7 +170,25 @@ const LOG_TYPES: LogType[] = [
     baseTitle: "Play",
     stepper: { label: "Duration", unit: "min", values: [5, 10, 15, 20, 30] },
   },
-  { type: "training", label: "Training", icon: "star", baseTitle: "Training win" },
+  {
+    type: "training",
+    label: "Training",
+    icon: "star",
+    baseTitle: "Training",
+    stepper: { label: "Duration", unit: "min", values: [5, 8, 10, 12, 15, 20] },
+    groups: [
+      {
+        key: "trainingOutcome",
+        label: "Outcome",
+        options: [
+          { id: "win", label: "Win", suffix: "win" },
+          { id: "practice", label: "Practice", suffix: "practice" },
+          { id: "struggle", label: "Struggle", suffix: "struggle", severity: "watch" },
+        ],
+      },
+    ],
+    noteField: { placeholder: "Sticky note: cue, trigger, reward, trainer notes, or what changed..." },
+  },
   {
     type: "mood",
     label: "Mood",
@@ -312,6 +330,9 @@ const DETAIL_LABELS: Record<string, string> = {
   serving: "Serving",
   stoolColor: "Stool color",
   pottyContext: "Context",
+  trainingOutcome: "Training outcome",
+  trainingSkill: "Skill",
+  nextPractice: "Next practice",
   routineLabel: "Routine",
   what: "Symptom",
 };
@@ -451,6 +472,8 @@ export default function LogScreen() {
   const [walkDistanceMiles, setWalkDistanceMiles] = useState("");
   const [walkDogInteractions, setWalkDogInteractions] = useState("");
   const [walkSocialOutcome, setWalkSocialOutcome] = useState("");
+  const [trainingSkill, setTrainingSkill] = useState("");
+  const [trainingNextPractice, setTrainingNextPractice] = useState("");
   const [householdVisible, setHouseholdVisible] = useState(true);
   const [noteText, setNoteText] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
@@ -488,6 +511,8 @@ export default function LogScreen() {
     setWalkDistanceMiles("");
     setWalkDogInteractions("");
     setWalkSocialOutcome("");
+    setTrainingSkill("");
+    setTrainingNextPractice("");
     setHouseholdVisible(true);
     setNoteText("");
   }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -701,6 +726,21 @@ export default function LogScreen() {
       if (socialOutcome) details.socialOutcome = socialOutcome;
     }
 
+    if (config.type === "training") {
+      const skill = trainingSkill.trim();
+      const nextPractice = trainingNextPractice.trim();
+      const outcome = choices.trainingOutcome ?? "win";
+
+      details.householdVisible = householdVisible;
+      details.trainingOutcome = outcome;
+      if (skill) {
+        details.trainingSkill = skill;
+        parts.unshift(skill);
+      }
+      if (nextPractice) details.nextPractice = nextPractice;
+      if (outcome === "struggle") severity = "watch";
+    }
+
     if (config.type === "potty") {
       details.householdVisible = householdVisible;
     }
@@ -745,6 +785,8 @@ export default function LogScreen() {
     walkDistanceMiles,
     walkDogInteractions,
     walkSocialOutcome,
+    trainingSkill,
+    trainingNextPractice,
     householdVisible,
     dietProgress.unit,
     noteText,
@@ -1265,6 +1307,55 @@ export default function LogScreen() {
                     </Text>
                     <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                       {householdVisible ? "Shared walk logs update route templates and handoffs." : "Private walks stay out of household route templates."}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            )}
+
+            {selectedType === "training" && (
+              <View style={s.mealFields}>
+                <View>
+                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Skill or cue</Text>
+                  <TextInput
+                    placeholder="Leash manners, recall, calm greeting..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={trainingSkill}
+                    onChangeText={setTrainingSkill}
+                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                  />
+                </View>
+                <View>
+                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Next practice</Text>
+                  <TextInput
+                    placeholder="Practice calm passes, repeat place cue, shorten distance..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={trainingNextPractice}
+                    onChangeText={setTrainingNextPractice}
+                    multiline
+                    style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
+                  />
+                </View>
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setHouseholdVisible((prev) => !prev);
+                  }}
+                  style={[
+                    s.visibilityToggle,
+                    {
+                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
+                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {householdVisible ? "Visible to household" : "Private log"}
+                    </Text>
+                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {householdVisible ? "Shared training logs update Training Progress and trainer handoffs." : "Private training stays out of shared progress."}
                     </Text>
                   </View>
                 </Pressable>

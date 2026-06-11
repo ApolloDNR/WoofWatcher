@@ -64,6 +64,8 @@ Current evidence, 2026-06-11: Care document refresh now reconciles local and ser
 
 Current evidence, 2026-06-11: Weekly Care Trends derives a household-visible 7-day care picture, including current-versus-previous comparison, top caregivers, meal completion, walk minutes, water refill equivalents, and review signals while excluding private logs.
 
+Current evidence, 2026-06-11: Training logs now capture skill/cue, win/practice/struggle outcome, duration, next-practice notes, sticky notes, and household visibility, and Training Progress derives visible 30-day sessions, minutes, wins, struggles, skills, caregivers, and latest context.
+
 ## Gate 4: Premium Mobile UX
 
 Passing means the mobile app feels warm, polished, clear, fast, and useful every day. No dead buttons, fake screens, or decorative-only workflows.
@@ -120,6 +122,8 @@ Current evidence, 2026-06-11: Care Pass Potty Health now includes stool colors a
 
 Current evidence, 2026-06-11: Care Pass reports now include a Care Trends section with 7-day household log volume, meal completion, walk minutes, water refills, and safe review signals, giving sitters and vets weekly context before longer-range trend reports exist.
 
+Current evidence, 2026-06-11: Care Pass reports now include a Training Progress section with sessions, skills, outcomes, latest trainer-relevant context, and next-practice notes, giving trainers and sitters useful behavior practice context before formal training plans exist.
+
 ## Gate 7: Revenue Readiness
 
 Passing means free/paid packaging is clear, premium value is visible, reports and household workflows support subscription value, and payments are not enabled before privacy/support obligations are ready.
@@ -144,6 +148,8 @@ Current evidence, 2026-06-11: Potty detail fields strengthen the paid report wed
 
 Current evidence, 2026-06-11: Weekly Care Trends strengthens the Plus report/insights wedge by turning routine care logs into readable week-over-week context across meals, walks, water, potty, medication, and health watch without enabling diagnosis or predictive AI.
 
+Current evidence, 2026-06-11: Training Progress strengthens the trainer/sitter report wedge by turning structured practice logs into shared progress context and next-practice guidance without pretending to be a behavior diagnosis.
+
 ## Gate 8: Production Safety
 
 Passing means CI is green, API auth is household-scoped, secrets are absent, privacy/export/delete are planned, sync failures are visible, and release docs are accurate.
@@ -162,4 +168,4 @@ Current evidence, 2026-06-08: Expo app identity no longer uses Replit placeholde
 
 Current evidence, 2026-06-08: Focused tests now cover the Home avatar motion state model and static wiring check. Native animation runtime verification, Rive/Lottie/Reanimated asset QA, and screenshot review remain open.
 
-Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, and static mobile wiring. Local focused tests pass at 132 tests. GitHub Actions `WoofWatcher Verify` run `27336407721` passed for the weekly Care Trends slice. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.
+Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, and static mobile wiring. Local focused tests pass at 137 tests. GitHub Actions `WoofWatcher Verify` run `27336407721` passed for the weekly Care Trends slice. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.

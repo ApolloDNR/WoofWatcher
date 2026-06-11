@@ -482,6 +482,16 @@ Owner: Codex.
 
 Revisit trigger: Long-range trend charts, predictive assistant nudges, clinician-reviewed language, paid report templates, or provider-backed analytics become active release work.
 
+### 2026-06-11: Training Progress Uses Owner-Logged Practice Evidence First
+
+Decision: Training Progress derives from household-visible training logs with skill/cue, outcome, duration, next-practice notes, caregiver, and latest context before adding formal training plans or trainer-assigned homework.
+
+Reason: Apollo wants training, dog interactions, sitters, trainers, and reports to connect. Owner-entered practice evidence can make Records and Care Pass useful now while keeping behavior interpretation bounded and avoiding fake trainer authority.
+
+Owner: Codex.
+
+Revisit trigger: Formal skill plans, trainer collaboration, behavior trigger taxonomy, paid trainer packs, or behavior/AI interpretation become active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

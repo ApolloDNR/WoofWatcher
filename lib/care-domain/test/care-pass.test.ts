@@ -308,6 +308,53 @@ test("trainer care pass emphasizes behavior and activity context", () => {
   assert.match(pass.message, /Eats better when the house is calm/);
 });
 
+test("trainer care pass includes training progress context", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "trainer",
+    now: new Date("2026-06-08T12:00:00-07:00").getTime(),
+    entries: [
+      ...baseInput().entries,
+      {
+        id: "training-win",
+        type: "training",
+        title: "Leash manners",
+        caregiver: "Emma",
+        occurredAt: "2026-06-08T09:00:00-07:00",
+        durationMinutes: 12,
+        details: {
+          skill: "Leash manners",
+          trainingOutcome: "win",
+          cue: "Heel",
+          nextPractice: "Practice calm passes",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "training-struggle",
+        type: "training",
+        title: "Calm greeting",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-07T17:00:00-07:00",
+        durationMinutes: 9,
+        details: {
+          skill: "Calm greeting",
+          trainingOutcome: "struggle",
+          trigger: "Dog at gate",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  const section = pass.sections.find((item) => item.title === "Training Progress");
+  assert.ok(section);
+  assert.match(pass.message, /2 training sessions in the last 30 days/);
+  assert.match(pass.message, /Skills: Leash manners, Calm greeting/);
+  assert.match(pass.message, /Latest: Leash manners - win with Emma/);
+  assert.match(pass.message, /Practice calm passes/);
+});
+
 test("creates a stable report artifact snapshot from a care pass", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
   const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");

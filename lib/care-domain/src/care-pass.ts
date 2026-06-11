@@ -4,6 +4,7 @@ import { deriveCareHandoff, type CareHandoffCaregiver, type CareHandoffRoutine }
 import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
 import { derivePottyHealth } from "./potty-health.ts";
+import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
 import { deriveWaterHydration } from "./water.ts";
 import { deriveWalkActivity, deriveWalkRouteTemplates, type WalkRouteTemplate } from "./walk-activity.ts";
 
@@ -180,6 +181,11 @@ function walkRouteTemplateLine(template: WalkRouteTemplate): string {
 
 function careTrendSignalLine(signal: CareTrendSignal): string {
   return `Watch: ${signal.label} - ${signal.detail} Action: ${signal.action}`;
+}
+
+function trainingLatestLine(item: TrainingProgressItem | null): string {
+  if (!item) return "";
+  return `Latest: ${item.label} - ${item.outcome} with ${item.caregiver}`;
 }
 
 function audienceChecklist(audience: CarePassAudience, name: string): string[] {
@@ -503,6 +509,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const walkRouteTemplates = deriveWalkRouteTemplates({ entries, now, limit: 3 });
   const pottyHealth = derivePottyHealth({ entries, now });
   const careTrends = deriveCareTrends({ entries, now, windowDays: 7 });
+  const trainingProgress = deriveTrainingProgress({ entries, now, lookbackDays: 30 });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -570,6 +577,17 @@ export function buildCarePass(input: CarePassInput): CarePass {
       walkActivity.last?.socialOutcome ? `Social notes: ${walkActivity.last.socialOutcome}` : "",
       walkRouteTemplates.length ? `Saved routes: ${walkRouteTemplates.map(walkRouteTemplateLine).join("; ")}` : "",
       walkActivity.nextStep,
+    ]),
+    section("Training Progress", [
+      trainingProgress.summary,
+      trainingProgress.focusSkills.length ? `Skills: ${trainingProgress.focusSkills.slice(0, 5).join(", ")}` : "",
+      trainingProgress.totalSessions
+        ? `Outcomes: ${trainingProgress.winCount} wins, ${trainingProgress.practiceCount} practice, ${trainingProgress.struggleCount} struggle`
+        : "",
+      trainingLatestLine(trainingProgress.latest),
+      trainingProgress.latest?.trigger ? `Trigger/context: ${trainingProgress.latest.trigger}` : "",
+      trainingProgress.latest?.nextPractice ? `Next practice: ${trainingProgress.latest.nextPractice}` : "",
+      trainingProgress.nextStep,
     ]),
     section("Potty Health", [
       pottyHealth.summary,

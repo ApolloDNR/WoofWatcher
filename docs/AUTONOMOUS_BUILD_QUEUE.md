@@ -37,6 +37,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 29. DONE 2026-06-11: Care document refresh is now conflict-safer: mobile reconciles server care-state refreshes against the local doc timestamp, keeps newer offline/local profile, routine, record, and report changes instead of clobbering them with stale server data, and pushes the newer doc back to the household.
 30. DONE 2026-06-11: Saved walk route templates now derive from household-visible route/place logs, ignoring private and stale walks, grouping repeat routes by name, and carrying visits, average duration, distance, dog interactions, caregivers, social outcomes, and suggested use into Records and Care Pass reports.
 31. DONE 2026-06-11: Weekly Care Trends now derive from household-visible logs, compare the current 7-day window against the previous window, and carry meal completion, walk minutes, water refills, potty/medication/health watch signals, top caregivers, Records UI, and Care Pass report language.
+32. DONE 2026-06-11: Training Progress now captures structured training outcomes, skill/cue, duration, next-practice notes, and household visibility in the Log composer, derives visible 30-day training progress in shared domain logic, and carries sessions, wins, skills, latest context, Records UI, and Care Pass report language into trainer-ready workflows.
 
 ## Cadence
 
