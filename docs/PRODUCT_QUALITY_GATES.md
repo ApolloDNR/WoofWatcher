@@ -189,11 +189,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI before the current medication slice:
+Latest known passing CI for the medication follow-up implementation:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27233608087`, completed success on 2026-06-09 UTC
+- Evidence: run `27323146356`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 
