@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 110 focused tests with the command above.
+- PASS: 115 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
 - PASS: GitHub Actions `WoofWatcher Verify` run `27324754112` completed successfully for `feat: add walk activity insights`.
 
@@ -29,6 +29,8 @@ Latest local evidence, 2026-06-11:
 - Hydration summary derivation for visible water logs, refill equivalents, daily goal percentage, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Walk quick-log defaults for household-visible activity evidence.
 - Walk Activity derivation for visible walk logs, duration, distance when logged, dog interactions, social outcomes, places/routes, caregiver participation, Records mobile wiring, and Care Pass report language.
+- Potty quick-log defaults for household-visible potty evidence.
+- Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior.
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
 - Home Quick Log routine matching and meal detail enrichment.
@@ -46,7 +48,7 @@ Latest local evidence, 2026-06-11:
 - Premium entitlement policy for Free, Plus, and Family feature gates before checkout is enabled.
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
-- Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, Records printable report and Dog ID actions, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
+- Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, Records printable report and Dog ID actions, Hydration/Walk/Potty Records wiring, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
 - Expo app identity smoke for release-grade slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
 - CI `build:ci` runs a mobile Expo web export smoke and verifies emitted HTML/JavaScript assets.
 
@@ -72,20 +74,23 @@ Latest local evidence, 2026-06-11:
 18. Use Home Quick Log for Walk and confirm it records a household-visible walk routine log.
 19. Add a walk with duration, place/route, dog interactions, and social outcome notes; confirm Records Walk Activity updates minutes, places, latest walk, and next-step copy.
 20. Preview a trainer or sitter Care Pass and confirm Walk Activity includes route/place and dog interaction context.
-21. Add sticky note to a log.
-22. Add vaccine, insurance, microchip, vet, receipt, and document records.
-23. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.
-24. Preview and share sitter/vet/trainer/caregiver Care Pass.
-25. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
-26. Confirm report history stores shared Care Pass with printable export metadata, separate resend action, and printable-source share action.
-27. Ask WoofGuide about recent changes and verify non-diagnostic wording.
-28. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
-29. Open Privacy & Safety from More, share the care-data export, and confirm it includes care data counts without auth/session tokens.
-30. Prepare an account deletion request and confirm it is non-destructive and says manual review/export first.
-31. Confirm AI disclosure, document storage rules, and payment launch blockers are visible.
-32. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
-33. Confirm the Home avatar motion row changes for a recent meal, upcoming walk, overdue routine, quiet hours, low energy, and Health Watch signal.
-34. Force offline or failed sync state and confirm visibility.
+21. Use Home Quick Log for Potty and confirm it records household-visible potty routine evidence.
+22. Add a potty log with pee/poop kind, soft/off condition, and a sticky note; confirm Records Potty Health updates pee, poop, review count, latest detail, and stool detail next-step copy.
+23. Preview a vet or sitter Care Pass and confirm Potty Health summarizes today without making medical claims.
+24. Add sticky note to a log.
+25. Add vaccine, insurance, microchip, vet, receipt, and document records.
+26. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.
+27. Preview and share sitter/vet/trainer/caregiver Care Pass.
+28. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
+29. Confirm report history stores shared Care Pass with printable export metadata, separate resend action, and printable-source share action.
+30. Ask WoofGuide about recent changes and verify non-diagnostic wording.
+31. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
+32. Open Privacy & Safety from More, share the care-data export, and confirm it includes care data counts without auth/session tokens.
+33. Prepare an account deletion request and confirm it is non-destructive and says manual review/export first.
+34. Confirm AI disclosure, document storage rules, and payment launch blockers are visible.
+35. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
+36. Confirm the Home avatar motion row changes for a recent meal, upcoming walk, overdue routine, quiet hours, low energy, and Health Watch signal.
+37. Force offline or failed sync state and confirm visibility.
 
 ## Missing QA
 

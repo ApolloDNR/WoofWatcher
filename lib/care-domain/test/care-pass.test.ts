@@ -215,6 +215,38 @@ test("care pass includes walk activity and dog interaction context", () => {
   assert.match(pass.message, /Latest: Dog park visit at Dog park/);
 });
 
+test("care pass includes potty health context for sitter and vet review", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "vet",
+    now: new Date("2026-06-06T20:00:00-07:00").getTime(),
+    entries: [
+      {
+        id: "potty-soft",
+        type: "potty",
+        title: "Potty - pee & poop",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T12:30:00-07:00",
+        details: { kind: "both", condition: "soft", note: "Soft but no blood." },
+      },
+      {
+        id: "potty-normal",
+        type: "potty",
+        title: "Potty - pee",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T08:10:00-07:00",
+        details: { kind: "pee", condition: "normal" },
+      },
+    ],
+  });
+
+  const section = pass.sections.find((item) => item.title === "Potty Health");
+  assert.ok(section);
+  assert.match(pass.message, /2 potty logs today - 2 pee, 1 poop, 1 needs stool review/);
+  assert.match(pass.message, /Conditions: soft/);
+  assert.match(pass.message, /Latest: Potty - pee & poop - pee & poop, soft/);
+});
+
 test("trainer care pass emphasizes behavior and activity context", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "trainer" });
 

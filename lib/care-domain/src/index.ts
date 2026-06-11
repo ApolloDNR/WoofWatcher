@@ -10,5 +10,6 @@ export * from "./routine-board.ts";
 export * from "./medication.ts";
 export * from "./water.ts";
 export * from "./walk-activity.ts";
+export * from "./potty-health.ts";
 export * from "./onboarding.ts";
 export * from "./premium.ts";

@@ -36,6 +36,7 @@ import {
   deriveMedicationAdherence,
   deriveMedicationFollowUps,
   deriveMedicationHistory,
+  derivePottyHealth,
   deriveRecordReminders,
   deriveWalkActivity,
   deriveWaterHydration,
@@ -188,6 +189,10 @@ export default function RecordsScreen() {
   );
   const walkActivity = useMemo(
     () => deriveWalkActivity({ entries: state.entries, now }),
+    [state.entries, now],
+  );
+  const pottyHealth = useMemo(
+    () => derivePottyHealth({ entries: state.entries, now }),
     [state.entries, now],
   );
 
@@ -917,6 +922,62 @@ export default function RecordsScreen() {
                       {walkActivity.last.socialOutcome}
                     </Text>
                   ) : null}
+                </View>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Potty health */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Potty Health</Text>
+            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+              {pottyHealth.total ? `${pottyHealth.total} logs` : "No logs"}
+            </Text>
+          </View>
+          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <View style={s.hydrationSummary}>
+              <View style={[s.watchSummaryIcon, { backgroundColor: colors.amber + "18" }]}>
+                <Ionicons name="medical-outline" size={18} color={colors.amber} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {pottyHealth.status === "watch" ? "Stool watch" : pottyHealth.status === "steady" ? "Potty steady" : "Potty check"}
+                </Text>
+                <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {pottyHealth.summary}
+                </Text>
+              </View>
+            </View>
+            <View style={s.hydrationStats}>
+              {[
+                { label: "Pee", value: String(pottyHealth.peeCount) },
+                { label: "Poop", value: String(pottyHealth.poopCount) },
+                { label: "Review", value: String(pottyHealth.watchCount) },
+              ].map((item, index) => (
+                <View key={item.label} style={[s.hydrationStat, index < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
+                  <Text style={[s.hydrationValue, { color: colors.foreground, fontFamily: DISPLAY }]}>{item.value}</Text>
+                  <Text style={[s.hydrationLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              {pottyHealth.nextStep}
+            </Text>
+            {pottyHealth.last ? (
+              <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
+                <View style={[s.watchSignalDot, { backgroundColor: pottyHealth.watchCount ? colors.amber : colors.sage }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Latest: {pottyHealth.last.kindLabel}
+                  </Text>
+                  <Text style={[s.watchPatternEvidence, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {[
+                      pottyHealth.last.condition !== "not logged" ? pottyHealth.last.condition : "",
+                      pottyHealth.last.stoolColor ? `${pottyHealth.last.stoolColor} stool detail` : "",
+                      pottyHealth.last.caregiver,
+                      relativeDay(pottyHealth.last.occurredAt, now),
+                    ].filter(Boolean).join(" - ")}
+                  </Text>
                 </View>
               </View>
             ) : null}

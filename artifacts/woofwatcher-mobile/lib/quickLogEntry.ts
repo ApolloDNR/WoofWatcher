@@ -159,6 +159,10 @@ export function buildQuickLogEntry(
     details.householdVisible = true;
   }
 
+  if (normalizedType === "potty") {
+    details.householdVisible = true;
+  }
+
   return {
     type: normalizedType,
     title: routine?.label ?? item.title,

@@ -107,6 +107,7 @@ const LOG_TYPES: LogType[] = [
         ],
       },
     ],
+    noteField: { placeholder: "Sticky note: stool detail, color, accident, urgency, or anything unusual..." },
   },
   { type: "treat", label: "Treat", icon: "bone", baseTitle: "Treat" },
   {
@@ -635,6 +636,10 @@ export default function LogScreen() {
         parts.splice(medicationDefault?.label ? 1 : 0, 0, dose);
       }
       if (outcome === "skipped") severity = "watch";
+    }
+
+    if (config.type === "potty") {
+      details.householdVisible = householdVisible;
     }
 
     const note = config.noteField ? noteText.trim() || undefined : undefined;

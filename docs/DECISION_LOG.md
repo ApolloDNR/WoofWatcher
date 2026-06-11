@@ -192,6 +192,16 @@ Owner: Codex.
 
 Revisit trigger: Saved route maps, location permissions, dog park templates, walker partnerships, or richer behavior/training programs become active release work.
 
+### 2026-06-11: Potty Health Is Shared Care Evidence, Not Diagnosis
+
+Decision: Potty Health is derived in `lib/care-domain` from household-visible potty logs and surfaced in Records and Care Passes as daily pee/poop, stool condition, review, caregiver, and latest-detail context.
+
+Reason: Apollo wants vomit, stool, and health changes to be trackable and shareable with the household, sitters, and vets. The app can organize potty evidence and safe next steps without diagnosing stool changes or pretending to replace veterinary care.
+
+Owner: Codex.
+
+Revisit trigger: Explicit stool color fields, accident/urgency workflows, longer-range vet reports, clinician-reviewed wording, or provider-backed health summaries become active release work.
+
 ### 2026-06-08: Log Details Stay In The Log Workflow
 
 Decision: Entry details, sticky notes, sync state, edit/delete actions, and entry-level handoff sharing are implemented as a Log screen bottom sheet rather than a separate route.

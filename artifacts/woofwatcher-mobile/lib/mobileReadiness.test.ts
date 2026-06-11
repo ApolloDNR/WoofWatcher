@@ -229,3 +229,16 @@ test("keeps walk activity insights visible in Records", () => {
   assert.match(records, /Walk Activity/);
   assert.match(records, /dog interactions/);
 });
+
+test("keeps potty health visible from Log composer to Records", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(log, /type: "potty"/);
+  assert.match(log, /label: "Condition"/);
+  assert.match(log, /soft/);
+  assert.match(records, /derivePottyHealth/);
+  assert.match(records, /pottyHealth/);
+  assert.match(records, /Potty Health/);
+  assert.match(records, /stool detail/);
+});

@@ -2,6 +2,7 @@ import { normalizeCareEventType } from "./events.ts";
 import { deriveCareHandoff, type CareHandoffCaregiver, type CareHandoffRoutine } from "./handoff.ts";
 import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
+import { derivePottyHealth } from "./potty-health.ts";
 import { deriveWaterHydration } from "./water.ts";
 import { deriveWalkActivity } from "./walk-activity.ts";
 
@@ -488,6 +489,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const medicationFollowUps = deriveMedicationFollowUps({ entries, routines, records, now }).slice(0, 4);
   const hydration = deriveWaterHydration({ entries, now });
   const walkActivity = deriveWalkActivity({ entries, now });
+  const pottyHealth = derivePottyHealth({ entries, now });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -540,6 +542,14 @@ export function buildCarePass(input: CarePassInput): CarePass {
       walkActivity.last ? `Latest: ${walkActivity.last.label}${walkActivity.last.place ? ` at ${walkActivity.last.place}` : ""} by ${walkActivity.last.caregiver}` : "",
       walkActivity.last?.socialOutcome ? `Social notes: ${walkActivity.last.socialOutcome}` : "",
       walkActivity.nextStep,
+    ]),
+    section("Potty Health", [
+      pottyHealth.summary,
+      pottyHealth.conditions.length ? `Conditions: ${pottyHealth.conditions.join(", ")}` : "",
+      pottyHealth.last
+        ? `Latest: ${pottyHealth.last.label} - ${pottyHealth.last.kindLabel}${pottyHealth.last.condition ? `, ${pottyHealth.last.condition}` : ""}`
+        : "",
+      pottyHealth.nextStep,
     ]),
     section("Medication", [
       medication.total > 0 ? medication.summary : "",

@@ -30,6 +30,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 22. DONE 2026-06-11: Medication history now derives recent household-visible medication logs with dose, taken/skipped/missed outcome, caregiver, routine id, note, and Records Medication History UI.
 23. DONE 2026-06-11: Water care now has Home quick-log access, household-visible refill defaults, shared daily hydration summary logic, Records Hydration UI, and Care Pass report language.
 24. DONE 2026-06-11: Walk activity now derives daily duration, places/routes, dog interactions, social outcome notes, caregiver participation, Records Walk Activity UI, and Care Pass report language from household-visible walk logs.
+25. DONE 2026-06-11: Potty Health now derives daily pee/poop counts, stool review signals, conditions, latest detail, caregiver participation, Records Potty Health UI, and Care Pass report language from household-visible potty logs.
 
 ## Cadence
 
