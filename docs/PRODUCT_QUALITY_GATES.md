@@ -32,6 +32,7 @@ Passing evidence:
 - Dog profile credential fields feed the Records ID card, share text, and escaped print-ready source.
 - Records includes a Medication Plan that derives taken, due, missed, upcoming, dose, owner, logged-by, and adherence percentage from routines and medication logs.
 - Home quick log and the Log composer can create medication logs with routine identity, dose, taken/skipped outcome, and household visibility.
+- Records includes Medication Follow-ups that derive missed-dose, due-now, and refill due-soon/overdue owner actions from routines, logs, and medication records.
 - Dedicated Setup route can save dog profile, diet baseline, starter routine, and household caregiver basics in one flow.
 - Log entries have a detail sheet with sticky notes, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Care Pass reports can be previewed by audience before sharing.
@@ -43,7 +44,7 @@ Passing evidence:
 Current gaps:
 
 - Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning and household invite/join onboarding remain incomplete.
-- Multiple dogs, roles, invites, binary PDF generation, server-backed report storage, record document storage, server reminders for expiring records, credential image/PDF export, and log audit policy need implementation.
+- Multiple dogs, roles, invites, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, credential image/PDF export, and log audit policy need implementation.
 - Runtime smoke has not been added.
 
 ## Gate 3: Care Domain Correctness
@@ -52,12 +53,12 @@ Status: Partially passing.
 
 Passing evidence:
 
-- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, medication quick-log defaults, medication composer wiring, medication adherence, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
+- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, medication quick-log defaults, medication composer wiring, medication adherence, medication follow-ups, Care Pass medication language, mobile Records medication wiring, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:
 
-- Add more edge-case tests for recurring routines, medication schedules, multi-dog state, and report generation.
+- Add more edge-case tests for recurring routines, medication schedules, provider-backed notifications, multi-dog state, and report generation.
 - Add API integration coverage for domain-backed routes.
 
 ## Gate 4: Backend And Data
@@ -131,7 +132,7 @@ Current gaps:
 - Need mobile runtime smoke.
 - Critical mobile action accessibility labels are covered by focused static smoke.
 - Home avatar motion state and wiring are covered by focused tests.
-- Medication adherence, medication log defaults, and Records/Log wiring are covered by focused tests.
+- Medication adherence, medication follow-ups, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
 - Need report/export tests.
 - Need release smoke checklist.
 

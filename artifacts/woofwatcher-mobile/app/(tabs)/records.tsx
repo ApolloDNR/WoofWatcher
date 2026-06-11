@@ -34,6 +34,7 @@ import {
   createCarePassArtifact,
   deriveHealthWatch,
   deriveMedicationAdherence,
+  deriveMedicationFollowUps,
   deriveRecordReminders,
   getCarePassArtifactPrintView,
   getPetCredentialPrintView,
@@ -169,6 +170,10 @@ export default function RecordsScreen() {
   const medicationAdherence = useMemo(
     () => deriveMedicationAdherence({ entries: state.entries, routines: state.routines, now }),
     [state.entries, state.routines, now],
+  );
+  const medicationFollowUps = useMemo(
+    () => deriveMedicationFollowUps({ entries: state.entries, routines: state.routines, records: state.records, now }).slice(0, 3),
+    [state.entries, state.routines, state.records, now],
   );
 
   // ---- Weight trend (prefer real weight logs, fall back to gentle synthesis) ----
@@ -972,6 +977,49 @@ export default function RecordsScreen() {
                 );
               })
             )}
+            <View style={[s.medFollowUps, { borderTopColor: colors.border }]}>
+              <View style={s.medFollowUpHeader}>
+                <Text style={[s.medFollowUpTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  Medication Follow-ups
+                </Text>
+                <Text style={[s.medFollowUpCount, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                  {medicationFollowUps.length ? `${medicationFollowUps.length} active` : "Clear"}
+                </Text>
+              </View>
+              {medicationFollowUps.length === 0 ? (
+                <Text style={[s.medFollowUpEmpty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  No medication follow-ups right now. Refill records and medication routines will surface here when they need attention.
+                </Text>
+              ) : (
+                medicationFollowUps.map((item, index) => {
+                  const tone = item.urgency === "alert" ? colors.rose : item.urgency === "watch" ? colors.amber : colors.primary;
+                  return (
+                    <View
+                      key={item.id}
+                      style={[s.medFollowUpRow, index > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}
+                    >
+                      <View style={[s.rowIconWrap, { backgroundColor: tone + "16" }]}>
+                        <Ionicons name={item.kind === "refill" ? "reload-circle" : "notifications-outline"} size={18} color={tone} />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {item.label}
+                        </Text>
+                        <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {item.detail}
+                        </Text>
+                        <Text style={[s.medFollowUpAction, { color: tone, fontFamily: "Inter_700Bold" }]}>
+                          {item.action}
+                        </Text>
+                        <Text style={[s.medFollowUpRule, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {item.notificationRule}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
           </View>
 
           {/* Care pass */}
@@ -1514,6 +1562,14 @@ const s = StyleSheet.create({
   medNextText: { flex: 1, fontSize: 12.8, lineHeight: 18 },
   medStatusPill: { minWidth: 76, alignItems: "center", borderRadius: 11, paddingHorizontal: 9, paddingVertical: 6 },
   medStatusText: { fontSize: 10.8, textTransform: "uppercase", letterSpacing: 0.4 },
+  medFollowUps: { borderTopWidth: 1, marginTop: 4, paddingTop: 14 },
+  medFollowUpHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 2 },
+  medFollowUpTitle: { fontSize: 15 },
+  medFollowUpCount: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  medFollowUpEmpty: { fontSize: 12.5, lineHeight: 18, paddingTop: 8 },
+  medFollowUpRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12 },
+  medFollowUpAction: { fontSize: 12, lineHeight: 17, marginTop: 5 },
+  medFollowUpRule: { fontSize: 11.2, lineHeight: 16, marginTop: 4 },
 
   carePassGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   carePassCard: {

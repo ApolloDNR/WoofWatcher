@@ -40,7 +40,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 | Potty | Potty status and logs exist. | Add stool/pee detail capture, pattern summary, and clearer health watch connection. |
 | Play/Training | Event taxonomy supports play and training. | Add training goals, skills, progress history, and trainer handoff fields. |
 | Mood/Energy | Avatar and health screens use mood/energy signals. Home now derives tested avatar motion states from health watch, recent care logs, routine status, quiet hours, and low energy. | Add structured mood/energy logging, trend charts, Rive/Lottie/Reanimated state assets, and runtime animation QA. |
-| Medication | Canonical medication event type exists. Shared domain logic now derives medication adherence from routines and household-visible logs, including taken, due, missed, upcoming, dose, owner, logged-by context, adherence percentage, and next medication action. Mobile Records shows a Medication Plan surface. Home quick log and the full Log composer now attach medication routine, dose, taken/skipped outcome, and household visibility; skipped medication logs do not count as taken. | Add refill reminders, notifications, calendar recurrence polish, medication report language, and richer medication history filters. |
+| Medication | Canonical medication event type exists. Shared domain logic now derives medication adherence from routines and household-visible logs, including taken, due, missed, upcoming, dose, owner, logged-by context, adherence percentage, and next medication action. Mobile Records shows a Medication Plan surface. Home quick log and the full Log composer now attach medication routine, dose, taken/skipped outcome, and household visibility; skipped medication logs do not count as taken. Medication follow-ups now derive missed-dose, due-now, and refill due-soon/overdue actions from routines, logs, and medication records; Records shows those follow-ups and Care Pass reports include medication adherence plus refill language. | Add real notification delivery, calendar recurrence polish, richer medication history filters, and stricter medication schedule schemas before pharmacy/vet integrations. |
 | Weight | Records and log taxonomy support weight. | Add weight chart, goal range, and vet report summary. |
 | Vomit/Symptom | Health Watch detects yellow bile, urgent signals, and non-diagnostic pattern cards with evidence and owner next steps. | Add richer symptom composer, frequency views, red-flag checklist, and vet-note export. |
 | Grooming | Event taxonomy supports grooming. | Add grooming-specific fields and reminders. |
@@ -65,7 +65,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 6. Records document upload/storage, server reminders for expiring records, and credential card image/PDF export.
 7. Binary PDF artifacts, native export/download, and server-backed report storage for vet, sitter, trainer, and household review.
 8. WoofGuide provider-backed actions with source citations, persisted report drafts, permission checks, and audit history.
-9. Reminder notification flow, including medication reminders.
+9. Provider-backed reminder notification flow, including medication delivery rules for the existing medication follow-up candidates.
 10. High-end motion, transitions, avatar state animation, and accessibility polish.
 11. Production deployment wiring and release runbook.
 
@@ -89,7 +89,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 ## Test And QA Gaps
 
-- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, medication quick-log defaults, medication composer wiring, avatar motion states, event taxonomy, day status, medication adherence, care pass audience checklists, print-ready Care Pass HTML artifacts, legacy printable artifact recovery, print-ready Dog ID credential HTML, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, privacy/account safety export gates, static mobile route readiness, critical mobile action accessibility labels, Records printable report and Dog ID actions, and mobile export-smoke CI wiring.
+- Existing focused behavior tests cover care sync, Today Command, Home Quick Log enrichment, medication quick-log defaults, medication composer wiring, avatar motion states, event taxonomy, day status, medication adherence, medication follow-ups, Care Pass medication report language, care pass audience checklists, print-ready Care Pass HTML artifacts, legacy printable artifact recovery, print-ready Dog ID credential HTML, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, privacy/account safety export gates, static mobile route readiness, critical mobile action accessibility labels, Records printable report and Dog ID actions, and mobile export-smoke CI wiring.
 - Focused mobile readiness checks also protect the release-grade Expo app identity: slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
 - Missing API integration tests.
 - Missing native simulator/device runtime smoke. Static mobile route smoke and CI Expo web export smoke exist, but they do not replace native runtime rendering.
@@ -139,7 +139,7 @@ No payment implementation should start until product scope, privacy terms, suppo
 6. Add API integration tests for care state and entries.
 7. Add native simulator/device smoke or screenshot verification once local dependencies/browser support are available.
 8. Add provider-backed self-serve account deletion, document storage rules, and retention/audit policy after Apollo approves providers/legal scope.
-9. Add medication refill reminders, notification rules, and report language.
+9. Add provider-backed notification delivery, reminder preferences, and runtime permission handling for existing medication follow-up candidates.
 10. Add provider-backed WoofGuide source citations, permission-aware writes, and persisted report drafts.
 11. Build visual system pass in Figma or code, then implement screen-by-screen.
 
@@ -160,8 +160,9 @@ No payment implementation should start until product scope, privacy terms, suppo
 - First-run care foundation setup belongs on a dedicated mobile route so profile, diet, starter routine, and caregiver basics can be saved together instead of scattered across separate screens.
 - Care Pass report history stores shared report snapshots in the care document with print-ready HTML payloads, print metadata, and legacy printable recovery; generated binary PDFs and server-backed artifact storage remain separate production work.
 - Privacy & Safety can export owner care data and prepare deletion requests now; actual destructive account deletion and storage-backed document deletion remain provider-gated.
-- Medication adherence is derived from routines plus household-visible medication logs before adding notifications or pharmacy/refill workflows.
-- Medication logs preserve taken versus skipped outcome before notification or refill workflows are added.
+- Medication adherence is derived from routines plus household-visible medication logs before adding notification delivery, pharmacy, or vet integration workflows.
+- Medication logs preserve taken versus skipped outcome before notification delivery is added.
+- Medication follow-ups derive missed-dose, due-now, and refill actions in shared care-domain logic before device push notifications or pharmacy/vet integrations are added.
 
 ## Blockers Requiring Apollo
 

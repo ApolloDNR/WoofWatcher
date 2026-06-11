@@ -1,6 +1,9 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { getRecordDueStatus, type CareRecord } from "./record-vault.ts";
 
 export type MedicationAdherenceStatus = "taken" | "missed" | "due" | "upcoming";
+export type MedicationFollowUpKind = "missed" | "due" | "refill";
+export type MedicationFollowUpUrgency = "alert" | "watch" | "info";
 
 export interface MedicationRoutine {
   id?: string;
@@ -27,6 +30,11 @@ export interface MedicationAdherenceInput {
   now?: number;
 }
 
+export interface MedicationFollowUpInput extends MedicationAdherenceInput {
+  records?: readonly MedicationRecord[];
+  refillDueSoonDays?: number;
+}
+
 export interface MedicationAdherenceItem {
   id: string;
   label: string;
@@ -50,6 +58,22 @@ export interface MedicationAdherence {
   adherencePercent: number;
   next: MedicationAdherenceItem | null;
   summary: string;
+}
+
+export type MedicationRecord = Pick<CareRecord, "id" | "type" | "title" | "due" | "note">;
+
+export interface MedicationFollowUp {
+  id: string;
+  kind: MedicationFollowUpKind;
+  label: string;
+  detail: string;
+  urgency: MedicationFollowUpUrgency;
+  action: string;
+  notificationRule: string;
+  routineId?: string;
+  recordId?: string;
+  daysUntil?: number;
+  dueDate?: string;
 }
 
 const DUE_WINDOW_MINUTES = 30;
@@ -109,6 +133,24 @@ function titleMatches(entry: MedicationEntry, routine: MedicationRoutine): boole
 function entryTaken(entry: MedicationEntry): boolean {
   const outcome = clean(entry.details?.medicationOutcome ?? entry.details?.outcome ?? entry.details?.status).toLowerCase();
   return !["skip", "skipped", "missed", "not taken", "held"].includes(outcome);
+}
+
+function medicationRecord(record: MedicationRecord): boolean {
+  const type = clean(record.type).toLowerCase();
+  const title = clean(record.title).toLowerCase();
+  return (
+    normalizeCareEventType(type) === "medication" ||
+    type.includes("med") ||
+    title.includes("med") ||
+    title.includes("refill") ||
+    title.includes("prescription") ||
+    title.includes("rx")
+  );
+}
+
+function refillLabelBase(title: string): string {
+  const cleaned = clean(title) || "Medication";
+  return /\brefill\b/i.test(cleaned) ? cleaned : `${cleaned} refill`;
 }
 
 function statusFor(minutesFromNow: number, taken: boolean, skipped: boolean): MedicationAdherenceStatus {
@@ -201,4 +243,88 @@ export function deriveMedicationAdherence(input: MedicationAdherenceInput): Medi
       null,
     summary: `${takenCount}/${total} medication doses logged today`,
   };
+}
+
+export function deriveMedicationFollowUps(input: MedicationFollowUpInput): MedicationFollowUp[] {
+  const now = input.now ?? Date.now();
+  const adherence = deriveMedicationAdherence({ ...input, now });
+  const refillDueSoonDays = input.refillDueSoonDays ?? 14;
+
+  const missed = adherence.items
+    .filter((item) => item.status === "missed")
+    .map((item): MedicationFollowUp => ({
+      id: `routine_${item.id}_missed`,
+      kind: "missed",
+      label: `${item.label} missed`,
+      detail: `${item.label} was not logged as taken for ${item.time}${item.owner ? ` by ${item.owner}` : ""}.`,
+      urgency: "alert",
+      action: "Confirm whether it was taken, skipped, or needs an owner follow-up note.",
+      notificationRule: "Medication reminder candidate: missed dose follow-up after the routine window.",
+      routineId: item.id,
+    }));
+
+  const due = adherence.items
+    .filter((item) => item.status === "due")
+    .map((item): MedicationFollowUp => ({
+      id: `routine_${item.id}_due`,
+      kind: "due",
+      label: `${item.label} due now`,
+      detail: `${item.label} is due at ${item.time}${item.owner ? ` with ${item.owner}` : ""}.`,
+      urgency: "watch",
+      action: "Log taken, partial, or skipped from the medication composer.",
+      notificationRule: "Medication reminder candidate: due-time nudge at the routine time.",
+      routineId: item.id,
+    }));
+
+  const refills = (input.records ?? [])
+    .filter(medicationRecord)
+    .flatMap((record): MedicationFollowUp[] => {
+      const status = getRecordDueStatus(record, now, refillDueSoonDays);
+      const title = clean(record.title) || "Medication";
+      const refillTitle = refillLabelBase(title);
+      if (status.status === "expired") {
+        return [
+          {
+            id: `record_${record.id ?? title}_refill_overdue`,
+            kind: "refill",
+            label: `${refillTitle} overdue`,
+            detail: status.date ? `${refillTitle} was due on ${status.date}.` : `${refillTitle} is overdue.`,
+            urgency: "alert",
+            action: "Request the refill and update the medication record when complete.",
+            notificationRule: "Medication reminder candidate: overdue refill follow-up until the record is updated.",
+            recordId: record.id,
+            daysUntil: status.daysUntil,
+            dueDate: status.date,
+          },
+        ];
+      }
+      if (status.status === "due_soon") {
+        const days = status.daysUntil ?? 0;
+        return [
+          {
+            id: `record_${record.id ?? title}_refill_due`,
+            kind: "refill",
+            label: `${refillTitle} due soon`,
+            detail: status.date ? `${refillTitle} is due in ${days} days (${status.date}).` : `${refillTitle} is due soon.`,
+            urgency: "watch",
+            action: "Request or schedule the refill before it runs out.",
+            notificationRule: "Medication reminder candidate: refill follow-up before the due date.",
+            recordId: record.id,
+            daysUntil: status.daysUntil,
+            dueDate: status.date,
+          },
+        ];
+      }
+      return [];
+    });
+
+  const kindRank: Record<MedicationFollowUpKind, number> = { missed: 0, due: 1, refill: 2 };
+  const urgencyRank: Record<MedicationFollowUpUrgency, number> = { alert: 0, watch: 1, info: 2 };
+  return [...missed, ...due, ...refills].sort(
+    (a, b) =>
+      kindRank[a.kind] - kindRank[b.kind] ||
+      urgencyRank[a.urgency] - urgencyRank[b.urgency] ||
+      (a.daysUntil ?? 9999) - (b.daysUntil ?? 9999) ||
+      a.label.localeCompare(b.label),
+  );
 }

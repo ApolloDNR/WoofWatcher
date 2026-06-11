@@ -111,6 +111,40 @@ test("vet care pass includes health pattern review next steps", () => {
   assert.match(pass.message, /vet promptly/i);
 });
 
+test("care pass includes medication adherence and follow-up language", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "vet",
+    now: new Date("2026-06-06T11:00:00-07:00").getTime(),
+    routines: [
+      ...baseInput().routines,
+      { id: "am-meds", type: "medication", label: "Apoquel", time: "8:00 AM", owner: "Apollo", note: "1 tablet" },
+      { id: "pm-meds", type: "medication", label: "Probiotic", time: "9:00 PM", owner: "Emma", note: "1 capsule" },
+    ],
+    records: [
+      ...baseInput().records,
+      { id: "apoquel-refill", type: "medication", title: "Apoquel refill", due: "Jun 10, 2026", note: "14 tablets left" },
+    ],
+    entries: [
+      ...baseInput().entries,
+      {
+        id: "am-log",
+        type: "medication",
+        title: "Apoquel",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T08:05:00-07:00",
+        details: { routineId: "am-meds", dose: "1 tablet", medicationOutcome: "taken", householdVisible: true },
+      },
+    ],
+  });
+
+  assert.ok(pass.sections.some((section) => section.title === "Medication"));
+  assert.match(pass.message, /1\/2 medication doses logged today/);
+  assert.match(pass.message, /Apoquel: taken/);
+  assert.match(pass.message, /Probiotic: upcoming/);
+  assert.match(pass.message, /Apoquel refill due soon/);
+});
+
 test("trainer care pass emphasizes behavior and activity context", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "trainer" });
 

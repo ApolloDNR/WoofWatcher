@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { deriveMedicationAdherence } from "../src/index.ts";
+import { deriveMedicationAdherence, deriveMedicationFollowUps } from "../src/index.ts";
 
 process.env.TZ = "America/Los_Angeles";
 
@@ -91,4 +91,32 @@ test("does not count skipped medication logs as taken", () => {
   assert.equal(adherence.items[0].entryId, "skipped-log");
   assert.equal(adherence.items[0].status, "missed");
   assert.equal(adherence.items[0].dose, "1 tablet");
+});
+
+test("derives medication follow-ups for missed doses and refill records", () => {
+  const followUps = deriveMedicationFollowUps({
+    now: new Date("2026-06-06T11:00:00-07:00").getTime(),
+    routines: [
+      { id: "am-meds", label: "Apoquel", type: "medication", time: "8:00 AM", owner: "Apollo", note: "1 tablet" },
+      { id: "pm-meds", label: "Probiotic", type: "medication", time: "11:00 AM", owner: "Emma", note: "1 capsule" },
+    ],
+    entries: [],
+    records: [
+      { id: "apoquel-refill", type: "medication", title: "Apoquel refill", due: "Jun 10, 2026", note: "14 tablets left" },
+    ],
+  });
+
+  assert.deepEqual(
+    followUps.map((item) => item.kind),
+    ["missed", "due", "refill"],
+  );
+  assert.equal(followUps[0].label, "Apoquel missed");
+  assert.equal(followUps[0].urgency, "alert");
+  assert.match(followUps[0].notificationRule, /missed dose/i);
+  assert.equal(followUps[1].label, "Probiotic due now");
+  assert.equal(followUps[1].urgency, "watch");
+  assert.equal(followUps[2].label, "Apoquel refill due soon");
+  assert.equal(followUps[2].recordId, "apoquel-refill");
+  assert.equal(followUps[2].daysUntil, 4);
+  assert.match(followUps[2].action, /refill/i);
 });

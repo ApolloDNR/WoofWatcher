@@ -190,3 +190,12 @@ test("keeps Log composer wired to medication routine defaults", () => {
   assert.match(log, /Medication routine/);
   assert.match(log, /Shared medication logs update the Medication Plan/);
 });
+
+test("keeps Records wired to medication follow-up reminders", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /deriveMedicationFollowUps/);
+  assert.match(records, /medicationFollowUps/);
+  assert.match(records, /Medication Follow-ups/);
+  assert.match(records, /notificationRule/);
+});

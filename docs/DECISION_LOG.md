@@ -152,6 +152,16 @@ Owner: Codex.
 
 Revisit trigger: Medication reminders, refill tracking, role-based permissions, or vet/pharmacy integrations require stricter schedule and dosage schemas.
 
+### 2026-06-11: Medication Follow-Ups Are Domain Rules Before Push Delivery
+
+Decision: Medication follow-ups are derived in `lib/care-domain` from medication adherence plus medication records before implementing device push notifications or provider-backed reminder delivery.
+
+Reason: The app needs useful missed-dose, due-now, and refill due-soon/overdue actions in Records and Care Pass reports now, but it should not claim real notifications until account, device permission, reminder preferences, and provider policy are implemented.
+
+Owner: Codex.
+
+Revisit trigger: Notification delivery, calendar recurrence, pharmacy/vet integrations, or stricter medication schedule schemas become active release work.
+
 ### 2026-06-08: Log Details Stay In The Log Workflow
 
 Decision: Entry details, sticky notes, sync state, edit/delete actions, and entry-level handoff sharing are implemented as a Log screen bottom sheet rather than a separate route.
