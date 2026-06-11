@@ -209,11 +209,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI before the current Alone Time local slice:
+Latest known passing CI for the Alone Time implementation:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27362966353`, completed success on 2026-06-11 UTC
+- Evidence: run `27364253713`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 
