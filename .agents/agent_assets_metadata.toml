@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "6nXvvqwnPPLMVjQI3gI_p"
@@ -78,3 +77,39 @@ id = "lBcoP9U4Fc6Bqr53X4bW2"
 uri = "file://artifacts/mockup-sandbox/public/images/dog-storybook.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "KLhvrIREohkL5HwN2XNeZ"
+uri = "file://artifacts/mockup-sandbox/public/images/phoenix-pixel.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "cVXkjr5Di7dTiCqAsne4k"
+uri = "file://artifacts/mockup-sandbox/public/images/phoenix-emote-sheet.png"
+type = "image"
+title = "generated_image"
+
+[[outputs]]
+id = "MyqJSU1BnOoEGFRPC3DcD"
+uri = "file://artifacts/mockup-sandbox/public/images/woof-dog.png"
+type = "image"
+title = "1. Scanned dog — source photo (Phoenix)"
+
+[[outputs]]
+id = "nGMPeOWWgRHsePQ3wHsY0"
+uri = "file://artifacts/mockup-sandbox/public/images/phoenix-pixel.png"
+type = "image"
+title = "2. Pixel avatar — the living Tamagotchi companion"
+
+[[outputs]]
+id = "1HzgxLezASJtlJI6u7plw"
+uri = "file://artifacts/mockup-sandbox/public/images/phoenix-emote-sheet.png"
+type = "image"
+title = "3. Pixel emote set — swaps with your dog's real status"
+
+[[outputs]]
+id = "-XlaKl5auPvEK9Ybzeniv"
+uri = "file://artifacts/mockup-sandbox/public/images/dog-storybook.png"
+type = "image"
+title = "4. Storybook portrait — the hybrid hero shot"
