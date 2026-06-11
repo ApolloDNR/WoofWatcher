@@ -202,11 +202,11 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI for the conflict-safe care document refresh implementation:
+Latest known passing CI for the weekly Care Trends implementation:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`
-- Evidence: run `27334039567`, completed success on 2026-06-11 UTC
+- Evidence: run `27336407721`, completed success on 2026-06-11 UTC
 
 ## Required Before Claiming Full Release
 
