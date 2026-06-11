@@ -1,4 +1,5 @@
 import { normalizeCareEventType } from "./events.ts";
+import { deriveAloneTime, type AloneTimeItem } from "./alone-time.ts";
 import { deriveCareTrends, type CareTrendSignal } from "./care-trends.ts";
 import { deriveCareHandoff, type CareHandoffCaregiver, type CareHandoffRoutine } from "./handoff.ts";
 import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
@@ -186,6 +187,17 @@ function careTrendSignalLine(signal: CareTrendSignal): string {
 function trainingLatestLine(item: TrainingProgressItem | null): string {
   if (!item) return "";
   return `Latest: ${item.label} - ${item.outcome} with ${item.caregiver}`;
+}
+
+function aloneLatestLine(item: AloneTimeItem | null): string {
+  if (!item) return "";
+  const lead = [item.outcome, item.caregiver ? `with ${item.caregiver}` : ""].filter(Boolean).join(" ");
+  const parts = [
+    lead,
+    item.durationMinutes ? `${item.durationMinutes}m` : "",
+    item.recoveryMinutes ? `${item.recoveryMinutes}m recovery` : "",
+  ].filter(Boolean);
+  return `Latest: ${item.label} - ${parts.join(", ")}`;
 }
 
 function audienceChecklist(audience: CarePassAudience, name: string): string[] {
@@ -510,6 +522,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const pottyHealth = derivePottyHealth({ entries, now });
   const careTrends = deriveCareTrends({ entries, now, windowDays: 7 });
   const trainingProgress = deriveTrainingProgress({ entries, now, lookbackDays: 30 });
+  const aloneTime = deriveAloneTime({ entries, now, lookbackDays: 30 });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -588,6 +601,17 @@ export function buildCarePass(input: CarePassInput): CarePass {
       trainingProgress.latest?.trigger ? `Trigger/context: ${trainingProgress.latest.trigger}` : "",
       trainingProgress.latest?.nextPractice ? `Next practice: ${trainingProgress.latest.nextPractice}` : "",
       trainingProgress.nextStep,
+    ]),
+    section("Alone Time", [
+      aloneTime.summary,
+      aloneTime.totalSessions
+        ? `Outcomes: ${aloneTime.calmCount} calm, ${aloneTime.anxiousCount} anxious, ${aloneTime.distressedCount} distressed`
+        : "",
+      aloneTime.triggers.length ? `Triggers: ${aloneTime.triggers.slice(0, 5).join(", ")}` : "",
+      aloneTime.supports.length ? `Supports: ${aloneTime.supports.slice(0, 5).join(", ")}` : "",
+      aloneTime.averageRecoveryMinutes ? `Average recovery: ${aloneTime.averageRecoveryMinutes} minutes` : "",
+      aloneLatestLine(aloneTime.latest),
+      aloneTime.nextStep,
     ]),
     section("Potty Health", [
       pottyHealth.summary,

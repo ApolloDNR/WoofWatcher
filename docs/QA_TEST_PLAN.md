@@ -12,9 +12,9 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 145 focused tests with the command above.
+- PASS: 150 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell.
-- PASS: GitHub Actions `WoofWatcher Verify` run `27362966353` completed successfully for `feat: add care log audit trail`.
+- LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27362966353` completed successfully for `feat: add care log audit trail`.
 
 ## Required Automated Coverage
 
@@ -32,6 +32,7 @@ Latest local evidence, 2026-06-11:
 - Saved walk route templates derived from household-visible route/place logs, including private-log exclusion, stale-log exclusion, repeat-route grouping, visits, average duration, distance, dog interactions, caregiver list, social outcome snippets, Records mobile wiring, walk composer fields, and Care Pass report language.
 - Weekly Care Trends derived from household-visible logs, including current-versus-previous 7-day windows, meal completion, walk minutes, water refills, potty/medication/health watch signals, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Training Progress derived from household-visible training logs, including skill/cue, outcome, duration, next-practice notes, private-log exclusion, Records mobile wiring, Log composer fields, and trainer Care Pass report language.
+- Alone Time derivation from household-visible departure logs, including duration, return state, trigger/context, calming support, recovery minutes, private-log exclusion, Records mobile wiring, Log composer fields, and Care Pass handoff language.
 - Potty quick-log defaults for household-visible potty evidence.
 - Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
@@ -109,6 +110,9 @@ Latest local evidence, 2026-06-11:
 48. Open More and confirm Responsibility Center shows the same household next step, member routine loads, visible log counts, and routes to Calendar.
 49. Create a log, add a sticky note, edit its title or note, open details, and confirm Audit trail shows create, sticky-note, and edit evidence.
 50. Delete a log and confirm a separate deleted-log audit note appears without counting as a health or routine-completion event.
+51. Add an Alone Time log with duration, return state, trigger/context, calming support, recovery minutes, sticky note, and household visibility.
+52. Confirm Records Alone Time updates status, minutes, anxious/distress counts, triggers, supports, latest context, and next-step copy while private alone logs stay out.
+53. Preview a sitter/trainer Care Pass and confirm Alone Time summarizes the latest return state, recovery, trigger, and calming support without diagnosing anxiety.
 
 ## Missing QA
 

@@ -355,6 +355,40 @@ test("trainer care pass includes training progress context", () => {
   assert.match(pass.message, /Practice calm passes/);
 });
 
+test("care pass includes alone-time anxiety context", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    now: new Date("2026-06-11T12:00:00-07:00").getTime(),
+    entries: [
+      ...baseInput().entries,
+      {
+        id: "alone-anxious",
+        type: "alone",
+        title: "Alone time - anxious",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-11T09:00:00-07:00",
+        durationMinutes: 45,
+        details: {
+          aloneOutcome: "anxious",
+          trigger: "Leaving after breakfast",
+          calmingSupport: "Puzzle toy",
+          recoveryMinutes: 15,
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  const section = pass.sections.find((item) => item.title === "Alone Time");
+  assert.ok(section);
+  assert.match(pass.message, /1 alone-time log in the last 30 days/);
+  assert.match(pass.message, /Outcomes: 0 calm, 1 anxious, 0 distressed/);
+  assert.match(pass.message, /Triggers: Leaving after breakfast/);
+  assert.match(pass.message, /Supports: Puzzle toy/);
+  assert.match(pass.message, /Latest: Alone time - anxious - anxious with Apollo/);
+});
+
 test("creates a stable report artifact snapshot from a care pass", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
   const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");

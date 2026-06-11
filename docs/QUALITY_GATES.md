@@ -30,6 +30,8 @@ Current evidence, 2026-06-11: Potty quick logs now record household-visible pott
 
 Current evidence, 2026-06-11: Potty logging now captures stool color and routine/accident/urgent/straining context. Potty Health uses those fields as review evidence and carries color/context detail into Records and Care Pass reports.
 
+Current evidence, 2026-06-11: Alone Time logging now captures departure duration, return state, trigger/context, calming support, recovery minutes, sticky notes, and household visibility. Shared Alone Time logic derives 30-day visible departure patterns, status, latest context, triggers, supports, and Care Pass handoff language.
+
 ## Gate 3: Household Trust
 
 Passing means owners and caregivers can see who did what, what is pending, what failed to sync, what was skipped, and what needs follow-up.
@@ -70,6 +72,8 @@ Current evidence, 2026-06-11: Household Responsibility now derives care-team own
 
 Current evidence, 2026-06-11: Care Log Audit Trail now records create, edit, sticky-note, and delete evidence with shared care-domain sanitization. Log details show audit history, handoff text includes audit summaries, and successful deletes create a separate non-health audit note instead of silently disappearing.
 
+Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
+
 ## Gate 4: Premium Mobile UX
 
 Passing means the mobile app feels warm, polished, clear, fast, and useful every day. No dead buttons, fake screens, or decorative-only workflows.
@@ -95,6 +99,8 @@ Current evidence, 2026-06-11: Medication refill follow-ups are framed as owner a
 Current evidence, 2026-06-11: Potty Health is framed as stool review and care context, not diagnosis. Its next-step language asks owners to log stool detail and contact a vet for repeat diarrhea, blood, pain, weakness, or dehydration.
 
 Current evidence, 2026-06-11: Stool color and accident/urgent/straining fields are treated as review evidence and report context, not medical interpretation.
+
+Current evidence, 2026-06-11: Alone Time is framed as owner-reported separation context and household care evidence. It summarizes calm/anxious/distressed return states, triggers, supports, and recovery notes without diagnosing separation anxiety.
 
 ## Gate 6: Reports And Records
 
@@ -128,6 +134,8 @@ Current evidence, 2026-06-11: Care Pass reports now include a Care Trends sectio
 
 Current evidence, 2026-06-11: Care Pass reports now include a Training Progress section with sessions, skills, outcomes, latest trainer-relevant context, and next-practice notes, giving trainers and sitters useful behavior practice context before formal training plans exist.
 
+Current evidence, 2026-06-11: Care Pass reports now include an Alone Time section with 30-day departure summary, return-state counts, triggers, calming supports, average recovery, latest context, and next-step language for sitters and trainers.
+
 ## Gate 7: Revenue Readiness
 
 Passing means free/paid packaging is clear, premium value is visible, reports and household workflows support subscription value, and payments are not enabled before privacy/support obligations are ready.
@@ -154,6 +162,8 @@ Current evidence, 2026-06-11: Weekly Care Trends strengthens the Plus report/ins
 
 Current evidence, 2026-06-11: Training Progress strengthens the trainer/sitter report wedge by turning structured practice logs into shared progress context and next-practice guidance without pretending to be a behavior diagnosis.
 
+Current evidence, 2026-06-11: Alone Time strengthens the Family and trainer/sitter report wedge by turning departure, return, trigger, support, and recovery logs into shared care context without claiming medical or behavioral diagnosis.
+
 ## Gate 8: Production Safety
 
 Passing means CI is green, API auth is household-scoped, secrets are absent, privacy/export/delete are planned, sync failures are visible, and release docs are accurate.
@@ -172,4 +182,4 @@ Current evidence, 2026-06-08: Expo app identity no longer uses Replit placeholde
 
 Current evidence, 2026-06-08: Focused tests now cover the Home avatar motion state model and static wiring check. Native animation runtime verification, Rive/Lottie/Reanimated asset QA, and screenshot review remain open.
 
-Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, Household Responsibility derivation/mobile wiring, Care Log Audit Trail derivation/mobile wiring, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, and static mobile wiring. Local focused tests pass at 145 tests. GitHub Actions `WoofWatcher Verify` run `27362966353` passed for the Care Log Audit Trail slice. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.
+Current evidence, 2026-06-11: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, Household Responsibility derivation/mobile wiring, Care Log Audit Trail derivation/mobile wiring, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, Alone Time derivation/report/mobile wiring, and static mobile wiring. Local focused tests pass at 150 tests. Last remote GitHub Actions `WoofWatcher Verify` evidence is run `27362966353` for the Care Log Audit Trail slice. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.

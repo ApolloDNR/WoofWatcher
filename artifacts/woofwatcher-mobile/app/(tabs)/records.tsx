@@ -32,6 +32,7 @@ import {
   buildPetCredential,
   buildCarePass,
   createCarePassArtifact,
+  deriveAloneTime,
   deriveCareTrends,
   deriveHealthWatch,
   deriveMedicationAdherence,
@@ -208,6 +209,10 @@ export default function RecordsScreen() {
   );
   const trainingProgress = useMemo(
     () => deriveTrainingProgress({ entries: state.entries, now, lookbackDays: 30 }),
+    [state.entries, now],
+  );
+  const aloneTime = useMemo(
+    () => deriveAloneTime({ entries: state.entries, now, lookbackDays: 30 }),
     [state.entries, now],
   );
 
@@ -1104,6 +1109,84 @@ export default function RecordsScreen() {
                   {trainingProgress.latest.nextPractice ? (
                     <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                       {trainingProgress.latest.nextPractice}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Alone time */}
+          <View style={[s.sectionHeader, { marginTop: 28 }]}>
+            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Alone Time</Text>
+            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+              {aloneTime.totalSessions ? `${aloneTime.totalSessions} logs` : "No logs"}
+            </Text>
+          </View>
+          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <View style={s.hydrationSummary}>
+              <View style={[s.watchSummaryIcon, { backgroundColor: colors.secondary + "18" }]}>
+                <Ionicons name="home-outline" size={18} color={colors.secondary} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {aloneTime.status === "needs-support"
+                    ? "Support needed"
+                    : aloneTime.status === "watch"
+                      ? "Anxiety watch"
+                      : aloneTime.status === "steady"
+                        ? "Alone steady"
+                        : "Build alone baseline"}
+                </Text>
+                <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {aloneTime.summary}
+                </Text>
+              </View>
+            </View>
+            <View style={s.hydrationStats}>
+              {[
+                { label: "Minutes", value: String(aloneTime.totalMinutes) },
+                { label: "Anxious", value: String(aloneTime.anxiousCount) },
+                { label: "Distress", value: String(aloneTime.distressedCount) },
+              ].map((item, index) => (
+                <View key={item.label} style={[s.hydrationStat, index < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
+                  <Text style={[s.hydrationValue, { color: colors.foreground, fontFamily: DISPLAY }]}>{item.value}</Text>
+                  <Text style={[s.hydrationLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+            {aloneTime.triggers.length ? (
+              <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Triggers: {aloneTime.triggers.slice(0, 4).join(", ")}
+              </Text>
+            ) : null}
+            {aloneTime.supports.length ? (
+              <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular", marginTop: 5 }]}>
+                Supports: {aloneTime.supports.slice(0, 4).join(", ")}
+              </Text>
+            ) : null}
+            <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular", marginTop: aloneTime.triggers.length || aloneTime.supports.length ? 5 : 0 }]}>
+              {aloneTime.nextStep}
+            </Text>
+            {aloneTime.latest ? (
+              <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
+                <View style={[s.watchSignalDot, { backgroundColor: aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.secondary }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Latest: {aloneTime.latest.label}
+                  </Text>
+                  <Text style={[s.watchPatternEvidence, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {[
+                      aloneTime.latest.outcome,
+                      aloneTime.latest.caregiver,
+                      aloneTime.latest.durationMinutes ? `${aloneTime.latest.durationMinutes} min` : "",
+                      aloneTime.latest.recoveryMinutes ? `${aloneTime.latest.recoveryMinutes} min recovery` : "",
+                      relativeDay(aloneTime.latest.occurredAt, now),
+                    ].filter(Boolean).join(" - ")}
+                  </Text>
+                  {aloneTime.latest.calmingSupport ? (
+                    <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      Support: {aloneTime.latest.calmingSupport}
                     </Text>
                   ) : null}
                 </View>

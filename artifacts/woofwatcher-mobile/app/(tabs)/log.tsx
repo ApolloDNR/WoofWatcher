@@ -213,6 +213,26 @@ const LOG_TYPES: LogType[] = [
     ],
   },
   {
+    type: "alone",
+    label: "Alone",
+    icon: "house",
+    baseTitle: "Alone time",
+    stepper: { label: "Duration", unit: "min", values: [10, 20, 30, 45, 60, 90] },
+    groups: [
+      {
+        key: "aloneOutcome",
+        label: "Return state",
+        options: [
+          { id: "settled", label: "Settled", suffix: "settled", mood: "calm" },
+          { id: "calm", label: "Calm", suffix: "calm", mood: "calm" },
+          { id: "anxious", label: "Anxious", suffix: "anxious", mood: "anxious", severity: "watch" },
+          { id: "distressed", label: "Distressed", suffix: "distressed", mood: "anxious", severity: "alert" },
+        ],
+      },
+    ],
+    noteField: { placeholder: "Sticky note: barking, pacing, damage, recovery, or what helped..." },
+  },
+  {
     type: "medication",
     label: "Meds",
     icon: "pill",
@@ -341,6 +361,10 @@ const DETAIL_LABELS: Record<string, string> = {
   trainingOutcome: "Training outcome",
   trainingSkill: "Skill",
   nextPractice: "Next practice",
+  aloneOutcome: "Return state",
+  aloneTrigger: "Trigger",
+  calmingSupport: "Calming support",
+  recoveryMinutes: "Recovery",
   routineLabel: "Routine",
   what: "Symptom",
 };
@@ -507,6 +531,9 @@ export default function LogScreen() {
   const [walkSocialOutcome, setWalkSocialOutcome] = useState("");
   const [trainingSkill, setTrainingSkill] = useState("");
   const [trainingNextPractice, setTrainingNextPractice] = useState("");
+  const [aloneTrigger, setAloneTrigger] = useState("");
+  const [calmingSupport, setCalmingSupport] = useState("");
+  const [recoveryMinutes, setRecoveryMinutes] = useState("");
   const [householdVisible, setHouseholdVisible] = useState(true);
   const [noteText, setNoteText] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
@@ -546,6 +573,9 @@ export default function LogScreen() {
     setWalkSocialOutcome("");
     setTrainingSkill("");
     setTrainingNextPractice("");
+    setAloneTrigger("");
+    setCalmingSupport("");
+    setRecoveryMinutes("");
     setHouseholdVisible(true);
     setNoteText("");
   }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -778,6 +808,22 @@ export default function LogScreen() {
       if (outcome === "struggle") severity = "watch";
     }
 
+    if (config.type === "alone") {
+      const trigger = aloneTrigger.trim();
+      const support = calmingSupport.trim();
+      const recovery = parseNonNegativeNumber(recoveryMinutes);
+
+      if (recoveryMinutes.trim() && recovery == null) {
+        Alert.alert("Check recovery time", "Enter recovery minutes as a number, or leave it blank.");
+        return null;
+      }
+
+      details.householdVisible = householdVisible;
+      if (trigger) details.aloneTrigger = trigger;
+      if (support) details.calmingSupport = support;
+      if (recovery != null) details.recoveryMinutes = Math.round(recovery);
+    }
+
     if (config.type === "potty") {
       details.householdVisible = householdVisible;
     }
@@ -831,6 +877,9 @@ export default function LogScreen() {
     walkSocialOutcome,
     trainingSkill,
     trainingNextPractice,
+    aloneTrigger,
+    calmingSupport,
+    recoveryMinutes,
     householdVisible,
     dietProgress.unit,
     noteText,
@@ -860,6 +909,12 @@ export default function LogScreen() {
     if (entry.type === "meal") {
       setExpectedPortion(state.dietProfile.normalPortion);
       setEatenAmount("");
+      setHouseholdVisible(true);
+    }
+    if (entry.type === "alone") {
+      setAloneTrigger("");
+      setCalmingSupport("");
+      setRecoveryMinutes("");
       setHouseholdVisible(true);
     }
     setNoteText("");
@@ -1440,6 +1495,67 @@ export default function LogScreen() {
                     </Text>
                     <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                       {householdVisible ? "Shared training logs update Training Progress and trainer handoffs." : "Private training stays out of shared progress."}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            )}
+
+            {selectedType === "alone" && (
+              <View style={s.mealFields}>
+                <View>
+                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Trigger or context</Text>
+                  <TextInput
+                    placeholder="Leaving after breakfast, doorbell, both owners out..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={aloneTrigger}
+                    onChangeText={setAloneTrigger}
+                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                  />
+                </View>
+                <View style={s.mealFieldRow}>
+                  <View style={s.mealField}>
+                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Recovery min</Text>
+                    <TextInput
+                      placeholder="15"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={recoveryMinutes}
+                      onChangeText={setRecoveryMinutes}
+                      keyboardType="number-pad"
+                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    />
+                  </View>
+                  <View style={s.mealField}>
+                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Support</Text>
+                    <TextInput
+                      placeholder="Puzzle toy"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={calmingSupport}
+                      onChangeText={setCalmingSupport}
+                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    />
+                  </View>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setHouseholdVisible((prev) => !prev);
+                  }}
+                  style={[
+                    s.visibilityToggle,
+                    {
+                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
+                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {householdVisible ? "Visible to household" : "Private log"}
+                    </Text>
+                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {householdVisible ? "Shared alone logs update Alone Time patterns and handoffs." : "Private alone logs stay out of shared anxiety patterns."}
                     </Text>
                   </View>
                 </Pressable>

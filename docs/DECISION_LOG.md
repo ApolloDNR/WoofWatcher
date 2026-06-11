@@ -512,6 +512,16 @@ Owner: Codex.
 
 Revisit trigger: Formal skill plans, trainer collaboration, behavior trigger taxonomy, paid trainer packs, or behavior/AI interpretation become active release work.
 
+### 2026-06-11: Alone Time Tracks Separation Context As Care Evidence
+
+Decision: Alone Time derives from household-visible departure logs with duration, return state, trigger/context, calming support, recovery minutes, caregiver, and latest context before adding formal separation-training plans or trainer/vet-reviewed language.
+
+Reason: Phoenix's anxiety and household schedule changes are part of the original product need. Owners need to know what happened when she was left alone, what helped, and what should be shared with a sitter or trainer, but WoofWatcher should not diagnose separation anxiety or pretend to be a behavior professional.
+
+Owner: Codex.
+
+Revisit trigger: Formal Alone Time plans, behavior trigger taxonomy, trainer collaboration, vet-reviewed language, or AI behavior interpretation become active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

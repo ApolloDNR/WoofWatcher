@@ -265,6 +265,22 @@ test("keeps training progress visible from Log composer to Records", () => {
   assert.match(records, /winCount/);
 });
 
+test("keeps alone-time anxiety tracking visible from Log composer to Records", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(log, /type: "alone"/);
+  assert.match(log, /aloneOutcome/);
+  assert.match(log, /aloneTrigger/);
+  assert.match(log, /calmingSupport/);
+  assert.match(log, /recoveryMinutes/);
+  assert.match(records, /deriveAloneTime/);
+  assert.match(records, /aloneTime/);
+  assert.match(records, /Alone Time/);
+  assert.match(records, /anxiousCount/);
+  assert.match(records, /distressedCount/);
+});
+
 test("keeps potty health visible from Log composer to Records", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const records = readAppFile(join("(tabs)", "records.tsx"));

@@ -40,6 +40,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 32. DONE 2026-06-11: Training Progress now captures structured training outcomes, skill/cue, duration, next-practice notes, and household visibility in the Log composer, derives visible 30-day training progress in shared domain logic, and carries sessions, wins, skills, latest context, Records UI, and Care Pass report language into trainer-ready workflows.
 33. DONE 2026-06-11: Household Responsibility Center now derives care-team routine ownership, open/overdue/unassigned counts, visible today log activity, and the next household action from routine-board truth, then surfaces it in Calendar and More.
 34. DONE 2026-06-11: Care Log Audit Trail now records create/edit/sticky-note/delete evidence in shared care-domain logic, shows audit history in Log detail sheets, includes audit summaries in entry handoffs, and creates a non-health audit note only after deletes succeed.
+35. DONE 2026-06-11: Alone Time now captures departure duration, return state, trigger/context, calming support, recovery minutes, sticky notes, and household visibility in the Log composer, derives 30-day separation/anxiety patterns in shared care-domain logic, and carries status, triggers, supports, latest context, Records UI, and Care Pass handoff language into household workflows.
 
 ## Cadence
 
