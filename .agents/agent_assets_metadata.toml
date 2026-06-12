@@ -162,6 +162,12 @@ uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/sq/phoenix-unwell.png"
 type = "image"
 title = "phoenix unwell clean"
 
+[[generated]]
+id = "CFS5pJmkUJO8IAlb-dRI1"
+uri = "file://artifacts/mockup-sandbox/public/images/phoenix-home-pixel.png"
+type = "image"
+title = "phoenix home pixel scene"
+
 [[outputs]]
 id = "MyqJSU1BnOoEGFRPC3DcD"
 uri = "file://artifacts/mockup-sandbox/public/images/woof-dog.png"
