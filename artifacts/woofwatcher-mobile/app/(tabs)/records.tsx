@@ -54,6 +54,7 @@ import {
   type CarePass,
   type CarePassAudience,
   type CarePassArtifact,
+  type MedicationHistoryOutcomeFilter,
   type RecordKind,
 } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
@@ -119,6 +120,14 @@ const RECORD_OPTIONS: {
   { kind: "document", label: "Document", detail: "Certificates and files", icon: "document-text-outline", dueLabel: "Date or reference" },
 ];
 
+const MEDICATION_OUTCOME_FILTERS: { id: MedicationHistoryOutcomeFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "taken", label: "Taken" },
+  { id: "attention", label: "Needs review" },
+  { id: "skipped", label: "Skipped" },
+  { id: "missed", label: "Missed" },
+];
+
 function daysBetween(iso: string, now: number): number {
   return (now - new Date(iso).getTime()) / 86400000;
 }
@@ -169,6 +178,8 @@ export default function RecordsScreen() {
   const [recordNote, setRecordNote] = useState("");
   const [recordAttachmentUri, setRecordAttachmentUri] = useState("");
   const [carePassPreview, setCarePassPreview] = useState<CarePass | null>(null);
+  const [medicationSearch, setMedicationSearch] = useState("");
+  const [medicationOutcomeFilter, setMedicationOutcomeFilter] = useState<MedicationHistoryOutcomeFilter>("all");
 
   const recordOption = RECORD_OPTIONS.find((option) => option.kind === recordType) ?? RECORD_OPTIONS[0];
 
@@ -189,8 +200,8 @@ export default function RecordsScreen() {
     [state.entries, state.routines, state.records, now],
   );
   const medicationHistory = useMemo(
-    () => deriveMedicationHistory({ entries: state.entries, now, limit: 4 }),
-    [state.entries, now],
+    () => deriveMedicationHistory({ entries: state.entries, now, limit: 8, query: medicationSearch, outcome: medicationOutcomeFilter }),
+    [state.entries, now, medicationSearch, medicationOutcomeFilter],
   );
   const waterHydration = useMemo(
     () => deriveWaterHydration({ entries: state.entries, now }),
@@ -1575,9 +1586,64 @@ export default function RecordsScreen() {
                   {medicationHistory.total ? `${medicationHistory.total} logs` : "No logs"}
                 </Text>
               </View>
+              <View style={[s.medSearchCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Ionicons name="search" size={16} color={colors.mutedForeground} />
+                <TextInput
+                  value={medicationSearch}
+                  onChangeText={setMedicationSearch}
+                  placeholder="Search meds, dose, caregiver..."
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={[s.medSearchInput, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                />
+                {medicationSearch.trim() ? (
+                  <Pressable
+                    accessibilityLabel="Clear medication search"
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setMedicationSearch("");
+                    }}
+                    style={[s.medSearchClear, { backgroundColor: colors.card }]}
+                  >
+                    <Ionicons name="close" size={14} color={colors.mutedForeground} />
+                  </Pressable>
+                ) : null}
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.medFilterRow}>
+                {MEDICATION_OUTCOME_FILTERS.map((option) => {
+                  const active = medicationOutcomeFilter === option.id;
+                  return (
+                    <Pressable
+                      key={option.id}
+                      accessibilityLabel={`Filter medication history: ${option.label}`}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setMedicationOutcomeFilter(option.id);
+                      }}
+                      style={[
+                        s.medFilterPill,
+                        {
+                          backgroundColor: active ? colors.primary : colors.background,
+                          borderColor: active ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.medFilterText, { color: active ? "#FFFFFF" : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              {medicationHistory.hasActiveFilters ? (
+                <Text style={[s.medHistorySummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {medicationHistory.summary}
+                </Text>
+              ) : null}
               {medicationHistory.items.length === 0 ? (
                 <Text style={[s.medFollowUpEmpty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  Visible medication logs will appear here with dose, outcome, caregiver, and notes.
+                  {medicationHistory.emptyMessage}
                 </Text>
               ) : (
                 medicationHistory.items.map((item, index) => {
@@ -2207,6 +2273,22 @@ const s = StyleSheet.create({
   medFollowUpAction: { fontSize: 12, lineHeight: 17, marginTop: 5 },
   medFollowUpRule: { fontSize: 11.2, lineHeight: 16, marginTop: 4 },
   medHistory: { borderTopWidth: 1, marginTop: 4, paddingTop: 14 },
+  medSearchCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    borderWidth: 1,
+    borderRadius: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 6,
+  },
+  medSearchInput: { flex: 1, fontSize: 13.5, minHeight: 26, paddingVertical: 0 },
+  medSearchClear: { width: 26, height: 26, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  medFilterRow: { gap: 7, paddingVertical: 9 },
+  medFilterPill: { borderWidth: 1, borderRadius: 13, paddingHorizontal: 11, paddingVertical: 7 },
+  medFilterText: { fontSize: 11.5 },
+  medHistorySummary: { fontSize: 12, lineHeight: 17, marginBottom: 1 },
   medHistoryRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12 },
   medHistoryTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   medHistoryNote: { fontSize: 12.2, lineHeight: 17, marginTop: 5 },

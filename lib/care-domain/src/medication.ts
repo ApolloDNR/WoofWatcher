@@ -5,6 +5,7 @@ export type MedicationAdherenceStatus = "taken" | "missed" | "due" | "upcoming";
 export type MedicationFollowUpKind = "missed" | "due" | "refill";
 export type MedicationFollowUpUrgency = "alert" | "watch" | "info";
 export type MedicationHistoryOutcome = "taken" | "skipped" | "missed" | "logged";
+export type MedicationHistoryOutcomeFilter = MedicationHistoryOutcome | "attention" | "all";
 
 export interface MedicationRoutine {
   id?: string;
@@ -42,6 +43,8 @@ export interface MedicationHistoryInput {
   now?: number;
   days?: number;
   limit?: number;
+  query?: string | null;
+  outcome?: MedicationHistoryOutcomeFilter | null;
 }
 
 export interface MedicationAdherenceItem {
@@ -100,10 +103,15 @@ export interface MedicationHistoryItem {
 export interface MedicationHistory {
   items: MedicationHistoryItem[];
   total: number;
+  unfilteredTotal: number;
   takenCount: number;
   skippedCount: number;
   missedCount: number;
+  query: string;
+  outcome: MedicationHistoryOutcomeFilter;
+  hasActiveFilters: boolean;
   summary: string;
+  emptyMessage: string;
 }
 
 const DUE_WINDOW_MINUTES = 30;
@@ -179,6 +187,33 @@ function statusLabel(outcome: MedicationHistoryOutcome): string {
   if (outcome === "skipped") return "Skipped";
   if (outcome === "missed") return "Missed";
   return "Logged";
+}
+
+function normalizeMedicationHistoryOutcomeFilter(value: unknown): MedicationHistoryOutcomeFilter {
+  const normalized = clean(value).toLowerCase();
+  if (normalized === "taken" || normalized === "skipped" || normalized === "missed" || normalized === "logged" || normalized === "attention") {
+    return normalized;
+  }
+  return "all";
+}
+
+function medicationHistoryMatchesOutcome(item: MedicationHistoryItem, outcome: MedicationHistoryOutcomeFilter): boolean {
+  if (outcome === "all") return true;
+  if (outcome === "attention") return item.outcome === "skipped" || item.outcome === "missed";
+  return item.outcome === outcome;
+}
+
+function medicationHistorySearchText(item: MedicationHistoryItem): string {
+  return [
+    item.label,
+    item.outcome,
+    item.statusLabel,
+    item.dose,
+    item.caregiver,
+    item.occurredAt,
+    item.routineId,
+    item.note,
+  ].join(" ").toLowerCase();
 }
 
 function entryNote(entry: MedicationEntry): string {
@@ -384,7 +419,11 @@ export function deriveMedicationHistory(input: MedicationHistoryInput): Medicati
   const now = input.now ?? Date.now();
   const days = input.days ?? 30;
   const limit = input.limit ?? 6;
-  const entries = input.entries
+  const query = clean(input.query).toLowerCase();
+  const queryTerms = query.split(/\s+/).filter(Boolean);
+  const outcome = normalizeMedicationHistoryOutcomeFilter(input.outcome);
+  const hasActiveFilters = Boolean(query || outcome !== "all");
+  const allItems = input.entries
     .filter(entryVisible)
     .map((entry, index) => ({
       entry,
@@ -399,7 +438,6 @@ export function deriveMedicationHistory(input: MedicationHistoryInput): Medicati
       return ageDays >= 0 && ageDays <= days;
     })
     .sort((a, b) => b.ms - a.ms)
-    .slice(0, limit)
     .map((candidate): MedicationHistoryItem => {
       const outcome = entryOutcome(candidate.entry);
       return {
@@ -415,17 +453,36 @@ export function deriveMedicationHistory(input: MedicationHistoryInput): Medicati
       };
     });
 
-  const takenCount = entries.filter((entry) => entry.outcome === "taken").length;
-  const skippedCount = entries.filter((entry) => entry.outcome === "skipped").length;
-  const missedCount = entries.filter((entry) => entry.outcome === "missed").length;
-  const total = entries.length;
+  const filtered = allItems.filter((item) => {
+    if (!medicationHistoryMatchesOutcome(item, outcome)) return false;
+    if (!queryTerms.length) return true;
+    const haystack = medicationHistorySearchText(item);
+    return queryTerms.every((term) => haystack.includes(term));
+  });
+  const limited = filtered.slice(0, limit);
+  const takenCount = filtered.filter((entry) => entry.outcome === "taken").length;
+  const skippedCount = filtered.filter((entry) => entry.outcome === "skipped").length;
+  const missedCount = filtered.filter((entry) => entry.outcome === "missed").length;
+  const total = filtered.length;
+  const logNoun = total === 1 ? "log" : "logs";
 
   return {
-    items: entries,
+    items: limited,
     total,
+    unfilteredTotal: allItems.length,
     takenCount,
     skippedCount,
     missedCount,
-    summary: `${total} visible medication ${total === 1 ? "log" : "logs"} in ${days} days`,
+    query,
+    outcome,
+    hasActiveFilters,
+    summary: hasActiveFilters
+      ? total
+        ? `${total} matching medication ${logNoun}`
+        : "No matching medication logs"
+      : `${total} visible medication ${logNoun} in ${days} days`,
+    emptyMessage: hasActiveFilters
+      ? "No medication logs match these filters. Clear medication search or switch the outcome filter."
+      : "Visible medication logs will appear here with dose, outcome, caregiver, and notes.",
   };
 }

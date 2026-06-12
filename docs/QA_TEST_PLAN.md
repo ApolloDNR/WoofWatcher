@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-11:
 
-- PASS: 173 focused tests with the command above.
+- PASS: 177 focused tests with the command above.
 - BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell. Direct `tsc --noEmit --pretty false` is also blocked because `tsc` is unavailable in the current Windows shell.
 - LAST REMOTE PASS: GitHub Actions `WoofWatcher Verify` run `27370209662` completed successfully for `feat: add full log search`.
 
@@ -24,7 +24,7 @@ Latest local evidence, 2026-06-11:
 - Medication adherence for taken, due, missed, and upcoming medication routines, including private-log exclusion and Records mobile wiring.
 - Medication quick-log and full Log composer defaults for routine dose, taken/skipped outcome, household visibility, and skipped-medication adherence behavior.
 - Medication follow-ups for missed doses, due-now doses, refill records, notification-rule copy, Records mobile wiring, and Care Pass report language.
-- Medication history for recent household-visible medication logs, including dose, outcome, caregiver, routine id, note, private-log exclusion, and Records mobile wiring.
+- Medication history for recent household-visible medication logs, including dose, outcome, caregiver, routine id, note, private-log exclusion, medicine/dose/caregiver/note search, taken/skipped/missed/needs-review outcome filters, filtered summary copy, empty-state copy, and Records mobile wiring.
 - Water quick-log defaults for household-visible fresh-water refills.
 - Hydration summary derivation for visible water logs, refill equivalents, daily goal percentage, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Walk quick-log defaults for household-visible activity evidence.
@@ -131,6 +131,7 @@ Latest local evidence, 2026-06-11:
 63. Open Calendar and confirm Reminder Center combines overdue routines, missed/due medication follow-ups, due-soon records, and grooming due dates into one owner action list with urgent/watch/total counts and no claim that real push notifications are enabled.
 64. Tap Reminder Center rows and confirm they route to the expected concrete workflow: routine edit, Records, Medication log, or Grooming log with the composer type preselected.
 65. Open Log, search by caregiver, route/place, medication detail, and sticky-note text, then combine search with type chips and confirm the summary and empty state update correctly.
+66. Open Records Medication History, search by medicine, dose, caregiver, and note text, then switch Taken, Skipped, Missed, and Needs review filters and confirm summary and empty-state copy update correctly.
 
 ## Missing QA
 

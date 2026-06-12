@@ -172,6 +172,16 @@ Owner: Codex.
 
 Revisit trigger: The app adds role-based permissions, medication search/filtering, audit history, or provider-backed medication reports.
 
+### 2026-06-11: Medication History Search Uses Owner-Visible Evidence First
+
+Decision: Medication History search and outcome filters are derived in `lib/care-domain` from household-visible medication evidence before adding provider-backed medication reports, server search indexes, or clinical scheduling schemas.
+
+Reason: Owners need to quickly find dose, caregiver, skipped, missed, and note context inside Records without leaving the medication workflow or exposing private logs. Scoped medication search strengthens household trust while keeping medication interpretation bounded to owner-entered evidence.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed medication reports, role-scoped medication search, server indexing, pharmacy/vet integrations, or stricter dosage/schedule schemas become active release work.
+
 ### 2026-06-11: Hydration Is Daily Care Evidence, Not Medical Diagnosis
 
 Decision: Daily hydration is derived in `lib/care-domain` from household-visible water logs and surfaced in Records and Care Passes as care coordination evidence.

@@ -47,6 +47,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 39. DONE 2026-06-11: Reminder Center now derives one owner-visible action list from routine-board status, medication follow-ups, record reminders, and grooming due dates, then surfaces urgent/watch/total counts and notification-readiness copy in Calendar before provider-backed push delivery exists.
 40. DONE 2026-06-11: Reminder Center rows now route to concrete workflows: routine reminders open the routine editor, medication routine reminders open the Medication log composer, record reminders open Records, and grooming reminders open the Grooming log composer.
 41. DONE 2026-06-11: Full Log search now uses shared care-domain logic to search titles, notes, caregivers, event details, routes, medication fields, and sticky notes while combining text query with type filters, summary copy, and active-filter empty states.
+42. DONE 2026-06-11: Medication History search and outcome filters now use shared care-domain logic to filter recent medication evidence by medicine, dose, caregiver, note, routine id, and taken/skipped/missed/needs-review outcome, then surface summary and empty-state copy in Records.
 
 ## Cadence
 

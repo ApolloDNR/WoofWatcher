@@ -209,6 +209,17 @@ test("keeps Records wired to medication history", () => {
   assert.match(records, /statusLabel/);
 });
 
+test("keeps Records medication history searchable and filterable", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /medicationSearch/);
+  assert.match(records, /medicationOutcomeFilter/);
+  assert.match(records, /Search meds, dose, caregiver/);
+  assert.match(records, /outcome: medicationOutcomeFilter/);
+  assert.match(records, /medicationHistory\.summary/);
+  assert.match(records, /medicationHistory\.emptyMessage/);
+});
+
 test("keeps hydration visible from Home quick log to Records", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const records = readAppFile(join("(tabs)", "records.tsx"));

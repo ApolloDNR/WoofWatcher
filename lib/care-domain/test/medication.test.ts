@@ -174,3 +174,100 @@ test("derives visible medication history with dose, outcome, caregiver, and note
   assert.equal(history.items[0].routineId, "pm-meds");
   assert.equal(history.items[0].note, "Held after soft stool.");
 });
+
+test("filters medication history by search text and outcome", () => {
+  const history = deriveMedicationHistory({
+    now: new Date("2026-06-06T20:00:00-07:00").getTime(),
+    query: "apoquel emma",
+    outcome: "skipped",
+    limit: 10,
+    entries: [
+      {
+        id: "taken-log",
+        type: "medication",
+        title: "Apoquel",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T08:05:00-07:00",
+        details: { routineId: "am-meds", dose: "1 tablet", medicationOutcome: "taken", householdVisible: true },
+      },
+      {
+        id: "skipped-log",
+        type: "medication",
+        title: "Apoquel",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T19:55:00-07:00",
+        note: "Skipped after soft stool.",
+        details: { routineId: "pm-meds", dose: "1 tablet", medicationOutcome: "skipped", householdVisible: true },
+      },
+    ],
+  });
+
+  assert.equal(history.total, 1);
+  assert.equal(history.unfilteredTotal, 2);
+  assert.equal(history.query, "apoquel emma");
+  assert.equal(history.outcome, "skipped");
+  assert.equal(history.hasActiveFilters, true);
+  assert.deepEqual(history.items.map((item) => item.id), ["skipped-log"]);
+  assert.match(history.summary, /1 matching medication log/);
+});
+
+test("filters medication history to attention outcomes", () => {
+  const history = deriveMedicationHistory({
+    now: new Date("2026-06-06T20:00:00-07:00").getTime(),
+    outcome: "attention",
+    entries: [
+      {
+        id: "taken-log",
+        type: "medication",
+        title: "Apoquel",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T08:05:00-07:00",
+        details: { dose: "1 tablet", medicationOutcome: "taken", householdVisible: true },
+      },
+      {
+        id: "skipped-log",
+        type: "medication",
+        title: "Apoquel",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T19:55:00-07:00",
+        details: { dose: "1 tablet", medicationOutcome: "skipped", householdVisible: true },
+      },
+      {
+        id: "missed-log",
+        type: "medication",
+        title: "Probiotic",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T19:15:00-07:00",
+        details: { dose: "1 capsule", medicationOutcome: "missed", householdVisible: true },
+      },
+    ],
+  });
+
+  assert.deepEqual(history.items.map((item) => item.id), ["skipped-log", "missed-log"]);
+  assert.equal(history.total, 2);
+  assert.equal(history.skippedCount, 1);
+  assert.equal(history.missedCount, 1);
+});
+
+test("returns medication history empty-state copy when filters have no matches", () => {
+  const history = deriveMedicationHistory({
+    now: new Date("2026-06-06T20:00:00-07:00").getTime(),
+    query: "banana",
+    entries: [
+      {
+        id: "taken-log",
+        type: "medication",
+        title: "Apoquel",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T08:05:00-07:00",
+        details: { dose: "1 tablet", medicationOutcome: "taken", householdVisible: true },
+      },
+    ],
+  });
+
+  assert.equal(history.total, 0);
+  assert.equal(history.unfilteredTotal, 1);
+  assert.equal(history.hasActiveFilters, true);
+  assert.match(history.summary, /No matching medication logs/);
+  assert.match(history.emptyMessage, /Clear medication search/i);
+});
