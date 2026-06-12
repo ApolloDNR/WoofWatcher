@@ -46,3 +46,23 @@ bundled `assets/phoenix/phoenix-{mood}.png` (5 moods) + WoofGuide header
 `assets/images/phoenix-avatar.png`. Image gen is text-only (no img2img) and rate-limited (429) —
 pace calls one at a time with waits. Pixel design system lives in mockup-sandbox
 `components/mockups/woofwatcher-pixel/` (PhoenixHome.tsx + pixel.css) before graduating to the app.
+
+## Recreating the boards EXACTLY (the fidelity bar)
+
+When the user says "recreate exactly what these images are," do NOT regenerate/interpret — REUSE the
+board's own art. The boards are 1448×1086. Use ImageMagick (`magick … -crop WxH+X+Y +repage
+-filter point -resize 200%`) to crop the actual scene art straight out of the board and serve it as
+the app image (display with `image-rendering: pixelated`). The big DESKTOP card on each board is the
+cleanest/highest-fidelity rendering of a screen's content; crop that.
+
+**Why:** First two pixel attempts were rejected because they invented copy and rearranged elements.
+A generated/interpreted scene is the thing that "sucks"; the cropped board art is unimpeachable.
+
+**How to apply (Phoenix Home canonical content — match these, no additions/removals):** speech
+bubble = "Morning! / Walk time soon? / I'm ready!" (baked into the cropped garden scene; don't render
+a second bubble). STATUS rows in order: MOOD 😊 Happy · ENERGY (green seg bar) · HUNGER (copper seg
+bar) · BILE RISK 💧 Low · BOND ❤ 92% (BILE RISK is core to this app — never drop it). NEXT UP =
+"Walk with Emma" + green START WALK button. Bottom tabs (5): Home · Log · [center PAW circle] · Guide
+· More (center is a PAW, not a +). Exact palette already in `pixel.css`: #0B1424 #C55A2A #6DA36F
+#BFE3C4 #A9D4FF #F7F2E8. The 6 board phone screens: Phoenix Home, Quick Log, Alone Time/Health Watch,
+Health Watch/Bile Watch, Care Pass, Avatar Studio.

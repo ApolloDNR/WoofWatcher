@@ -4,8 +4,19 @@ import "./pixel.css";
 /* ---------- pixel-bitmap icon engine ---------- */
 type Bitmap = string[];
 
-function Px({ m, s = 3, c = "#0C2A33" }: { m: Bitmap; s?: number; c?: string }) {
+function Px({
+  m,
+  s = 3,
+  c = "#0B1424",
+  colors,
+}: {
+  m: Bitmap;
+  s?: number;
+  c?: string;
+  colors?: Record<string, string>;
+}) {
   const cols = m[0].length;
+  const map: Record<string, string> = { "#": c, ...(colors || {}) };
   return (
     <div
       className="ww-art"
@@ -19,7 +30,7 @@ function Px({ m, s = 3, c = "#0C2A33" }: { m: Bitmap; s?: number; c?: string }) 
         row.split("").map((ch, x) => (
           <div
             key={`${x}-${y}`}
-            style={{ width: s, height: s, background: ch === "#" ? c : "transparent" }}
+            style={{ width: s, height: s, background: map[ch] ?? "transparent" }}
           />
         )),
       )}
@@ -58,45 +69,35 @@ const I = {
     "#......#",
     "###..###",
   ],
-  heart: [
-    ".##..##.",
-    "########",
-    "########",
-    "########",
-    ".######.",
-    "..####..",
-    "...##...",
-    "........",
+  smiley: [
+    ".YYYYYY.",
+    "YYYYYYYY",
+    "YYnYYnYY",
+    "YYYYYYYY",
+    "YYYYYYYY",
+    "YnYYYYnY",
+    "YYnnnnYY",
+    ".YYYYYY.",
   ],
-  paw: [
-    ".#....#.",
-    "##....##",
+  bolt: [
+    "...##...",
+    "..##....",
+    ".###....",
+    ".#####..",
+    "...##...",
+    "..##....",
+    ".##.....",
     "........",
-    "..####..",
-    ".######.",
-    ".######.",
-    ".######.",
-    "..####..",
   ],
   bowl: [
     "........",
-    "........",
+    "..#..#..",
     ".######.",
     "########",
+    "########",
     ".#....#.",
-    ".######.",
     "..####..",
     "........",
-  ],
-  boot: [
-    ".##.....",
-    ".##.....",
-    ".##.....",
-    ".##.....",
-    ".##.....",
-    ".#####..",
-    ".######.",
-    ".######.",
   ],
   drop: [
     "...#....",
@@ -108,35 +109,25 @@ const I = {
     ".#####..",
     "..###...",
   ],
-  bone: [
-    "##....##",
-    "##....##",
+  heart: [
+    ".##..##.",
+    "########",
+    "########",
+    "########",
     ".######.",
     "..####..",
-    ".######.",
-    "##....##",
-    "##....##",
+    "...##...",
     "........",
   ],
-  star: [
-    "...#....",
-    "...#....",
+  paw: [
+    "#.#..#.#",
+    "#.#..#.#",
+    "........",
+    "..####..",
+    ".######.",
+    ".######.",
     ".######.",
     "..####..",
-    ".#.##.#.",
-    ".#....#.",
-    "........",
-    "........",
-  ],
-  note: [
-    ".#####..",
-    ".#...#..",
-    ".#.#.#..",
-    ".#...#..",
-    ".#.#.#..",
-    ".#...#..",
-    ".#####..",
-    "........",
   ],
   home: [
     "...##...",
@@ -148,6 +139,16 @@ const I = {
     ".#.##.#.",
     "........",
   ],
+  list: [
+    "........",
+    "##.####.",
+    "........",
+    "##.####.",
+    "........",
+    "##.####.",
+    "........",
+    "........",
+  ],
   book: [
     ".######.",
     ".#..#.#.",
@@ -156,26 +157,6 @@ const I = {
     ".#..#.#.",
     ".#..#.#.",
     ".######.",
-    "........",
-  ],
-  plus: [
-    "........",
-    "...##...",
-    "...##...",
-    ".######.",
-    ".######.",
-    "...##...",
-    "...##...",
-    "........",
-  ],
-  bell: [
-    "...##...",
-    "..####..",
-    "..####..",
-    ".######.",
-    "########",
-    "........",
-    "...##...",
     "........",
   ],
   menu: [
@@ -191,17 +172,17 @@ const I = {
 };
 
 /* ---------- composite primitives ---------- */
-function Bar({ total = 10, filled, c }: { total?: number; filled: number; c: string }) {
+function Bar({ total = 5, filled, c }: { total?: number; filled: number; c: string }) {
   return (
-    <div style={{ display: "flex", gap: 2 }}>
+    <div style={{ display: "flex", gap: 3 }}>
       {Array.from({ length: total }).map((_, i) => (
         <div
           key={i}
           style={{
-            width: 11,
-            height: 14,
+            width: 15,
+            height: 13,
             boxSizing: "border-box",
-            border: "2px solid #0C2A33",
+            border: "2px solid var(--ww-ink)",
             background: i < filled ? c : "var(--ww-empty)",
           }}
         />
@@ -210,28 +191,23 @@ function Bar({ total = 10, filled, c }: { total?: number; filled: number; c: str
   );
 }
 
-function Hearts({ filled = 4, total = 5 }: { filled?: number; total?: number }) {
-  return (
-    <div style={{ display: "flex", gap: 3 }}>
-      {Array.from({ length: total }).map((_, i) => (
-        <Px key={i} m={I.heart} s={2.5} c={i < filled ? "#CE4B2E" : "#E5D3BC"} />
-      ))}
-    </div>
-  );
-}
-
 function StatRow({
+  icon,
   label,
   children,
 }: {
+  icon: React.ReactNode;
   label: string;
   children: React.ReactNode;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-      <span className="ww-pixel" style={{ fontSize: 8, width: 92, color: "var(--ww-ink)" }}>
-        {label}
-      </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {icon}
+        <span className="ww-pixel" style={{ fontSize: 8, color: "var(--ww-ink)" }}>
+          {label}
+        </span>
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{children}</div>
     </div>
   );
@@ -306,53 +282,21 @@ export default function PhoenixHome() {
       </div>
 
       <div className="ww-scroll">
-        {/* scene */}
+        {/* scene — board art with baked-in speech bubble */}
         <div className="ww-card" style={{ position: "relative", overflow: "hidden", padding: 4 }}>
           <img
-            src="/__mockup/images/phoenix-home-pixel.png"
-            alt="Phoenix at home"
+            src="/__mockup/images/phoenix-garden.png"
+            alt="Phoenix in the garden"
             className="ww-art"
-            style={{ display: "block", width: "100%", height: 208, objectFit: "cover" }}
+            style={{ display: "block", width: "100%", height: "auto" }}
           />
-
-          {/* speech bubble */}
-          <div
-            style={{
-              position: "absolute",
-              top: 16,
-              left: 14,
-              maxWidth: "62%",
-              background: "#FFFFFF",
-              border: "3px solid var(--ww-ink)",
-              boxShadow: "3px 3px 0 var(--ww-ink)",
-              padding: "8px 10px",
-              fontFamily: "'Pixelify Sans', monospace",
-              fontSize: 15,
-              lineHeight: 1.15,
-              color: "var(--ww-ink)",
-            }}
-          >
-            Morning! Let&apos;s make it a great day!
-            <div
-              style={{
-                position: "absolute",
-                bottom: -10,
-                left: 22,
-                width: 0,
-                height: 0,
-                borderLeft: "8px solid transparent",
-                borderRight: "8px solid transparent",
-                borderTop: "10px solid var(--ww-ink)",
-              }}
-            />
-          </div>
 
           {/* mood chip */}
           <div
             style={{
               position: "absolute",
-              top: 16,
-              right: 14,
+              top: 12,
+              right: 12,
               background: "var(--ww-card)",
               border: "3px solid var(--ww-ink)",
               boxShadow: "2px 2px 0 var(--ww-ink)",
@@ -362,70 +306,57 @@ export default function PhoenixHome() {
               gap: 6,
             }}
           >
-            <Px m={I.heart} s={2.5} c="#CE4B2E" />
+            <Px m={I.smiley} s={2.5} colors={{ Y: "var(--ww-yellow)", n: "var(--ww-ink)" }} />
             <span className="ww-pixel" style={{ fontSize: 8 }}>
               Happy
-            </span>
-          </div>
-
-          {/* level badge */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: 12,
-              right: 14,
-              background: "var(--ww-ink)",
-              color: "var(--ww-cream)",
-              border: "3px solid var(--ww-cream)",
-              boxShadow: "2px 2px 0 var(--ww-ink)",
-              padding: "4px 8px",
-            }}
-          >
-            <span className="ww-pixel" style={{ fontSize: 8 }}>
-              LV 12
             </span>
           </div>
         </div>
 
         {/* status panel */}
         <div className="ww-card" style={{ padding: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div style={{ marginBottom: 12 }}>
             <span className="ww-section-title">Status</span>
-            <span className="ww-pixel" style={{ fontSize: 8, color: "var(--ww-good)" }}>
-              Good Boy!
-            </span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-            <StatRow label="Mood">
-              <Hearts filled={4} total={5} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <StatRow
+              icon={<Px m={I.smiley} s={2.5} colors={{ Y: "var(--ww-yellow)", n: "var(--ww-ink)" }} />}
+              label="Mood"
+            >
+              <span className="ww-pixel" style={{ fontSize: 9 }}>
+                Happy
+              </span>
             </StatRow>
-            <StatRow label="Energy">
-              <Bar filled={8} c="var(--ww-mint)" />
+            <StatRow icon={<Px m={I.bolt} s={2.5} c="var(--ww-sage)" />} label="Energy">
+              <Bar filled={4} c="var(--ww-sage)" />
             </StatRow>
-            <StatRow label="Hunger">
+            <StatRow icon={<Px m={I.bowl} s={2.5} c="var(--ww-copper)" />} label="Hunger">
               <Bar filled={3} c="var(--ww-copper)" />
             </StatRow>
-            <StatRow label="Alone Time">
-              <Bar filled={2} c="var(--ww-sky)" />
+            <StatRow icon={<Px m={I.drop} s={2.5} c="var(--ww-bile)" />} label="Bile Risk">
+              <span className="ww-pixel" style={{ fontSize: 9, color: "var(--ww-bile)" }}>
+                Low
+              </span>
             </StatRow>
-            <div style={{ height: 2, background: "var(--ww-empty)", margin: "2px 0" }} />
-            <StatRow label="EXP 92/100">
-              <Bar filled={9} c="var(--ww-sage)" />
+            <StatRow icon={<Px m={I.heart} s={2.5} c="var(--ww-copper)" />} label="Bond">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Bar filled={5} c="var(--ww-sage)" />
+                <span className="ww-pixel" style={{ fontSize: 9 }}>
+                  92%
+                </span>
+              </div>
             </StatRow>
           </div>
         </div>
 
         {/* next up */}
-        <button
+        <div
           className="ww-card"
           style={{
             display: "flex",
             alignItems: "center",
             gap: 12,
             padding: 12,
-            textAlign: "left",
-            cursor: "pointer",
-            background: "var(--ww-mint-soft)",
           }}
         >
           <div
@@ -433,52 +364,37 @@ export default function PhoenixHome() {
               width: 44,
               height: 44,
               flexShrink: 0,
-              background: "var(--ww-card)",
+              background: "var(--ww-mint)",
               border: "3px solid var(--ww-ink)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Px m={I.boot} s={3} c="var(--ww-copper)" />
+            <Px m={I.paw} s={3} c="var(--ww-ink)" />
           </div>
-          <div style={{ flex: 1 }}>
-            <div className="ww-pixel" style={{ fontSize: 9, marginBottom: 4 }}>
-              Next Walk
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="ww-pixel" style={{ fontSize: 8, marginBottom: 5, opacity: 0.85 }}>
+              Next Up
             </div>
-            <div style={{ fontFamily: "'Pixelify Sans', monospace", fontSize: 15, color: "var(--ww-ink-soft)" }}>
-              In 1h 35m · 8:30 AM
+            <div style={{ fontFamily: "'Pixelify Sans', monospace", fontSize: 15, color: "var(--ww-ink)" }}>
+              Walk with Emma
             </div>
           </div>
-          <Px m={I.chevR} s={3} />
-        </button>
-
-        {/* quick log */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <span className="ww-section-title">Quick Log</span>
-          <div
+          <button
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 10,
+              flexShrink: 0,
+              background: "var(--ww-sage)",
+              border: "3px solid var(--ww-ink)",
+              boxShadow: "3px 3px 0 var(--ww-ink)",
+              padding: "9px 10px",
+              cursor: "pointer",
             }}
           >
-            {[
-              { icon: I.bowl, label: "Meal", bg: "var(--ww-copper)", ic: "#FFFCF2" },
-              { icon: I.boot, label: "Walk", bg: "var(--ww-sage)", ic: "#FFFCF2" },
-              { icon: I.drop, label: "Potty", bg: "var(--ww-sky)", ic: "var(--ww-ink)" },
-              { icon: I.bone, label: "Treat", bg: "var(--ww-card)", ic: "var(--ww-ink)" },
-              { icon: I.star, label: "Training", bg: "var(--ww-lav)", ic: "var(--ww-ink)" },
-              { icon: I.note, label: "Note", bg: "var(--ww-ink)", ic: "var(--ww-cream)" },
-            ].map((t) => (
-              <div key={t.label} className="ww-tile" style={{ background: t.bg }}>
-                <Px m={t.icon} s={3} c={t.ic} />
-                <span className="ww-pixel" style={{ fontSize: 7, color: t.ic }}>
-                  {t.label}
-                </span>
-              </div>
-            ))}
-          </div>
+            <span className="ww-pixel" style={{ fontSize: 8, color: "#FFFDF6" }}>
+              Start Walk
+            </span>
+          </button>
         </div>
       </div>
 
@@ -489,14 +405,14 @@ export default function PhoenixHome() {
           alignItems: "center",
           justifyContent: "space-around",
           height: 72,
-          background: "var(--ww-card)",
+          background: "var(--ww-ink)",
           borderTop: "3px solid var(--ww-ink)",
           position: "relative",
         }}
       >
         {[
           { icon: I.home, label: "Home", active: true },
-          { icon: I.book, label: "Log", active: false },
+          { icon: I.list, label: "Log", active: false },
         ].map((t) => (
           <button
             key={t.label}
@@ -508,29 +424,28 @@ export default function PhoenixHome() {
               alignItems: "center",
               gap: 5,
               cursor: "pointer",
-              opacity: t.active ? 1 : 0.55,
             }}
           >
-            <Px m={t.icon} s={3} c={t.active ? "var(--ww-copper)" : "var(--ww-ink)"} />
+            <Px m={t.icon} s={3} c={t.active ? "var(--ww-copper)" : "var(--ww-mint)"} />
             <span
               className="ww-pixel"
-              style={{ fontSize: 7, color: t.active ? "var(--ww-copper)" : "var(--ww-ink)" }}
+              style={{ fontSize: 7, color: t.active ? "var(--ww-copper)" : "var(--ww-mint)" }}
             >
               {t.label}
             </span>
           </button>
         ))}
 
-        {/* center add */}
-        <div style={{ position: "relative", top: -18 }}>
+        {/* center paw */}
+        <div style={{ position: "relative", top: -16 }}>
           <button
-            aria-label="Add"
+            aria-label="Quick log"
             style={{
-              width: 58,
-              height: 58,
+              width: 56,
+              height: 56,
               borderRadius: "50%",
-              background: "var(--ww-copper)",
-              border: "4px solid var(--ww-ink)",
+              background: "var(--ww-cream)",
+              border: "3px solid var(--ww-ink)",
               boxShadow: "0 4px 0 var(--ww-ink)",
               display: "flex",
               alignItems: "center",
@@ -538,12 +453,12 @@ export default function PhoenixHome() {
               cursor: "pointer",
             }}
           >
-            <Px m={I.plus} s={4} c="#FFFCF2" />
+            <Px m={I.paw} s={4} c="var(--ww-ink)" />
           </button>
         </div>
 
         {[
-          { icon: I.bell, label: "Alerts", active: false },
+          { icon: I.book, label: "Guide", active: false },
           { icon: I.menu, label: "More", active: false },
         ].map((t) => (
           <button
@@ -556,11 +471,10 @@ export default function PhoenixHome() {
               alignItems: "center",
               gap: 5,
               cursor: "pointer",
-              opacity: 0.55,
             }}
           >
-            <Px m={t.icon} s={3} c="var(--ww-ink)" />
-            <span className="ww-pixel" style={{ fontSize: 7, color: "var(--ww-ink)" }}>
+            <Px m={t.icon} s={3} c="var(--ww-mint)" />
+            <span className="ww-pixel" style={{ fontSize: 7, color: "var(--ww-mint)" }}>
               {t.label}
             </span>
           </button>

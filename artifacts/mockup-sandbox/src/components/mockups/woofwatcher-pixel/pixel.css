@@ -1,21 +1,23 @@
 /* WoofWatcher — Neo Retro / Digital Pet pixel design system
    Palette pulled from the user's Option B / Option C mockup boards. */
 :root {
-  --ww-cream: #FFF7E8;
-  --ww-card: #FFFCF2;
-  --ww-card2: #F7EAD2;
-  --ww-ink: #0C2A33;       /* deep teal-navy */
-  --ww-ink-soft: #2A4A52;
+  /* Exact palette from Option B board (#0B1424 / #C55A2A / #6DA36F / #BFE3C4 / #A9D4FF / #F7F2E8) */
+  --ww-cream: #F7F2E8;
+  --ww-card: #FFFDF6;
+  --ww-card2: #EFE7D5;
+  --ww-ink: #0B1424;       /* deep navy */
+  --ww-ink-soft: #3A4456;
   --ww-copper: #C55A2A;
   --ww-copper-deep: #9E3F18;
-  --ww-sage: #5E9E64;
-  --ww-mint: #79C58C;
-  --ww-mint-soft: #BFE3C4;
-  --ww-sky: #9FC6E8;
-  --ww-lav: #CBB9E8;
-  --ww-heart: #CE4B2E;
+  --ww-sage: #6DA36F;
+  --ww-mint: #BFE3C4;
+  --ww-mint-soft: #D6EBD8;
+  --ww-sky: #A9D4FF;
+  --ww-bile: #4F92D6;
+  --ww-yellow: #F2C94C;
+  --ww-heart: #C55A2A;
   --ww-good: #3F7E4B;
-  --ww-empty: rgba(12, 42, 51, 0.10);
+  --ww-empty: rgba(11, 20, 36, 0.10);
 }
 
 .ww-root {
