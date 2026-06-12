@@ -38,7 +38,7 @@ const QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
   { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
   { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water" },
-  { key: "pee", icon: "pee", label: "Pee", type: "potty", title: "Pee break" },
+  { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty break" },
   { key: "training", icon: "training", label: "Training", type: "training", title: "Training win" },
   { key: "treat", icon: "treat", label: "Treat", type: "treat", title: "Treat" },
   { key: "play", icon: "play", label: "Play", type: "play", title: "Play session" },
@@ -49,7 +49,7 @@ function routineIcon(type: string): PixelIconName {
   if (t === "walk") return "walk";
   if (t === "meal") return "meal";
   if (t === "training") return "training";
-  if (t === "potty" || t === "pee") return "pee";
+  if (t === "potty") return "pee";
   if (t === "medication") return "medication";
   if (t === "play") return "play";
   if (t === "treat") return "treat";
