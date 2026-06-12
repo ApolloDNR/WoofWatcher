@@ -23,20 +23,27 @@ persisted in AsyncStorage; old files are deleted on re-save/revert. Use `getAvat
 place that shows the dog so the custom avatar appears everywhere. Scope is MOBILE-ONLY; do not edit
 the web artifact.
 
-## Locked default art style (Phoenix) — PIXEL / "Neo Retro Digital Pet"
+## Locked default art style (Phoenix) — "PIXEL CHARM MEETS MODERN POLISH"
 
-Current locked direction = a FULL PIXEL-ART / retro tamagotchi look across the whole mobile app,
-dog INCLUDED. Phoenix is a detailed **16-bit pixel-art** German Shepherd (black-and-tan) in a
-signature OLIVE-GREEN cloth BANDANA (never a collar/tag), shown inside a cozy pixel home scene.
-The whole UI is pixel chrome: chunky 3px navy borders, hard offset shadows, segmented EXP/stat
-bars, pixel hearts, Press Start 2P labels + Pixelify Sans body. This matches the user's uploaded
-boards: Option B "Neo Retro Digital Pet" + Option C "Avatar Studio" (`attached_assets/*1781225081158.*`).
+The board's OWN design principle is the lock: **clean modern app UI + pixel-art ONLY in the pet
+scene and small content icons.** It is NOT a fully-pixelated tamagotchi chrome. The UI shell is
+clean and smooth: rounded cards (~18px) with soft shadows + thin tan borders, **Baloo 2** rounded
+sans for all body/values/nav labels (Happy, Low, 92%, Walk with Emma, Home/Log/Guide/More), and
+**Silkscreen** pixel-caps ONLY for uppercase section labels + the header (PHOENIX HOME / MOOD /
+ENERGY …). Navigation = a clean navy rounded bar with **smooth SVG line icons** (house/list/book/
+hamburger) + a raised white circle holding a paw — NOT pixel bitmaps. Pixel art appears in exactly
+two places: the hero pet SCENE and the little STATUS/Quick-Log content icons.
+Phoenix himself = detailed **16-bit pixel-art** German Shepherd (black-and-tan) in an OLIVE-GREEN
+cloth BANDANA (never a collar/tag), in a cozy INDOOR room scene.
 
-**Why:** The user pivoted hard to pixel and was emphatic — "this pixel style, this gametachi, copy
-this exactly… perfect UI… ready to go live." IMPORTANT NUANCE: an *earlier* generic/low-quality
-blocky pixel dog WAS rejected — the bar is HIGH-FIDELITY detailed pixel art that mirrors their
-boards, not crude 8-bit blobs. Quality is the dividing line, not pixel-vs-painted. (This supersedes
-the prior "painted, never pixel" lock from earlier in the same session.)
+**Why:** The user rejected a FULL-pixel build of Phoenix Home TWICE. Decisive reason: "the
+navigation can be exactly like the images i attached, NOT pixelated," plus scene wrong (wanted
+indoor, not garden) and "colors or fonts are off." Press Start 2P everywhere + hand-drawn bitmap
+icons + chunky 3px hard-shadow borders = the rejected look. The boards read as a polished modern
+app whose *charm* is the pixel pet, exactly per the board's own left-panel principle "Retro
+Delight: pixel charm meets modern polish." (Supersedes the earlier "full pixel chrome" lock AND
+the older "painted, never pixel" lock.) An earlier low-quality blocky dog was also rejected — the
+bar is high-fidelity, not crude 8-bit.
 
 **How to apply:** Keep the same dog + green bandana across every mood for character consistency;
 vary only the expression. For pixel scenes prompt "detailed 16-bit pixel art, SNES JRPG style…
@@ -51,18 +58,24 @@ pace calls one at a time with waits. Pixel design system lives in mockup-sandbox
 
 When the user says "recreate exactly what these images are," do NOT regenerate/interpret — REUSE the
 board's own art. The boards are 1448×1086. Use ImageMagick (`magick … -crop WxH+X+Y +repage
--filter point -resize 200%`) to crop the actual scene art straight out of the board and serve it as
-the app image (display with `image-rendering: pixelated`). The big DESKTOP card on each board is the
-cleanest/highest-fidelity rendering of a screen's content; crop that.
+-filter point -resize 300%`) to crop straight out of the board: (1) the **phone #1 indoor scene**
+(German Shepherd in a cozy room — window, plants, side table, toy balls — with the "I'm ready! 🐾"
+bubble already baked in) → serve as the hero image; (2) the board's **ICON LIBRARY PREVIEW** grid
+(Home/Walk/Food/Potty/Training/Health/Bile/AloneTime/Guide/Studio) + the smiley/lightning from the
+desktop STATUS panel → crop each ~36px box and serve as the small content icons. Display these with
+`image-rendering: auto` (clean downscale), NOT pixelated. Assets live in mockup-sandbox
+`public/images/` (`phoenix-indoor.png`) and `public/images/icons/*.png`.
 
-**Why:** First two pixel attempts were rejected because they invented copy and rearranged elements.
-A generated/interpreted scene is the thing that "sucks"; the cropped board art is unimpeachable.
+**Why:** Pixel attempts were rejected for inventing copy/scene. Cropped board art is unimpeachable.
+The INDOOR room scene + "I'm ready!" bubble come from phone #1 — the GARDEN desktop scene and the
+"Morning!"/"Walk time soon?" bubbles are the WRONG ones (explicitly corrected).
 
-**How to apply (Phoenix Home canonical content — match these, no additions/removals):** speech
-bubble = "Morning! / Walk time soon? / I'm ready!" (baked into the cropped garden scene; don't render
-a second bubble). STATUS rows in order: MOOD 😊 Happy · ENERGY (green seg bar) · HUNGER (copper seg
-bar) · BILE RISK 💧 Low · BOND ❤ 92% (BILE RISK is core to this app — never drop it). NEXT UP =
-"Walk with Emma" + green START WALK button. Bottom tabs (5): Home · Log · [center PAW circle] · Guide
-· More (center is a PAW, not a +). Exact palette already in `pixel.css`: #0B1424 #C55A2A #6DA36F
-#BFE3C4 #A9D4FF #F7F2E8. The 6 board phone screens: Phoenix Home, Quick Log, Alone Time/Health Watch,
-Health Watch/Bile Watch, Care Pass, Avatar Studio.
+**How to apply (Phoenix Home canonical content — match these, no additions/removals):** header
+"PHOENIX HOME" (Silkscreen, centered, ← back + ⊡ expand). STATUS rows in order: MOOD smiley + mini
+green bar … "Happy" (right) · ENERGY green seg bar · HUNGER copper seg bar · BILE RISK 💧 "Low" ·
+BOND green bar + ❤ + "92%" (BILE RISK is core to this app — never drop it). NEXT UP = "Walk with
+Emma" + "In 1h 35m · 8:30 AM" + copper START WALK button. Bottom nav (5, clean line icons): Home ·
+Log · [center raised white circle w/ PAW] · Guide · More (center is a PAW, not a +). Palette in
+`pixel.css`: bg #EFE7D6, card #FBF6EC, ink #15233C, copper #C55A2A, sage #6DA36F, bile #5AA0DC.
+The board has 6 phone screens: Phoenix Home, Quick Log, Alone Time/Health Watch, Bile Watch, Care
+Pass, Avatar Studio.

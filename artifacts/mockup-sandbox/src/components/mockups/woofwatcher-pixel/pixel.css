@@ -1,88 +1,74 @@
-/* WoofWatcher — Neo Retro / Digital Pet pixel design system
-   Palette pulled from the user's Option B / Option C mockup boards. */
+/* WoofWatcher — Neo Retro / Digital Pet
+   Clean modern UI shell ("modern polish") + pixel-art pet scene & icons ("pixel charm").
+   Palette + icon/scene assets pulled directly from the user's mockup boards. */
 :root {
-  /* Exact palette from Option B board (#0B1424 / #C55A2A / #6DA36F / #BFE3C4 / #A9D4FF / #F7F2E8) */
-  --ww-cream: #F7F2E8;
-  --ww-card: #FFFDF6;
-  --ww-card2: #EFE7D5;
-  --ww-ink: #0B1424;       /* deep navy */
-  --ww-ink-soft: #3A4456;
+  --ww-bg: #EFE7D6;
+  --ww-card: #FBF6EC;
+  --ww-card-2: #F3ECDD;
+  --ww-border: #E6DCC6;
+  --ww-border-soft: #ECE3D1;
+  --ww-ink: #15233C;
+  --ww-ink-soft: #9A9181;
   --ww-copper: #C55A2A;
-  --ww-copper-deep: #9E3F18;
+  --ww-copper-deep: #A8461C;
   --ww-sage: #6DA36F;
-  --ww-mint: #BFE3C4;
-  --ww-mint-soft: #D6EBD8;
+  --ww-sage-deep: #4E8A57;
+  --ww-mint: #C7E6CC;
   --ww-sky: #A9D4FF;
-  --ww-bile: #4F92D6;
+  --ww-bile: #5AA0DC;
   --ww-yellow: #F2C94C;
-  --ww-heart: #C55A2A;
-  --ww-good: #3F7E4B;
-  --ww-empty: rgba(11, 20, 36, 0.10);
+  --ww-track: rgba(21, 35, 60, 0.09);
+  --ww-nav: #16233B;
+  --ww-nav-2: #1E2E49;
+  --ww-font-label: 'Silkscreen', monospace;
+  --ww-font-body: 'Baloo 2', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
+* { box-sizing: border-box; }
+
 .ww-root {
-  font-family: 'Pixelify Sans', 'VT323', monospace;
+  font-family: var(--ww-font-body);
   width: 390px;
   max-width: 100%;
   margin: 0 auto;
   height: 100%;
   min-height: 844px;
-  background: var(--ww-cream);
+  background: var(--ww-bg);
   color: var(--ww-ink);
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  -webkit-font-smoothing: none;
+  -webkit-font-smoothing: antialiased;
 }
 
-.ww-pixel {
-  font-family: 'Press Start 2P', monospace;
+.ww-label {
+  font-family: var(--ww-font-label);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  line-height: 1.6;
+  letter-spacing: 1px;
+  color: var(--ww-ink);
+  line-height: 1;
 }
 
-.ww-art { image-rendering: pixelated; }
+.ww-img { image-rendering: auto; display: block; }
 
 .ww-card {
   background: var(--ww-card);
-  border: 3px solid var(--ww-ink);
-  box-shadow: 4px 4px 0 var(--ww-ink);
-  border-radius: 0;
+  border: 1px solid var(--ww-border);
+  border-radius: 18px;
+  box-shadow: 0 8px 20px rgba(21, 35, 60, 0.06);
 }
 
 .ww-scroll {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 14px 14px 22px;
+  padding: 12px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 13px;
 }
 .ww-scroll::-webkit-scrollbar { width: 0; }
 
-.ww-tile {
-  background: var(--ww-card);
-  border: 3px solid var(--ww-ink);
-  box-shadow: 3px 3px 0 var(--ww-ink);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px 4px 8px;
-  cursor: pointer;
-  transition: transform .08s, box-shadow .08s;
-}
-.ww-tile:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ww-ink); }
-
-.ww-section-title {
-  font-family: 'Press Start 2P', monospace;
-  text-transform: uppercase;
-  font-size: 9px;
-  letter-spacing: 0.5px;
-  color: var(--ww-ink);
-  opacity: 0.85;
-}
+.ww-press { transition: transform .08s ease; cursor: pointer; }
+.ww-press:active { transform: scale(0.96); }
