@@ -55,7 +55,11 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
 
+  // Development convenience: skip the sign-in gate so the app can be reviewed
+  // in the web preview / simulator without logging in on every reload. Real
+  // production builds (where __DEV__ is false) always enforce authentication.
   useEffect(() => {
+    if (__DEV__) return;
     const inAuthGroup = segments[0] === "(auth)";
     if (!isSignedIn && !inAuthGroup) {
       router.replace("/(auth)/sign-in");
