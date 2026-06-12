@@ -48,6 +48,10 @@ Every autonomous run should improve at least one of: care workflow, household us
 40. DONE 2026-06-11: Reminder Center rows now route to concrete workflows: routine reminders open the routine editor, medication routine reminders open the Medication log composer, record reminders open Records, and grooming reminders open the Grooming log composer.
 41. DONE 2026-06-11: Full Log search now uses shared care-domain logic to search titles, notes, caregivers, event details, routes, medication fields, and sticky notes while combining text query with type filters, summary copy, and active-filter empty states.
 42. DONE 2026-06-11: Medication History search and outcome filters now use shared care-domain logic to filter recent medication evidence by medicine, dose, caregiver, note, routine id, and taken/skipped/missed/needs-review outcome, then surface summary and empty-state copy in Records.
+43. IN PROGRESS 2026-06-12: v1.5 Premium Neo-Retro Pixel Care direction is being mirrored into durable docs and the app shell/navigation pass is starting with CI repair, mobile nav alignment, PWA local-first preservation, grouped desktop navigation, five-tab mobile navigation, and light/dark design tokens.
+44. NEXT: PWA v1.5 shell/navigation implementation: grouped desktop sidebar, mobile bottom nav, top bar actions, theme toggle, reusable card/status/quick-action patterns, and no dead-end route buttons.
+45. NEXT: Phoenix Home v1.5: pixel room hero, presence/alone state, mood/status strip, Next Up, Today at a Glance, Quick Actions, Household Pulse mini-card, and Health/Bile snapshot.
+46. NEXT: Quick Log v2: grouped actions, Potty parent/outcome flow, and visible Meal served/outcome lifecycle while preserving routines/logs linkage.
 
 ## Cadence
 

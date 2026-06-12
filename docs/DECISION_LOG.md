@@ -12,6 +12,26 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-12: v1.5 Locks Premium Neo-Retro Pixel Care
+
+Decision: WoofWatcher v1.5 uses the Premium Neo-Retro Pixel Care direction with the line "Real care. Pixel heart.", the tagline "Your dog's day, brought to life.", and the promise "Care for your real dog. Watch their care twin come alive."
+
+Reason: Apollo provided this as the current locked product direction and asked Codex/Fable/Replit to build toward a strong working version today/tomorrow.
+
+Owner: Apollo.
+
+Revisit trigger: Apollo replaces the v1.5 kickoff with a newer canonical product/design brief.
+
+### 2026-06-12: PWA Becomes A v1.5 Dashboard Surface While Mobile Remains Canonical
+
+Decision: `artifacts/woofwatcher-mobile` remains the canonical mobile product, and `artifacts/woofwatcher` is intentionally upgraded as the local-first PWA/dashboard surface that preserves localStorage, backup/import, reports, Health Watch/Bile Watch, records, and assistant routing.
+
+Reason: Existing docs correctly identify mobile as canonical, but Apollo's v1.5 kickoff explicitly says to preserve and upgrade the existing local-first PWA architecture rather than rebuilding from scratch.
+
+Owner: Codex, pending Apollo confirmation.
+
+Revisit trigger: Apollo chooses a single-surface launch strategy or declares the web/PWA no longer part of v1.5.
+
 ### 2026-06-08: Apollo Shared Thread Is Product Vision Source
 
 Decision: Apollo's ChatGPT shared thread `https://chatgpt.com/share/6a2650b3-82f8-83e8-be54-55d68cea34a4` is treated as the current WoofWatcher product vision source.

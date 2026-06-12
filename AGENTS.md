@@ -5,27 +5,35 @@
 When working in this repo, use this order:
 
 1. `AGENTS.md`
-2. `docs/APOLLO_VISION_SYNTHESIS.md`
-3. `docs/30_YEAR_NORTH_STAR.md`
-4. `docs/MONEY_RELEASE_PLAN.md`
-5. `docs/AUTONOMOUS_BUILD_QUEUE.md`
-6. `docs/QUALITY_GATES.md`
-7. `docs/QA_TEST_PLAN.md`
-8. `docs/ULTIMATE_RELEASE_PLAN.md`
-9. `docs/PRODUCT_QUALITY_GATES.md`
-10. `docs/DECISION_LOG.md`
-11. `docs/BLOCKERS_FOR_APOLLO.md`
-12. `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
-13. `README.md` and `replit.md`
-14. Product specs and implementation plans in `docs/superpowers`
-15. Current app, API, package, test, CI, schema, and migration state
-16. Brand/design screenshots and external references Apollo provides
+2. `docs/V1_COMPLETION_AUDIT.md`
+3. `docs/V1_PLAN.md`
+4. `docs/FIGMA_BRIEF.md`
+5. `docs/strategy/LOCKED_BUSINESS_PLAN_AND_PRD.md`
+6. `docs/strategy/CODEX_BUILD_HANDOFF.md`
+7. `docs/design/WOOFWATCHER_UI_DIRECTION_LOCK.md`
+8. `docs/APOLLO_VISION_SYNTHESIS.md`
+9. `docs/30_YEAR_NORTH_STAR.md`
+10. `docs/MONEY_RELEASE_PLAN.md`
+11. `docs/AUTONOMOUS_BUILD_QUEUE.md`
+12. `docs/QUALITY_GATES.md`
+13. `docs/QA_TEST_PLAN.md`
+14. `docs/ULTIMATE_RELEASE_PLAN.md`
+15. `docs/PRODUCT_QUALITY_GATES.md`
+16. `docs/DECISION_LOG.md`
+17. `docs/BLOCKERS_FOR_APOLLO.md`
+18. `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+19. `README.md` and `replit.md`
+20. Product specs and implementation plans in `docs/superpowers`
+21. Current app, API, package, test, CI, schema, and migration state
+22. Brand/design screenshots and external references Apollo provides
 
 ## Product Identity
 
 WoofWatcher is a premium mobile-first dog care operating system. It is the shared command center for a dog's routines, logs, health signals, records, caregiver coordination, sitter/vet/trainer handoffs, and WoofGuide AI assistance.
 
-The canonical product surface is `artifacts/woofwatcher-mobile`. The API is `artifacts/api-server`. Shared care rules belong in `lib/care-domain`. The web app in `artifacts/woofwatcher` is a prototype/dashboard surface unless intentionally promoted.
+The v1.5 product direction is Premium Neo-Retro Pixel Care: "Real care. Pixel heart." and "Your dog's day, brought to life." The product promise is: "Care for your real dog. Watch their care twin come alive."
+
+The canonical product surface is `artifacts/woofwatcher-mobile`. The API is `artifacts/api-server`. Shared care rules belong in `lib/care-domain`. The web app in `artifacts/woofwatcher` is a local-first PWA/dashboard surface that must preserve localStorage, backup/import, reports, Health Watch, Bile Watch, records, and assistant routing while it is upgraded toward the v1.5 app shell and visual direction.
 
 Dog-first means dog-first. Do not dilute the first premium release by trying to serve all pets equally. Architecture may remain flexible for later species support, but the release target is the best shared dog-care command center.
 
@@ -90,11 +98,11 @@ Before each implementation slice:
 
 Default autonomous priority:
 
-1. Routines/logs relationship and meal logging correctness.
-2. Today Command and Quick Log usefulness.
-3. Health Watch, handoff, reports, and WoofGuide usefulness.
-4. Subscription/revenue path.
-5. App Store, privacy, export/delete, and production hardening.
+1. Keep CI green and repair failing verification before adding feature scope.
+2. Preserve the routines/logs relationship and meal logging correctness.
+3. Implement the v1.5 shell/navigation direction across mobile and PWA surfaces.
+4. Improve Today Command, Phoenix Home, Quick Log, Health Watch, Bile Watch, Diet & Treats, Care Pass, WoofGuide, Avatar Studio, and household workflows without dead ends.
+5. Continue premium design, motion, accessibility, App Store, privacy, export/delete, and production hardening.
 
 Stop only for missing secrets, destructive data risk, app-store approval, legal/veterinary safety boundaries, production approval, or direct source-of-truth contradictions.
 
