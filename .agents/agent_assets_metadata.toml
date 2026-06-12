@@ -102,6 +102,66 @@ uri = "file://artifacts/mockup-sandbox/public/images/phoenix-expressions.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "URi09-M8OW6OvfzKXApcS"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/painted/phoenix-happy.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "D9U4_nNYyi2OnzRw5apaX"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/painted/phoenix-excited.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "RjMZYi7iikmcDtTT75-t9"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/painted/phoenix-calm.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "TXG0BuoCIra5rzx_X1WJz"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/painted/phoenix-anxious.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "paCa0V1fS0jnnmwgUY4GV"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/painted/phoenix-unwell.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Je6NliysWF6uE45bEGFKy"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/sq/phoenix-happy.png"
+type = "image"
+title = "phoenix happy clean"
+
+[[generated]]
+id = "sQk3xkjfur-CFRwh-3hgl"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/sq/phoenix-excited.png"
+type = "image"
+title = "phoenix excited clean"
+
+[[generated]]
+id = "zHfRSirV0sFE3fOqYQUda"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/sq/phoenix-calm.png"
+type = "image"
+title = "phoenix calm clean"
+
+[[generated]]
+id = "X-QuizN36yYQCUZyO31Xx"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/sq/phoenix-anxious.png"
+type = "image"
+title = "phoenix anxious clean"
+
+[[generated]]
+id = "47TpntN7xjmWF1UNtaUs_"
+uri = "file://artifacts/woofwatcher-mobile/assets/phoenix/sq/phoenix-unwell.png"
+type = "image"
+title = "phoenix unwell clean"
+
 [[outputs]]
 id = "MyqJSU1BnOoEGFRPC3DcD"
 uri = "file://artifacts/mockup-sandbox/public/images/woof-dog.png"
