@@ -39,9 +39,11 @@ test("registers the critical mobile routes and tabs", () => {
     assert.ok(existsSync(join(APP_DIR, `${route}.tsx`)), `${route} route file should exist`);
   }
 
-  for (const tab of ["Today", "Log", "Calendar", "Records", "More"]) {
+  for (const tab of ["Home", "Log", "Plans", "Health", "More"]) {
     assert.match(tabLayout, new RegExp(`title: "${tab}"`), `${tab} tab should be visible`);
   }
+  assert.match(tabLayout, /name="records"/, "records route should stay registered for More links and deep links");
+  assert.match(tabLayout, /href: null/, "records should not appear as a primary bottom tab in v1.5");
 });
 
 test("keeps string router links pointed at existing route files", () => {
@@ -144,13 +146,23 @@ test("keeps Expo app identity release-grade", () => {
   assert.doesNotMatch(JSON.stringify(expo), /replit/i);
 });
 
-test("wires Home to the avatar motion state model", () => {
+test("wires Home to the Phoenix status model", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 
-  assert.match(home, /deriveAvatarMotion/);
-  assert.match(home, /avatarMotion\.avatarMood/);
-  assert.match(home, /avatarMotion\.route/);
-  assert.match(home, /avatarMotion\.line/);
+  assert.match(home, /derivePhoenixStatus/);
+  assert.match(home, /status\.mood/);
+  assert.match(home, /status\.energy/);
+  assert.match(home, /status\.counts/);
+});
+
+test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () => {
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+
+  assert.match(health, /deriveHealthWatch/);
+  assert.match(health, /Health Watch/);
+  assert.match(health, /Bile Watch/);
+  assert.match(health, /Pattern noticed/);
+  assert.match(health, /Not veterinary advice/);
 });
 
 test("keeps Records report history wired for printable Care Pass artifacts", () => {

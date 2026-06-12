@@ -37,6 +37,7 @@ interface QuickItem {
 const QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
   { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
+  { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water" },
   { key: "pee", icon: "pee", label: "Pee", type: "potty", title: "Pee break" },
   { key: "training", icon: "training", label: "Training", type: "training", title: "Training win" },
   { key: "treat", icon: "treat", label: "Treat", type: "treat", title: "Treat" },
@@ -379,8 +380,8 @@ export default function HomeScreen() {
           {/* Watch cards */}
           <View style={s.watchRow}>
             {[
-              { title: "Health Watch", icon: "health" as PixelIconName, data: health, route: "/records" },
-              { title: "Bile Watch", icon: "bile" as PixelIconName, data: bile, route: "/records" },
+              { title: "Health Watch", icon: "health" as PixelIconName, data: health, route: "/health" },
+              { title: "Bile Watch", icon: "bile" as PixelIconName, data: bile, route: "/health" },
               { title: "Alone Time", icon: "clock" as PixelIconName, data: alone, route: "/log" },
             ].map((w) => (
               <Pressable

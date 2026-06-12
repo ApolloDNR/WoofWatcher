@@ -109,14 +109,6 @@ export default function TabLayout() {
             never swallows taps meant for the Log/Plans tabs. The records
             screen stays reachable via router.push("/records"). */}
         <Tabs.Screen
-          name="records"
-          options={{
-            tabBarButton: () => (
-              <View style={{ flex: 1, pointerEvents: "none" }} />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="calendar"
           options={{
             title: "Plans",
@@ -126,6 +118,21 @@ export default function TabLayout() {
                 color={color}
                 ion="clipboard-outline"
                 ionFilled="clipboard"
+                size={21}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="health"
+          options={{
+            title: "Health",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon
+                focused={focused}
+                color={color}
+                ion="heart-outline"
+                ionFilled="heart"
                 size={21}
               />
             ),
@@ -143,6 +150,12 @@ export default function TabLayout() {
                 ionFilled="ellipsis-horizontal"
               />
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="records"
+          options={{
+            href: null,
           }}
         />
       </Tabs>
