@@ -450,7 +450,7 @@ export default function CalendarScreen() {
               <Ionicons name="calendar" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[s.title, { color: colors.foreground, fontFamily: DISPLAY }]}>Calendar</Text>
+              <Text style={[s.title, { color: colors.foreground, fontFamily: DISPLAY }]}>Plans & Schedule</Text>
               <Text style={[s.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{dateLabel}</Text>
             </View>
             <Pressable onPress={() => { Haptics.selectionAsync(); setAddOpen(true); }} style={[s.addBtn, { backgroundColor: colors.primary }]}>

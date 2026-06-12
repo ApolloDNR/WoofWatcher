@@ -1,40 +1,42 @@
+// Palette tuned to the WoofWatcher design board: warm cream page, ivory cards,
+// navy ink, copper accent, sage-green values.
 const lightTheme = {
-  text: "#1F2D27",
-  tint: "#BB602D",
+  text: "#14233B",
+  tint: "#C75A2A",
 
-  background: "#F4F1EC",
-  foreground: "#1A2820",
+  background: "#F1E8D6",
+  foreground: "#14233B",
 
-  card: "#FFFFFF",
-  cardForeground: "#1A2820",
+  card: "#FCF8EF",
+  cardForeground: "#14233B",
 
-  primary: "#2E5846",
+  primary: "#2E7D52",
   primaryForeground: "#FFFFFF",
 
-  secondary: "#DCE6D9",
-  secondaryForeground: "#1A2820",
+  secondary: "#E9DFC9",
+  secondaryForeground: "#14233B",
 
-  muted: "#F4F1EC",
-  mutedForeground: "#6B7A6E",
+  muted: "#EFE6D3",
+  mutedForeground: "#6E7888",
 
-  accent: "#DCE6D9",
-  accentForeground: "#1A2820",
+  accent: "#F3E7D2",
+  accentForeground: "#14233B",
 
-  destructive: "#C0604A",
+  destructive: "#C0492E",
   destructiveForeground: "#FFFFFF",
 
-  border: "#E4E0D9",
-  input: "#E4E0D9",
+  border: "#E7DCC4",
+  input: "#E7DCC4",
 
-  amber: "#CC9630",
-  rose: "#C0604A",
-  sage: "#3B7854",
-  copper: "#B85E2A",
-  ink: "#1A2820",
-  navy: "#0F1F33",
+  amber: "#D8912E",
+  rose: "#C75A4A",
+  sage: "#2E7D52",
+  copper: "#C75A2A",
+  ink: "#14233B",
+  navy: "#14233B",
   midnight: "#0A131F",
-  brandNavy: "#1B3A5B",
-  cream: "#FCFAF6",
+  brandNavy: "#14233B",
+  cream: "#FCF8EF",
 };
 
 const darkTheme = {

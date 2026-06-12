@@ -1,9 +1,9 @@
-import { BlurView } from "expo-blur";
-import { Tabs } from "expo-router";
-import { SymbolView, SymbolViewProps } from "expo-symbols";
+import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import React from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -11,129 +11,164 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 function TabIcon({
   focused,
   color,
-  sf,
-  sfFilled,
   ion,
   ionFilled,
-  size = 24,
+  size = 23,
 }: {
   focused: boolean;
   color: string;
-  sf: SymbolViewProps["name"];
-  sfFilled: SymbolViewProps["name"];
   ion: IoniconName;
   ionFilled: IoniconName;
   size?: number;
 }) {
-  if (Platform.OS === "ios") {
-    return <SymbolView name={focused ? sfFilled : sf} tintColor={color} size={size} />;
-  }
   return <Ionicons name={focused ? ionFilled : ion} size={size} color={color} />;
+}
+
+function CenterPaw() {
+  const colors = useColors();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  return (
+    <View pointerEvents="box-none" style={[s.fabWrap, { bottom: (insets.bottom || 10) + 26 }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Quick log"
+        onPress={() => {
+          if (Platform.OS !== "web") {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          }
+          router.push("/log");
+        }}
+        style={({ pressed }) => [
+          s.fab,
+          {
+            backgroundColor: colors.copper,
+            borderColor: colors.background,
+            shadowColor: colors.copper,
+            transform: [{ scale: pressed ? 0.94 : 1 }],
+          },
+        ]}
+      >
+        <Ionicons name="paw" size={26} color="#FFFFFF" />
+      </Pressable>
+    </View>
+  );
 }
 
 export default function TabLayout() {
   const colors = useColors();
-  const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
-        tabBarLabelStyle: { fontFamily: "Inter_600SemiBold", fontSize: 11 },
-        tabBarStyle: {
-          position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.card,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          elevation: 0,
-          paddingTop: 8,
-          ...(isWeb ? { height: 84 } : {}),
-        },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />
-          ) : (
+    <View style={{ flex: 1 }}>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: colors.copper,
+          tabBarInactiveTintColor: colors.mutedForeground,
+          tabBarLabelStyle: { fontFamily: "Inter_600SemiBold", fontSize: 11 },
+          tabBarItemStyle: { paddingTop: 6 },
+          tabBarStyle: {
+            position: "absolute",
+            backgroundColor: colors.card,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            elevation: 0,
+            paddingTop: 6,
+            ...(isWeb ? { height: 84 } : {}),
+          },
+          tabBarBackground: () => (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
           ),
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Today",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} color={color} sf="house" sfFilled="house.fill" ion="home-outline" ionFilled="home" />
-          ),
         }}
-      />
-      <Tabs.Screen
-        name="log"
-        options={{
-          title: "Log",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              focused={focused}
-              color={color}
-              sf="list.bullet.clipboard"
-              sfFilled="list.bullet.clipboard.fill"
-              ion="list-outline"
-              ionFilled="list"
-              size={22}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="calendar"
-        options={{
-          title: "Calendar",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              focused={focused}
-              color={color}
-              sf="calendar"
-              sfFilled="calendar"
-              ion="calendar-outline"
-              ionFilled="calendar"
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="records"
-        options={{
-          title: "Records",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              focused={focused}
-              color={color}
-              sf="folder"
-              sfFilled="folder.fill"
-              ion="folder-outline"
-              ionFilled="folder"
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="more"
-        options={{
-          title: "More",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              focused={focused}
-              color={color}
-              sf="ellipsis.circle"
-              sfFilled="ellipsis.circle.fill"
-              ion="ellipsis-horizontal-circle-outline"
-              ionFilled="ellipsis-horizontal-circle"
-            />
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Home",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon focused={focused} color={color} ion="home-outline" ionFilled="home" />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="log"
+          options={{
+            title: "Log",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon
+                focused={focused}
+                color={color}
+                ion="compass-outline"
+                ionFilled="compass"
+              />
+            ),
+          }}
+        />
+        {/* Empty center slot reserves space under the floating paw FAB so it
+            never swallows taps meant for the Log/Plans tabs. The records
+            screen stays reachable via router.push("/records"). */}
+        <Tabs.Screen
+          name="records"
+          options={{
+            tabBarButton: () => (
+              <View style={{ flex: 1, pointerEvents: "none" }} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="calendar"
+          options={{
+            title: "Plans",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon
+                focused={focused}
+                color={color}
+                ion="clipboard-outline"
+                ionFilled="clipboard"
+                size={21}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="more"
+          options={{
+            title: "More",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon
+                focused={focused}
+                color={color}
+                ion="ellipsis-horizontal"
+                ionFilled="ellipsis-horizontal"
+              />
+            ),
+          }}
+        />
+      </Tabs>
+      <CenterPaw />
+    </View>
   );
 }
+
+const s = StyleSheet.create({
+  fabWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fab: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 4,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 8,
+  },
+});
