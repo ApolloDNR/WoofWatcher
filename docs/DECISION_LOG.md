@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-12: Avatar Studio Starts As A Template-State Prototype
+
+Decision: Avatar Studio is a first-class PWA route with local reference photo memory and required template states before generated pixel sprites or animation assets exist.
+
+Reason: Apollo wants Phoenix to feel like a living care twin, but final Rive/Lottie/Reanimated assets and AI generation are a design/asset pipeline task. A tested template-state route gives Fable/Replit the correct product structure and state inventory to polish.
+
+Owner: Codex.
+
+Revisit trigger: Final sprite assets, Rive/Lottie/Reanimated state machines, or AI avatar generation become active implementation work.
+
 ### 2026-06-12: Records And Reports Need Direct PWA Routes
 
 Decision: Timeline, Records, Reports, and Care Pass are direct PWA routes instead of aliases into the More page.

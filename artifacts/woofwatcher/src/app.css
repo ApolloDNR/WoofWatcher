@@ -859,6 +859,49 @@ p { margin: 0; }
   line-height: 1.45;
   margin-top: 8px;
 }
+.avatar-studio-preview {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) 1fr;
+  gap: 18px;
+  align-items: center;
+}
+.avatar-reference-photo {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 1px solid var(--stone);
+  border-radius: 16px;
+  background: var(--surface-nested);
+}
+.avatar-state-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.avatar-state-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 118px;
+  border: 1px solid var(--stone);
+  border-radius: 14px;
+  background: var(--surface-nested);
+  color: var(--text-strong);
+  font: inherit;
+  text-align: left;
+  padding: 12px;
+  cursor: pointer;
+}
+.avatar-state-card.selected {
+  border-color: var(--copper);
+  box-shadow: 0 0 0 2px rgba(200, 90, 42, 0.14);
+}
+.avatar-state-card span,
+.avatar-state-card small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
 
 .notification-actions {
   display: flex;
@@ -1741,6 +1784,8 @@ p { margin: 0; }
   .more-directory-grid { grid-template-columns: 1fr; }
   .scoped-care-pass-grid { grid-template-columns: 1fr; }
   .woofguide-action-grid { grid-template-columns: 1fr; }
+  .avatar-studio-preview { grid-template-columns: 1fr; }
+  .avatar-state-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .diet-progress-stats { grid-template-columns: 1fr; }
   .diet-log-row { grid-template-columns: auto 1fr; }
   .diet-log-row .button { grid-column: 1 / -1; width: 100%; }

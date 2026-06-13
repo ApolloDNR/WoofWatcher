@@ -88,7 +88,8 @@ const PRIMARY_TABS = new Set([
   "timeline",
   "records",
   "reports",
-  "care-pass"
+  "care-pass",
+  "avatar-studio"
 ]);
 const TAB_ALIASES = {
   today: "phoenix",
@@ -113,8 +114,8 @@ const TAB_ALIASES = {
   "diet-treats": "diet-treats",
   carepass: "care-pass",
   "care-pass": "care-pass",
-  avatar: "more",
-  "avatar-studio": "more",
+  avatar: "avatar-studio",
+  "avatar-studio": "avatar-studio",
   achievements: "more",
   settings: "more",
   timeline: "timeline",
@@ -247,6 +248,18 @@ const WOOFGUIDE_ACTIONS = [
     action: "woofguide-draft-vet-note",
     cta: "Draft note"
   }
+];
+const AVATAR_STATES = [
+  { id: "happy", label: "Happy", mood: "happy", motion: "happy tail wag", use: "Normal cheerful care state." },
+  { id: "calm", label: "Calm", mood: "calm", motion: "soft idle", use: "Settled household baseline." },
+  { id: "excited", label: "Excited", mood: "excited", motion: "excited bounce", use: "Play, greeting, and adventure moments." },
+  { id: "sleepy", label: "Sleepy", mood: "settled", motion: "sleepy zzz", use: "Quiet hours and rest." },
+  { id: "anxious", label: "Anxious", mood: "anxious", motion: "ears and glance", use: "Watchful or nervous context." },
+  { id: "bored", label: "Bored", mood: "bored", motion: "attention nudge", use: "Needs enrichment or activity." },
+  { id: "hungry", label: "Hungry", mood: "hungry-watch", motion: "bowl look", use: "Food gap or meal routine coming up." },
+  { id: "proud", label: "Proud", mood: "playful", motion: "proud sparkle", use: "Training wins and progress moments." },
+  { id: "home-alone", label: "Home Alone", mood: "home-alone", motion: "waiting idle", use: "Manual alone-time timer active." },
+  { id: "not-feeling-well", label: "Not Feeling Well", mood: "sick", motion: "low posture", use: "Health Watch or Bile Watch review context." }
 ];
 
 let app;
@@ -395,6 +408,7 @@ function render() {
       ${renderNavButton("more", "More")}
     </nav>
     <input class="visually-hidden" data-input="import-json" type="file" accept="application/json,.json" />
+    <input class="visually-hidden" data-input="avatar-photo" type="file" accept="image/*" />
   `;
 
   bindEvents();
@@ -771,6 +785,7 @@ function renderActiveTab(tab, context) {
   if (tab === "records") return renderRecordsTab(context);
   if (tab === "reports") return renderReportsTab(context);
   if (tab === "care-pass") return renderCarePassTab(context);
+  if (tab === "avatar-studio") return renderAvatarStudioTab(context);
   if (tab === "more") return renderMoreTab(context);
   return renderPhoenixTab(context);
 }
@@ -2387,6 +2402,72 @@ function renderCarePassTab(context) {
   `;
 }
 
+function renderAvatarStudioTab(context) {
+  const studio = state.avatarStudio || {};
+  const selected = AVATAR_STATES.find((item) => item.id === studio.selectedState) || AVATAR_STATES[0];
+  const previewAvatar = {
+    ...context.avatar,
+    mood: selected.mood,
+    urgency: selected.id === "not-feeling-well" ? "review" : selected.id === "home-alone" ? "watch" : "steady",
+    speech: `${selected.label} state selected for Phoenix.`,
+    suggestedAction: selected.motion,
+    evidence: [selected.use]
+  };
+  return `
+    <div class="dashboard-grid avatar-studio-screen">
+      <section class="panel span-2 avatar-studio-hero">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Avatar Studio</p>
+            <h3>Bring Phoenix into the app</h3>
+            <p>Prototype state inventory for future pixel sprite, Rive, Lottie, or Reanimated assets. Current mode uses local template states and optional uploaded reference photo memory.</p>
+          </div>
+          <span class="status-chip watch">Template mode</span>
+        </div>
+        <div class="avatar-studio-preview">
+          <div>
+            ${studio.sourceImage ? `<img class="avatar-reference-photo" src="${escapeAttribute(studio.sourceImage)}" alt="Uploaded Phoenix reference" />` : renderPhoenixAvatar(previewAvatar, "rail")}
+          </div>
+          <div>
+            <p class="micro">Selected state</p>
+            <h3>${escapeHtml(selected.label)}</h3>
+            <p>${escapeHtml(selected.use)}</p>
+            <small>Motion target: ${escapeHtml(selected.motion)}</small>
+            <div class="button-row">
+              <button class="button primary" data-action="avatar-upload-photo">Upload Photo</button>
+              <button class="button ghost" data-action="set-avatar-state" data-avatar-state="${escapeAttribute(selected.id)}">Save State</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">State inventory</p>
+            <h3>Required Phoenix states</h3>
+          </div>
+          <span class="status-chip steady">${AVATAR_STATES.length} states</span>
+        </div>
+        <div class="avatar-state-grid">
+          ${AVATAR_STATES.map((item) => renderAvatarStateCard(item, selected.id)).join("")}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function renderAvatarStateCard(item, selectedId) {
+  const selected = item.id === selectedId;
+  return `
+    <button class="avatar-state-card ${selected ? "selected" : ""}" data-action="set-avatar-state" data-avatar-state="${escapeAttribute(item.id)}">
+      <strong>${escapeHtml(item.label)}</strong>
+      <span>${escapeHtml(item.motion)}</span>
+      <small>${escapeHtml(item.use)}</small>
+    </button>
+  `;
+}
+
 function renderMoreTab(context) {
   return `
     <div class="dashboard-grid more-screen">
@@ -3169,6 +3250,8 @@ function bindEvents() {
   });
 
   app.querySelector("[data-input='import-json']")?.addEventListener("change", handleImportFile);
+
+  app.querySelector("[data-input='avatar-photo']")?.addEventListener("change", handleAvatarPhotoInput);
 }
 
 function handleMealLifecycleSubmit(event) {
@@ -3416,6 +3499,27 @@ async function handleAction(action, button) {
     return;
   }
 
+  if (action === "avatar-upload-photo") {
+    app.querySelector("[data-input='avatar-photo']")?.click();
+    return;
+  }
+
+  if (action === "set-avatar-state") {
+    const avatarState = button?.dataset.avatarState || "happy";
+    saveState({
+      ...state,
+      avatarStudio: {
+        ...(state.avatarStudio || {}),
+        selectedState: avatarState,
+        updatedAt: new Date().toISOString()
+      }
+    });
+    activeTab = "avatar-studio";
+    history.replaceState(null, "", "?tab=avatar-studio");
+    render();
+    return;
+  }
+
   if (action === "quick-leaving-home") {
     startLeavingHome({ caregiver: "Unassigned", note: "Started from Household Pulse." });
     activeTab = "household-pulse";
@@ -3565,6 +3669,29 @@ async function handleImportFile(event) {
   } catch {
     window.alert("WoofWatcher could not import that file. Choose a JSON backup or care room transfer exported from this app.");
   }
+}
+
+function handleAvatarPhotoInput(event) {
+  const file = event.currentTarget.files?.[0];
+  event.currentTarget.value = "";
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    saveState({
+      ...state,
+      avatarStudio: {
+        ...(state.avatarStudio || {}),
+        sourceImage: String(reader.result || ""),
+        sourceImageName: file.name || "Phoenix reference",
+        updatedAt: new Date().toISOString()
+      }
+    });
+    activeTab = "avatar-studio";
+    history.replaceState(null, "", "?tab=avatar-studio");
+    render();
+  });
+  reader.readAsDataURL(file);
 }
 
 function downloadText(filename, text, type = "text/plain") {

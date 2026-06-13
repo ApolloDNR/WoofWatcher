@@ -142,3 +142,18 @@ test("keeps records and reports tools directly routable in the PWA", () => {
   assert.match(appEntry, /function renderReportsTab/);
   assert.match(appEntry, /function renderCarePassTab/);
 });
+
+test("keeps Avatar Studio wired as a prototype route with state inventory", () => {
+  assert.match(appEntry, /avatar: "avatar-studio"/);
+  assert.match(appEntry, /"avatar-studio": "avatar-studio"/);
+  assert.match(appEntry, /if \(tab === "avatar-studio"\) return renderAvatarStudioTab\(context\)/);
+  assert.match(appEntry, /const AVATAR_STATES = \[/);
+  assert.match(appEntry, /Happy/);
+  assert.match(appEntry, /Home Alone/);
+  assert.match(appEntry, /Not Feeling Well/);
+  assert.match(appEntry, /function renderAvatarStudioTab/);
+  assert.match(appEntry, /data-input="avatar-photo"/);
+  assert.match(appEntry, /data-action="avatar-upload-photo"/);
+  assert.match(appEntry, /data-action="set-avatar-state"/);
+  assert.match(appEntry, /function handleAvatarPhotoInput/);
+});

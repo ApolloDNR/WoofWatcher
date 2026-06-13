@@ -57,8 +57,9 @@ Every autonomous run should improve at least one of: care workflow, household us
 49. DONE 2026-06-12: Diet & Treats is now a first-class PWA route with daily meal target/progress, meals today, treats today, hydration context, avoid list, profile editing, and direct Log Meal/Log Treat/Edit Diet Profile actions.
 50. DONE 2026-06-12: WoofGuide is now a first-class PWA route with owner-reviewed action cards that route to Meal Log, Care Pass review, Records review, and a bounded vet-note draft without pretending live AI is configured.
 51. DONE 2026-06-12: PWA Timeline, Records, Reports, and Care Pass are now directly routable so desktop secondary navigation no longer collapses important tools into More.
-52. NEXT: Avatar Studio prototype route and state inventory.
-53. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
+52. DONE 2026-06-12: Avatar Studio is now a first-class PWA prototype route with local reference photo upload memory, selectable Phoenix template state, and the required Happy/Calm/Excited/Sleepy/Anxious/Bored/Hungry/Proud/Home Alone/Not Feeling Well state inventory.
+53. NEXT: Achievements route and meaningful care milestones.
+54. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
 
 ## Cadence
 
