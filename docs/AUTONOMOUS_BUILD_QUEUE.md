@@ -62,7 +62,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 54. DONE 2026-06-13: Settings is now a first-class PWA route that consolidates full backup, import, care-room transfer, reset, local-only provider readiness, AI boundary, health boundary, reminder delivery truth, and sync resource blockers in one system surface.
 55. DONE 2026-06-13: Phoenix Home v1.5 polish now adds generated pixel-room state copy, a first-screen "Where Phoenix is" household pulse card, and a combined Health/Bile snapshot with food-gap, bedtime snack, vomiting, energy, and weight context.
 56. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
-57. NEXT: Fable/Replit handoff notes for the completed PWA skeleton routes and visual polish requirements.
+57. DONE 2026-06-13: Fable/Replit handoff notes are now captured in `docs/design/FABLE_HANDOFF_2026-06-13.md`, including route inventory, preserved workflows, visual priorities, motion direction, and runtime QA limits.
+58. NEXT: Provider-backed account/cloud/payment decision pack after Apollo chooses the release stack.
 
 ## Cadence
 

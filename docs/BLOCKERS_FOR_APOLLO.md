@@ -23,6 +23,7 @@
 ## Development Environment
 
 - Local Windows shell currently lacks `pnpm`, `npm`, `corepack`, and `node_modules`, so `pnpm run typecheck` cannot run locally even though zero-install Node behavior tests pass.
+- Codex could not attach to the in-app Browser target during the 2026-06-13 visual QA attempt (`iab` unavailable), so local screenshot/runtime verification is still pending in Fable/Replit or another browser-capable environment.
 
 ## Legal, Privacy, And Safety
 

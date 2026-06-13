@@ -24,6 +24,7 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Implemented Achievements as a first-class PWA route backed by `getAchievementReview`. The route derives meaningful milestones from real care evidence: routine streak, training consistency, happy tummy week, bedtime snack proof, calm alone time, and records completeness.
 - Implemented Settings as a first-class PWA route that consolidates full backup, import, care-room transfer, reset, local-only provider readiness, AI mode, health boundary, reminder delivery truth, and sync blockers.
 - Polished Phoenix Home with generated pixel-room state copy, a "Where Phoenix is" Household Pulse card, and a combined Health/Bile snapshot covering food gap, bedtime snack proof, vomiting, energy, and weight.
+- Added `docs/design/FABLE_HANDOFF_2026-06-13.md` so Fable/Replit can polish the existing functional skeleton without breaking route structure, data hooks, local-first behavior, backup/import, or safety boundaries.
 
 ## Verification
 
@@ -56,9 +57,9 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 Next implementation slice:
 
 1. Runtime/browser visual QA once a local package manager or dev server dependency install is available.
-2. Fable/Replit-facing visual handoff notes for the shipped PWA routes.
-3. Provider-backed account/cloud/payment decisions after Apollo picks the release stack.
-4. Native/mobile runtime QA and final visual system pass.
+2. Provider-backed account/cloud/payment decisions after Apollo picks the release stack.
+3. Native/mobile runtime QA and final visual system pass.
+4. Fable/Replit visual polish using the new handoff file.
 
 ## Known Limitations
 
