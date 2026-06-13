@@ -76,3 +76,16 @@ test("keeps Quick Log v2 wired to dedicated meal and potty flows", () => {
   assert.match(appEntry, /What happened\?/);
   assert.match(appEntry, /Tried, nothing/);
 });
+
+test("keeps Household Pulse wired to manual alone-time workflow", () => {
+  assert.match(appEntry, /"household-pulse"/);
+  assert.match(appEntry, /function renderHouseholdPulseTab/);
+  assert.match(appEntry, /function getActiveAloneEntry/);
+  assert.match(appEntry, /data-form="leaving-home"/);
+  assert.match(appEntry, /data-form="return-home"/);
+  assert.match(appEntry, /function handleLeavingHomeSubmit/);
+  assert.match(appEntry, /function handleReturnHomeSubmit/);
+  assert.match(appEntry, /Phoenix is home alone/);
+  assert.match(appEntry, /Return outcomes/);
+  assert.match(appEntry, /function renderMoreDirectoryPanel/);
+});

@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-12: Household Presence Is Manual For v1.5
+
+Decision: Household Pulse uses manual Leaving Home and I'm Home state for v1.5. An open household-visible `alone` log means Phoenix is home alone. Closing that log records the return outcome, duration, caregiver, recovery, and notes.
+
+Reason: Apollo asked for household coordination without forcing geolocation in this version. Manual state is enough to make the workflow useful now and avoids privacy/provider complexity before auth, roles, and device permissions are implemented.
+
+Owner: Codex.
+
+Revisit trigger: Auth-connected household presence, geofencing, device permission policy, or provider-backed role enforcement becomes active production work.
+
 ### 2026-06-12: Quick Log Uses Structured Flows For Meal And Potty
 
 Decision: Meal and Potty quick actions open dedicated Quick Log v2 flows in the PWA instead of saving generic one-tap rows. Meal uses a served-to-outcome lifecycle. Potty remains the parent action and stores the specific outcome as structured detail.

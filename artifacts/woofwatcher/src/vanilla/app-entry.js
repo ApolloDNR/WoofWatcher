@@ -72,7 +72,7 @@ const ENTRY_SELECT_OPTIONS = [
   "note"
 ];
 const RECORD_TYPE_OPTIONS = ["vet", "vaccine", "weight", "instruction", "medication", "microchip"];
-const PRIMARY_TABS = new Set(["phoenix", "log", "plans", "health", "more"]);
+const PRIMARY_TABS = new Set(["phoenix", "log", "plans", "health", "more", "household-pulse"]);
 const TAB_ALIASES = {
   today: "phoenix",
   dashboard: "phoenix",
@@ -89,9 +89,8 @@ const TAB_ALIASES = {
   assistant: "more",
   woofguide: "more",
   guide: "more",
-  household: "more",
-  pulse: "more",
-  "household-pulse": "more",
+  household: "household-pulse",
+  pulse: "household-pulse",
   diet: "more",
   treats: "more",
   "diet-treats": "more",
@@ -463,6 +462,192 @@ function renderPulseRail(pulse, handoff) {
   `;
 }
 
+function renderHouseholdPulseTab(context) {
+  const activeAlone = getActiveAloneEntry();
+  const status = getHouseholdPresenceStatus(activeAlone);
+  return `
+    <div class="dashboard-grid household-pulse-screen">
+      <section class="panel span-2 household-status-panel">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Household Pulse</p>
+            <h3>${escapeHtml(status.label)}</h3>
+            <p>${escapeHtml(status.detail)}</p>
+          </div>
+          <span class="status-chip ${status.className}">${escapeHtml(status.statusLabel)}</span>
+        </div>
+        <div class="household-status-grid">
+          ${renderStatusAnswer("Phoenix status", status.statusLabel)}
+          ${renderStatusAnswer("Supervised by", status.supervisedBy)}
+          ${renderStatusAnswer("Since", status.sinceLabel)}
+          ${renderStatusAnswer("Timer", status.timerLabel)}
+        </div>
+        <div class="household-action-row">
+          <button class="button primary" data-action="quick-leaving-home">Leaving Home</button>
+          <button class="button ghost" data-action="focus-return-home">I'm Home</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <p class="micro">Manual state</p>
+        <h3>Leaving Home</h3>
+        <form class="household-flow-form" data-form="leaving-home">
+          <label>
+            <span>Who is leaving?</span>
+            <select name="caregiver">${renderCaregiverOptionList()}</select>
+          </label>
+          <label>
+            <span>Setup note</span>
+            <input name="note" placeholder="Puzzle toy, water checked, lights on" />
+          </label>
+          <button class="button primary" type="submit" ${activeAlone ? "disabled" : ""}>Start alone timer</button>
+        </form>
+      </section>
+
+      <section class="panel return-home-panel" id="return-home">
+        <p class="micro">Return outcomes</p>
+        <h3>I'm Home</h3>
+        ${renderReturnHomeForm(activeAlone)}
+      </section>
+
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">People</p>
+            <h3>Household visibility</h3>
+          </div>
+          <span class="status-chip steady">${context.pulse.humans.length} profiles</span>
+        </div>
+        <div class="pulse-human-list">
+          ${context.pulse.humans.map(renderPulseHuman).join("")}
+        </div>
+      </section>
+
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Recent household activity</p>
+            <h3>${escapeHtml(context.pulse.nextAction.label)}</h3>
+          </div>
+          <span class="status-chip steady">${context.pulse.completedCount}/${context.pulse.totalCount} routine proof</span>
+        </div>
+        <div class="timeline-list compact">
+          ${context.pulse.timeline.length ? context.pulse.timeline.map(renderPulseTimelineRow).join("") : `<p class="empty-state">No household activity logged today.</p>`}
+        </div>
+        <p class="notification-boundary">${escapeHtml(context.pulse.healthBoundary)}</p>
+      </section>
+    </div>
+  `;
+}
+
+function renderCaregiverOptionList() {
+  return getCaregiverOptions()
+    .map((name) => `<option value="${escapeAttribute(name)}">${escapeHtml(name)}</option>`)
+    .join("");
+}
+
+function renderReturnHomeForm(activeAlone) {
+  if (!activeAlone) {
+    return `<p class="quick-flow-empty">No active alone timer. Use Leaving Home when Phoenix is actually home alone.</p>`;
+  }
+  return `
+    <form class="household-flow-form" data-form="return-home">
+      <input type="hidden" name="entryId" value="${escapeAttribute(activeAlone.id)}" />
+      <label>
+        <span>Who returned?</span>
+        <select name="caregiver">${renderCaregiverOptionList()}</select>
+      </label>
+      <label>
+        <span>How was Phoenix?</span>
+        <select name="aloneOutcome">
+          <option>Calm</option>
+          <option>Excited</option>
+          <option>Anxious</option>
+          <option>Barking/whining</option>
+          <option>Accident</option>
+          <option>Vomit</option>
+          <option>Destructive</option>
+          <option>Unknown</option>
+        </select>
+      </label>
+      <label>
+        <span>Recovery minutes</span>
+        <input name="recoveryMinutes" inputmode="numeric" placeholder="0" />
+      </label>
+      <label class="wide">
+        <span>Return note</span>
+        <textarea name="note" rows="3" placeholder="What you saw, what helped, and whether Phoenix settled."></textarea>
+      </label>
+      <button class="button primary wide" type="submit">Save return outcome</button>
+    </form>
+  `;
+}
+
+function renderPulseTimelineRow(item) {
+  return `
+    <article class="timeline-row compact">
+      <div>
+        <strong>${escapeHtml(item.label)}</strong>
+        <small>${escapeHtml(formatDateTime(item.occurredAt))}</small>
+      </div>
+      <p>${escapeHtml(item.detail || item.type)}</p>
+    </article>
+  `;
+}
+
+function getActiveAloneEntry() {
+  return (state.entries || [])
+    .filter((entry) => entry.type === "alone" && !entry.endedAt)
+    .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt))[0] || null;
+}
+
+function getHouseholdPresenceStatus(activeAlone) {
+  const name = state.profile?.name || "Phoenix";
+  if (!activeAlone) {
+    const human = (state.entries || []).find((entry) => entry.caregiver && entry.caregiver !== "Unassigned")?.caregiver || getCaregiverOptions()[0] || "household";
+    return {
+      label: `${name} is with ${human}`,
+      detail: "Manual household state says Phoenix is supervised. Use Leaving Home when the last human leaves.",
+      statusLabel: "With human",
+      className: "steady",
+      supervisedBy: human,
+      sinceLabel: "Current",
+      timerLabel: "No active timer"
+    };
+  }
+  const started = new Date(activeAlone.occurredAt);
+  const minutes = Math.max(0, Math.round((Date.now() - started.getTime()) / 60000));
+  const stale = !Number.isFinite(minutes) || minutes > 720;
+  if (stale) {
+    return {
+      label: "Status unknown",
+      detail: "The last alone timer is stale or unclear. Confirm who is home before relying on this state.",
+      statusLabel: "Unknown",
+      className: "review",
+      supervisedBy: "Unknown",
+      sinceLabel: activeAlone.occurredAt ? formatDateTime(activeAlone.occurredAt) : "Unknown",
+      timerLabel: "Needs review"
+    };
+  }
+  return {
+    label: `${name} is home alone`,
+    detail: `Alone timer started by ${activeAlone.caregiver || "Unassigned"}. Log the return outcome when someone comes home.`,
+    statusLabel: "Home alone",
+    className: "watch",
+    supervisedBy: "Home alone",
+    sinceLabel: formatDateTime(activeAlone.occurredAt),
+    timerLabel: formatDuration(minutes)
+  };
+}
+
+function formatDuration(minutes) {
+  const whole = Math.max(0, Number(minutes) || 0);
+  if (whole < 60) return `${whole} min`;
+  const hours = Math.floor(whole / 60);
+  const remainder = whole % 60;
+  return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
+}
+
 function renderCaregiverLoad(caregiver) {
   return `
     <article>
@@ -531,6 +716,7 @@ function renderActiveTab(tab, context) {
   if (tab === "log") return renderLogTab();
   if (tab === "plans") return renderPlansTab(context);
   if (tab === "health") return renderHealthTab(context.health, context.bileWatch);
+  if (tab === "household-pulse") return renderHouseholdPulseTab(context);
   if (tab === "more") return renderMoreTab(context);
   return renderPhoenixTab(context);
 }
@@ -1881,6 +2067,7 @@ function renderPlansTab(context) {
 function renderMoreTab(context) {
   return `
     <div class="dashboard-grid more-screen">
+      ${renderMoreDirectoryPanel()}
       ${renderDietProfilePanel()}
       ${renderCarePassPanel(context.summary)}
       ${renderCareTeamPanel(context.handoff)}
@@ -1888,6 +2075,36 @@ function renderMoreTab(context) {
       ${renderProgressMemoryPanel(context.calendar, context.trainingProgress)}
       ${renderWoofGuidePanel()}
     </div>
+  `;
+}
+
+function renderMoreDirectoryPanel() {
+  const items = [
+    { tab: "household-pulse", label: "Household Pulse", detail: "Who is home, whether Phoenix is alone, and return outcomes." },
+    { tab: "diet-treats", label: "Diet & Treats", detail: "Food baseline, portions, treats, notes, and avoid list." },
+    { tab: "records", label: "Records", detail: "Vaccines, visits, insurance, receipts, and dog ID." },
+    { tab: "reports", label: "Reports", detail: "Care Pass exports and monthly progress." },
+    { tab: "woofguide", label: "WoofGuide", detail: "Owner-reviewed assistant drafts and summaries." },
+    { tab: "avatar-studio", label: "Avatar Studio", detail: "Pixel Phoenix states and future asset pipeline." }
+  ];
+  return `
+    <section class="panel span-2 more-directory-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">More</p>
+          <h3>Tools that connect care</h3>
+        </div>
+        <span class="status-chip steady">No dead ends</span>
+      </div>
+      <div class="more-directory-grid">
+        ${items.map((item) => `
+          <button class="more-directory-tile" data-tab="${escapeAttribute(item.tab)}">
+            <strong>${escapeHtml(item.label)}</strong>
+            <span>${escapeHtml(item.detail)}</span>
+          </button>
+        `).join("")}
+      </div>
+    </section>
   `;
 }
 
@@ -2382,6 +2599,19 @@ function bindEvents() {
         render();
         return;
       }
+      if (type === "alone") {
+        if (/leaving/i.test(title)) {
+          startLeavingHome({
+            caregiver: "Unassigned",
+            note: "Started from Quick Log."
+          });
+        }
+        activeQuickFlow = "";
+        activeTab = "household-pulse";
+        history.replaceState(null, "", "?tab=household-pulse");
+        render();
+        return;
+      }
       const now = new Date().toISOString();
       const entry = createEntry({
         type,
@@ -2413,6 +2643,10 @@ function bindEvents() {
   });
 
   app.querySelector("[data-form='potty-outcome']")?.addEventListener("submit", handlePottyOutcomeSubmit);
+
+  app.querySelector("[data-form='leaving-home']")?.addEventListener("submit", handleLeavingHomeSubmit);
+
+  app.querySelector("[data-form='return-home']")?.addEventListener("submit", handleReturnHomeSubmit);
 
   app.querySelectorAll("[data-action='remove-record']").forEach((button) => {
     button.addEventListener("click", () => {
@@ -2558,6 +2792,75 @@ function cleanFormValue(value) {
   return String(value || "").trim();
 }
 
+function handleLeavingHomeSubmit(event) {
+  event.preventDefault();
+  const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+  startLeavingHome({
+    caregiver: cleanFormValue(data.caregiver) || "Unassigned",
+    note: cleanFormValue(data.note)
+  });
+  activeTab = "household-pulse";
+  history.replaceState(null, "", "?tab=household-pulse");
+  render();
+}
+
+function startLeavingHome({ caregiver = "Unassigned", note = "" } = {}) {
+  const active = getActiveAloneEntry();
+  if (active) return active;
+  const now = new Date().toISOString();
+  const entry = createEntry({
+    type: "alone",
+    title: "Leaving Home",
+    caregiver,
+    occurredAt: now,
+    trustState: "Confirmed",
+    visibility: "Household",
+    moodAfter: "Home alone",
+    note: note ? `Phoenix is home alone. ${note}` : "Phoenix is home alone. Return outcome pending."
+  });
+  saveState({ ...state, entries: [entry, ...(state.entries || [])] });
+  return entry;
+}
+
+function handleReturnHomeSubmit(event) {
+  event.preventDefault();
+  const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+  const now = new Date().toISOString();
+  const entryId = cleanFormValue(data.entryId);
+  const outcome = cleanFormValue(data.aloneOutcome) || "Unknown";
+  const caregiver = cleanFormValue(data.caregiver) || "Unassigned";
+  const recoveryMinutes = cleanFormValue(data.recoveryMinutes);
+  const note = cleanFormValue(data.note);
+  const entries = (state.entries || []).map((entry) => {
+    if (entry.id !== entryId) return entry;
+    const durationMinutes = Math.max(0, Math.round((new Date(now).getTime() - new Date(entry.occurredAt).getTime()) / 60000));
+    return {
+      ...entry,
+      title: "Alone Time",
+      caregiver: entry.caregiver && entry.caregiver !== "Unassigned" ? entry.caregiver : caregiver,
+      endedAt: now,
+      durationMinutes,
+      aloneOutcome: outcome,
+      moodAfter: outcome,
+      outcome,
+      trustState: "Confirmed",
+      visibility: "Household",
+      note: mergeNote(entry.note, buildReturnHomeNote({ caregiver, outcome, recoveryMinutes, note }))
+    };
+  });
+  saveState({ ...state, entries });
+  activeTab = "household-pulse";
+  history.replaceState(null, "", "?tab=household-pulse");
+  render();
+}
+
+function buildReturnHomeNote({ caregiver, outcome, recoveryMinutes, note }) {
+  const parts = [`Return logged by ${caregiver}. Outcome: ${outcome}.`];
+  if (recoveryMinutes) parts.push(`Recovery: ${recoveryMinutes} minutes.`);
+  if (note) parts.push(note);
+  return parts.join(" ");
+}
+
 async function handleAction(action, button) {
   if (action === "reset-demo") {
     const confirmed = window.confirm("Reset WoofWatcher to the Phoenix demo state? This clears local logs on this device.");
@@ -2584,6 +2887,19 @@ async function handleAction(action, button) {
     activeQuickFlow = "";
     activeTab = "log";
     history.replaceState(null, "", "?tab=log");
+    render();
+  }
+
+  if (action === "quick-leaving-home") {
+    startLeavingHome({ caregiver: "Unassigned", note: "Started from Household Pulse." });
+    activeTab = "household-pulse";
+    history.replaceState(null, "", "?tab=household-pulse");
+    render();
+  }
+
+  if (action === "focus-return-home") {
+    activeTab = "household-pulse";
+    history.replaceState(null, "", "?tab=household-pulse#return-home");
     render();
   }
 
