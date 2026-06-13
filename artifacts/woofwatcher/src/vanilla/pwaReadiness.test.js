@@ -99,3 +99,17 @@ test("keeps Care Pass wired to scoped audience exports", () => {
   assert.match(appEntry, /data-action="copy-care-pass"/);
   assert.match(appEntry, /data-action="download-care-pass"/);
 });
+
+test("keeps Diet & Treats wired as a first-class PWA route", () => {
+  assert.match(appEntry, /"diet-treats"/);
+  assert.match(appEntry, /diet: "diet-treats"/);
+  assert.match(appEntry, /treats: "diet-treats"/);
+  assert.match(appEntry, /if \(tab === "diet-treats"\) return renderDietTreatsTab\(context\)/);
+  assert.match(appEntry, /function renderDietTreatsTab/);
+  assert.match(appEntry, /function renderDietDailyProgress/);
+  assert.match(appEntry, /function renderMealsTodayPanel/);
+  assert.match(appEntry, /function renderDietAvoidList/);
+  assert.match(appEntry, /data-action="open-diet-log-meal"/);
+  assert.match(appEntry, /data-action="open-diet-log-treat"/);
+  assert.match(appEntry, /data-action="edit-diet-profile"/);
+});

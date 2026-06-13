@@ -76,7 +76,7 @@ const ENTRY_SELECT_OPTIONS = [
   "note"
 ];
 const RECORD_TYPE_OPTIONS = ["vet", "vaccine", "weight", "instruction", "medication", "microchip"];
-const PRIMARY_TABS = new Set(["phoenix", "log", "plans", "health", "more", "household-pulse"]);
+const PRIMARY_TABS = new Set(["phoenix", "log", "plans", "health", "more", "household-pulse", "diet-treats"]);
 const TAB_ALIASES = {
   today: "phoenix",
   dashboard: "phoenix",
@@ -95,9 +95,9 @@ const TAB_ALIASES = {
   guide: "more",
   household: "household-pulse",
   pulse: "household-pulse",
-  diet: "more",
-  treats: "more",
-  "diet-treats": "more",
+  diet: "diet-treats",
+  treats: "diet-treats",
+  "diet-treats": "diet-treats",
   carepass: "more",
   "care-pass": "more",
   avatar: "more",
@@ -722,6 +722,7 @@ function renderActiveTab(tab, context) {
   if (tab === "plans") return renderPlansTab(context);
   if (tab === "health") return renderHealthTab(context.health, context.bileWatch);
   if (tab === "household-pulse") return renderHouseholdPulseTab(context);
+  if (tab === "diet-treats") return renderDietTreatsTab(context);
   if (tab === "more") return renderMoreTab(context);
   return renderPhoenixTab(context);
 }
@@ -2069,6 +2070,225 @@ function renderPlansTab(context) {
   `;
 }
 
+function renderDietTreatsTab(context) {
+  const review = getDietDayReview(context);
+  return `
+    <div class="dashboard-grid diet-treats-screen">
+      <section class="panel span-2 diet-hero-panel">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Diet & Treats</p>
+            <h3>Daily food proof for Phoenix</h3>
+            <p>Meals, treats, water context, avoid notes, and appetite quirks stay connected to household logs and Care Pass exports.</p>
+          </div>
+          <span class="status-chip ${review.openMeal ? "watch" : "steady"}">${review.openMeal ? "Outcome pending" : "Care proof current"}</span>
+        </div>
+        <div class="button-row">
+          <button class="button primary" data-action="open-diet-log-meal">Log Meal</button>
+          <button class="button ghost" data-action="open-diet-log-treat">Log Treat</button>
+          <button class="button ghost" data-action="edit-diet-profile">Edit Diet Profile</button>
+        </div>
+      </section>
+
+      ${renderDietDailyProgress(review)}
+      ${renderMealsTodayPanel(review)}
+      ${renderTreatsTodayPanel(review)}
+      ${renderHydrationContextPanel(review)}
+      ${renderDietAvoidList(review)}
+      ${renderDietProfilePanel()}
+    </div>
+  `;
+}
+
+function getDietDayReview(context = {}) {
+  const entries = state.entries || [];
+  const todayEntries = entries.filter((entry) => isSameLocalDay(entry.occurredAt));
+  const meals = todayEntries
+    .filter((entry) => entry.type === "meal")
+    .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  const treats = todayEntries
+    .filter((entry) => entry.type === "treat")
+    .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  const water = todayEntries
+    .filter((entry) => entry.type === "water" || /water|hydration/i.test(`${entry.title || ""} ${entry.note || ""}`))
+    .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  const mealRoutines = (state.routines || []).filter((routine) => {
+    const text = `${routine.type || ""} ${routine.label || ""} ${routine.note || ""}`;
+    return /meal|breakfast|dinner|snack|food/i.test(text);
+  });
+  const expectedMeals = Math.max(mealRoutines.length, 2);
+  const eatenMeals = meals.filter((entry) => isMealOutcomeComplete(entry));
+  const progressPercent = Math.min(100, Math.round((eatenMeals.length / expectedMeals) * 100));
+  const openMeal = getOpenMealOutcomeTask();
+  const bedtimeSnack = (state.routines || []).find((routine) => /bed|snack/i.test(`${routine.label || ""} ${routine.note || ""}`));
+  return {
+    profile: state.dietProfile || {},
+    meals,
+    treats,
+    water,
+    expectedMeals,
+    eatenMeals,
+    progressPercent,
+    openMeal,
+    bedtimeSnack,
+    bileStatus: context.bileWatch?.level || context.bileWatch?.status || "Pattern watch",
+    lastMeal: meals[0] || null
+  };
+}
+
+function isMealOutcomeComplete(entry) {
+  const text = `${entry.outcome || ""} ${entry.portionEaten || ""} ${entry.note || ""}`.toLowerCase();
+  if (/pending|still grazing|refused|skipped|not eat/.test(text)) return false;
+  return /ate|all|most|some|half|finished|complete/.test(text) || Boolean(entry.outcomeAt);
+}
+
+function isSameLocalDay(value, target = new Date()) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  return (
+    date.getFullYear() === target.getFullYear() &&
+    date.getMonth() === target.getMonth() &&
+    date.getDate() === target.getDate()
+  );
+}
+
+function renderDietDailyProgress(review) {
+  const currentFood = review.profile.primaryFood || "Food not set";
+  const dailyTarget = `${review.expectedMeals} meal slot${review.expectedMeals === 1 ? "" : "s"}`;
+  return `
+    <section class="panel diet-progress-panel">
+      <p class="micro">Daily target</p>
+      <h3>${escapeHtml(currentFood)}</h3>
+      <div class="diet-progress-track" style="--diet-progress: ${escapeAttribute(review.progressPercent)}%;">
+        <span></span>
+      </div>
+      <div class="diet-progress-stats">
+        ${renderStat("Target", dailyTarget)}
+        ${renderStat("Eaten", `${review.eatenMeals.length}/${review.expectedMeals}`)}
+        ${renderStat("Served", review.meals.length)}
+      </div>
+      <p>${review.openMeal ? "A meal is served and waiting for an outcome." : "No open meal outcome is waiting right now."}</p>
+    </section>
+  `;
+}
+
+function renderMealsTodayPanel(review) {
+  return `
+    <section class="panel diet-meals-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Meals today</p>
+          <h3>${review.meals.length}/${review.expectedMeals} served</h3>
+        </div>
+        <button class="button ghost" data-action="open-diet-log-meal">Log Meal</button>
+      </div>
+      <div class="diet-log-list">
+        ${review.meals.length ? review.meals.map(renderDietMealRow).join("") : `<p class="empty-state">No meals logged today. Use Log Meal when Phoenix is served.</p>`}
+      </div>
+    </section>
+  `;
+}
+
+function renderDietMealRow(entry) {
+  const pending = /pending|still grazing/i.test(`${entry.outcome || ""} ${entry.note || ""}`);
+  return `
+    <article class="diet-log-row ${pending ? "pending" : "complete"}">
+      ${renderGlyph("meal")}
+      <div>
+        <strong>${escapeHtml(entry.mealType || entry.title || "Meal")}</strong>
+        <small>${escapeHtml(formatDateTime(entry.occurredAt))} | ${escapeHtml(entry.servedBy || entry.caregiver || "Unassigned")}</small>
+        <p>${escapeHtml(entry.portionOffered || "Portion not set")} offered | ${escapeHtml(entry.outcome || "Pending")}</p>
+      </div>
+      ${
+        pending
+          ? `<button class="button ghost" data-action="meal-outcome" data-entry-id="${escapeAttribute(entry.id)}" data-outcome="Ate all">Mark eaten</button>`
+          : ""
+      }
+    </article>
+  `;
+}
+
+function renderTreatsTodayPanel(review) {
+  return `
+    <section class="panel diet-treats-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Treats today</p>
+          <h3>${review.treats.length} logged</h3>
+        </div>
+        <button class="button ghost" data-action="open-diet-log-treat">Log Treat</button>
+      </div>
+      <div class="diet-log-list">
+        ${
+          review.treats.length
+            ? review.treats.map((entry) => renderDietSimpleRow(entry, "treat")).join("")
+            : `<p class="empty-state">No treats logged today. Training treats and chews will show here.</p>`
+        }
+      </div>
+      <p class="diet-note">${escapeHtml(review.profile.treatsAllowed || "Treat baseline not set yet.")}</p>
+    </section>
+  `;
+}
+
+function renderHydrationContextPanel(review) {
+  const latest = review.water[0];
+  const copy = latest
+    ? `${review.water.length} water note${review.water.length === 1 ? "" : "s"} today. Last: ${formatDateTime(latest.occurredAt)}.`
+    : "No water refill logged today. Add hydration detail from the Log screen when needed.";
+  return `
+    <section class="panel">
+      <p class="micro">Water / hydration</p>
+      <h3>${review.water.length ? "Water evidence logged" : "Needs water proof"}</h3>
+      <p>${escapeHtml(copy)}</p>
+      <small>Health wording stays non-diagnostic. Share changes with a vet when appetite, vomiting, stool, energy, or hydration concerns stack up.</small>
+    </section>
+  `;
+}
+
+function renderDietAvoidList(review) {
+  const avoidItems = splitDietList(review.profile.avoid);
+  const sensitivityItems = splitDietList(review.profile.sensitivities);
+  return `
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Avoid list</p>
+          <h3>Food boundaries</h3>
+        </div>
+        <button class="button ghost" data-action="edit-diet-profile">Edit</button>
+      </div>
+      <div class="diet-chip-list">
+        ${
+          [...avoidItems, ...sensitivityItems].length
+            ? [...avoidItems, ...sensitivityItems].map((item) => `<span>${escapeHtml(item)}</span>`).join("")
+            : `<span>Nothing listed yet</span>`
+        }
+      </div>
+      <p>${escapeHtml(review.profile.appetiteQuirks || "Add picky eating, anxiety, or feeding setup notes here.")}</p>
+    </section>
+  `;
+}
+
+function renderDietSimpleRow(entry, glyphType) {
+  return `
+    <article class="diet-log-row">
+      ${renderGlyph(glyphType)}
+      <div>
+        <strong>${escapeHtml(entry.treatType || entry.title || titleCase(entry.type))}</strong>
+        <small>${escapeHtml(formatDateTime(entry.occurredAt))} | ${escapeHtml(entry.caregiver || "Unassigned")}</small>
+        <p>${escapeHtml(entry.note || entry.reason || "Household-visible care proof.")}</p>
+      </div>
+    </article>
+  `;
+}
+
+function splitDietList(value) {
+  return String(value || "")
+    .split(/[,;\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function renderMoreTab(context) {
   return `
     <div class="dashboard-grid more-screen">
@@ -2757,7 +2977,7 @@ function bindEvents() {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget).entries());
     saveState({ ...state, dietProfile: normalizeDietProfileInput(data) });
-    activeTab = "more";
+    activeTab = activeTab === "diet-treats" ? "diet-treats" : "more";
     render();
   });
 
@@ -2945,6 +3165,45 @@ async function handleAction(action, button) {
     activeTab = "log";
     history.replaceState(null, "", "?tab=log");
     render();
+  }
+
+  if (action === "open-diet-log-meal") {
+    activeQuickFlow = "meal";
+    activeTab = "log";
+    history.replaceState(null, "", "?tab=log");
+    render();
+    return;
+  }
+
+  if (action === "open-diet-log-treat") {
+    const now = new Date().toISOString();
+    const caregiver = getCaregiverOptions()[0] || "Unassigned";
+    const entry = createEntry({
+      type: "treat",
+      title: "Treat",
+      caregiver,
+      occurredAt: now,
+      treatType: state.dietProfile?.treatsAllowed || "Treat",
+      reason: "Diet & Treats quick log",
+      trustState: "Confirmed",
+      visibility: "Household",
+      note: "Treat logged from Diet & Treats."
+    });
+    saveState({ ...state, entries: [entry, ...(state.entries || [])] });
+    activeTab = "diet-treats";
+    history.replaceState(null, "", "?tab=diet-treats");
+    render();
+    return;
+  }
+
+  if (action === "edit-diet-profile") {
+    activeTab = "diet-treats";
+    history.replaceState(null, "", "?tab=diet-treats#diet-profile");
+    render();
+    window.requestAnimationFrame(() => {
+      app.querySelector("[data-form='diet-profile'] input")?.focus();
+    });
+    return;
   }
 
   if (action === "quick-leaving-home") {

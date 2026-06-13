@@ -717,6 +717,77 @@ p { margin: 0; }
   color: var(--text-strong);
   font-size: 0.95rem;
 }
+.diet-hero-panel .section-heading p {
+  max-width: 62ch;
+}
+.diet-progress-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.diet-progress-track {
+  height: 12px;
+  border: 1px solid var(--stone);
+  border-radius: 999px;
+  background: var(--surface-nested);
+  overflow: hidden;
+}
+.diet-progress-track span {
+  display: block;
+  width: var(--diet-progress, 0%);
+  height: 100%;
+  background: linear-gradient(90deg, var(--sage), var(--copper));
+}
+.diet-progress-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.diet-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.diet-log-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--stone);
+  border-radius: 14px;
+  background: var(--surface-nested);
+  padding: 12px;
+}
+.diet-log-row.pending {
+  border-color: rgba(210, 154, 62, 0.45);
+}
+.diet-log-row strong,
+.diet-log-row small,
+.diet-log-row p {
+  display: block;
+}
+.diet-log-row small,
+.diet-log-row p,
+.diet-note {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.diet-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.diet-chip-list span {
+  border: 1px solid var(--stone);
+  border-radius: 999px;
+  background: var(--surface-nested);
+  color: var(--text-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 8px 10px;
+}
 
 .report-box {
   background: var(--surface-nested);
@@ -1644,6 +1715,9 @@ p { margin: 0; }
   .pulse-human-list { grid-template-columns: 1fr; }
   .more-directory-grid { grid-template-columns: 1fr; }
   .scoped-care-pass-grid { grid-template-columns: 1fr; }
+  .diet-progress-stats { grid-template-columns: 1fr; }
+  .diet-log-row { grid-template-columns: auto 1fr; }
+  .diet-log-row .button { grid-column: 1 / -1; width: 100%; }
   .timeline-row.compact { flex-direction: column; }
   .timeline-row.compact p { max-width: none; text-align: left; }
   .open-meal-task { flex-direction: column; }

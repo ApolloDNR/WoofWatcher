@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-12: Diet & Treats Is A First-Class PWA Care Route
+
+Decision: Diet & Treats is promoted from a More subpanel into a first-class PWA route that reads local meal, treat, water, routine, and diet-profile state.
+
+Reason: Phoenix's food intake, treats, bedtime snack context, and avoid list are central to Apollo's original bile/vomit concern and daily household workflow. The route should help owners answer what was served, what was eaten, what treats happened, and what food boundaries matter without waiting for a visual redesign.
+
+Owner: Codex.
+
+Revisit trigger: Shared care-domain diet review helpers or server-backed diet profile/storage become the canonical implementation.
+
 ### 2026-06-12: Care Pass Uses Scoped Audience Source Before Binary PDFs
 
 Decision: PWA Care Pass exports generate separate Vet, Sitter, Trainer, and Emergency source payloads through `buildScopedCarePass` before WoofWatcher adds binary PDF generation or server-backed report storage.

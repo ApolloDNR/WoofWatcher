@@ -54,8 +54,9 @@ Every autonomous run should improve at least one of: care workflow, household us
 46. DONE 2026-06-12: PWA Household Pulse is now a first-class route with manual Leaving Home and I'm Home flows. Leaving Home starts a household-visible open alone timer; I'm Home closes it with return outcome, duration, caregiver, recovery, and notes. More now includes a tool directory entry point back to Household Pulse.
 47. NEXT: Phoenix Home v1.5 polish: household pulse mini-card, stronger Health/Bile snapshot, and richer pixel-room state copy.
 48. DONE 2026-06-12: PWA Care Pass now exposes scoped Vet, Sitter, Trainer, and Emergency export cards, each backed by `buildScopedCarePass`, with copyable text and downloadable JSON source for Fable/Replit to style into premium report/PDF flows.
-49. NEXT: Diet & Treats first-class PWA route polish: daily target/progress, meals today, treats today, hydration context, avoid list, and direct Log Meal/Log Treat/Edit Diet Profile actions.
-50. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
+49. DONE 2026-06-12: Diet & Treats is now a first-class PWA route with daily meal target/progress, meals today, treats today, hydration context, avoid list, profile editing, and direct Log Meal/Log Treat/Edit Diet Profile actions.
+50. NEXT: WoofGuide PWA owner-reviewed action routing: make assistant suggestions route into concrete meal log, Care Pass, record review, and vet-note draft workflows without pretending live AI is configured.
+51. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
 
 ## Cadence
 
