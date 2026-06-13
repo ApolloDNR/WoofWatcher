@@ -672,6 +672,16 @@ Owner: Codex.
 
 Revisit trigger: Provider-backed notification delivery, reminder preferences, recurring-rule scheduling, medication-specific delivery policy, or automatic assistant writes become active release work.
 
+### 2026-06-13: Achievements Are Evidence-Based Care Milestones
+
+Decision: Achievements derive from household-visible care evidence, including routine streaks, training consistency, food/vomit stability, bedtime snack proof, calm alone-time outcomes, and records completeness. The app should not use fake currencies, empty badges, or reward loops detached from Phoenix's real care.
+
+Reason: Apollo wants WoofWatcher to feel fun and emotionally alive without becoming a shallow gamified tracker. Evidence-based milestones make care progress visible to the household, reports, and future premium polish while keeping the product trustworthy for health, records, sitters, trainers, and vets.
+
+Owner: Codex.
+
+Revisit trigger: Paid achievement packs, kid-mode rewards, trainer goals, or long-range progress challenges become active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

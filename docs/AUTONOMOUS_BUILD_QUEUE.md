@@ -58,8 +58,9 @@ Every autonomous run should improve at least one of: care workflow, household us
 50. DONE 2026-06-12: WoofGuide is now a first-class PWA route with owner-reviewed action cards that route to Meal Log, Care Pass review, Records review, and a bounded vet-note draft without pretending live AI is configured.
 51. DONE 2026-06-12: PWA Timeline, Records, Reports, and Care Pass are now directly routable so desktop secondary navigation no longer collapses important tools into More.
 52. DONE 2026-06-12: Avatar Studio is now a first-class PWA prototype route with local reference photo upload memory, selectable Phoenix template state, and the required Happy/Calm/Excited/Sleepy/Anxious/Bored/Hungry/Proud/Home Alone/Not Feeling Well state inventory.
-53. NEXT: Achievements route and meaningful care milestones.
-54. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
+53. DONE 2026-06-13: Achievements is now a first-class PWA route backed by `getAchievementReview`, deriving meaningful care milestones from household-visible logs, records, training consistency, calm alone-time outcomes, Bile Watch bedtime snack proof, and record readiness instead of fake coins.
+54. NEXT: Settings route and export/import/safety consolidation so backup, restore, privacy, AI boundary, provider readiness, and reset controls live in one trustworthy system surface.
+55. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
 
 ## Cadence
 

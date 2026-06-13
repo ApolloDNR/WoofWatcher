@@ -1016,6 +1016,112 @@ export function getTrainingProgress(state, now = new Date().toISOString()) {
   };
 }
 
+export function getAchievementReview(state, now = new Date().toISOString()) {
+  const normalized = normalizeState(state, now);
+  const visibleEntries = (normalized.entries || []).filter((entry) => entry.visibility !== "Private");
+  const recentEntries = entriesWithinDays(visibleEntries, now, 7);
+  const monthEntries = entriesForCurrentMonth(visibleEntries, now);
+  const routineStreak = getConsecutiveLoggedDayCount(visibleEntries, now, 7);
+  const trainingSessions = recentEntries.filter((entry) => entry.type === "training").length;
+  const recentVomit = recentEntries.filter((entry) => entry.type === "vomit").length;
+  const recentFood = recentEntries.filter(isFoodEntry).length;
+  const bedtimeSnacks = recentEntries.filter(isBedtimeSnackEntry).length;
+  const calmAloneEntries = recentEntries.filter((entry) => entry.type === "alone" && hasCalmAloneSignal(entry));
+  const concerningAloneEntries = recentEntries.filter((entry) => entry.type === "alone" && hasConcerningAloneSignal(entry));
+  const requiredRecordTypes = ["vaccine", "vet", "microchip"];
+  const recordsPresent = requiredRecordTypes.filter((type) => hasRecordType(normalized.records || [], type));
+  const achievements = [
+    buildAchievement({
+      id: "routine_streak",
+      title: "7-day care streak",
+      category: "Care rhythm",
+      progress: routineStreak,
+      target: 7,
+      status: routineStreak >= 7 ? "earned" : routineStreak > 0 ? "progress" : "needs_log",
+      summary: routineStreak >= 7
+        ? "Phoenix has care proof on every day of the last week."
+        : "Log at least one household-visible care event each day to build this streak.",
+      evidence: `${routineStreak}/7 days with household-visible logs.`
+    }),
+    buildAchievement({
+      id: "training_consistency",
+      title: "Training consistency",
+      category: "Training",
+      progress: trainingSessions,
+      target: 3,
+      status: trainingSessions >= 3 ? "earned" : trainingSessions > 0 ? "progress" : "needs_log",
+      summary: trainingSessions >= 3
+        ? "Three short training sessions are logged this week."
+        : "Log short, calm sessions to make training patterns visible.",
+      evidence: `${trainingSessions}/3 training sessions in the last 7 days.`
+    }),
+    buildAchievement({
+      id: "happy_tummy_week",
+      title: "Happy tummy week",
+      category: "Health watch",
+      progress: recentVomit === 0 && recentFood > 0 ? 1 : 0,
+      target: 1,
+      status: recentVomit === 0 && recentFood > 0 ? "earned" : recentFood > 0 ? "progress" : "needs_log",
+      summary: recentVomit === 0 && recentFood > 0
+        ? "Food was logged and no vomit events were recorded in the last week."
+        : "Keep logging meals, snacks, appetite, and any vomit timing.",
+      evidence: `${recentFood} food logs and ${recentVomit} vomit logs in the last 7 days.`
+    }),
+    buildAchievement({
+      id: "bedtime_snack_proof",
+      title: "Bedtime snack proof",
+      category: "Bile Watch",
+      progress: bedtimeSnacks,
+      target: 3,
+      status: bedtimeSnacks >= 3 ? "earned" : "progress",
+      summary: bedtimeSnacks >= 3
+        ? "Bedtime snack coverage is visible for several nights."
+        : "Use bedtime snack logs to test whether overnight food gaps improve.",
+      evidence: `${bedtimeSnacks}/3 bedtime snack logs in the last 7 days.`
+    }),
+    buildAchievement({
+      id: "calm_alone_time",
+      title: "Calm alone time",
+      category: "Household",
+      progress: calmAloneEntries.length,
+      target: 1,
+      status: calmAloneEntries.length > 0 && concerningAloneEntries.length === 0 ? "earned" : calmAloneEntries.length > 0 ? "progress" : "needs_log",
+      summary: calmAloneEntries.length > 0 && concerningAloneEntries.length === 0
+        ? "A calm return was logged without a concerning alone-time outcome this week."
+        : "Log Leaving Home and I'm Home outcomes so separation patterns are visible.",
+      evidence: `${calmAloneEntries.length} calm and ${concerningAloneEntries.length} watch outcomes in the last 7 days.`
+    }),
+    buildAchievement({
+      id: "records_complete",
+      title: "Records complete",
+      category: "Care vault",
+      progress: recordsPresent.length,
+      target: requiredRecordTypes.length,
+      status: recordsPresent.length >= requiredRecordTypes.length ? "earned" : recordsPresent.length > 0 ? "progress" : "needs_log",
+      summary: recordsPresent.length >= requiredRecordTypes.length
+        ? "Core vaccine, vet, and microchip references are stored."
+        : "Add vaccine, vet, and microchip records before relying on emergency sharing.",
+      evidence: `${recordsPresent.length}/${requiredRecordTypes.length} core record types stored.`
+    })
+  ];
+  const completedCount = achievements.filter((achievement) => achievement.status === "earned").length;
+
+  return {
+    monthLabel: new Date(now).toLocaleString("en-US", { month: "long", year: "numeric" }),
+    totalCount: achievements.length,
+    completedCount,
+    progressCount: achievements.filter((achievement) => achievement.status === "progress").length,
+    score: Math.round((completedCount / achievements.length) * 100),
+    featured: achievements.find((achievement) => achievement.status === "earned") || achievements[0],
+    achievements,
+    evidence: {
+      weekLogs: recentEntries.length,
+      monthLogs: monthEntries.length,
+      householdCaregivers: [...new Set(monthEntries.map((entry) => entry.caregiver).filter(Boolean))].length
+    }
+  };
+}
+
 export function buildReportText(state, now = new Date().toISOString()) {
   const profile = state.profile || { name: "Phoenix" };
   const summary = getMonthlySummary(state, now);
@@ -1253,6 +1359,55 @@ function sortProgressWins(entries) {
     const right = b.type === "training" ? 0 : 1;
     if (left !== right) return left - right;
     return new Date(b.occurredAt) - new Date(a.occurredAt);
+  });
+}
+
+function buildAchievement({ id, title, category, progress, target, status, summary, evidence }) {
+  const safeProgress = Math.max(0, Number(progress) || 0);
+  const safeTarget = Math.max(1, Number(target) || 1);
+  return {
+    id,
+    title,
+    category,
+    progress: safeProgress,
+    target: safeTarget,
+    percent: Math.min(100, Math.round((safeProgress / safeTarget) * 100)),
+    status,
+    statusLabel: status === "earned" ? "Earned" : status === "progress" ? "In Progress" : "Needs Log",
+    summary,
+    evidence
+  };
+}
+
+function getConsecutiveLoggedDayCount(entries = [], now = new Date().toISOString(), limit = 7) {
+  const loggedDays = new Set(entries.map((entry) => formatDateKey(new Date(entry.occurredAt))));
+  let streak = 0;
+  const cursor = new Date(now);
+  for (let index = 0; index < limit; index += 1) {
+    if (!loggedDays.has(formatDateKey(cursor))) break;
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+function hasCalmAloneSignal(entry) {
+  return /calm|settled|quiet|relaxed|soft|fine|ok|okay|excited/i.test(aloneText(entry));
+}
+
+function hasConcerningAloneSignal(entry) {
+  return /anxious|bark|whin|accident|vomit|destruct|panic|stress|howl/i.test(aloneText(entry));
+}
+
+function aloneText(entry) {
+  return `${entry.aloneOutcome || ""} ${entry.mood || ""} ${entry.note || ""}`;
+}
+
+function hasRecordType(records = [], type = "") {
+  const normalizedType = cleanText(type).toLowerCase();
+  return records.some((record) => {
+    const haystack = `${record.type || ""} ${record.title || ""} ${record.note || ""}`.toLowerCase();
+    return haystack.includes(normalizedType);
   });
 }
 

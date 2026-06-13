@@ -2,6 +2,7 @@ import {
   buildCareRoomTransfer,
   buildReportText,
   createEntry,
+  getAchievementReview,
   getBileWatch,
   getCareCalendar,
   getCaregiverHandoff,
@@ -89,7 +90,8 @@ const PRIMARY_TABS = new Set([
   "records",
   "reports",
   "care-pass",
-  "avatar-studio"
+  "avatar-studio",
+  "achievements"
 ]);
 const TAB_ALIASES = {
   today: "phoenix",
@@ -116,7 +118,7 @@ const TAB_ALIASES = {
   "care-pass": "care-pass",
   avatar: "avatar-studio",
   "avatar-studio": "avatar-studio",
-  achievements: "more",
+  achievements: "achievements",
   settings: "more",
   timeline: "timeline",
   bile: "health",
@@ -261,6 +263,14 @@ const AVATAR_STATES = [
   { id: "home-alone", label: "Home Alone", mood: "home-alone", motion: "waiting idle", use: "Manual alone-time timer active." },
   { id: "not-feeling-well", label: "Not Feeling Well", mood: "sick", motion: "low posture", use: "Health Watch or Bile Watch review context." }
 ];
+const ACHIEVEMENT_ROUTE_IDS = [
+  "routine_streak",
+  "training_consistency",
+  "happy_tummy_week",
+  "bedtime_snack_proof",
+  "calm_alone_time",
+  "records_complete"
+];
 
 let app;
 let state;
@@ -347,6 +357,7 @@ function render() {
   const pulse = getHouseholdPulse(state, now);
   const avatar = getAvatarState(state, now);
   const goalReview = getGoalReview(state);
+  const achievementReview = getAchievementReview(state, now);
   const calendar = getCareCalendar(state);
   const trainingProgress = getTrainingProgress(state);
   const health = getHealthWatch(state);
@@ -395,7 +406,7 @@ function render() {
           </div>
         </header>
         <main class="workspace">
-          ${renderActiveTab(activeTab, { summary, plan, reminders, notifications, health, bileWatch, handoff, pulse, avatar, goalReview, calendar, trainingProgress })}
+          ${renderActiveTab(activeTab, { summary, plan, reminders, notifications, health, bileWatch, handoff, pulse, avatar, goalReview, achievementReview, calendar, trainingProgress })}
         </main>
       </div>
     </div>
@@ -786,6 +797,7 @@ function renderActiveTab(tab, context) {
   if (tab === "reports") return renderReportsTab(context);
   if (tab === "care-pass") return renderCarePassTab(context);
   if (tab === "avatar-studio") return renderAvatarStudioTab(context);
+  if (tab === "achievements") return renderAchievementsTab(context);
   if (tab === "more") return renderMoreTab(context);
   return renderPhoenixTab(context);
 }
@@ -2468,6 +2480,84 @@ function renderAvatarStateCard(item, selectedId) {
   `;
 }
 
+function renderAchievementsTab(context) {
+  const review = context.achievementReview || getAchievementReview(state);
+  const achievements = review.achievements.filter((item) => ACHIEVEMENT_ROUTE_IDS.includes(item.id));
+  const featured = review.featured || achievements[0];
+  return `
+    <div class="dashboard-grid achievements-screen">
+      <section class="panel span-2 achievements-hero">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Achievements</p>
+            <h3>Meaningful care milestones</h3>
+            <p>Badges are earned from household-visible logs, records, and care consistency. No fake coins, no empty rewards.</p>
+          </div>
+          <span class="status-chip ${review.completedCount >= review.totalCount ? "steady" : "watch"}">${review.completedCount}/${review.totalCount} earned</span>
+        </div>
+        <div class="achievement-hero-grid">
+          <article class="achievement-featured-card">
+            <p class="micro">Featured</p>
+            <h4>${escapeHtml(featured.title)}</h4>
+            <p>${escapeHtml(featured.summary)}</p>
+            <div class="achievement-progress-track" aria-label="${escapeAttribute(featured.title)} progress">
+              <span style="width: ${featured.percent}%"></span>
+            </div>
+            <small>${escapeHtml(featured.evidence)}</small>
+          </article>
+          <div class="achievement-score-stack">
+            ${renderStat("Score", `${review.score}%`)}
+            ${renderStat("Week logs", review.evidence.weekLogs)}
+            ${renderStat("Month logs", review.evidence.monthLogs)}
+            ${renderStat("Humans", review.evidence.householdCaregivers)}
+          </div>
+        </div>
+      </section>
+      <section class="panel">
+        <p class="micro">Next best milestone</p>
+        <h3>${escapeHtml(achievements.find((item) => item.status !== "earned")?.title || "Care set is steady")}</h3>
+        <p>${escapeHtml(achievements.find((item) => item.status !== "earned")?.summary || "Keep logging care normally and review Health Watch when patterns change.")}</p>
+        <div class="button-row">
+          <button class="button ghost" data-tab="log">Log care</button>
+          <button class="button ghost" data-tab="records">Review records</button>
+          <button class="button primary" data-tab="reports">Open reports</button>
+        </div>
+      </section>
+      <section class="panel span-2 achievement-card-grid">
+        ${achievements.map(renderAchievementCard).join("")}
+      </section>
+    </div>
+  `;
+}
+
+function renderAchievementCard(achievement) {
+  return `
+    <article class="achievement-card ${escapeAttribute(achievement.status)}" data-achievement-id="${escapeAttribute(achievement.id)}">
+      <div class="achievement-card-top">
+        <div>
+          <p class="micro">${escapeHtml(achievement.category)}</p>
+          <h4>${escapeHtml(achievement.title)}</h4>
+        </div>
+        <span class="status-chip ${achievementStatusClass(achievement.status)}">${escapeHtml(achievement.statusLabel)}</span>
+      </div>
+      <p>${escapeHtml(achievement.summary)}</p>
+      <div class="achievement-progress-track" aria-label="${escapeAttribute(achievement.title)} progress">
+        <span style="width: ${achievement.percent}%"></span>
+      </div>
+      <div class="achievement-card-footer">
+        <strong>${achievement.progress}/${achievement.target}</strong>
+        <small>${escapeHtml(achievement.evidence)}</small>
+      </div>
+    </article>
+  `;
+}
+
+function achievementStatusClass(status) {
+  if (status === "earned") return "steady";
+  if (status === "progress") return "watch";
+  return "review";
+}
+
 function renderMoreTab(context) {
   return `
     <div class="dashboard-grid more-screen">
@@ -2489,7 +2579,8 @@ function renderMoreDirectoryPanel() {
     { tab: "records", label: "Records", detail: "Vaccines, visits, insurance, receipts, and dog ID." },
     { tab: "reports", label: "Reports", detail: "Care Pass exports and monthly progress." },
     { tab: "woofguide", label: "WoofGuide", detail: "Owner-reviewed assistant drafts and summaries." },
-    { tab: "avatar-studio", label: "Avatar Studio", detail: "Pixel Phoenix states and future asset pipeline." }
+    { tab: "avatar-studio", label: "Avatar Studio", detail: "Pixel Phoenix states and future asset pipeline." },
+    { tab: "achievements", label: "Achievements", detail: "Meaningful care milestones from real logs and records." }
   ];
   return `
     <section class="panel span-2 more-directory-panel">

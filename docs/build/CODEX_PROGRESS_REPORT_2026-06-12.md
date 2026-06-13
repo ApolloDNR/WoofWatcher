@@ -21,6 +21,7 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Implemented WoofGuide as a first-class PWA route with owner-reviewed action cards. Actions now route into Meal Log, Care Pass review, Records review, and a bounded vet-note draft while keeping live OpenAI optional and clearly separated.
 - Split PWA Timeline, Records, Reports, and Care Pass into directly routable desktop/sidebar work surfaces instead of collapsing them into More.
 - Implemented Avatar Studio as a first-class PWA prototype route with local reference photo upload memory, selectable Phoenix template state, and the required future animation state inventory.
+- Implemented Achievements as a first-class PWA route backed by `getAchievementReview`. The route derives meaningful milestones from real care evidence: routine streak, training consistency, happy tummy week, bedtime snack proof, calm alone time, and records completeness.
 
 ## Verification
 
@@ -38,7 +39,9 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - WoofGuide owner-reviewed action routing is covered by the PWA readiness test.
 - Timeline/Records/Reports/Care Pass direct routing is covered by the PWA readiness test.
 - Avatar Studio prototype route and state inventory are covered by the PWA readiness test.
-- JS syntax checks passed for `artifacts/woofwatcher/src/vanilla/app-entry.js` and `artifacts/woofwatcher/src/vanilla/woof-product-view-model.js`.
+- Achievements direct routing is covered by the PWA readiness test, and achievement derivation is covered by `woof-achievements.test.js`.
+- Focused behavior tests passed locally after the Achievements route slice: 191 passing tests.
+- JS syntax checks passed for `artifacts/woofwatcher/src/vanilla/app-entry.js`, `artifacts/woofwatcher/src/vanilla/woof-core.js`, and `artifacts/woofwatcher/src/vanilla/woof-product-view-model.js`.
 - `git diff --check` passed.
 - Local TypeScript could not run because this checkout did not have `node_modules/typescript`.
 - GitHub Actions full verification is the authoritative full typecheck/build gate after push.
@@ -48,9 +51,9 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 Next implementation slice:
 
 1. Phoenix Home v1.5 polish: stronger household pulse mini-card and Health/Bile snapshot.
-2. Achievements route and meaningful care milestones.
-3. Settings route and export/import/safety consolidation.
-4. Runtime/browser visual QA once a local package manager or dev server dependency install is available.
+2. Settings route and export/import/safety consolidation.
+3. Runtime/browser visual QA once a local package manager or dev server dependency install is available.
+4. Fable/Replit-facing visual handoff notes for the shipped PWA routes.
 
 ## Known Limitations
 

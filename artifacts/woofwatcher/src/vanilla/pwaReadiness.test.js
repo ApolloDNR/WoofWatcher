@@ -157,3 +157,17 @@ test("keeps Avatar Studio wired as a prototype route with state inventory", () =
   assert.match(appEntry, /data-action="set-avatar-state"/);
   assert.match(appEntry, /function handleAvatarPhotoInput/);
 });
+
+test("keeps Achievements wired as a direct route with meaningful milestones", () => {
+  assert.match(appEntry, /getAchievementReview/);
+  assert.match(appEntry, /"achievements"/);
+  assert.match(appEntry, /achievements: "achievements"/);
+  assert.match(appEntry, /if \(tab === "achievements"\) return renderAchievementsTab\(context\)/);
+  assert.match(appEntry, /function renderAchievementsTab/);
+  assert.match(appEntry, /function renderAchievementCard/);
+  assert.match(appEntry, /routine_streak/);
+  assert.match(appEntry, /training_consistency/);
+  assert.match(appEntry, /happy_tummy_week/);
+  assert.match(appEntry, /calm_alone_time/);
+  assert.match(appEntry, /records_complete/);
+});
