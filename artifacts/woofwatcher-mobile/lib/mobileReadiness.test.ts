@@ -146,6 +146,38 @@ test("keeps Expo app identity release-grade", () => {
   assert.doesNotMatch(JSON.stringify(expo), /replit/i);
 });
 
+test("keeps EAS build profiles ready for iOS and Android release paths", () => {
+  const easPath = join(process.cwd(), "artifacts", "woofwatcher-mobile", "eas.json");
+
+  assert.ok(existsSync(easPath), "mobile EAS config should exist");
+
+  const eas = JSON.parse(readFileSync(easPath, "utf8"));
+
+  assert.equal(eas.cli.appVersionSource, "remote");
+  assert.equal(eas.build.development.developmentClient, true);
+  assert.equal(eas.build.development.distribution, "internal");
+  assert.equal(eas.build.preview.distribution, "internal");
+  assert.equal(eas.build.production.autoIncrement, true);
+  assert.equal(eas.build.production.android.buildType, "app-bundle");
+  assert.ok(eas.submit.production, "production submit profile should exist");
+});
+
+test("documents the mobile-first iOS, Android, and web release handoff path", () => {
+  const runbookPath = join(process.cwd(), "docs", "release", "MOBILE_RELEASE_RUNBOOK.md");
+
+  assert.ok(existsSync(runbookPath), "mobile release runbook should exist");
+
+  const runbook = readFileSync(runbookPath, "utf8");
+
+  assert.match(runbook, /iOS/);
+  assert.match(runbook, /Android/);
+  assert.match(runbook, /EAS/);
+  assert.match(runbook, /TestFlight/);
+  assert.match(runbook, /Google Play/);
+  assert.match(runbook, /Fable/);
+  assert.match(runbook, /web dashboard|PWA/i);
+});
+
 test("wires Home to the Phoenix status model", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

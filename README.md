@@ -48,6 +48,7 @@ Full Premium Release planning and quality gates are documented in:
 - `docs/ULTIMATE_RELEASE_PLAN.md`
 - `docs/PRODUCT_QUALITY_GATES.md`
 - `docs/DECISION_LOG.md`
+- `docs/release/MOBILE_RELEASE_RUNBOOK.md`
 
 The first implementation slice is documented in:
 

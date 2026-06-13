@@ -702,6 +702,16 @@ Owner: Codex.
 
 Revisit trigger: Final Fable/Figma visual redesign, animated room assets, or multi-dog home state rules become active release work.
 
+### 2026-06-13: Expo/EAS Is The v1 Mobile Release Path
+
+Decision: WoofWatcher v1 uses Expo/EAS as the iOS and Android build path, with committed development, preview, production, and submit profiles under `artifacts/woofwatcher-mobile/eas.json`.
+
+Reason: Apollo clarified that WoofWatcher is mainly an iOS and Android product, with web as a supporting surface. Committing EAS profiles and a release runbook gives Fable and Replit a concrete mobile target while keeping store submission, accounts, privacy/legal, and production secrets properly gated.
+
+Owner: Codex.
+
+Revisit trigger: Apollo chooses a native rebuild, bare React Native path, custom CI signing pipeline, or a different mobile release provider.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

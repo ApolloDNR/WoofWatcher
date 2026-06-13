@@ -2,9 +2,11 @@
 
 ## Purpose
 
-This handoff is for the Fable/Replit visual pass. The app should not be rebuilt from scratch unless a specific architecture blocker is found. The current repo already has the local-first care model, persistence, backup/import, reports, Health Watch, Bile Watch, records, routines/logs relationship, and PWA route skeleton.
+This handoff is for the Fable/Replit visual pass. The app should not be rebuilt from scratch unless a specific architecture blocker is found. The canonical product surface is the Expo mobile app in `artifacts/woofwatcher-mobile`; the PWA/web dashboard is a supporting desktop surface. The current repo already has the local-first care model, persistence, backup/import, reports, Health Watch, Bile Watch, records, routines/logs relationship, mobile app identity, EAS release profiles, and PWA route skeleton.
 
 Fable's job is to make it feel premium, animated, and emotionally memorable without breaking the care workflows.
+
+Mobile comes first. Polish iOS and Android safe areas, bottom navigation, tap targets, keyboard behavior, native sharing/export affordances, and quick logging before extending the same system to the web dashboard/PWA.
 
 ## Preserve
 
@@ -94,6 +96,8 @@ Fable's job is to make it feel premium, animated, and emotionally memorable with
 
 Codex could not attach to the in-app Browser tool in this session because the `iab` browser target was unavailable. Local behavior and syntax checks pass, and GitHub Actions is the authoritative build/typecheck gate, but Fable/Replit should perform visual runtime QA with screenshots across mobile and desktop.
 
+Mobile release setup is documented in `docs/release/MOBILE_RELEASE_RUNBOOK.md`. EAS profiles exist for internal preview and production iOS/Android builds, but real TestFlight, Google Play, and App Store submission require Apollo's Expo, Apple Developer, Google Play, privacy/legal, and launch approval.
+
 ## Suggested Fable Task
 
-Polish the existing WoofWatcher PWA into a premium neo-retro pixel dog-care app while preserving the current route structure, local-first workflows, state hooks, data actions, non-diagnostic health language, and backup/import behavior. Start with Phoenix Home, Quick Log, Health/Bile, Care Pass, Avatar Studio, Achievements, and Settings.
+Polish the existing WoofWatcher mobile app first into a premium neo-retro pixel dog-care app for iOS and Android, then bring the PWA/web dashboard into visual alignment. Preserve the current route structure, local-first workflows, state hooks, data actions, non-diagnostic health language, and backup/import behavior. Start with Phoenix Home, Quick Log, Health/Bile, Care Pass, Avatar Studio, Achievements, and Settings.

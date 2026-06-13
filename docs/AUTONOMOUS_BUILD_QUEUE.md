@@ -64,6 +64,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 56. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
 57. DONE 2026-06-13: Fable/Replit handoff notes are now captured in `docs/design/FABLE_HANDOFF_2026-06-13.md`, including route inventory, preserved workflows, visual priorities, motion direction, and runtime QA limits.
 58. NEXT: Provider-backed account/cloud/payment decision pack after Apollo chooses the release stack.
+59. DONE 2026-06-13: Mobile-first release readiness now has committed Expo/EAS iOS and Android build profiles in `artifacts/woofwatcher-mobile/eas.json`, a mobile release runbook in `docs/release/MOBILE_RELEASE_RUNBOOK.md`, and static readiness tests that protect both.
+60. NEXT: Native iOS/Android runtime QA with real Expo/EAS account access, simulator/device screenshots, safe-area checks, and Fable-polished assets.
 
 ## Cadence
 

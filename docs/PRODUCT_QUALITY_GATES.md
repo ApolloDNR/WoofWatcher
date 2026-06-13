@@ -200,7 +200,7 @@ Current gaps:
 - Need Vercel/API/mobile deployment targets confirmed.
 - Need migration runbook.
 - Need monitoring/logging configuration.
-- Need Expo/EAS or iOS release path.
+- Need Expo/EAS account access, native preview builds, store screenshots, privacy manifests, and Apollo-approved TestFlight/Google Play submission. The iOS/Android EAS release path is now documented.
 - Need rollback and support triage process.
 
 ## Gate 10: Business Readiness
