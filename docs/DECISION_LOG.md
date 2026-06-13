@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-12: Records And Reports Need Direct PWA Routes
+
+Decision: Timeline, Records, Reports, and Care Pass are direct PWA routes instead of aliases into the More page.
+
+Reason: Apollo wants a navigable product with no dead ends. Records, reports, and handoffs are core premium workflows and should be reachable from the desktop sidebar as distinct work surfaces before a visual redesign starts.
+
+Owner: Codex.
+
+Revisit trigger: A router framework replaces the vanilla PWA tab model or mobile/web information architecture is consolidated.
+
 ### 2026-06-12: WoofGuide Actions Stay Owner-Reviewed In The PWA
 
 Decision: WoofGuide is a first-class PWA route, but its action cards route owners into existing review flows instead of performing automatic writes.

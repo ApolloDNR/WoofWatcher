@@ -127,3 +127,18 @@ test("keeps WoofGuide wired to owner-reviewed action routing", () => {
   assert.match(appEntry, /function buildWoofGuideVetNoteDraft/);
   assert.match(appEntry, /owner-reviewed/);
 });
+
+test("keeps records and reports tools directly routable in the PWA", () => {
+  assert.match(appEntry, /records: "records"/);
+  assert.match(appEntry, /reports: "reports"/);
+  assert.match(appEntry, /timeline: "timeline"/);
+  assert.match(appEntry, /"care-pass": "care-pass"/);
+  assert.match(appEntry, /if \(tab === "timeline"\) return renderTimelineTab\(context\)/);
+  assert.match(appEntry, /if \(tab === "records"\) return renderRecordsTab\(context\)/);
+  assert.match(appEntry, /if \(tab === "reports"\) return renderReportsTab\(context\)/);
+  assert.match(appEntry, /if \(tab === "care-pass"\) return renderCarePassTab\(context\)/);
+  assert.match(appEntry, /function renderTimelineTab/);
+  assert.match(appEntry, /function renderRecordsTab/);
+  assert.match(appEntry, /function renderReportsTab/);
+  assert.match(appEntry, /function renderCarePassTab/);
+});

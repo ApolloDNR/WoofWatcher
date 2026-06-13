@@ -76,7 +76,20 @@ const ENTRY_SELECT_OPTIONS = [
   "note"
 ];
 const RECORD_TYPE_OPTIONS = ["vet", "vaccine", "weight", "instruction", "medication", "microchip"];
-const PRIMARY_TABS = new Set(["phoenix", "log", "plans", "health", "more", "household-pulse", "diet-treats", "woofguide"]);
+const PRIMARY_TABS = new Set([
+  "phoenix",
+  "log",
+  "plans",
+  "health",
+  "more",
+  "household-pulse",
+  "diet-treats",
+  "woofguide",
+  "timeline",
+  "records",
+  "reports",
+  "care-pass"
+]);
 const TAB_ALIASES = {
   today: "phoenix",
   dashboard: "phoenix",
@@ -87,9 +100,9 @@ const TAB_ALIASES = {
   calendar: "more",
   progress: "more",
   team: "more",
-  records: "more",
-  report: "more",
-  reports: "more",
+  records: "records",
+  report: "reports",
+  reports: "reports",
   assistant: "woofguide",
   woofguide: "woofguide",
   guide: "woofguide",
@@ -98,13 +111,13 @@ const TAB_ALIASES = {
   diet: "diet-treats",
   treats: "diet-treats",
   "diet-treats": "diet-treats",
-  carepass: "more",
-  "care-pass": "more",
+  carepass: "care-pass",
+  "care-pass": "care-pass",
   avatar: "more",
   "avatar-studio": "more",
   achievements: "more",
   settings: "more",
-  timeline: "more",
+  timeline: "timeline",
   bile: "health",
   "bile-watch": "health"
 };
@@ -754,6 +767,10 @@ function renderActiveTab(tab, context) {
   if (tab === "household-pulse") return renderHouseholdPulseTab(context);
   if (tab === "diet-treats") return renderDietTreatsTab(context);
   if (tab === "woofguide") return renderWoofGuideTab(context);
+  if (tab === "timeline") return renderTimelineTab(context);
+  if (tab === "records") return renderRecordsTab(context);
+  if (tab === "reports") return renderReportsTab(context);
+  if (tab === "care-pass") return renderCarePassTab(context);
   if (tab === "more") return renderMoreTab(context);
   return renderPhoenixTab(context);
 }
@@ -2320,6 +2337,56 @@ function splitDietList(value) {
     .filter(Boolean);
 }
 
+function renderTimelineTab() {
+  const entries = [...(state.entries || [])].sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  return `
+    <div class="dashboard-grid timeline-screen">
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Timeline</p>
+            <h3>Full household care history</h3>
+            <p>Every care event stays inspectable before deeper edit-history and server retention policies are added.</p>
+          </div>
+          <button class="button primary" data-tab="log">Add log</button>
+        </div>
+        ${renderTimeline(entries)}
+      </section>
+    </div>
+  `;
+}
+
+function renderReportsTab(context) {
+  const report = buildReportText(state);
+  return `
+    <div class="dashboard-grid reports-screen">
+      <section class="panel span-2">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Reports</p>
+            <h3>${escapeHtml(context.summary.monthLabel)} progress report</h3>
+            <p>Monthly care context, progress memory, and export actions stay separate from raw records.</p>
+          </div>
+          <div class="button-row">
+            <button class="button ghost" data-action="copy-report">Copy report</button>
+            <button class="button primary" data-action="download-report">Download</button>
+          </div>
+        </div>
+        <pre class="report-box">${escapeHtml(report)}</pre>
+      </section>
+      ${renderProgressMemoryPanel(context.calendar, context.trainingProgress)}
+    </div>
+  `;
+}
+
+function renderCarePassTab(context) {
+  return `
+    <div class="dashboard-grid care-pass-screen">
+      ${renderCarePassPanel(context.summary)}
+    </div>
+  `;
+}
+
 function renderMoreTab(context) {
   return `
     <div class="dashboard-grid more-screen">
@@ -3038,7 +3105,7 @@ function bindEvents() {
   app.querySelectorAll("[data-action='remove-record']").forEach((button) => {
     button.addEventListener("click", () => {
       saveState({ ...state, records: removeRecord(state.records, button.dataset.recordId) });
-      activeTab = "more";
+      activeTab = activeTab === "records" ? "records" : "more";
       render();
     });
   });
@@ -3048,7 +3115,7 @@ function bindEvents() {
       event.preventDefault();
       const data = Object.fromEntries(new FormData(event.currentTarget).entries());
       saveState({ ...state, records: upsertRecord(state.records, data) });
-      activeTab = "more";
+      activeTab = activeTab === "records" ? "records" : "more";
       render();
     });
   });
@@ -3326,17 +3393,17 @@ async function handleAction(action, button) {
   }
 
   if (action === "woofguide-open-care-pass") {
-    activeTab = "more";
+    activeTab = "care-pass";
     assistantAnswer = "Care Pass review opened. Pick the right audience before copying or downloading anything.";
-    history.replaceState(null, "", "?tab=more#care-pass");
+    history.replaceState(null, "", "?tab=care-pass");
     render();
     return;
   }
 
   if (action === "woofguide-open-records") {
-    activeTab = "more";
+    activeTab = "records";
     assistantAnswer = "Records review opened. Check vaccines, visits, insurance, microchip, and documents before sharing.";
-    history.replaceState(null, "", "?tab=more#records");
+    history.replaceState(null, "", "?tab=records");
     render();
     return;
   }
