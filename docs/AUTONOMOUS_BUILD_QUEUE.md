@@ -49,9 +49,10 @@ Every autonomous run should improve at least one of: care workflow, household us
 41. DONE 2026-06-11: Full Log search now uses shared care-domain logic to search titles, notes, caregivers, event details, routes, medication fields, and sticky notes while combining text query with type filters, summary copy, and active-filter empty states.
 42. DONE 2026-06-11: Medication History search and outcome filters now use shared care-domain logic to filter recent medication evidence by medicine, dose, caregiver, note, routine id, and taken/skipped/missed/needs-review outcome, then surface summary and empty-state copy in Records.
 43. DONE 2026-06-12: v1.5 Premium Neo-Retro Pixel Care direction is mirrored into durable docs, CI was repaired, mobile nav is aligned, and the PWA v1.5 shell foundation now has grouped desktop navigation, five-tab mobile navigation, top-bar search/reminder/date/profile/theme controls, persisted light/dark theme, grouped Quick Log v2, Potty parent quick action, and meal/potty lifecycle field preservation.
-44. NEXT: Phoenix Home v1.5: pixel room hero, presence/alone state, open meal outcome task, mood/status strip, Next Up, Today at a Glance, Quick Actions, Household Pulse mini-card, and Health/Bile snapshot.
-45. NEXT: Quick Log v2: dedicated Potty parent/outcome flow and visible Meal served/update outcome lifecycle while preserving routines/logs linkage.
+44. DONE 2026-06-12: Phoenix Home v1.5 now includes a Phoenix Status card for where Phoenix is, whether she is alone, how she feels, what is next, and whether a served meal has an outcome pending. Open meal outcomes can be updated from Home with one tap.
+45. NEXT: Quick Log v2: dedicated Potty parent/outcome flow and richer Meal served/update outcome lifecycle while preserving routines/logs linkage.
 46. NEXT: Household Pulse and Alone Time Watch: first-class page, Leaving Home and I'm Home flows, return outcomes, and status-staleness handling.
+47. NEXT: Phoenix Home v1.5 polish: household pulse mini-card, stronger Health/Bile snapshot, and richer pixel-room state copy.
 
 ## Cadence
 

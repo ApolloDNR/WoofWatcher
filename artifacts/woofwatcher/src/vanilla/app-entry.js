@@ -1022,6 +1022,8 @@ function renderPhoenixTab(context) {
   const vomiting = summary.vomitIncidents > 0 ? String(summary.vomitIncidents) : "None";
   const weight = `${state.profile.weight.current} ${state.profile.weight.unit}`;
   const caregiverName = (state.caregivers && state.caregivers[0] && state.caregivers[0].name) || "friend";
+  const presenceLabel = getPresenceLabel(pulse, avatar, caregiverName);
+  const openMeal = getOpenMealOutcomeTask();
 
   return `
     <div class="dash">
@@ -1048,6 +1050,8 @@ function renderPhoenixTab(context) {
             <button class="button" data-tab="plans">View</button>
           </div>
         </section>
+
+        ${renderPhoenixStatusCard({ presenceLabel, mood, nextReminder, avatar, openMeal })}
 
         <section class="card">
           <div class="card-head"><h3>Quick Log</h3></div>
@@ -1108,6 +1112,65 @@ function renderPhoenixTab(context) {
       </div>
     </div>
   `;
+}
+
+function renderPhoenixStatusCard({ presenceLabel, mood, nextReminder, avatar, openMeal }) {
+  return `
+    <section class="card phoenix-status-card">
+      <div class="card-head">
+        <h3>Phoenix Status</h3>
+        <span class="pill ${escapeAttribute(avatar.urgency || "steady")}">${escapeHtml(mood.label)}</span>
+      </div>
+      <div class="status-answer-grid">
+        ${renderStatusAnswer("Where", presenceLabel)}
+        ${renderStatusAnswer("Alone", avatar.mood === "home-alone" ? "Yes - timer active" : "No")}
+        ${renderStatusAnswer("Feels", mood.label)}
+        ${renderStatusAnswer("Next", `${nextReminder.label || "Routine covered"} | ${nextReminder.time || "Today"}`)}
+      </div>
+      ${
+        openMeal
+          ? renderOpenMealTask(openMeal)
+          : `<p class="status-steady-note">No open meal outcomes. Care proof is current.</p>`
+      }
+    </section>
+  `;
+}
+
+function renderStatusAnswer(label, value) {
+  return `
+    <article class="status-answer">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </article>
+  `;
+}
+
+function renderOpenMealTask(meal) {
+  return `
+    <article class="open-meal-task">
+      <div>
+        <span>Open task</span>
+        <strong>${escapeHtml(meal.title)} served. Outcome pending.</strong>
+        <p>${escapeHtml(meal.detail)}</p>
+      </div>
+      <div class="open-meal-actions">
+        <button class="button ghost" data-action="meal-outcome" data-entry-id="${escapeAttribute(meal.id)}" data-outcome="Ate all">Ate all</button>
+        <button class="button ghost" data-action="meal-outcome" data-entry-id="${escapeAttribute(meal.id)}" data-outcome="Ate some">Ate some</button>
+        <button class="button ghost" data-tab="log">Details</button>
+      </div>
+    </article>
+  `;
+}
+
+function getOpenMealOutcomeTask() {
+  const meals = (state.entries || [])
+    .filter((entry) => entry.type === "meal")
+    .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+  return meals.find((entry) => {
+    const outcome = String(entry.outcome || "").toLowerCase();
+    const eaten = String(entry.portionEaten || "").trim();
+    return outcome === "pending" || outcome === "still grazing" || (!outcome && !eaten);
+  });
 }
 
 function renderDesktopSidebar(caregiverName, presenceLabel) {
@@ -1402,6 +1465,14 @@ function getQuickEntryDefaults(type, title, now) {
     trustState: "Confirmed",
     visibility: "Household"
   };
+}
+
+function mergeNote(existing, addition) {
+  const current = String(existing || "").trim();
+  const next = String(addition || "").trim();
+  if (!current) return next;
+  if (!next || current.includes(next)) return current;
+  return `${current} ${next}`;
 }
 
 function renderEntryForm(prefill = {}) {
@@ -2270,6 +2341,27 @@ async function handleAction(action, button) {
     logSearchQuery = "";
     activeTab = "log";
     history.replaceState(null, "", "?tab=log");
+    render();
+  }
+
+  if (action === "meal-outcome") {
+    const entryId = button?.dataset.entryId;
+    const outcome = button?.dataset.outcome || "Ate some";
+    const now = new Date().toISOString();
+    const entries = (state.entries || []).map((entry) => {
+      if (entry.id !== entryId) return entry;
+      return {
+        ...entry,
+        outcome,
+        portionEaten: outcome === "Ate all" ? (entry.portionOffered || "All") : (entry.portionEaten || outcome),
+        outcomeAt: now,
+        outcomeBy: entry.caregiver || "Unassigned",
+        trustState: "Confirmed",
+        note: mergeNote(entry.note, `Meal outcome updated: ${outcome}.`)
+      };
+    });
+    saveState({ ...state, entries });
+    activeTab = "phoenix";
     render();
   }
 

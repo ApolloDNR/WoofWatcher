@@ -56,3 +56,10 @@ test("preserves the PWA meal served-to-outcome lifecycle contract", () => {
   assert.match(core, /outcomeAt: input\.outcomeAt \? normalizeDate\(input\.outcomeAt\) : ""/);
 });
 
+test("keeps Phoenix Home wired to open meal outcome tasks", () => {
+  assert.match(appEntry, /function renderPhoenixStatusCard/);
+  assert.match(appEntry, /function getOpenMealOutcomeTask/);
+  assert.match(appEntry, /data-action="meal-outcome"/);
+  assert.match(appEntry, /Meal outcome updated:/);
+  assert.match(appEntry, /No open meal outcomes\. Care proof is current\./);
+});

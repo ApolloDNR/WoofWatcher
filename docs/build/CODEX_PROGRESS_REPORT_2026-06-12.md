@@ -13,11 +13,13 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Recorded the PWA/dashboard upgrade direction without demoting the canonical mobile app.
 - Implemented the PWA v1.5 shell foundation: grouped desktop sidebar, five-item mobile bottom nav, top-bar search/reminder/date/profile/theme controls, persisted light/dark theme, grouped Quick Log v2, PWA product-view-model navigation groups, and localStorage-preserved meal/potty lifecycle fields.
 - Added a PWA readiness test for v1.5 navigation, Potty parent quick log, and meal served-to-outcome lifecycle.
+- Implemented the first Phoenix Home v1.5 workflow upgrade: a Phoenix Status card that answers presence, alone state, mood, next care, and open meal outcome state. Open meals can now be updated from Home with one tap.
 
 ## Verification
 
 - Focused behavior tests passed locally after the CI repair: 178 passing tests.
 - Focused behavior tests passed locally after the PWA shell slice: 181 passing tests.
+- Phoenix Home open meal workflow verification is covered by the PWA readiness test.
 - JS syntax checks passed for `artifacts/woofwatcher/src/vanilla/app-entry.js` and `artifacts/woofwatcher/src/vanilla/woof-product-view-model.js`.
 - `git diff --check` passed.
 - Local TypeScript could not run because this checkout did not have `node_modules/typescript`.
@@ -27,9 +29,9 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 
 Next implementation slice:
 
-1. Phoenix Home v1.5: clearer presence/alone state, open meal outcome task, household pulse mini-card, and Health/Bile snapshot.
-2. Quick Log v2 detail flow: dedicated Potty outcome flow and meal served/update outcome flow.
-3. Household Pulse and Alone Time Watch as first-class pages/surfaces.
+1. Quick Log v2 detail flow: dedicated Potty outcome flow and richer meal served/update outcome flow.
+2. Household Pulse and Alone Time Watch as first-class pages/surfaces.
+3. Phoenix Home v1.5 polish: stronger household pulse mini-card and Health/Bile snapshot.
 4. Diet & Treats and Care Pass polish.
 
 ## Known Limitations

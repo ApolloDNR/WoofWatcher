@@ -1051,6 +1051,72 @@ p { margin: 0; }
 .hero-next span { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); font-weight: 600; }
 .hero-next strong { font-size: 0.88rem; }
 
+.phoenix-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.status-answer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.status-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 74px;
+  background: var(--surface-nested);
+  border: 1px solid var(--stone);
+  border-radius: 12px;
+  padding: 12px;
+}
+.status-answer span,
+.open-meal-task span {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.status-answer strong {
+  color: var(--text-strong);
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+.status-steady-note {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+.open-meal-task {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  background: color-mix(in srgb, var(--amber) 18%, var(--surface-nested));
+  border: 1px solid color-mix(in srgb, var(--amber) 46%, var(--stone));
+  border-radius: 12px;
+  padding: 14px;
+}
+.open-meal-task strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-strong);
+  font-size: 0.95rem;
+}
+.open-meal-task p {
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.open-meal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 /* quick log grid */
 .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 
@@ -1345,6 +1411,9 @@ p { margin: 0; }
     font-size: 0.78rem;
     padding-inline: 2px;
   }
+  .status-answer-grid { grid-template-columns: 1fr; }
+  .open-meal-task { flex-direction: column; }
+  .open-meal-actions { justify-content: flex-start; }
   .quick-group-grid { grid-template-columns: 1fr; }
   .quick-group-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .quick-btn { min-height: 84px; padding: 12px 6px; }
