@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-12: Quick Log Uses Structured Flows For Meal And Potty
+
+Decision: Meal and Potty quick actions open dedicated Quick Log v2 flows in the PWA instead of saving generic one-tap rows. Meal uses a served-to-outcome lifecycle. Potty remains the parent action and stores the specific outcome as structured detail.
+
+Reason: Apollo specifically wants logging to be more sophisticated while still fast. Meals need portion, served/eaten state, notes, and household visibility. Potty should not split pee/poop into confusing top-level actions; it should ask what happened inside one clear flow.
+
+Owner: Codex.
+
+Revisit trigger: Native mobile Log composer becomes the only canonical write surface, or a server-side event command model replaces local PWA form handlers.
+
 ### 2026-06-12: v1.5 Locks Premium Neo-Retro Pixel Care
 
 Decision: WoofWatcher v1.5 uses the Premium Neo-Retro Pixel Care direction with the line "Real care. Pixel heart.", the tagline "Your dog's day, brought to life.", and the promise "Care for your real dog. Watch their care twin come alive."

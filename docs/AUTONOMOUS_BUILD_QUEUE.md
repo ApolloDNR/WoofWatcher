@@ -50,9 +50,10 @@ Every autonomous run should improve at least one of: care workflow, household us
 42. DONE 2026-06-11: Medication History search and outcome filters now use shared care-domain logic to filter recent medication evidence by medicine, dose, caregiver, note, routine id, and taken/skipped/missed/needs-review outcome, then surface summary and empty-state copy in Records.
 43. DONE 2026-06-12: v1.5 Premium Neo-Retro Pixel Care direction is mirrored into durable docs, CI was repaired, mobile nav is aligned, and the PWA v1.5 shell foundation now has grouped desktop navigation, five-tab mobile navigation, top-bar search/reminder/date/profile/theme controls, persisted light/dark theme, grouped Quick Log v2, Potty parent quick action, and meal/potty lifecycle field preservation.
 44. DONE 2026-06-12: Phoenix Home v1.5 now includes a Phoenix Status card for where Phoenix is, whether she is alone, how she feels, what is next, and whether a served meal has an outcome pending. Open meal outcomes can be updated from Home with one tap.
-45. NEXT: Quick Log v2: dedicated Potty parent/outcome flow and richer Meal served/update outcome lifecycle while preserving routines/logs linkage.
+45. DONE 2026-06-12: PWA Quick Log v2 now routes Meal and Potty quick actions into dedicated detail flows. Meal supports serving a pending meal with food, portion, caregiver, note, and later outcome update; Potty supports parent/action logging with location, pee/poop/both/tried/accident outcome, caregiver, and notes. Other quick actions remain one-tap.
 46. NEXT: Household Pulse and Alone Time Watch: first-class page, Leaving Home and I'm Home flows, return outcomes, and status-staleness handling.
 47. NEXT: Phoenix Home v1.5 polish: household pulse mini-card, stronger Health/Bile snapshot, and richer pixel-room state copy.
+48. NEXT: Care Pass export polish: stronger printable vet, sitter, trainer, and emergency pass source with report history continuity.
 
 ## Cadence
 

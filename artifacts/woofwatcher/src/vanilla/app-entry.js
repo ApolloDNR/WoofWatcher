@@ -207,6 +207,7 @@ let state;
 let activeTab;
 let theme = "light";
 let logSearchQuery = "";
+let activeQuickFlow = "";
 let selectedCalendarDate;
 let assistantAnswer = "";
 let assistantBusy = false;
@@ -1361,6 +1362,151 @@ function renderQuickLogGroups() {
   `;
 }
 
+function renderQuickLogFlowPanel() {
+  if (activeQuickFlow === "meal") return renderMealLifecycleFlow();
+  if (activeQuickFlow === "potty") return renderPottyOutcomeFlow();
+  return `
+    <section class="quick-flow-panel idle" aria-live="polite">
+      <p class="quick-group-label">Focused flow</p>
+      <h4>Select Meal or Potty for guided details</h4>
+      <p>Other quick actions still save immediately. Meal and Potty use structured flows so the household record stays clear.</p>
+    </section>
+  `;
+}
+
+function renderMealLifecycleFlow() {
+  const caregiverOptions = getCaregiverOptions()
+    .map((name) => `<option value="${escapeAttribute(name)}">${escapeHtml(name)}</option>`)
+    .join("");
+  const openMeal = getOpenMealOutcomeTask();
+  return `
+    <section class="quick-flow-panel meal-flow" aria-live="polite">
+      <div class="quick-flow-header">
+        <div>
+          <p class="quick-group-label">Meal lifecycle</p>
+          <h4>Serve meal</h4>
+        </div>
+        <button class="card-link" data-action="clear-quick-flow">Close</button>
+      </div>
+      <form class="quick-flow-form" data-form="meal-lifecycle">
+        <input type="hidden" name="mode" value="serve" />
+        <label>
+          <span>Meal</span>
+          <select name="mealType">
+            <option>Breakfast</option>
+            <option>Dinner</option>
+            <option>Bedtime snack</option>
+            <option>Snack</option>
+          </select>
+        </label>
+        <label>
+          <span>Served by</span>
+          <select name="servedBy">${caregiverOptions}</select>
+        </label>
+        <label>
+          <span>Food</span>
+          <input name="food" value="${escapeAttribute(state.dietProfile?.primaryFood || "")}" placeholder="Kibble, topper, snack" />
+        </label>
+        <label>
+          <span>Portion offered</span>
+          <input name="portionOffered" value="${escapeAttribute(state.dietProfile?.normalPortion || "")}" placeholder="1 cup" />
+        </label>
+        <label class="wide">
+          <span>Note</span>
+          <textarea name="note" rows="2" placeholder="Any appetite context or setup note."></textarea>
+        </label>
+        <button class="button primary wide" type="submit">Serve meal</button>
+      </form>
+      <div class="quick-flow-divider"></div>
+      <div class="quick-flow-header">
+        <div>
+          <p class="quick-group-label">Outcome</p>
+          <h4>Update open meal</h4>
+        </div>
+        <span class="status-chip ${openMeal ? "watch" : "steady"}">${openMeal ? "Pending" : "Current"}</span>
+      </div>
+      ${
+        openMeal
+          ? `
+            <form class="quick-flow-form" data-form="meal-lifecycle">
+              <input type="hidden" name="mode" value="update" />
+              <input type="hidden" name="entryId" value="${escapeAttribute(openMeal.id)}" />
+              <label>
+                <span>Outcome</span>
+                <select name="outcome">
+                  <option>Ate all</option>
+                  <option>Ate most</option>
+                  <option>Ate some</option>
+                  <option>Refused</option>
+                  <option>Still grazing</option>
+                </select>
+              </label>
+              <label>
+                <span>Eaten amount</span>
+                <input name="portionEaten" placeholder="All, half, a few bites" />
+              </label>
+              <label>
+                <span>Updated by</span>
+                <select name="outcomeBy">${caregiverOptions}</select>
+              </label>
+              <label class="wide">
+                <span>Note</span>
+                <textarea name="note" rows="2" placeholder="Any appetite detail."></textarea>
+              </label>
+              <button class="button primary wide" type="submit">Update open meal</button>
+            </form>
+          `
+          : `<p class="quick-flow-empty">No meal is waiting for an outcome.</p>`
+      }
+    </section>
+  `;
+}
+
+function renderPottyOutcomeFlow() {
+  const caregiverOptions = getCaregiverOptions()
+    .map((name) => `<option value="${escapeAttribute(name)}">${escapeHtml(name)}</option>`)
+    .join("");
+  return `
+    <section class="quick-flow-panel potty-flow" aria-live="polite">
+      <div class="quick-flow-header">
+        <div>
+          <p class="quick-group-label">Potty flow</p>
+          <h4>Potty is the parent action</h4>
+        </div>
+        <button class="card-link" data-action="clear-quick-flow">Close</button>
+      </div>
+      <form class="quick-flow-form" data-form="potty-outcome">
+        <label>
+          <span>Where?</span>
+          <select name="pottyLocation">
+            <option>Outside</option>
+            <option>Inside</option>
+          </select>
+        </label>
+        <label>
+          <span>What happened?</span>
+          <select name="pottyOutcome">
+            <option>Pee</option>
+            <option>Poop</option>
+            <option>Both</option>
+            <option>Tried, nothing</option>
+            <option>Accident</option>
+          </select>
+        </label>
+        <label>
+          <span>Caregiver</span>
+          <select name="caregiver">${caregiverOptions}</select>
+        </label>
+        <label class="wide">
+          <span>Notes</span>
+          <textarea name="note" rows="3" placeholder="Stool, accident, urgency, or anything the household should know."></textarea>
+        </label>
+        <button class="button primary wide" type="submit">Save Log</button>
+      </form>
+    </section>
+  `;
+}
+
 function renderLogTab() {
   const visibleEntries = getVisibleLogEntries();
   const searchNote = logSearchQuery
@@ -1378,6 +1524,7 @@ function renderLogTab() {
           <span class="status-chip steady">Local-first</span>
         </div>
         ${renderQuickLogGroups()}
+        ${renderQuickLogFlowPanel()}
       </section>
       <section class="panel span-2">
         <p class="micro">New care event</p>
@@ -2197,6 +2344,7 @@ function bindEvents() {
   app.querySelectorAll("[data-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       activeTab = normalizeTab(button.dataset.tab);
+      if (activeTab !== "log") activeQuickFlow = "";
       const params = new URLSearchParams({ tab: activeTab });
       history.replaceState(null, "", `?${params.toString()}`);
       render();
@@ -2227,6 +2375,13 @@ function bindEvents() {
     button.addEventListener("click", () => {
       const type = button.dataset.quickType;
       const title = button.dataset.quickTitle;
+      if (type === "meal" || type === "potty") {
+        activeQuickFlow = type;
+        activeTab = "log";
+        history.replaceState(null, "", "?tab=log");
+        render();
+        return;
+      }
       const now = new Date().toISOString();
       const entry = createEntry({
         type,
@@ -2252,6 +2407,12 @@ function bindEvents() {
     activeTab = "phoenix";
     render();
   });
+
+  app.querySelectorAll("[data-form='meal-lifecycle']").forEach((form) => {
+    form.addEventListener("submit", handleMealLifecycleSubmit);
+  });
+
+  app.querySelector("[data-form='potty-outcome']")?.addEventListener("submit", handlePottyOutcomeSubmit);
 
   app.querySelectorAll("[data-action='remove-record']").forEach((button) => {
     button.addEventListener("click", () => {
@@ -2322,6 +2483,81 @@ function bindEvents() {
   app.querySelector("[data-input='import-json']")?.addEventListener("change", handleImportFile);
 }
 
+function handleMealLifecycleSubmit(event) {
+  event.preventDefault();
+  const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+  const now = new Date().toISOString();
+  if (data.mode === "update") {
+    const outcome = cleanFormValue(data.outcome) || "Ate some";
+    const portionEaten = cleanFormValue(data.portionEaten) || outcome;
+    const note = cleanFormValue(data.note);
+    const entries = (state.entries || []).map((entry) => {
+      if (entry.id !== data.entryId) return entry;
+      return {
+        ...entry,
+        outcome,
+        portionEaten,
+        outcomeAt: now,
+        outcomeBy: cleanFormValue(data.outcomeBy) || entry.caregiver || "Unassigned",
+        trustState: "Confirmed",
+        visibility: "Household",
+        note: mergeNote(entry.note, note ? `Meal outcome updated: ${outcome}. ${note}` : `Meal outcome updated: ${outcome}.`)
+      };
+    });
+    saveState({ ...state, entries });
+  } else {
+    const mealType = cleanFormValue(data.mealType) || "Meal";
+    const servedBy = cleanFormValue(data.servedBy) || "Unassigned";
+    const entry = createEntry({
+      type: "meal",
+      title: mealType,
+      caregiver: servedBy,
+      occurredAt: now,
+      mealType,
+      servedAt: now,
+      servedBy,
+      food: cleanFormValue(data.food),
+      portionOffered: cleanFormValue(data.portionOffered),
+      outcome: "Pending",
+      trustState: "Confirmed",
+      visibility: "Household",
+      note: cleanFormValue(data.note) || "Meal served. Outcome pending."
+    });
+    saveState({ ...state, entries: [entry, ...(state.entries || [])] });
+  }
+  activeQuickFlow = "";
+  activeTab = "phoenix";
+  render();
+}
+
+function handlePottyOutcomeSubmit(event) {
+  event.preventDefault();
+  const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+  const now = new Date().toISOString();
+  const pottyOutcome = cleanFormValue(data.pottyOutcome) || "Tried, nothing";
+  const pottyLocation = cleanFormValue(data.pottyLocation) || "Outside";
+  const entry = createEntry({
+    type: "potty",
+    title: `Potty: ${pottyOutcome}`,
+    caregiver: cleanFormValue(data.caregiver) || "Unassigned",
+    occurredAt: now,
+    pottyLocation,
+    pottyOutcome,
+    outcome: pottyOutcome,
+    trustState: "Confirmed",
+    visibility: "Household",
+    note: cleanFormValue(data.note)
+  });
+  saveState({ ...state, entries: [entry, ...(state.entries || [])] });
+  activeQuickFlow = "";
+  activeTab = "phoenix";
+  render();
+}
+
+function cleanFormValue(value) {
+  return String(value || "").trim();
+}
+
 async function handleAction(action, button) {
   if (action === "reset-demo") {
     const confirmed = window.confirm("Reset WoofWatcher to the Phoenix demo state? This clears local logs on this device.");
@@ -2339,6 +2575,13 @@ async function handleAction(action, button) {
 
   if (action === "clear-log-search") {
     logSearchQuery = "";
+    activeTab = "log";
+    history.replaceState(null, "", "?tab=log");
+    render();
+  }
+
+  if (action === "clear-quick-flow") {
+    activeQuickFlow = "";
     activeTab = "log";
     history.replaceState(null, "", "?tab=log");
     render();

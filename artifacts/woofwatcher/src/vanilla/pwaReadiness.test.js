@@ -63,3 +63,16 @@ test("keeps Phoenix Home wired to open meal outcome tasks", () => {
   assert.match(appEntry, /Meal outcome updated:/);
   assert.match(appEntry, /No open meal outcomes\. Care proof is current\./);
 });
+
+test("keeps Quick Log v2 wired to dedicated meal and potty flows", () => {
+  assert.match(appEntry, /let activeQuickFlow/);
+  assert.match(appEntry, /function renderQuickLogFlowPanel/);
+  assert.match(appEntry, /function renderMealLifecycleFlow/);
+  assert.match(appEntry, /data-form="meal-lifecycle"/);
+  assert.match(appEntry, /Serve meal/);
+  assert.match(appEntry, /Update open meal/);
+  assert.match(appEntry, /function renderPottyOutcomeFlow/);
+  assert.match(appEntry, /data-form="potty-outcome"/);
+  assert.match(appEntry, /What happened\?/);
+  assert.match(appEntry, /Tried, nothing/);
+});
