@@ -16,6 +16,7 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Implemented the first Phoenix Home v1.5 workflow upgrade: a Phoenix Status card that answers presence, alone state, mood, next care, and open meal outcome state. Open meals can now be updated from Home with one tap.
 - Implemented the Quick Log v2 detail-flow skeleton in the PWA: Meal now opens a served-to-outcome workflow with portion, food, caregiver, pending outcome, and update outcome fields; Potty now opens a parent/outcome workflow for location, pee/poop/both/tried/accident, caregiver, and notes. Other quick actions still save immediately.
 - Implemented Household Pulse as a first-class PWA route with manual Leaving Home and I'm Home flows. Leaving Home starts an open household-visible alone timer; returning home closes it with outcome, duration, caregiver, recovery, and note context. The More screen now has a directory entry point back into Household Pulse and other secondary tools.
+- Implemented scoped PWA Care Pass export cards for Vet, Sitter, Trainer, and Emergency audiences. Each card now uses the shared `buildScopedCarePass` source, exposes a copyable text payload, and downloads structured JSON for later premium PDF/server-backed report generation.
 
 ## Verification
 
@@ -26,6 +27,8 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Focused behavior tests passed locally after the Quick Log v2 flow slice: 183 passing tests.
 - Household Pulse manual alone-time workflow verification is covered by the PWA readiness test.
 - Focused behavior tests passed locally after the Household Pulse slice: 184 passing tests.
+- Scoped Care Pass audience export wiring is covered by the PWA readiness test.
+- Focused behavior tests passed locally after the scoped Care Pass export slice: 185 passing tests.
 - JS syntax checks passed for `artifacts/woofwatcher/src/vanilla/app-entry.js` and `artifacts/woofwatcher/src/vanilla/woof-product-view-model.js`.
 - `git diff --check` passed.
 - Local TypeScript could not run because this checkout did not have `node_modules/typescript`.
@@ -36,8 +39,8 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 Next implementation slice:
 
 1. Phoenix Home v1.5 polish: stronger household pulse mini-card and Health/Bile snapshot.
-2. Diet & Treats and Care Pass polish.
-3. Care Pass printable/export polish for vet, sitter, trainer, and emergency use.
+2. Diet & Treats first-class PWA route polish: daily target/progress, meals today, treats today, hydration context, avoid list, and direct Log Meal/Log Treat/Edit Diet Profile actions.
+3. WoofGuide owner-reviewed action routing in the PWA.
 4. Runtime/browser visual QA once a local package manager or dev server dependency install is available.
 
 ## Known Limitations

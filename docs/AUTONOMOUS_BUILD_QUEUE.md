@@ -53,8 +53,9 @@ Every autonomous run should improve at least one of: care workflow, household us
 45. DONE 2026-06-12: PWA Quick Log v2 now routes Meal and Potty quick actions into dedicated detail flows. Meal supports serving a pending meal with food, portion, caregiver, note, and later outcome update; Potty supports parent/action logging with location, pee/poop/both/tried/accident outcome, caregiver, and notes. Other quick actions remain one-tap.
 46. DONE 2026-06-12: PWA Household Pulse is now a first-class route with manual Leaving Home and I'm Home flows. Leaving Home starts a household-visible open alone timer; I'm Home closes it with return outcome, duration, caregiver, recovery, and notes. More now includes a tool directory entry point back to Household Pulse.
 47. NEXT: Phoenix Home v1.5 polish: household pulse mini-card, stronger Health/Bile snapshot, and richer pixel-room state copy.
-48. NEXT: Care Pass export polish: stronger printable vet, sitter, trainer, and emergency pass source with report history continuity.
-49. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
+48. DONE 2026-06-12: PWA Care Pass now exposes scoped Vet, Sitter, Trainer, and Emergency export cards, each backed by `buildScopedCarePass`, with copyable text and downloadable JSON source for Fable/Replit to style into premium report/PDF flows.
+49. NEXT: Diet & Treats first-class PWA route polish: daily target/progress, meals today, treats today, hydration context, avoid list, and direct Log Meal/Log Treat/Edit Diet Profile actions.
+50. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
 
 ## Cadence
 

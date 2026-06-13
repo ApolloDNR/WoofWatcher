@@ -731,6 +731,38 @@ p { margin: 0; }
   overflow-x: auto;
   margin: 0;
 }
+.scoped-care-pass-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.care-pass-audience-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 188px;
+  border: 1px solid var(--stone);
+  border-radius: 14px;
+  background: var(--surface-nested);
+  padding: 14px;
+}
+.care-pass-audience-card h4 {
+  margin: 0;
+  color: var(--text-strong);
+}
+.care-pass-audience-card p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+.care-pass-audience-card small {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
 
 .notification-actions {
   display: flex;
@@ -1611,6 +1643,7 @@ p { margin: 0; }
   .household-status-grid { grid-template-columns: 1fr; }
   .pulse-human-list { grid-template-columns: 1fr; }
   .more-directory-grid { grid-template-columns: 1fr; }
+  .scoped-care-pass-grid { grid-template-columns: 1fr; }
   .timeline-row.compact { flex-direction: column; }
   .timeline-row.compact p { max-width: none; text-align: left; }
   .open-meal-task { flex-direction: column; }

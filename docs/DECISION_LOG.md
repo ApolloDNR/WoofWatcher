@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-12: Care Pass Uses Scoped Audience Source Before Binary PDFs
+
+Decision: PWA Care Pass exports generate separate Vet, Sitter, Trainer, and Emergency source payloads through `buildScopedCarePass` before WoofWatcher adds binary PDF generation or server-backed report storage.
+
+Reason: Apollo wants handoffs and reports that can be sent to vets, sitters, trainers, or emergency contacts. Scoped source exports make the workflow useful now, keep the audience boundary explicit, and give Fable/Replit a concrete data contract to polish visually later.
+
+Owner: Codex.
+
+Revisit trigger: Native PDF generation, stored report artifacts, server-side rendering, or provider-backed document storage becomes active production work.
+
 ### 2026-06-12: Household Presence Is Manual For v1.5
 
 Decision: Household Pulse uses manual Leaving Home and I'm Home state for v1.5. An open household-visible `alone` log means Phoenix is home alone. Closing that log records the return outcome, duration, caregiver, recovery, and notes.

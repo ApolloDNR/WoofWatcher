@@ -89,3 +89,13 @@ test("keeps Household Pulse wired to manual alone-time workflow", () => {
   assert.match(appEntry, /Return outcomes/);
   assert.match(appEntry, /function renderMoreDirectoryPanel/);
 });
+
+test("keeps Care Pass wired to scoped audience exports", () => {
+  assert.match(appEntry, /buildScopedCarePass/);
+  assert.match(appEntry, /CARE_PASS_VARIANTS/);
+  assert.match(appEntry, /const SCOPED_CARE_PASS_AUDIENCES = \["vet", "sitter", "trainer", "emergency"\]/);
+  assert.match(appEntry, /function renderScopedCarePassPanel/);
+  assert.match(appEntry, /data-care-pass-audience="\$\{escapeAttribute\(variant\.id\)\}"/);
+  assert.match(appEntry, /data-action="copy-care-pass"/);
+  assert.match(appEntry, /data-action="download-care-pass"/);
+});

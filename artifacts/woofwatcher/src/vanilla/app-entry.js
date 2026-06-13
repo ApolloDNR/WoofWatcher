@@ -27,6 +27,10 @@ import {
   upsertRecord,
   upsertRoutine
 } from "./woof-core.js";
+import {
+  buildScopedCarePass,
+  CARE_PASS_VARIANTS
+} from "./woof-privacy-cloud.js";
 
 import phoenixHappy from "../assets/phoenix/phoenix-happy.png";
 import phoenixExcited from "../assets/phoenix/phoenix-excited.png";
@@ -200,6 +204,7 @@ const QUICK_LOG_GROUPS = [
     ]
   }
 ];
+const SCOPED_CARE_PASS_AUDIENCES = ["vet", "sitter", "trainer", "emergency"];
 
 let app;
 let state;
@@ -2180,9 +2185,61 @@ function renderCarePassPanel(summary) {
         </div>
       </div>
       <p>Care Pass packages Phoenix's care context for a caregiver, sitter, vet conversation, or monthly review.</p>
+      ${renderScopedCarePassPanel()}
       <pre class="report-box compact">${escapeHtml(report)}</pre>
     </section>
   `;
+}
+
+function renderScopedCarePassPanel() {
+  const audiences = CARE_PASS_VARIANTS.filter((variant) => SCOPED_CARE_PASS_AUDIENCES.includes(variant.id));
+  return `
+    <div class="scoped-care-pass-grid" aria-label="Scoped Care Pass exports">
+      ${audiences.map((variant) => renderCarePassAudienceCard(variant)).join("")}
+    </div>
+  `;
+}
+
+function renderCarePassAudienceCard(variant) {
+  const pass = buildScopedCarePass(state, { audience: variant.id });
+  const sectionCount = Array.isArray(pass.sections) ? pass.sections.length : 0;
+  return `
+    <article class="care-pass-audience-card">
+      <div>
+        <p class="micro">${escapeHtml(variant.id)}</p>
+        <h4>${escapeHtml(variant.label)}</h4>
+        <p>${escapeHtml(getCarePassAudienceDescription(variant.id))}</p>
+      </div>
+      <small>${sectionCount} scoped sections | ${escapeHtml(pass.privacy?.privateData || "Scoped context")}</small>
+      <div class="button-row">
+        <button class="button ghost" data-action="copy-care-pass" data-care-pass-audience="${escapeAttribute(variant.id)}">Copy</button>
+        <button class="button ghost" data-action="download-care-pass" data-care-pass-audience="${escapeAttribute(variant.id)}">Download</button>
+      </div>
+    </article>
+  `;
+}
+
+function getCarePassAudienceDescription(audience) {
+  if (audience === "vet") return "Health, diet, medications, vomiting, records, and recent concerns for veterinarian review.";
+  if (audience === "trainer") return "Training wins, rough spots, triggers, social exposure, and focus areas.";
+  if (audience === "emergency") return "Core ID, routines, diet, key records, health watch, and latest timeline.";
+  return "Routine, food instructions, anxiety notes, walks, bedtime, and household handoff context.";
+}
+
+function buildScopedCarePassText(audience) {
+  const pass = buildScopedCarePass(state, { audience });
+  const lines = [
+    `${pass.label} for ${pass.petName}`,
+    `Created: ${formatDateTime(pass.createdAt)}`,
+    pass.boundary,
+    "",
+    `Sections: ${(pass.sections || []).join(", ")}`,
+    `Diet: ${pass.dietProfile?.primaryFood || "Not set"} | ${pass.dietProfile?.normalPortion || "Portion not set"}`,
+    `Household: ${pass.householdPulse?.summary || "No household summary"}`,
+    "",
+    JSON.stringify(pass, null, 2)
+  ];
+  return lines.filter(Boolean).join("\n");
 }
 
 function renderCareTeamPanel(handoff) {
@@ -2930,6 +2987,17 @@ async function handleAction(action, button) {
 
   if (action === "copy-report") {
     navigator.clipboard?.writeText(buildReportText(state));
+  }
+
+  if (action === "copy-care-pass") {
+    const audience = button?.dataset.carePassAudience || "sitter";
+    navigator.clipboard?.writeText(buildScopedCarePassText(audience));
+  }
+
+  if (action === "download-care-pass") {
+    const audience = button?.dataset.carePassAudience || "sitter";
+    const filename = `woofwatcher-phoenix-${audience}-care-pass.json`;
+    downloadText(filename, JSON.stringify(buildScopedCarePass(state, { audience }), null, 2), "application/json");
   }
 
   if (action === "copy-handoff") {
