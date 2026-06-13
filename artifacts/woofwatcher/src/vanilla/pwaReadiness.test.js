@@ -171,3 +171,18 @@ test("keeps Achievements wired as a direct route with meaningful milestones", ()
   assert.match(appEntry, /calm_alone_time/);
   assert.match(appEntry, /records_complete/);
 });
+
+test("keeps Settings wired as a direct system route with local safety controls", () => {
+  assert.match(appEntry, /buildCloudSyncPlan/);
+  assert.match(appEntry, /settings: "settings"/);
+  assert.match(appEntry, /if \(tab === "settings"\) return renderSettingsTab\(context\)/);
+  assert.match(appEntry, /function renderSettingsTab/);
+  assert.match(appEntry, /function renderSettingsBackupPanel/);
+  assert.match(appEntry, /function renderSettingsSafetyPanel/);
+  assert.match(appEntry, /data-action="export-json"/);
+  assert.match(appEntry, /data-action="import-json"/);
+  assert.match(appEntry, /data-action="export-transfer"/);
+  assert.match(appEntry, /data-action="reset-demo"/);
+  assert.match(appEntry, /local-only/);
+  assert.match(appEntry, /No provider-backed sync is enabled/);
+});

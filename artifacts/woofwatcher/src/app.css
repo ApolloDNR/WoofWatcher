@@ -993,6 +993,61 @@ p { margin: 0; }
   line-height: 1.35;
   text-align: right;
 }
+.settings-metric-grid,
+.settings-action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.settings-action-grid .button {
+  justify-content: center;
+  min-height: 44px;
+}
+.settings-safety-list {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+  padding: 0;
+  list-style: none;
+}
+.settings-safety-list li,
+.settings-blocker-list p {
+  border: 1px solid var(--stone);
+  border-radius: 12px;
+  background: var(--surface-nested);
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  padding: 10px 12px;
+}
+.settings-resource-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.settings-resource-list article {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--stone);
+  border-radius: 12px;
+  background: var(--surface-nested);
+  padding: 10px 12px;
+}
+.settings-resource-list strong {
+  color: var(--text-strong);
+  font-size: 0.9rem;
+}
+.settings-resource-list span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+.settings-blocker-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
 
 .notification-actions {
   display: flex;
@@ -1880,6 +1935,8 @@ p { margin: 0; }
   .achievement-hero-grid { grid-template-columns: 1fr; }
   .achievement-score-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .achievement-card-grid { grid-template-columns: 1fr; }
+  .settings-metric-grid,
+  .settings-action-grid { grid-template-columns: 1fr; }
   .diet-progress-stats { grid-template-columns: 1fr; }
   .diet-log-row { grid-template-columns: auto 1fr; }
   .diet-log-row .button { grid-column: 1 / -1; width: 100%; }

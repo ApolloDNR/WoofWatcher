@@ -29,6 +29,7 @@ import {
   upsertRoutine
 } from "./woof-core.js";
 import {
+  buildCloudSyncPlan,
   buildScopedCarePass,
   CARE_PASS_VARIANTS
 } from "./woof-privacy-cloud.js";
@@ -91,7 +92,8 @@ const PRIMARY_TABS = new Set([
   "reports",
   "care-pass",
   "avatar-studio",
-  "achievements"
+  "achievements",
+  "settings"
 ]);
 const TAB_ALIASES = {
   today: "phoenix",
@@ -119,7 +121,7 @@ const TAB_ALIASES = {
   avatar: "avatar-studio",
   "avatar-studio": "avatar-studio",
   achievements: "achievements",
-  settings: "more",
+  settings: "settings",
   timeline: "timeline",
   bile: "health",
   "bile-watch": "health"
@@ -399,7 +401,7 @@ function render() {
             </button>
             <button class="date-pill" data-tab="plans">${ICONS.calendar}${escapeHtml(dateLabel)}</button>
             <button class="top-icon-btn" data-action="toggle-theme" aria-label="Switch to ${theme === "dark" ? "light" : "dark"} mode" title="Switch theme">${theme === "dark" ? ICONS.sun : ICONS.moon}</button>
-            <button class="profile-pill" data-tab="more" aria-label="Open profile and settings">
+            <button class="profile-pill" data-tab="settings" aria-label="Open profile and settings">
               <span>${escapeHtml(caregiverName.charAt(0).toUpperCase())}</span>
               <strong>${escapeHtml(caregiverName)}</strong>
             </button>
@@ -798,6 +800,7 @@ function renderActiveTab(tab, context) {
   if (tab === "care-pass") return renderCarePassTab(context);
   if (tab === "avatar-studio") return renderAvatarStudioTab(context);
   if (tab === "achievements") return renderAchievementsTab(context);
+  if (tab === "settings") return renderSettingsTab(context);
   if (tab === "more") return renderMoreTab(context);
   return renderPhoenixTab(context);
 }
@@ -2558,6 +2561,102 @@ function achievementStatusClass(status) {
   return "review";
 }
 
+function renderSettingsTab(context) {
+  const syncPlan = buildCloudSyncPlan(state, { provider: "local-only" });
+  return `
+    <div class="dashboard-grid settings-screen">
+      <section class="panel span-2 settings-hero">
+        <div class="section-heading">
+          <div>
+            <p class="micro">Settings</p>
+            <h3>Local-first care controls</h3>
+            <p>Backup, restore, privacy, safety boundaries, provider readiness, and reset controls are kept together so the household can trust what is live.</p>
+          </div>
+          <span class="status-chip watch">local-only</span>
+        </div>
+        <div class="settings-metric-grid">
+          ${renderStat("Logs", state.entries?.length || 0)}
+          ${renderStat("Routines", state.routines?.length || 0)}
+          ${renderStat("Records", state.records?.length || 0)}
+          ${renderStat("Goals", state.goals?.length || 0)}
+        </div>
+      </section>
+      ${renderSettingsBackupPanel()}
+      ${renderSettingsSafetyPanel(context, syncPlan)}
+      ${renderSettingsProviderPanel(syncPlan)}
+    </div>
+  `;
+}
+
+function renderSettingsBackupPanel() {
+  return `
+    <section class="panel span-2 settings-backup-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Backup and transfer</p>
+          <h3>Move Phoenix data intentionally</h3>
+          <p>Full backup is for the household. Care room transfer is for same-household device moves. Scoped Care Pass stays under Reports.</p>
+        </div>
+        <span class="status-chip steady">Local file</span>
+      </div>
+      <div class="settings-action-grid">
+        <button class="button primary" data-action="export-json">Download full backup</button>
+        <button class="button ghost" data-action="import-json">Import backup</button>
+        <button class="button ghost" data-action="export-transfer">Download care room transfer</button>
+        <button class="button ghost danger" data-action="reset-demo">Reset demo data</button>
+      </div>
+    </section>
+  `;
+}
+
+function renderSettingsSafetyPanel(context, syncPlan) {
+  const aiMode = assistantStatus.configured ? "Live OpenAI configured" : "Local WoofGuide fallback";
+  const notificationLabel = context.notifications?.statusLabel || "Not checked";
+  const items = [
+    "No provider-backed sync is enabled in this PWA route yet.",
+    "No external AI key is stored in client JavaScript.",
+    "Health Watch and Bile Watch are pattern tracking, not veterinary diagnosis.",
+    "Full backups include private household care data. Share only with trusted household members.",
+    `Reminder delivery is ${notificationLabel.toLowerCase()} and still app-open unless a hosted provider is configured.`,
+    `Cloud readiness is ${syncPlan.status.replace(/_/g, "-")}.`
+  ];
+  return `
+    <section class="panel settings-safety-panel">
+      <p class="micro">Safety</p>
+      <h3>What is true right now</h3>
+      <ul class="settings-safety-list">
+        ${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      </ul>
+      <p class="notification-boundary">WoofGuide mode: ${escapeHtml(aiMode)}. Serious symptoms, repeated vomiting, blood, lethargy, bloating, dehydration, toxin exposure, foreign-object concern, or not eating need veterinary care.</p>
+    </section>
+  `;
+}
+
+function renderSettingsProviderPanel(syncPlan) {
+  return `
+    <section class="panel settings-provider-panel">
+      <div class="section-heading">
+        <div>
+          <p class="micro">Provider readiness</p>
+          <h3>${escapeHtml(syncPlan.backend.provider)} sync plan</h3>
+        </div>
+        <span class="status-chip ${syncPlan.blockers.length ? "watch" : "steady"}">${escapeHtml(syncPlan.status.replace(/_/g, "-"))}</span>
+      </div>
+      <div class="settings-resource-list">
+        ${syncPlan.resources.slice(0, 6).map((resource) => `
+          <article>
+            <strong>${escapeHtml(resource.name)}</strong>
+            <span>${escapeHtml(resource.description)}</span>
+          </article>
+        `).join("")}
+      </div>
+      <div class="settings-blocker-list">
+        ${(syncPlan.blockers.length ? syncPlan.blockers : ["Provider-backed sync can be connected after auth, storage, and privacy policy are approved."]).map((blocker) => `<p>${escapeHtml(blocker)}</p>`).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function renderMoreTab(context) {
   return `
     <div class="dashboard-grid more-screen">
@@ -2580,7 +2679,8 @@ function renderMoreDirectoryPanel() {
     { tab: "reports", label: "Reports", detail: "Care Pass exports and monthly progress." },
     { tab: "woofguide", label: "WoofGuide", detail: "Owner-reviewed assistant drafts and summaries." },
     { tab: "avatar-studio", label: "Avatar Studio", detail: "Pixel Phoenix states and future asset pipeline." },
-    { tab: "achievements", label: "Achievements", detail: "Meaningful care milestones from real logs and records." }
+    { tab: "achievements", label: "Achievements", detail: "Meaningful care milestones from real logs and records." },
+    { tab: "settings", label: "Settings", detail: "Backup, import, privacy, safety, and provider readiness." }
   ];
   return `
     <section class="panel span-2 more-directory-panel">

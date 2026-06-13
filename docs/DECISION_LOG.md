@@ -682,6 +682,16 @@ Owner: Codex.
 
 Revisit trigger: Paid achievement packs, kid-mode rewards, trainer goals, or long-range progress challenges become active release work.
 
+### 2026-06-13: Settings Is The Local-First Truth Surface
+
+Decision: Settings consolidates backup, import, same-household transfer, reset, provider readiness, AI mode, health boundary, reminder delivery truth, and sync blockers before adding provider-backed account controls.
+
+Reason: Apollo wants no dead ends and no fake integrations. A trustworthy Settings route lets owners understand what is local, what can be exported, what is safe to share, and what still needs auth/storage/sync providers before Fable or Replit polish the visuals.
+
+Owner: Codex.
+
+Revisit trigger: Auth-connected account settings, provider-backed deletion, household invites, cloud sync enablement, payment settings, or production privacy policy become active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
