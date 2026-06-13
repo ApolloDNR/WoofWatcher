@@ -55,8 +55,9 @@ Every autonomous run should improve at least one of: care workflow, household us
 47. NEXT: Phoenix Home v1.5 polish: household pulse mini-card, stronger Health/Bile snapshot, and richer pixel-room state copy.
 48. DONE 2026-06-12: PWA Care Pass now exposes scoped Vet, Sitter, Trainer, and Emergency export cards, each backed by `buildScopedCarePass`, with copyable text and downloadable JSON source for Fable/Replit to style into premium report/PDF flows.
 49. DONE 2026-06-12: Diet & Treats is now a first-class PWA route with daily meal target/progress, meals today, treats today, hydration context, avoid list, profile editing, and direct Log Meal/Log Treat/Edit Diet Profile actions.
-50. NEXT: WoofGuide PWA owner-reviewed action routing: make assistant suggestions route into concrete meal log, Care Pass, record review, and vet-note draft workflows without pretending live AI is configured.
-51. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
+50. DONE 2026-06-12: WoofGuide is now a first-class PWA route with owner-reviewed action cards that route to Meal Log, Care Pass review, Records review, and a bounded vet-note draft without pretending live AI is configured.
+51. NEXT: Records/Reports route split so desktop secondary navigation stops collapsing important tools into More.
+52. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
 
 ## Cadence
 

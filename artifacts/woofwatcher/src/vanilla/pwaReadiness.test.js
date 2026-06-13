@@ -113,3 +113,17 @@ test("keeps Diet & Treats wired as a first-class PWA route", () => {
   assert.match(appEntry, /data-action="open-diet-log-treat"/);
   assert.match(appEntry, /data-action="edit-diet-profile"/);
 });
+
+test("keeps WoofGuide wired to owner-reviewed action routing", () => {
+  assert.match(appEntry, /woofguide: "woofguide"/);
+  assert.match(appEntry, /assistant: "woofguide"/);
+  assert.match(appEntry, /if \(tab === "woofguide"\) return renderWoofGuideTab\(context\)/);
+  assert.match(appEntry, /const WOOFGUIDE_ACTIONS = \[/);
+  assert.match(appEntry, /function renderWoofGuideActionCards/);
+  assert.match(appEntry, /data-action="woofguide-log-meal"/);
+  assert.match(appEntry, /data-action="woofguide-open-care-pass"/);
+  assert.match(appEntry, /data-action="woofguide-open-records"/);
+  assert.match(appEntry, /data-action="woofguide-draft-vet-note"/);
+  assert.match(appEntry, /function buildWoofGuideVetNoteDraft/);
+  assert.match(appEntry, /owner-reviewed/);
+});

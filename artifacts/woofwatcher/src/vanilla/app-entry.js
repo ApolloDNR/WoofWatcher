@@ -76,7 +76,7 @@ const ENTRY_SELECT_OPTIONS = [
   "note"
 ];
 const RECORD_TYPE_OPTIONS = ["vet", "vaccine", "weight", "instruction", "medication", "microchip"];
-const PRIMARY_TABS = new Set(["phoenix", "log", "plans", "health", "more", "household-pulse", "diet-treats"]);
+const PRIMARY_TABS = new Set(["phoenix", "log", "plans", "health", "more", "household-pulse", "diet-treats", "woofguide"]);
 const TAB_ALIASES = {
   today: "phoenix",
   dashboard: "phoenix",
@@ -90,9 +90,9 @@ const TAB_ALIASES = {
   records: "more",
   report: "more",
   reports: "more",
-  assistant: "more",
-  woofguide: "more",
-  guide: "more",
+  assistant: "woofguide",
+  woofguide: "woofguide",
+  guide: "woofguide",
   household: "household-pulse",
   pulse: "household-pulse",
   diet: "diet-treats",
@@ -205,6 +205,36 @@ const QUICK_LOG_GROUPS = [
   }
 ];
 const SCOPED_CARE_PASS_AUDIENCES = ["vet", "sitter", "trainer", "emergency"];
+const WOOFGUIDE_ACTIONS = [
+  {
+    id: "meal-draft",
+    label: "Review meal log",
+    detail: "Open the structured Meal flow so a human can confirm served and eaten amounts.",
+    action: "woofguide-log-meal",
+    cta: "Open meal draft"
+  },
+  {
+    id: "care-pass",
+    label: "Prepare Care Pass",
+    detail: "Open report context for sitter, vet, trainer, or emergency sharing.",
+    action: "woofguide-open-care-pass",
+    cta: "Open Care Pass"
+  },
+  {
+    id: "records",
+    label: "Review records",
+    detail: "Jump to vaccines, visits, insurance, microchip, and document readiness.",
+    action: "woofguide-open-records",
+    cta: "Open records"
+  },
+  {
+    id: "vet-note",
+    label: "Draft vet note",
+    detail: "Create an owner-reviewed note from Phoenix's current pattern context.",
+    action: "woofguide-draft-vet-note",
+    cta: "Draft note"
+  }
+];
 
 let app;
 let state;
@@ -723,6 +753,7 @@ function renderActiveTab(tab, context) {
   if (tab === "health") return renderHealthTab(context.health, context.bileWatch);
   if (tab === "household-pulse") return renderHouseholdPulseTab(context);
   if (tab === "diet-treats") return renderDietTreatsTab(context);
+  if (tab === "woofguide") return renderWoofGuideTab(context);
   if (tab === "more") return renderMoreTab(context);
   return renderPhoenixTab(context);
 }
@@ -2556,6 +2587,14 @@ function renderProgressMemoryPanel(calendar, trainingProgress) {
   `;
 }
 
+function renderWoofGuideTab(context) {
+  return `
+    <div class="dashboard-grid woofguide-screen">
+      ${renderWoofGuidePanel(context)}
+    </div>
+  `;
+}
+
 function renderWoofGuidePanel() {
   const context = getAssistantContext(state, "");
   const answer = assistantAnswer || context.localAnswer;
@@ -2581,9 +2620,80 @@ function renderWoofGuidePanel() {
       <div class="assistant-answer" aria-live="polite">
         <p>${escapeHtml(answer)}</p>
       </div>
+      ${renderWoofGuideActionCards(context)}
       <p class="notification-boundary">WoofGuide can organize Phoenix's logs and caregiver notes. It does not diagnose, replace a veterinarian, or decide urgent care.</p>
     </section>
   `;
+}
+
+function renderWoofGuideActionCards(context) {
+  const meal = WOOFGUIDE_ACTIONS.find((action) => action.id === "meal-draft");
+  const carePass = WOOFGUIDE_ACTIONS.find((action) => action.id === "care-pass");
+  const records = WOOFGUIDE_ACTIONS.find((action) => action.id === "records");
+  const vetNote = WOOFGUIDE_ACTIONS.find((action) => action.id === "vet-note");
+  return `
+    <div class="woofguide-action-grid" aria-label="Owner-reviewed WoofGuide actions">
+      ${renderWoofGuideActionCard(meal, "woofguide-log-meal")}
+      ${renderWoofGuideActionCard(carePass, "woofguide-open-care-pass")}
+      ${renderWoofGuideActionCard(records, "woofguide-open-records")}
+      ${renderWoofGuideActionCard(vetNote, "woofguide-draft-vet-note", context.healthWatch?.status === "alert" ? "review" : "watch")}
+    </div>
+  `;
+}
+
+function renderWoofGuideActionCard(action, dataAction, tone = "steady") {
+  if (!action) return "";
+  return `
+    <article class="woofguide-action-card">
+      <div>
+        <p class="micro">owner-reviewed</p>
+        <h4>${escapeHtml(action.label)}</h4>
+        <p>${escapeHtml(action.detail)}</p>
+      </div>
+      ${renderWoofGuideActionButton(dataAction, action.cta, tone)}
+    </article>
+  `;
+}
+
+function renderWoofGuideActionButton(dataAction, label, tone) {
+  const buttonClass = tone === "review" ? "primary" : "ghost";
+  if (dataAction === "woofguide-log-meal") {
+    return `<button class="button ${buttonClass}" data-action="woofguide-log-meal">${escapeHtml(label)}</button>`;
+  }
+  if (dataAction === "woofguide-open-care-pass") {
+    return `<button class="button ${buttonClass}" data-action="woofguide-open-care-pass">${escapeHtml(label)}</button>`;
+  }
+  if (dataAction === "woofguide-open-records") {
+    return `<button class="button ${buttonClass}" data-action="woofguide-open-records">${escapeHtml(label)}</button>`;
+  }
+  return `<button class="button ${buttonClass}" data-action="woofguide-draft-vet-note">${escapeHtml(label)}</button>`;
+}
+
+function buildWoofGuideVetNoteDraft(context = getAssistantContext(state, "")) {
+  const latest = context.latest || [];
+  const healthSignals = context.healthWatch?.signals || [];
+  const bileSignals = context.bileWatch?.signals || [];
+  const petName = state.profile?.name || "Phoenix";
+  const lines = [
+    `${petName} vet note draft`,
+    "",
+    "Reason for review:",
+    healthSignals[0] || "Owner is organizing recent care context for veterinarian review.",
+    "",
+    "Bile Watch:",
+    bileSignals[0] || "No bile-watch signal available in local context.",
+    "",
+    "Recent owner-entered logs:",
+    ...latest.map((entry) => `- ${formatDateTime(entry.occurredAt)} | ${entry.type} | ${entry.title} | ${entry.caregiver}${entry.note ? ` | ${entry.note}` : ""}`),
+    "",
+    "Questions to ask:",
+    "- Is this pattern worth an appointment or continued tracking?",
+    "- What details should we log next time?",
+    "- Are food gaps, appetite, stool, hydration, or energy relevant here?",
+    "",
+    "Boundary: This is owner-entered pattern context for a veterinarian. It is not a diagnosis, treatment plan, or emergency triage."
+  ];
+  return lines.join("\n");
 }
 
 function renderHealthTab(health, bileWatch) {
@@ -3206,6 +3316,39 @@ async function handleAction(action, button) {
     return;
   }
 
+  if (action === "woofguide-log-meal") {
+    activeQuickFlow = "meal";
+    activeTab = "log";
+    assistantAnswer = "Meal log draft opened. Review what was served, portion offered, and outcome before saving to the household timeline.";
+    history.replaceState(null, "", "?tab=log");
+    render();
+    return;
+  }
+
+  if (action === "woofguide-open-care-pass") {
+    activeTab = "more";
+    assistantAnswer = "Care Pass review opened. Pick the right audience before copying or downloading anything.";
+    history.replaceState(null, "", "?tab=more#care-pass");
+    render();
+    return;
+  }
+
+  if (action === "woofguide-open-records") {
+    activeTab = "more";
+    assistantAnswer = "Records review opened. Check vaccines, visits, insurance, microchip, and documents before sharing.";
+    history.replaceState(null, "", "?tab=more#records");
+    render();
+    return;
+  }
+
+  if (action === "woofguide-draft-vet-note") {
+    assistantAnswer = buildWoofGuideVetNoteDraft();
+    activeTab = "woofguide";
+    history.replaceState(null, "", "?tab=woofguide#vet-note");
+    render();
+    return;
+  }
+
   if (action === "quick-leaving-home") {
     startLeavingHome({ caregiver: "Unassigned", note: "Started from Household Pulse." });
     activeTab = "household-pulse";
@@ -3443,7 +3586,7 @@ async function checkAssistantStatus() {
       mode: status.mode || (status.configured ? "openai" : "local"),
       model: status.model || ""
     };
-    if (activeTab === "assistant") render();
+    if (activeTab === "woofguide") render();
   } catch {
     assistantStatus = { checked: true, configured: false, mode: "local", model: "" };
   }

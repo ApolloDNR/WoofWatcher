@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-12: WoofGuide Actions Stay Owner-Reviewed In The PWA
+
+Decision: WoofGuide is a first-class PWA route, but its action cards route owners into existing review flows instead of performing automatic writes.
+
+Reason: Apollo wants useful AI-style workflows with no dead ends, but live AI, permissions, citations, and audit policy are not complete. Routing to Meal Log, Care Pass review, Records review, and a bounded vet-note draft makes WoofGuide useful now while keeping household and health actions human-confirmed.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed WoofGuide actions, citations, role-aware writes, or durable assistant draft storage become active production work.
+
 ### 2026-06-12: Diet & Treats Is A First-Class PWA Care Route
 
 Decision: Diet & Treats is promoted from a More subpanel into a first-class PWA route that reads local meal, treat, water, routine, and diet-profile state.

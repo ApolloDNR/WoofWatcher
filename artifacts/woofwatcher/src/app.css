@@ -834,6 +834,31 @@ p { margin: 0; }
   font-size: 0.76rem;
   line-height: 1.35;
 }
+.woofguide-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 0;
+}
+.woofguide-action-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--stone);
+  border-radius: 14px;
+  background: var(--surface-nested);
+  padding: 14px;
+}
+.woofguide-action-card h4 {
+  margin: 0;
+}
+.woofguide-action-card p:not(.micro) {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  margin-top: 8px;
+}
 
 .notification-actions {
   display: flex;
@@ -1715,6 +1740,7 @@ p { margin: 0; }
   .pulse-human-list { grid-template-columns: 1fr; }
   .more-directory-grid { grid-template-columns: 1fr; }
   .scoped-care-pass-grid { grid-template-columns: 1fr; }
+  .woofguide-action-grid { grid-template-columns: 1fr; }
   .diet-progress-stats { grid-template-columns: 1fr; }
   .diet-log-row { grid-template-columns: auto 1fr; }
   .diet-log-row .button { grid-column: 1 / -1; width: 100%; }
