@@ -304,6 +304,8 @@ export function normalizeEntryInput(input = {}) {
   const title = cleanText(input.title) || TYPE_DEFAULT_TITLES[type] || "Care note";
   const occurredAt = normalizeDate(input.occurredAt);
   const severity = ["normal", "watch", "urgent"].includes(input.severity) ? input.severity : "normal";
+  const trustState = ["Confirmed", "Pending", "Estimated", "Corrected"].includes(input.trustState) ? input.trustState : "Confirmed";
+  const visibility = ["Household", "Private", "Vet review"].includes(input.visibility) ? input.visibility : "Household";
 
   return {
     type,
@@ -313,10 +315,17 @@ export function normalizeEntryInput(input = {}) {
     durationMinutes: clampWholeNumber(input.durationMinutes),
     dogInteractions: clampWholeNumber(input.dogInteractions),
     amount: cleanText(input.amount),
+    mealType: cleanText(input.mealType),
+    servedAt: input.servedAt ? normalizeDate(input.servedAt) : "",
+    servedBy: cleanText(input.servedBy),
     food: cleanText(input.food),
     portionOffered: cleanText(input.portionOffered),
     portionEaten: cleanText(input.portionEaten),
+    outcomeAt: input.outcomeAt ? normalizeDate(input.outcomeAt) : "",
+    outcomeBy: cleanText(input.outcomeBy),
     appetite: cleanText(input.appetite),
+    pottyLocation: cleanText(input.pottyLocation),
+    pottyOutcome: cleanText(input.pottyOutcome),
     treatType: cleanText(input.treatType),
     reason: cleanText(input.reason),
     reaction: cleanText(input.reaction),
@@ -327,6 +336,9 @@ export function normalizeEntryInput(input = {}) {
     moodAfter: cleanText(input.moodAfter),
     aloneOutcome: cleanText(input.aloneOutcome),
     endedAt: input.endedAt ? normalizeDate(input.endedAt) : "",
+    photo: cleanText(input.photo),
+    trustState,
+    visibility,
     note: cleanText(input.note),
     severity
   };

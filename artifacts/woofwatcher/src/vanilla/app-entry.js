@@ -52,14 +52,13 @@ function phoenixArt(mood) {
 
 const STORAGE_KEY = "woofwatcher.v1.state";
 const NOTIFICATION_SENT_KEY = "woofwatcher.v1.lastNotificationKey";
+const THEME_KEY = "woofwatcher.v1.theme";
 const ENTRY_SELECT_OPTIONS = [
   "meal",
   "treat",
   "walk",
   "park",
   "potty",
-  "poop",
-  "pee",
   "play",
   "training",
   "social",
@@ -86,7 +85,25 @@ const TAB_ALIASES = {
   team: "more",
   records: "more",
   report: "more",
-  assistant: "more"
+  reports: "more",
+  assistant: "more",
+  woofguide: "more",
+  guide: "more",
+  household: "more",
+  pulse: "more",
+  "household-pulse": "more",
+  diet: "more",
+  treats: "more",
+  "diet-treats": "more",
+  carepass: "more",
+  "care-pass": "more",
+  avatar: "more",
+  "avatar-studio": "more",
+  achievements: "more",
+  settings: "more",
+  timeline: "more",
+  bile: "health",
+  "bile-watch": "health"
 };
 
 const ICONS = {
@@ -95,6 +112,10 @@ const ICONS = {
   log: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`,
   health: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>`,
   more: `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>`,
+  search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+  bell: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>`,
+  moon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.9 14.3A8.6 8.6 0 0 1 9.7 3.1 8.6 8.6 0 1 0 20.9 14.3Z"/></svg>`,
+  sun: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`,
   calendar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
   backup: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
   meal: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11h14a7 7 0 0 1-14 0Z"/><line x1="12" y1="4" x2="12" y2="7"/></svg>`,
@@ -105,9 +126,87 @@ const ICONS = {
   send: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`
 };
 
+const DESKTOP_NAV_GROUPS = [
+  {
+    label: "Care & Wellbeing",
+    items: [
+      { tab: "phoenix", label: "Phoenix Home", icon: ICONS.dashboard },
+      { tab: "log", label: "Quick Log", icon: ICONS.log },
+      { tab: "household-pulse", label: "Household Pulse", icon: ICONS.walk, secondary: true },
+      { tab: "plans", label: "Plans", icon: ICONS.plans },
+      { tab: "health", label: "Health Watch", icon: ICONS.health },
+      { tab: "bile-watch", label: "Bile Watch", icon: ICONS.potty, secondary: true },
+      { tab: "diet-treats", label: "Diet & Treats", icon: ICONS.meal, secondary: true }
+    ]
+  },
+  {
+    label: "More Tools",
+    items: [
+      { tab: "care-pass", label: "Care Pass", icon: ICONS.backup, secondary: true },
+      { tab: "woofguide", label: "WoofGuide", icon: ICONS.spark, secondary: true },
+      { tab: "avatar-studio", label: "Avatar Studio", icon: ICONS.dashboard, secondary: true }
+    ]
+  },
+  {
+    label: "Records",
+    items: [
+      { tab: "timeline", label: "Timeline", icon: ICONS.calendar, secondary: true },
+      { tab: "records", label: "Records", icon: ICONS.health, secondary: true },
+      { tab: "reports", label: "Reports", icon: ICONS.backup, secondary: true },
+      { tab: "achievements", label: "Achievements", icon: ICONS.training, secondary: true }
+    ]
+  },
+  {
+    label: "System",
+    items: [
+      { tab: "settings", label: "Settings", icon: ICONS.more, secondary: true }
+    ]
+  }
+];
+
+const QUICK_LOG_GROUPS = [
+  {
+    label: "Care",
+    actions: [
+      { type: "meal", title: "Meal", glyph: "M" },
+      { type: "treat", title: "Treat", glyph: "T" },
+      { type: "walk", title: "Walk", glyph: "W" },
+      { type: "potty", title: "Potty", glyph: "P" }
+    ]
+  },
+  {
+    label: "Mood & Behavior",
+    actions: [
+      { type: "mood", title: "Happy", glyph: "H" },
+      { type: "mood", title: "Anxious", glyph: "A" },
+      { type: "play", title: "Play", glyph: "Y" },
+      { type: "training", title: "Training win", glyph: "T" }
+    ]
+  },
+  {
+    label: "Health",
+    actions: [
+      { type: "vomit", title: "Vomit", glyph: "V" },
+      { type: "medication", title: "Medication", glyph: "Rx" },
+      { type: "health", title: "Appetite", glyph: "Ap" },
+      { type: "weight", title: "Weight", glyph: "Lb" }
+    ]
+  },
+  {
+    label: "Household",
+    actions: [
+      { type: "alone", title: "Leaving Home", glyph: "Out" },
+      { type: "alone", title: "I'm Home", glyph: "In" },
+      { type: "note", title: "Note", glyph: "N" }
+    ]
+  }
+];
+
 let app;
 let state;
 let activeTab;
+let theme = "light";
+let logSearchQuery = "";
 let selectedCalendarDate;
 let assistantAnswer = "";
 let assistantBusy = false;
@@ -117,8 +216,11 @@ let notificationPermission;
 export function initApp(container) {
   app = container;
   state = loadState();
+  theme = loadTheme();
+  applyTheme(theme);
   const initialParams = new URLSearchParams(window.location.search);
   activeTab = normalizeTab(initialParams.get("tab"));
+  logSearchQuery = String(initialParams.get("q") || "").trim();
   selectedCalendarDate = initialParams.get("date") || "";
   notificationPermission = getBrowserNotificationPermission();
 
@@ -141,6 +243,33 @@ function loadState() {
 function saveState(nextState = state) {
   state = { ...nextState, updatedAt: new Date().toISOString() };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "dark" || saved === "light") return saved;
+  } catch {
+    return "light";
+  }
+  return "light";
+}
+
+function saveTheme(nextTheme) {
+  theme = nextTheme === "dark" ? "dark" : "light";
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // Theme persistence is optional; visual state still updates in memory.
+  }
+  applyTheme(theme);
+}
+
+function applyTheme(nextTheme) {
+  const resolved = nextTheme === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = resolved;
+  document.body.dataset.theme = resolved;
+  if (app) app.dataset.theme = resolved;
 }
 
 function normalizeTab(tab) {
@@ -168,6 +297,7 @@ function render() {
   });
 
   const caregiverName = (state.caregivers && state.caregivers[0] && state.caregivers[0].name) || "there";
+  const presenceLabel = getPresenceLabel(pulse, avatar, caregiverName);
   const clock = new Date();
   const hour = clock.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -175,31 +305,10 @@ function render() {
   const dateLabel = clock.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
   app.dataset.loading = "false";
+  app.dataset.theme = theme;
   app.innerHTML = `
     <div class="app-layout">
-      <aside class="sidebar">
-        <div class="side-brand">
-          <img src="/app-icon.svg" alt="" class="side-logo" />
-          <span class="side-brand-text"><span class="woof">Woof</span> <span class="watcher">Watcher</span></span>
-        </div>
-        <nav class="side-nav" aria-label="WoofWatcher sections">
-          ${renderSideNav("phoenix", "Dashboard", ICONS.dashboard)}
-          ${renderSideNav("plans", "Plans", ICONS.plans)}
-          ${renderSideNav("log", "Log", ICONS.log)}
-          ${renderSideNav("health", "Health", ICONS.health)}
-          ${renderSideNav("more", "More", ICONS.more)}
-        </nav>
-        <div class="side-foot">
-          <div class="side-user">
-            <div class="side-user-avatar">${escapeHtml(caregiverName.charAt(0).toUpperCase())}</div>
-            <div class="side-user-meta">
-              <strong>${escapeHtml(caregiverName)}</strong>
-              <span>Primary Caregiver</span>
-            </div>
-          </div>
-          <button class="side-backup" data-action="export-json">${ICONS.backup}<span>Backup data</span></button>
-        </div>
-      </aside>
+      ${renderDesktopSidebar(caregiverName, presenceLabel)}
 
       <div class="main-area">
         <header class="dash-topbar">
@@ -208,7 +317,20 @@ function render() {
             <p class="greeting-sub">${escapeHtml(state.profile.name)} is ready for an adventure.</p>
           </div>
           <div class="top-right">
-            <span class="date-pill">${ICONS.calendar}${escapeHtml(dateLabel)}</span>
+            <form class="top-search" data-form="top-search" role="search">
+              <input name="q" value="${escapeAttribute(logSearchQuery)}" placeholder="Search logs, notes, care..." aria-label="Search care logs" />
+              <button type="submit" aria-label="Search care logs">${ICONS.search}</button>
+            </form>
+            <button class="top-icon-btn" data-tab="plans" aria-label="Open reminders">
+              ${ICONS.bell}
+              ${reminders.dueCount || reminders.overdueCount ? `<span class="top-dot">${reminders.overdueCount + reminders.dueCount}</span>` : ""}
+            </button>
+            <button class="date-pill" data-tab="plans">${ICONS.calendar}${escapeHtml(dateLabel)}</button>
+            <button class="top-icon-btn" data-action="toggle-theme" aria-label="Switch to ${theme === "dark" ? "light" : "dark"} mode" title="Switch theme">${theme === "dark" ? ICONS.sun : ICONS.moon}</button>
+            <button class="profile-pill" data-tab="more" aria-label="Open profile and settings">
+              <span>${escapeHtml(caregiverName.charAt(0).toUpperCase())}</span>
+              <strong>${escapeHtml(caregiverName)}</strong>
+            </button>
           </div>
         </header>
         <main class="workspace">
@@ -219,8 +341,8 @@ function render() {
 
     <nav class="bottom-nav" aria-label="WoofWatcher sections">
       ${renderNavButton("phoenix", "Home")}
+      ${renderNavButton("log", "Log")}
       ${renderNavButton("plans", "Plans")}
-      <button class="nav-center-btn" data-tab="log">+</button>
       ${renderNavButton("health", "Health")}
       ${renderNavButton("more", "More")}
     </nav>
@@ -988,9 +1110,55 @@ function renderPhoenixTab(context) {
   `;
 }
 
-function renderSideNav(tab, label, icon) {
-  const isActive = activeTab === tab;
-  return `<button class="side-link ${isActive ? "active" : ""}"${isActive ? ' aria-current="page"' : ""} data-tab="${escapeAttribute(tab)}">${icon}<span>${escapeHtml(label)}</span></button>`;
+function renderDesktopSidebar(caregiverName, presenceLabel) {
+  return `
+    <aside class="sidebar">
+      <div class="side-brand">
+        <img src="/app-icon.svg" alt="" class="side-logo" />
+        <span class="side-brand-text"><span class="woof">Woof</span> <span class="watcher">Watcher</span></span>
+      </div>
+      <nav class="side-nav" aria-label="WoofWatcher sections">
+        ${DESKTOP_NAV_GROUPS.map(renderSideGroup).join("")}
+      </nav>
+      <div class="side-foot">
+        <div class="side-user">
+          <div class="side-user-avatar">${escapeHtml(caregiverName.charAt(0).toUpperCase())}</div>
+          <div class="side-user-meta">
+            <strong>${escapeHtml(caregiverName)}</strong>
+            <span>Primary Caregiver</span>
+          </div>
+        </div>
+        <p class="side-presence">${escapeHtml(presenceLabel)}</p>
+        <button class="side-backup" data-action="export-json">${ICONS.backup}<span>Backup data</span></button>
+      </div>
+    </aside>
+  `;
+}
+
+function renderSideGroup(group) {
+  return `
+    <section class="side-section">
+      <p class="side-section-label">${escapeHtml(group.label)}</p>
+      <div class="side-section-links">
+        ${group.items.map(renderSideNav).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderSideNav(item) {
+  const tab = item.tab;
+  const normalized = normalizeTab(tab);
+  const isActive = !item.secondary && activeTab === normalized;
+  return `<button class="side-link ${item.secondary ? "secondary" : ""} ${isActive ? "active" : ""}"${isActive ? ' aria-current="page"' : ""} data-tab="${escapeAttribute(tab)}">${item.icon}<span>${escapeHtml(item.label)}</span></button>`;
+}
+
+function getPresenceLabel(pulse, avatar, caregiverName) {
+  if (avatar?.mood === "home-alone") return `${state.profile.name} is home alone`;
+  const activeHuman = (pulse?.humans || []).find((human) => human.todayLogs > 0);
+  if (activeHuman?.name) return `${state.profile.name} is with ${activeHuman.name}`;
+  if (caregiverName) return `${state.profile.name} is with ${caregiverName}`;
+  return `${state.profile.name} status unknown`;
 }
 
 function dogMoodClass(mood) {
@@ -1115,27 +1283,38 @@ function renderQuickButton(type, title, overrideGlyph) {
   `;
 }
 
+function renderQuickLogGroups() {
+  return `
+    <div class="quick-group-grid">
+      ${QUICK_LOG_GROUPS.map((group) => `
+        <section class="quick-group" aria-label="${escapeAttribute(group.label)} quick actions">
+          <p class="quick-group-label">${escapeHtml(group.label)}</p>
+          <div class="quick-group-actions">
+            ${group.actions.map((action) => renderQuickButton(action.type, action.title, action.glyph)).join("")}
+          </div>
+        </section>
+      `).join("")}
+    </div>
+  `;
+}
+
 function renderLogTab() {
+  const visibleEntries = getVisibleLogEntries();
+  const searchNote = logSearchQuery
+    ? `<div class="search-result-note"><span>Showing ${visibleEntries.length} result${visibleEntries.length === 1 ? "" : "s"} for "${escapeHtml(logSearchQuery)}"</span><button class="card-link" data-action="clear-log-search">Clear</button></div>`
+    : "";
   return `
     <div class="dashboard-grid log-screen">
       <section class="panel span-2">
         <div class="section-heading">
           <div>
             <p class="micro">Effortless Log</p>
-            <h3>Tap first, detail second</h3>
+            <h3>Quick Log v2</h3>
+            <p>Grouped actions keep fast care simple while detailed fields preserve household proof.</p>
           </div>
           <span class="status-chip steady">Local-first</span>
         </div>
-        <div class="effortless-grid">
-          ${renderQuickButton("meal", "Meal")}
-          ${renderQuickButton("treat", "Treat")}
-          ${renderQuickButton("walk", "Walk")}
-          ${renderQuickButton("potty", "Potty")}
-          ${renderQuickButton("training", "Training win")}
-          ${renderQuickButton("alone", "Alone time")}
-          ${renderQuickButton("mood", "Mood")}
-          ${renderQuickButton("vomit", "Bile note")}
-        </div>
+        ${renderQuickLogGroups()}
       </section>
       <section class="panel span-2">
         <p class="micro">New care event</p>
@@ -1145,10 +1324,84 @@ function renderLogTab() {
       <section class="panel span-2">
         <p class="micro">Recent entries</p>
         <h3>Latest household proof</h3>
-        ${renderTimeline(state.entries.slice(0, 12))}
+        ${searchNote}
+        ${renderTimeline(visibleEntries)}
       </section>
     </div>
   `;
+}
+
+function getVisibleLogEntries() {
+  const entries = state.entries || [];
+  const query = logSearchQuery.trim().toLowerCase();
+  if (!query) return entries.slice(0, 12);
+  return entries.filter((entry) => entryMatchesSearch(entry, query)).slice(0, 20);
+}
+
+function entryMatchesSearch(entry, query) {
+  const values = [
+    entry.type,
+    entry.title,
+    entry.caregiver,
+    entry.note,
+    entry.food,
+    entry.portionOffered,
+    entry.portionEaten,
+    entry.appetite,
+    entry.treatType,
+    entry.reason,
+    entry.reaction,
+    entry.skill,
+    entry.outcome,
+    entry.moodBefore,
+    entry.mood,
+    entry.moodAfter,
+    entry.aloneOutcome,
+    entry.mealType,
+    entry.servedBy,
+    entry.outcomeBy,
+    entry.pottyLocation,
+    entry.pottyOutcome,
+    entry.trustState,
+    entry.visibility
+  ];
+  return values.join(" ").toLowerCase().includes(query);
+}
+
+function getQuickEntryDefaults(type, title, now) {
+  if (type === "meal") {
+    return {
+      mealType: title,
+      servedAt: now,
+      servedBy: "Unassigned",
+      portionOffered: state.dietProfile?.normalPortion || "",
+      outcome: "Pending",
+      trustState: "Confirmed",
+      visibility: "Household",
+      note: "Meal served. Outcome pending."
+    };
+  }
+  if (type === "potty") {
+    return {
+      pottyLocation: "",
+      pottyOutcome: "",
+      trustState: "Pending",
+      visibility: "Household",
+      note: "Potty break logged. Add pee/poop outcome when known."
+    };
+  }
+  if (type === "alone") {
+    const leaving = /leaving/i.test(title);
+    return {
+      trustState: leaving ? "Confirmed" : "Pending",
+      visibility: "Household",
+      note: leaving ? "Phoenix is home alone. Return outcome pending." : "Returned home. Add how Phoenix was."
+    };
+  }
+  return {
+    trustState: "Confirmed",
+    visibility: "Household"
+  };
 }
 
 function renderEntryForm(prefill = {}) {
@@ -1178,6 +1431,21 @@ function renderEntryForm(prefill = {}) {
         <input name="occurredAt" type="datetime-local" value="${toDateTimeLocal(prefill.occurredAt || new Date().toISOString())}" />
       </label>
       <label>
+        <span>Meal type</span>
+        <input name="mealType" placeholder="Breakfast, dinner, bedtime snack" />
+      </label>
+      <label>
+        <span>Served at</span>
+        <input name="servedAt" type="datetime-local" />
+      </label>
+      <label>
+        <span>Served by</span>
+        <select name="servedBy">
+          <option value="">Same as caregiver</option>
+          ${caregiverOptions}
+        </select>
+      </label>
+      <label>
         <span>Amount</span>
         <input name="amount" placeholder="1 cup, small snack, 56.2 lb" />
       </label>
@@ -1194,8 +1462,50 @@ function renderEntryForm(prefill = {}) {
         <input name="portionEaten" placeholder="All, half, refused" />
       </label>
       <label>
+        <span>Meal outcome</span>
+        <select name="outcome">
+          <option value="">Select outcome</option>
+          <option value="Pending">Pending</option>
+          <option value="Ate all">Ate all</option>
+          <option value="Ate most">Ate most</option>
+          <option value="Ate some">Ate some</option>
+          <option value="Refused">Refused</option>
+          <option value="Still grazing">Still grazing</option>
+        </select>
+      </label>
+      <label>
+        <span>Outcome at</span>
+        <input name="outcomeAt" type="datetime-local" />
+      </label>
+      <label>
+        <span>Outcome by</span>
+        <select name="outcomeBy">
+          <option value="">Same as caregiver</option>
+          ${caregiverOptions}
+        </select>
+      </label>
+      <label>
         <span>Appetite</span>
         <input name="appetite" placeholder="eager, picky, refused" />
+      </label>
+      <label>
+        <span>Potty location</span>
+        <select name="pottyLocation">
+          <option value="">Not potty</option>
+          <option value="Outside">Outside</option>
+          <option value="Inside">Inside</option>
+        </select>
+      </label>
+      <label>
+        <span>Potty outcome</span>
+        <select name="pottyOutcome">
+          <option value="">Not potty</option>
+          <option value="Pee">Pee</option>
+          <option value="Poop">Poop</option>
+          <option value="Both">Both</option>
+          <option value="Tried, nothing">Tried, nothing</option>
+          <option value="Accident">Accident</option>
+        </select>
       </label>
       <label>
         <span>Minutes</span>
@@ -1247,6 +1557,23 @@ function renderEntryForm(prefill = {}) {
           <option value="normal">Normal</option>
           <option value="watch">Watch</option>
           <option value="urgent">Urgent</option>
+        </select>
+      </label>
+      <label>
+        <span>Trust state</span>
+        <select name="trustState">
+          <option value="Confirmed">Confirmed</option>
+          <option value="Pending">Pending</option>
+          <option value="Estimated">Estimated</option>
+          <option value="Corrected">Corrected</option>
+        </select>
+      </label>
+      <label>
+        <span>Visibility</span>
+        <select name="visibility">
+          <option value="Household">Household</option>
+          <option value="Private">Private</option>
+          <option value="Vet review">Vet review</option>
         </select>
       </label>
       <label class="wide">
@@ -1791,7 +2118,8 @@ function renderMonthMap() {
 }
 
 function renderNavButton(tab, label) {
-  return `<button class="${activeTab === tab ? "active" : ""}" data-tab="${tab}">${label}</button>`;
+  const isActive = activeTab === tab;
+  return `<button class="${isActive ? "active" : ""}"${isActive ? ' aria-current="page"' : ""} data-tab="${escapeAttribute(tab)}"><span>${escapeHtml(label)}</span></button>`;
 }
 
 function bindEvents() {
@@ -1813,11 +2141,29 @@ function bindEvents() {
     });
   });
 
+  app.querySelector("[data-form='top-search']")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const query = String(new FormData(event.currentTarget).get("q") || "").trim();
+    logSearchQuery = query;
+    activeTab = "log";
+    const params = new URLSearchParams({ tab: activeTab });
+    if (logSearchQuery) params.set("q", logSearchQuery);
+    history.replaceState(null, "", `?${params.toString()}`);
+    render();
+  });
+
   app.querySelectorAll("[data-quick-type]").forEach((button) => {
     button.addEventListener("click", () => {
       const type = button.dataset.quickType;
       const title = button.dataset.quickTitle;
-      const entry = createEntry({ type, title, caregiver: "Unassigned", occurredAt: new Date().toISOString() });
+      const now = new Date().toISOString();
+      const entry = createEntry({
+        type,
+        title,
+        caregiver: "Unassigned",
+        occurredAt: now,
+        ...getQuickEntryDefaults(type, title, now)
+      });
       saveState({ ...state, entries: [entry, ...(state.entries || [])] });
       activeTab = "phoenix";
       render();
@@ -1912,6 +2258,18 @@ async function handleAction(action, button) {
     saveState(getDefaultState());
     activeTab = "phoenix";
     assistantAnswer = "";
+    render();
+  }
+
+  if (action === "toggle-theme") {
+    saveTheme(theme === "dark" ? "light" : "dark");
+    render();
+  }
+
+  if (action === "clear-log-search") {
+    logSearchQuery = "";
+    activeTab = "log";
+    history.replaceState(null, "", "?tab=log");
     render();
   }
 

@@ -35,34 +35,70 @@ import {
 } from "./woof-backend-schema.js";
 
 export const PRODUCT_NAVIGATION = [
-  { id: "phoenix", label: "Phoenix" },
+  { id: "phoenix", label: "Home" },
   { id: "log", label: "Log" },
   { id: "plans", label: "Plans" },
   { id: "health", label: "Health" },
   { id: "more", label: "More" }
 ];
 
+export const DESKTOP_NAVIGATION_GROUPS = [
+  {
+    label: "Care & Wellbeing",
+    items: ["Phoenix Home", "Quick Log", "Household Pulse", "Plans", "Health Watch", "Bile Watch", "Diet & Treats"]
+  },
+  {
+    label: "More Tools",
+    items: ["Care Pass", "WoofGuide", "Avatar Studio"]
+  },
+  {
+    label: "Records",
+    items: ["Timeline", "Records", "Reports", "Achievements"]
+  },
+  {
+    label: "System",
+    items: ["Settings"]
+  }
+];
+
 export const QUICK_LOG_ACTIONS = [
-  { type: "meal", label: "Meal", detailLevel: "optional" },
-  { type: "treat", label: "Treat", detailLevel: "optional" },
-  { type: "walk", label: "Walk", detailLevel: "optional" },
-  { type: "potty", label: "Potty", detailLevel: "quick" },
-  { type: "poop", label: "Poop", detailLevel: "quick" },
-  { type: "pee", label: "Pee", detailLevel: "quick" },
-  { type: "play", label: "Play", detailLevel: "quick" },
-  { type: "training", label: "Training win", detailLevel: "optional" },
-  { type: "social", label: "Social", detailLevel: "optional" },
-  { type: "mood", label: "Mood", detailLevel: "optional" },
-  { type: "alone", label: "Alone time", detailLevel: "optional" },
-  { type: "vomit", label: "Bile note", detailLevel: "important" },
-  { type: "medication", label: "Medication", detailLevel: "important" },
-  { type: "weight", label: "Weight", detailLevel: "important" },
-  { type: "note", label: "Note", detailLevel: "quick" }
+  { key: "meal", group: "Care", type: "meal", label: "Meal", detailLevel: "lifecycle" },
+  { key: "treat", group: "Care", type: "treat", label: "Treat", detailLevel: "optional" },
+  { key: "walk", group: "Care", type: "walk", label: "Walk", detailLevel: "optional" },
+  { key: "potty", group: "Care", type: "potty", label: "Potty", detailLevel: "outcome-flow" },
+  { key: "happy", group: "Mood & Behavior", type: "mood", label: "Happy", detailLevel: "quick" },
+  { key: "anxious", group: "Mood & Behavior", type: "mood", label: "Anxious", detailLevel: "optional" },
+  { key: "play", group: "Mood & Behavior", type: "play", label: "Play", detailLevel: "quick" },
+  { key: "training-win", group: "Mood & Behavior", type: "training", label: "Training win", detailLevel: "optional" },
+  { key: "vomit", group: "Health", type: "vomit", label: "Vomit", detailLevel: "important" },
+  { key: "medication", group: "Health", type: "medication", label: "Medication", detailLevel: "important" },
+  { key: "appetite", group: "Health", type: "health", label: "Appetite", detailLevel: "optional" },
+  { key: "weight", group: "Health", type: "weight", label: "Weight", detailLevel: "important" },
+  { key: "leaving-home", group: "Household", type: "alone", label: "Leaving Home", detailLevel: "important" },
+  { key: "im-home", group: "Household", type: "alone", label: "I'm Home", detailLevel: "important" },
+  { key: "note", group: "Household", type: "note", label: "Note", detailLevel: "quick" }
 ];
 
 const EVENT_DETAIL_FIELDS = {
-  meal: ["food", "portionOffered", "portionEaten", "appetite", "mood", "note"],
+  meal: [
+    "mealType",
+    "servedAt",
+    "servedBy",
+    "food",
+    "portionOffered",
+    "outcome",
+    "portionEaten",
+    "outcomeAt",
+    "outcomeBy",
+    "appetite",
+    "mood",
+    "note",
+    "photo",
+    "trustState",
+    "visibility"
+  ],
   treat: ["treatType", "reason", "reaction", "amount", "note"],
+  potty: ["pottyLocation", "pottyOutcome", "note", "photo", "trustState", "visibility"],
   training: ["skill", "outcome", "moodBefore", "moodAfter", "durationMinutes", "note"],
   alone: ["durationMinutes", "moodBefore", "moodAfter", "aloneOutcome", "endedAt", "note"],
   vomit: ["severity", "appetite", "mood", "note"],
@@ -100,6 +136,7 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
     generatedAt: now,
     storageKey: "woofwatcher.v1.state",
     navigation: PRODUCT_NAVIGATION,
+    desktopNavigationGroups: DESKTOP_NAVIGATION_GROUPS,
     phoenix: {
       profile: state.profile,
       avatar,
@@ -183,11 +220,13 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
         "Backend schema and seed drafts are planning contracts only until Apollo chooses auth, database, deployment, and privacy settings."
     },
     uiGuidance: {
-      visualStatus: "functional-placeholder",
+      visualStatus: "v1.5-shell-in-progress",
       redesignInstruction:
         "Use this view model as the data contract. Replace the current CSS/HTML look freely, but keep localStorage, non-diagnostic health language, five-tab navigation, and Phoenix privacy boundaries intact.",
-      preferredDirection: "premium playful storybook utility",
-      avoid: ["publicly exposing private Phoenix details without consent", "diagnostic health claims", "removing backup/import/export"]
+      preferredDirection: "Premium Neo-Retro Pixel Care",
+      coreLine: "Real care. Pixel heart.",
+      tagline: "Your dog's day, brought to life.",
+      avoid: ["publicly exposing private Phoenix details without consent", "diagnostic health claims", "removing backup/import/export", "top-level pee/poop quick actions"]
     }
   };
 }
