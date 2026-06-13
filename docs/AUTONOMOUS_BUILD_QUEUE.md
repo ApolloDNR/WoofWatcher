@@ -60,8 +60,9 @@ Every autonomous run should improve at least one of: care workflow, household us
 52. DONE 2026-06-12: Avatar Studio is now a first-class PWA prototype route with local reference photo upload memory, selectable Phoenix template state, and the required Happy/Calm/Excited/Sleepy/Anxious/Bored/Hungry/Proud/Home Alone/Not Feeling Well state inventory.
 53. DONE 2026-06-13: Achievements is now a first-class PWA route backed by `getAchievementReview`, deriving meaningful care milestones from household-visible logs, records, training consistency, calm alone-time outcomes, Bile Watch bedtime snack proof, and record readiness instead of fake coins.
 54. DONE 2026-06-13: Settings is now a first-class PWA route that consolidates full backup, import, care-room transfer, reset, local-only provider readiness, AI boundary, health boundary, reminder delivery truth, and sync resource blockers in one system surface.
-55. NEXT: Phoenix Home v1.5 polish: household pulse mini-card, stronger Health/Bile snapshot, and richer pixel-room state copy.
+55. DONE 2026-06-13: Phoenix Home v1.5 polish now adds generated pixel-room state copy, a first-screen "Where Phoenix is" household pulse card, and a combined Health/Bile snapshot with food-gap, bedtime snack, vomiting, energy, and weight context.
 56. NEXT: Runtime/browser visual QA once local dependencies or a package manager are available in the checkout.
+57. NEXT: Fable/Replit handoff notes for the completed PWA skeleton routes and visual polish requirements.
 
 ## Cadence
 

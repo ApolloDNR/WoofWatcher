@@ -692,6 +692,16 @@ Owner: Codex.
 
 Revisit trigger: Auth-connected account settings, provider-backed deletion, household invites, cloud sync enablement, payment settings, or production privacy policy become active release work.
 
+### 2026-06-13: Phoenix Home Must Answer Presence And Health Context First
+
+Decision: Phoenix Home keeps the first-screen priority on where Phoenix is, whether she is alone, what care is next, and whether Health Watch or Bile Watch needs review. Pixel-room copy should reflect real state: open meal outcome, home-alone timer, health/bile review, next routine, or steady care.
+
+Reason: Apollo's original product need is shared household care, not a decorative dashboard. The Home screen should let either owner understand Phoenix's status in seconds and move to the correct workflow without hunting through More.
+
+Owner: Codex.
+
+Revisit trigger: Final Fable/Figma visual redesign, animated room assets, or multi-dog home state rules become active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

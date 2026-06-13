@@ -1285,16 +1285,15 @@ function renderRoutineForm(routine = {}) {
 }
 
 function renderPhoenixTab(context) {
-  const { avatar, pulse, summary, health, reminders } = context;
+  const { avatar, pulse, summary, health, bileWatch, reminders } = context;
   const nextReminder = reminders.nextReminder || pulse.nextAction || {};
   const mood = moodInfo(avatar.mood);
   const energy = energyPct(health.status);
   const recent = (state.entries || []).slice(0, 4);
-  const vomiting = summary.vomitIncidents > 0 ? String(summary.vomitIncidents) : "None";
-  const weight = `${state.profile.weight.current} ${state.profile.weight.unit}`;
   const caregiverName = (state.caregivers && state.caregivers[0] && state.caregivers[0].name) || "friend";
   const presenceLabel = getPresenceLabel(pulse, avatar, caregiverName);
   const openMeal = getOpenMealOutcomeTask();
+  const roomCopy = buildPhoenixRoomCopy({ avatar, pulse, health, bileWatch, openMeal });
 
   return `
     <div class="dash">
@@ -1303,7 +1302,7 @@ function renderPhoenixTab(context) {
           <div class="dog-scene ${dogMoodClass(avatar.mood)}">
             ${renderDogScene(avatar.mood)}
             <span class="hero-name">${escapeHtml(state.profile.name)}</span>
-            <span class="hero-speech">${escapeHtml(avatar.suggestedAction)}</span>
+            <span class="hero-speech">${escapeHtml(roomCopy.speech)}</span>
             <span class="hero-mood">${mood.emoji} ${escapeHtml(mood.label)}</span>
           </div>
           <div class="hero-body">
@@ -1311,7 +1310,7 @@ function renderPhoenixTab(context) {
               <div class="energy-top"><span>Energy</span><strong>${energy}%</strong></div>
               <div class="energy-track"><i style="width:${energy}%"></i></div>
             </div>
-            <p class="hero-quote">${escapeHtml(avatar.speech)}</p>
+            <p class="hero-quote">${escapeHtml(roomCopy.detail)}</p>
           </div>
           <div class="hero-next">
             <div>
@@ -1350,6 +1349,8 @@ function renderPhoenixTab(context) {
           </div>
         </section>
 
+        ${renderHomeHouseholdPulseCard({ pulse, avatar, presenceLabel })}
+
         <section class="card">
           <div class="card-head"><h3>Handoff Timeline</h3><button class="card-link" data-tab="more">View all</button></div>
           <ul class="timeline-feed">
@@ -1370,19 +1371,45 @@ function renderPhoenixTab(context) {
           <button class="assist-ask" data-tab="assistant"><span>Ask Woof Assistant</span>${ICONS.send}</button>
         </section>
 
-        <section class="card">
-          <div class="card-head"><h3>Health Watch</h3><span class="pill ${escapeAttribute(health.status)}">${escapeHtml(health.label)}</span></div>
-          <div class="health-list">
-            ${renderHealthRow("Appetite", health.status === "review" ? "Watch" : "Good", health.status === "review" ? "watch" : "good")}
-            ${renderHealthRow("Stool", "Normal", "good")}
-            ${renderHealthRow("Vomiting", vomiting, summary.vomitIncidents > 0 ? "watch" : "good")}
-            ${renderHealthRow("Energy", energy >= 70 ? "Good" : energy >= 50 ? "Fair" : "Low", energy >= 70 ? "good" : "watch")}
-            ${renderHealthRow("Weight", weight, "neutral")}
-          </div>
-        </section>
+        ${renderHomeHealthBileSnapshot({ health, bileWatch, summary, energy })}
       </div>
     </div>
   `;
+}
+
+function buildPhoenixRoomCopy({ avatar, pulse, health, bileWatch, openMeal }) {
+  if (openMeal) {
+    return {
+      speech: `${openMeal.title} is waiting for an outcome.`,
+      detail: "A meal was served. Confirm whether Phoenix ate all, ate some, refused, or is still grazing so the household record stays accurate."
+    };
+  }
+
+  if (avatar.mood === "home-alone") {
+    return {
+      speech: "Phoenix is home alone. Timer is active.",
+      detail: "The room is in watch mode until someone returns and logs how Phoenix did."
+    };
+  }
+
+  if (health.status === "review" || bileWatch.status === "review") {
+    return {
+      speech: "Pattern noticed. Review calmly.",
+      detail: "Health Watch or Bile Watch has enough evidence to review timing, appetite, energy, and notes before deciding what to share with a veterinarian."
+    };
+  }
+
+  if (pulse.completedCount < pulse.totalCount) {
+    return {
+      speech: `${pulse.nextAction.label || "Next care"} is next.`,
+      detail: `Phoenix has ${pulse.completedCount}/${pulse.totalCount} routine items covered. Keep the next step simple and log what actually happens.`
+    };
+  }
+
+  return {
+    speech: avatar.suggestedAction || "Care rhythm looks steady.",
+    detail: avatar.speech || "Phoenix's day is covered. Keep using quick logs for meals, walks, potty, mood, and notes."
+  };
 }
 
 function renderPhoenixStatusCard({ presenceLabel, mood, nextReminder, avatar, openMeal }) {
@@ -1403,6 +1430,54 @@ function renderPhoenixStatusCard({ presenceLabel, mood, nextReminder, avatar, op
           ? renderOpenMealTask(openMeal)
           : `<p class="status-steady-note">No open meal outcomes. Care proof is current.</p>`
       }
+    </section>
+  `;
+}
+
+function renderHomeHouseholdPulseCard({ pulse, avatar, presenceLabel }) {
+  const activeHuman = (pulse.humans || []).find((human) => human.todayLogs > 0);
+  const status = avatar.mood === "home-alone" ? "home-alone" : activeHuman ? "with-human" : "unknown";
+  const supervisedBy = avatar.mood === "home-alone" ? "Home alone" : activeHuman?.name || "Confirm status";
+  return `
+    <section class="card home-pulse-card">
+      <div class="card-head">
+        <h3>Where Phoenix is</h3>
+        <span class="pill ${status === "home-alone" ? "watch" : status === "with-human" ? "good" : "neutral"}">${escapeHtml(status.replace("-", " "))}</span>
+      </div>
+      <p class="home-card-copy">${escapeHtml(presenceLabel)}</p>
+      <div class="home-pulse-grid">
+        ${renderStatusAnswer("Supervised by", supervisedBy)}
+        ${renderStatusAnswer("Since", pulse.timeline[0] ? formatDateTime(pulse.timeline[0].occurredAt) : "Needs log")}
+        ${renderStatusAnswer("Routine proof", `${pulse.completedCount}/${pulse.totalCount}`)}
+        ${renderStatusAnswer("Next", pulse.nextAction?.label || "Routine covered")}
+      </div>
+      <button class="button ghost" data-tab="household-pulse">Open Household Pulse</button>
+    </section>
+  `;
+}
+
+function renderHomeHealthBileSnapshot({ health, bileWatch, summary, energy }) {
+  const vomiting = summary.vomitIncidents > 0 ? String(summary.vomitIncidents) : "None";
+  const weight = `${state.profile.weight.current} ${state.profile.weight.unit}`;
+  return `
+    <section class="card home-health-snapshot">
+      <div class="card-head">
+        <h3>Health/Bile snapshot</h3>
+        <button class="card-link" data-tab="health">Review</button>
+      </div>
+      <div class="home-snapshot-status">
+        <span class="pill ${escapeAttribute(health.status)}">Health ${escapeHtml(health.label)}</span>
+        <span class="pill ${escapeAttribute(bileWatch.status)}">Bile ${escapeHtml(bileWatch.label)}</span>
+      </div>
+      <div class="health-list">
+        ${renderHealthRow("Appetite", health.status === "review" ? "Watch" : "Good", health.status === "review" ? "watch" : "good")}
+        ${renderHealthRow("Food gap", bileWatch.hoursSinceLastFood === null ? "No logs" : `${bileWatch.hoursSinceLastFood}h`, bileWatch.emptyStomachWindow ? "watch" : "good")}
+        ${renderHealthRow("Bed snack", bileWatch.bedtimeSnackLogged ? "Logged" : "Missing", bileWatch.bedtimeSnackLogged ? "good" : "watch")}
+        ${renderHealthRow("Vomiting", vomiting, summary.vomitIncidents > 0 ? "watch" : "good")}
+        ${renderHealthRow("Energy", energy >= 70 ? "Good" : energy >= 50 ? "Fair" : "Low", energy >= 70 ? "good" : "watch")}
+        ${renderHealthRow("Weight", weight, "neutral")}
+      </div>
+      <p class="notification-boundary">${escapeHtml(health.signals[0])} ${escapeHtml(bileWatch.vetBoundary)}</p>
     </section>
   `;
 }
