@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-14: Records Uses One Shared Mobile Board Vocabulary
+
+Decision: Mobile Records should not keep a parallel `padCard`/local section-header vocabulary. Care Trends, Dog ID, health/care evidence, reports, records, and medication sections should all use the shared board primitives unless a future Records-specific design system intentionally replaces them.
+
+Reason: Records is the densest trust surface in WoofWatcher. A single board vocabulary gives Fable/Replit one coherent structure to visually polish and reduces the risk of fragmented mobile spacing, nested-card drift, or dead decorative sections.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves a dedicated Records design system or a final Figma/Fable board replaces the shared mobile primitives with an equivalent reusable component set.
+
 ### 2026-06-14: Records Reports Use Board Sections
 
 Decision: Mobile Records report workflows should use shared board sections for Care Pass, Report History, and Progress Report instead of loose section headers plus one-off card shells.

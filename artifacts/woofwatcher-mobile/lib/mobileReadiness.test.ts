@@ -350,9 +350,17 @@ test("keeps Records vault, diet, and cabinet on shared board card anatomy", () =
 test("keeps Records trend sections on shared board card anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Trends"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Weight Trend"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Mood Trend"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Hydration"/);
+});
+
+test("keeps Records dog ID heading on shared board section anatomy", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /<BoardSectionHeader[\s\S]*title=\{`\$\{credential\.name\} ID Card`\}/);
+  assert.match(records, /<BoardCard tone="navy" padded=\{false\} style=\{s\.idCard\}/);
 });
 
 test("keeps Records activity and potty sections on shared board card anatomy", () => {
@@ -361,6 +369,15 @@ test("keeps Records activity and potty sections on shared board card anatomy", (
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Walk Activity"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Training Progress"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Potty Health"/);
+});
+
+test("keeps Records watch, grooming, and medication sections on shared board card anatomy", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Alone Time"/);
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Grooming Care"/);
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Incident Lookback"/);
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Medication Plan"/);
 });
 
 test("keeps Records wired to medication adherence status", () => {

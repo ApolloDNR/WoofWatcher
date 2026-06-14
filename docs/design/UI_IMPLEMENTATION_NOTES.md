@@ -140,3 +140,14 @@ Moved the next Records care-evidence set onto shared board anatomy:
 - Converted Training Progress into a `BoardCard` section while preserving minutes/wins/skills stats, focus skills, latest practice context, and next-practice notes.
 - Converted Potty Health into a `BoardCard` section while preserving pee/poop/review stats, stool color/context detail, latest potty context, and non-diagnostic next-step copy.
 - Added a mobile readiness test that protects Walk Activity, Training Progress, and Potty Health board anatomy.
+
+## 2026-06-14 Records Completion Board Anatomy Pass
+
+Finished the remaining Records screen board-unification work:
+
+- Converted Care Trends into a `BoardCard` section while preserving weekly signals, meal completion, walk minutes, and next-step copy.
+- Moved the Dog ID heading and Share/Print actions onto the shared `BoardSectionHeader` pattern while preserving the navy credential card.
+- Converted Alone Time, Grooming Care, Incident Lookback, and Medication Plan into shared `BoardCard` sections.
+- Preserved medication routine navigation, adherence stats, next-dose state, follow-ups, medication history search, outcome filters, and all medication accessibility labels.
+- Removed the now-unused Records-only `padCard`, `sectionHeader`, and `sectionTitle` styles so the screen no longer carries a parallel card vocabulary.
+- Added mobile readiness tests for Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Lookback, and Medication Plan board anatomy.

@@ -622,8 +622,8 @@ export default function RecordsScreen() {
           </View>
 
           {/* Care trends */}
-          <BoardSectionHeader title="Care Trends" action="7 days" style={{ marginTop: 28 }} />
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader title="Care Trends" action="7 days" />
             <View style={s.trendHeroRow}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "14" }]}>
                 <Ionicons name="analytics-outline" size={18} color={colors.primary} />
@@ -673,34 +673,37 @@ export default function RecordsScreen() {
               </View>
             ) : null}
             <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{careTrends.nextStep}</Text>
-          </View>
+          </BoardCard>
 
           {/* Dog ID card */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{credential.name} ID Card</Text>
-            <View style={s.shareInlineGroup}>
-              <Pressable
-                onPress={shareCredential}
-                accessibilityRole="button"
-                accessibilityLabel="Share dog ID card"
-                hitSlop={8}
-                style={s.shareInline}
-              >
-                <Ionicons name="share-outline" size={15} color={colors.copper} />
-                <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
-              </Pressable>
-              <Pressable
-                onPress={sharePrintableCredential}
-                accessibilityRole="button"
-                accessibilityLabel="Share printable dog ID source"
-                hitSlop={8}
-                style={s.shareInline}
-              >
-                <Ionicons name="print-outline" size={15} color={colors.copper} />
-                <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Print</Text>
-              </Pressable>
-            </View>
-          </View>
+          <BoardSectionHeader
+            title={`${credential.name} ID Card`}
+            style={{ marginTop: 28 }}
+            accessory={
+              <View style={s.shareInlineGroup}>
+                <Pressable
+                  onPress={shareCredential}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share dog ID card"
+                  hitSlop={8}
+                  style={s.shareInline}
+                >
+                  <Ionicons name="share-outline" size={15} color={colors.copper} />
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
+                </Pressable>
+                <Pressable
+                  onPress={sharePrintableCredential}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share printable dog ID source"
+                  hitSlop={8}
+                  style={s.shareInline}
+                >
+                  <Ionicons name="print-outline" size={15} color={colors.copper} />
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Print</Text>
+                </Pressable>
+              </View>
+            }
+          />
           <BoardCard tone="navy" padded={false} style={s.idCard}>
             <View style={s.idCardTop}>
               <View style={[s.idBadge, { backgroundColor: colors.copper }]}>
@@ -1104,13 +1107,8 @@ export default function RecordsScreen() {
           </BoardCard>
 
           {/* Alone time */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Alone Time</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-              {aloneTime.totalSessions ? `${aloneTime.totalSessions} logs` : "No logs"}
-            </Text>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader title="Alone Time" action={aloneTime.totalSessions ? `${aloneTime.totalSessions} logs` : "No logs"} />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.secondary + "18" }]}>
                 <Ionicons name="home-outline" size={18} color={colors.secondary} />
@@ -1179,16 +1177,11 @@ export default function RecordsScreen() {
                 </View>
               </View>
             ) : null}
-          </View>
+          </BoardCard>
 
           {/* Grooming care */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Grooming Care</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-              {groomingCare.totalSessions ? `${groomingCare.totalSessions} logs` : "No logs"}
-            </Text>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader title="Grooming Care" action={groomingCare.totalSessions ? `${groomingCare.totalSessions} logs` : "No logs"} />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
                 <Ionicons name="sparkles-outline" size={18} color={colors.sage} />
@@ -1251,7 +1244,7 @@ export default function RecordsScreen() {
                 </View>
               </View>
             ) : null}
-          </View>
+          </BoardCard>
 
           {/* Potty health */}
           <BoardCard style={s.recordsBoardCard}>
@@ -1316,10 +1309,8 @@ export default function RecordsScreen() {
           </BoardCard>
 
           {/* Incident lookback */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Incident Lookback</Text>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader title="Incident Lookback" />
             <View style={s.watchSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: healthTone + "18" }]}>
                 <Ionicons
@@ -1406,23 +1397,25 @@ export default function RecordsScreen() {
                 No incidents logged. Tail wags all around.
               </Text>
             )}
-          </View>
+          </BoardCard>
 
           {/* Medication plan */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Medication Plan</Text>
-            <Pressable
-              onPress={() => router.push("/calendar")}
-              accessibilityRole="button"
-              accessibilityLabel="Open calendar medication routines"
-              hitSlop={8}
-              style={s.shareInline}
-            >
-              <Ionicons name="calendar-outline" size={15} color={colors.copper} />
-              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Routines</Text>
-            </Pressable>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader
+              title="Medication Plan"
+              accessory={
+                <Pressable
+                  onPress={() => router.push("/calendar")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open calendar medication routines"
+                  hitSlop={8}
+                  style={s.shareInline}
+                >
+                  <Ionicons name="calendar-outline" size={15} color={colors.copper} />
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Routines</Text>
+                </Pressable>
+              }
+            />
             <View style={[s.medSummaryRow, { borderBottomColor: colors.border }]}>
               {[
                 { value: `${medicationAdherence.adherencePercent}%`, label: "Logged", color: medicationAdherence.missedCount > 0 ? colors.rose : colors.sage },
@@ -1660,7 +1653,7 @@ export default function RecordsScreen() {
                 })
               )}
             </View>
-          </View>
+          </BoardCard>
 
           {/* Care pass */}
           <BoardCard style={s.recordsBoardCard}>
@@ -2088,8 +2081,6 @@ const s = StyleSheet.create({
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
 
-  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  sectionTitle: { fontSize: 20, letterSpacing: -0.2 },
   sectionLink: { fontSize: 14 },
   shareInline: { flexDirection: "row", alignItems: "center", gap: 4 },
   shareInlineGroup: { flexDirection: "row", alignItems: "center", gap: 14 },
@@ -2141,14 +2132,6 @@ const s = StyleSheet.create({
   goalPillText: { fontSize: 12.5 },
   chartNote: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
 
-  padCard: {
-    borderRadius: 22,
-    padding: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
-  },
   empty: { fontSize: 14, paddingVertical: 16, textAlign: "center" },
   trendHeroRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 12 },
   trendStatGrid: { flexDirection: "row", gap: 9, marginBottom: 8 },
