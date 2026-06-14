@@ -159,7 +159,7 @@ export default function HealthScreen() {
               tone={colors.copper}
             />
             <BoardMetricTile
-              icon="bone"
+              icon="treat"
               label="Bedtime snack proof"
               value={state.dietProfile.bedtimeSnack || "Not set"}
               tone={colors.amber}
