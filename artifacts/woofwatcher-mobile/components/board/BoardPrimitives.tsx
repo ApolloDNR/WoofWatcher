@@ -209,11 +209,13 @@ export function BoardCard({
 export function BoardSectionHeader({
   title,
   action,
+  accessory,
   style,
   textStyle,
 }: {
   title: string;
   action?: string;
+  accessory?: ReactNode;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
 }) {
@@ -223,7 +225,9 @@ export function BoardSectionHeader({
       <Text style={[styles.sectionTitle, { color: colors.navy, fontFamily: DISPLAY_SEMI }, textStyle]}>
         {title}
       </Text>
-      {action ? (
+      {accessory ? (
+        accessory
+      ) : action ? (
         <Text style={[styles.sectionAction, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
           {action}
         </Text>

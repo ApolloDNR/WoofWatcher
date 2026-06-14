@@ -101,3 +101,13 @@ Tightened the next board-system layer across the highest-frequency mobile routes
 - Wrapped Plans upcoming events in a board card with internal event rows, preserving real add/remove event behavior without nesting cards.
 - Converted the Records Dog ID credential to the navy `BoardCard` tone while preserving share/print behavior and credential content.
 - Added a mobile readiness test that protects this shared card anatomy for Quick Log, Plans, and Records.
+
+## 2026-06-14 Records Report Board Anatomy Pass
+
+Tightened the premium Records and report surfaces:
+
+- Added an accessory slot to `BoardSectionHeader` so board headers can carry real actions such as Share without becoming dead decorative labels.
+- Converted Records Care Pass preview into a `BoardCard` section with internal audience rows for Sitter, Vet, Trainer, and Caregiver.
+- Converted Report History into a `BoardCard` section while preserving resend and printable-source share actions for saved Care Pass artifacts.
+- Converted Progress Report into a `BoardCard` section with the period segmented control and working share action inside the same report surface.
+- Added a mobile readiness test that protects Records Care Pass, Report History, and Progress Report board anatomy for the Fable/Replit polish pass.

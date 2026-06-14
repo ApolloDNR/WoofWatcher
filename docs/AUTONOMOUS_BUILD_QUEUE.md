@@ -71,7 +71,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 63. DONE 2026-06-14: The Expo mobile board primitive system now reaches the core v1.5 routes beyond Home: Log, Plans, Health/Bile, More, Records, WoofGuide, and Avatar Studio all use shared board route chrome or board sections, and Health/Bile Watch uses shared board cards, pills, metric tiles, section headers, and care rows.
 64. DONE 2026-06-14: GitHub Actions `WoofWatcher Verify` now uses Node 24-compatible action majors for checkout, setup-node, and pnpm setup while keeping the project runtime on Node 24.
 65. DONE 2026-06-14: Quick Log, Plans, and Records now share stronger board card anatomy: the Log composer, Plans upcoming-events section, and Records Dog ID card use `BoardCard`, with a readiness test protecting the pattern.
-66. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize replacing placeholder/static Phoenix art with final pixel states and extending board anatomy deeper into secondary Records/Reports sections.
+66. DONE 2026-06-14: Records secondary report surfaces now use shared board anatomy: Care Pass audience preview rows, Report History resend/print rows, and Progress Report period/share controls are inside `BoardCard` sections with a readiness test protecting the structure.
+67. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize replacing placeholder/static Phoenix art with final pixel states and tightening remaining secondary Records/Diet/Vault cards.
 
 ## Cadence
 

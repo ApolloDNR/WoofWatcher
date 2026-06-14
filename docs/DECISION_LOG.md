@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-14: Records Reports Use Board Sections
+
+Decision: Mobile Records report workflows should use shared board sections for Care Pass, Report History, and Progress Report instead of loose section headers plus one-off card shells.
+
+Reason: Records and reports are premium trust surfaces for vets, sitters, trainers, and household owners. Keeping their share, print, and period controls inside the same board anatomy as Home, Health, Log, and Plans makes the app easier to polish visually without breaking the working handoff/report flows.
+
+Owner: Codex.
+
+Revisit trigger: A dedicated Records/Care Pass design system replaces the current shared mobile board primitives or Fable/Replit supplies a stronger final report composition.
+
 ### 2026-06-12: Avatar Studio Starts As A Template-State Prototype
 
 Decision: Avatar Studio is a first-class PWA route with local reference photo memory and required template states before generated pixel sprites or animation assets exist.

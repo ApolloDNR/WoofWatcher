@@ -102,6 +102,8 @@ Current evidence, 2026-06-11: Records Medication History now has a scoped search
 
 Current evidence, 2026-06-14: Quick Log, Plans, and Records now use shared `BoardCard` anatomy for primary workflow surfaces, and static mobile readiness protects the Log composer, Plans upcoming events, and Records Dog ID card from drifting back to one-off card shells.
 
+Current evidence, 2026-06-14: Records Care Pass, Report History, and Progress Report now use shared `BoardCard` and `BoardSectionHeader` anatomy while preserving real preview, resend, print-source, period-filter, and share actions.
+
 ## Gate 5: Health Safety
 
 Passing means health features organize patterns without diagnosis. Urgent red flags direct users to veterinary care. WoofGuide stays bounded.
@@ -161,6 +163,8 @@ Current evidence, 2026-06-11: Care Pass reports now include an Alone Time sectio
 Current evidence, 2026-06-11: Care Pass reports now include a Weight Trend section with recent weigh-in count, current weight, goal, change from previous, latest caregiver context, and owner-reported/vet-review boundary language.
 
 Current evidence, 2026-06-11: Care Pass reports now include a Grooming Care section with recent grooming count, type counts, latest grooming context, products, next due date, and owner-reported/non-diagnostic boundary language.
+
+Current evidence, 2026-06-14: Mobile Records now presents Care Pass audience previews, saved report artifacts, and Progress Report controls as shared board sections with accessible resend, printable-source, and share actions preserved for sitter/vet/trainer handoff workflows.
 
 ## Gate 7: Revenue Readiness
 

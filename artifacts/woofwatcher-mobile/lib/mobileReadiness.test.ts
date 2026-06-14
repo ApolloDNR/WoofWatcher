@@ -331,6 +331,14 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
   assert.match(records, /accessibilityLabel="Share printable dog ID source"/);
 });
 
+test("keeps Records Care Pass and reports on shared board card anatomy", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Pass"/);
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Report History"/);
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Progress Report"/);
+});
+
 test("keeps Records wired to medication adherence status", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 

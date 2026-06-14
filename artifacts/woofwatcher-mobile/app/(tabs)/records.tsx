@@ -1687,48 +1687,43 @@ export default function RecordsScreen() {
           </View>
 
           {/* Care pass */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Care Pass</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Preview</Text>
-          </View>
-          <View style={s.carePassGrid}>
-            {CARE_PASS_OPTIONS.map((option) => (
-              <Pressable
-                key={option.audience}
-                onPress={() => openCarePassPreview(option.audience)}
-                style={({ pressed }) => [
-                  s.carePassCard,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                    shadowColor: colors.primary,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
-                <View style={[s.carePassIcon, { backgroundColor: colors.primary + "14" }]}>
-                  <Ionicons name={option.icon} size={18} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[s.carePassLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {option.label}
-                  </Text>
-                  <Text numberOfLines={2} style={[s.carePassDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                    {option.detail}
-                  </Text>
-                </View>
-                <Ionicons name="share-outline" size={16} color={colors.copper} />
-              </Pressable>
-            ))}
-          </View>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader title="Care Pass" action="Preview" />
+            <View style={s.carePassList}>
+              {CARE_PASS_OPTIONS.map((option) => (
+                <Pressable
+                  key={option.audience}
+                  onPress={() => openCarePassPreview(option.audience)}
+                  style={({ pressed }) => [
+                    s.carePassRow,
+                    {
+                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View style={[s.carePassIcon, { backgroundColor: colors.primary + "14" }]}>
+                    <Ionicons name={option.icon} size={18} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[s.carePassLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      {option.label}
+                    </Text>
+                    <Text numberOfLines={2} style={[s.carePassDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {option.detail}
+                    </Text>
+                  </View>
+                  <Ionicons name="share-outline" size={16} color={colors.copper} />
+                </Pressable>
+              ))}
+            </View>
+          </BoardCard>
 
-          <View style={[s.sectionHeader, { marginTop: 18 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Report History</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-              {reportArtifacts.length ? `${reportArtifacts.length} saved` : "No saved"}
-            </Text>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader
+              title="Report History"
+              action={reportArtifacts.length ? `${reportArtifacts.length} saved` : "No saved"}
+            />
             {reportArtifacts.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                 Shared Care Passes will appear here for quick resend.
@@ -1796,17 +1791,19 @@ export default function RecordsScreen() {
                 );
               })
             )}
-          </View>
+          </BoardCard>
 
           {/* Progress report */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Progress Report</Text>
-            <Pressable onPress={shareReport} hitSlop={8} style={s.shareInline}>
-              <Ionicons name="share-outline" size={15} color={colors.copper} />
-              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
-            </Pressable>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader
+              title="Progress Report"
+              accessory={
+                <Pressable onPress={shareReport} hitSlop={8} style={s.shareInline}>
+                  <Ionicons name="share-outline" size={15} color={colors.copper} />
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
+                </Pressable>
+              }
+            />
             <View style={[s.segRow, { backgroundColor: colors.background }]}>
               {PERIODS.map((p) => {
                 const active = period === p.key;
@@ -1852,7 +1849,7 @@ export default function RecordsScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </BoardCard>
 
           {/* Diet folder */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
@@ -2285,19 +2282,18 @@ const s = StyleSheet.create({
   medHistoryTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   medHistoryNote: { fontSize: 12.2, lineHeight: 17, marginTop: 5 },
 
-  carePassGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  carePassCard: {
-    width: "48%",
-    minHeight: 92,
-    borderRadius: 18,
+  recordsBoardCard: { marginTop: 20 },
+  carePassList: { gap: 9 },
+  carePassRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     borderWidth: 1,
-    padding: 13,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    elevation: 2,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
   },
-  carePassIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 9 },
+  carePassIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   carePassLabel: { fontSize: 15 },
   carePassDetail: { fontSize: 12, lineHeight: 16, marginTop: 2, paddingRight: 14 },
   reportArtifactRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13 },
