@@ -812,6 +812,16 @@ Owner: Codex.
 
 Revisit trigger: A final native component library or Figma-derived design system replaces the current in-code board primitives.
 
+### 2026-06-14: WoofGuide Uses Board Sections, Not A Separate Chat UI
+
+Decision: WoofGuide's owner-reviewed intro, Quick Questions, and Suggested Actions should use the shared `BoardCard` and `BoardSectionHeader` anatomy while keeping chat bubbles and the review sheet as interaction-specific surfaces.
+
+Reason: WoofGuide is a core care assistant, not a separate chatbot product. It should feel integrated with Phoenix's care board while preserving bounded health language, owner-reviewed drafts, and real route/action behavior.
+
+Owner: Codex.
+
+Revisit trigger: A full assistant redesign, native AI chat package, or final Figma component library introduces a better shared assistant pattern.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

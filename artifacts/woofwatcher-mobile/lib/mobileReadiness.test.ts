@@ -315,6 +315,20 @@ test("keeps Quick Log search and timeline on shared board card anatomy", () => {
   assert.doesNotMatch(log, /dayCard:/);
 });
 
+test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
+  const guide = readAppFile("woofguide.tsx");
+
+  assert.match(guide, /<BoardCard style=\{s\.guideIntroCard\}/);
+  assert.match(guide, /<BoardCard style=\{s\.quickQuestionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Quick questions"/);
+  assert.match(guide, /<BoardCard style=\{s\.actionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Suggested actions"/);
+  assert.match(guide, /Owner review required/);
+  assert.doesNotMatch(guide, /quickRow:/);
+  assert.doesNotMatch(guide, /actionArea:/);
+  assert.doesNotMatch(guide, /actionCard:/);
+  assert.doesNotMatch(guide, /quickChip: \{[^\n]*shadowOpacity/);
+  assert.doesNotMatch(guide, /actionRow: \{[^\n]*shadowOpacity/);
+});
+
 test("does not keep hidden legacy headers behind board route headers", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const avatarStudio = readAppFile("portrait.tsx");

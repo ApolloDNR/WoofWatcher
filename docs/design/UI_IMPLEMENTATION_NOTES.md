@@ -183,3 +183,13 @@ Moved the remaining Quick Log search and timeline surfaces onto shared board ana
 - Converted grouped timeline days into `BoardCard` sections with `BoardSectionHeader` titles while preserving sticky notes, edit/detail/delete actions, sync labels, and severity badges.
 - Replaced the old local `searchCard`, `snapshotBar`, `dayCard`, and timeline-empty card vocabulary with board panel styles.
 - Updated the composer-boundary readiness test so the Log composer and search card remain separate board surfaces.
+
+## 2026-06-14 WoofGuide Board Anatomy Pass
+
+Moved the assistant's owner-reviewed start state onto the same board system:
+
+- Kept the WoofGuide intro as a shared `BoardCard` with route-header copy that makes the vet boundary explicit.
+- Converted Quick Questions into a `BoardCard` with tappable internal prompt rows instead of standalone floating chips.
+- Converted Suggested Actions into a `BoardCard` with internal action rows while preserving generated routing, prompts, draft creation, and owner-review labels.
+- Removed the old `quickRow`, `actionArea`, and `actionCard` vocabulary so WoofGuide does not drift into a separate chat-app visual system.
+- Added a mobile readiness test that protects WoofGuide prompt and action board anatomy.

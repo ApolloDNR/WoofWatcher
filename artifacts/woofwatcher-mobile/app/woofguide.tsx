@@ -295,60 +295,65 @@ export default function WoofGuideScreen() {
                     style={s.guideIntroHeader}
                   />
                 </BoardCard>
-                <View style={s.quickRow}>
-                  {quickQuestions.map((q) => (
-                    <Pressable
-                      key={q}
-                      onPress={() => sendMessage(q)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Ask WoofGuide: ${q}`}
-                      style={({pressed}) => [s.quickChip, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
-                    >
-                      <Text style={[s.quickText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>{q}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={s.actionArea}>
-                  <BoardSectionHeader title="Suggested actions" />
-                  {actionCards.map((action) => {
-                    const tone =
-                      action.urgency === "alert"
-                        ? colors.rose
-                        : action.urgency === "watch"
-                          ? colors.amber
-                          : colors.primary;
-                    return (
+                <BoardCard style={s.quickQuestionBoard}>
+                  <BoardSectionHeader title="Quick questions" action="Tap to ask" />
+                  <View style={s.quickQuestionGrid}>
+                    {quickQuestions.map((q) => (
                       <Pressable
-                        key={action.id}
-                        onPress={() => runAction(action)}
+                        key={q}
+                        onPress={() => sendMessage(q)}
                         accessibilityRole="button"
-                        accessibilityLabel={`Review WoofGuide action: ${action.label}. ${action.detail}${action.draft ? ". Owner review required." : ""}`}
-                        style={({ pressed }) => [
-                          s.actionCard,
-                          {
-                            backgroundColor: colors.card,
-                            borderColor: action.urgency === "normal" ? colors.border : tone + "66",
-                            opacity: pressed ? 0.75 : 1,
-                          },
-                        ]}
+                        accessibilityLabel={`Ask WoofGuide: ${q}`}
+                        style={({pressed}) => [s.quickChip, { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
                       >
-                        <View style={[s.actionIcon, { backgroundColor: tone + "16" }]}>
-                          <Ionicons name={ACTION_ICON[action.icon]} size={17} color={tone} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[s.actionLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{action.label}</Text>
-                          <Text style={[s.actionDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{action.detail}</Text>
-                          {action.draft ? (
-                            <Text style={[s.actionDraftLabel, { color: tone, fontFamily: "Inter_700Bold" }]}>
-                              Owner review required
-                            </Text>
-                          ) : null}
-                        </View>
-                        <Ionicons name={action.draft ? "create-outline" : action.route ? "chevron-forward" : "arrow-up"} size={17} color={tone} />
+                        <Text style={[s.quickText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{q}</Text>
                       </Pressable>
-                    );
-                  })}
-                </View>
+                    ))}
+                  </View>
+                </BoardCard>
+                <BoardCard style={s.actionBoard}>
+                  <BoardSectionHeader title="Suggested actions" action="Owner reviewed" />
+                  <View style={s.guideActionList}>
+                    {actionCards.map((action) => {
+                      const tone =
+                        action.urgency === "alert"
+                          ? colors.rose
+                          : action.urgency === "watch"
+                            ? colors.amber
+                            : colors.primary;
+                      return (
+                        <Pressable
+                          key={action.id}
+                          onPress={() => runAction(action)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Review WoofGuide action: ${action.label}. ${action.detail}${action.draft ? ". Owner review required." : ""}`}
+                          style={({ pressed }) => [
+                            s.actionRow,
+                            {
+                              backgroundColor: colors.background,
+                              borderColor: action.urgency === "normal" ? colors.border : tone + "66",
+                              opacity: pressed ? 0.75 : 1,
+                            },
+                          ]}
+                        >
+                          <View style={[s.actionIcon, { backgroundColor: tone + "16" }]}>
+                            <Ionicons name={ACTION_ICON[action.icon]} size={17} color={tone} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[s.actionLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{action.label}</Text>
+                            <Text style={[s.actionDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{action.detail}</Text>
+                            {action.draft ? (
+                              <Text style={[s.actionDraftLabel, { color: tone, fontFamily: "Inter_700Bold" }]}>
+                                Owner review required
+                              </Text>
+                            ) : null}
+                          </View>
+                          <Ionicons name={action.draft ? "create-outline" : action.route ? "chevron-forward" : "arrow-up"} size={17} color={tone} />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </BoardCard>
               </View>
             ) : null
           }
@@ -468,12 +473,13 @@ const s = StyleSheet.create({
   guideIntroHeader: { marginBottom: 0 },
   emptyTitle: { fontSize: 20 },
   emptySub: { fontSize: 15, textAlign: "center", paddingHorizontal: 24, lineHeight: 22 },
-  quickRow: { width: "100%", gap: 10, paddingHorizontal: 12, marginTop: 16 },
-  quickChip: { borderRadius: 14, borderWidth: 1, padding: 14, shadowColor: "#2E5846", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8 },
+  quickQuestionBoard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 8 },
+  quickQuestionGrid: { gap: 10 },
+  quickChip: { borderRadius: 14, borderWidth: 1, padding: 14 },
   quickText: { fontSize: 14, lineHeight: 20 },
-  actionArea: { width: "100%", gap: 10, paddingHorizontal: 12, marginTop: 14 },
-  actionTitle: { fontSize: 15, marginLeft: 2 },
-  actionCard: { flexDirection: "row", alignItems: "center", gap: 11, borderRadius: 16, borderWidth: 1, padding: 13, shadowColor: "#2E5846", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8 },
+  actionBoard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 8 },
+  guideActionList: { gap: 10 },
+  actionRow: { flexDirection: "row", alignItems: "center", gap: 11, borderRadius: 16, borderWidth: 1, padding: 13 },
   actionIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   actionLabel: { fontSize: 14.5 },
   actionDetail: { fontSize: 12.5, lineHeight: 17, marginTop: 2 },
