@@ -25,7 +25,7 @@ import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
 import { useAvatar, MOODS, AvatarSet } from "@/context/AvatarContext";
 import { MOOD_META, type Mood } from "@/lib/phoenixStatus";
-import { BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -266,7 +266,7 @@ export default function PortraitScreen() {
 
         {/* Working state — cinematic scan over the source photo */}
         {phase === "working" && (
-          <View style={[s.canvasCard, { backgroundColor: colors.card, shadowColor: colors.primary, width: canvasW, height: canvasH, alignSelf: "center" }]}>
+          <BoardCard padded={false} style={[s.canvasCard, { width: canvasW, height: canvasH, alignSelf: "center" }]}>
             {sourceUri ? (
               <Image source={{ uri: sourceUri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
             ) : (
@@ -308,35 +308,37 @@ export default function PortraitScreen() {
                 Reading {name}'s features and painting all five moods.
               </Text>
             </View>
-          </View>
+          </BoardCard>
         )}
 
         {/* Result preview — the full emotion set */}
         {phase === "result" && result && (
           <View>
-            <View style={[s.heroPreview, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <BoardCard padded={false} style={s.heroPreview}>
               <Image source={{ uri: result.happy ?? Object.values(result)[0] }} style={s.heroImg} contentFit="cover" transition={300} />
               <View style={[s.resultBadge, { backgroundColor: colors.primary }]}>
                 <Ionicons name="sparkles" size={13} color="#FFF" />
                 <Text style={[s.resultBadgeText, { fontFamily: "Inter_700Bold" }]}>Fresh off the easel</Text>
               </View>
-            </View>
+            </BoardCard>
 
-            <BoardSectionHeader title="Mood set" style={{ marginTop: 16 }} />
-            <View style={s.moodGrid}>
-              {MOODS.map((m) =>
-                result[m] ? (
-                  <View key={m} style={s.moodChip}>
-                    <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
-                      <Image source={{ uri: result[m] }} style={s.moodThumb} contentFit="cover" transition={200} />
+            <BoardCard style={s.avatarBoard}>
+              <BoardSectionHeader title="Generated mood set" action="Review" />
+              <View style={s.moodGrid}>
+                {MOODS.map((m) =>
+                  result[m] ? (
+                    <View key={m} style={s.moodChip}>
+                      <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
+                        <Image source={{ uri: result[m] }} style={s.moodThumb} contentFit="cover" transition={200} />
+                      </View>
+                      <Text style={[s.moodChipLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        {moodLabel(m)}
+                      </Text>
                     </View>
-                    <Text style={[s.moodChipLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      {moodLabel(m)}
-                    </Text>
-                  </View>
-                ) : null,
-              )}
-            </View>
+                  ) : null,
+                )}
+              </View>
+            </BoardCard>
 
             <View style={s.actionRow}>
               <Pressable
@@ -360,7 +362,7 @@ export default function PortraitScreen() {
         {/* Idle: current live avatar set + actions */}
         {phase === "idle" && (
           <View>
-            <View style={[s.heroPreview, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <BoardCard padded={false} style={s.heroPreview}>
               <Image source={getAvatarSource("happy")} style={s.heroImg} contentFit="cover" transition={200} />
               <LinearGradient
                 colors={["transparent", "rgba(20,30,24,0.55)"]}
@@ -376,22 +378,24 @@ export default function PortraitScreen() {
                   <Text style={[s.liveBadgeText, { fontFamily: "Inter_700Bold" }]}>LIVE</Text>
                 </View>
               )}
-            </View>
+            </BoardCard>
 
             {/* Current mood set preview */}
-            <BoardSectionHeader title="Mood set" style={{ marginTop: 16 }} />
-            <View style={s.moodGrid}>
-              {MOODS.map((m) => (
-                <View key={m} style={s.moodChip}>
-                  <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
-                    <Image source={getAvatarSource(m)} style={s.moodThumb} contentFit="cover" transition={150} />
+            <BoardCard style={s.avatarBoard}>
+              <BoardSectionHeader title="Mood set" action={hasCustomAvatar ? "Live" : "Default"} />
+              <View style={s.moodGrid}>
+                {MOODS.map((m) => (
+                  <View key={m} style={s.moodChip}>
+                    <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
+                      <Image source={getAvatarSource(m)} style={s.moodThumb} contentFit="cover" transition={150} />
+                    </View>
+                    <Text style={[s.moodChipLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      {moodLabel(m)}
+                    </Text>
                   </View>
-                  <Text style={[s.moodChipLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {moodLabel(m)}
-                  </Text>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            </BoardCard>
 
             {error && (
               <View style={[s.errorBox, { backgroundColor: colors.copper + "14", borderColor: colors.copper + "44" }]}>
@@ -428,12 +432,14 @@ export default function PortraitScreen() {
               </Pressable>
             )}
 
-            <View style={s.tipRow}>
-              <Ionicons name="sparkles-outline" size={15} color={colors.sage} />
-              <Text style={[s.tipText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                One photo paints all five moods. Best with a clear, well-lit shot of {name}'s face.
-              </Text>
-            </View>
+            <BoardCard style={s.tipBoard} tone="soft">
+              <View style={s.tipRow}>
+                <Ionicons name="sparkles-outline" size={15} color={colors.sage} />
+                <Text style={[s.tipText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  One photo paints all five moods. Best with a clear, well-lit shot of {name}'s face.
+                </Text>
+              </View>
+            </BoardCard>
           </View>
         )}
       </ScrollView>
@@ -447,22 +453,10 @@ export default function PortraitScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
-  backBtn: {
-    width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center",
-    shadowColor: "#0F1F33", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
-  },
-  headerTitle: { fontSize: 21, letterSpacing: -0.2 },
-  subtitle: { fontSize: 15, lineHeight: 21, marginTop: 4, marginBottom: 20 },
 
   canvasCard: {
-    borderRadius: 26,
     overflow: "hidden",
     marginBottom: 18,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.14,
-    shadowRadius: 24,
-    elevation: 6,
   },
   scanBand: { position: "absolute", left: 0, right: 0, top: 0, height: 56 },
   scanBandFill: { ...StyleSheet.absoluteFillObject, borderRadius: 2 },
@@ -491,14 +485,9 @@ const s = StyleSheet.create({
   workingHint: { fontSize: 13, lineHeight: 18 },
 
   heroPreview: {
-    borderRadius: 26,
     overflow: "hidden",
     aspectRatio: 1,
     marginBottom: 16,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.14,
-    shadowRadius: 24,
-    elevation: 6,
   },
   heroImg: { width: "100%", height: "100%" },
 
@@ -517,7 +506,8 @@ const s = StyleSheet.create({
   liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#FFFFFF" },
   liveBadgeText: { color: "#FFF", fontSize: 11, letterSpacing: 0.5 },
 
-  moodGrid: { flexDirection: "row", justifyContent: "space-between", marginBottom: 18 },
+  avatarBoard: { marginBottom: 16 },
+  moodGrid: { flexDirection: "row", justifyContent: "space-between" },
   moodChip: { alignItems: "center", flex: 1 },
   moodThumbWrap: {
     width: "92%", aspectRatio: 1, borderRadius: 14, overflow: "hidden", borderWidth: 1, marginBottom: 6,
@@ -546,7 +536,8 @@ const s = StyleSheet.create({
   revertBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14 },
   revertText: { fontSize: 13.5 },
 
-  tipRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 18, paddingHorizontal: 16 },
+  tipBoard: { marginTop: 16 },
+  tipRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   tipText: { fontSize: 13, textAlign: "center", flexShrink: 1 },
 
   webSpinner: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },

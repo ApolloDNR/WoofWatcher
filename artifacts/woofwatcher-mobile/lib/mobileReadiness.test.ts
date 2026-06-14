@@ -358,6 +358,20 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
   assert.doesNotMatch(privacy, /statCard:/);
 });
 
+test("keeps Avatar Studio preview and mood states on shared board anatomy", () => {
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{\[s\.canvasCard/);
+  assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{s\.heroPreview\}/);
+  assert.match(avatarStudio, /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Generated mood set"/);
+  assert.match(avatarStudio, /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Mood set"/);
+  assert.match(avatarStudio, /<BoardCard style=\{s\.tipBoard\} tone="soft"/);
+  assert.doesNotMatch(avatarStudio, /backBtn:/);
+  assert.doesNotMatch(avatarStudio, /headerTitle:/);
+  assert.doesNotMatch(avatarStudio, /heroPreview: \{[^\n]*(shadowOpacity|elevation)/);
+  assert.doesNotMatch(avatarStudio, /canvasCard: \{[^\n]*(shadowOpacity|elevation)/);
+});
+
 test("does not keep hidden legacy headers behind board route headers", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const avatarStudio = readAppFile("portrait.tsx");

@@ -213,3 +213,13 @@ Moved the mobile privacy and launch-safety screen onto the shared board system:
 - Converted Before Public Launch blockers into a `BoardCard` so the release blockers read as a first-class safety surface.
 - Preserved owner data export and deletion-request share actions.
 - Removed the old local `sectionHeader`, `sectionTitle`, and `statCard` vocabulary from Privacy & Safety.
+
+## 2026-06-14 Avatar Studio Board Anatomy Pass
+
+Moved the mobile avatar creation route closer to the locked pixel-board system:
+
+- Converted the working scan canvas and live/generated preview frames to shared `BoardCard` shells while preserving image content, scan beam, reticle, and generated-result state.
+- Converted Generated Mood Set and current Mood Set into `BoardCard` sections with `BoardSectionHeader` copy.
+- Converted the photo guidance tip into a soft board card.
+- Removed unused legacy header/back/subtitle styles and the local preview shadow treatment so Avatar Studio does not carry a parallel card system.
+- Remaining art task: replace default/static Phoenix images with final pixel state assets and motion-ready sprite or animation files.
