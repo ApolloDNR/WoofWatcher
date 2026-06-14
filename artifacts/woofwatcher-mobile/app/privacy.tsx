@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import {
   buildAccountDeletionRequest,
   buildPrivacyExportBundle,
@@ -130,12 +131,15 @@ export default function PrivacyScreen() {
           </Text>
         </LinearGradient>
 
-        <View style={s.statsGrid}>
-          <StatCard label="Logs" value={String(bundle.counts.entries)} colors={colors} />
-          <StatCard label="Records" value={String(bundle.counts.records)} colors={colors} />
-          <StatCard label="Reports" value={String(bundle.counts.reportArtifacts)} colors={colors} />
-          <StatCard label="Files" value={String(bundle.counts.attachedDocuments)} colors={colors} />
-        </View>
+        <BoardCard style={s.privacyBoard}>
+          <BoardSectionHeader title="Export summary" action="Local bundle" />
+          <View style={s.statsGrid}>
+            <StatCard label="Logs" value={String(bundle.counts.entries)} colors={colors} />
+            <StatCard label="Records" value={String(bundle.counts.records)} colors={colors} />
+            <StatCard label="Reports" value={String(bundle.counts.reportArtifacts)} colors={colors} />
+            <StatCard label="Files" value={String(bundle.counts.attachedDocuments)} colors={colors} />
+          </View>
+        </BoardCard>
 
         <View style={s.actionRow}>
           <Pressable
@@ -158,28 +162,30 @@ export default function PrivacyScreen() {
           </Pressable>
         </View>
 
-        <View style={s.sectionHeader}>
-          <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Launch safety gates</Text>
-        </View>
-        <View style={s.sectionStack}>
-          {sections.map((section) => (
-            <SafetyRow key={section.title} section={section} colors={colors} />
-          ))}
-        </View>
-
-        <View style={[s.notice, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "45" }]}>
-          <Ionicons name="alert-circle-outline" size={17} color={colors.amber} />
-          <View style={{ flex: 1 }}>
-            <Text style={[s.noticeTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-              Before public launch
-            </Text>
-            {plan.launchBlockers.map((blocker) => (
-              <Text key={blocker} style={[s.noticeLine, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                - {blocker}
-              </Text>
+        <BoardCard style={s.privacyBoard}>
+          <BoardSectionHeader title="Launch safety gates" action={`${sections.length} gates`} />
+          <View style={s.sectionStack}>
+            {sections.map((section) => (
+              <SafetyRow key={section.title} section={section} colors={colors} />
             ))}
           </View>
-        </View>
+        </BoardCard>
+
+        <BoardCard style={[s.noticeBoard, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "45" }]}>
+          <View style={s.noticeContent}>
+            <Ionicons name="alert-circle-outline" size={17} color={colors.amber} />
+            <View style={{ flex: 1 }}>
+              <Text style={[s.noticeTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                Before public launch
+              </Text>
+              {plan.launchBlockers.map((blocker) => (
+                <Text key={blocker} style={[s.noticeLine, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  - {blocker}
+                </Text>
+              ))}
+            </View>
+          </View>
+        </BoardCard>
       </ScrollView>
     </View>
   );
@@ -195,7 +201,7 @@ function StatCard({
   colors: ReturnType<typeof useColors>;
 }) {
   return (
-    <View style={[s.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[s.statTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
       <Text style={[s.statValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{value}</Text>
       <Text style={[s.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{label}</Text>
     </View>
@@ -211,7 +217,7 @@ function SafetyRow({
 }) {
   const tone = statusColor(section.status, colors);
   return (
-    <View style={[s.safetyRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[s.safetyRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
       <View style={[s.safetyIcon, { backgroundColor: tone + "16" }]}>
         <Ionicons name={statusIcon(section.status)} size={18} color={tone} />
       </View>
@@ -241,8 +247,9 @@ const s = StyleSheet.create({
   },
   heroTitle: { color: "#FFFFFF", fontSize: 33, letterSpacing: 0 },
   heroSub: { color: "rgba(255,255,255,0.84)", fontSize: 15, lineHeight: 22, marginTop: 10 },
-  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 14 },
-  statCard: { width: "48.5%", borderRadius: 18, borderWidth: 1, padding: 15 },
+  privacyBoard: { marginTop: 14 },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  statTile: { width: "48.5%", borderRadius: 16, borderWidth: 1, padding: 15 },
   statValue: { fontSize: 24 },
   statLabel: { fontSize: 11.5, marginTop: 3, textTransform: "uppercase", letterSpacing: 0.6 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 14 },
@@ -250,8 +257,6 @@ const s = StyleSheet.create({
   primaryText: { color: "#FFFFFF", fontSize: 14 },
   secondaryBtn: { flex: 1, height: 52, borderRadius: 17, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   secondaryText: { fontSize: 13.5 },
-  sectionHeader: { marginTop: 28, marginBottom: 12 },
-  sectionTitle: { fontSize: 22, letterSpacing: 0 },
   sectionStack: { gap: 10 },
   safetyRow: { flexDirection: "row", gap: 12, borderRadius: 18, borderWidth: 1, padding: 14 },
   safetyIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
@@ -260,7 +265,8 @@ const s = StyleSheet.create({
   statusPill: { fontSize: 10.5, textTransform: "uppercase" },
   safetyDetail: { fontSize: 12.5, lineHeight: 18, marginTop: 5 },
   safetyAction: { fontSize: 12, marginTop: 8 },
-  notice: { flexDirection: "row", gap: 10, borderRadius: 18, borderWidth: 1, padding: 15, marginTop: 18 },
+  noticeBoard: { marginTop: 14 },
+  noticeContent: { flexDirection: "row", gap: 10 },
   noticeTitle: { fontSize: 14, marginBottom: 5 },
   noticeLine: { fontSize: 12.5, lineHeight: 18 },
 });

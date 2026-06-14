@@ -203,3 +203,13 @@ Moved the mobile revenue and launch-trust screen onto the shared board system:
 - Converted Launch Entitlements into a `BoardCard` while preserving Free/Plus/Family entitlement policy truth.
 - Kept the payment boundary honest with "Checkout gated" and the existing Premium launch checklist instead of implying live subscription checkout.
 - Removed the old local `sectionHeader`, `sectionTitle`, and `signalCard` vocabulary from the Premium screen.
+
+## 2026-06-14 Privacy Board Anatomy Pass
+
+Moved the mobile privacy and launch-safety screen onto the shared board system:
+
+- Converted Export Summary into a `BoardCard` with internal count tiles.
+- Converted Launch Safety Gates into a `BoardCard` while preserving export, deletion, AI, document-storage, and payment gate status rows.
+- Converted Before Public Launch blockers into a `BoardCard` so the release blockers read as a first-class safety surface.
+- Preserved owner data export and deletion-request share actions.
+- Removed the old local `sectionHeader`, `sectionTitle`, and `statCard` vocabulary from Privacy & Safety.

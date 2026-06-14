@@ -343,6 +343,21 @@ test("keeps Premium value, plan, and entitlement surfaces on shared board anatom
   assert.doesNotMatch(premium, /signalCard:/);
 });
 
+test("keeps Privacy export and launch safety surfaces on shared board anatomy", () => {
+  const privacy = readAppFile("privacy.tsx");
+
+  assert.match(privacy, /@\/components\/board\/BoardPrimitives/);
+  assert.match(privacy, /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Export summary"/);
+  assert.match(privacy, /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch safety gates"/);
+  assert.match(privacy, /<BoardCard style=\{\[s\.noticeBoard/);
+  assert.match(privacy, /Export care data/);
+  assert.match(privacy, /Deletion request/);
+  assert.match(privacy, /Before public launch/);
+  assert.doesNotMatch(privacy, /sectionHeader:/);
+  assert.doesNotMatch(privacy, /sectionTitle:/);
+  assert.doesNotMatch(privacy, /statCard:/);
+});
+
 test("does not keep hidden legacy headers behind board route headers", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const avatarStudio = readAppFile("portrait.tsx");
