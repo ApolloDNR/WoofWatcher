@@ -66,6 +66,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 58. NEXT: Provider-backed account/cloud/payment decision pack after Apollo chooses the release stack.
 59. DONE 2026-06-13: Mobile-first release readiness now has committed Expo/EAS iOS and Android build profiles in `artifacts/woofwatcher-mobile/eas.json`, a mobile release runbook in `docs/release/MOBILE_RELEASE_RUNBOOK.md`, and static readiness tests that protect both.
 60. NEXT: Native iOS/Android runtime QA with real Expo/EAS account access, simulator/device screenshots, safe-area checks, and Fable-polished assets.
+61. DONE 2026-06-14: Apollo's four pixel UI reference boards are mirrored in `docs/design/reference/` and locked in `docs/superpowers/specs/2026-06-14-woofwatcher-pixel-ui-lock-design.md` as the visual source of truth for the next UI implementation pass.
+62. NEXT: Implement the board-accurate mobile-first visual system in the Expo app, then align the PWA shell after mobile patterns are stable.
 
 ## Cadence
 

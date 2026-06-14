@@ -1,6 +1,17 @@
 # Asset TODO
 
-Date: 2026-06-12
+Date: 2026-06-14
+
+## Locked Reference Boards
+
+Apollo's current selected UI references are versioned here:
+
+- `docs/design/reference/woofwatcher-pixel-reference-board-01.png`
+- `docs/design/reference/woofwatcher-pixel-reference-board-02.png`
+- `docs/design/reference/woofwatcher-pixel-reference-board-03.png`
+- `docs/design/reference/woofwatcher-pixel-reference-board-04.png`
+
+Use board 04 as the primary shell/layout target and boards 02/03 as the component vocabulary target.
 
 ## Needed For v1.5
 
@@ -21,6 +32,11 @@ Date: 2026-06-12
 - Status meters and badge sprites.
 - Speech bubble and emote sprites.
 - Achievement badge set.
+- Desktop navy sidebar assets.
+- Mobile navy bottom navigation assets.
+- Segmented retro HUD meter sprites or CSS equivalents.
+- Pixel speech bubble variants.
+- Pixel scenic room/patio backgrounds matching the board style.
 
 ## Future Animation States
 
@@ -36,4 +52,3 @@ Date: 2026-06-12
 ## Source Control Rule
 
 Mirror final selected screenshots or source references into `docs/design/reference/` when Apollo provides them. Do not rely only on expiring chat image attachments.
-

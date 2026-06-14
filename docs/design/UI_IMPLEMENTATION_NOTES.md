@@ -1,6 +1,6 @@
 # UI Implementation Notes
 
-Date: 2026-06-12
+Date: 2026-06-14
 
 ## Current Approach
 
@@ -11,17 +11,22 @@ The app should converge on a shared visual system across:
 - Local-first PWA/dashboard.
 - Future Figma components.
 
+Apollo's latest reference boards are now the visual source of truth. Keep them mirrored in `docs/design/reference/` and use `docs/superpowers/specs/2026-06-14-woofwatcher-pixel-ui-lock-design.md` as the implementation spec before making visual changes.
+
 ## Tokens
 
 Use the v1.5 palette:
+- Deep navy `#081424`
 - Navy `#081A2A`
 - Navy 2 `#102C40`
 - Copper `#C85A2A`
 - Copper 2 `#E07A2F`
+- Forest `#4D8A56`
 - Sage `#6DA36F`
 - Sage soft `#E8F3E7`
 - Cream `#F7F2E8`
 - Ivory `#FFF9EF`
+- Blue signal `#A8CBE8`
 - Amber `#D8A852`
 - Rose `#C96358`
 - Stone `#E6DED2`
@@ -46,4 +51,14 @@ Use the v1.5 palette:
 - Keep Home, Log, Plans, Health, More as bottom nav.
 - Put overflow tools under More.
 - Continue moving reusable rules into `lib/care-domain`.
+- Prioritize the actual Expo mobile screens before polishing the PWA because mobile is the primary product surface.
+- Match the reference-board mobile layouts: Home, Quick Log, Plans, Health/Bile, Household Pulse/Alone Time, Care Pass, Avatar Studio, and Reports.
 
+## Visual Fidelity Notes
+
+- Use the navy shell and bottom bar as the strongest brand frame.
+- Use cream/ivory content backgrounds with thin stone borders.
+- Keep cards compact and purposeful.
+- Use segmented HUD meters for energy, hunger, hydration, bile risk, bond, and similar status signals.
+- Use pixel icons and Phoenix room art as product identity, but keep care copy readable.
+- No button should be introduced unless it has a real action, route, or honest setup explanation.

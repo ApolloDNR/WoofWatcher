@@ -712,6 +712,16 @@ Owner: Codex.
 
 Revisit trigger: Apollo chooses a native rebuild, bare React Native path, custom CI signing pipeline, or a different mobile release provider.
 
+### 2026-06-14: Pixel UI Reference Boards Are The Visual Source Of Truth
+
+Decision: The four Apollo-provided WoofWatcher pixel UI boards are mirrored into `docs/design/reference/` and locked as the current visual source of truth. Board 04 is the primary shell/layout target, while boards 02 and 03 define the cleanest component vocabulary and board 01 provides supporting palette, icon, and mobile route evidence.
+
+Reason: Apollo asked Codex to stop drifting and match the provided premium neo-retro pixel direction as closely as possible before handing final polish to Fable/Replit/Figma-style tooling. Locking the images and spec in Git gives future builders a concrete target that will not expire with chat uploads.
+
+Owner: Codex.
+
+Revisit trigger: Apollo replaces these boards with a newer canonical Figma file, production art direction, or final commissioned Phoenix asset set.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

@@ -1,12 +1,24 @@
 # WoofWatcher UI Direction Lock
 
-Date: 2026-06-12
+Date: 2026-06-14
 
 ## Locked Style
 
 Premium Neo-Retro Pixel Care.
 
 The product should feel like real software from a strong product team, with a playful pixel-pet identity. It should be memorable, fast, and emotionally warm without becoming childish or unserious.
+
+The current visual source of truth is now the reference-board set mirrored in `docs/design/reference/`, with implementation guidance in `docs/superpowers/specs/2026-06-14-woofwatcher-pixel-ui-lock-design.md`.
+
+Primary reference:
+
+- `docs/design/reference/woofwatcher-pixel-reference-board-04.png`
+
+Supporting references:
+
+- `docs/design/reference/woofwatcher-pixel-reference-board-01.png`
+- `docs/design/reference/woofwatcher-pixel-reference-board-02.png`
+- `docs/design/reference/woofwatcher-pixel-reference-board-03.png`
 
 ## Non-Negotiables
 
@@ -19,6 +31,8 @@ The product should feel like real software from a strong product team, with a pl
 - Pixel art is used for Phoenix, icons, status meters, badges, emotes, speech bubbles, and delightful feedback.
 - Long text uses readable UI typography.
 - Health surfaces remain calm and non-diagnostic.
+- The dark navy shell, cream/ivory canvas, copper/sage accents, pixel Phoenix room, compact cards, and segmented status meters are not optional styling details.
+- Do not replace the selected direction with generic SaaS, gradient AI-app, soft beige lifestyle, or full-game UI styling.
 
 ## App Shell Components
 
@@ -57,3 +71,6 @@ Phoenix Home must answer in five seconds:
 - No fake provider claims.
 - No medical certainty.
 
+## Reference Match Rule
+
+When visual implementation choices conflict, prefer the reference boards over earlier loose descriptions. Board 04 is the main layout target. Boards 02 and 03 define the component vocabulary. Board 01 supplies supporting palette, icon, and mobile route details.

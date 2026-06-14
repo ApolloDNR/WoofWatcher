@@ -43,6 +43,10 @@ The approved product direction is documented in:
 
 `docs/superpowers/specs/2026-06-06-woofwatcher-dog-care-os-design.md`
 
+The current locked visual direction and reference boards are documented in:
+
+`docs/superpowers/specs/2026-06-14-woofwatcher-pixel-ui-lock-design.md`
+
 Full Premium Release planning and quality gates are documented in:
 
 - `docs/ULTIMATE_RELEASE_PLAN.md`
