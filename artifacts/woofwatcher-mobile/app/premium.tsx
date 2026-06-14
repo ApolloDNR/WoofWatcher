@@ -23,6 +23,7 @@ import {
 } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -131,27 +132,27 @@ export default function PremiumScreen() {
             </Text>
           </View>
 
-          <View style={s.sectionHeader}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Why upgrade</Text>
-          </View>
-          <View style={s.signalGrid}>
-            {preview.valueSignals.slice(0, 4).map((signal) => (
-              <View key={signal.key} style={[s.signalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={[s.signalIcon, { backgroundColor: colors.sage + "16" }]}>
-                  <Ionicons name={signalIcon(signal.key)} size={18} color={colors.sage} />
+          <BoardCard style={s.premiumBoard}>
+            <BoardSectionHeader title="Why upgrade" action={`${preview.valueSignals.length} signals`} />
+            <View style={s.signalGrid}>
+              {preview.valueSignals.slice(0, 4).map((signal) => (
+                <View key={signal.key} style={[s.signalTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={[s.signalIcon, { backgroundColor: colors.sage + "16" }]}>
+                    <Ionicons name={signalIcon(signal.key)} size={18} color={colors.sage} />
+                  </View>
+                  <Text style={[s.signalLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    {signal.label}
+                  </Text>
+                  <Text style={[s.signalDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {signal.detail}
+                  </Text>
                 </View>
-                <Text style={[s.signalLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  {signal.label}
-                </Text>
-                <Text style={[s.signalDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {signal.detail}
-                </Text>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          </BoardCard>
 
-          <View style={s.sectionHeader}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Plans</Text>
+          <View style={s.planSection}>
+            <BoardSectionHeader title="Plans" action="Checkout gated" />
           </View>
           <View style={s.planStack}>
             {preview.plans.map((plan) => (
@@ -164,20 +165,11 @@ export default function PremiumScreen() {
             ))}
           </View>
 
-          <View style={[s.entitlementCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={s.entitlementTop}>
-              <View>
-                <Text style={[s.entitlementTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Launch entitlements</Text>
-                <Text style={[s.entitlementSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Current plan: Free
-                </Text>
-              </View>
-              <View style={[s.currentPlanPill, { backgroundColor: colors.background }]}>
-                <Text style={[s.currentPlanText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
-                  Policy
-                </Text>
-              </View>
-            </View>
+          <BoardCard style={s.entitlementCard}>
+            <BoardSectionHeader title="Launch entitlements" action="Current: Free" />
+            <Text style={[s.entitlementSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              Current plan: Free
+            </Text>
             <Text style={[s.entitlementNote, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
               {preview.entitlements.upgradeHeadline}
             </Text>
@@ -195,7 +187,7 @@ export default function PremiumScreen() {
                 colors={colors}
               />
             </View>
-          </View>
+          </BoardCard>
 
           <View style={s.actionRow}>
             <Pressable
@@ -274,13 +266,11 @@ function PlanCard({
   colors: ReturnType<typeof useColors>;
 }) {
   return (
-    <View
+    <BoardCard
       style={[
         s.planCard,
         {
-          backgroundColor: colors.card,
           borderColor: recommended ? colors.primary : colors.border,
-          shadowColor: colors.primary,
         },
       ]}
     >
@@ -314,7 +304,7 @@ function PlanCard({
       <Text style={[s.annualText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
         Annual target: {plan.annualPrice}
       </Text>
-    </View>
+    </BoardCard>
   );
 }
 
@@ -352,15 +342,15 @@ const s = StyleSheet.create({
   recoPrice: { color: "#FFFFFF", fontSize: 13 },
   notice: { flexDirection: "row", gap: 9, borderWidth: 1, borderRadius: 17, padding: 14, marginTop: 14 },
   noticeText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
-  sectionHeader: { marginTop: 28, marginBottom: 12 },
-  sectionTitle: { fontSize: 22, letterSpacing: 0 },
+  premiumBoard: { marginTop: 18 },
   signalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  signalCard: { width: "48.5%", borderWidth: 1, borderRadius: 18, padding: 14 },
+  signalTile: { width: "48.5%", borderWidth: 1, borderRadius: 16, padding: 14 },
   signalIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 12 },
   signalLabel: { fontSize: 14 },
   signalDetail: { fontSize: 12.5, lineHeight: 18, marginTop: 5 },
+  planSection: { marginTop: 18, marginHorizontal: 2 },
   planStack: { gap: 12 },
-  planCard: { borderWidth: 1.5, borderRadius: 20, padding: 16, shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
+  planCard: { borderWidth: 1.5 },
   planTop: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
   planName: { fontSize: 20 },
   planSummary: { fontSize: 13, lineHeight: 19, marginTop: 4, maxWidth: 220 },
@@ -372,12 +362,8 @@ const s = StyleSheet.create({
   featureRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   featureText: { flex: 1, fontSize: 13.5, lineHeight: 18 },
   annualText: { fontSize: 12, marginTop: 14 },
-  entitlementCard: { borderWidth: 1, borderRadius: 20, padding: 16, marginTop: 14 },
-  entitlementTop: { flexDirection: "row", justifyContent: "space-between", gap: 12, alignItems: "flex-start" },
-  entitlementTitle: { fontSize: 22, letterSpacing: 0 },
-  entitlementSub: { fontSize: 12.5, marginTop: 3 },
-  currentPlanPill: { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
-  currentPlanText: { fontSize: 11.5, textTransform: "uppercase" },
+  entitlementCard: { marginTop: 14 },
+  entitlementSub: { fontSize: 12.5, marginTop: -4 },
   entitlementNote: { fontSize: 13, lineHeight: 19, marginTop: 12 },
   entitlementColumns: { gap: 14, marginTop: 16 },
   entitlementColumn: { gap: 10 },

@@ -120,6 +120,8 @@ Current evidence, 2026-06-14: Mobile Quick Log now uses shared board sections fo
 
 Current evidence, 2026-06-14: Mobile WoofGuide now uses shared board sections for the owner-reviewed intro, Quick Questions, and Suggested Actions while preserving generated action routing, owner-review drafts, and bounded health guidance language.
 
+Current evidence, 2026-06-14: Mobile Premium now uses shared board anatomy for Why Upgrade, gated plan cards, and Launch Entitlements while preserving the launch checklist and truthful disabled-payment boundary.
+
 ## Gate 5: Health Safety
 
 Passing means health features organize patterns without diagnosis. Urgent red flags direct users to veterinary care. WoofGuide stays bounded.

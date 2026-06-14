@@ -822,6 +822,16 @@ Owner: Codex.
 
 Revisit trigger: A full assistant redesign, native AI chat package, or final Figma component library introduces a better shared assistant pattern.
 
+### 2026-06-14: Premium Polish Must Preserve Payment Truth
+
+Decision: The Premium screen can use shared board anatomy and stronger plan presentation, but checkout remains visibly gated until Apollo approves privacy terms, support/refund workflow, subscription packaging, app-store target, and payment provider setup.
+
+Reason: Premium polish is valuable for the July product path, but a beautiful monetization screen cannot imply live billing before the operational and legal pieces are ready.
+
+Owner: Codex.
+
+Revisit trigger: Payment provider setup, app-store subscription configuration, legal/privacy approval, or real checkout implementation becomes active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

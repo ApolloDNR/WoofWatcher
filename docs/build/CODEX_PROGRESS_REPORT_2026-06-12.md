@@ -36,6 +36,7 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Converted the mobile Plans tab's Reminder Center and Daily Routine surfaces to shared board anatomy while preserving reminder routing, routine editor actions, routine completion, owner load chips, household responsibility metrics, and empty routine setup.
 - Converted the mobile Quick Log tab's Today at a Glance, Find Care Logs, empty timeline state, and grouped timeline day sections to shared board anatomy while preserving search, filters, sticky notes, edit/detail/delete actions, and sync status copy.
 - Converted mobile WoofGuide's owner-reviewed intro, Quick Questions, and Suggested Actions into shared board sections while preserving prompt routing, generated action routing, owner-reviewed drafts, and bounded health language.
+- Converted mobile Premium's Why Upgrade, Plans, and Launch Entitlements surfaces to shared board anatomy while preserving truthful checkout gating, launch checklist copy, and Free/Plus/Family entitlement policy.
 
 ## Verification
 
@@ -83,6 +84,8 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Focused mobile readiness suite passed locally after the Quick Log board anatomy slice: 49 passing tests.
 - WoofGuide prompt and suggested-action board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Focused mobile readiness suite passed locally after the WoofGuide board anatomy slice: 50 passing tests.
+- Premium value, plan, and entitlement board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Focused mobile readiness suite passed locally after the Premium board anatomy slice: 51 passing tests.
 - GitHub Actions full verification is the authoritative full typecheck/build gate after push.
 
 ## Current Implementation Focus
@@ -92,7 +95,7 @@ Next implementation slice:
 1. Runtime/browser visual QA once a local package manager or dev server dependency install is available.
 2. Provider-backed account/cloud/payment decisions after Apollo picks the release stack.
 3. Native/mobile runtime QA and final visual system pass.
-4. Deeper route-by-route visual polish now that Records, More, Plans, Quick Log, and WoofGuide have been moved off the biggest old local card/header patterns and the remaining core routes have shared board chrome.
+4. Deeper route-by-route visual polish now that Records, More, Plans, Quick Log, WoofGuide, and Premium have been moved off the biggest old local card/header patterns and the remaining core routes have shared board chrome.
 5. Fable/Replit visual polish using the new handoff file.
 
 ## Known Limitations

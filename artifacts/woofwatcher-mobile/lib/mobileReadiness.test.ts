@@ -329,6 +329,20 @@ test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
   assert.doesNotMatch(guide, /actionRow: \{[^\n]*shadowOpacity/);
 });
 
+test("keeps Premium value, plan, and entitlement surfaces on shared board anatomy", () => {
+  const premium = readAppFile("premium.tsx");
+
+  assert.match(premium, /@\/components\/board\/BoardPrimitives/);
+  assert.match(premium, /<BoardCard style=\{s\.premiumBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Why upgrade"/);
+  assert.match(premium, /BoardSectionHeader title="Plans" action="Checkout gated"/);
+  assert.match(premium, /<BoardCard style=\{s\.entitlementCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch entitlements"/);
+  assert.match(premium, /function PlanCard[\s\S]*<BoardCard/);
+  assert.match(premium, /Premium launch checklist/);
+  assert.doesNotMatch(premium, /sectionHeader:/);
+  assert.doesNotMatch(premium, /sectionTitle:/);
+  assert.doesNotMatch(premium, /signalCard:/);
+});
+
 test("does not keep hidden legacy headers behind board route headers", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const avatarStudio = readAppFile("portrait.tsx");

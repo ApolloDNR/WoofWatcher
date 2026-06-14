@@ -193,3 +193,13 @@ Moved the assistant's owner-reviewed start state onto the same board system:
 - Converted Suggested Actions into a `BoardCard` with internal action rows while preserving generated routing, prompts, draft creation, and owner-review labels.
 - Removed the old `quickRow`, `actionArea`, and `actionCard` vocabulary so WoofGuide does not drift into a separate chat-app visual system.
 - Added a mobile readiness test that protects WoofGuide prompt and action board anatomy.
+
+## 2026-06-14 Premium Board Anatomy Pass
+
+Moved the mobile revenue and launch-trust screen onto the shared board system:
+
+- Converted Why Upgrade into a `BoardCard` with internal value tiles.
+- Kept Plans under a board section header and converted individual plan cards to shared `BoardCard` shells.
+- Converted Launch Entitlements into a `BoardCard` while preserving Free/Plus/Family entitlement policy truth.
+- Kept the payment boundary honest with "Checkout gated" and the existing Premium launch checklist instead of implying live subscription checkout.
+- Removed the old local `sectionHeader`, `sectionTitle`, and `signalCard` vocabulary from the Premium screen.

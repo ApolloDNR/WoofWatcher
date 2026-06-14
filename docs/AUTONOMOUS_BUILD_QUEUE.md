@@ -80,7 +80,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 72. DONE 2026-06-14: Mobile Plans now uses shared board anatomy for Reminder Center and Daily Routine while preserving reminder action routing, routine add/edit/delete, routine done logging, owner load chips, household responsibility metrics, and empty routine setup.
 73. DONE 2026-06-14: Mobile Quick Log now uses shared board anatomy for Today at a Glance, Find Care Logs, empty timeline state, and grouped timeline days while preserving composer boundaries, search, filters, sticky notes, edit/detail/delete actions, and sync status copy.
 74. DONE 2026-06-14: Mobile WoofGuide now uses shared board anatomy for the owner-reviewed intro, Quick Questions, and Suggested Actions surfaces while preserving assistant prompts, generated action routing, owner-review drafts, and veterinary-boundary copy.
-75. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize Avatar Studio, Premium, Privacy, Setup, Home motion polish, and replacing placeholder/static Phoenix art with final pixel states.
+75. DONE 2026-06-14: Mobile Premium now uses shared board anatomy for Why Upgrade, gated plan cards, and Launch Entitlements while preserving the launch checklist, Free/Plus/Family policy truth, and disabled-payment safety boundary.
+76. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize Avatar Studio, Privacy, Setup, Home motion polish, and replacing placeholder/static Phoenix art with final pixel states.
 
 ## Cadence
 
