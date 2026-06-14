@@ -116,6 +116,8 @@ Current evidence, 2026-06-14: Mobile More now uses shared board sections for Car
 
 Current evidence, 2026-06-14: Mobile Plans now uses shared board sections for Reminder Center and Daily Routine while preserving reminder action routing, routine add/edit/delete, one-tap routine completion, owner load chips, household responsibility metrics, and empty routine setup.
 
+Current evidence, 2026-06-14: Mobile Quick Log now uses shared board sections for Today at a Glance, Find Care Logs, empty timeline state, and grouped timeline days while preserving search, filters, sticky notes, edit/detail/delete actions, sync status, and the composer boundary.
+
 ## Gate 5: Health Safety
 
 Passing means health features organize patterns without diagnosis. Urgent red flags direct users to veterinary care. WoofGuide stays bounded.

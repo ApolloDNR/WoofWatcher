@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-14: Quick Log Search And Timeline Use Board Sections
+
+Decision: Mobile Quick Log should keep the composer, daily summary, search/filter controls, empty state, and timeline groups as separate shared board surfaces instead of local floating cards.
+
+Reason: Quick Log is the highest-frequency care workflow. Separating the composer from search/timeline board sections keeps logging fast while making review, correction, sticky notes, and sync status easier for Fable/Replit to polish consistently.
+
+Owner: Codex.
+
+Revisit trigger: A dedicated Log design system replaces the shared mobile board primitives with reusable equivalents.
+
 ### 2026-06-14: Plans Keeps Reminder And Routine Workflows Inside Board Sections
 
 Decision: The mobile Plans tab's Reminder Center and Daily Routine surfaces should use shared board sections, with reminder actions, routine editor entry points, routine completion, owner load, and responsibility summaries kept inside those surfaces.

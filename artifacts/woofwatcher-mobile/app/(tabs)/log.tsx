@@ -1819,63 +1819,69 @@ export default function LogScreen() {
 
           {/* Today at a glance */}
           {todaySnapshot.total > 0 && (
-            <View style={[s.snapshotBar, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-              <View style={s.snapshotLeft}>
-                <Text style={[s.snapshotCount, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{todaySnapshot.total}</Text>
-                <Text style={[s.snapshotLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>logged today</Text>
+            <BoardCard style={s.logBoardCard}>
+              <BoardSectionHeader title="Today at a glance" action={`${todaySnapshot.total} logged`} />
+              <View style={[s.snapshotSummary, { backgroundColor: colors.background }]}>
+                <View style={s.snapshotLeft}>
+                  <Text style={[s.snapshotCount, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{todaySnapshot.total}</Text>
+                  <Text style={[s.snapshotLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>logged today</Text>
+                </View>
+                <View style={s.snapshotIcons}>
+                  {todaySnapshot.top.map((t) => {
+                    const tint = PULSE_COLORS[t.icon];
+                    return (
+                      <View key={t.type} style={[s.snapshotChip, { backgroundColor: tint + "16" }]}>
+                        <PulseIcon name={t.icon} size={13} />
+                        <Text style={[s.snapshotChipCount, { color: tint, fontFamily: "Inter_700Bold" }]}>{t.count}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
               </View>
-              <View style={s.snapshotIcons}>
-                {todaySnapshot.top.map((t) => {
-                  const tint = PULSE_COLORS[t.icon];
-                  return (
-                    <View key={t.type} style={[s.snapshotChip, { backgroundColor: tint + "16" }]}>
-                      <PulseIcon name={t.icon} size={13} />
-                      <Text style={[s.snapshotChipCount, { color: tint, fontFamily: "Inter_700Bold" }]}>{t.count}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
+            </BoardCard>
           )}
 
-          <View style={[s.searchCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
-            <Ionicons name="search" size={18} color={colors.mutedForeground} />
-            <TextInput
-              value={searchText}
-              onChangeText={setSearchText}
-              placeholder="Search notes, caregivers, routes, meds..."
-              placeholderTextColor={colors.mutedForeground}
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={[s.searchInput, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-            />
-            {searchText.trim() ? (
-              <Pressable
-                accessibilityLabel="Clear log search"
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setSearchText("");
-                }}
-                style={[s.searchClear, { backgroundColor: colors.background }]}
-              >
-                <Ionicons name="close" size={16} color={colors.mutedForeground} />
-              </Pressable>
+          {/* Search and filters */}
+          <BoardCard style={s.logBoardCard}>
+            <BoardSectionHeader title="Find care logs" action={logSearch.hasActiveFilters ? "Filtered" : undefined} />
+            <View style={[s.searchPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Ionicons name="search" size={18} color={colors.mutedForeground} />
+              <TextInput
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder="Search notes, caregivers, routes, meds..."
+                placeholderTextColor={colors.mutedForeground}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={[s.searchInput, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+              />
+              {searchText.trim() ? (
+                <Pressable
+                  accessibilityLabel="Clear log search"
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setSearchText("");
+                  }}
+                  style={[s.searchClear, { backgroundColor: colors.card }]}
+                >
+                  <Ionicons name="close" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
+            </View>
+            {logSearch.hasActiveFilters ? (
+              <Text style={[s.searchSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                {logSearch.summary}
+              </Text>
             ) : null}
-          </View>
-          {logSearch.hasActiveFilters ? (
-            <Text style={[s.searchSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-              {logSearch.summary}
-            </Text>
-          ) : null}
 
-          {/* Filter chips */}
-          {presentTypes.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.filterRow}
-              style={{ marginHorizontal: -H_PAD, marginTop: 6 }}
-            >
+            {/* Filter chips */}
+            {presentTypes.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.filterRow}
+                style={s.filterScroll}
+              >
               <Pressable
                 onPress={() => {
                   Haptics.selectionAsync();
@@ -1885,39 +1891,43 @@ export default function LogScreen() {
               >
                 <Text style={[s.filterText, { color: filter === null ? "#FFFFFF" : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>All</Text>
               </Pressable>
-              {presentTypes.map((q) => {
-                const active = filter === q.type;
-                const tint = PULSE_COLORS[q.icon];
-                return (
-                  <Pressable
-                    key={q.type}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setFilter(active ? null : q.type);
-                    }}
-                    style={[s.filterChip, { backgroundColor: active ? tint : colors.card, borderColor: active ? tint : colors.border }]}
-                  >
-                    <PulseIcon name={q.icon} size={14} color={active ? "#FFFFFF" : undefined} />
-                    <Text style={[s.filterText, { color: active ? "#FFFFFF" : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{q.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          )}
+                {presentTypes.map((q) => {
+                  const active = filter === q.type;
+                  const tint = PULSE_COLORS[q.icon];
+                  return (
+                    <Pressable
+                      key={q.type}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setFilter(active ? null : q.type);
+                      }}
+                      style={[s.filterChip, { backgroundColor: active ? tint : colors.card, borderColor: active ? tint : colors.border }]}
+                    >
+                      <PulseIcon name={q.icon} size={14} color={active ? "#FFFFFF" : undefined} />
+                      <Text style={[s.filterText, { color: active ? "#FFFFFF" : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{q.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </BoardCard>
 
           {/* Timeline */}
           {grouped.length === 0 ? (
-            <View style={[s.empty, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-              <Ionicons name="clipboard-outline" size={32} color={colors.mutedForeground} />
-              <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                {logSearch.emptyMessage}
-              </Text>
-            </View>
+            <BoardCard style={s.logBoardCard}>
+              <BoardSectionHeader title="No matching logs" />
+              <View style={[s.emptyPanel, { backgroundColor: colors.background }]}>
+                <Ionicons name="clipboard-outline" size={32} color={colors.mutedForeground} />
+                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {logSearch.emptyMessage}
+                </Text>
+              </View>
+            </BoardCard>
           ) : (
             grouped.map((g) => (
-              <View key={g.key} style={{ marginTop: 22 }}>
-                <Text style={[s.dayHeading, { color: colors.foreground, fontFamily: DISPLAY }]}>{g.label}</Text>
-                <View style={[s.dayCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+              <BoardCard key={g.key} style={s.logBoardCard}>
+                <BoardSectionHeader title={g.label} />
+                <View style={s.dayEntries}>
                   {g.entries.map((e, i) => {
                     const normalizedType = normalizeCareEventType(e.type, e.details);
                     const icon = TYPE_ICON[normalizedType] ?? "paw";
@@ -2006,7 +2016,7 @@ export default function LogScreen() {
                     );
                   })}
                 </View>
-              </View>
+              </BoardCard>
             ))
           )}
         </Animated.View>
@@ -2354,7 +2364,8 @@ const s = StyleSheet.create({
   },
   logBtnText: { color: "#fff", fontSize: 15.5 },
 
-  searchCard: {
+  logBoardCard: { marginTop: 12 },
+  searchPanel: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -2362,16 +2373,12 @@ const s = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 13,
     paddingVertical: 10,
-    marginTop: 12,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
   },
   searchInput: { flex: 1, fontSize: 14.5, minHeight: 28, paddingVertical: 0 },
   searchClear: { width: 28, height: 28, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   searchSummary: { fontSize: 12.5, lineHeight: 18, marginTop: 8, marginLeft: 2 },
 
+  filterScroll: { marginTop: 8 },
   filterRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 6 },
   filterChip: {
     flexDirection: "row",
@@ -2384,7 +2391,7 @@ const s = StyleSheet.create({
   },
   filterText: { fontSize: 13 },
 
-  snapshotBar: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 12, marginTop: 12, marginBottom: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 2 },
+  snapshotSummary: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12 },
   snapshotLeft: { flexDirection: "row", alignItems: "baseline", gap: 5 },
   snapshotCount: { fontSize: 22, letterSpacing: -0.3 },
   snapshotLabel: { fontSize: 13 },
@@ -2392,15 +2399,7 @@ const s = StyleSheet.create({
   snapshotChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 10 },
   snapshotChipCount: { fontSize: 12 },
 
-  dayHeading: { fontSize: 18, letterSpacing: -0.2, marginBottom: 10, marginLeft: 2 },
-  dayCard: {
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
-  },
+  dayEntries: { marginTop: -2 },
   entryRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 14 },
   entryAccent: { width: 3, height: 38, borderRadius: 2, marginRight: 2 },
   entryAvatar: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
@@ -2456,16 +2455,11 @@ const s = StyleSheet.create({
   editSheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
   editFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
 
-  empty: {
-    borderRadius: 22,
-    padding: 40,
+  emptyPanel: {
+    borderRadius: 16,
+    padding: 32,
     alignItems: "center",
     gap: 12,
-    marginTop: 22,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
   },
   emptyText: { fontSize: 15 },
 

@@ -294,12 +294,25 @@ test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
 test("keeps Quick Log composer card boundaries separate from search controls", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const composerBlock = log.slice(log.indexOf("{/* Composer card */}"), log.indexOf("{/* Today at a glance */}"));
-  const searchBlock = log.slice(log.indexOf("<View style={[s.searchCard"), log.indexOf("{logSearch.hasActiveFilters"));
+  const searchBlock = log.slice(log.indexOf("{/* Search and filters */}"), log.indexOf("{/* Timeline */}"));
 
   assert.match(composerBlock, /<BoardCard[\s\S]*<\/BoardCard>/);
-  assert.doesNotMatch(composerBlock, /<View style=\{\[s\.searchCard/);
-  assert.match(searchBlock, /<View style=\{\[s\.searchCard[\s\S]*<\/View>/);
-  assert.doesNotMatch(searchBlock, /<\/BoardCard>/);
+  assert.match(composerBlock, /BoardSectionHeader title="Log something"/);
+  assert.doesNotMatch(composerBlock, /title="Find care logs"/);
+  assert.match(searchBlock, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Find care logs"[\s\S]*<\/BoardCard>/);
+  assert.doesNotMatch(searchBlock, /BoardSectionHeader title="Log something"/);
+});
+
+test("keeps Quick Log search and timeline on shared board card anatomy", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Today at a glance"/);
+  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Find care logs"/);
+  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title=\{g\.label\}/);
+  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="No matching logs"/);
+  assert.doesNotMatch(log, /searchCard:/);
+  assert.doesNotMatch(log, /snapshotBar:/);
+  assert.doesNotMatch(log, /dayCard:/);
 });
 
 test("does not keep hidden legacy headers behind board route headers", () => {

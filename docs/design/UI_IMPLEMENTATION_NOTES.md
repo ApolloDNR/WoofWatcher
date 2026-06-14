@@ -172,3 +172,14 @@ Moved the main Plans route care-planning surfaces onto shared board anatomy:
 - Replaced the old local `sectionHeader`, `sectionTitle`, `emptyCard`, `reminderCard`, and `responsibilityCard` style vocabulary with shared board spacing and an internal routine responsibility panel.
 - Removed one unused legacy `eventCard` style.
 - Added a mobile readiness test that protects Reminder Center and Daily Routine board anatomy.
+
+## 2026-06-14 Quick Log Board Anatomy Pass
+
+Moved the remaining Quick Log search and timeline surfaces onto shared board anatomy:
+
+- Converted Today at a Glance into a `BoardCard` with a `BoardSectionHeader` and internal daily summary panel.
+- Converted Find Care Logs into a `BoardCard` containing search input, active-filter summary, and filter chips while preserving search/filter behavior.
+- Converted the empty timeline state into a `BoardCard` with a clear "No matching logs" header.
+- Converted grouped timeline days into `BoardCard` sections with `BoardSectionHeader` titles while preserving sticky notes, edit/detail/delete actions, sync labels, and severity badges.
+- Replaced the old local `searchCard`, `snapshotBar`, `dayCard`, and timeline-empty card vocabulary with board panel styles.
+- Updated the composer-boundary readiness test so the Log composer and search card remain separate board surfaces.
