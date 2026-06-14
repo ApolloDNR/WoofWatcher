@@ -33,6 +33,7 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Converted mobile Records Walk Activity, Training Progress, and Potty Health into shared board-card sections while preserving saved routes, training focus/latest context, stool color/context, and care-safe next steps.
 - Completed the remaining mobile Records board unification: Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Lookback, and Medication Plan now use shared board primitives while preserving share/print actions, medication routine navigation, follow-ups, search/filter history, and non-diagnostic care copy.
 - Converted the mobile More tab's primary household/system surfaces to shared board anatomy: Care Team, Household Access, Responsibility Center, Sync Health, Tools & Sharing, and Diet Profile now use `BoardCard`/`BoardSectionHeader` while preserving their real actions.
+- Converted the mobile Plans tab's Reminder Center and Daily Routine surfaces to shared board anatomy while preserving reminder routing, routine editor actions, routine completion, owner load chips, household responsibility metrics, and empty routine setup.
 
 ## Verification
 
@@ -74,6 +75,8 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Focused mobile readiness suite passed locally after the Records completion board anatomy slice: 46 passing tests.
 - More tab household, tools, and diet board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Focused mobile readiness suite passed locally after the More board anatomy slice: 47 passing tests.
+- Plans Reminder Center and Daily Routine board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Focused mobile readiness suite passed locally after the Plans board anatomy slice: 48 passing tests.
 - GitHub Actions full verification is the authoritative full typecheck/build gate after push.
 
 ## Current Implementation Focus
@@ -83,7 +86,7 @@ Next implementation slice:
 1. Runtime/browser visual QA once a local package manager or dev server dependency install is available.
 2. Provider-backed account/cloud/payment decisions after Apollo picks the release stack.
 3. Native/mobile runtime QA and final visual system pass.
-4. Deeper route-by-route visual polish now that Records and the More tab's main household/system surfaces have been moved off old local card/header patterns and the remaining core routes have shared board chrome.
+4. Deeper route-by-route visual polish now that Records, More, and the Plans tab's Reminder Center/Daily Routine surfaces have been moved off old local card/header patterns and the remaining core routes have shared board chrome.
 5. Fable/Replit visual polish using the new handoff file.
 
 ## Known Limitations

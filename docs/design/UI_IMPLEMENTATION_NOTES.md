@@ -162,3 +162,13 @@ Moved the primary More tab household and system surfaces onto the shared board v
 - Converted Diet Profile into a `BoardCard` section while preserving Edit and Details controls plus expanded diet rows and vet-note copy.
 - Removed the old local More `sectionHeader`, `sectionTitle`, `inviteCard`, `responsibilityCard`, `syncCard`, and `dietCard` style vocabulary.
 - Added a mobile readiness test that protects the new More board anatomy.
+
+## 2026-06-14 Plans Board Anatomy Pass
+
+Moved the main Plans route care-planning surfaces onto shared board anatomy:
+
+- Converted Reminder Center into a single `BoardCard` with its `BoardSectionHeader` inside the card while preserving active-count copy, reminder metrics, row routing, and notification-readiness language.
+- Converted Daily Routine into a `BoardCard` with add-routine action, progress copy, empty setup state, household responsibility panel, owner load chips, routine timeline, edit routing, and one-tap completion preserved.
+- Replaced the old local `sectionHeader`, `sectionTitle`, `emptyCard`, `reminderCard`, and `responsibilityCard` style vocabulary with shared board spacing and an internal routine responsibility panel.
+- Removed one unused legacy `eventCard` style.
+- Added a mobile readiness test that protects Reminder Center and Daily Routine board anatomy.

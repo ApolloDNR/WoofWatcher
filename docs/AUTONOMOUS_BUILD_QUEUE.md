@@ -77,7 +77,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 69. DONE 2026-06-14: Mobile Records activity and potty sections now share board anatomy for Walk Activity, Training Progress, and Potty Health while preserving saved routes, training focus/latest practice, stool color/context, and report-safe next steps.
 70. DONE 2026-06-14: Mobile Records is now fully moved off its old one-off `padCard`/`sectionHeader` anatomy. Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Lookback, and Medication Plan now use shared board primitives while preserving share/print, medication routines, filters, history, and care-safe copy.
 71. DONE 2026-06-14: Mobile More now uses shared board anatomy for Care Team, Household Access, Responsibility Center, Sync Health, Tools & Sharing, and Diet Profile while preserving invite, rename, routine-board, sync refresh, tool routing, and diet edit/detail actions.
-72. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize replacing placeholder/static Phoenix art with final pixel states and tightening Quick Log, Plans, WoofGuide, Avatar Studio, Home motion polish, and remaining native runtime fit/finish.
+72. DONE 2026-06-14: Mobile Plans now uses shared board anatomy for Reminder Center and Daily Routine while preserving reminder action routing, routine add/edit/delete, routine done logging, owner load chips, household responsibility metrics, and empty routine setup.
+73. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize replacing placeholder/static Phoenix art with final pixel states and tightening Quick Log, WoofGuide, Avatar Studio, Home motion polish, and remaining native runtime fit/finish.
 
 ## Cadence
 

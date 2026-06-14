@@ -583,12 +583,11 @@ export default function CalendarScreen() {
           </BoardCard>
 
           {/* Reminder Center */}
-          <BoardSectionHeader
-            title="Reminder Center"
-            action={reminderCount === 0 ? "Clear" : `${reminderCount} active`}
-            style={{ marginTop: 14 }}
-          />
-          <BoardCard padded={false} style={[s.reminderCard, { backgroundColor: colors.card, borderColor: reminderTone + "44", shadowColor: reminderTone }]}>
+          <BoardCard style={[s.plansBoardCard, { borderColor: reminderTone + "44" }]}>
+            <BoardSectionHeader
+              title="Reminder Center"
+              action={reminderCount === 0 ? "Clear" : `${reminderCount} active`}
+            />
             <View style={s.responsibilityTop}>
               <View style={[s.responsibilityIcon, { backgroundColor: reminderTone + "18" }]}>
                 <Ionicons name="notifications-outline" size={18} color={reminderTone} />
@@ -666,29 +665,32 @@ export default function CalendarScreen() {
           </BoardCard>
 
           {/* Daily routine */}
-          <View style={[s.sectionHeader, { marginTop: 14 }]}>
-            <View>
-              <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Daily Routine</Text>
-              {routineBoard.items.length > 0 && (
-                <Text style={[s.routineProgress, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {routineBoard.doneCount}/{routineBoard.items.length} done today
+          <BoardCard style={s.plansBoardCard}>
+            <BoardSectionHeader
+              title="Daily Routine"
+              accessory={
+                <View style={s.routineHeaderAccessory}>
+                  {routineBoard.items.length > 0 && (
+                    <Text style={[s.routineProgress, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {routineBoard.doneCount}/{routineBoard.items.length} done today
+                    </Text>
+                  )}
+                  <Pressable onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }} style={[s.sectionAddBtn, { backgroundColor: colors.primary }]}>
+                    <Ionicons name="add" size={18} color="#fff" />
+                  </Pressable>
+                </View>
+              }
+            />
+            {routineBoard.items.length === 0 ? (
+              <Pressable onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }} style={[s.emptyPanel, { backgroundColor: colors.background }]}>
+                <PulseIcon name="bowl" size={30} />
+                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  No routines yet. Tap to add feeding times, walks, and more.
                 </Text>
-              )}
-            </View>
-            <Pressable onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }} style={[s.sectionAddBtn, { backgroundColor: colors.primary }]}>
-              <Ionicons name="add" size={18} color="#fff" />
-            </Pressable>
-          </View>
-          {routineBoard.items.length === 0 ? (
-            <Pressable onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }} style={[s.emptyCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-              <PulseIcon name="bowl" size={30} />
-              <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                No routines yet. Tap to add feeding times, walks, and more.
-              </Text>
-            </Pressable>
-          ) : (
-            <View>
-              <View style={[s.responsibilityCard, { backgroundColor: colors.card, borderColor: responsibilityTone + "44", shadowColor: responsibilityTone }]}>
+              </Pressable>
+            ) : (
+              <>
+              <View style={[s.responsibilityPanel, { backgroundColor: colors.background, borderColor: responsibilityTone + "44" }]}>
                 <View style={s.responsibilityTop}>
                   <View style={[s.responsibilityIcon, { backgroundColor: responsibilityTone + "18" }]}>
                     <Ionicons name="people-outline" size={18} color={responsibilityTone} />
@@ -820,8 +822,9 @@ export default function CalendarScreen() {
                   );
                 })}
               </View>
-            </View>
-          )}
+              </>
+            )}
+          </BoardCard>
         </Animated.View>
       </ScrollView>
 
@@ -1047,30 +1050,16 @@ const s = StyleSheet.create({
   sugNote: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
   sugAdd: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center" },
 
-  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-  sectionTitle: { fontSize: 20, letterSpacing: -0.2 },
-  sectionLink: { fontSize: 13 },
+  plansBoardCard: { marginTop: 14 },
+  routineHeaderAccessory: { flexDirection: "row", alignItems: "center", gap: 10 },
   sectionAddBtn: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   routineProgress: { fontSize: 12, marginTop: 1 },
 
-  emptyCard: { borderRadius: 20, padding: 32, alignItems: "center", gap: 12, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
   emptyPanel: { borderRadius: 14, padding: 24, alignItems: "center", gap: 12 },
   emptyText: { fontSize: 14, textAlign: "center", lineHeight: 20 },
   upcomingBoardCard: { marginTop: 28, marginBottom: 18 },
 
   dayHeading: { fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
-  eventCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 10,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
-  },
   eventPanel: {
     flexDirection: "row",
     alignItems: "center",
@@ -1089,16 +1078,6 @@ const s = StyleSheet.create({
   eventNote: { fontSize: 12.5, lineHeight: 17, marginTop: 4 },
   removeBtn: { width: 28, height: 28, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 
-  reminderCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 12,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 2,
-  },
   reminderList: { marginTop: 8 },
   reminderRow: { flexDirection: "row", gap: 11, paddingVertical: 11 },
   reminderIcon: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
@@ -1115,15 +1094,11 @@ const s = StyleSheet.create({
   reminderEmpty: { flexDirection: "row", alignItems: "center", gap: 9, borderRadius: 14, padding: 12, marginTop: 12 },
   reminderEmptyText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
 
-  responsibilityCard: {
-    borderRadius: 20,
+  responsibilityPanel: {
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 14,
+    padding: 13,
     marginBottom: 12,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 2,
   },
   responsibilityTop: { flexDirection: "row", alignItems: "center", gap: 10 },
   responsibilityIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },

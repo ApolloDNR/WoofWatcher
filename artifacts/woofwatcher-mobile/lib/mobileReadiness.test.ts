@@ -620,6 +620,17 @@ test("routes Reminder Center rows to concrete care workflows", () => {
   assert.match(log, /routeSelectedType/);
 });
 
+test("keeps Plans reminder and routine sections on shared board card anatomy", () => {
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+
+  assert.match(calendar, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Reminder Center"/);
+  assert.match(calendar, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Daily Routine"/);
+  assert.doesNotMatch(calendar, /sectionHeader:/);
+  assert.doesNotMatch(calendar, /sectionTitle:/);
+  assert.doesNotMatch(calendar, /emptyCard:/);
+  assert.doesNotMatch(calendar, /reminderCard:/);
+});
+
 test("keeps Log search wired across text query and type filters", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 

@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-14: Plans Keeps Reminder And Routine Workflows Inside Board Sections
+
+Decision: The mobile Plans tab's Reminder Center and Daily Routine surfaces should use shared board sections, with reminder actions, routine editor entry points, routine completion, owner load, and responsibility summaries kept inside those surfaces.
+
+Reason: Plans is where households coordinate what should happen next. Keeping reminders and routines in board sections makes the workflow easier to scan and gives final visual polish one coherent structure without weakening the existing routine/log relationship.
+
+Owner: Codex.
+
+Revisit trigger: A dedicated planning/calendar design system replaces the shared mobile board primitives with reusable equivalents.
+
 ### 2026-06-14: More Uses Shared Board Sections For Primary Household Tools
 
 Decision: The mobile More tab's Care Team, Household Access, Responsibility Center, Sync Health, Tools & Sharing, and Diet Profile surfaces should use shared board primitives instead of local section headers and one-off card shells.
