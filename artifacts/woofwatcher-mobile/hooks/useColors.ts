@@ -16,5 +16,5 @@ export function useColors() {
   // The WoofWatcher board is a light-only design and the baked pixel-art
   // assets (hero scene, icons, heart mark) assume the cream palette, so the
   // mobile app always renders the light theme regardless of device appearance.
-  return { ...colors.light, radius: colors.radius };
+  return { ...colors.light, radius: colors.radius, pixelUi: colors.pixelUi };
 }

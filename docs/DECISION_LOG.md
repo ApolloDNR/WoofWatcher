@@ -722,6 +722,16 @@ Owner: Codex.
 
 Revisit trigger: Apollo replaces these boards with a newer canonical Figma file, production art direction, or final commissioned Phoenix asset set.
 
+### 2026-06-14: Board Primitives Are The Mobile Visual System Foundation
+
+Decision: The Expo mobile app now uses a shared board primitive layer for the locked pixel UI direction, starting with Phoenix Home and the bottom tab shell. The primitives include compact board cards, section headers, segmented status meters, quick action tiles, pixel speech bubbles, and care rows.
+
+Reason: Apollo wants Codex to implement the UI direction in real app code before Fable/Replit/Figma polish. A primitive layer prevents every screen from recreating the reference-board style differently, while keeping the existing care workflows, local-first behavior, and safety boundaries intact.
+
+Owner: Codex.
+
+Revisit trigger: A canonical Figma component library replaces the in-code primitives, or final native animation/asset tooling requires a more formal design-token package.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

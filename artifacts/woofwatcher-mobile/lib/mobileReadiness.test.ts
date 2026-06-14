@@ -197,6 +197,49 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /Not veterinary advice/);
 });
 
+test("locks the mobile pixel UI foundation to Apollo's reference boards", () => {
+  const colors = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "constants", "colors.ts"),
+    "utf8",
+  );
+  const primitivesPath = join(
+    process.cwd(),
+    "artifacts",
+    "woofwatcher-mobile",
+    "components",
+    "board",
+    "BoardPrimitives.tsx",
+  );
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const tabs = readAppFile(join("(tabs)", "_layout.tsx"));
+
+  assert.match(colors, /#081424/);
+  assert.match(colors, /#0D182A/);
+  assert.match(colors, /#FFF9EF/);
+  assert.match(colors, /#A8CBE8/);
+  assert.match(colors, /pixelUi/);
+  assert.ok(existsSync(primitivesPath), "board primitives should exist");
+
+  const primitives = readFileSync(primitivesPath, "utf8");
+  for (const exportedName of [
+    "BoardCard",
+    "BoardSectionHeader",
+    "StatusMeter",
+    "QuickActionTile",
+    "PixelSpeechBubble",
+    "CareRow",
+  ]) {
+    assert.match(primitives, new RegExp(`export function ${exportedName}`));
+  }
+
+  assert.match(home, /BoardCard/);
+  assert.match(home, /StatusMeter/);
+  assert.match(home, /QuickActionTile/);
+  assert.match(home, /PixelSpeechBubble/);
+  assert.match(tabs, /colors\.brandNavy/);
+  assert.match(tabs, /tabBarActiveBackgroundColor/);
+});
+
 test("keeps Records report history wired for printable Care Pass artifacts", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 

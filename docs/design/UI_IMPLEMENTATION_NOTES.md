@@ -62,3 +62,19 @@ Use the v1.5 palette:
 - Use segmented HUD meters for energy, hunger, hydration, bile risk, bond, and similar status signals.
 - Use pixel icons and Phoenix room art as product identity, but keep care copy readable.
 - No button should be introduced unless it has a real action, route, or honest setup explanation.
+
+## 2026-06-14 Mobile Foundation Pass
+
+Implemented the first board-accurate Expo mobile foundation slice:
+
+- Locked board palette tokens in `artifacts/woofwatcher-mobile/constants/colors.ts`.
+- Added reusable board primitives in `artifacts/woofwatcher-mobile/components/board/BoardPrimitives.tsx`.
+- Converted mobile bottom navigation to the dark navy shell with cream active states.
+- Rebuilt Phoenix Home around the reference-board composition: pixel room hero, speech bubble, presence chip, segmented status meters, Quick Actions, Today at a Glance, Recent Activity, and Health/Bile/Alone watch cards.
+- Added a static readiness test so the app keeps the locked palette, board primitives, Home wiring, and navy tab shell.
+
+Remaining visual work:
+
+- Apply the same primitive system to Quick Log, Plans, Health/Bile, More, Records, Care Pass, WoofGuide, and Avatar Studio.
+- Run simulator/browser screenshot QA once dependencies are installed.
+- Replace current static board assets with final Phoenix pixel states when available.

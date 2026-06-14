@@ -15,11 +15,19 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { normalizeCareEventType } from "@workspace/care-domain";
 
-import { useCare } from "@/context/CareContext";
-import { useColors } from "@/hooks/useColors";
+import {
+  BoardCard,
+  BoardSectionHeader,
+  CareRow,
+  PixelSpeechBubble,
+  QuickActionTile,
+  StatusMeter,
+} from "@/components/board/BoardPrimitives";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
-import { derivePhoenixStatus } from "@/lib/phoenixStatus";
+import { useCare } from "@/context/CareContext";
+import { useColors } from "@/hooks/useColors";
+import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 
 const HERO = require("@/assets/board/hero.png");
 const HERO_RATIO = 1050 / 786;
@@ -37,12 +45,22 @@ interface QuickItem {
 const QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
   { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
-  { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water" },
   { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty break" },
+  { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water" },
   { key: "training", icon: "training", label: "Training", type: "training", title: "Training win" },
+  { key: "bile", icon: "bile", label: "Bile", type: "vomit", title: "Bile watch note", severity: "watch" },
+  { key: "note", icon: "note", label: "Note", type: "note", title: "Care note" },
   { key: "treat", icon: "treat", label: "Treat", type: "treat", title: "Treat" },
   { key: "play", icon: "play", label: "Play", type: "play", title: "Play session" },
 ];
+
+const SPEECH_BY_MOOD: Record<Mood, string> = {
+  happy: "Great job! Phoenix is on track.",
+  excited: "Walk time soon? I am ready!",
+  calm: "Morning! Ready for a good day.",
+  anxious: "Stay close today. A calm plan helps.",
+  unwell: "Tummy feels off. Let's watch gently.",
+};
 
 function routineIcon(type: string): PixelIconName {
   const t = normalizeCareEventType(type);
@@ -53,6 +71,8 @@ function routineIcon(type: string): PixelIconName {
   if (t === "medication") return "medication";
   if (t === "play") return "play";
   if (t === "treat") return "treat";
+  if (t === "water") return "bile";
+  if (t === "vomit") return "bile";
   return "clock";
 }
 
@@ -75,6 +95,13 @@ function isToday(iso: string, now: number): boolean {
   );
 }
 
+function shortTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -95,36 +122,15 @@ export default function HomeScreen() {
       ? state.profile.name
       : "Phoenix";
   const caregiver = state.caregivers[0]?.name ?? "Emma";
-  const timeLabel = useMemo(
-    () =>
-      new Date(now).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      }),
-    [now],
-  );
+  const timeLabel = useMemo(() => shortTime(new Date(now).toISOString()), [now]);
 
-  // ---- Stat cards -------------------------------------------------------
-  const happyMap: Record<string, { word: string; icon: PixelIconName }> = {
-    happy: { word: "Great", icon: "mood_great" },
-    excited: { word: "Great", icon: "mood_great" },
-    calm: { word: "Good", icon: "mood_good" },
-    anxious: { word: "Okay", icon: "mood_okay" },
-    unwell: { word: "Low", icon: "mood_rough" },
-  };
-  const happiness = happyMap[status.mood] ?? happyMap.calm;
   const meals = status.counts.meals;
   const fed = meals.target > 0 ? meals.done >= meals.target : true;
-  const bond = status.mood === "unwell" ? "Okay" : "Strong";
+  const bondLabel = status.mood === "unwell" ? "Okay" : "Strong";
+  const hydrationScore = 72;
+  const hungerScore = fed ? 86 : 42;
+  const bondScore = status.mood === "anxious" ? 70 : 92;
 
-  const stats: { label: string; icon: PixelIconName; value: string }[] = [
-    { label: "Happiness", icon: happiness.icon, value: happiness.word },
-    { label: "Energy", icon: "energy", value: `${status.energy}%` },
-    { label: "Hunger", icon: "hunger", value: fed ? "Good" : "Hungry" },
-    { label: "Bond", icon: "bond", value: bond },
-  ];
-
-  // ---- Next up ----------------------------------------------------------
   const nextUp = useMemo(() => {
     if (state.routines.length) {
       return state.routines.slice(0, 3).map((r) => ({
@@ -140,7 +146,12 @@ export default function HomeScreen() {
     ];
   }, [state.routines, caregiver]);
 
-  // ---- Watch cards ------------------------------------------------------
+  const nextPrimary = nextUp[0];
+  const nextMeta =
+    status.minutesUntilNext !== null
+      ? `In ${formatDuration(status.minutesUntilNext)}`
+      : nextPrimary?.time ?? "Ready";
+
   const health = status.counts.healthAlert
     ? { status: "Needs Watch", sub: "Recent symptom logged", color: colors.amber }
     : { status: "Stable", sub: "All good right now", color: colors.sage };
@@ -176,7 +187,20 @@ export default function HomeScreen() {
     color: colors.copper,
   };
 
-  // ---- Toast ------------------------------------------------------------
+  const recentActivity = useMemo(
+    () =>
+      [...state.entries]
+        .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
+        .slice(0, 3)
+        .map((entry) => ({
+          title: entry.title,
+          time: shortTime(entry.occurredAt),
+          icon: routineIcon(entry.type),
+          caregiver: entry.caregiver,
+        })),
+    [state.entries],
+  );
+
   const [toast, setToast] = useState<string | null>(null);
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -218,7 +242,6 @@ export default function HomeScreen() {
     showToast(`${item.title} logged`);
   };
 
-  // ---- Mount fade -------------------------------------------------------
   const fade = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(fade, {
@@ -228,156 +251,232 @@ export default function HomeScreen() {
     }).start();
   }, [fade]);
 
-  const navy = colors.navy;
-  const green = colors.sage;
-
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
         style={s.container}
         contentContainerStyle={{
-          paddingTop: topInset + 6,
-          paddingBottom: 140,
-          paddingHorizontal: 18,
+          paddingTop: topInset + 8,
+          paddingBottom: 142,
+          paddingHorizontal: 16,
         }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade }}>
-          {/* Header */}
           <View style={s.header}>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open More"
               onPress={() => router.push("/more")}
               hitSlop={10}
-              style={s.hamburger}
+              style={[s.headerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
             >
-              <Ionicons name="menu" size={24} color={navy} />
+              <Ionicons name="menu" size={20} color={colors.navy} />
             </Pressable>
             <View style={s.logoWrap}>
-              <WoofWatcherLogo size={24} wordmarkSize={20} />
+              <WoofWatcherLogo size={25} wordmarkSize={20} />
             </View>
-            <View style={s.hamburger} />
-          </View>
-          <Text
-            style={[s.tagline, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-          >
-            Real care. Pixel heart.
-          </Text>
-
-          {/* Hero scene */}
-          <View style={s.heroWrap}>
-            <Image source={HERO} style={s.heroImg} resizeMode="cover" />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open Health Watch"
+              onPress={() => router.push("/health")}
+              hitSlop={10}
+              style={[s.headerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
+            >
+              <Ionicons name="notifications-outline" size={19} color={colors.navy} />
+            </Pressable>
           </View>
 
-          {/* Presence card */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${petName} is with ${caregiver}`}
-            onPress={() => router.push("/more")}
-            style={({ pressed }) => [
-              s.presenceCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                shadowColor: navy,
-                opacity: pressed ? 0.92 : 1,
-              },
-            ]}
-          >
-            <View style={[s.presenceAvatar, { backgroundColor: colors.copper }]}>
-              <Text style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}>
-                {caregiver.charAt(0).toUpperCase()}
+          <View style={s.greetingRow}>
+            <View>
+              <Text style={[s.kicker, { color: colors.copper, fontFamily: "Fredoka_600SemiBold" }]}>
+                Neo retro pet care
+              </Text>
+              <Text style={[s.greeting, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                Good morning, {caregiver}
               </Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.presenceTitle, { color: navy, fontFamily: "Inter_700Bold" }]}>
-                {petName} is with {caregiver}
-              </Text>
-              <Text
-                style={[s.presenceSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-              >
-                At home · {timeLabel}
+            <View style={[s.dateChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Ionicons name="calendar-outline" size={13} color={colors.navy} />
+              <Text style={[s.dateText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                {timeLabel}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-          </Pressable>
+          </View>
 
-          {/* Stat cards */}
-          <View style={s.statRow}>
-            {stats.map((stat) => (
-              <View
-                key={stat.label}
-                style={[s.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              >
-                <Text style={[s.statLabel, { color: navy, fontFamily: "Inter_600SemiBold" }]}>
-                  {stat.label}
-                </Text>
-                <PixelIcon name={stat.icon} size={30} style={{ marginVertical: 4 }} />
-                <Text style={[s.statValue, { color: green, fontFamily: "Inter_700Bold" }]}>
-                  {stat.value}
+          <BoardCard padded={false} style={s.heroCard}>
+            <View style={s.heroWrap}>
+              <Image source={HERO} style={s.heroImg} resizeMode="cover" />
+              <View style={s.heroLabel}>
+                <Text style={[s.heroLabelText, { color: colors.navy, fontFamily: "Fredoka_700Bold" }]}>
+                  Phoenix Home
                 </Text>
               </View>
-            ))}
-          </View>
-
-          {/* Next Up + Quick Log */}
-          <View style={s.twoCol}>
-            <View
-              style={[s.col, s.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-            >
-              <Text style={[s.cardTitle, { color: navy, fontFamily: "Inter_700Bold" }]}>Next Up</Text>
-              {nextUp.map((row, i) => (
-                <View
-                  key={`${row.label}-${i}`}
-                  style={[
-                    s.nextRow,
-                    i < nextUp.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-                  ]}
+              <PixelSpeechBubble text={SPEECH_BY_MOOD[status.mood]} style={s.speech} />
+              <View style={s.heroBottom}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${petName} is with ${caregiver}`}
+                  onPress={() => router.push("/more")}
+                  style={[s.presenceChip, { backgroundColor: colors.ivory, borderColor: colors.border }]}
                 >
-                  <PixelIcon name={row.icon} size={20} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text
-                      numberOfLines={1}
-                      style={[s.nextLabel, { color: navy, fontFamily: "Inter_600SemiBold" }]}
-                    >
-                      {row.label}
-                    </Text>
-                    <Text
-                      style={[s.nextTime, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-                    >
-                      {row.time}
+                  <View style={[s.presenceAvatar, { backgroundColor: colors.copper }]}>
+                    <Text style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}>
+                      {caregiver.charAt(0).toUpperCase()}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={13} color={colors.mutedForeground} />
-                </View>
-              ))}
-            </View>
-
-            <View
-              style={[s.col, s.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-            >
-              <Text style={[s.cardTitle, { color: navy, fontFamily: "Inter_700Bold" }]}>Quick Log</Text>
-              <View style={s.quickGrid}>
-                {QUICK_LOG.map((item) => (
-                  <Pressable
-                    key={item.key}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Log ${item.label}`}
-                    onPress={() => logQuick(item)}
-                    style={({ pressed }) => [s.quickTile, { opacity: pressed ? 0.6 : 1 }]}
-                  >
-                    <View style={[s.quickTileBox, { backgroundColor: colors.secondary }]}>
-                      <PixelIcon name={item.icon} size={24} />
-                    </View>
-                    <Text style={[s.quickLabel, { color: navy, fontFamily: "Inter_500Medium" }]}>
-                      {item.label}
+                  <View>
+                    <Text style={[s.presenceText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                      With {caregiver}
                     </Text>
-                  </Pressable>
-                ))}
+                    <Text style={[s.presenceSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      Since {timeLabel}
+                    </Text>
+                  </View>
+                </Pressable>
+                <View style={[s.moodChip, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
+                  <PixelIcon name={status.mood === "unwell" ? "mood_rough" : "mood_great"} size={24} />
+                  <View>
+                    <Text style={[s.moodLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      Mood
+                    </Text>
+                    <Text style={[s.moodValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                      {status.meta.label}
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
+          </BoardCard>
+
+          <BoardCard style={s.nextCard}>
+            <BoardSectionHeader title="Next up" action="1 of 2 today" />
+            <CareRow
+              icon={nextPrimary?.icon ?? "walk"}
+              title={nextPrimary?.label ?? `Walk with ${caregiver}`}
+              detail={`${nextMeta} - ${nextPrimary?.time ?? "8:30 AM"}`}
+              meta="Start"
+              onPress={() => router.push("/calendar")}
+            />
+          </BoardCard>
+
+          <BoardCard style={s.statusCard}>
+            <BoardSectionHeader title="Phoenix status" action="View full report" />
+            <View style={s.meterStack}>
+              <StatusMeter
+                label="Energy"
+                icon="energy"
+                value={status.energy}
+                valueLabel={`${status.energy}%`}
+                tone={colors.sage}
+              />
+              <StatusMeter
+                label="Hunger"
+                icon="hunger"
+                value={hungerScore}
+                valueLabel={fed ? "Full" : "Hungry"}
+                tone={fed ? colors.sage : colors.copper}
+              />
+              <StatusMeter
+                label="Hydration"
+                icon="bile"
+                value={hydrationScore}
+                valueLabel="Good"
+                tone={colors.blueSignal}
+              />
+              <StatusMeter
+                label="Bile Risk"
+                icon="bile"
+                value={bileCount ? 46 : 82}
+                valueLabel={bile.status}
+                tone={bile.color}
+              />
+              <StatusMeter
+                label="Bond"
+                icon="bond"
+                value={bondScore}
+                valueLabel={bondLabel}
+                tone={colors.sage}
+              />
+            </View>
+          </BoardCard>
+
+          <BoardCard>
+            <BoardSectionHeader title="Quick actions" />
+            <View style={s.quickGrid}>
+              {QUICK_LOG.map((item) => (
+                <QuickActionTile
+                  key={item.key}
+                  icon={item.icon}
+                  label={item.label}
+                  accessibilityLabel={`Log ${item.label}`}
+                  onPress={() => logQuick(item)}
+                  accent={
+                    item.type === "water" || item.key === "bile"
+                      ? colors.blueSignal + "55"
+                      : item.type === "training"
+                        ? colors.accent
+                        : colors.secondary
+                  }
+                />
+              ))}
+            </View>
+          </BoardCard>
+
+          <View style={s.cardGrid}>
+            <BoardCard style={s.gridCard}>
+              <BoardSectionHeader title="Today at a glance" />
+              <View style={s.todayGrid}>
+                <View style={s.todayMetric}>
+                  <PixelIcon name="walk" size={26} />
+                  <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                    {status.counts.walkMinutes}m
+                  </Text>
+                  <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    Activity
+                  </Text>
+                </View>
+                <View style={s.todayMetric}>
+                  <PixelIcon name="meal" size={26} />
+                  <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                    {meals.done}/{meals.target || 2}
+                  </Text>
+                  <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    Meals
+                  </Text>
+                </View>
+                <View style={s.todayMetric}>
+                  <PixelIcon name="pee" size={26} />
+                  <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                    {status.counts.potty.done}/{status.counts.potty.target || 3}
+                  </Text>
+                  <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    Potty
+                  </Text>
+                </View>
+              </View>
+            </BoardCard>
+
+            <BoardCard style={s.gridCard}>
+              <BoardSectionHeader title="Recent activity" action="View all" />
+              {recentActivity.length ? (
+                recentActivity.map((entry) => (
+                  <CareRow
+                    key={`${entry.title}-${entry.time}`}
+                    icon={entry.icon}
+                    title={entry.title}
+                    detail={entry.caregiver}
+                    meta={entry.time}
+                  />
+                ))
+              ) : (
+                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  No care logs yet today.
+                </Text>
+              )}
+            </BoardCard>
           </View>
 
-          {/* Watch cards */}
           <View style={s.watchRow}>
             {[
               { title: "Health Watch", icon: "health" as PixelIconName, data: health, route: "/health" },
@@ -386,30 +485,23 @@ export default function HomeScreen() {
             ].map((w) => (
               <Pressable
                 key={w.title}
+                accessibilityRole="button"
+                accessibilityLabel={`${w.title}. ${w.data.status}`}
                 onPress={() => router.push(w.route as never)}
-                style={({ pressed }) => [
-                  s.watchCard,
-                  { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.92 : 1 },
-                ]}
+                style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.72 : 1 }]}
               >
-                <Text style={[s.watchTitle, { color: navy, fontFamily: "Inter_600SemiBold" }]}>
-                  {w.title}
-                </Text>
-                <View style={s.watchStatusRow}>
-                  <PixelIcon name={w.icon} size={18} />
-                  <Text
-                    numberOfLines={1}
-                    style={[s.watchStatus, { color: w.data.color, fontFamily: "Inter_700Bold" }]}
-                  >
+                <BoardCard style={s.watchCard}>
+                  <PixelIcon name={w.icon} size={24} />
+                  <Text style={[s.watchTitle, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                    {w.title}
+                  </Text>
+                  <Text style={[s.watchStatus, { color: w.data.color, fontFamily: "Inter_700Bold" }]}>
                     {w.data.status}
                   </Text>
-                </View>
-                <Text
-                  numberOfLines={2}
-                  style={[s.watchSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-                >
-                  {w.data.sub}
-                </Text>
+                  <Text style={[s.watchSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {w.data.sub}
+                  </Text>
+                </BoardCard>
               </Pressable>
             ))}
           </View>
@@ -422,13 +514,13 @@ export default function HomeScreen() {
           style={[
             s.toast,
             {
-              backgroundColor: navy,
+              backgroundColor: colors.brandNavy,
               opacity: toastOpacity,
               bottom: insets.bottom + 96,
             },
           ]}
         >
-          <Text style={[s.toastText, { fontFamily: "Inter_600SemiBold" }]}>{toast}</Text>
+          <Text style={[s.toastText, { fontFamily: "Inter_700Bold" }]}>{toast}</Text>
         </Animated.View>
       )}
     </View>
@@ -440,83 +532,130 @@ const s = StyleSheet.create({
   container: { flex: 1 },
 
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  hamburger: { width: 28, alignItems: "flex-start" },
-  logoWrap: { flex: 1, alignItems: "center" },
-  tagline: { textAlign: "center", fontSize: 12, marginTop: 4, letterSpacing: 0.3 },
-
-  heroWrap: {
-    marginTop: 14,
-    borderRadius: 22,
-    overflow: "hidden",
-    width: "100%",
-    aspectRatio: HERO_RATIO,
+  headerButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  heroImg: { width: "100%", height: "100%" },
-
-  presenceCard: {
+  logoWrap: { flex: 1, alignItems: "center" },
+  greetingRow: {
+    marginTop: 14,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  kicker: { fontSize: 11, letterSpacing: 0.8, textTransform: "uppercase" },
+  greeting: { fontSize: 21, lineHeight: 25, marginTop: 2 },
+  dateChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginTop: -26,
-    marginHorizontal: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 18,
+    gap: 6,
     borderWidth: 1,
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  dateText: { fontSize: 11 },
+
+  heroCard: { overflow: "hidden", marginBottom: 10 },
+  heroWrap: {
+    width: "100%",
+    aspectRatio: HERO_RATIO,
+    position: "relative",
+  },
+  heroImg: { width: "100%", height: "100%" },
+  heroLabel: {
+    position: "absolute",
+    top: 12,
+    left: 13,
+    backgroundColor: "rgba(255,249,239,0.88)",
+    borderRadius: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+  },
+  heroLabelText: { fontSize: 11, letterSpacing: 1, textTransform: "uppercase" },
+  speech: {
+    position: "absolute",
+    top: "18%",
+    left: "9%",
+  },
+  heroBottom: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    bottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  presenceChip: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 9,
   },
   presenceAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 31,
+    height: 31,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
   },
-  presenceInitial: { color: "#FFFFFF", fontSize: 17 },
-  presenceTitle: { fontSize: 15 },
-  presenceSub: { fontSize: 12.5, marginTop: 2 },
+  presenceInitial: { color: "#FFFFFF", fontSize: 14 },
+  presenceText: { fontSize: 12 },
+  presenceSub: { fontSize: 10, marginTop: 1 },
+  moodChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 9,
+  },
+  moodLabel: { fontSize: 9, textTransform: "uppercase", letterSpacing: 0.4 },
+  moodValue: { fontSize: 12 },
 
-  statRow: { flexDirection: "row", gap: 9, marginTop: 16 },
-  statCard: {
+  nextCard: { marginTop: 2, marginBottom: 10 },
+  statusCard: { marginBottom: 10 },
+  meterStack: { gap: 8 },
+  quickGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 9,
+  },
+  cardGrid: { gap: 10, marginTop: 10 },
+  gridCard: { minHeight: 124 },
+  todayGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  todayMetric: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderRadius: 16,
-    borderWidth: 1,
+    gap: 4,
   },
-  statLabel: { fontSize: 11 },
-  statValue: { fontSize: 13.5 },
-
-  twoCol: { flexDirection: "row", gap: 12, marginTop: 14, alignItems: "stretch" },
-  col: { flex: 1 },
-  card: { borderRadius: 18, borderWidth: 1, padding: 14 },
-  cardTitle: { fontSize: 15, marginBottom: 8 },
-
-  nextRow: { flexDirection: "row", alignItems: "center", gap: 9, paddingVertical: 9 },
-  nextLabel: { fontSize: 12.5 },
-  nextTime: { fontSize: 11, marginTop: 1 },
-
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12 },
-  quickTile: { width: "30%", alignItems: "center", gap: 4 },
-  quickTileBox: {
-    width: "100%",
-    aspectRatio: 1,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  quickLabel: { fontSize: 10 },
-
-  watchRow: { flexDirection: "row", gap: 10, marginTop: 14 },
-  watchCard: { flex: 1, borderRadius: 16, borderWidth: 1, padding: 12 },
+  metricValue: { fontSize: 17 },
+  metricLabel: { fontSize: 10.5 },
+  emptyText: { fontSize: 12, lineHeight: 18 },
+  watchRow: { flexDirection: "row", gap: 9, marginTop: 10 },
+  watchCard: { minHeight: 118, alignItems: "flex-start", gap: 4 },
   watchTitle: { fontSize: 11.5 },
-  watchStatusRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 8 },
-  watchStatus: { fontSize: 12.5, flexShrink: 1 },
-  watchSub: { fontSize: 10, marginTop: 5, lineHeight: 13 },
+  watchStatus: { fontSize: 12 },
+  watchSub: { fontSize: 10.5, lineHeight: 14 },
 
   toast: {
     position: "absolute",

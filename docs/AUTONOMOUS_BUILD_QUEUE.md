@@ -67,7 +67,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 59. DONE 2026-06-13: Mobile-first release readiness now has committed Expo/EAS iOS and Android build profiles in `artifacts/woofwatcher-mobile/eas.json`, a mobile release runbook in `docs/release/MOBILE_RELEASE_RUNBOOK.md`, and static readiness tests that protect both.
 60. NEXT: Native iOS/Android runtime QA with real Expo/EAS account access, simulator/device screenshots, safe-area checks, and Fable-polished assets.
 61. DONE 2026-06-14: Apollo's four pixel UI reference boards are mirrored in `docs/design/reference/` and locked in `docs/superpowers/specs/2026-06-14-woofwatcher-pixel-ui-lock-design.md` as the visual source of truth for the next UI implementation pass.
-62. NEXT: Implement the board-accurate mobile-first visual system in the Expo app, then align the PWA shell after mobile patterns are stable.
+62. DONE 2026-06-14: The Expo mobile app now has a board-accurate pixel UI foundation: locked palette tokens, reusable board primitives, navy bottom navigation, and a rebuilt Phoenix Home using pixel room, speech bubble, presence, segmented meters, quick actions, today summary, recent activity, and health watch cards.
+63. NEXT: Apply the board primitive system to Quick Log, Plans, Health/Bile, More, Records, Care Pass, WoofGuide, and Avatar Studio, then run simulator/browser screenshot QA when dependencies are installed.
 
 ## Cadence
 
