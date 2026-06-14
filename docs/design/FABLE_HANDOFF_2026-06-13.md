@@ -8,6 +8,19 @@ Fable's job is to make it feel premium, animated, and emotionally memorable with
 
 Mobile comes first. Polish iOS and Android safe areas, bottom navigation, tap targets, keyboard behavior, native sharing/export affordances, and quick logging before extending the same system to the web dashboard/PWA.
 
+## Current Mobile Board Status - 2026-06-14
+
+Codex completed the structural mobile board-system pass after this handoff was first written. The Expo mobile app now has shared board primitives and guarded adoption across the primary v1.5 surfaces:
+
+- Phoenix Home, Health/Bile Watch, Quick Log, Plans, More, Records, WoofGuide, Premium, Privacy & Safety, Avatar Studio, and Setup.
+- Records has been fully moved off its old one-off `padCard`/`sectionHeader` anatomy.
+- More, Plans, Quick Log timeline/search, WoofGuide prompts/actions, Premium launch policy, Privacy safety gates, Avatar Studio preview/mood sets, and Setup onboarding now use shared `BoardCard`, `BoardRouteHeader`, and/or `BoardSectionHeader` patterns.
+- Static mobile readiness now protects 54 mobile wiring and board-anatomy checks.
+- The full zero-dependency suite passed locally at 214 tests after the Setup slice.
+- GitHub Actions `WoofWatcher Verify` passed after each pushed board-system slice through `33bdc78`.
+
+Fable/Replit should treat this as an implemented UI skeleton, not a blank design exercise. Polish the existing structure, spacing, motion, art, and native fit/finish.
+
 ## Preserve
 
 - Local-first state and localStorage behavior.
@@ -60,8 +73,9 @@ Mobile comes first. Polish iOS and Android safe areas, bottom navigation, tap ta
    - Make records and Care Pass feel serious enough for vets and sitters.
 
 4. Avatar Studio
-   - Replace template cards with a polished upload/customize/state preview flow.
+   - Polish the existing board-based upload/customize/state preview flow.
    - Required states: Happy, Calm, Excited, Sleepy, Anxious, Bored, Hungry, Proud, Home Alone, Not Feeling Well.
+   - Replace current placeholder/static Phoenix art with final pixel states and motion-ready assets.
 
 5. Achievements
    - Keep achievements meaningful, not coin-like.
@@ -94,10 +108,10 @@ Mobile comes first. Polish iOS and Android safe areas, bottom navigation, tap ta
 
 ## Runtime QA Note
 
-Codex could not attach to the in-app Browser tool in this session because the `iab` browser target was unavailable. Local behavior and syntax checks pass, and GitHub Actions is the authoritative build/typecheck gate, but Fable/Replit should perform visual runtime QA with screenshots across mobile and desktop.
+Codex could not complete screenshot/runtime QA in the local Windows shell because the checkout lacks the local package manager/dependencies needed to start the app here, and earlier browser attachment was unavailable. Local zero-dependency behavior/readiness checks pass, and GitHub Actions is the authoritative build/typecheck gate, but Fable/Replit should perform visual runtime QA with screenshots across mobile and desktop.
 
 Mobile release setup is documented in `docs/release/MOBILE_RELEASE_RUNBOOK.md`. EAS profiles exist for internal preview and production iOS/Android builds, but real TestFlight, Google Play, and App Store submission require Apollo's Expo, Apple Developer, Google Play, privacy/legal, and launch approval.
 
 ## Suggested Fable Task
 
-Polish the existing WoofWatcher mobile app first into a premium neo-retro pixel dog-care app for iOS and Android, then bring the PWA/web dashboard into visual alignment. Preserve the current route structure, local-first workflows, state hooks, data actions, non-diagnostic health language, and backup/import behavior. Start with Phoenix Home, Quick Log, Health/Bile, Care Pass, Avatar Studio, Achievements, and Settings.
+Polish the existing WoofWatcher mobile app first into a premium neo-retro pixel dog-care app for iOS and Android, then bring the PWA/web dashboard into visual alignment. Preserve the current route structure, local-first workflows, state hooks, data actions, non-diagnostic health language, and backup/import behavior. Start with Phoenix Home motion/art, Quick Log tactile feedback, Health/Bile calm status transitions, Care Pass export presentation, Avatar Studio final states, and native safe-area/device polish.
