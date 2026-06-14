@@ -742,6 +742,16 @@ Owner: Codex.
 
 Revisit trigger: A final Figma component library, native animation package, or full visual QA pass replaces this in-code board route layer.
 
+### 2026-06-14: CI Actions Use Node 24 Runtime Majors
+
+Decision: `WoofWatcher Verify` uses `actions/checkout@v6`, `actions/setup-node@v6`, and `pnpm/action-setup@v6`, with the project runtime pinned to Node 24.
+
+Reason: GitHub Actions is moving JavaScript action execution away from Node 20. Keeping the workflow on Node 24-compatible action majors protects the production safety gate before the runner default changes.
+
+Owner: Codex.
+
+Revisit trigger: Upstream action major versions introduce a breaking workflow change, or GitHub changes the hosted runner JavaScript action runtime again.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

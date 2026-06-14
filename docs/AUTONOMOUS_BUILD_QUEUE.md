@@ -69,7 +69,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 61. DONE 2026-06-14: Apollo's four pixel UI reference boards are mirrored in `docs/design/reference/` and locked in `docs/superpowers/specs/2026-06-14-woofwatcher-pixel-ui-lock-design.md` as the visual source of truth for the next UI implementation pass.
 62. DONE 2026-06-14: The Expo mobile app now has a board-accurate pixel UI foundation: locked palette tokens, reusable board primitives, navy bottom navigation, and a rebuilt Phoenix Home using pixel room, speech bubble, presence, segmented meters, quick actions, today summary, recent activity, and health watch cards.
 63. DONE 2026-06-14: The Expo mobile board primitive system now reaches the core v1.5 routes beyond Home: Log, Plans, Health/Bile, More, Records, WoofGuide, and Avatar Studio all use shared board route chrome or board sections, and Health/Bile Watch uses shared board cards, pills, metric tiles, section headers, and care rows.
-64. NEXT: Deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize strengthening Quick Log/Plans/Records card anatomy and replacing placeholder/static Phoenix art with final pixel states.
+64. DONE 2026-06-14: GitHub Actions `WoofWatcher Verify` now uses Node 24-compatible action majors for checkout, setup-node, and pnpm setup while keeping the project runtime on Node 24.
+65. NEXT: Deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize strengthening Quick Log/Plans/Records card anatomy and replacing placeholder/static Phoenix art with final pixel states.
 
 ## Cadence
 
