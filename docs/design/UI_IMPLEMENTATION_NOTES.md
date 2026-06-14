@@ -121,3 +121,13 @@ Closed the remaining lower Records layout gap:
 - Converted Records Cabinet into a `BoardCard` section with saved-count copy, the empty add-first-record action, existing record rows, attachment indicators, due labels, and delete controls preserved.
 - Removed the old shadow treatment from vault tiles so they read as internal board controls rather than cards inside cards.
 - Added a mobile readiness test that protects Record Vault, Diet on File, and Records Cabinet board anatomy.
+
+## 2026-06-14 Records Trend Board Anatomy Pass
+
+Moved the first Records trend set onto shared board anatomy:
+
+- Converted Weight Trend into a `BoardCard` section while preserving the SVG trend chart, goal pill, chart labels, and vet-safe pacing copy.
+- Converted Mood Trend into a `BoardCard` section while preserving the mood distribution bars and average mood summary.
+- Converted Hydration into a `BoardCard` section while preserving the water summary, progress meter, refill/caregiver stats, latest-log context, and next-step copy.
+- Removed the now-unused `chartCard` style.
+- Added a mobile readiness test that protects Weight Trend, Mood Trend, and Hydration board anatomy.

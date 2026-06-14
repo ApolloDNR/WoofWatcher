@@ -810,13 +810,11 @@ export default function RecordsScreen() {
           </BoardCard>
 
           {/* Weight trend */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Weight Trend</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-              {remaining > 0 ? `${remaining.toFixed(1)} ${unit} ${weightTrend.direction === "reduce" ? "over goal" : "to go"}` : "Goal reached"}
-            </Text>
-          </View>
-          <View style={[s.chartCard, { backgroundColor: colors.card, shadowColor: colors.primary, padding: cardPad }]}>
+          <BoardCard style={[s.recordsBoardCard, { padding: cardPad }]}>
+            <BoardSectionHeader
+              title="Weight Trend"
+              action={remaining > 0 ? `${remaining.toFixed(1)} ${unit} ${weightTrend.direction === "reduce" ? "over goal" : "to go"}` : "Goal reached"}
+            />
             <View style={s.chartTopRow}>
               <View>
                 <Text style={[s.chartBig, { color: colors.foreground, fontFamily: DISPLAY }]}>
@@ -864,18 +862,11 @@ export default function RecordsScreen() {
             <Text style={[s.chartNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
               {isRealWeight ? weightTrend.nextStep : "Gentle, vet-guided pacing - slow and steady."}
             </Text>
-          </View>
+          </BoardCard>
 
           {/* Mood trend */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Mood Trend</Text>
-            {moodStats.total > 0 && (
-              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-                {moodStats.avg.toFixed(1)}/5 avg
-              </Text>
-            )}
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader title="Mood Trend" action={moodStats.total > 0 ? `${moodStats.avg.toFixed(1)}/5 avg` : undefined} />
             {moodStats.bars.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                 No mood check-ins yet. Log a mood to see trends.
@@ -896,16 +887,11 @@ export default function RecordsScreen() {
                 );
               })
             )}
-          </View>
+          </BoardCard>
 
           {/* Hydration */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Hydration</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-              {waterHydration.total ? `${waterHydration.total} logs` : "No logs"}
-            </Text>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader title="Hydration" action={waterHydration.total ? `${waterHydration.total} logs` : "No logs"} />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "18" }]}>
                 <Ionicons name="water-outline" size={18} color={colors.primary} />
@@ -950,7 +936,7 @@ export default function RecordsScreen() {
                 </View>
               </View>
             ) : null}
-          </View>
+          </BoardCard>
 
           {/* Walk activity */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
@@ -2159,13 +2145,6 @@ const s = StyleSheet.create({
   reminderDetail: { fontSize: 12, lineHeight: 17, marginTop: 2 },
   reminderAction: { fontSize: 11.5, lineHeight: 16, marginTop: 4 },
 
-  chartCard: {
-    borderRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 4,
-  },
   chartTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   chartBig: { fontSize: 30, letterSpacing: -0.5 },
   chartUnit: { fontSize: 15 },

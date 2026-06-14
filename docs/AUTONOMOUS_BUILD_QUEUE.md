@@ -73,7 +73,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 65. DONE 2026-06-14: Quick Log, Plans, and Records now share stronger board card anatomy: the Log composer, Plans upcoming-events section, and Records Dog ID card use `BoardCard`, with a readiness test protecting the pattern.
 66. DONE 2026-06-14: Records secondary report surfaces now use shared board anatomy: Care Pass audience preview rows, Report History resend/print rows, and Progress Report period/share controls are inside `BoardCard` sections with a readiness test protecting the structure.
 67. DONE 2026-06-14: Remaining mobile Records lower sections now share board anatomy: Record Vault, Diet on File, and Records Cabinet are `BoardCard` sections with working Add/Edit/delete controls and internal vault tiles instead of old floating card islands.
-68. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize replacing placeholder/static Phoenix art with final pixel states and tightening remaining secondary health/trend cards.
+68. DONE 2026-06-14: Mobile Records trend cards now share board anatomy for Weight Trend, Mood Trend, and Hydration, preserving the chart, mood bars, hydration meter, latest log context, and report-safe copy.
+69. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize replacing placeholder/static Phoenix art with final pixel states and tightening the remaining activity, health, training, alone-time, grooming, and medication sections.
 
 ## Cadence
 

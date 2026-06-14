@@ -347,6 +347,14 @@ test("keeps Records vault, diet, and cabinet on shared board card anatomy", () =
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Records Cabinet"/);
 });
 
+test("keeps Records trend sections on shared board card anatomy", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Weight Trend"/);
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Mood Trend"/);
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Hydration"/);
+});
+
 test("keeps Records wired to medication adherence status", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
