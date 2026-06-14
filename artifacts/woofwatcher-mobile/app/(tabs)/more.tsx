@@ -34,7 +34,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
-import { BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -605,23 +605,23 @@ export default function MoreScreen() {
           </Pressable>
 
           {/* Care Team / Household */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Care Team</Text>
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                setRenameValue(household?.name ?? "");
-                setRenameOpen(true);
-              }}
-              hitSlop={8}
-              disabled={!household}
-            >
-              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Rename</Text>
-            </Pressable>
-          </View>
-
-          {/* Invite card */}
-          <View style={[s.inviteCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.moreBoardCard}>
+            <BoardSectionHeader
+              title="Care Team"
+              accessory={
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setRenameValue(household?.name ?? "");
+                    setRenameOpen(true);
+                  }}
+                  hitSlop={8}
+                  disabled={!household}
+                >
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Rename</Text>
+                </Pressable>
+              }
+            />
             <View style={s.inviteTop}>
               <View style={[s.inviteIcon, { backgroundColor: colors.sage + "1A" }]}>
                 <Ionicons name="people" size={20} color={colors.sage} />
@@ -653,10 +653,8 @@ export default function MoreScreen() {
                 <Text style={[s.shareBtnText, { fontFamily: "Inter_700Bold" }]}>Invite</Text>
               </Pressable>
             </View>
-          </View>
 
-          {/* Members */}
-          <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
+            <View style={[s.boardDivider, { borderTopColor: colors.border }]} />
             {householdAccess.people.length === 0 ? (
               <View style={s.teamRow}>
                 <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -699,21 +697,23 @@ export default function MoreScreen() {
                 );
               })
             )}
-          </View>
+          </BoardCard>
 
-          <View style={[s.sectionHeader, { marginTop: 18 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Household Access</Text>
-            <Pressable
-              onPress={shareInvite}
-              disabled={!householdAccess.canShareInvite}
-              accessibilityRole="button"
-              accessibilityLabel="Share household invite"
-              hitSlop={8}
-            >
-              <Text style={[s.sectionLink, { color: accessTone, fontFamily: "Inter_600SemiBold", opacity: householdAccess.canShareInvite ? 1 : 0.55 }]}>Invite</Text>
-            </Pressable>
-          </View>
-          <View style={[s.responsibilityCard, { backgroundColor: colors.card, borderColor: accessTone + "44", shadowColor: accessTone }]}>
+          <BoardCard style={[s.moreBoardCard, { borderColor: accessTone + "44" }]}>
+            <BoardSectionHeader
+              title="Household Access"
+              accessory={
+                <Pressable
+                  onPress={shareInvite}
+                  disabled={!householdAccess.canShareInvite}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share household invite"
+                  hitSlop={8}
+                >
+                  <Text style={[s.sectionLink, { color: accessTone, fontFamily: "Inter_600SemiBold", opacity: householdAccess.canShareInvite ? 1 : 0.55 }]}>Invite</Text>
+                </Pressable>
+              }
+            />
             <View style={s.responsibilityTop}>
               <View style={[s.responsibilityIcon, { backgroundColor: accessTone + "18" }]}>
                 <Ionicons name="key-outline" size={21} color={accessTone} />
@@ -754,11 +754,26 @@ export default function MoreScreen() {
                 ))}
               </View>
             )}
-          </View>
+          </BoardCard>
 
           {/* Household responsibility */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Responsibility Center</Text>
+          <BoardCard style={[s.moreBoardCard, { borderColor: responsibilityTone + "44" }]}>
+            <BoardSectionHeader
+              title="Responsibility Center"
+              accessory={
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push("/calendar");
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open routine board"
+                  hitSlop={8}
+                >
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Open routine board</Text>
+                </Pressable>
+              }
+            />
             <Pressable
               onPress={() => {
                 Haptics.selectionAsync();
@@ -766,82 +781,73 @@ export default function MoreScreen() {
               }}
               accessibilityRole="button"
               accessibilityLabel="Open routine board"
-              hitSlop={8}
+              style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}
             >
-              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Open routine board</Text>
-            </Pressable>
-          </View>
-          <Pressable
-            onPress={() => {
-              Haptics.selectionAsync();
-              router.push("/calendar");
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Open routine board"
-            style={[s.responsibilityCard, { backgroundColor: colors.card, borderColor: responsibilityTone + "44", shadowColor: responsibilityTone }]}
-          >
-            <View style={s.responsibilityTop}>
-              <View style={[s.responsibilityIcon, { backgroundColor: responsibilityTone + "18" }]}>
-                <Ionicons name="people-circle-outline" size={22} color={responsibilityTone} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {householdResponsibility.title}
-                </Text>
-                <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {householdResponsibility.summary}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-            </View>
-            <View style={s.responsibilityMetrics}>
-              {[
-                { label: "Open", value: householdResponsibility.openRoutines },
-                { label: "Overdue", value: householdResponsibility.overdueRoutines },
-                { label: "Unassigned", value: householdResponsibility.unassignedRoutines },
-              ].map((metric) => (
-                <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
-                  <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
-                  <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
+              <View style={s.responsibilityTop}>
+                <View style={[s.responsibilityIcon, { backgroundColor: responsibilityTone + "18" }]}>
+                  <Ionicons name="people-circle-outline" size={22} color={responsibilityTone} />
                 </View>
-              ))}
-            </View>
-            <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-              {householdResponsibility.nextStep}
-            </Text>
-            {householdResponsibility.members.length > 0 && (
-              <View style={[s.responsibilityRoster, { borderTopColor: colors.border }]}>
-                {householdResponsibility.members.slice(0, 3).map((member) => (
-                  <View key={member.name} style={s.responsibilityMember}>
-                    <Text style={[s.responsibilityMemberName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{member.name}</Text>
-                    <Text style={[s.responsibilityMemberMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {member.done}/{member.assigned} routines - {member.todayLogs} logs
-                    </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {householdResponsibility.title}
+                  </Text>
+                  <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {householdResponsibility.summary}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+              </View>
+              <View style={s.responsibilityMetrics}>
+                {[
+                  { label: "Open", value: householdResponsibility.openRoutines },
+                  { label: "Overdue", value: householdResponsibility.overdueRoutines },
+                  { label: "Unassigned", value: householdResponsibility.unassignedRoutines },
+                ].map((metric) => (
+                  <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
+                    <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
+                    <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
                   </View>
                 ))}
               </View>
-            )}
-          </Pressable>
+              <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {householdResponsibility.nextStep}
+              </Text>
+              {householdResponsibility.members.length > 0 && (
+                <View style={[s.responsibilityRoster, { borderTopColor: colors.border }]}>
+                  {householdResponsibility.members.slice(0, 3).map((member) => (
+                    <View key={member.name} style={s.responsibilityMember}>
+                      <Text style={[s.responsibilityMemberName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{member.name}</Text>
+                      <Text style={[s.responsibilityMemberMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {member.done}/{member.assigned} routines - {member.todayLogs} logs
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </Pressable>
+          </BoardCard>
 
           {/* Sync health */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Sync Health</Text>
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                refresh();
-              }}
-              disabled={isSyncing}
-              accessibilityRole="button"
-              accessibilityLabel="Refresh household sync"
-              hitSlop={8}
-            >
-              <Text style={[s.sectionLink, { color: syncTone, fontFamily: "Inter_600SemiBold", opacity: isSyncing ? 0.65 : 1 }]}>
-                {syncDashboard.actionLabel}
-              </Text>
-            </Pressable>
-          </View>
-          <View style={[s.syncCard, { backgroundColor: colors.card, borderColor: syncTone + "44", shadowColor: syncTone }]}>
+          <BoardCard style={[s.moreBoardCard, { borderColor: syncTone + "44" }]}>
+            <BoardSectionHeader
+              title="Sync Health"
+              accessory={
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    refresh();
+                  }}
+                  disabled={isSyncing}
+                  accessibilityRole="button"
+                  accessibilityLabel="Refresh household sync"
+                  hitSlop={8}
+                >
+                  <Text style={[s.sectionLink, { color: syncTone, fontFamily: "Inter_600SemiBold", opacity: isSyncing ? 0.65 : 1 }]}>
+                    {syncDashboard.actionLabel}
+                  </Text>
+                </Pressable>
+              }
+            />
             <View style={s.syncTop}>
               <View style={[s.syncIcon, { backgroundColor: syncTone + "18" }]}>
                 <Ionicons name={syncIcon} size={20} color={syncTone} />
@@ -870,7 +876,7 @@ export default function MoreScreen() {
             <Text style={[s.syncNextStep, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {syncDashboard.nextStep}
             </Text>
-          </View>
+          </BoardCard>
 
           {/* Household actions */}
           <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
@@ -915,8 +921,8 @@ export default function MoreScreen() {
           </View>
 
           {/* Links */}
-          <BoardSectionHeader title="Tools & Sharing" style={{ marginTop: 28 }} />
-          <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.moreBoardCard}>
+            <BoardSectionHeader title="Tools & Sharing" />
             {links.map((l, i) => (
               <Pressable
                 key={l.label}
@@ -935,21 +941,23 @@ export default function MoreScreen() {
                 <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
               </Pressable>
             ))}
-          </View>
+          </BoardCard>
 
           {/* Diet profile */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Diet Profile</Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-              <Pressable onPress={() => { Haptics.selectionAsync(); openDietEdit(); }} hitSlop={8}>
-                <Text style={[s.sectionLink, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>Edit</Text>
-              </Pressable>
-              <Pressable onPress={() => { Haptics.selectionAsync(); setDietOpen((v) => !v); }} hitSlop={8}>
-                <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>{dietOpen ? "Hide" : "Details"}</Text>
-              </Pressable>
-            </View>
-          </View>
-          <View style={[s.dietCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.moreBoardCard}>
+            <BoardSectionHeader
+              title="Diet Profile"
+              accessory={
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                  <Pressable onPress={() => { Haptics.selectionAsync(); openDietEdit(); }} hitSlop={8}>
+                    <Text style={[s.sectionLink, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>Edit</Text>
+                  </Pressable>
+                  <Pressable onPress={() => { Haptics.selectionAsync(); setDietOpen((v) => !v); }} hitSlop={8}>
+                    <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>{dietOpen ? "Hide" : "Details"}</Text>
+                  </Pressable>
+                </View>
+              }
+            />
             <View style={s.dietHeader}>
               <View style={[s.dietIconWrap, { backgroundColor: colors.copper + "1A" }]}>
                 <PulseIcon name="bowl" size={22} />
@@ -978,7 +986,7 @@ export default function MoreScreen() {
                 ) : null}
               </View>
             )}
-          </View>
+          </BoardCard>
 
           {/* About / boundary */}
           <View style={[s.notice, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -1347,9 +1355,9 @@ const s = StyleSheet.create({
   profileStatLabel: { fontSize: 12, marginTop: 3 },
   profileStatDivider: { width: 1, height: 36 },
 
-  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  sectionTitle: { fontSize: 20, letterSpacing: -0.2 },
   sectionLink: { fontSize: 14 },
+  moreBoardCard: { marginTop: 14 },
+  boardDivider: { borderTopWidth: 1, marginTop: 14 },
 
   listCard: {
     borderRadius: 22,
@@ -1370,15 +1378,6 @@ const s = StyleSheet.create({
   logBadge: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 11 },
   logBadgeText: { fontSize: 12 },
 
-  responsibilityCard: {
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 2,
-  },
   responsibilityTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   responsibilityIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   responsibilityTitle: { fontSize: 16, letterSpacing: 0 },
@@ -1393,15 +1392,6 @@ const s = StyleSheet.create({
   responsibilityMemberName: { fontSize: 12.5, flex: 1 },
   responsibilityMemberMeta: { fontSize: 12, textAlign: "right" },
 
-  syncCard: {
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 2,
-  },
   syncTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   syncIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   syncTitle: { fontSize: 16, letterSpacing: 0 },
@@ -1412,14 +1402,6 @@ const s = StyleSheet.create({
   syncMetricLabel: { fontSize: 10.5, textAlign: "center", marginTop: 3 },
   syncNextStep: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
 
-  inviteCard: {
-    borderRadius: 22,
-    padding: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
-  },
   inviteTop: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   inviteIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   inviteHousehold: { fontSize: 16 },
@@ -1475,14 +1457,6 @@ const s = StyleSheet.create({
   linkLabel: { fontSize: 15.5 },
   linkSub: { fontSize: 13, marginTop: 2 },
 
-  dietCard: {
-    borderRadius: 22,
-    padding: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
-  },
   dietHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   dietIconWrap: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   dietTitle: { fontSize: 15.5 },

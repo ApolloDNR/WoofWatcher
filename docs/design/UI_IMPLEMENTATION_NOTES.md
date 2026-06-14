@@ -151,3 +151,14 @@ Finished the remaining Records screen board-unification work:
 - Preserved medication routine navigation, adherence stats, next-dose state, follow-ups, medication history search, outcome filters, and all medication accessibility labels.
 - Removed the now-unused Records-only `padCard`, `sectionHeader`, and `sectionTitle` styles so the screen no longer carries a parallel card vocabulary.
 - Added mobile readiness tests for Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Lookback, and Medication Plan board anatomy.
+
+## 2026-06-14 More Board Anatomy Pass
+
+Moved the primary More tab household and system surfaces onto the shared board vocabulary:
+
+- Converted Care Team into one `BoardCard` section with household rename, invite code, invite sharing, and member rows preserved.
+- Converted Household Access, Responsibility Center, and Sync Health into `BoardCard` sections while preserving invite, routine-board, and refresh actions.
+- Converted Tools & Sharing into a `BoardCard` section while preserving all route links and accessibility labels.
+- Converted Diet Profile into a `BoardCard` section while preserving Edit and Details controls plus expanded diet rows and vet-note copy.
+- Removed the old local More `sectionHeader`, `sectionTitle`, `inviteCard`, `responsibilityCard`, `syncCard`, and `dietCard` style vocabulary.
+- Added a mobile readiness test that protects the new More board anatomy.

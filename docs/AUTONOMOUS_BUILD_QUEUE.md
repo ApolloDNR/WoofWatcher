@@ -76,7 +76,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 68. DONE 2026-06-14: Mobile Records trend cards now share board anatomy for Weight Trend, Mood Trend, and Hydration, preserving the chart, mood bars, hydration meter, latest log context, and report-safe copy.
 69. DONE 2026-06-14: Mobile Records activity and potty sections now share board anatomy for Walk Activity, Training Progress, and Potty Health while preserving saved routes, training focus/latest practice, stool color/context, and report-safe next steps.
 70. DONE 2026-06-14: Mobile Records is now fully moved off its old one-off `padCard`/`sectionHeader` anatomy. Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Lookback, and Medication Plan now use shared board primitives while preserving share/print, medication routines, filters, history, and care-safe copy.
-71. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize replacing placeholder/static Phoenix art with final pixel states and tightening Quick Log, Plans, More, WoofGuide, Avatar Studio, and Home motion polish.
+71. DONE 2026-06-14: Mobile More now uses shared board anatomy for Care Team, Household Access, Responsibility Center, Sync Health, Tools & Sharing, and Diet Profile while preserving invite, rename, routine-board, sync refresh, tool routing, and diet edit/detail actions.
+72. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize replacing placeholder/static Phoenix art with final pixel states and tightening Quick Log, Plans, WoofGuide, Avatar Studio, Home motion polish, and remaining native runtime fit/finish.
 
 ## Cadence
 

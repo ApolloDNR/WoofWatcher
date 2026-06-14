@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-14: More Uses Shared Board Sections For Primary Household Tools
+
+Decision: The mobile More tab's Care Team, Household Access, Responsibility Center, Sync Health, Tools & Sharing, and Diet Profile surfaces should use shared board primitives instead of local section headers and one-off card shells.
+
+Reason: More is a primary mobile tab and carries the household/account/system workflows that make WoofWatcher feel real. Keeping those surfaces on the same board vocabulary as Home, Records, Health, Log, and Plans helps final design polish stay coherent while preserving working actions.
+
+Owner: Codex.
+
+Revisit trigger: A future mobile settings/household design system intentionally replaces the current board primitives with reusable equivalents.
+
 ### 2026-06-14: Records Uses One Shared Mobile Board Vocabulary
 
 Decision: Mobile Records should not keep a parallel `padCard`/local section-header vocabulary. Care Trends, Dog ID, health/care evidence, reports, records, and medication sections should all use the shared board primitives unless a future Records-specific design system intentionally replaces them.

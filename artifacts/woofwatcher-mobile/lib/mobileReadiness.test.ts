@@ -642,6 +642,19 @@ test("keeps household access readiness visible from More", () => {
   assert.match(more, /accessibilityLabel="Share household invite"/);
 });
 
+test("keeps More household, tools, and diet sections on shared board card anatomy", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Team"/);
+  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Household Access"/);
+  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Responsibility Center"/);
+  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Sync Health"/);
+  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Tools & Sharing"/);
+  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Diet Profile"/);
+  assert.doesNotMatch(more, /sectionHeader:/);
+  assert.doesNotMatch(more, /sectionTitle:/);
+});
+
 test("keeps care document refresh conflict-safe in CareContext", () => {
   const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
 
