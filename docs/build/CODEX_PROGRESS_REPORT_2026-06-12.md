@@ -30,6 +30,7 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Converted mobile Records Care Pass, Report History, and Progress Report into shared board-card sections while preserving preview, resend, print-source, period-filter, and share actions.
 - Converted mobile Records Record Vault, Diet on File, and Records Cabinet into shared board-card sections while preserving add/edit/delete controls, attachment indicators, due labels, and diet context.
 - Converted mobile Records Weight Trend, Mood Trend, and Hydration into shared board-card sections while preserving the chart, mood bars, hydration meter, latest-log context, and report-safe copy.
+- Converted mobile Records Walk Activity, Training Progress, and Potty Health into shared board-card sections while preserving saved routes, training focus/latest context, stool color/context, and care-safe next steps.
 
 ## Verification
 
@@ -65,6 +66,8 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Focused zero-dependency suite passed locally after the Records vault board anatomy slice: 202 passing tests.
 - Records Weight Trend, Mood Trend, and Hydration board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Focused zero-dependency suite passed locally after the Records trend board anatomy slice: 203 passing tests.
+- Records Walk Activity, Training Progress, and Potty Health board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Focused zero-dependency suite passed locally after the Records activity board anatomy slice: 204 passing tests.
 - GitHub Actions full verification is the authoritative full typecheck/build gate after push.
 
 ## Current Implementation Focus
@@ -74,7 +77,7 @@ Next implementation slice:
 1. Runtime/browser visual QA once a local package manager or dev server dependency install is available.
 2. Provider-backed account/cloud/payment decisions after Apollo picks the release stack.
 3. Native/mobile runtime QA and final visual system pass.
-4. Deeper route-by-route visual polish now that board route headers, core workflow cards, Records report board sections, Records vault board sections, and the first Records trend board sections are in place.
+4. Deeper route-by-route visual polish now that board route headers, core workflow cards, Records report board sections, Records vault board sections, Records trend board sections, and the first Records activity board sections are in place.
 5. Fable/Replit visual polish using the new handoff file.
 
 ## Known Limitations

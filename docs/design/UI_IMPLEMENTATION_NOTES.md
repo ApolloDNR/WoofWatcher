@@ -131,3 +131,12 @@ Moved the first Records trend set onto shared board anatomy:
 - Converted Hydration into a `BoardCard` section while preserving the water summary, progress meter, refill/caregiver stats, latest-log context, and next-step copy.
 - Removed the now-unused `chartCard` style.
 - Added a mobile readiness test that protects Weight Trend, Mood Trend, and Hydration board anatomy.
+
+## 2026-06-14 Records Activity Board Anatomy Pass
+
+Moved the next Records care-evidence set onto shared board anatomy:
+
+- Converted Walk Activity into a `BoardCard` section while preserving activity status, walk meter, dog-interaction stats, latest walk context, and Saved Routes.
+- Converted Training Progress into a `BoardCard` section while preserving minutes/wins/skills stats, focus skills, latest practice context, and next-practice notes.
+- Converted Potty Health into a `BoardCard` section while preserving pee/poop/review stats, stool color/context detail, latest potty context, and non-diagnostic next-step copy.
+- Added a mobile readiness test that protects Walk Activity, Training Progress, and Potty Health board anatomy.

@@ -355,6 +355,14 @@ test("keeps Records trend sections on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Hydration"/);
 });
 
+test("keeps Records activity and potty sections on shared board card anatomy", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Walk Activity"/);
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Training Progress"/);
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Potty Health"/);
+});
+
 test("keeps Records wired to medication adherence status", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 

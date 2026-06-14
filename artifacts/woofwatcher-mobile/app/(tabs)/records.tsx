@@ -939,13 +939,8 @@ export default function RecordsScreen() {
           </BoardCard>
 
           {/* Walk activity */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Walk Activity</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-              {walkActivity.total ? `${walkActivity.total} walks` : "No walks"}
-            </Text>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader title="Walk Activity" action={walkActivity.total ? `${walkActivity.total} walks` : "No walks"} />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
                 <Ionicons name="walk-outline" size={18} color={colors.sage} />
@@ -1036,16 +1031,14 @@ export default function RecordsScreen() {
                 ))}
               </View>
             ) : null}
-          </View>
+          </BoardCard>
 
           {/* Training progress */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Training Progress</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-              {trainingProgress.totalSessions ? `${trainingProgress.totalSessions} sessions` : "No sessions"}
-            </Text>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader
+              title="Training Progress"
+              action={trainingProgress.totalSessions ? `${trainingProgress.totalSessions} sessions` : "No sessions"}
+            />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.copper + "18" }]}>
                 <Ionicons name="school-outline" size={18} color={colors.copper} />
@@ -1108,7 +1101,7 @@ export default function RecordsScreen() {
                 </View>
               </View>
             ) : null}
-          </View>
+          </BoardCard>
 
           {/* Alone time */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
@@ -1261,13 +1254,8 @@ export default function RecordsScreen() {
           </View>
 
           {/* Potty health */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Potty Health</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-              {pottyHealth.total ? `${pottyHealth.total} logs` : "No logs"}
-            </Text>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader title="Potty Health" action={pottyHealth.total ? `${pottyHealth.total} logs` : "No logs"} />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.amber + "18" }]}>
                 <Ionicons name="medical-outline" size={18} color={colors.amber} />
@@ -1325,7 +1313,7 @@ export default function RecordsScreen() {
                 </View>
               </View>
             ) : null}
-          </View>
+          </BoardCard>
 
           {/* Incident lookback */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
