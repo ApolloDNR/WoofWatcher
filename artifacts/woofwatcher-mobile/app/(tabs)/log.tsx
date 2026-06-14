@@ -36,7 +36,7 @@ import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
-import { BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -1275,7 +1275,7 @@ export default function LogScreen() {
           ) : null}
 
           {/* Composer card */}
-          <View style={[s.loggerCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard padded={false} style={s.loggerCard}>
             <BoardSectionHeader title="Log something" />
             <ScrollView
               horizontal
@@ -1861,7 +1861,7 @@ export default function LogScreen() {
                 <Ionicons name="close" size={16} color={colors.mutedForeground} />
               </Pressable>
             ) : null}
-          </View>
+          </BoardCard>
           {logSearch.hasActiveFilters ? (
             <Text style={[s.searchSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
               {logSearch.summary}

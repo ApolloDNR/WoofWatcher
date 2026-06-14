@@ -60,7 +60,7 @@ import {
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
-import { BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -701,7 +701,7 @@ export default function RecordsScreen() {
               </Pressable>
             </View>
           </View>
-          <View style={[s.idCard, { backgroundColor: colors.navy, shadowColor: colors.midnight }]}>
+          <BoardCard tone="navy" padded={false} style={s.idCard}>
             <View style={s.idCardTop}>
               <View style={[s.idBadge, { backgroundColor: colors.copper }]}>
                 <Ionicons name="paw" size={16} color="#FFFFFF" />
@@ -731,7 +731,7 @@ export default function RecordsScreen() {
                 Vaccines: {credential.vaccines}
               </Text>
             </View>
-          </View>
+          </BoardCard>
 
           {/* Record vault */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>

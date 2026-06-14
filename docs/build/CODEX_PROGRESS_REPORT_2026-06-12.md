@@ -54,6 +54,8 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Local TypeScript could not run because this checkout did not have `node_modules/typescript`.
 - Mobile board route adoption is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Focused zero-dependency suite passed locally after the board route adoption slice: 197 passing tests.
+- Quick Log, Plans, and Records shared board-card anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Focused zero-dependency suite passed locally after the core workflow card anatomy slice: 199 passing tests.
 - GitHub Actions full verification is the authoritative full typecheck/build gate after push.
 
 ## Current Implementation Focus
@@ -63,7 +65,7 @@ Next implementation slice:
 1. Runtime/browser visual QA once a local package manager or dev server dependency install is available.
 2. Provider-backed account/cloud/payment decisions after Apollo picks the release stack.
 3. Native/mobile runtime QA and final visual system pass.
-4. Deeper route-by-route visual polish now that board route headers and shared primitives are in place.
+4. Deeper route-by-route visual polish now that board route headers and shared card anatomy are in place.
 5. Fable/Replit visual polish using the new handoff file.
 
 ## Known Limitations

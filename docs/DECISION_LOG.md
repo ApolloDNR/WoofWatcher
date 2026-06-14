@@ -752,6 +752,16 @@ Owner: Codex.
 
 Revisit trigger: Upstream action major versions introduce a breaking workflow change, or GitHub changes the hosted runner JavaScript action runtime again.
 
+### 2026-06-14: Core Workflow Cards Should Use BoardCard
+
+Decision: Quick Log, Plans, and Records should use the shared `BoardCard` shell for primary workflow cards, starting with the Log composer, Plans upcoming-events section, and the Records Dog ID credential.
+
+Reason: Apollo's reference boards depend on compact, consistent card anatomy. Moving these high-frequency surfaces away from one-off card shells makes the app easier for Fable/Replit/Figma-style polish to improve without breaking care workflows.
+
+Owner: Codex.
+
+Revisit trigger: A final native component library or Figma-derived design system replaces the current in-code board primitives.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

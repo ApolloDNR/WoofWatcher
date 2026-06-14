@@ -100,6 +100,8 @@ Current evidence, 2026-06-11: Full Log now has text search backed by shared care
 
 Current evidence, 2026-06-11: Records Medication History now has a scoped search field and outcome chips, so owners can review medication-specific evidence without leaving Records or scanning the full timeline.
 
+Current evidence, 2026-06-14: Quick Log, Plans, and Records now use shared `BoardCard` anatomy for primary workflow surfaces, and static mobile readiness protects the Log composer, Plans upcoming events, and Records Dog ID card from drifting back to one-off card shells.
+
 ## Gate 5: Health Safety
 
 Passing means health features organize patterns without diagnosis. Urgent red flags direct users to veterinary care. WoofGuide stays bounded.

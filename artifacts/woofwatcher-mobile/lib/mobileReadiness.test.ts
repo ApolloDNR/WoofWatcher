@@ -277,6 +277,20 @@ test("extends the mobile pixel board system across core v1.5 routes", () => {
   }
 });
 
+test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const plans = readAppFile(join("(tabs)", "calendar.tsx"));
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  for (const [route, source] of Object.entries({ log, plans, records })) {
+    assert.match(source, /BoardCard/, `${route} should use shared BoardCard sections`);
+  }
+
+  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader title="Log something"/);
+  assert.match(plans, /<BoardCard[\s\S]*BoardSectionHeader title="Upcoming Events"/);
+  assert.match(records, /<BoardCard[\s\S]*WOOFWATCHER DOG ID/);
+});
+
 test("does not keep hidden legacy headers behind board route headers", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const avatarStudio = readAppFile("portrait.tsx");

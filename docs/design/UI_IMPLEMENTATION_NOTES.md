@@ -92,3 +92,12 @@ Extended the mobile board primitive system beyond Phoenix Home:
 Cleanup note:
 
 - Removed the hidden legacy route-header blocks from `more.tsx` and `portrait.tsx` so those routes now rely on `BoardRouteHeader` without duplicate hidden markup.
+
+## 2026-06-14 Core Workflow Card Anatomy Pass
+
+Tightened the next board-system layer across the highest-frequency mobile routes:
+
+- Converted the Quick Log composer to `BoardCard` so the main logging surface shares the same border, radius, and shadow contract as Home and Health.
+- Wrapped Plans upcoming events in a board card with internal event rows, preserving real add/remove event behavior without nesting cards.
+- Converted the Records Dog ID credential to the navy `BoardCard` tone while preserving share/print behavior and credential content.
+- Added a mobile readiness test that protects this shared card anatomy for Quick Log, Plans, and Records.

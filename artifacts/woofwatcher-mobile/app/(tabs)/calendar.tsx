@@ -527,58 +527,60 @@ export default function CalendarScreen() {
           )}
 
           {/* Upcoming one-off events */}
-          <BoardSectionHeader title="Upcoming Events" style={{ marginTop: 28 }} />
-          {upcoming.length === 0 ? (
-            <View style={[s.emptyCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-              <Ionicons name="calendar-outline" size={30} color={colors.mutedForeground} />
-              <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                No events planned. Add one or discover nearby outings above.
-              </Text>
-            </View>
-          ) : (
-            upcoming.map((group) => (
-              <View key={group.date} style={{ marginBottom: 18 }}>
-                <Text style={[s.dayHeading, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>{dayLabel(group.date)}</Text>
-                {group.events.map((e) => {
-                  const icon = EVENT_ICON[e.type] ?? "calendar";
-                  const daysUntil = Math.round((new Date(`${e.date}T12:00:00`).getTime() - Date.now()) / 86400000);
-                  const countdownLabel = daysUntil === 0 ? "Today" : daysUntil === 1 ? "Tomorrow" : daysUntil <= 7 ? `${daysUntil}d away` : null;
-                  return (
-                    <View key={e.id} style={[s.eventCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-                      <View style={[s.eventIcon, { backgroundColor: colors.sage + "16" }]}>
-                        <Ionicons name={icon} size={20} color={colors.sage} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <View style={s.eventTitleLine}>
-                          <Text style={[s.eventTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{e.title}</Text>
-                          {e.source === "woofguide" && (
-                            <View style={[s.tag, { backgroundColor: colors.primary + "16" }]}>
-                              <Ionicons name="sparkles" size={9} color={colors.primary} />
-                              <Text style={[s.tagText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>WoofGuide</Text>
-                            </View>
-                          )}
-                          {countdownLabel && (
-                            <View style={[s.tag, { backgroundColor: (daysUntil === 0 ? colors.copper : colors.sage) + "18" }]}>
-                              <Text style={[s.tagText, { color: daysUntil === 0 ? colors.copper : colors.sage, fontFamily: "Inter_700Bold" }]}>{countdownLabel}</Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text style={[s.eventMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          {[e.time, e.location].filter(Boolean).join(" - ") || "All day"}
-                        </Text>
-                        {e.note ? (
-                          <Text numberOfLines={2} style={[s.eventNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{e.note}</Text>
-                        ) : null}
-                      </View>
-                      <Pressable onPress={() => removeEvent(e.id)} hitSlop={8} style={s.removeBtn}>
-                        <Ionicons name="close" size={16} color={colors.mutedForeground} />
-                      </Pressable>
-                    </View>
-                  );
-                })}
+          <BoardCard style={s.upcomingBoardCard}>
+            <BoardSectionHeader title="Upcoming Events" action={upcoming.length ? `${upcoming.length} days` : "Add one"} />
+            {upcoming.length === 0 ? (
+              <View style={[s.emptyPanel, { backgroundColor: colors.background }]}>
+                <Ionicons name="calendar-outline" size={30} color={colors.mutedForeground} />
+                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  No events planned. Add one or discover nearby outings above.
+                </Text>
               </View>
-            ))
-          )}
+            ) : (
+              upcoming.map((group) => (
+                <View key={group.date} style={{ marginBottom: 18 }}>
+                  <Text style={[s.dayHeading, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>{dayLabel(group.date)}</Text>
+                  {group.events.map((e) => {
+                    const icon = EVENT_ICON[e.type] ?? "calendar";
+                    const daysUntil = Math.round((new Date(`${e.date}T12:00:00`).getTime() - Date.now()) / 86400000);
+                    const countdownLabel = daysUntil === 0 ? "Today" : daysUntil === 1 ? "Tomorrow" : daysUntil <= 7 ? `${daysUntil}d away` : null;
+                    return (
+                      <View key={e.id} style={[s.eventPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <View style={[s.eventIcon, { backgroundColor: colors.sage + "16" }]}>
+                          <Ionicons name={icon} size={20} color={colors.sage} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <View style={s.eventTitleLine}>
+                            <Text style={[s.eventTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{e.title}</Text>
+                            {e.source === "woofguide" && (
+                              <View style={[s.tag, { backgroundColor: colors.primary + "16" }]}>
+                                <Ionicons name="sparkles" size={9} color={colors.primary} />
+                                <Text style={[s.tagText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>WoofGuide</Text>
+                              </View>
+                            )}
+                            {countdownLabel && (
+                              <View style={[s.tag, { backgroundColor: (daysUntil === 0 ? colors.copper : colors.sage) + "18" }]}>
+                                <Text style={[s.tagText, { color: daysUntil === 0 ? colors.copper : colors.sage, fontFamily: "Inter_700Bold" }]}>{countdownLabel}</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={[s.eventMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                            {[e.time, e.location].filter(Boolean).join(" - ") || "All day"}
+                          </Text>
+                          {e.note ? (
+                            <Text numberOfLines={2} style={[s.eventNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{e.note}</Text>
+                          ) : null}
+                        </View>
+                        <Pressable onPress={() => removeEvent(e.id)} hitSlop={8} style={s.removeBtn}>
+                          <Ionicons name="close" size={16} color={colors.mutedForeground} />
+                        </Pressable>
+                      </View>
+                    );
+                  })}
+                </View>
+              ))
+            )}
+          </BoardCard>
 
           {/* Reminder Center */}
           <BoardSectionHeader
@@ -1052,7 +1054,9 @@ const s = StyleSheet.create({
   routineProgress: { fontSize: 12, marginTop: 1 },
 
   emptyCard: { borderRadius: 20, padding: 32, alignItems: "center", gap: 12, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
+  emptyPanel: { borderRadius: 14, padding: 24, alignItems: "center", gap: 12 },
   emptyText: { fontSize: 14, textAlign: "center", lineHeight: 20 },
+  upcomingBoardCard: { marginTop: 28, marginBottom: 18 },
 
   dayHeading: { fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
   eventCard: {
@@ -1066,6 +1070,15 @@ const s = StyleSheet.create({
     shadowOpacity: 0.07,
     shadowRadius: 14,
     elevation: 2,
+  },
+  eventPanel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 10,
   },
   eventIcon: { width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   eventTitleLine: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
