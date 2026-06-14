@@ -223,3 +223,13 @@ Moved the mobile avatar creation route closer to the locked pixel-board system:
 - Converted the photo guidance tip into a soft board card.
 - Removed unused legacy header/back/subtitle styles and the local preview shadow treatment so Avatar Studio does not carry a parallel card system.
 - Remaining art task: replace default/static Phoenix images with final pixel state assets and motion-ready sprite or animation files.
+
+## 2026-06-14 Setup Board Anatomy Pass
+
+Moved the mobile onboarding route onto the shared board system:
+
+- Replaced the local setup header with `BoardRouteHeader`.
+- Converted setup progress into a `BoardCard` with a `BoardSectionHeader`.
+- Converted the reusable setup `Section` component to `BoardCard`, covering Dog Profile, Diet Baseline, Starter Routine, and Household Caregiver.
+- Kept draft hydration, save foundation, and finish-later behavior unchanged.
+- Removed old local setup header and progress-card shell styles.

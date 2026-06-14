@@ -83,7 +83,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 75. DONE 2026-06-14: Mobile Premium now uses shared board anatomy for Why Upgrade, gated plan cards, and Launch Entitlements while preserving the launch checklist, Free/Plus/Family policy truth, and disabled-payment safety boundary.
 76. DONE 2026-06-14: Mobile Privacy & Safety now uses shared board anatomy for Export Summary, Launch Safety Gates, and Before Public Launch blockers while preserving owner data export, deletion-request sharing, AI/document/payment safety copy, and provider-gated truth.
 77. DONE 2026-06-14: Mobile Avatar Studio now uses shared board anatomy for the working scan canvas, live/generated preview, mood-state set, and photo guidance while preserving library/camera generation, saved avatar state, revert-to-default, and animated scan behavior.
-78. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize Setup, Home motion polish, and replacing placeholder/static Phoenix art with final pixel states.
+78. DONE 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation header, setup-progress meter, and Dog Profile/Diet/Starter Routine/Household Caregiver sections while preserving draft application, save foundation, and finish-later behavior.
+79. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app once local dependencies, Expo preview, simulator, or device access is available; prioritize Home motion polish, final Phoenix pixel-state assets, and native safe-area/device QA.
 
 ## Cadence
 

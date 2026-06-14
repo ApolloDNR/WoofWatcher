@@ -39,6 +39,7 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Converted mobile Premium's Why Upgrade, Plans, and Launch Entitlements surfaces to shared board anatomy while preserving truthful checkout gating, launch checklist copy, and Free/Plus/Family entitlement policy.
 - Converted mobile Privacy & Safety's Export Summary, Launch Safety Gates, and Before Public Launch blockers into shared board sections while preserving owner data export, deletion-request sharing, and provider-gated AI/document/payment safety copy.
 - Converted mobile Avatar Studio's working scan canvas, live/generated preview, mood-state set, and photo guidance into shared board sections while preserving image generation, saved avatar state, revert-to-default, and scan animation behavior.
+- Converted mobile Setup's care-foundation header, setup-progress meter, and profile/diet/routine/caregiver sections into shared board anatomy while preserving setup draft hydration, save foundation, and finish-later behavior.
 
 ## Verification
 
@@ -92,6 +93,8 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Focused mobile readiness suite passed locally after the Privacy board anatomy slice: 52 passing tests.
 - Avatar Studio preview, mood-state, and guidance board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Focused mobile readiness suite passed locally after the Avatar Studio board anatomy slice: 53 passing tests.
+- Setup onboarding board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Focused mobile readiness suite passed locally after the Setup board anatomy slice: 54 passing tests.
 - GitHub Actions full verification is the authoritative full typecheck/build gate after push.
 
 ## Current Implementation Focus
@@ -101,7 +104,7 @@ Next implementation slice:
 1. Runtime/browser visual QA once a local package manager or dev server dependency install is available.
 2. Provider-backed account/cloud/payment decisions after Apollo picks the release stack.
 3. Native/mobile runtime QA and final visual system pass.
-4. Deeper route-by-route visual polish now that Records, More, Plans, Quick Log, WoofGuide, Premium, Privacy, and Avatar Studio have been moved off the biggest old local card/header patterns and the remaining core routes have shared board chrome.
+4. Deeper route-by-route visual polish now that Records, More, Plans, Quick Log, WoofGuide, Premium, Privacy, Avatar Studio, and Setup have been moved off the biggest old local card/header patterns and the remaining core routes have shared board chrome.
 5. Fable/Replit visual polish using the new handoff file.
 
 ## Known Limitations

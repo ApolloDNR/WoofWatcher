@@ -16,13 +16,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { deriveOnboardingStatus } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import {
   applySetupWizardDraft,
   createSetupWizardDraft,
   type SetupWizardDraft,
 } from "@/lib/setupWizard";
 
-const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -93,15 +93,15 @@ export default function SetupScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingTop: topInset + 14, paddingBottom: insets.bottom + 32, paddingHorizontal: 20 }}
         >
-          <View style={s.header}>
-            <Text style={[s.eyebrow, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>CARE FOUNDATION</Text>
-            <Text style={[s.title, { color: colors.foreground, fontFamily: DISPLAY }]}>Set up WoofWatcher</Text>
-            <Text style={[s.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              One clean setup pass gives Today, Log, Reports, Records, and WoofGuide the context they need.
-            </Text>
-          </View>
+          <BoardRouteHeader
+            kicker="Care foundation"
+            title="Set up WoofWatcher"
+            subtitle="One clean setup pass gives Today, Log, Reports, Records, and WoofGuide the context they need."
+            icon="sparkles-outline"
+          />
 
-          <View style={[s.progressCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <BoardCard style={s.progressCard}>
+            <BoardSectionHeader title="Setup progress" action={`${onboarding.completedCount}/${onboarding.totalCount} ready`} />
             <View style={s.progressTop}>
               <View>
                 <Text style={[s.progressValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -132,7 +132,7 @@ export default function SetupScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </BoardCard>
 
           <Section title="Dog profile" icon="paw-outline">
             <Field label="Name" value={draft.dogName} placeholder="Phoenix" onChangeText={(value) => setField("dogName", value)} />
@@ -171,7 +171,7 @@ export default function SetupScreen() {
                     style={({ pressed }) => [
                       s.typePill,
                       {
-                        backgroundColor: selected ? colors.primary : colors.card,
+                        backgroundColor: selected ? colors.primary : colors.background,
                         borderColor: selected ? colors.primary : colors.border,
                         opacity: pressed ? 0.75 : 1,
                       },
@@ -225,7 +225,7 @@ function Section({
 }) {
   const colors = useColors();
   return (
-    <View style={[s.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <BoardCard style={s.section}>
       <View style={s.sectionHead}>
         <View style={[s.sectionIcon, { backgroundColor: colors.primary + "16" }]}>
           <Ionicons name={icon} size={18} color={colors.primary} />
@@ -233,7 +233,7 @@ function Section({
         <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{title}</Text>
       </View>
       <View style={s.sectionBody}>{children}</View>
-    </View>
+    </BoardCard>
   );
 }
 
@@ -281,11 +281,7 @@ function Field({
 const s = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
-  header: { marginBottom: 16 },
-  eyebrow: { fontSize: 11, letterSpacing: 0.6, marginBottom: 6 },
-  title: { fontSize: 30, lineHeight: 36 },
-  subtitle: { fontSize: 14.5, lineHeight: 21, marginTop: 6 },
-  progressCard: { borderRadius: 22, borderWidth: 1, padding: 16, marginBottom: 16 },
+  progressCard: { marginBottom: 16 },
   progressTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   progressValue: { fontSize: 28 },
   progressLabel: { fontSize: 12, marginTop: 1 },
@@ -296,7 +292,7 @@ const s = StyleSheet.create({
   stepGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginTop: 14 },
   stepItem: { flexDirection: "row", alignItems: "center", gap: 5, width: "47%" },
   stepText: { fontSize: 11.5 },
-  section: { borderRadius: 22, borderWidth: 1, padding: 16, marginBottom: 14 },
+  section: { marginBottom: 14 },
   sectionHead: { flexDirection: "row", alignItems: "center", gap: 10 },
   sectionIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   sectionTitle: { fontSize: 18 },

@@ -372,6 +372,22 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.doesNotMatch(avatarStudio, /canvasCard: \{[^\n]*(shadowOpacity|elevation)/);
 });
 
+test("keeps Setup onboarding on shared board anatomy", () => {
+  const setup = readAppFile("setup.tsx");
+
+  assert.match(setup, /@\/components\/board\/BoardPrimitives/);
+  assert.match(setup, /<BoardRouteHeader[\s\S]*title="Set up WoofWatcher"/);
+  assert.match(setup, /<BoardCard style=\{s\.progressCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Setup progress"/);
+  assert.match(setup, /function Section[\s\S]*<BoardCard style=\{s\.section\}/);
+  assert.match(setup, /Dog profile/);
+  assert.match(setup, /Diet baseline/);
+  assert.match(setup, /Starter routine/);
+  assert.match(setup, /Household caregiver/);
+  assert.doesNotMatch(setup, /header:/);
+  assert.doesNotMatch(setup, /progressCard: \{[^\n]*(borderRadius|borderWidth|padding)/);
+  assert.doesNotMatch(setup, /backgroundColor: colors\.card/);
+});
+
 test("does not keep hidden legacy headers behind board route headers", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const avatarStudio = readAppFile("portrait.tsx");
