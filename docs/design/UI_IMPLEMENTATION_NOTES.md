@@ -111,3 +111,13 @@ Tightened the premium Records and report surfaces:
 - Converted Report History into a `BoardCard` section while preserving resend and printable-source share actions for saved Care Pass artifacts.
 - Converted Progress Report into a `BoardCard` section with the period segmented control and working share action inside the same report surface.
 - Added a mobile readiness test that protects Records Care Pass, Report History, and Progress Report board anatomy for the Fable/Replit polish pass.
+
+## 2026-06-14 Records Vault Board Anatomy Pass
+
+Closed the remaining lower Records layout gap:
+
+- Converted Record Vault into a `BoardCard` section with a real Add action and internal vault tiles for vaccines, visits, receipts, insurance, microchip, medication, weight, and documents.
+- Converted Diet on File into a `BoardCard` section with a real Edit route and preserved recent meal-note context.
+- Converted Records Cabinet into a `BoardCard` section with saved-count copy, the empty add-first-record action, existing record rows, attachment indicators, due labels, and delete controls preserved.
+- Removed the old shadow treatment from vault tiles so they read as internal board controls rather than cards inside cards.
+- Added a mobile readiness test that protects Record Vault, Diet on File, and Records Cabinet board anatomy.

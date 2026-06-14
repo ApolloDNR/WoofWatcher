@@ -104,6 +104,8 @@ Current evidence, 2026-06-14: Quick Log, Plans, and Records now use shared `Boar
 
 Current evidence, 2026-06-14: Records Care Pass, Report History, and Progress Report now use shared `BoardCard` and `BoardSectionHeader` anatomy while preserving real preview, resend, print-source, period-filter, and share actions.
 
+Current evidence, 2026-06-14: Records Record Vault, Diet on File, and Records Cabinet now use shared board sections with working add/edit/delete entry points and internal vault tiles instead of separate floating card islands.
+
 ## Gate 5: Health Safety
 
 Passing means health features organize patterns without diagnosis. Urgent red flags direct users to veterinary care. WoofGuide stays bounded.
@@ -165,6 +167,8 @@ Current evidence, 2026-06-11: Care Pass reports now include a Weight Trend secti
 Current evidence, 2026-06-11: Care Pass reports now include a Grooming Care section with recent grooming count, type counts, latest grooming context, products, next due date, and owner-reported/non-diagnostic boundary language.
 
 Current evidence, 2026-06-14: Mobile Records now presents Care Pass audience previews, saved report artifacts, and Progress Report controls as shared board sections with accessible resend, printable-source, and share actions preserved for sitter/vet/trainer handoff workflows.
+
+Current evidence, 2026-06-14: Mobile Records now keeps credential vault sections, diet context, and the records cabinet in the same board anatomy as report handoffs, making vaccines, visits, receipts, insurance, microchip, diet, and documents easier to scan as one care vault.
 
 ## Gate 7: Revenue Readiness
 

@@ -734,78 +734,80 @@ export default function RecordsScreen() {
           </BoardCard>
 
           {/* Record vault */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Record Vault</Text>
-            <Pressable onPress={() => openRecordForm("document")} hitSlop={8} style={s.shareInline}>
-              <Ionicons name="add-circle-outline" size={15} color={colors.copper} />
-              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Add</Text>
-            </Pressable>
-          </View>
-          <View style={s.vaultGrid}>
-            {recordSections.map((section) => {
-              const option = RECORD_OPTIONS.find((item) => item.kind === section.kind) ?? RECORD_OPTIONS[0];
-              const tone = section.status === "On file" ? colors.sage : colors.amber;
-              return (
-                <Pressable
-                  key={section.kind}
-                  onPress={() => openRecordForm(section.kind)}
-                  style={({ pressed }) => [
-                    s.vaultCard,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: section.status === "On file" ? colors.border : colors.amber + "66",
-                      shadowColor: colors.primary,
-                      opacity: pressed ? 0.85 : 1,
-                    },
-                  ]}
-                >
-                  <View style={[s.vaultIcon, { backgroundColor: tone + "16" }]}>
-                    <Ionicons name={option.icon} size={17} color={tone} />
-                  </View>
-                  <Text style={[s.vaultLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{section.label}</Text>
-                  <Text style={[s.vaultMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {section.count > 0 ? `${section.count} on file` : "Add now"}
-                  </Text>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader
+              title="Record Vault"
+              accessory={
+                <Pressable onPress={() => openRecordForm("document")} hitSlop={8} style={s.shareInline}>
+                  <Ionicons name="add-circle-outline" size={15} color={colors.copper} />
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Add</Text>
                 </Pressable>
-              );
-            })}
-          </View>
-          {recordVault.missingCritical.length > 0 ? (
-            <View style={[s.vaultNotice, { backgroundColor: colors.amber + "12", borderColor: colors.amber + "44" }]}>
-              <Ionicons name="alert-circle-outline" size={16} color={colors.amber} />
-              <Text style={[s.vaultNoticeText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                Missing: {recordVault.missingCritical.join(", ")}
-              </Text>
-            </View>
-          ) : null}
-          {recordReminders.length > 0 ? (
-            <View style={[s.reminderList, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {recordReminders.map((reminder, index) => {
-                const tone = reminder.urgency === "alert" ? colors.rose : colors.amber;
+              }
+            />
+            <View style={s.vaultGrid}>
+              {recordSections.map((section) => {
+                const option = RECORD_OPTIONS.find((item) => item.kind === section.kind) ?? RECORD_OPTIONS[0];
+                const tone = section.status === "On file" ? colors.sage : colors.amber;
                 return (
-                  <View
-                    key={`${reminder.kind}_${reminder.recordId ?? reminder.label}`}
-                    style={[s.reminderRow, index > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}
+                  <Pressable
+                    key={section.kind}
+                    onPress={() => openRecordForm(section.kind)}
+                    style={({ pressed }) => [
+                      s.vaultCard,
+                      {
+                        backgroundColor: pressed ? colors.secondary : colors.background,
+                        borderColor: section.status === "On file" ? colors.border : colors.amber + "66",
+                      },
+                    ]}
                   >
-                    <View style={[s.reminderIcon, { backgroundColor: tone + "16" }]}>
-                      <Ionicons name={reminder.urgency === "alert" ? "alert-circle" : "time-outline"} size={16} color={tone} />
+                    <View style={[s.vaultIcon, { backgroundColor: tone + "16" }]}>
+                      <Ionicons name={option.icon} size={17} color={tone} />
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.reminderTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {reminder.label}
-                      </Text>
-                      <Text style={[s.reminderDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                        {reminder.detail}
-                      </Text>
-                      <Text style={[s.reminderAction, { color: tone, fontFamily: "Inter_700Bold" }]}>
-                        {reminder.action}
-                      </Text>
-                    </View>
-                  </View>
+                    <Text style={[s.vaultLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{section.label}</Text>
+                    <Text style={[s.vaultMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {section.count > 0 ? `${section.count} on file` : "Add now"}
+                    </Text>
+                  </Pressable>
                 );
               })}
             </View>
-          ) : null}
+            {recordVault.missingCritical.length > 0 ? (
+              <View style={[s.vaultNotice, { backgroundColor: colors.amber + "12", borderColor: colors.amber + "44" }]}>
+                <Ionicons name="alert-circle-outline" size={16} color={colors.amber} />
+                <Text style={[s.vaultNoticeText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  Missing: {recordVault.missingCritical.join(", ")}
+                </Text>
+              </View>
+            ) : null}
+            {recordReminders.length > 0 ? (
+              <View style={[s.reminderList, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                {recordReminders.map((reminder, index) => {
+                  const tone = reminder.urgency === "alert" ? colors.rose : colors.amber;
+                  return (
+                    <View
+                      key={`${reminder.kind}_${reminder.recordId ?? reminder.label}`}
+                      style={[s.reminderRow, index > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}
+                    >
+                      <View style={[s.reminderIcon, { backgroundColor: tone + "16" }]}>
+                        <Ionicons name={reminder.urgency === "alert" ? "alert-circle" : "time-outline"} size={16} color={tone} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.reminderTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {reminder.label}
+                        </Text>
+                        <Text style={[s.reminderDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                          {reminder.detail}
+                        </Text>
+                        <Text style={[s.reminderAction, { color: tone, fontFamily: "Inter_700Bold" }]}>
+                          {reminder.action}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
+          </BoardCard>
 
           {/* Weight trend */}
           <View style={[s.sectionHeader, { marginTop: 28 }]}>
@@ -1852,13 +1854,15 @@ export default function RecordsScreen() {
           </BoardCard>
 
           {/* Diet folder */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Diet on File</Text>
-            <Pressable onPress={() => router.push("/more")} hitSlop={8}>
-              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Edit</Text>
-            </Pressable>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader
+              title="Diet on File"
+              accessory={
+                <Pressable onPress={() => router.push("/more")} hitSlop={8}>
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Edit</Text>
+                </Pressable>
+              }
+            />
             <View style={s.dietHead}>
               <View style={[s.rowIconWrap, { backgroundColor: colors.copper + "16" }]}>
                 <PulseIcon name="bowl" size={20} />
@@ -1884,16 +1888,11 @@ export default function RecordsScreen() {
                 ))}
               </View>
             )}
-          </View>
+          </BoardCard>
 
           {/* Records cabinet */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Records Cabinet</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-              {recordVault.total} saved
-            </Text>
-          </View>
-          <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader title="Records Cabinet" action={`${recordVault.total} saved`} />
             {recordList.length === 0 ? (
               <View style={s.recordEmpty}>
                 <Ionicons name="folder-open-outline" size={28} color={colors.mutedForeground} />
@@ -1952,7 +1951,7 @@ export default function RecordsScreen() {
                 );
               })
             )}
-          </View>
+          </BoardCard>
 
           {/* Vet boundary */}
           <View style={[s.notice, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -2144,13 +2143,9 @@ const s = StyleSheet.create({
   vaultCard: {
     width: "48%",
     minHeight: 92,
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 13,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    elevation: 2,
   },
   vaultIcon: { width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center", marginBottom: 8 },
   vaultLabel: { fontSize: 15 },

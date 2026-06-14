@@ -28,6 +28,7 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Extended the Expo mobile board primitive system beyond Home. The shared mobile primitives now include route headers, status pills, and metric tiles, and core routes now adopt the board system across Log, Plans, Health/Bile, More, Records, WoofGuide, and Avatar Studio.
 - Converted mobile Health Watch/Bile Watch to shared board cards, metric tiles, section headers, care rows, and status pills while preserving non-diagnostic health boundary language.
 - Converted mobile Records Care Pass, Report History, and Progress Report into shared board-card sections while preserving preview, resend, print-source, period-filter, and share actions.
+- Converted mobile Records Record Vault, Diet on File, and Records Cabinet into shared board-card sections while preserving add/edit/delete controls, attachment indicators, due labels, and diet context.
 
 ## Verification
 
@@ -59,6 +60,8 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Focused zero-dependency suite passed locally after the core workflow card anatomy slice: 199 passing tests.
 - Records Care Pass, Report History, and Progress Report board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Focused zero-dependency suite passed locally after the Records report board anatomy slice: 201 passing tests.
+- Records Record Vault, Diet on File, and Records Cabinet board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Focused zero-dependency suite passed locally after the Records vault board anatomy slice: 202 passing tests.
 - GitHub Actions full verification is the authoritative full typecheck/build gate after push.
 
 ## Current Implementation Focus
@@ -68,7 +71,7 @@ Next implementation slice:
 1. Runtime/browser visual QA once a local package manager or dev server dependency install is available.
 2. Provider-backed account/cloud/payment decisions after Apollo picks the release stack.
 3. Native/mobile runtime QA and final visual system pass.
-4. Deeper route-by-route visual polish now that board route headers, core workflow cards, and Records report board sections are in place.
+4. Deeper route-by-route visual polish now that board route headers, core workflow cards, Records report board sections, and Records vault board sections are in place.
 5. Fable/Replit visual polish using the new handoff file.
 
 ## Known Limitations
