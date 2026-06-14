@@ -1815,7 +1815,7 @@ export default function LogScreen() {
               <Ionicons name="checkmark-circle" size={20} color="#fff" />
               <Text style={[s.logBtnText, { fontFamily: "Inter_700Bold" }]}>Log {config?.label.toLowerCase()}</Text>
             </Pressable>
-          </View>
+          </BoardCard>
 
           {/* Today at a glance */}
           {todaySnapshot.total > 0 && (
@@ -1861,7 +1861,7 @@ export default function LogScreen() {
                 <Ionicons name="close" size={16} color={colors.mutedForeground} />
               </Pressable>
             ) : null}
-          </BoardCard>
+          </View>
           {logSearch.hasActiveFilters ? (
             <Text style={[s.searchSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
               {logSearch.summary}

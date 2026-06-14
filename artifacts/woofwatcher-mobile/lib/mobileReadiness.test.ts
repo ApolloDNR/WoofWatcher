@@ -291,6 +291,17 @@ test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*WOOFWATCHER DOG ID/);
 });
 
+test("keeps Quick Log composer card boundaries separate from search controls", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const composerBlock = log.slice(log.indexOf("{/* Composer card */}"), log.indexOf("{/* Today at a glance */}"));
+  const searchBlock = log.slice(log.indexOf("<View style={[s.searchCard"), log.indexOf("{logSearch.hasActiveFilters"));
+
+  assert.match(composerBlock, /<BoardCard[\s\S]*<\/BoardCard>/);
+  assert.doesNotMatch(composerBlock, /<View style=\{\[s\.searchCard/);
+  assert.match(searchBlock, /<View style=\{\[s\.searchCard[\s\S]*<\/View>/);
+  assert.doesNotMatch(searchBlock, /<\/BoardCard>/);
+});
+
 test("does not keep hidden legacy headers behind board route headers", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const avatarStudio = readAppFile("portrait.tsx");
