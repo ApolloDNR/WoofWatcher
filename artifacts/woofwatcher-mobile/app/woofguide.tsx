@@ -26,6 +26,7 @@ import {
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare, CareState } from "@/context/CareContext";
+import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import {
   deriveWoofGuideActions,
   type WoofGuideActionCard,
@@ -285,10 +286,15 @@ export default function WoofGuideScreen() {
                 <View style={s.emptyIconContainer}>
                   <Image source={require("@/assets/images/phoenix-avatar.png")} style={s.avatar} />
                 </View>
-                <Text style={[s.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Ask me anything</Text>
-                <Text style={[s.emptySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  Get help with {name}'s care, diet, anxiety, and more.
-                </Text>
+                <BoardCard style={s.guideIntroCard}>
+                  <BoardRouteHeader
+                    kicker="WoofGuide"
+                    title="Owner-reviewed guidance"
+                    subtitle={`Ask about ${name}'s care, diet, anxiety, and patterns. Never a vet replacement.`}
+                    icon="chatbubbles-outline"
+                    style={s.guideIntroHeader}
+                  />
+                </BoardCard>
                 <View style={s.quickRow}>
                   {quickQuestions.map((q) => (
                     <Pressable
@@ -303,7 +309,7 @@ export default function WoofGuideScreen() {
                   ))}
                 </View>
                 <View style={s.actionArea}>
-                  <Text style={[s.actionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Suggested actions</Text>
+                  <BoardSectionHeader title="Suggested actions" />
                   {actionCards.map((action) => {
                     const tone =
                       action.urgency === "alert"
@@ -458,6 +464,8 @@ const s = StyleSheet.create({
   emptyArea: { alignItems: "center", paddingTop: 40, gap: 10 },
   emptyIconContainer: { width: 80, height: 80, borderRadius: 40, overflow: "hidden", marginBottom: 8, borderWidth: 4, borderColor: "#fff", shadowColor: "#2E5846", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
   avatar: { width: "100%", height: "100%" },
+  guideIntroCard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 8 },
+  guideIntroHeader: { marginBottom: 0 },
   emptyTitle: { fontSize: 20 },
   emptySub: { fontSize: 15, textAlign: "center", paddingHorizontal: 24, lineHeight: 22 },
   quickRow: { width: "100%", gap: 10, paddingHorizontal: 12, marginTop: 16 },

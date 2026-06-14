@@ -732,6 +732,16 @@ Owner: Codex.
 
 Revisit trigger: A canonical Figma component library replaces the in-code primitives, or final native animation/asset tooling requires a more formal design-token package.
 
+### 2026-06-14: Core Mobile Routes Must Inherit The Board System
+
+Decision: Core v1.5 mobile routes should use shared board primitives instead of one-off route chrome. The primitive layer now includes `BoardRouteHeader`, `BoardPill`, and `BoardMetricTile`, and the readiness suite protects adoption across Log, Plans, Health/Bile, More, Records, WoofGuide, and Avatar Studio.
+
+Reason: Apollo wants the app to feel like one premium neo-retro pixel product, not a Home screen mockup attached to mismatched utility pages. Shared route chrome gives Fable/Replit/Figma a stable system to polish while preserving the existing care workflows, local-first data, safety language, reports, records, and assistant routing.
+
+Owner: Codex.
+
+Revisit trigger: A final Figma component library, native animation package, or full visual QA pass replaces this in-code board route layer.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

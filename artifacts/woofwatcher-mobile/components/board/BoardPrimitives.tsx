@@ -15,6 +15,158 @@ import { useColors } from "@/hooks/useColors";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+export function BoardRouteHeader({
+  kicker,
+  title,
+  subtitle,
+  icon,
+  back,
+  onBack,
+  actionIcon,
+  actionLabel,
+  onAction,
+  actionDisabled,
+  style,
+}: {
+  kicker?: string;
+  title: string;
+  subtitle?: string;
+  icon?: IoniconName;
+  back?: boolean;
+  onBack?: () => void;
+  actionIcon?: IoniconName;
+  actionLabel?: string;
+  onAction?: () => void;
+  actionDisabled?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const colors = useColors();
+
+  return (
+    <View style={[styles.routeHeader, style]}>
+      {back ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          onPress={onBack}
+          style={({ pressed }) => [
+            styles.routeIconButton,
+            {
+              backgroundColor: pressed ? colors.secondary : colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Ionicons name="chevron-back" size={20} color={colors.navy} />
+        </Pressable>
+      ) : icon ? (
+        <View style={[styles.routeIconButton, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+          <Ionicons name={icon} size={20} color={colors.navy} />
+        </View>
+      ) : null}
+      <View style={styles.routeHeaderText}>
+        {kicker ? (
+          <Text style={[styles.routeKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>{kicker}</Text>
+        ) : null}
+        <Text style={[styles.routeTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{title}</Text>
+        {subtitle ? (
+          <Text style={[styles.routeSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      {actionIcon && onAction ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel ?? title}
+          onPress={onAction}
+          disabled={actionDisabled}
+          style={({ pressed }) => [
+            styles.routeIconButton,
+            {
+              backgroundColor: pressed || actionDisabled ? colors.secondary : colors.card,
+              borderColor: colors.border,
+              opacity: actionDisabled ? 0.55 : 1,
+            },
+          ]}
+        >
+          <Ionicons name={actionIcon} size={19} color={colors.navy} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+export function BoardPill({
+  label,
+  icon,
+  tone,
+  active,
+  style,
+}: {
+  label: string;
+  icon?: IoniconName;
+  tone?: string;
+  active?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const colors = useColors();
+  const pillTone = tone ?? colors.sage;
+  return (
+    <View
+      style={[
+        styles.pill,
+        {
+          backgroundColor: active ? pillTone : pillTone + "18",
+          borderColor: pillTone + "55",
+        },
+        style,
+      ]}
+    >
+      {icon ? <Ionicons name={icon} size={12} color={active ? "#FFFFFF" : pillTone} /> : null}
+      <Text style={[styles.pillText, { color: active ? "#FFFFFF" : pillTone, fontFamily: "Inter_700Bold" }]}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+export function BoardMetricTile({
+  icon,
+  label,
+  value,
+  detail,
+  tone,
+  style,
+}: {
+  icon: PixelIconName;
+  label: string;
+  value: string;
+  detail?: string;
+  tone?: string;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const colors = useColors();
+  const tileTone = tone ?? colors.sage;
+  return (
+    <View style={[styles.metricTile, { backgroundColor: colors.background, borderColor: colors.border }, style]}>
+      <View style={[styles.metricIcon, { backgroundColor: tileTone + "16" }]}>
+        <PixelIcon name={icon} size={22} />
+      </View>
+      <View style={styles.metricText}>
+        <Text style={[styles.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
+        <Text style={[styles.metricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{value}</Text>
+        {detail ? (
+          <Text style={[styles.metricDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            {detail}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
 
 export function BoardCard({
   children,
@@ -233,6 +385,89 @@ export function CareRow({
 }
 
 const styles = StyleSheet.create({
+  routeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
+  routeIconButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  routeHeaderText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  routeKicker: {
+    fontSize: 10,
+    letterSpacing: 0,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  routeTitle: {
+    fontSize: 26,
+    lineHeight: 30,
+    letterSpacing: 0,
+  },
+  routeSubtitle: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  pill: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  pillText: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  metricTile: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  metricIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  metricText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  metricLabel: {
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  metricValue: {
+    fontSize: 17,
+    lineHeight: 21,
+    marginTop: 2,
+  },
+  metricDetail: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 2,
+  },
   card: {
     borderWidth: 1,
     elevation: 2,
@@ -350,4 +585,3 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
   },
 });
-

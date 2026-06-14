@@ -34,6 +34,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -494,6 +495,12 @@ export default function MoreScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
+          <BoardRouteHeader
+            kicker="More"
+            title="Profile & Care Team"
+            subtitle={`Everything that keeps ${profile.name} thriving`}
+            icon="people-circle-outline"
+          />
           {/* Header */}
           <View style={s.header}>
             <Text style={[s.title, { color: colors.foreground, fontFamily: DISPLAY }]}>Profile & Care Team</Text>
@@ -915,9 +922,7 @@ export default function MoreScreen() {
           </View>
 
           {/* Links */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Tools & Sharing</Text>
-          </View>
+          <BoardSectionHeader title="Tools & Sharing" style={{ marginTop: 28 }} />
           <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             {links.map((l, i) => (
               <Pressable
@@ -1311,7 +1316,7 @@ const s = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1 },
 
-  header: { marginBottom: 18 },
+  header: { display: "none", marginBottom: 18 },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 3 },
 

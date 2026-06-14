@@ -25,6 +25,7 @@ import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
 import { useAvatar, MOODS, AvatarSet } from "@/context/AvatarContext";
 import { MOOD_META, type Mood } from "@/lib/phoenixStatus";
+import { BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -254,6 +255,14 @@ export default function PortraitScreen() {
         contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: 60, paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
       >
+        <BoardRouteHeader
+          kicker="Avatar Studio"
+          title="Avatar Studio"
+          subtitle={`Snap one photo of ${name} and paint a full set of moods for the live care twin.`}
+          back
+          onBack={() => router.back()}
+        />
+
         {/* Header */}
         <View style={s.header}>
           <Pressable onPress={() => router.back()} hitSlop={10} style={[s.backBtn, { backgroundColor: colors.card }]}>
@@ -326,6 +335,7 @@ export default function PortraitScreen() {
               </View>
             </View>
 
+            <BoardSectionHeader title="Mood set" style={{ marginTop: 16 }} />
             <View style={s.moodGrid}>
               {MOODS.map((m) =>
                 result[m] ? (
@@ -382,6 +392,7 @@ export default function PortraitScreen() {
             </View>
 
             {/* Current mood set preview */}
+            <BoardSectionHeader title="Mood set" style={{ marginTop: 16 }} />
             <View style={s.moodGrid}>
               {MOODS.map((m) => (
                 <View key={m} style={s.moodChip}>
@@ -449,13 +460,13 @@ export default function PortraitScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
+  header: { display: "none", flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
   backBtn: {
     width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center",
     shadowColor: "#0F1F33", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
   },
   headerTitle: { fontSize: 21, letterSpacing: -0.2 },
-  subtitle: { fontSize: 15, lineHeight: 21, marginTop: 4, marginBottom: 20 },
+  subtitle: { display: "none", fontSize: 15, lineHeight: 21, marginTop: 4, marginBottom: 20 },
 
   canvasCard: {
     borderRadius: 26,

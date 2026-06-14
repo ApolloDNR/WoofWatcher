@@ -60,6 +60,7 @@ import {
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -599,18 +600,12 @@ export default function RecordsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
-          {/* Header */}
-          <View style={s.header}>
-            <View style={[s.headerIcon, { backgroundColor: colors.primary + "14" }]}>
-              <Ionicons name="folder-open" size={22} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.title, { color: colors.foreground, fontFamily: DISPLAY }]}>Records</Text>
-              <Text style={[s.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                {state.profile.name}'s file cabinet - trends, incidents & reports
-              </Text>
-            </View>
-          </View>
+          <BoardRouteHeader
+            kicker="Records"
+            title="Records"
+            subtitle={`${state.profile.name}'s file cabinet - trends, incidents & reports`}
+            icon="folder-open-outline"
+          />
 
           {/* Care highlights strip */}
           <View style={[s.highlightStrip, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
@@ -627,10 +622,7 @@ export default function RecordsScreen() {
           </View>
 
           {/* Care trends */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Care Trends</Text>
-            <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>7 days</Text>
-          </View>
+          <BoardSectionHeader title="Care Trends" action="7 days" style={{ marginTop: 28 }} />
           <View style={[s.padCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             <View style={s.trendHeroRow}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "14" }]}>

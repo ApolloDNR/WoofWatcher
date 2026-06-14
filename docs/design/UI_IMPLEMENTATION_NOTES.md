@@ -75,6 +75,20 @@ Implemented the first board-accurate Expo mobile foundation slice:
 
 Remaining visual work:
 
-- Apply the same primitive system to Quick Log, Plans, Health/Bile, More, Records, Care Pass, WoofGuide, and Avatar Studio.
+- Continue deep visual polish on Quick Log, Plans, More, Records, Care Pass, WoofGuide, and Avatar Studio now that route chrome is aligned.
 - Run simulator/browser screenshot QA once dependencies are installed.
 - Replace current static board assets with final Phoenix pixel states when available.
+
+## 2026-06-14 Board Route Adoption Pass
+
+Extended the mobile board primitive system beyond Phoenix Home:
+
+- Added `BoardRouteHeader`, `BoardPill`, and `BoardMetricTile` to `artifacts/woofwatcher-mobile/components/board/BoardPrimitives.tsx`.
+- Converted Health Watch/Bile Watch to shared board cards, pills, metric tiles, section headers, and care rows while preserving non-diagnostic health copy.
+- Added shared route headers to Quick Log, Plans, More, Records, WoofGuide, and Avatar Studio.
+- Added board section usage to Quick Log, Plans, More, Records, WoofGuide, and Avatar Studio so the visual system now reaches every core v1.5 mobile route.
+- Added a mobile readiness test that protects board primitive adoption across Log, Plans, Health, More, Records, WoofGuide, and Avatar Studio.
+
+Known implementation note:
+
+- `more.tsx` and `portrait.tsx` still contain hidden legacy header markup because those source blocks contain older encoded characters. The visible UI uses `BoardRouteHeader`; a later cleanup pass can safely remove the hidden legacy markup after a formatter/typechecker run.

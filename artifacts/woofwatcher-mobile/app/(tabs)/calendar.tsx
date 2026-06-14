@@ -30,6 +30,7 @@ import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { parseLocalDate } from "@/lib/time";
+import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -444,19 +445,18 @@ export default function CalendarScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
-          {/* Header */}
-          <View style={s.header}>
-            <View style={[s.headerIcon, { backgroundColor: colors.primary + "14" }]}>
-              <Ionicons name="calendar" size={22} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.title, { color: colors.foreground, fontFamily: DISPLAY }]}>Plans & Schedule</Text>
-              <Text style={[s.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{dateLabel}</Text>
-            </View>
-            <Pressable onPress={() => { Haptics.selectionAsync(); setAddOpen(true); }} style={[s.addBtn, { backgroundColor: colors.primary }]}>
-              <Ionicons name="add" size={22} color="#fff" />
-            </Pressable>
-          </View>
+          <BoardRouteHeader
+            kicker="Plans"
+            title="Plans & Schedule"
+            subtitle={dateLabel}
+            icon="calendar-outline"
+            actionIcon="add"
+            actionLabel="Add plan"
+            onAction={() => {
+              Haptics.selectionAsync();
+              setAddOpen(true);
+            }}
+          />
 
           {/* WoofGuide discovery banner */}
           <Pressable
@@ -527,9 +527,7 @@ export default function CalendarScreen() {
           )}
 
           {/* Upcoming one-off events */}
-          <View style={[s.sectionHeader, { marginTop: 28 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Upcoming Events</Text>
-          </View>
+          <BoardSectionHeader title="Upcoming Events" style={{ marginTop: 28 }} />
           {upcoming.length === 0 ? (
             <View style={[s.emptyCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
               <Ionicons name="calendar-outline" size={30} color={colors.mutedForeground} />
@@ -583,13 +581,12 @@ export default function CalendarScreen() {
           )}
 
           {/* Reminder Center */}
-          <View style={[s.sectionHeader, { marginTop: 14 }]}>
-            <Text style={[s.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Reminder Center</Text>
-            <Text style={[s.sectionLink, { color: reminderTone, fontFamily: "Inter_700Bold" }]}>
-              {reminderCount === 0 ? "Clear" : `${reminderCount} active`}
-            </Text>
-          </View>
-          <View style={[s.reminderCard, { backgroundColor: colors.card, borderColor: reminderTone + "44", shadowColor: reminderTone }]}>
+          <BoardSectionHeader
+            title="Reminder Center"
+            action={reminderCount === 0 ? "Clear" : `${reminderCount} active`}
+            style={{ marginTop: 14 }}
+          />
+          <BoardCard padded={false} style={[s.reminderCard, { backgroundColor: colors.card, borderColor: reminderTone + "44", shadowColor: reminderTone }]}>
             <View style={s.responsibilityTop}>
               <View style={[s.responsibilityIcon, { backgroundColor: reminderTone + "18" }]}>
                 <Ionicons name="notifications-outline" size={18} color={reminderTone} />
@@ -664,7 +661,7 @@ export default function CalendarScreen() {
             <Text style={[s.reminderReadiness, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {careReminderCenter.notificationReadiness}
             </Text>
-          </View>
+          </BoardCard>
 
           {/* Daily routine */}
           <View style={[s.sectionHeader, { marginTop: 14 }]}>

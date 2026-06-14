@@ -36,6 +36,7 @@ import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
+import { BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -1159,35 +1160,19 @@ export default function LogScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
-          {/* Header */}
-          <View style={s.header}>
-            <View style={[s.headerIcon, { backgroundColor: colors.primary + "14" }]}>
-              <Ionicons name="reader" size={22} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.title, { color: colors.foreground, fontFamily: DISPLAY }]}>Activity Log</Text>
-              <Text style={[s.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Logging as {caregiver} - every care note stays connected
-              </Text>
-            </View>
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                refresh();
-              }}
-              disabled={isSyncing}
-              style={({ pressed }) => [
-                s.syncBtn,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  opacity: pressed || isSyncing ? 0.65 : 1,
-                },
-              ]}
-            >
-              <Ionicons name={isSyncing ? "sync" : "cloud-upload-outline"} size={18} color={colors.primary} />
-            </Pressable>
-          </View>
+          <BoardRouteHeader
+            kicker="Quick Log"
+            title="Activity Log"
+            subtitle={`Logging as ${caregiver} - every care note stays connected`}
+            icon="reader-outline"
+            actionIcon={isSyncing ? "sync" : "cloud-upload-outline"}
+            actionLabel="Refresh care sync"
+            actionDisabled={isSyncing}
+            onAction={() => {
+              Haptics.selectionAsync();
+              refresh();
+            }}
+          />
 
           {syncOutbox.total > 0 ? (
             <View
@@ -1291,7 +1276,7 @@ export default function LogScreen() {
 
           {/* Composer card */}
           <View style={[s.loggerCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-            <Text style={[s.loggerTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Log something</Text>
+            <BoardSectionHeader title="Log something" />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}

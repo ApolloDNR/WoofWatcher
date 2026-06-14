@@ -240,6 +240,43 @@ test("locks the mobile pixel UI foundation to Apollo's reference boards", () => 
   assert.match(tabs, /tabBarActiveBackgroundColor/);
 });
 
+test("extends the mobile pixel board system across core v1.5 routes", () => {
+  const primitives = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "board",
+      "BoardPrimitives.tsx",
+    ),
+    "utf8",
+  );
+  const coreRoutes: Record<string, string> = {
+    log: readAppFile(join("(tabs)", "log.tsx")),
+    plans: readAppFile(join("(tabs)", "calendar.tsx")),
+    health: readAppFile(join("(tabs)", "health.tsx")),
+    more: readAppFile(join("(tabs)", "more.tsx")),
+    records: readAppFile(join("(tabs)", "records.tsx")),
+    woofguide: readAppFile("woofguide.tsx"),
+    avatarStudio: readAppFile("portrait.tsx"),
+  };
+
+  for (const exportedName of ["BoardRouteHeader", "BoardPill", "BoardMetricTile"]) {
+    assert.match(primitives, new RegExp(`export function ${exportedName}`));
+  }
+
+  for (const [route, source] of Object.entries(coreRoutes)) {
+    assert.match(source, /@\/components\/board\/BoardPrimitives/, `${route} should import board primitives`);
+    assert.match(source, /BoardRouteHeader/, `${route} should use the shared route header`);
+    assert.match(
+      source,
+      /BoardCard|BoardSectionHeader|CareRow|StatusMeter|BoardMetricTile/,
+      `${route} should use a board primitive beyond route chrome`,
+    );
+  }
+});
+
 test("keeps Records report history wired for printable Care Pass artifacts", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 

@@ -49,6 +49,13 @@ Use board 04 as the primary shell/layout target and boards 02/03 as the componen
 - Home-alone waiting.
 - Not-feeling-well low posture.
 
+## Current Code Slots Ready For Final Assets
+
+- Phoenix Home: pixel room hero, speech bubble, segmented status meters, watch cards.
+- Health/Bile Watch: board metric tiles and Bile Watch status pill.
+- Log, Plans, More, Records, WoofGuide, Avatar Studio: shared board route header slots ready for final icon/animation polish.
+- Avatar Studio: mood-set preview grid ready for final generated or hand-authored Phoenix pixel states.
+
 ## Source Control Rule
 
 Mirror final selected screenshots or source references into `docs/design/reference/` when Apollo provides them. Do not rely only on expiring chat image attachments.

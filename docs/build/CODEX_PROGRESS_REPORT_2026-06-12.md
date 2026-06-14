@@ -25,6 +25,8 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Implemented Settings as a first-class PWA route that consolidates full backup, import, care-room transfer, reset, local-only provider readiness, AI mode, health boundary, reminder delivery truth, and sync blockers.
 - Polished Phoenix Home with generated pixel-room state copy, a "Where Phoenix is" Household Pulse card, and a combined Health/Bile snapshot covering food gap, bedtime snack proof, vomiting, energy, and weight.
 - Added `docs/design/FABLE_HANDOFF_2026-06-13.md` so Fable/Replit can polish the existing functional skeleton without breaking route structure, data hooks, local-first behavior, backup/import, or safety boundaries.
+- Extended the Expo mobile board primitive system beyond Home. The shared mobile primitives now include route headers, status pills, and metric tiles, and core routes now adopt the board system across Log, Plans, Health/Bile, More, Records, WoofGuide, and Avatar Studio.
+- Converted mobile Health Watch/Bile Watch to shared board cards, metric tiles, section headers, care rows, and status pills while preserving non-diagnostic health boundary language.
 
 ## Verification
 
@@ -50,6 +52,8 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - JS syntax checks passed for `artifacts/woofwatcher/src/vanilla/app-entry.js`, `artifacts/woofwatcher/src/vanilla/woof-core.js`, and `artifacts/woofwatcher/src/vanilla/woof-product-view-model.js`.
 - `git diff --check` passed.
 - Local TypeScript could not run because this checkout did not have `node_modules/typescript`.
+- Mobile board route adoption is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Focused zero-dependency suite passed locally after the board route adoption slice: 197 passing tests.
 - GitHub Actions full verification is the authoritative full typecheck/build gate after push.
 
 ## Current Implementation Focus
@@ -59,10 +63,12 @@ Next implementation slice:
 1. Runtime/browser visual QA once a local package manager or dev server dependency install is available.
 2. Provider-backed account/cloud/payment decisions after Apollo picks the release stack.
 3. Native/mobile runtime QA and final visual system pass.
-4. Fable/Replit visual polish using the new handoff file.
+4. Deeper route-by-route visual polish now that board route headers and shared primitives are in place.
+5. Fable/Replit visual polish using the new handoff file.
 
 ## Known Limitations
 
 - Final pixel animation assets are not present.
 - Browser screenshot verification was not possible in this checkout because `node_modules`, `pnpm`, `npm`, and the local app terminal helper were unavailable.
 - Real AI, cloud sync, provider-backed roles, push notifications, payments, document storage, binary PDFs, and app-store release remain separate production slices.
+- `more.tsx` and `portrait.tsx` contain hidden legacy header markup with older encoded characters; the visible mobile UI uses the new `BoardRouteHeader` and the old hidden blocks should be removed in a formatter-backed cleanup pass.
