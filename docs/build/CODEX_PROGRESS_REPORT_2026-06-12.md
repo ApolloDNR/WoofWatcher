@@ -71,4 +71,3 @@ Next implementation slice:
 - Final pixel animation assets are not present.
 - Browser screenshot verification was not possible in this checkout because `node_modules`, `pnpm`, `npm`, and the local app terminal helper were unavailable.
 - Real AI, cloud sync, provider-backed roles, push notifications, payments, document storage, binary PDFs, and app-store release remain separate production slices.
-- `more.tsx` and `portrait.tsx` contain hidden legacy header markup with older encoded characters; the visible mobile UI uses the new `BoardRouteHeader` and the old hidden blocks should be removed in a formatter-backed cleanup pass.

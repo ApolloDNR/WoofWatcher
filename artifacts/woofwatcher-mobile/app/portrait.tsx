@@ -263,19 +263,6 @@ export default function PortraitScreen() {
           onBack={() => router.back()}
         />
 
-        {/* Header */}
-        <View style={s.header}>
-          <Pressable onPress={() => router.back()} hitSlop={10} style={[s.backBtn, { backgroundColor: colors.card }]}>
-            <Ionicons name="chevron-back" size={22} color={colors.foreground} />
-          </Pressable>
-          <Text style={[s.headerTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Avatar Studio</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <Text style={[s.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          Snap one photo of {name} and we'll paint a full set of moods — happy, playful, cozy,
-          unsure and sleepy. They become {name}'s live avatar across the app.
-        </Text>
 
         {/* Working state — cinematic scan over the source photo */}
         {phase === "working" && (
@@ -460,13 +447,13 @@ export default function PortraitScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  header: { display: "none", flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
   backBtn: {
     width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center",
     shadowColor: "#0F1F33", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
   },
   headerTitle: { fontSize: 21, letterSpacing: -0.2 },
-  subtitle: { display: "none", fontSize: 15, lineHeight: 21, marginTop: 4, marginBottom: 20 },
+  subtitle: { fontSize: 15, lineHeight: 21, marginTop: 4, marginBottom: 20 },
 
   canvasCard: {
     borderRadius: 26,

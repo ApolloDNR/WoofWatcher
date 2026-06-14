@@ -89,6 +89,6 @@ Extended the mobile board primitive system beyond Phoenix Home:
 - Added board section usage to Quick Log, Plans, More, Records, WoofGuide, and Avatar Studio so the visual system now reaches every core v1.5 mobile route.
 - Added a mobile readiness test that protects board primitive adoption across Log, Plans, Health, More, Records, WoofGuide, and Avatar Studio.
 
-Known implementation note:
+Cleanup note:
 
-- `more.tsx` and `portrait.tsx` still contain hidden legacy header markup because those source blocks contain older encoded characters. The visible UI uses `BoardRouteHeader`; a later cleanup pass can safely remove the hidden legacy markup after a formatter/typechecker run.
+- Removed the hidden legacy route-header blocks from `more.tsx` and `portrait.tsx` so those routes now rely on `BoardRouteHeader` without duplicate hidden markup.

@@ -501,13 +501,6 @@ export default function MoreScreen() {
             subtitle={`Everything that keeps ${profile.name} thriving`}
             icon="people-circle-outline"
           />
-          {/* Header */}
-          <View style={s.header}>
-            <Text style={[s.title, { color: colors.foreground, fontFamily: DISPLAY }]}>Profile & Care Team</Text>
-            <Text style={[s.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              Everything that keeps {profile.name} thriving 🐾
-            </Text>
-          </View>
 
           {/* Profile header card */}
           <View style={[s.profileCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
@@ -1316,7 +1309,7 @@ const s = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1 },
 
-  header: { display: "none", marginBottom: 18 },
+  header: { marginBottom: 18 },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 3 },
 

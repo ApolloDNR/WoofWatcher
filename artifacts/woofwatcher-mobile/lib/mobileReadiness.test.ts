@@ -277,6 +277,16 @@ test("extends the mobile pixel board system across core v1.5 routes", () => {
   }
 });
 
+test("does not keep hidden legacy headers behind board route headers", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  assert.doesNotMatch(more, /display: "none"/);
+  assert.doesNotMatch(avatarStudio, /display: "none"/);
+  assert.equal((more.match(/<BoardRouteHeader/g) ?? []).length, 1);
+  assert.equal((avatarStudio.match(/<BoardRouteHeader/g) ?? []).length, 1);
+});
+
 test("keeps Records report history wired for printable Care Pass artifacts", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
