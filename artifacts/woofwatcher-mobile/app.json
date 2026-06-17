@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
     "scheme": "woofwatcher",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
@@ -15,7 +15,11 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.pegasusdreamscapes.woofwatcher"
+      "bundleIdentifier": "com.pegasusdreamscapes.woofwatcher",
+      "infoPlist": {
+        "NSCameraUsageDescription": "WoofWatcher uses the camera when you choose to capture Phoenix photos for avatar, care log, or record updates.",
+        "NSPhotoLibraryUsageDescription": "WoofWatcher lets you choose Phoenix photos and care documents for avatar, log, record, and Care Pass updates."
+      }
     },
     "android": {
       "package": "com.pegasusdreamscapes.woofwatcher"
@@ -26,6 +30,13 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "WoofWatcher uses the camera when you choose to capture Phoenix photos for avatar, care log, or record updates.",
+          "photosPermission": "WoofWatcher lets you choose Phoenix photos and care documents for avatar, log, record, and Care Pass updates."
+        }
+      ],
       "expo-web-browser"
     ],
     "experiments": {

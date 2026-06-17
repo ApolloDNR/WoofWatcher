@@ -98,8 +98,20 @@ test("keeps Expo web export smoke wired into CI", () => {
   assert.equal(mobilePackage.scripts["smoke:web"], "node scripts/smoke-web-export.js");
   assert.match(rootPackage.scripts["build:ci"], /woofwatcher-mobile run smoke:web/);
   assert.match(smokeScript, /expo", "export"/);
+  assert.match(smokeScript, /const outputDirName = "\.expo-smoke"/);
+  assert.match(smokeScript, /"--output-dir", outputDirName/);
   assert.match(smokeScript, /EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY/);
   assert.match(mobileGitignore, /\.expo-smoke\//);
+});
+
+test("keeps local Clerk placeholders from blanking the web preview", () => {
+  const auth = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "auth.ts"), "utf8");
+
+  assert.match(auth, /isPlaceholderPublishableKey/);
+  assert.match(auth, /placeholder/);
+  assert.match(auth, /local_smoke/);
+  assert.match(auth, /!isPlaceholderPublishableKey/);
+  assert.match(auth, /useWoofAuth = isClerkConfigured \? useClerkAuth : useLocalAuth/);
 });
 
 test("keeps critical mobile actions accessible to screen readers", () => {
@@ -141,6 +153,7 @@ test("keeps Expo app identity release-grade", () => {
   assert.equal(expo.name, "WoofWatcher");
   assert.equal(expo.slug, "woofwatcher");
   assert.equal(expo.scheme, "woofwatcher");
+  assert.equal(expo.userInterfaceStyle, "automatic");
   assert.equal(expo.ios.bundleIdentifier, "com.pegasusdreamscapes.woofwatcher");
   assert.equal(expo.android.package, "com.pegasusdreamscapes.woofwatcher");
   assert.doesNotMatch(JSON.stringify(expo), /replit/i);
@@ -187,13 +200,111 @@ test("wires Home to the Phoenix status model", () => {
   assert.match(home, /status\.counts/);
 });
 
+test("wires Home to the living Phoenix room and avatar motion model", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const room = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "LivingPhoenixRoom.tsx"),
+    "utf8",
+  );
+  const lifeEngine = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarLifeEngine.ts"),
+    "utf8",
+  );
+  const spritePlayer = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "SpriteSheetPlayer.tsx"),
+    "utf8",
+  );
+  const careTwinAssets = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "careTwinAssets.ts"),
+    "utf8",
+  );
+
+  assert.match(home, /LivingPhoenixRoom/);
+  assert.match(home, /deriveAvatarMotion/);
+  assert.match(home, /avatarMotion\.speech/);
+  assert.match(home, /setRoomReaction/);
+  assert.match(home, /avatarMotion\.line/);
+  assert.match(room, /LIVE CARE TWIN/);
+  assert.match(room, /reactionProgress/);
+  assert.match(room, /energyBlocks/);
+  assert.match(room, /Phoenix room/);
+  assert.match(room, /deriveCareTwinScene/);
+  assert.match(room, /plan\.tapVerb/);
+  assert.match(room, /plan\.recommendedActionLabel/);
+  assert.match(room, /plan\.scenePhase/);
+  assert.match(room, /SpriteSheetPlayer/);
+  assert.match(room, /getCareTwinLayerReadiness/);
+  assert.match(room, /layeredStageReady/);
+  assert.match(room, /care-twin-layered-sprite-rig/);
+  assert.match(room, /ROOM_ZONES/);
+  assert.match(room, /STATE_SCENES/);
+  assert.match(room, /sceneMotionStyle/);
+  assert.match(room, /dogFocusGlow/);
+  assert.match(room, /speechBubble/);
+  assert.match(room, /zoneX/);
+  assert.match(room, /walkCycle/);
+  assert.match(room, /activeZoneStyle/);
+  assert.match(room, /actionBurst/);
+  assert.match(lifeEngine, /AvatarRoomZone/);
+  assert.match(lifeEngine, /deriveAvatarLifePlan/);
+  assert.match(lifeEngine, /deriveCareTwinScene/);
+  assert.match(lifeEngine, /CARE_TWIN_SPRITE_MANIFEST/);
+  assert.match(lifeEngine, /CareTwinSpriteAction/);
+  assert.match(lifeEngine, /anchor: "bottom-center"/);
+  assert.match(lifeEngine, /slotSize: 256/);
+  assert.match(lifeEngine, /spriteAction: "walk-loop"/);
+  assert.match(lifeEngine, /spriteAction: "health-watch"/);
+  assert.match(lifeEngine, /zone: "bowl"/);
+  assert.match(lifeEngine, /animation: "walk"/);
+  assert.match(spritePlayer, /export function SpriteSheetPlayer/);
+  assert.match(spritePlayer, /frameProgress/);
+  assert.match(spritePlayer, /withRepeat/);
+  assert.match(spritePlayer, /overflow: "hidden"/);
+  assert.match(careTwinAssets, /CARE_TWIN_SPRITE_ASSETS/);
+  assert.match(careTwinAssets, /CARE_TWIN_DOGLESS_ROOM_ASSETS/);
+  assert.match(careTwinAssets, /dogless-room-layer/);
+  assert.match(careTwinAssets, /listCareTwinSpriteSlots/);
+  assert.doesNotMatch(room, /PhoenixSpriteRig/);
+  assert.doesNotMatch(room, /SPRITE LOOP/);
+  assert.doesNotMatch(room, /deriveAvatarSpritePlan/);
+  assert.doesNotMatch(room, /phoenix\/cutout/);
+  assert.doesNotMatch(room, /speechWrap/);
+});
+
+test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {
+  const domain = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-intelligence.ts"), "utf8");
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  assert.match(domain, /deriveCareIntelligence/);
+  assert.match(domain, /confidenceScore/);
+  assert.match(domain, /pendingOutcomeCount/);
+  assert.match(domain, /routineProgress/);
+  assert.match(home, /deriveCareIntelligence/);
+  assert.match(home, /careIntelligence\.score/);
+  assert.match(home, /Care IQ/);
+  assert.match(log, /deriveCareIntelligence/);
+  assert.match(log, /Care IQ/);
+  assert.match(log, /careIntelligence\.status/);
+  assert.match(more, /deriveCareIntelligence/);
+  assert.match(more, /Care Intelligence/);
+  assert.match(more, /careIntelligence\.metrics/);
+  assert.match(more, /careIntelligence\.nextAction/);
+});
+
 test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () => {
   const health = readAppFile(join("(tabs)", "health.tsx"));
 
   assert.match(health, /deriveHealthWatch/);
   assert.match(health, /Health Watch/);
   assert.match(health, /Bile Watch/);
-  assert.match(health, /Pattern noticed/);
+  assert.match(health, /Health score/);
+  assert.match(health, /Health Snapshot/);
+  assert.match(health, /Pattern Board/);
+  assert.match(health, /Log health note/);
+  assert.match(health, /7-day bile log/);
+  assert.match(health, /accessibilityState=\{\{ selected: active \}\}/);
   assert.match(health, /Not veterinary advice/);
 });
 
@@ -235,7 +346,7 @@ test("locks the mobile pixel UI foundation to Apollo's reference boards", () => 
   assert.match(home, /BoardCard/);
   assert.match(home, /StatusMeter/);
   assert.match(home, /QuickActionTile/);
-  assert.match(home, /PixelSpeechBubble/);
+  assert.match(home, /LivingPhoenixRoom/);
   assert.match(tabs, /colors\.brandNavy/);
   assert.match(tabs, /tabBarActiveBackgroundColor/);
 });
@@ -286,7 +397,8 @@ test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
     assert.match(source, /BoardCard/, `${route} should use shared BoardCard sections`);
   }
 
-  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader title="Log something"/);
+  assert.match(log, /<BoardCard[\s\S]*style=\{s\.composerHero/);
+  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader title="Choose care type"/);
   assert.match(plans, /<BoardCard[\s\S]*BoardSectionHeader title="Upcoming Events"/);
   assert.match(records, /<BoardCard[\s\S]*WOOFWATCHER DOG ID/);
 });
@@ -297,10 +409,24 @@ test("keeps Quick Log composer card boundaries separate from search controls", (
   const searchBlock = log.slice(log.indexOf("{/* Search and filters */}"), log.indexOf("{/* Timeline */}"));
 
   assert.match(composerBlock, /<BoardCard[\s\S]*<\/BoardCard>/);
-  assert.match(composerBlock, /BoardSectionHeader title="Log something"/);
+  assert.match(composerBlock, /style=\{s\.composerHero/);
+  assert.match(composerBlock, /BoardSectionHeader title="Choose care type"/);
   assert.doesNotMatch(composerBlock, /title="Find care logs"/);
   assert.match(searchBlock, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Find care logs"[\s\S]*<\/BoardCard>/);
-  assert.doesNotMatch(searchBlock, /BoardSectionHeader title="Log something"/);
+  assert.doesNotMatch(searchBlock, /BoardSectionHeader title="Choose care type"/);
+});
+
+test("keeps Quick Log polished for exact tap selection and mobile scanability", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(log, /launcherActionKey/);
+  assert.match(log, /selectedLauncherKey === launcherActionKey\(action\)/);
+  assert.match(log, /accessibilityState=\{\{ selected: active \}\}/);
+  assert.match(log, /width: "31\.5%"/);
+  assert.match(log, /composerTrustRail/);
+  assert.match(log, /Care IQ/);
+  assert.match(log, /moodTone/);
+  assert.match(log, /flexBasis: "47\.5%"/);
 });
 
 test("keeps Quick Log search and timeline on shared board card anatomy", () => {
@@ -360,12 +486,39 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
 
 test("keeps Avatar Studio preview and mood states on shared board anatomy", () => {
   const avatarStudio = readAppFile("portrait.tsx");
+  const avatarModel = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarStudio.ts"),
+    "utf8",
+  );
+  const avatarContext = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "AvatarContext.tsx"),
+    "utf8",
+  );
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const more = readAppFile(join("(tabs)", "more.tsx"));
 
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{\[s\.canvasCard/);
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{s\.heroPreview\}/);
   assert.match(avatarStudio, /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Generated mood set"/);
   assert.match(avatarStudio, /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Mood set"/);
   assert.match(avatarStudio, /<BoardCard style=\{s\.tipBoard\} tone="soft"/);
+  assert.match(avatarStudio, /Upload photos to help us suggest your dog's pixel care twin/);
+  assert.match(avatarStudio, /Choose base template/);
+  assert.match(avatarStudio, /Accessories/);
+  assert.match(avatarStudio, /Save Avatar/);
+  assert.match(avatarStudio, /AVATAR_EMOTE_STATES/);
+  assert.match(avatarModel, /PetAvatarConfig/);
+  assert.match(avatarModel, /AVATAR_TEMPLATES/);
+  assert.match(avatarModel, /buildMockScanSuggestion/);
+  assert.match(avatarModel, /You always approve the match/);
+  assert.doesNotMatch(avatarModel, /perfectly scan/i);
+  assert.match(avatarContext, /AVATAR_CONFIG_KEY/);
+  assert.match(avatarContext, /saveAvatarConfig/);
+  assert.match(avatarContext, /hasConfiguredAvatar/);
+  assert.match(home, /avatarTemplate\.label/);
+  assert.match(home, /Open Avatar Studio/);
+  assert.match(more, /Avatar Studio/);
+  assert.doesNotMatch(more, /Portrait Studio/);
   assert.doesNotMatch(avatarStudio, /backBtn:/);
   assert.doesNotMatch(avatarStudio, /headerTitle:/);
   assert.doesNotMatch(avatarStudio, /heroPreview: \{[^\n]*(shadowOpacity|elevation)/);
@@ -746,6 +899,9 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Household Access"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Responsibility Center"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Sync Health"/);
+  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Launch Readiness"/);
+  assert.match(more, /Expo\/EAS profiles ready/);
+  assert.match(more, /Store submission waits on Apple, Google, Expo, privacy\/legal, and Apollo approval/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Tools & Sharing"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Diet Profile"/);
   assert.doesNotMatch(more, /sectionHeader:/);

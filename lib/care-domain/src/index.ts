@@ -23,3 +23,4 @@ export * from "./household-access.ts";
 export * from "./household-responsibility.ts";
 export * from "./onboarding.ts";
 export * from "./premium.ts";
+export * from "./care-intelligence.ts";

@@ -42,14 +42,14 @@ function CenterPaw() {
         style={({ pressed }) => [
           s.fab,
           {
-            backgroundColor: colors.cream,
-            borderColor: colors.brandNavy,
+            backgroundColor: colors.copperBright,
+            borderColor: colors.card,
             shadowColor: colors.brandNavy,
             transform: [{ scale: pressed ? 0.94 : 1 }],
           },
         ]}
       >
-        <Ionicons name="paw" size={26} color={colors.copper} />
+        <Ionicons name="paw" size={30} color={colors.foreground} />
       </Pressable>
     </View>
   );
@@ -64,13 +64,13 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: colors.brandNavy,
-          tabBarInactiveTintColor: colors.cream,
-          tabBarActiveBackgroundColor: colors.cream,
+          tabBarActiveTintColor: colors.copperBright,
+          tabBarInactiveTintColor: colors.foreground,
+          tabBarActiveBackgroundColor: "transparent",
           tabBarLabelStyle: { fontFamily: "Inter_700Bold", fontSize: 10.5 },
           tabBarItemStyle: {
-            paddingTop: 7,
-            marginVertical: 7,
+            paddingTop: 6,
+            marginVertical: 8,
             marginHorizontal: 3,
             borderRadius: colors.pixelUi.radius.card,
           },
@@ -79,25 +79,28 @@ export default function TabLayout() {
             left: 12,
             right: 12,
             bottom: isWeb ? 12 : 8,
-            height: isWeb ? 76 : 70,
-            backgroundColor: colors.brandNavy,
+            height: isWeb ? 78 : 72,
+            backgroundColor: colors.card,
             borderTopWidth: 0,
-            borderRadius: 20,
-            elevation: 10,
+            borderRadius: 28,
+            elevation: 12,
             paddingTop: 5,
-            paddingHorizontal: 7,
+            paddingHorizontal: 8,
+            borderWidth: 1,
+            borderColor: colors.border,
             shadowColor: colors.brandNavy,
-            shadowOpacity: 0.25,
-            shadowRadius: 16,
-            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.16,
+            shadowRadius: 20,
+            shadowOffset: { width: 0, height: 10 },
           },
           tabBarBackground: () => (
             <View
               style={[
                 StyleSheet.absoluteFill,
                 {
-                  backgroundColor: colors.brandNavy,
-                  borderRadius: 20,
+                  backgroundColor: colors.card,
+                  borderRadius: 28,
+                  opacity: 0.96,
                 },
               ]}
             />
@@ -195,15 +198,16 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   fab: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 5,
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 8,
+    boxShadow: "0 12px 28px rgba(8, 20, 36, 0.28)",
+    shadowOpacity: 0.32,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 10,
   },
 });

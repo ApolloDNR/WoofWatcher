@@ -233,3 +233,61 @@ Moved the mobile onboarding route onto the shared board system:
 - Converted the reusable setup `Section` component to `BoardCard`, covering Dog Profile, Diet Baseline, Starter Routine, and Household Caregiver.
 - Kept draft hydration, save foundation, and finish-later behavior unchanged.
 - Removed old local setup header and progress-card shell styles.
+
+## 2026-06-16 Living Phoenix Runtime Pass
+
+Moved Phoenix Home from a static board image toward a real care-twin runtime:
+
+- Added `artifacts/woofwatcher-mobile/lib/avatarLifeEngine.ts` to map care state into room zones, motion modes, care cue labels, breathing pace, sleep/hearts/aura flags, and game-like activity labels.
+- Rebuilt `LivingPhoenixRoom` as a single animated hero stage using the board-accurate pixel room art instead of layering a second Phoenix image over the room.
+- Added Reanimated motion for breathing, light walking sway, eating/drinking cue movement, comfort aura, sleep `Zz`, sparkle feedback, press haptics, and post-log reaction bursts.
+- Added a dynamic pixel speech bubble, `LIVE CARE TWIN` chip, zone chip, mood patch, presence/care/energy dock, and next-action chip while preserving the existing Home care workflows.
+- Tightened local web auth so placeholder Clerk keys use the local auth adapter instead of blanking the preview when Clerk JS is unavailable.
+- Added focused readiness coverage for the avatar life engine, Home room wiring, single-stage room implementation, and local Clerk placeholder behavior.
+
+Remaining visual work:
+
+- Replace the current single-stage animated room with final dogless room backgrounds plus transparent Phoenix pixel sprite sheets when those assets exist.
+- Add true sprite loops for tail wag, walk, sit, lie down, ears/glance, eat/drink, proud sparkle, and home-alone waiting.
+- Run native iOS/Android visual QA for motion timing, safe area, and frame rate once simulator/device access is available.
+
+## 2026-06-16 Care Twin Engine And Sprite Manifest Pass
+
+Locked the next video-game foundation without reintroducing a pasted-on second dog:
+
+- Extended `avatarLifeEngine.ts` into a Care Twin scene engine with explicit scene phases, priority needs, HUD tones, tap verbs, recommended actions, and sprite actions.
+- Added `CARE_TWIN_SPRITE_MANIFEST` as the production asset contract for transparent 256px bottom-center Phoenix sprite strips: idle breathing, tail wag, ear perk, walk, eat, drink, sleep, comfort, celebrate, and health watch.
+- Kept `deriveAvatarLifePlan` as a compatibility wrapper while Home now uses `deriveCareTwinScene`.
+- Updated `LivingPhoenixRoom` so the HUD, accessibility label, care cue, and mood patch read from the game-state plan instead of one-off display copy.
+- Added focused tests for care-state-to-sprite mapping and manifest invariants, plus readiness checks that protect the Care Twin contract.
+
+Implementation note:
+
+- Until dogless backgrounds and transparent Phoenix strips exist, the app intentionally animates the single approved room art. This keeps the main dog visually coherent and avoids the duplicate-avatar problem. The engine is ready for layered sprite rendering as soon as the asset set lands.
+
+## 2026-06-16 Layered Sprite Runtime Pass
+
+Added the real runtime seam for video-game Phoenix animation:
+
+- Added `SpriteSheetPlayer` to crop and animate PNG sprite strips using frame count, fps, loop mode, and 256px slot metadata.
+- Added `careTwinAssets.ts` as the mobile asset registry for Phoenix sprite strips and dogless room layers.
+- Wired `LivingPhoenixRoom` to switch to layered rendering only when both a dogless room layer and the selected Phoenix sprite strip are registered.
+- Preserved the current single-stage room animation as the fallback so Home does not show duplicate Phoenix art while final assets are missing.
+- Added `docs/design/CARE_TWIN_ASSET_PIPELINE.md` and `assets/avatar/phoenix/README.md` so Apollo, Fable, Replit, or an artist can generate and register the exact assets.
+
+## 2026-06-17 Avatar Studio Lite Pass
+
+Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:
+
+- Added `PetAvatarConfig`, 12 dog templates, accessory slots, emote states, truthful scan-suggestion copy, and config normalization in `avatarStudio.ts`.
+- Extended `AvatarContext` so the app stores an editable avatar config alongside the existing custom mood-image set.
+- Reworked `/portrait` into Avatar Studio Lite with Scan, Template, Customize, and Emotes tabs.
+- Added mock scan review for Phoenix that suggests the Shepherd template and detected traits without claiming perfect AI generation.
+- Added coat-color, face-marking, accessory-slot, template, and emote preview controls.
+- Connected the saved avatar identity to Home and More so the Studio feeds the visible app experience.
+
+Design boundary:
+
+- The route can say upload photos help suggest a care twin.
+- It cannot claim live AI scan or full custom sprite generation until those provider-backed systems are implemented.
+- Current previews use existing Phoenix art until final template/sprite assets are produced.

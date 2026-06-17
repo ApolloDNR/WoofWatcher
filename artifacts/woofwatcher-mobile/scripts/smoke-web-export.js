@@ -3,7 +3,8 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const projectRoot = path.resolve(__dirname, "..");
-const outputDir = path.join(projectRoot, ".expo-smoke");
+const outputDirName = ".expo-smoke";
+const outputDir = path.join(projectRoot, outputDirName);
 
 function removeOutput() {
   fs.rmSync(outputDir, { recursive: true, force: true });
@@ -35,7 +36,7 @@ const env = {
 
 const result = spawnSync(
   "pnpm",
-  ["exec", "expo", "export", "--platform", "web", "--output-dir", outputDir, "--clear"],
+  ["exec", "expo", "export", "--platform", "web", "--output-dir", outputDirName, "--clear"],
   {
     cwd: projectRoot,
     env,

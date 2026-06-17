@@ -52,11 +52,11 @@ export default function PrivacyScreen() {
   const me = useGetMe();
   const context = useMemo(
     () => ({
-      userId: me.data?.user.id ?? null,
-      householdId: me.data?.household.id ?? null,
-      householdName: me.data?.household.name ?? null,
+      userId: me.data?.user?.id ?? null,
+      householdId: me.data?.household?.id ?? null,
+      householdName: me.data?.household?.name ?? null,
     }),
-    [me.data?.household.id, me.data?.household.name, me.data?.user.id],
+    [me.data?.household?.id, me.data?.household?.name, me.data?.user?.id],
   );
 
   const plan = useMemo(

@@ -122,6 +122,20 @@ Before relying on the web surface:
 - WoofGuide never claims live AI unless provider-backed generation is configured.
 - Empty, loading, failed-sync, and offline states are visible and useful.
 
+## Codex Launch-Readiness Checkpoint - 2026-06-16
+
+- Mobile app identity is release-grade for Expo/EAS, iOS, and Android, and native appearance is configured as `automatic`.
+- The web preview at `http://127.0.0.1:4192/more` was rebuilt from the Expo web export and verified for the More launch-readiness card, Plus, Care Team, Household Access, Responsibility Center, Sync Health, Tools & Sharing, and Diet Profile.
+- More now exposes truthful internal-preview launch gates: iOS/Android EAS readiness, privacy review, sync health, and checkout gating.
+- Shared Care Intelligence now derives Care IQ, routine fit, core care progress, log confidence, sync health, pending meal outcomes, and next actions from the tested care-domain package instead of isolated screen math.
+- Home, Quick Log, and More should preserve Care Intelligence as a functional operating layer while visual polish is improved in Fable/Replit/Figma.
+- `pnpm --filter @workspace/woofwatcher-mobile run typecheck` passed.
+- `pnpm run test:focused` passed with 217 tests.
+- `expo export --platform web --output-dir .expo-smoke --clear` passed.
+- `pnpm --filter @workspace/woofwatcher-mobile run smoke:web` passed after the smoke script was corrected to pass Expo a relative `.expo-smoke` output path.
+- `pnpm run build:ci` passed with elevated Windows filesystem access for the API server esbuild step.
+- Browser DOM smoke passed for Home and More Care Intelligence. Screenshot capture is still unavailable in this Codex browser adapter, so native simulator/device screenshots and visual regression screenshots remain a Fable/manual QA responsibility.
+
 ## Release Blockers
 
 - No production Apple/Google/Expo account access in this repo.

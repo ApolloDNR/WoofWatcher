@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAuth } from "@clerk/expo";
 import { useQueryClient } from "@tanstack/react-query";
 import React, {
   createContext,
@@ -33,6 +32,7 @@ import {
   type EntrySyncStatus,
 } from "@/lib/careSync";
 import type { CarePassArtifact } from "@workspace/care-domain";
+import { useWoofAuth } from "@/lib/auth";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
 
@@ -294,7 +294,7 @@ interface CareContextValue {
 const CareContext = createContext<CareContextValue | null>(null);
 
 export function CareProvider({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, isLoaded: clerkLoaded } = useAuth();
+  const { isSignedIn, isLoaded: clerkLoaded } = useWoofAuth();
   const queryClient = useQueryClient();
 
   const [doc, setDoc] = useState<CareDoc>(getDefaultDoc);

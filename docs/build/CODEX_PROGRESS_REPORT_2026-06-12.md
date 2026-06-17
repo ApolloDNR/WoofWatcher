@@ -112,3 +112,88 @@ Next implementation slice:
 - Final pixel animation assets are not present.
 - Browser screenshot verification was not possible in this checkout because `node_modules`, `pnpm`, `npm`, and the local app terminal helper were unavailable.
 - Real AI, cloud sync, provider-backed roles, push notifications, payments, document storage, binary PDFs, and app-store release remain separate production slices.
+
+## 2026-06-17 Avatar Studio Lite Release Slice
+
+### Status
+
+This slice moves Avatar Studio from a prototype portrait screen into the first shippable care-twin system. It is ready for internal review and the next visual-asset pass. It is not public live-ready yet because final production pixel sprite assets, store assets, production providers, and release-account setup are still open.
+
+### Preview And Browser Proof
+
+- Live local preview: `http://127.0.0.1:4192/portrait`
+- Browser proof artifact: `docs/build/browser-proof-avatar-studio-lite-2026-06-17.json`
+- Visible checks passed in the in-app browser:
+  - `AVATAR STUDIO` renders on `/portrait`.
+  - `Create the care twin` renders.
+  - Upload copy says: "Upload photos to help us suggest your dog's pixel care twin, then approve and customize it."
+  - Scan, Template, Customize, and Emotes tabs render.
+  - Save Avatar renders.
+  - The old `Portrait Studio` label is not visible.
+  - Current browser console errors: none.
+- Screenshot capture was attempted three ways: full-page, viewport, and clipped mobile capture. All timed out at the browser capture layer with `Page.captureScreenshot`, so no screenshot artifact was produced in this environment.
+
+### Screens Completed
+
+- Avatar Studio Lite on `/portrait`
+  - Upload photo entry points for gallery and camera.
+  - Truthful scan-assisted suggestion copy.
+  - Template picker for the launch breed/body library.
+  - Coat, marking, ear, and accessory customization.
+  - Emote preview set for the living care twin.
+  - Save/reset avatar config actions.
+- Phoenix Home
+  - Reads saved avatar configuration.
+  - Shows the selected avatar identity and opens Avatar Studio.
+- More
+  - Renamed the old portrait entry to Avatar Studio.
+  - Shows template identity and scan-assisted/template-ready status.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/avatarStudio.ts`
+- `artifacts/woofwatcher-mobile/lib/avatarStudio.test.ts`
+- `artifacts/woofwatcher-mobile/context/AvatarContext.tsx`
+- `artifacts/woofwatcher-mobile/app/portrait.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/index.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/design/AVATAR_STUDIO_IMPLEMENTATION.md`
+- `docs/design/ASSET_TODO.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/DECISION_LOG.md`
+- `docs/build/browser-proof-avatar-studio-lite-2026-06-17.json`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+
+### Tests And Checks Run
+
+- `pnpm run test:focused`
+  - Result: could not run directly in this shell because `pnpm` is not installed or on PATH.
+- Focused zero-dependency equivalent from `AGENTS.md`:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts`
+  - Result: passed, 234 tests.
+- Mobile TypeScript:
+  - Command: `artifacts/woofwatcher-mobile/node_modules/.bin/tsc.cmd -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+- Expo web export:
+  - Command: `expo export --platform web --output-dir .expo-smoke --clear`
+  - Result: passed, exported `.expo-smoke`.
+- Browser verification:
+  - Route: `http://127.0.0.1:4192/portrait`
+  - Result: passed DOM/content checks and had zero console errors.
+
+### Remaining Blockers
+
+- Final dogless room backgrounds are still required before the layered sprite room can replace the baked hero art.
+- Production Phoenix sprite strips are still required for true walking, breathing, eating, sleeping, anxious, proud, and not-well loops.
+- Avatar templates currently ship as data/config and existing Phoenix art placeholders; App Store-quality per-template art packs remain a visual-asset task.
+- Scan-to-avatar is intentionally not live AI yet. V1 uses a truthful mock/suggestion flow so the pipeline can receive real vision/image analysis later without changing the saved config model.
+- Public launch still needs production auth/cloud storage decisions, privacy/legal review, App Store and Google Play account setup, icons, splash, screenshots, store copy, release signing, TestFlight/internal testing, and Apollo approval.
+
+### Next Best Pass
+
+1. Add the final Phoenix identity seed and dogless room background.
+2. Register the first production sprite strip set in `careTwinAssets.ts`.
+3. Give Avatar Studio production-ready template thumbnail art for Shepherd plus 2-3 other launch templates.
+4. Run real-device Expo QA on iPhone and Android once release accounts/dev-client setup is available.

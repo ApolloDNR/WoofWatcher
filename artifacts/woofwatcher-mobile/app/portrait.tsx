@@ -1,15 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useAuth } from "@clerk/expo";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Easing,
   Platform,
@@ -17,102 +13,200 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColors } from "@/hooks/useColors";
+
+import {
+  BoardCard,
+  BoardPill,
+  BoardRouteHeader,
+  BoardSectionHeader,
+} from "@/components/board/BoardPrimitives";
+import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
-import { useAvatar, MOODS, AvatarSet } from "@/context/AvatarContext";
-import { MOOD_META, type Mood } from "@/lib/phoenixStatus";
-import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { useColors } from "@/hooks/useColors";
+import {
+  AVATAR_ACCESSORIES,
+  AVATAR_EMOTE_STATES,
+  AVATAR_TEMPLATES,
+  buildMockScanSuggestion,
+  createDefaultAvatarConfig,
+  describeAvatarConfig,
+  getAvatarTemplate,
+  type AvatarAccessoryOption,
+  type AvatarEmoteState,
+  type AvatarFaceMarkingId,
+  type AvatarTemplateId,
+  type PetAvatarConfig,
+} from "@/lib/avatarStudio";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
-const BASE_URL = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
-  : "";
+type Phase = "idle" | "working" | "result";
+type StudioTab = "scan" | "template" | "customize" | "emotes";
 
-const PAINTING_LINES = [
-  "Mixing the paints…",
-  "Getting the ears just right…",
-  "Adding a sparkle to those eyes…",
-  "Painting every little mood…",
-  "A few more brushstrokes…",
+const SCAN_LINES = [
+  "Reading body shape...",
+  "Finding coat colors...",
+  "Checking ears and muzzle...",
+  "Matching a pixel template...",
+  "Preparing owner review...",
 ];
 
-type Phase = "idle" | "working" | "result";
+const COAT_SWATCHES = [
+  "#1B1714",
+  "#C99052",
+  "#F1E2C7",
+  "#5B412F",
+  "#E7E0D3",
+  "#2F2F31",
+  "#A86B3D",
+  "#FFFFFF",
+];
 
-type ResultSet = Partial<Record<Mood, string>>; // mood -> data uri
+const FACE_MARKINGS: { id: AvatarFaceMarkingId; label: string }[] = [
+  { id: "mask", label: "Mask" },
+  { id: "blaze", label: "Blaze" },
+  { id: "muzzle", label: "Muzzle" },
+  { id: "eyebrows", label: "Brows" },
+  { id: "patch", label: "Patch" },
+  { id: "none", label: "None" },
+];
+
+const EMOTE_ICON: Record<AvatarEmoteState, PixelIconName> = {
+  happy: "mood_great",
+  calm: "mood_good",
+  excited: "happy",
+  bored: "clock",
+  hungry: "meal",
+  anxious: "anxious",
+  sleepy: "clock",
+  proud: "heart",
+  home_alone: "note",
+  not_feeling_well: "health",
+};
+
+function emoteLabel(state: AvatarEmoteState): string {
+  return state
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function updateConfig(config: PetAvatarConfig, patch: Partial<PetAvatarConfig>): PetAvatarConfig {
+  return {
+    ...config,
+    ...patch,
+    accessorySlots: {
+      ...config.accessorySlots,
+      ...(patch.accessorySlots ?? {}),
+    },
+  };
+}
+
+function templateColor(templateId: AvatarTemplateId): string {
+  const palette: Record<AvatarTemplateId, string> = {
+    shepherd: "#2E5846",
+    retriever: "#D8A852",
+    husky: "#A8CBE8",
+    bully: "#C96358",
+    doodle: "#C99052",
+    terrier: "#6DA36F",
+    hound: "#8C6A4A",
+    dachshund: "#B46A35",
+    spaniel: "#E07A2F",
+    toy: "#C96358",
+    slender: "#9DBAA7",
+    mixed: "#081424",
+  };
+  return palette[templateId];
+}
 
 export default function PortraitScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state } = useCare();
-  const { getToken } = useAuth();
-  const { avatarSet, getAvatarSource, hasCustomAvatar, saveAvatarSet, clearAvatarSet } = useAvatar();
-  const name = state.profile.name;
+  const {
+    avatarConfig,
+    getAvatarSource,
+    hasCustomAvatar,
+    hasConfiguredAvatar,
+    saveAvatarConfig,
+    resetAvatarConfig,
+  } = useAvatar();
 
+  const petName = state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
   const topInset = Platform.OS === "web" ? 20 : insets.top;
-  const { width: winW } = useWindowDimensions();
-  const canvasW = Math.min(winW, 520) - 40;
-  const canvasH = canvasW / 0.82;
 
   const [phase, setPhase] = useState<Phase>("idle");
-  const [result, setResult] = useState<ResultSet | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [lineIdx, setLineIdx] = useState(0);
+  const [activeTab, setActiveTab] = useState<StudioTab>("scan");
+  const [draft, setDraft] = useState<PetAvatarConfig>(() => avatarConfig);
   const [sourceUri, setSourceUri] = useState<string | null>(null);
+  const [scanLine, setScanLine] = useState(0);
+  const [savedToast, setSavedToast] = useState<string | null>(null);
+  const scanSuggestion = useMemo(() => buildMockScanSuggestion(petName), [petName]);
 
-  // Brush spinner + rotating copy while working
-  const spin = useRef(new Animated.Value(0)).current;
-  // Cinematic scan beam sweeping over the source photo
-  const scan = useRef(new Animated.Value(0)).current;
+  const scanAnim = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    setDraft(avatarConfig);
+  }, [avatarConfig]);
+
   useEffect(() => {
     if (phase !== "working") return;
-    const loop = Animated.loop(
-      Animated.timing(spin, {
-        toValue: 1,
-        duration: 2200,
-        easing: Easing.linear,
-        useNativeDriver: Platform.OS !== "web",
-      }),
-    );
     const scanLoop = Animated.loop(
-      Animated.timing(scan, {
+      Animated.timing(scanAnim, {
         toValue: 1,
-        duration: 1900,
+        duration: 1800,
         easing: Easing.inOut(Easing.ease),
         useNativeDriver: Platform.OS !== "web",
       }),
     );
     const pulseLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: Platform.OS !== "web" }),
-        Animated.timing(pulse, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: Platform.OS !== "web" }),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 860,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 860,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: Platform.OS !== "web",
+        }),
       ]),
     );
-    loop.start();
     scanLoop.start();
     pulseLoop.start();
-    const t = setInterval(() => setLineIdx((i) => (i + 1) % PAINTING_LINES.length), 1900);
+    const lineTimer = setInterval(() => setScanLine((idx) => (idx + 1) % SCAN_LINES.length), 900);
+    const finishTimer = setTimeout(() => {
+      setDraft(scanSuggestion.suggestedConfig);
+      setPhase("result");
+      setActiveTab("template");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    }, 2450);
+
     return () => {
-      loop.stop();
       scanLoop.stop();
       pulseLoop.stop();
-      spin.setValue(0);
-      scan.setValue(0);
+      clearInterval(lineTimer);
+      clearTimeout(finishTimer);
+      scanAnim.setValue(0);
       pulse.setValue(0);
-      clearInterval(t);
     };
-  }, [phase, spin, scan, pulse]);
+  }, [phase, pulse, scanAnim, scanSuggestion.suggestedConfig]);
 
-  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
-  const scanTranslate = scan.interpolate({ inputRange: [0, 1], outputRange: [0, canvasH - 56] });
-  const reticleOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.85] });
+  const selectedTemplate = getAvatarTemplate(draft.templateId);
+  const avatarSummary = describeAvatarConfig(draft);
+  const scanTranslate = scanAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 250] });
+  const reticleOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.34, 0.84] });
 
   const ensurePermission = async (camera: boolean) => {
     if (Platform.OS === "web") return true;
@@ -124,421 +218,596 @@ export default function PortraitScreen() {
   };
 
   const pick = async (camera: boolean) => {
-    setError(null);
     const ok = await ensurePermission(camera);
-    if (!ok) {
-      setError(
-        camera
-          ? "Camera access is needed to snap a photo."
-          : "Photo access is needed to choose a picture.",
-      );
-      return;
-    }
+    if (!ok) return;
 
-    const opts: ImagePicker.ImagePickerOptions = {
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    };
     const res = camera
-      ? await ImagePicker.launchCameraAsync(opts)
-      : await ImagePicker.launchImageLibraryAsync(opts);
+      ? await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], allowsEditing: true, quality: 0.86 })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, quality: 0.86 });
 
     if (res.canceled || !res.assets?.[0]?.uri) return;
-    await generate(res.assets[0].uri);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setSourceUri(res.assets[0].uri);
+    setScanLine(0);
+    setPhase("working");
+    setActiveTab("scan");
   };
 
-  const generate = async (uri: string) => {
-    try {
-      setPhase("working");
-      setResult(null);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-      setSourceUri(uri);
-      // Downscale + compress to keep the upload small and fast
-      const shrunk = await manipulateAsync(uri, [{ resize: { width: 900 } }], {
-        compress: 0.7,
-        format: SaveFormat.JPEG,
-        base64: true,
-      });
-      const imageBase64 = shrunk.base64;
-      if (!imageBase64) throw new Error("Could not read that image.");
-
-      const token = await getToken();
-      const res = await fetch(`${BASE_URL}/api/avatar-emotions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ imageBase64, mimeType: "image/jpeg" }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.images || Object.keys(data.images).length === 0) {
-        throw new Error(data.error || "The portrait studio is busy. Try again in a moment.");
-      }
-
-      const set: ResultSet = {};
-      for (const mood of MOODS) {
-        const img = data.images[mood];
-        if (img?.imageBase64) {
-          set[mood] = `data:${img.mimeType || "image/png"};base64,${img.imageBase64}`;
-        }
-      }
-      setResult(set);
-      setPhase("result");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e: unknown) {
-      setError((e as Error).message || "Something went wrong. Please try again.");
-      setPhase("idle");
-    }
-  };
-
-  const deleteStoredFiles = async (set: AvatarSet | null) => {
-    if (!set || Platform.OS === "web") return;
-    await Promise.all(
-      Object.values(set).map(async (uri) => {
-        if (uri && uri.startsWith("file://")) {
-          try {
-            await FileSystem.deleteAsync(uri, { idempotent: true });
-          } catch {
-            // best-effort cleanup
-          }
-        }
+  const selectTemplate = (templateId: AvatarTemplateId) => {
+    const template = getAvatarTemplate(templateId);
+    Haptics.selectionAsync().catch(() => {});
+    setDraft((current) =>
+      updateConfig(current, {
+        templateId,
+        earTypeId: template.defaultEarTypeId,
+        muzzleTypeId: template.defaultMuzzleTypeId,
+        emotePackId: template.recommendedEmotePackId,
       }),
     );
   };
 
-  const saveSet = async () => {
-    if (!result) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    try {
-      const previous = avatarSet;
-      const stored: AvatarSet = {};
-      for (const mood of MOODS) {
-        const dataUri = result[mood];
-        if (!dataUri) continue;
-        if (Platform.OS !== "web" && FileSystem.documentDirectory) {
-          const base64 = dataUri.slice(dataUri.indexOf(",") + 1);
-          const fileUri = `${FileSystem.documentDirectory}avatar-${mood}-${Date.now()}.png`;
-          await FileSystem.writeAsStringAsync(fileUri, base64, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          stored[mood] = fileUri;
-        } else {
-          stored[mood] = dataUri;
-        }
-      }
-      await saveAvatarSet(stored);
-      await deleteStoredFiles(previous);
-      setResult(null);
-      setPhase("idle");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      setError("Couldn't save the avatars. Please try again.");
-    }
+  const setAccessory = (item: AvatarAccessoryOption) => {
+    Haptics.selectionAsync().catch(() => {});
+    setDraft((current) =>
+      updateConfig(current, {
+        accessorySlots: { [item.slot]: item.id },
+        collarId: item.slot === "neck" && item.id.includes("collar") ? (item.id as PetAvatarConfig["collarId"]) : current.collarId,
+      }),
+    );
   };
 
-  const revertToDefault = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const previous = avatarSet;
-    await clearAvatarSet();
-    await deleteStoredFiles(previous);
+  const saveDraft = async () => {
+    await saveAvatarConfig({ ...draft, petName, updatedAt: new Date().toISOString() });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setSavedToast(`${petName}'s care twin saved`);
+    setTimeout(() => setSavedToast(null), 1600);
+    setPhase("idle");
   };
 
-  const moodLabel = (m: Mood) => MOOD_META[m].label;
+  const resetDraft = async () => {
+    const clean = createDefaultAvatarConfig(petName);
+    setDraft(clean);
+    await resetAvatarConfig(petName);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  };
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: 60, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: 72, paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
       >
         <BoardRouteHeader
           kicker="Avatar Studio"
-          title="Avatar Studio"
-          subtitle={`Snap one photo of ${name} and paint a full set of moods for the live care twin.`}
+          title="Create the care twin"
+          subtitle="Upload photos to help us suggest your dog's pixel care twin, then approve and customize it."
           back
           onBack={() => router.back()}
+          actionIcon="checkmark"
+          actionLabel="Save avatar"
+          onAction={saveDraft}
+          plain
         />
 
-
-        {/* Working state — cinematic scan over the source photo */}
-        {phase === "working" && (
-          <BoardCard padded={false} style={[s.canvasCard, { width: canvasW, height: canvasH, alignSelf: "center" }]}>
+        {phase === "working" ? (
+          <BoardCard padded={false} style={[s.canvasCard, { borderColor: colors.border }]}>
             {sourceUri ? (
-              <Image source={{ uri: sourceUri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
+              <Image source={{ uri: sourceUri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
             ) : (
-              <LinearGradient colors={["#FBF6EE", "#EAF1E9"]} style={StyleSheet.absoluteFill} />
+              <Image source={getAvatarSource("happy")} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
             )}
-
-            {/* Cool scan tint so the beam reads clearly */}
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(20,40,32,0.34)" }]} pointerEvents="none" />
-
-            {/* Sweeping scan beam */}
-            <Animated.View style={[s.scanBand, { transform: [{ translateY: scanTranslate }] }]} pointerEvents="none">
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(8,26,42,0.44)" }]} />
+            <Animated.View style={[s.scanBand, { transform: [{ translateY: scanTranslate }] }]}>
               <LinearGradient
-                colors={["transparent", colors.sage + "22", colors.sage + "66"]}
-                style={s.scanBandFill}
+                colors={["transparent", colors.sage + "55", "#FFF9EF"]}
+                style={StyleSheet.absoluteFill}
               />
-              <View style={[s.scanLine, { backgroundColor: "#EAFBF0", shadowColor: colors.sage }]} />
+              <View style={[s.scanLine, { backgroundColor: "#FFF9EF" }]} />
             </Animated.View>
-
-            {/* Reticle corner brackets */}
-            <Animated.View style={[s.reticle, { opacity: reticleOpacity }]} pointerEvents="none">
-              <View style={[s.corner, s.cornerTL, { borderColor: "#EAFBF0" }]} />
-              <View style={[s.corner, s.cornerTR, { borderColor: "#EAFBF0" }]} />
-              <View style={[s.corner, s.cornerBL, { borderColor: "#EAFBF0" }]} />
-              <View style={[s.corner, s.cornerBR, { borderColor: "#EAFBF0" }]} />
+            <Animated.View pointerEvents="none" style={[s.reticle, { opacity: reticleOpacity }]}>
+              <View style={[s.corner, s.cornerTL]} />
+              <View style={[s.corner, s.cornerTR]} />
+              <View style={[s.corner, s.cornerBL]} />
+              <View style={[s.corner, s.cornerBR]} />
             </Animated.View>
-
-            {/* Bottom copy */}
-            <LinearGradient colors={["transparent", "rgba(15,28,22,0.82)"]} style={s.workingScrim} pointerEvents="none" />
             <View style={s.workingCopy}>
-              <View style={s.workingCopyRow}>
-                <Animated.View style={{ transform: [{ rotate }] }}>
-                  <Ionicons name="sparkles" size={16} color="#EAFBF0" />
-                </Animated.View>
-                <Text style={[s.workingText, { color: "#FFFFFF", fontFamily: DISPLAY_SEMI }]}>
-                  {PAINTING_LINES[lineIdx]}
-                </Text>
-              </View>
-              <Text style={[s.workingHint, { color: "rgba(255,255,255,0.82)", fontFamily: "Inter_400Regular" }]}>
-                Reading {name}'s features and painting all five moods.
+              <BoardPill label="Scan assist mock" icon="scan-outline" tone={colors.amber} active />
+              <Text style={[s.workingText, { color: "#FFF9EF", fontFamily: DISPLAY }]}>{SCAN_LINES[scanLine]}</Text>
+              <Text style={[s.workingHint, { color: "rgba(255,249,239,0.82)", fontFamily: "Inter_600SemiBold" }]}>
+                This suggests traits only. You approve the final avatar.
               </Text>
+            </View>
+          </BoardCard>
+        ) : (
+          <BoardCard padded={false} style={s.heroPreview}>
+            <Image source={getAvatarSource("happy")} style={s.heroImg} contentFit="cover" transition={200} />
+            <LinearGradient
+              colors={["transparent", "rgba(8,26,42,0.84)"]}
+              style={s.savedScrim}
+              pointerEvents="none"
+            />
+            <View style={s.heroCopy}>
+              <BoardPill
+                label={draft.scanAssisted ? "Scan-assisted" : "Template-built"}
+                icon={draft.scanAssisted ? "scan-outline" : "color-palette-outline"}
+                tone={draft.scanAssisted ? colors.sage : colors.amber}
+                active
+              />
+              <Text style={[s.savedName, { fontFamily: DISPLAY }]}>{petName}'s Pixel Twin</Text>
+              <Text style={[s.savedSub, { fontFamily: "Inter_600SemiBold" }]}>{avatarSummary}</Text>
             </View>
           </BoardCard>
         )}
 
-        {/* Result preview — the full emotion set */}
-        {phase === "result" && result && (
-          <View>
-            <BoardCard padded={false} style={s.heroPreview}>
-              <Image source={{ uri: result.happy ?? Object.values(result)[0] }} style={s.heroImg} contentFit="cover" transition={300} />
-              <View style={[s.resultBadge, { backgroundColor: colors.primary }]}>
-                <Ionicons name="sparkles" size={13} color="#FFF" />
-                <Text style={[s.resultBadgeText, { fontFamily: "Inter_700Bold" }]}>Fresh off the easel</Text>
-              </View>
-            </BoardCard>
-
-            <BoardCard style={s.avatarBoard}>
-              <BoardSectionHeader title="Generated mood set" action="Review" />
-              <View style={s.moodGrid}>
-                {MOODS.map((m) =>
-                  result[m] ? (
-                    <View key={m} style={s.moodChip}>
-                      <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
-                        <Image source={{ uri: result[m] }} style={s.moodThumb} contentFit="cover" transition={200} />
-                      </View>
-                      <Text style={[s.moodChipLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                        {moodLabel(m)}
-                      </Text>
-                    </View>
-                  ) : null,
-                )}
-              </View>
-            </BoardCard>
-
-            <View style={s.actionRow}>
+        <View style={s.tabRow}>
+          {[
+            ["scan", "Scan"],
+            ["template", "Template"],
+            ["customize", "Customize"],
+            ["emotes", "Emotes"],
+          ].map(([key, label]) => {
+            const active = activeTab === key;
+            return (
               <Pressable
-                onPress={() => { setResult(null); setPhase("idle"); }}
-                style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: pressed ? 0.6 : 1 }]}
+                key={key}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`Avatar Studio ${label}`}
+                onPress={() => setActiveTab(key as StudioTab)}
+                style={[
+                  s.tab,
+                  {
+                    backgroundColor: active ? colors.brandNavy : colors.card,
+                    borderColor: active ? colors.brandNavy : colors.border,
+                  },
+                ]}
               >
-                <Ionicons name="refresh" size={18} color={colors.foreground} />
-                <Text style={[s.secondaryBtnText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Try again</Text>
+                <Text style={[s.tabText, { color: active ? "#FFF9EF" : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  {label}
+                </Text>
               </Pressable>
-              <Pressable
-                onPress={saveSet}
-                style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Ionicons name="heart" size={18} color="#FFF" />
-                <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>Make it live</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
+            );
+          })}
+        </View>
 
-        {/* Idle: current live avatar set + actions */}
-        {phase === "idle" && (
-          <View>
-            <BoardCard padded={false} style={s.heroPreview}>
-              <Image source={getAvatarSource("happy")} style={s.heroImg} contentFit="cover" transition={200} />
-              <LinearGradient
-                colors={["transparent", "rgba(20,30,24,0.55)"]}
-                style={s.savedScrim}
-                pointerEvents="none"
-              />
-              <Text style={[s.savedName, { fontFamily: DISPLAY }]}>
-                {hasCustomAvatar ? `${name}'s avatar` : "Default art"}
-              </Text>
-              {hasCustomAvatar && (
-                <View style={[s.liveBadge, { backgroundColor: colors.sage }]}>
-                  <View style={s.liveDot} />
-                  <Text style={[s.liveBadgeText, { fontFamily: "Inter_700Bold" }]}>LIVE</Text>
+        {phase === "result" ? (
+          <BoardCard style={s.avatarBoard}>
+            <BoardSectionHeader title="Generated mood set" action="Owner review" />
+            <Text style={[s.copy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {scanSuggestion.copy}
+            </Text>
+            <View style={s.traitGrid}>
+              {scanSuggestion.detectedTraits.map((trait) => (
+                <View key={trait} style={[s.traitChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                  <Ionicons name="checkmark-circle" size={14} color={colors.sage} />
+                  <Text style={[s.traitText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{trait}</Text>
                 </View>
-              )}
-            </BoardCard>
+              ))}
+            </View>
+          </BoardCard>
+        ) : null}
 
-            {/* Current mood set preview */}
-            <BoardCard style={s.avatarBoard}>
-              <BoardSectionHeader title="Mood set" action={hasCustomAvatar ? "Live" : "Default"} />
-              <View style={s.moodGrid}>
-                {MOODS.map((m) => (
-                  <View key={m} style={s.moodChip}>
-                    <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
-                      <Image source={getAvatarSource(m)} style={s.moodThumb} contentFit="cover" transition={150} />
-                    </View>
-                    <Text style={[s.moodChipLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      {moodLabel(m)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </BoardCard>
-
-            {error && (
-              <View style={[s.errorBox, { backgroundColor: colors.copper + "14", borderColor: colors.copper + "44" }]}>
-                <Ionicons name="alert-circle" size={16} color={colors.copper} />
-                <Text style={[s.errorText, { color: colors.copper, fontFamily: "Inter_500Medium" }]}>{error}</Text>
-              </View>
-            )}
-
+        {activeTab === "scan" ? (
+          <BoardCard style={s.avatarBoard}>
+            <BoardSectionHeader title="Bring your dog in" action={hasConfiguredAvatar ? "Configured" : "Start"} />
+            <Text style={[s.copy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              Add 1-3 clear photos. WoofWatcher will suggest a base template and traits, then you can edit every choice before saving.
+            </Text>
             <View style={s.actionRow}>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Choose dog photo from gallery"
                 onPress={() => pick(false)}
-                style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: pressed ? 0.6 : 1 }]}
+                style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: pressed ? 0.65 : 1 }]}
               >
                 <Ionicons name="images-outline" size={18} color={colors.foreground} />
-                <Text style={[s.secondaryBtnText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Library</Text>
+                <Text style={[s.secondaryBtnText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Gallery</Text>
               </Pressable>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Take dog photo"
                 onPress={() => pick(true)}
-                style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}
               >
-                <Ionicons name="camera" size={18} color="#FFF" />
-                <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>
-                  {hasCustomAvatar ? "New photo" : "Create set"}
-                </Text>
+                <Ionicons name="camera" size={18} color="#FFF9EF" />
+                <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>Take photo</Text>
               </Pressable>
             </View>
+          </BoardCard>
+        ) : null}
 
-            {hasCustomAvatar && (
-              <Pressable onPress={revertToDefault} style={({ pressed }) => [s.revertBtn, { opacity: pressed ? 0.6 : 1 }]}>
-                <Ionicons name="arrow-undo" size={15} color={colors.mutedForeground} />
-                <Text style={[s.revertText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  Revert to default art
-                </Text>
-              </Pressable>
-            )}
+        {activeTab === "template" ? (
+          <BoardCard style={s.avatarBoard}>
+            <BoardSectionHeader title="Choose base template" action={selectedTemplate.label} />
+            <View style={s.templateGrid}>
+              {AVATAR_TEMPLATES.map((template) => {
+                const active = draft.templateId === template.id;
+                const tone = templateColor(template.id);
+                return (
+                  <Pressable
+                    key={template.id}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Choose ${template.label} avatar template`}
+                    onPress={() => selectTemplate(template.id)}
+                    style={[
+                      s.templateTile,
+                      {
+                        backgroundColor: active ? tone + "20" : colors.background,
+                        borderColor: active ? tone : colors.border,
+                      },
+                    ]}
+                  >
+                    <View style={[s.templateIcon, { backgroundColor: tone + "22" }]}>
+                      <PixelIcon name={template.id === "shepherd" ? "heart" : "happy"} size={24} />
+                    </View>
+                    <Text style={[s.templateTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {template.label}
+                    </Text>
+                    <Text style={[s.templateSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {template.subtitle}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </BoardCard>
+        ) : null}
 
-            <BoardCard style={s.tipBoard} tone="soft">
-              <View style={s.tipRow}>
-                <Ionicons name="sparkles-outline" size={15} color={colors.sage} />
-                <Text style={[s.tipText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  One photo paints all five moods. Best with a clear, well-lit shot of {name}'s face.
-                </Text>
+        {activeTab === "customize" ? (
+          <View>
+            <BoardCard style={s.avatarBoard}>
+              <BoardSectionHeader title="Coat colors" action="Editable" />
+              <View style={s.swatchGrid}>
+                {COAT_SWATCHES.map((swatch) => {
+                  const primary = draft.coatPrimary === swatch;
+                  const secondary = draft.coatSecondary === swatch;
+                  return (
+                    <Pressable
+                      key={swatch}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set coat color ${swatch}`}
+                      onPress={() =>
+                        setDraft((current) =>
+                          updateConfig(current, primary ? { coatSecondary: swatch } : { coatPrimary: swatch }),
+                        )
+                      }
+                      style={[
+                        s.swatch,
+                        {
+                          backgroundColor: swatch,
+                          borderColor: primary ? colors.navy : secondary ? colors.copper : colors.border,
+                          borderWidth: primary || secondary ? 3 : 1,
+                        },
+                      ]}
+                    />
+                  );
+                })}
+              </View>
+            </BoardCard>
+
+            <BoardCard style={s.avatarBoard}>
+              <BoardSectionHeader title="Face and ears" action={draft.faceMarkingId} />
+              <View style={s.optionGrid}>
+                {FACE_MARKINGS.map((marking) => {
+                  const active = draft.faceMarkingId === marking.id;
+                  return (
+                    <Pressable
+                      key={marking.id}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      onPress={() => setDraft((current) => updateConfig(current, { faceMarkingId: marking.id }))}
+                      style={[
+                        s.optionPill,
+                        {
+                          backgroundColor: active ? colors.brandNavy : colors.background,
+                          borderColor: active ? colors.brandNavy : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.optionText, { color: active ? "#FFF9EF" : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {marking.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </BoardCard>
+
+            <BoardCard style={s.avatarBoard}>
+              <BoardSectionHeader title="Accessories" action="Slots" />
+              <View style={s.accessoryGrid}>
+                {AVATAR_ACCESSORIES.map((item) => {
+                  const active = Object.values(draft.accessorySlots).includes(item.id);
+                  return (
+                    <Pressable
+                      key={item.id}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={`Set ${item.label} ${item.slot} accessory`}
+                      onPress={() => setAccessory(item)}
+                      style={[
+                        s.accessoryTile,
+                        {
+                          backgroundColor: active ? item.tone + "20" : colors.background,
+                          borderColor: active ? item.tone : colors.border,
+                        },
+                      ]}
+                    >
+                      <View style={[s.accessoryDot, { backgroundColor: item.tone }]} />
+                      <Text style={[s.accessoryLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {item.label}
+                      </Text>
+                      <Text style={[s.accessorySlot, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        {item.slot}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </BoardCard>
           </View>
+        ) : null}
+
+        {activeTab === "emotes" ? (
+          <BoardCard style={s.avatarBoard}>
+            <BoardSectionHeader title="Mood set" action={draft.emotePackId === "phoenix-shepherd" ? "Phoenix pack" : "Starter"} />
+            <View style={s.moodGrid}>
+              {AVATAR_EMOTE_STATES.map((emote) => (
+                <View key={emote} style={s.moodChip}>
+                  <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
+                    <Image source={getAvatarSource(emote === "not_feeling_well" ? "unwell" : "happy")} style={s.moodThumb} contentFit="cover" transition={150} />
+                    <View style={[s.emoteIcon, { backgroundColor: colors.ivory }]}>
+                      <PixelIcon name={EMOTE_ICON[emote]} size={18} />
+                    </View>
+                  </View>
+                  <Text style={[s.moodChipLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {emoteLabel(emote)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </BoardCard>
+        ) : null}
+
+        <View style={s.actionRow}>
+          <Pressable
+            onPress={resetDraft}
+            style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: pressed ? 0.65 : 1 }]}
+          >
+            <Ionicons name="refresh" size={18} color={colors.foreground} />
+            <Text style={[s.secondaryBtnText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Reset</Text>
+          </Pressable>
+          <Pressable
+            onPress={saveDraft}
+            style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}
+          >
+            <Ionicons name="heart" size={18} color="#FFF9EF" />
+            <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>Save Avatar</Text>
+          </Pressable>
+        </View>
+
+        {hasCustomAvatar ? (
+          <BoardCard style={s.tipBoard} tone="soft">
+            <Text style={[s.tipText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+              Your uploaded mood images still work. The new template config gives those images a real editable identity layer.
+            </Text>
+          </BoardCard>
+        ) : (
+          <BoardCard style={s.tipBoard} tone="soft">
+            <Text style={[s.tipText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+              True AI scanning plugs in later. This version ships the reliable character creator, scan suggestion, and emote-preview system first.
+            </Text>
+          </BoardCard>
         )}
       </ScrollView>
 
-      {phase === "working" && Platform.OS === "web" && (
-        <View style={s.webSpinner}><ActivityIndicator color={colors.primary} /></View>
-      )}
+      {savedToast ? (
+        <View style={[s.toast, { backgroundColor: colors.brandNavy, bottom: insets.bottom + 22 }]}>
+          <Text style={[s.toastText, { fontFamily: "Inter_700Bold" }]}>{savedToast}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-
   canvasCard: {
+    height: 360,
     overflow: "hidden",
-    marginBottom: 18,
-  },
-  scanBand: { position: "absolute", left: 0, right: 0, top: 0, height: 56 },
-  scanBandFill: { ...StyleSheet.absoluteFillObject, borderRadius: 2 },
-  scanLine: {
-    position: "absolute",
-    left: 10,
-    right: 10,
-    bottom: 0,
-    height: 2.5,
-    borderRadius: 2,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  reticle: { ...StyleSheet.absoluteFillObject, margin: 20 },
-  corner: { position: "absolute", width: 26, height: 26 },
-  cornerTL: { top: 0, left: 0, borderTopWidth: 2.5, borderLeftWidth: 2.5, borderTopLeftRadius: 8 },
-  cornerTR: { top: 0, right: 0, borderTopWidth: 2.5, borderRightWidth: 2.5, borderTopRightRadius: 8 },
-  cornerBL: { bottom: 0, left: 0, borderBottomWidth: 2.5, borderLeftWidth: 2.5, borderBottomLeftRadius: 8 },
-  cornerBR: { bottom: 0, right: 0, borderBottomWidth: 2.5, borderRightWidth: 2.5, borderBottomRightRadius: 8 },
-  workingScrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: "42%" },
-  workingCopy: { position: "absolute", left: 20, right: 20, bottom: 20, gap: 6 },
-  workingCopyRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  workingText: { fontSize: 17, flexShrink: 1 },
-  workingHint: { fontSize: 13, lineHeight: 18 },
-
-  heroPreview: {
-    overflow: "hidden",
-    aspectRatio: 1,
     marginBottom: 16,
   },
+  scanBand: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 74,
+  },
+  scanLine: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    bottom: 0,
+    height: 3,
+    borderRadius: 3,
+  },
+  reticle: {
+    ...StyleSheet.absoluteFillObject,
+    margin: 20,
+  },
+  corner: {
+    position: "absolute",
+    width: 28,
+    height: 28,
+    borderColor: "#FFF9EF",
+  },
+  cornerTL: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 },
+  cornerTR: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 },
+  cornerBL: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 },
+  cornerBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 },
+  workingCopy: {
+    position: "absolute",
+    left: 18,
+    right: 18,
+    bottom: 18,
+    gap: 8,
+  },
+  workingText: { fontSize: 25, lineHeight: 30 },
+  workingHint: { fontSize: 13, lineHeight: 18 },
+  heroPreview: {
+    overflow: "hidden",
+    aspectRatio: 0.96,
+    marginBottom: 12,
+  },
   heroImg: { width: "100%", height: "100%" },
-
-  resultBadge: {
-    position: "absolute", top: 14, left: 14, flexDirection: "row", alignItems: "center", gap: 5,
-    paddingHorizontal: 11, paddingVertical: 6, borderRadius: 12,
+  savedScrim: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "52%",
   },
-  resultBadgeText: { color: "#FFF", fontSize: 12 },
-
-  savedScrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: "40%" },
-  savedName: { position: "absolute", left: 18, bottom: 16, color: "#FFF", fontSize: 22 },
-  liveBadge: {
-    position: "absolute", top: 14, right: 14, flexDirection: "row", alignItems: "center", gap: 5,
-    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12,
+  heroCopy: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 16,
+    gap: 7,
   },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#FFFFFF" },
-  liveBadgeText: { color: "#FFF", fontSize: 11, letterSpacing: 0.5 },
-
-  avatarBoard: { marginBottom: 16 },
-  moodGrid: { flexDirection: "row", justifyContent: "space-between" },
-  moodChip: { alignItems: "center", flex: 1 },
+  savedName: { color: "#FFF9EF", fontSize: 25 },
+  savedSub: { color: "rgba(255,249,239,0.82)", fontSize: 12.5, lineHeight: 17 },
+  tabRow: {
+    flexDirection: "row",
+    gap: 7,
+    marginBottom: 12,
+  },
+  tab: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabText: { fontSize: 11.5 },
+  avatarBoard: { marginBottom: 12 },
+  copy: { fontSize: 13, lineHeight: 19 },
+  traitGrid: { gap: 8, marginTop: 12 },
+  traitChip: {
+    minHeight: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  traitText: { fontSize: 12.5, flex: 1 },
+  actionRow: { flexDirection: "row", gap: 10, marginTop: 4, marginBottom: 12 },
+  secondaryBtn: {
+    flex: 1,
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  secondaryBtnText: { fontSize: 14 },
+  primaryBtn: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  primaryBtnText: { color: "#FFF9EF", fontSize: 14 },
+  templateGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
+  templateTile: {
+    flexBasis: "48%",
+    flexGrow: 1,
+    minHeight: 150,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    gap: 7,
+  },
+  templateIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  templateTitle: { fontSize: 13.5 },
+  templateSub: { fontSize: 11.5, lineHeight: 16 },
+  swatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
+  swatch: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+  },
+  optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  optionPill: {
+    minHeight: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  optionText: { fontSize: 12 },
+  accessoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
+  accessoryTile: {
+    flexBasis: "47.5%",
+    flexGrow: 1,
+    minHeight: 82,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    justifyContent: "center",
+    gap: 5,
+  },
+  accessoryDot: { width: 18, height: 18, borderRadius: 5 },
+  accessoryLabel: { fontSize: 12.5 },
+  accessorySlot: { fontSize: 10, textTransform: "uppercase" },
+  moodGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
+  moodChip: { width: "30.9%", alignItems: "center" },
   moodThumbWrap: {
-    width: "92%", aspectRatio: 1, borderRadius: 14, overflow: "hidden", borderWidth: 1, marginBottom: 6,
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 8,
+    overflow: "hidden",
+    borderWidth: 1,
+    marginBottom: 6,
+    position: "relative",
   },
   moodThumb: { width: "100%", height: "100%" },
-  moodChipLabel: { fontSize: 11 },
-
-  errorBox: {
-    flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderRadius: 14, borderWidth: 1, marginBottom: 14,
+  emoteIcon: {
+    position: "absolute",
+    right: 5,
+    bottom: 5,
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  errorText: { fontSize: 13.5, flex: 1, lineHeight: 18 },
-
-  actionRow: { flexDirection: "row", gap: 12 },
-  secondaryBtn: {
-    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    paddingVertical: 15, borderRadius: 16, borderWidth: 1.5,
+  moodChipLabel: { fontSize: 10.5, textAlign: "center" },
+  tipBoard: { marginTop: 2 },
+  tipText: { fontSize: 12.5, lineHeight: 18, textAlign: "center" },
+  toast: {
+    position: "absolute",
+    alignSelf: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
   },
-  secondaryBtnText: { fontSize: 15 },
-  primaryBtn: {
-    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    paddingVertical: 15, borderRadius: 16,
-    shadowColor: "#2E5846", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 4,
-  },
-  primaryBtnText: { color: "#FFF", fontSize: 15 },
-
-  revertBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14 },
-  revertText: { fontSize: 13.5 },
-
-  tipBoard: { marginTop: 16 },
-  tipRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
-  tipText: { fontSize: 13, textAlign: "center", flexShrink: 1 },
-
-  webSpinner: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
+  toastText: { color: "#FFF9EF", fontSize: 13 },
 });

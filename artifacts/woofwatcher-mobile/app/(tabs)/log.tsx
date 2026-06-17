@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -23,6 +23,7 @@ import {
   appendStickyNote,
   buildCareLogDeletionAuditEntry,
   getCareAuditTrail,
+  deriveCareIntelligence,
   deriveCareLogSearch,
   deriveDietProgress,
   deriveMedicationAdherence,
@@ -35,6 +36,7 @@ import {
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -87,11 +89,14 @@ const LOG_TYPES: LogType[] = [
       },
       {
         key: "mealCompletion",
-        label: "Completion",
+        label: "Meal outcome",
         options: [
-          { id: "complete", label: "Ate it", suffix: "complete" },
-          { id: "partial", label: "Partial", suffix: "partial", severity: "watch" },
-          { id: "skipped", label: "Skipped", suffix: "skipped", severity: "watch" },
+          { id: "served", label: "Served", suffix: "outcome pending" },
+          { id: "complete", label: "Ate all", suffix: "ate all" },
+          { id: "most", label: "Ate most", suffix: "ate most" },
+          { id: "partial", label: "Ate some", suffix: "partial", severity: "watch" },
+          { id: "grazing", label: "Still grazing", suffix: "still grazing", severity: "watch" },
+          { id: "skipped", label: "Refused", suffix: "refused", severity: "watch" },
         ],
       },
     ],
@@ -308,6 +313,52 @@ const TYPE_BY_ID: Record<string, LogType> = LOG_TYPES.reduce(
   {} as Record<string, LogType>,
 );
 
+type LauncherTab = "favorites" | "all" | "health";
+
+interface LauncherAction {
+  label: string;
+  type: CareEventType;
+  icon: PixelIconName;
+  tab: LauncherTab | "household";
+  preset?: Record<string, string>;
+}
+
+const LAUNCHER_TABS: { key: LauncherTab; label: string }[] = [
+  { key: "favorites", label: "Favorites" },
+  { key: "all", label: "All" },
+  { key: "health", label: "Health" },
+];
+
+const LAUNCHER_ACTIONS: LauncherAction[] = [
+  { label: "Meal", type: "meal", icon: "meal", tab: "favorites" },
+  { label: "Walk", type: "walk", icon: "walk", tab: "favorites" },
+  { label: "Pee", type: "potty", icon: "pee", tab: "favorites", preset: { kind: "pee", condition: "normal" } },
+  { label: "Poo", type: "potty", icon: "poo", tab: "favorites", preset: { kind: "poop", condition: "normal" } },
+  { label: "Training", type: "training", icon: "training", tab: "favorites" },
+  { label: "Treat", type: "treat", icon: "treat", tab: "favorites" },
+  { label: "Play", type: "play", icon: "play", tab: "favorites" },
+  { label: "Vomit", type: "symptom", icon: "vomit", tab: "health", preset: { what: "vomit", severity: "watch" } },
+  { label: "Medication", type: "medication", icon: "medication", tab: "health" },
+  { label: "Alone Time", type: "alone", icon: "clock", tab: "household" },
+  { label: "Anxious", type: "mood", icon: "anxious", tab: "health", preset: { mood: "anxious" } },
+  { label: "Note", type: "note", icon: "note", tab: "household" },
+  { label: "Water", type: "water", icon: "bile", tab: "all" },
+  { label: "Weight", type: "weight", icon: "health", tab: "health" },
+  { label: "Grooming", type: "grooming", icon: "happy", tab: "all" },
+];
+
+const MOOD_LAUNCHER: { key: string; label: string; icon: PixelIconName; mood: string }[] = [
+  { key: "great", label: "Great", icon: "mood_great", mood: "happy" },
+  { key: "good", label: "Good", icon: "mood_good", mood: "calm" },
+  { key: "okay", label: "Okay", icon: "mood_okay", mood: "calm" },
+  { key: "meh", label: "Meh", icon: "mood_meh", mood: "anxious" },
+  { key: "rough", label: "Rough", icon: "mood_rough", mood: "unwell" },
+];
+
+function launcherActionKey(action: Pick<LauncherAction, "label" | "type">): string {
+  return `${action.type}:${action.label}`;
+}
+
 // Icon resolution covers the composer types plus legacy entry types.
 const TYPE_ICON: Record<string, PulseIconName> = {
   ...LOG_TYPES.reduce((acc, t) => ({ ...acc, [t.type]: t.icon }), {} as Record<string, PulseIconName>),
@@ -321,6 +372,23 @@ const TYPE_ICON: Record<string, PulseIconName> = {
   vet: "heart",
   medication: "pill",
   meds: "pill",
+};
+
+const LOG_GUIDANCE: Record<string, string> = {
+  meal: "Serve it now, then update the outcome when Phoenix finishes.",
+  water: "Fresh water keeps hydration and Bile Watch context honest.",
+  treat: "Treats stay connected to diet, training, and appetite patterns.",
+  walk: "Capture route, duration, distance, and dog interactions in one pass.",
+  potty: "Potty is the parent log; pee, poop, accidents, and stool notes live here.",
+  play: "Play logs help separate energy from anxiety and boredom.",
+  training: "Wins, rough spots, and next practice become trainer-ready handoff notes.",
+  mood: "Mood checks make Phoenix's care twin respond to real daily patterns.",
+  alone: "Track away time, return state, and what helped Phoenix settle.",
+  medication: "Medication logs are household-visible by default and audit-friendly.",
+  weight: "Weight logs update Phoenix's living profile.",
+  symptom: "Health notes stay non-diagnostic and easy to share with your vet.",
+  grooming: "Grooming logs remember coat, paws, ears, products, and next due.",
+  note: "Sticky notes keep tiny care details from disappearing.",
 };
 
 function syncLabel(status: Entry["syncStatus"]): string | null {
@@ -505,14 +573,22 @@ function parseNonNegativeNumber(value: string): number | null {
 }
 
 function mealCompletionLabel(value: string): string {
+  if (value === "served") return "outcome pending";
+  if (value === "grazing") return "still grazing";
+  if (value === "most") return "ate most";
   if (value === "skipped") return "skipped";
   if (value === "partial") return "partial";
   return "complete";
 }
 
+function mealOutcomeNeedsEatenAmount(value: string): boolean {
+  return value === "partial";
+}
+
 export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
   const me = useGetMe();
   const routeParams = useLocalSearchParams<{ type?: string | string[] }>();
@@ -531,7 +607,7 @@ export default function LogScreen() {
   }, []);
 
   const caregiver =
-    me.data?.user.displayName?.trim() || state.caregivers[0]?.name || "You";
+    me.data?.user?.displayName?.trim() || state.caregivers[0]?.name || "You";
 
   const [selectedType, setSelectedType] = useState<string>(() => routeSelectedType ?? "meal");
   const [choices, setChoices] = useState<Record<string, string>>({});
@@ -556,6 +632,9 @@ export default function LogScreen() {
   const [noteText, setNoteText] = useState("");
   const [searchText, setSearchText] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
+  const [launcherTab, setLauncherTab] = useState<LauncherTab>("favorites");
+  const [selectedLauncherKey, setSelectedLauncherKey] = useState<string | null>(() => launcherActionKey(LAUNCHER_ACTIONS[0]!));
+  const pendingChoicePreset = useRef<Record<string, string> | null>(null);
 
   const config = TYPE_BY_ID[selectedType];
   const medicationAdherence = useMemo(
@@ -573,6 +652,7 @@ export default function LogScreen() {
   useEffect(() => {
     if (routeSelectedType && routeSelectedType !== lastRouteSelectedType.current) {
       setSelectedType(routeSelectedType);
+      setSelectedLauncherKey(null);
       lastRouteSelectedType.current = routeSelectedType;
     }
   }, [routeSelectedType]);
@@ -583,7 +663,8 @@ export default function LogScreen() {
     config?.groups?.forEach((g) => {
       init[g.key] = g.options[0].id;
     });
-    setChoices(init);
+    setChoices({ ...init, ...(pendingChoicePreset.current ?? {}) });
+    pendingChoicePreset.current = null;
     setStepIndex(config?.stepper ? Math.min(2, config.stepper.values.length - 1) : 0);
     setNumeric(selectedType === "weight" ? String(state.profile.weight.current ?? "") : "");
     setExpectedPortion(selectedType === "meal" ? state.dietProfile.normalPortion : "");
@@ -610,7 +691,12 @@ export default function LogScreen() {
   }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (selectedType === "meal" && choices.mealCompletion === "skipped") {
+    if (
+      selectedType === "meal" &&
+      (choices.mealCompletion === "skipped" ||
+        choices.mealCompletion === "served" ||
+        choices.mealCompletion === "grazing")
+    ) {
       setEatenAmount("");
     }
   }, [selectedType, choices.mealCompletion]);
@@ -621,6 +707,7 @@ export default function LogScreen() {
   const [promptNote, setPromptNote] = useState("");
   const [promptMode, setPromptMode] = useState<"post-log" | "sticky">("post-log");
   const promptRef = useRef<TextInput>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   // Entry editor
   const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
@@ -650,6 +737,16 @@ export default function LogScreen() {
         now,
       }),
     [state.dietProfile, state.entries, now],
+  );
+  const careIntelligence = useMemo(
+    () =>
+      deriveCareIntelligence({
+        entries: state.entries,
+        routines: state.routines,
+        caregivers: state.caregivers,
+        now,
+      }),
+    [state.entries, state.routines, state.caregivers, now],
   );
 
   const detailEntry = useMemo(
@@ -694,7 +791,9 @@ export default function LogScreen() {
     config.groups?.forEach((g) => {
       const opt = g.options.find((o) => o.id === choices[g.key]) ?? g.options[0];
       details[g.key] = opt.id;
-      if (opt.suffix) parts.push(opt.suffix);
+      if (opt.suffix && !(config.type === "meal" && g.key === "mealCompletion")) {
+        parts.push(opt.suffix);
+      }
       if (opt.mood) mood = opt.mood;
       if (opt.severity && opt.severity !== "normal") severity = opt.severity;
     });
@@ -724,7 +823,7 @@ export default function LogScreen() {
 
     if (config.type === "meal") {
       const unit = dietProgress.unit;
-      const completion = choices.mealCompletion ?? "complete";
+      const completion = choices.mealCompletion ?? "served";
       const expected = expectedPortion.trim() || state.dietProfile.normalPortion.trim();
       const eaten = parseNonNegativeNumber(eatenAmount);
 
@@ -733,12 +832,16 @@ export default function LogScreen() {
         return null;
       }
 
-      if (completion === "partial" && eaten == null) {
+      if (mealOutcomeNeedsEatenAmount(completion) && eaten == null) {
         Alert.alert("Add eaten amount", "For a partial meal, enter how much Phoenix actually ate.");
         return null;
       }
 
       details.mealCompletion = completion;
+      details.mealLifecycle =
+        completion === "served" || completion === "grazing"
+          ? "outcome-pending"
+          : "outcome-recorded";
       details.householdVisible = householdVisible;
       if (expected) details.expectedPortion = expected;
 
@@ -755,6 +858,10 @@ export default function LogScreen() {
         amount = "0";
         if (numericValue != null && numericValue > 0) parts.push(`served ${numericValue} ${unit}`);
         parts.push("skipped");
+      } else if (completion === "served" || completion === "grazing") {
+        amount = undefined;
+        if (numericValue != null && numericValue > 0) parts.push(`served ${numericValue} ${unit}`);
+        parts.push(mealCompletionLabel(completion));
       } else {
         const finalEaten = eaten ?? (completion === "complete" && numericValue != null ? numericValue : null);
         if (finalEaten != null) {
@@ -1137,9 +1244,95 @@ export default function LogScreen() {
       .map(([type, count]) => ({ type, count, icon: TYPE_ICON[type] ?? ("paw" as PulseIconName) }));
     return { total: todayEntries.length, top };
   }, [state.entries]);
+  const todaySignalCards = useMemo(
+    () => [
+      {
+        label: "Care IQ",
+        value: `${careIntelligence.score}%`,
+        detail: careIntelligence.status === "needs-attention" ? "review loops" : "day rhythm",
+        icon: "sparkles-outline" as const,
+        tone:
+          careIntelligence.status === "needs-attention"
+            ? colors.amber
+            : careIntelligence.status === "excellent"
+              ? colors.sage
+              : colors.primary,
+      },
+      {
+        label: "Today",
+        value: String(todaySnapshot.total),
+        detail: "care logs",
+        icon: "reader-outline" as const,
+        tone: colors.copper,
+      },
+      {
+        label: "Food",
+        value: dietProgress.targetAmount == null ? "Set" : `${dietProgress.percent}%`,
+        detail: dietProgress.targetAmount == null ? "portion" : "of daily target",
+        icon: "restaurant-outline" as const,
+        tone: colors.sage,
+      },
+      {
+        label: "Sync",
+        value: syncOutbox.total > 0 ? `${syncOutbox.total}` : "Ready",
+        detail: syncOutbox.total > 0 ? "queued safely" : "protected",
+        icon: syncOutbox.total > 0 ? ("cloud-offline-outline" as const) : ("cloud-done-outline" as const),
+        tone: syncOutbox.status === "needs-retry" ? colors.amber : colors.primary,
+      },
+    ],
+    [
+      colors.amber,
+      colors.copper,
+      colors.primary,
+      colors.sage,
+      careIntelligence.score,
+      careIntelligence.status,
+      dietProgress.percent,
+      dietProgress.targetAmount,
+      syncOutbox.status,
+      syncOutbox.total,
+      todaySnapshot.total,
+    ],
+  );
 
   const numericUnit = config?.numeric?.unit === "diet" ? dietProgress.unit : state.profile.weight.unit;
-  const selectedMealCompletion = choices.mealCompletion ?? "complete";
+  const selectedMealCompletion = choices.mealCompletion ?? "served";
+  const selectedIcon = config?.icon ?? ("paw" as PulseIconName);
+  const selectedTone = PULSE_COLORS[selectedIcon];
+  const selectedLabel = config?.label ?? "Care";
+  const selectedGuidance = LOG_GUIDANCE[selectedType] ?? "Log care once and it becomes part of the shared household record.";
+  const selectedTrustLabel =
+    selectedType === "symptom"
+      ? "Vet-share ready"
+      : selectedType === "meal"
+        ? selectedMealCompletion === "served" || selectedMealCompletion === "grazing"
+          ? "Outcome pending"
+          : "Diet progress ready"
+        : selectedType === "alone"
+          ? "Alone Time Watch"
+          : "Household record";
+  const composerTrustItems = [
+    {
+      icon: "git-branch-outline" as const,
+      label: selectedType === "meal" ? "Routine-aware" : "Pattern-aware",
+      tone: colors.sage,
+    },
+    {
+      icon: "bar-chart-outline" as const,
+      label: `${careIntelligence.score}% Care IQ`,
+      tone:
+        careIntelligence.status === "needs-attention"
+          ? colors.amber
+          : careIntelligence.status === "excellent"
+            ? colors.sage
+            : colors.primary,
+    },
+    {
+      icon: householdVisible ? ("people-outline" as const) : ("lock-closed-outline" as const),
+      label: householdVisible ? "Household" : "Private",
+      tone: householdVisible ? colors.primary : colors.mutedForeground,
+    },
+  ];
   const dietPercentWidth = `${Math.min(Math.max(dietProgress.percent, 0), 100)}%` as `${number}%`;
   const dietProgressText =
     dietProgress.targetAmount == null
@@ -1149,11 +1342,40 @@ export default function LogScreen() {
           dietProgress.unit,
         )} remaining`;
 
+  const launcherActions = useMemo(() => {
+    if (launcherTab === "favorites") return LAUNCHER_ACTIONS.slice(0, 12);
+    if (launcherTab === "health") {
+      return LAUNCHER_ACTIONS.filter((action) => action.tab === "health");
+    }
+    return LAUNCHER_ACTIONS;
+  }, [launcherTab]);
+
+  const selectLauncherAction = (action: LauncherAction) => {
+    Haptics.selectionAsync();
+    pendingChoicePreset.current = action.preset ?? null;
+    setSelectedLauncherKey(launcherActionKey(action));
+    setSelectedType(action.type);
+    if (selectedType === action.type && action.preset) {
+      setChoices((prev) => ({ ...prev, ...action.preset }));
+    }
+  };
+
+  const selectMoodLauncher = (mood: (typeof MOOD_LAUNCHER)[number]) => {
+    Haptics.selectionAsync();
+    pendingChoicePreset.current = { mood: mood.mood, moodTone: mood.key };
+    setSelectedLauncherKey(null);
+    setSelectedType("mood");
+    if (selectedType === "mood") {
+      setChoices((prev) => ({ ...prev, mood: mood.mood, moodTone: mood.key }));
+    }
+  };
+
   const H_PAD = 20;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        ref={scrollRef}
         style={s.container}
         contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: 130, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
@@ -1161,18 +1383,185 @@ export default function LogScreen() {
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader
-            kicker="Quick Log"
-            title="Activity Log"
-            subtitle={`Logging as ${caregiver} - every care note stays connected`}
-            icon="reader-outline"
-            actionIcon={isSyncing ? "sync" : "cloud-upload-outline"}
-            actionLabel="Refresh care sync"
-            actionDisabled={isSyncing}
+            title="Quick Log"
+            back
+            centered
+            plain
+            onBack={() => router.push("/")}
+            actionIcon="notifications-outline"
+            actionLabel="Open Health Watch"
             onAction={() => {
               Haptics.selectionAsync();
-              refresh();
+              router.push("/health");
             }}
           />
+
+          <BoardCard style={s.launcherCard}>
+            <View style={s.launcherTabs}>
+              {LAUNCHER_TABS.map((tab) => {
+                const active = launcherTab === tab.key;
+                return (
+                  <Pressable
+                    key={tab.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Show ${tab.label} quick log actions`}
+                    accessibilityState={{ selected: active }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setLauncherTab(tab.key);
+                    }}
+                    style={[
+                      s.launcherTab,
+                      {
+                        backgroundColor: active ? colors.brandNavy : colors.background,
+                        borderColor: active ? colors.brandNavy : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.launcherTabText,
+                        {
+                          color: active ? colors.ivory : colors.navy,
+                          fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {tab.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={s.launcherGrid}>
+              {launcherActions.map((action) => {
+                const active = selectedLauncherKey === launcherActionKey(action);
+                return (
+                  <Pressable
+                    key={`${action.label}-${action.type}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Prepare ${action.label} log`}
+                    accessibilityState={{ selected: active }}
+                    onPress={() => selectLauncherAction(action)}
+                    style={({ pressed }) => [
+                      s.launcherTile,
+                      {
+                        backgroundColor: active ? colors.ivory : colors.background,
+                        borderColor: active ? colors.copper : colors.border,
+                        shadowColor: active ? colors.copper : colors.navy,
+                        shadowOpacity: active ? 0.13 : 0,
+                        shadowRadius: active ? 10 : 0,
+                        shadowOffset: { width: 0, height: active ? 5 : 0 },
+                        elevation: active ? 2 : 0,
+                        transform: [{ scale: pressed ? 0.97 : 1 }],
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        s.launcherIconHalo,
+                        {
+                          backgroundColor: active ? colors.copper + "12" : colors.card,
+                          borderColor: active ? colors.copper + "55" : colors.border,
+                        },
+                      ]}
+                    >
+                      <PixelIcon name={action.icon} size={30} />
+                    </View>
+                    {active ? (
+                      <View style={[s.launcherSelectedMark, { backgroundColor: colors.copper }]}>
+                        <Ionicons name="checkmark" size={12} color={colors.ivory} />
+                      </View>
+                    ) : null}
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      style={[s.launcherTileText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}
+                    >
+                      {action.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={[s.moodPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Text style={[s.moodQuestion, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                How is Phoenix feeling?
+              </Text>
+              <View style={s.moodRow}>
+                {MOOD_LAUNCHER.map((mood) => {
+                  const active = selectedType === "mood" && choices.moodTone === mood.key;
+                  return (
+                    <Pressable
+                      key={mood.label}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Phoenix feels ${mood.label}`}
+                      accessibilityState={{ selected: active }}
+                      onPress={() => selectMoodLauncher(mood)}
+                      style={({ pressed }) => [
+                        s.moodOption,
+                        {
+                          backgroundColor: active ? colors.amber + "16" : "transparent",
+                          borderColor: active ? colors.amber + "66" : "transparent",
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}
+                    >
+                      <PixelIcon name={mood.icon} size={30} />
+                      <Text style={[s.moodOptionText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                        {mood.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add details to the selected log"
+              onPress={() => {
+                Haptics.selectionAsync();
+                scrollRef.current?.scrollTo({ y: 620, animated: true });
+              }}
+              style={({ pressed }) => [
+                s.launcherCta,
+                {
+                      backgroundColor: colors.brandNavy,
+                      opacity: pressed ? 0.88 : 1,
+                    },
+                  ]}
+            >
+              <Text style={[s.launcherCtaText, { fontFamily: "Inter_700Bold" }]}>
+                Add Details (optional)
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.ivory} />
+            </Pressable>
+          </BoardCard>
+
+          <View style={s.signalStrip}>
+            {todaySignalCards.map((card) => (
+              <View
+                key={card.label}
+                style={[s.signalCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <View style={[s.signalIcon, { backgroundColor: card.tone + "18" }]}>
+                  <Ionicons name={card.icon} size={16} color={card.tone} />
+                </View>
+                <Text style={[s.signalLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  {card.label}
+                </Text>
+                <Text style={[s.signalValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {card.value}
+                </Text>
+                <Text style={[s.signalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {card.detail}
+                </Text>
+              </View>
+            ))}
+          </View>
 
           {syncOutbox.total > 0 ? (
             <View
@@ -1215,13 +1604,13 @@ export default function LogScreen() {
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[s.outboxEyebrow, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                    OFFLINE OUTBOX
+                    SYNC STATUS
                   </Text>
                   <Text style={[s.outboxTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    Care changes are protected
+                    {syncOutbox.status === "needs-retry" ? "Saved on this device" : "Syncing safely"}
                   </Text>
                   <Text style={[s.outboxMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {syncOutbox.message}
+                    {syncOutbox.message} Phoenix's local record is safe on this device.
                   </Text>
                 </View>
                 <Pressable
@@ -1250,7 +1639,7 @@ export default function LogScreen() {
                       },
                     ]}
                   >
-                    {isSyncing ? "Syncing" : "Retry sync"}
+                    {isSyncing ? "Syncing" : "Retry"}
                   </Text>
                 </Pressable>
               </View>
@@ -1275,8 +1664,54 @@ export default function LogScreen() {
           ) : null}
 
           {/* Composer card */}
-          <BoardCard padded={false} style={s.loggerCard}>
-            <BoardSectionHeader title="Log something" />
+          <BoardCard style={s.composerHero}>
+            <View style={[s.composerHeroBanner, { backgroundColor: colors.brandNavy, borderColor: colors.shellNavy }]}>
+              <View style={[s.composerHeroIcon, { backgroundColor: selectedTone + "22", borderColor: selectedTone + "66" }]}>
+                <PulseIcon name={selectedIcon} size={30} />
+              </View>
+              <View style={s.composerHeroText}>
+                <Text style={[s.composerKicker, { color: colors.amber, fontFamily: DISPLAY_SEMI }]}>
+                  Now logging
+                </Text>
+                <Text style={[s.composerTitle, { fontFamily: DISPLAY }]}>
+                  {selectedLabel}
+                </Text>
+                <Text style={[s.composerHint, { fontFamily: "Inter_500Medium" }]}>
+                  {selectedGuidance}
+                </Text>
+              </View>
+              <View style={[s.composerBadge, { backgroundColor: "rgba(255,249,239,0.1)", borderColor: "rgba(255,249,239,0.18)" }]}>
+                <Text style={[s.composerBadgeText, { fontFamily: "Inter_700Bold" }]}>
+                  {selectedTrustLabel}
+                </Text>
+              </View>
+            </View>
+
+            <View style={s.composerTrustRail}>
+              {composerTrustItems.map((item) => (
+                <View
+                  key={item.label}
+                  style={[
+                    s.composerTrustChip,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: item.tone + "33",
+                    },
+                  ]}
+                >
+                  <Ionicons name={item.icon} size={14} color={item.tone} />
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    style={[s.composerTrustText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                  >
+                    {item.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            <BoardSectionHeader title="Choose care type" action="Fast tap" style={s.composerSectionHeader} />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -1291,13 +1726,14 @@ export default function LogScreen() {
                     key={q.type}
                     onPress={() => {
                       Haptics.selectionAsync();
+                      setSelectedLauncherKey(null);
                       setSelectedType(q.type);
                     }}
                     style={[
                       s.typeChip,
                       {
-                        backgroundColor: active ? colors.primary : colors.background,
-                        borderColor: active ? colors.primary : colors.border,
+                        backgroundColor: active ? tint : colors.background,
+                        borderColor: active ? colors.navy : colors.border,
                       },
                     ]}
                   >
@@ -1669,15 +2105,25 @@ export default function LogScreen() {
                   </View>
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      Eaten amount {selectedMealCompletion === "partial" ? "(required)" : "(optional)"}
+                      Eaten amount {mealOutcomeNeedsEatenAmount(selectedMealCompletion) ? "(required)" : "(optional)"}
                     </Text>
                     <TextInput
-                      placeholder={selectedMealCompletion === "skipped" ? "0" : "0.5"}
+                      placeholder={
+                        selectedMealCompletion === "skipped"
+                          ? "0"
+                          : selectedMealCompletion === "served" || selectedMealCompletion === "grazing"
+                            ? "pending"
+                            : "0.5"
+                      }
                       placeholderTextColor={colors.mutedForeground}
                       value={eatenAmount}
                       onChangeText={setEatenAmount}
                       keyboardType="decimal-pad"
-                      editable={selectedMealCompletion !== "skipped"}
+                      editable={
+                        selectedMealCompletion !== "skipped" &&
+                        selectedMealCompletion !== "served" &&
+                        selectedMealCompletion !== "grazing"
+                      }
                       style={[
                         s.input,
                         {
@@ -1685,7 +2131,12 @@ export default function LogScreen() {
                           color: colors.foreground,
                           borderColor: colors.border,
                           fontFamily: "Inter_500Medium",
-                          opacity: selectedMealCompletion === "skipped" ? 0.62 : 1,
+                          opacity:
+                            selectedMealCompletion === "skipped" ||
+                            selectedMealCompletion === "served" ||
+                            selectedMealCompletion === "grazing"
+                              ? 0.62
+                              : 1,
                         },
                       ]}
                     />
@@ -1935,11 +2386,27 @@ export default function LogScreen() {
                     const sev = e.severity && e.severity !== "normal" ? e.severity : null;
                     const sevColor = sev === "alert" ? colors.rose : colors.amber;
                     const statusLabel = syncLabel(e.syncStatus);
+                    const compactStatusLabel =
+                      statusLabel === "Saved offline"
+                        ? "Offline"
+                        : statusLabel === "Pending sync"
+                          ? "Queued"
+                          : statusLabel;
                     const stickyNotes = getStickyNotes(e.details);
                     return (
-                      <View
+                      <Pressable
                         key={e.id}
-                        style={[s.entryRow, i < g.entries.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Open ${e.title} log details`}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          openEntryDetail(e);
+                        }}
+                        style={({ pressed }) => [
+                          s.entryRow,
+                          { backgroundColor: pressed ? colors.background : "transparent" },
+                          i < g.entries.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                        ]}
                       >
                         <View style={[s.entryAccent, { backgroundColor: PULSE_COLORS[icon] }]} />
                         <View style={[s.entryAvatar, { backgroundColor: cg + "18" }]}>
@@ -1961,10 +2428,43 @@ export default function LogScreen() {
                               </View>
                             )}
                           </View>
-                          <Text style={[s.entryMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                            {e.caregiver} - {new Date(e.occurredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                            {statusLabel ? ` - ${statusLabel}` : ""}
-                          </Text>
+                          <View style={s.entryMetaLine}>
+                            <Text style={[s.entryMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                              {e.caregiver} - {new Date(e.occurredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                            </Text>
+                            {compactStatusLabel ? (
+                              <View
+                                style={[
+                                  s.entryStatusChip,
+                                  {
+                                    backgroundColor:
+                                      e.syncStatus === "failed"
+                                        ? colors.rose + "14"
+                                        : e.syncStatus === "synced"
+                                          ? colors.sage + "14"
+                                          : colors.amber + "14",
+                                  },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    s.entryStatusText,
+                                    {
+                                      color:
+                                        e.syncStatus === "failed"
+                                          ? colors.rose
+                                          : e.syncStatus === "synced"
+                                            ? colors.sage
+                                            : colors.amber,
+                                      fontFamily: "Inter_700Bold",
+                                    },
+                                  ]}
+                                >
+                                  {compactStatusLabel}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
                           {e.syncStatus === "failed" && e.syncError ? (
                             <Text style={[s.entrySyncError, { color: colors.rose, fontFamily: "Inter_500Medium" }]}>
                               {e.syncError}
@@ -1997,22 +2497,14 @@ export default function LogScreen() {
                           <Text style={[s.entryRelTime, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                             {relativeTime(e.occurredAt, now)}
                           </Text>
-                          <View style={s.entryActions}>
-                            <Pressable onPress={() => openEntryDetail(e)} hitSlop={10} style={s.actionBtn}>
-                              <Ionicons name="information-circle-outline" size={15} color={colors.mutedForeground} />
-                            </Pressable>
-                            <Pressable onPress={() => openStickyPrompt(e)} hitSlop={10} style={s.actionBtn}>
-                              <Ionicons name="document-text-outline" size={15} color={colors.mutedForeground} />
-                            </Pressable>
-                            <Pressable onPress={() => openEditEntry(e)} hitSlop={10} style={s.actionBtn}>
-                              <Ionicons name="pencil-outline" size={15} color={colors.mutedForeground} />
-                            </Pressable>
-                            <Pressable onPress={() => handleDelete(e.id, e.title)} hitSlop={10} style={s.actionBtn}>
-                              <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
-                            </Pressable>
+                          <View style={[s.entryOpenPill, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                            <Text style={[s.entryOpenText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                              Open
+                            </Text>
+                            <Ionicons name="chevron-forward" size={13} color={colors.mutedForeground} />
                           </View>
                         </View>
-                      </View>
+                      </Pressable>
                     );
                   })}
                 </View>
@@ -2259,6 +2751,43 @@ const s = StyleSheet.create({
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
 
+  signalStrip: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  signalCard: {
+    flexGrow: 1,
+    flexBasis: "47.5%",
+    minHeight: 82,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    justifyContent: "space-between",
+  },
+  signalIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  signalLabel: {
+    fontSize: 9.5,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  signalValue: {
+    fontSize: 18,
+    lineHeight: 21,
+  },
+  signalDetail: {
+    fontSize: 10,
+    lineHeight: 13,
+  },
+
   outboxCard: {
     borderRadius: 20,
     borderWidth: 1,
@@ -2286,14 +2815,178 @@ const s = StyleSheet.create({
   outboxMetric: { borderRadius: 11, paddingHorizontal: 10, paddingVertical: 6 },
   outboxMetricText: { fontSize: 11.5 },
 
-  loggerCard: {
-    borderRadius: 24,
-    padding: 16,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 4,
+  launcherCard: {
+    marginBottom: 12,
+    gap: 13,
+    padding: 13,
   },
+  launcherTabs: {
+    flexDirection: "row",
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(8, 20, 36, 0.08)",
+    padding: 3,
+  },
+  launcherTab: {
+    flex: 1,
+    minHeight: 36,
+    borderWidth: 1,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launcherTabText: { fontSize: 12 },
+  launcherGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 10,
+  },
+  launcherTile: {
+    width: "31.5%",
+    minHeight: 82,
+    borderWidth: 1,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    position: "relative",
+  },
+  launcherIconHalo: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launcherSelectedMark: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launcherTileText: {
+    fontSize: 11,
+    textAlign: "center",
+  },
+  moodPanel: {
+    borderWidth: 1,
+    borderRadius: 9,
+    padding: 10,
+  },
+  moodQuestion: {
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  moodRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 5,
+  },
+  moodOption: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+    minHeight: 62,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 6,
+  },
+  moodOptionText: {
+    fontSize: 10,
+  },
+  launcherCta: {
+    minHeight: 48,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    paddingHorizontal: 16,
+  },
+  launcherCtaText: {
+    color: "#FFF9EF",
+    fontSize: 14,
+    flex: 1,
+    textAlign: "center",
+  },
+
+  composerHero: {
+    borderRadius: 8,
+    padding: 12,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  composerHeroBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+  },
+  composerHeroIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  composerHeroText: { flex: 1, minWidth: 0 },
+  composerKicker: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0 },
+  composerTitle: { color: "#FFF9EF", fontSize: 22, lineHeight: 25, marginTop: 1 },
+  composerHint: { color: "rgba(255,249,239,0.72)", fontSize: 12, lineHeight: 17, marginTop: 3 },
+  composerBadge: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    maxWidth: 118,
+  },
+  composerBadgeText: {
+    color: "#FFF9EF",
+    fontSize: 10,
+    lineHeight: 13,
+    textAlign: "center",
+  },
+  composerTrustRail: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+    marginBottom: 12,
+  },
+  composerTrustChip: {
+    flexGrow: 1,
+    flexBasis: "30%",
+    minHeight: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+  composerTrustText: {
+    fontSize: 10.5,
+    minWidth: 0,
+  },
+  composerSectionHeader: { marginBottom: 8 },
   loggerTitle: { fontSize: 16, marginBottom: 12 },
   typeRow: { gap: 8, paddingHorizontal: 4, paddingBottom: 4 },
   typeChip: {
@@ -2303,19 +2996,19 @@ const s = StyleSheet.create({
     paddingLeft: 6,
     paddingRight: 13,
     paddingVertical: 6,
-    borderRadius: 22,
+    borderRadius: 8,
     borderWidth: 1,
   },
-  typeChipIcon: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  typeChipIcon: { width: 26, height: 26, borderRadius: 6, alignItems: "center", justifyContent: "center" },
   typeChipLabel: { fontSize: 13.5 },
 
   fieldBlock: { marginTop: 16 },
-  fieldLabel: { fontSize: 12.5, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 9 },
+  fieldLabel: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0, marginBottom: 8 },
   segRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  segPill: { paddingHorizontal: 15, paddingVertical: 9, borderRadius: 13, borderWidth: 1 },
+  segPill: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 8, borderWidth: 1 },
   segText: { fontSize: 13.5 },
 
-  input: { borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15 },
+  input: { borderRadius: 8, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   inputMulti: { minHeight: 64, textAlignVertical: "top" },
   mealFields: { marginTop: 2, gap: 12 },
   mealFieldRow: { flexDirection: "row", gap: 10 },
@@ -2325,24 +3018,24 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   visibilityTitle: { fontSize: 13.5 },
   visibilitySub: { fontSize: 12, lineHeight: 16, marginTop: 2 },
 
-  medRoutinePanel: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderRadius: 16, padding: 13 },
-  medRoutineIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  medRoutinePanel: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderRadius: 8, padding: 13 },
+  medRoutineIcon: { width: 34, height: 34, borderRadius: 7, alignItems: "center", justifyContent: "center" },
   medRoutineLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5 },
   medRoutineTitle: { fontSize: 15.5, marginTop: 2 },
   medRoutineMeta: { fontSize: 12.5, marginTop: 2 },
 
-  dietPanel: { marginTop: 14, borderRadius: 18, borderWidth: 1, padding: 14 },
+  dietPanel: { marginTop: 14, borderRadius: 8, borderWidth: 1, padding: 14 },
   dietPanelTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
   dietTitle: { fontSize: 15, letterSpacing: -0.1 },
   dietSub: { fontSize: 12.5, marginTop: 2 },
-  dietBadge: { minWidth: 48, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
+  dietBadge: { minWidth: 48, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
   dietBadgeText: { fontSize: 12.5 },
   dietTrack: { height: 8, borderRadius: 99, overflow: "hidden", marginTop: 12 },
   dietFill: { height: "100%", borderRadius: 99 },
@@ -2354,7 +3047,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     height: 52,
-    borderRadius: 16,
+    borderRadius: 8,
     marginTop: 18,
     shadowColor: "#2E5846",
     shadowOffset: { width: 0, height: 4 },
@@ -2400,7 +3093,15 @@ const s = StyleSheet.create({
   snapshotChipCount: { fontSize: 12 },
 
   dayEntries: { marginTop: -2 },
-  entryRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 14 },
+  entryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
+    marginHorizontal: -6,
+    borderRadius: 8,
+  },
   entryAccent: { width: 3, height: 38, borderRadius: 2, marginRight: 2 },
   entryAvatar: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   entryInitial: { fontSize: 13 },
@@ -2409,7 +3110,24 @@ const s = StyleSheet.create({
   entryTitle: { fontSize: 14.5, flexShrink: 1 },
   sevBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
   sevText: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0.4 },
+  entryMetaLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 2,
+  },
   entryMeta: { fontSize: 12, marginTop: 2 },
+  entryStatusChip: {
+    borderRadius: 7,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  entryStatusText: {
+    fontSize: 9.5,
+    letterSpacing: 0.2,
+    textTransform: "uppercase",
+  },
   entrySyncError: { fontSize: 12, marginTop: 4 },
   entryNote: { fontSize: 13, lineHeight: 18, marginTop: 4 },
   stickyStack: { gap: 6, marginTop: 8 },
@@ -2418,8 +3136,16 @@ const s = StyleSheet.create({
   stickyNoteMeta: { fontSize: 11, marginTop: 4 },
   entryRight: { alignItems: "flex-end", gap: 4 },
   entryRelTime: { fontSize: 11.5 },
-  entryActions: { flexDirection: "row", gap: 2 },
-  actionBtn: { padding: 4 },
+  entryOpenPill: {
+    minHeight: 26,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    paddingHorizontal: 7,
+  },
+  entryOpenText: { fontSize: 10 },
   detailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", padding: 22 },
   detailHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   detailIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Stack, useRouter } from "expo-router";
-import { useAuth } from "@clerk/expo";
+import { useWoofAuth } from "@/lib/auth";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -143,7 +143,7 @@ export default function WoofGuideScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, addEntry, updateCareDoc } = useCare();
-  const { getToken } = useAuth();
+  const { getToken } = useWoofAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);

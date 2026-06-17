@@ -12,6 +12,26 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-16: Care Twin Animation Uses A Sprite Manifest Before Layered Runtime Swap
+
+Decision: Mobile Phoenix Home should keep the current single-stage room animation until dogless room backgrounds and transparent Phoenix sprite strips exist, while `avatarLifeEngine.ts` owns the Care Twin scene state, sprite actions, and `CARE_TWIN_SPRITE_MANIFEST`.
+
+Reason: Apollo rejected the pasted-on duplicate-avatar look and wants the main Phoenix to feel like a video-game character. A tested manifest gives Fable/Replit or a sprite artist a precise asset contract without shipping an ugly temporary second dog layer.
+
+Owner: Codex.
+
+Revisit trigger: Final dogless room layers and transparent Phoenix sprite strips are available for in-engine inspection.
+
+### 2026-06-16: Layered Sprite Rendering Requires Both Room And Phoenix Assets
+
+Decision: `LivingPhoenixRoom` may render `SpriteSheetPlayer` only when `careTwinAssets.ts` has both a dogless room layer and the selected transparent Phoenix sprite strip registered.
+
+Reason: This protects the premium presentation. Rendering a transparent Phoenix strip over the current board hero would duplicate Phoenix because the hero art already contains the dog. The runtime can be ready now, but the visual switch should happen only when the asset set is complete enough to look intentional.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves a final layered room/character asset pack and in-engine preview confirms there is no duplicate Phoenix.
+
 ### 2026-06-14: Quick Log Search And Timeline Use Board Sections
 
 Decision: Mobile Quick Log should keep the composer, daily summary, search/filter controls, empty state, and timeline groups as separate shared board surfaces instead of local floating cards.
@@ -831,6 +851,35 @@ Reason: Premium polish is valuable for the July product path, but a beautiful mo
 Owner: Codex.
 
 Revisit trigger: Payment provider setup, app-store subscription configuration, legal/privacy approval, or real checkout implementation becomes active release work.
+
+### 2026-06-16: Living Phoenix Uses One Animated Stage Until Sprite Assets Exist
+
+Decision: Phoenix Home should animate the board-accurate room as one living care-twin stage for now, instead of compositing the current non-transparent Phoenix portrait files over another background. The care-state logic lives in `avatarLifeEngine.ts`, and `LivingPhoenixRoom.tsx` owns the Reanimated stage, HUD, speech, haptics, and reaction feedback.
+
+Reason: Apollo rejected the pasted-on second avatar look. The available "cutout" files are not production transparent sprites, so using them as layers makes the app look cheaper than the reference boards. A single animated stage preserves the premium pixel-room composition today while leaving a clean slot for true dogless-room plus Phoenix sprite-sheet assets later.
+
+Owner: Codex.
+
+Revisit trigger: Final transparent Phoenix sprite sheets, Rive/Lottie animations, or a Figma/Fable asset pack with separated room and character layers becomes available.
+
+### 2026-06-17: Avatar Studio Starts With Templates Plus Scan-Assisted Suggestions
+
+Decision: WoofWatcher Avatar Studio should ship first as a template-based pixel care-twin creator with scan-assisted suggestions and owner approval, not as a promise that one uploaded photo can perfectly generate a full animated custom dog.
+
+Reason: The product needs the magic of "bring your real dog into the app" without sacrificing consistency, animation quality, or launch speed. Premade body templates, editable traits, accessory slots, and emote packs create a reliable game-like system that future AI scan and custom sprite generation can plug into.
+
+Consequences:
+
+- `PetAvatarConfig` is now the durable avatar identity model.
+- The visible Avatar Studio flow uses Scan, Template, Customize, and Emotes steps.
+- Current scan behavior is mock/local and uses truthful copy: photos help suggest a care twin, and the owner approves the match.
+- Accessory customization uses slots such as neck, head, face, body, room, and fx instead of loose stickers.
+- Home and More read the saved avatar template identity.
+- Final AI scan, final template art, and custom sprite generation remain later production slices.
+
+Owner: Codex.
+
+Revisit trigger: Apollo supplies final template art, a production image-analysis provider is approved, or a pixel artist/Fable/Replit produces consistent template and sprite packs.
 
 ## Open Decisions For Apollo
 

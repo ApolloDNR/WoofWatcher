@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
-  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -13,24 +12,26 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { normalizeCareEventType } from "@workspace/care-domain";
+import { deriveCareIntelligence, normalizeCareEventType, type CareEventDetails } from "@workspace/care-domain";
 
 import {
   BoardCard,
   BoardSectionHeader,
   CareRow,
-  PixelSpeechBubble,
   QuickActionTile,
   StatusMeter,
 } from "@/components/board/BoardPrimitives";
+import { LivingPhoenixRoom, type PhoenixRoomReaction } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
+import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { getAvatarTemplate } from "@/lib/avatarStudio";
+import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 
-const HERO = require("@/assets/board/hero.png");
-const HERO_RATIO = 1050 / 786;
+const HERO_RATIO = 1.05;
 
 interface QuickItem {
   key: string;
@@ -40,27 +41,40 @@ interface QuickItem {
   title: string;
   mood?: string;
   severity?: string;
+  route?: "/log";
 }
 
-const QUICK_LOG: QuickItem[] = [
+const HOME_QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
   { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
-  { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty break" },
+  { key: "pee", icon: "pee", label: "Pee", type: "potty", title: "Potty - Pee" },
   { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water" },
   { key: "training", icon: "training", label: "Training", type: "training", title: "Training win" },
-  { key: "bile", icon: "bile", label: "Bile", type: "vomit", title: "Bile watch note", severity: "watch" },
-  { key: "note", icon: "note", label: "Note", type: "note", title: "Care note" },
   { key: "treat", icon: "treat", label: "Treat", type: "treat", title: "Treat" },
   { key: "play", icon: "play", label: "Play", type: "play", title: "Play session" },
+  { key: "more", icon: "note", label: "More", type: "note", title: "Open quick log", route: "/log" },
 ];
 
 const SPEECH_BY_MOOD: Record<Mood, string> = {
-  happy: "Great job! Phoenix is on track.",
-  excited: "Walk time soon? I am ready!",
-  calm: "Morning! Ready for a good day.",
-  anxious: "Stay close today. A calm plan helps.",
-  unwell: "Tummy feels off. Let's watch gently.",
+  happy: "Good morning!\nWalk time soon?\nI'm ready!",
+  excited: "Good morning!\nWalk time soon?\nI'm ready!",
+  calm: "Good morning!\nWalk time soon?\nI'm ready!",
+  anxious: "Stay close today.\nA calm plan helps.",
+  unwell: "Tummy feels off.\nLet's watch gently.",
 };
+
+const MOOD_ICON: Record<Mood, PixelIconName> = {
+  happy: "mood_great",
+  excited: "mood_great",
+  calm: "mood_good",
+  anxious: "mood_meh",
+  unwell: "mood_rough",
+};
+
+function completionLabel(done: number, target: number): string {
+  if (!target) return `${done}`;
+  return `${Math.min(done, target)}/${target}`;
+}
 
 function routineIcon(type: string): PixelIconName {
   const t = normalizeCareEventType(type);
@@ -102,11 +116,30 @@ function shortTime(iso: string): string {
   });
 }
 
+function detailValue(details: unknown, key: string): unknown {
+  if (!details || typeof details !== "object" || Array.isArray(details)) return undefined;
+  return (details as Record<string, unknown>)[key];
+}
+
+function careDetails(details: unknown): CareEventDetails {
+  if (!details || typeof details !== "object" || Array.isArray(details)) return undefined;
+  return details as CareEventDetails;
+}
+
+function isPendingMealLog(entry: { type: string; details?: unknown }): boolean {
+  const details = careDetails(entry.details);
+  if (normalizeCareEventType(entry.type, details) !== "meal") return false;
+  const completion = String(detailValue(entry.details, "mealCompletion") ?? "");
+  const lifecycle = String(detailValue(entry.details, "mealLifecycle") ?? "");
+  return lifecycle === "outcome-pending" || completion === "served" || completion === "grazing";
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, addEntry } = useCare();
+  const { avatarConfig, hasConfiguredAvatar } = useAvatar();
 
   const topInset = Platform.OS === "web" ? 18 : insets.top;
   const [now, setNow] = useState(() => Date.now());
@@ -116,11 +149,36 @@ export default function HomeScreen() {
   }, []);
 
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const avatarMotion = useMemo(
+    () =>
+      deriveAvatarMotion({
+        entries: state.entries,
+        routines: state.routines,
+        caregivers: state.caregivers,
+        now,
+        energy: status.energy,
+      }),
+    [state.entries, state.routines, state.caregivers, now, status.energy],
+  );
+  const careIntelligence = useMemo(
+    () =>
+      deriveCareIntelligence({
+        entries: state.entries,
+        routines: state.routines,
+        caregivers: state.caregivers,
+        now,
+      }),
+    [state.entries, state.routines, state.caregivers, now],
+  );
 
   const petName =
     state.profile.name && state.profile.name !== "My Dog"
       ? state.profile.name
       : "Phoenix";
+  const avatarTemplate = useMemo(
+    () => getAvatarTemplate(avatarConfig.templateId),
+    [avatarConfig.templateId],
+  );
   const caregiver = state.caregivers[0]?.name ?? "Emma";
   const timeLabel = useMemo(() => shortTime(new Date(now).toISOString()), [now]);
 
@@ -129,9 +187,29 @@ export default function HomeScreen() {
   const bondLabel = status.mood === "unwell" ? "Okay" : "Strong";
   const hydrationScore = 72;
   const hungerScore = fed ? 86 : 42;
+  const hungerLabel = fed ? "Good" : "Hungry";
   const bondScore = status.mood === "anxious" ? 70 : 92;
+  const moodIcon = MOOD_ICON[status.mood];
+
+  const pendingMeal = useMemo(
+    () =>
+      [...state.entries]
+        .filter((entry) => isToday(entry.occurredAt, now) && isPendingMealLog(entry))
+        .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))[0] ?? null,
+    [state.entries, now],
+  );
 
   const nextUp = useMemo(() => {
+    if (pendingMeal) {
+      const label = pendingMeal.title.split(" - ")[0] || "Meal";
+      return [
+        {
+          label: `${label} served`,
+          time: "Outcome pending",
+          icon: "meal" as PixelIconName,
+        },
+      ];
+    }
     if (state.routines.length) {
       return state.routines.slice(0, 3).map((r) => ({
         label: r.label,
@@ -144,13 +222,22 @@ export default function HomeScreen() {
       { label: "Dinner", time: "7:00 PM", icon: "meal" as PixelIconName },
       { label: "Training", time: "6:30 PM", icon: "training" as PixelIconName },
     ];
-  }, [state.routines, caregiver]);
+  }, [pendingMeal, state.routines, caregiver]);
 
   const nextPrimary = nextUp[0];
+  const nextCount = Math.max(nextUp.length, 1);
   const nextMeta =
-    status.minutesUntilNext !== null
+    pendingMeal
+      ? "Open meal"
+      : status.minutesUntilNext !== null
       ? `In ${formatDuration(status.minutesUntilNext)}`
       : nextPrimary?.time ?? "Ready";
+  const nextDetail =
+    pendingMeal
+      ? "Outcome pending - update when Phoenix finishes"
+      : status.minutesUntilNext !== null
+      ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
+      : nextPrimary?.time ?? "Ready when you are";
 
   const health = status.counts.healthAlert
     ? { status: "Needs Watch", sub: "Recent symptom logged", color: colors.amber }
@@ -201,7 +288,18 @@ export default function HomeScreen() {
     [state.entries],
   );
 
+  const careProgress = careIntelligence.score;
+  const questLine = careIntelligence.title;
+
+  const statusTiles = [
+    { label: "Happiness", value: status.meta.label, icon: moodIcon, tone: colors.amber },
+    { label: "Energy", value: `${status.energy}%`, icon: "energy" as PixelIconName, tone: colors.sage },
+    { label: "Hunger", value: hungerLabel, icon: "hunger" as PixelIconName, tone: fed ? colors.sage : colors.copper },
+    { label: "Bond", value: bondLabel, icon: "heart" as PixelIconName, tone: colors.rose },
+  ];
+
   const [toast, setToast] = useState<string | null>(null);
+  const [roomReaction, setRoomReaction] = useState<PhoenixRoomReaction | null>(null);
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = (msg: string) => {
@@ -228,6 +326,10 @@ export default function HomeScreen() {
   );
 
   const logQuick = (item: QuickItem) => {
+    if (item.route) {
+      router.push(item.route);
+      return;
+    }
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
@@ -238,6 +340,13 @@ export default function HomeScreen() {
       occurredAt: new Date().toISOString(),
       mood: item.mood,
       severity: item.severity,
+    });
+    setRoomReaction({
+      id: Date.now(),
+      icon: item.icon,
+      label: `${item.label} logged`,
+      detail: avatarMotion.cue === "health-watch" ? "Health context updated." : "Phoenix reacts in the room.",
+      tone: item.type === "vomit" || item.severity === "alert" ? colors.rose : colors.brandNavy,
     });
     showToast(`${item.title} logged`);
   };
@@ -269,159 +378,140 @@ export default function HomeScreen() {
               accessibilityLabel="Open More"
               onPress={() => router.push("/more")}
               hitSlop={10}
-              style={[s.headerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
+              style={[s.headerButton, { borderColor: "transparent", backgroundColor: "transparent" }]}
             >
-              <Ionicons name="menu" size={20} color={colors.navy} />
+              <Ionicons name="menu" size={27} color={colors.navy} />
             </Pressable>
             <View style={s.logoWrap}>
-              <WoofWatcherLogo size={25} wordmarkSize={20} />
+              <WoofWatcherLogo size={39} wordmarkSize={30} />
+              <Text style={[s.logoSub, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                Real care. Pixel heart.
+              </Text>
             </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Open Health Watch"
               onPress={() => router.push("/health")}
               hitSlop={10}
-              style={[s.headerButton, { borderColor: colors.border, backgroundColor: colors.card }]}
+              style={[s.headerButton, { borderColor: "transparent", backgroundColor: "transparent" }]}
             >
-              <Ionicons name="notifications-outline" size={19} color={colors.navy} />
+              <Ionicons name="notifications-outline" size={23} color={colors.navy} />
+              <View style={[s.badge, { backgroundColor: colors.rose }]}>
+                <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>3</Text>
+              </View>
             </Pressable>
-          </View>
-
-          <View style={s.greetingRow}>
-            <View>
-              <Text style={[s.kicker, { color: colors.copper, fontFamily: "Fredoka_600SemiBold" }]}>
-                Neo retro pet care
-              </Text>
-              <Text style={[s.greeting, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                Good morning, {caregiver}
-              </Text>
-            </View>
-            <View style={[s.dateChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="calendar-outline" size={13} color={colors.navy} />
-              <Text style={[s.dateText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                {timeLabel}
-              </Text>
-            </View>
           </View>
 
           <BoardCard padded={false} style={s.heroCard}>
             <View style={s.heroWrap}>
-              <Image source={HERO} style={s.heroImg} resizeMode="cover" />
-              <View style={s.heroLabel}>
-                <Text style={[s.heroLabelText, { color: colors.navy, fontFamily: "Fredoka_700Bold" }]}>
-                  Phoenix Home
+              <LivingPhoenixRoom
+                mood={avatarMotion.avatarMood}
+                motion={avatarMotion}
+                speech={avatarMotion.speech || SPEECH_BY_MOOD[status.mood]}
+                energy={status.energy}
+                presenceLabel={`${petName} with ${caregiver}`}
+                nextLabel={avatarMotion.label}
+                reaction={roomReaction}
+                onPress={() => showToast(avatarMotion.line)}
+              />
+            </View>
+          </BoardCard>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${petName} is with ${caregiver}`}
+            onPress={() => router.push("/more")}
+            style={[s.presencePanel, { backgroundColor: colors.ivory, borderColor: colors.border }]}
+          >
+            <View style={[s.presenceAvatar, { backgroundColor: colors.copper }]}>
+              <Text style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}>
+                {caregiver.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={s.presenceCopy}>
+              <Text style={[s.presenceText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                {petName} is with {caregiver}
+              </Text>
+              <Text style={[s.presenceSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                At home - {timeLabel}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={17} color={colors.navy} />
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
+            onPress={() => router.push("/portrait")}
+            style={[s.avatarIdentityBar, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            <View style={[s.avatarIdentityIcon, { backgroundColor: colors.secondary }]}>
+              <PixelIcon name="heart" size={22} />
+            </View>
+            <View style={s.avatarIdentityCopy}>
+              <Text style={[s.avatarIdentityTitle, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                {avatarTemplate.label} care twin
+              </Text>
+              <Text style={[s.avatarIdentitySub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {avatarConfig.scanAssisted ? "Scan-assisted traits saved" : "Template ready - customize Phoenix"}
+              </Text>
+            </View>
+            <Ionicons name="color-palette-outline" size={18} color={colors.navy} />
+          </Pressable>
+
+          <View style={s.statusTiles}>
+            {statusTiles.map((tile) => (
+              <View
+                key={tile.label}
+                style={[s.statusTile, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <View style={[s.statusTileIcon, { backgroundColor: tile.tone + "16" }]}>
+                  <PixelIcon name={tile.icon} size={29} />
+                </View>
+                <Text style={[s.statusTileLabel, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                  {tile.label}
+                </Text>
+                <Text style={[s.statusTileValue, { color: tile.tone, fontFamily: "Inter_700Bold" }]}>
+                  {tile.value}
                 </Text>
               </View>
-              <PixelSpeechBubble text={SPEECH_BY_MOOD[status.mood]} style={s.speech} />
-              <View style={s.heroBottom}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${petName} is with ${caregiver}`}
-                  onPress={() => router.push("/more")}
-                  style={[s.presenceChip, { backgroundColor: colors.ivory, borderColor: colors.border }]}
-                >
-                  <View style={[s.presenceAvatar, { backgroundColor: colors.copper }]}>
-                    <Text style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}>
-                      {caregiver.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View>
-                    <Text style={[s.presenceText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                      With {caregiver}
-                    </Text>
-                    <Text style={[s.presenceSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      Since {timeLabel}
-                    </Text>
-                  </View>
-                </Pressable>
-                <View style={[s.moodChip, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
-                  <PixelIcon name={status.mood === "unwell" ? "mood_rough" : "mood_great"} size={24} />
-                  <View>
-                    <Text style={[s.moodLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      Mood
-                    </Text>
-                    <Text style={[s.moodValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                      {status.meta.label}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </BoardCard>
+            ))}
+          </View>
 
-          <BoardCard style={s.nextCard}>
-            <BoardSectionHeader title="Next up" action="1 of 2 today" />
-            <CareRow
-              icon={nextPrimary?.icon ?? "walk"}
-              title={nextPrimary?.label ?? `Walk with ${caregiver}`}
-              detail={`${nextMeta} - ${nextPrimary?.time ?? "8:30 AM"}`}
-              meta="Start"
-              onPress={() => router.push("/calendar")}
-            />
-          </BoardCard>
-
-          <BoardCard style={s.statusCard}>
-            <BoardSectionHeader title="Phoenix status" action="View full report" />
-            <View style={s.meterStack}>
-              <StatusMeter
-                label="Energy"
-                icon="energy"
-                value={status.energy}
-                valueLabel={`${status.energy}%`}
-                tone={colors.sage}
-              />
-              <StatusMeter
-                label="Hunger"
-                icon="hunger"
-                value={hungerScore}
-                valueLabel={fed ? "Full" : "Hungry"}
-                tone={fed ? colors.sage : colors.copper}
-              />
-              <StatusMeter
-                label="Hydration"
-                icon="bile"
-                value={hydrationScore}
-                valueLabel="Good"
-                tone={colors.blueSignal}
-              />
-              <StatusMeter
-                label="Bile Risk"
-                icon="bile"
-                value={bileCount ? 46 : 82}
-                valueLabel={bile.status}
-                tone={bile.color}
-              />
-              <StatusMeter
-                label="Bond"
-                icon="bond"
-                value={bondScore}
-                valueLabel={bondLabel}
-                tone={colors.sage}
-              />
-            </View>
-          </BoardCard>
-
-          <BoardCard>
-            <BoardSectionHeader title="Quick actions" />
-            <View style={s.quickGrid}>
-              {QUICK_LOG.map((item) => (
-                <QuickActionTile
-                  key={item.key}
+          <View style={s.homeSplit}>
+            <BoardCard style={[s.nextCard, s.homeSplitCard]}>
+              <BoardSectionHeader title="Next Up" action={`1 of ${nextCount}`} />
+              {nextUp.slice(0, 3).map((item, index) => (
+                <CareRow
+                  key={`${item.label}-${item.time}-${index}`}
                   icon={item.icon}
-                  label={item.label}
-                  accessibilityLabel={`Log ${item.label}`}
-                  onPress={() => logQuick(item)}
-                  accent={
-                    item.type === "water" || item.key === "bile"
-                      ? colors.blueSignal + "55"
-                      : item.type === "training"
-                        ? colors.accent
-                        : colors.secondary
-                  }
+                  title={item.label}
+                  detail={index === 0 ? nextDetail : item.time}
+                  meta={index === 0 && pendingMeal ? "Update" : index === 0 ? "Start" : ""}
+                  onPress={() => router.push(pendingMeal ? "/log?type=meal" : "/calendar")}
                 />
               ))}
-            </View>
-          </BoardCard>
+            </BoardCard>
+
+            <BoardCard style={[s.quickHomeCard, s.homeSplitCard]}>
+              <BoardSectionHeader title="Quick Log" action="Open" />
+              <View style={s.homeQuickGrid}>
+                {HOME_QUICK_LOG.map((item) => (
+                  <QuickActionTile
+                    key={item.key}
+                    icon={item.icon}
+                    label={item.label}
+                    accessibilityLabel={item.route ? "Open Quick Log" : `Log ${item.label}`}
+                    onPress={() => logQuick(item)}
+                    accent={colors.secondary}
+                    style={s.homeQuickTile}
+                    iconSize={25}
+                    labelStyle={s.homeQuickText}
+                  />
+                ))}
+              </View>
+            </BoardCard>
+          </View>
 
           <View style={s.cardGrid}>
             <BoardCard style={s.gridCard}>
@@ -439,7 +529,7 @@ export default function HomeScreen() {
                 <View style={s.todayMetric}>
                   <PixelIcon name="meal" size={26} />
                   <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                    {meals.done}/{meals.target || 2}
+                    {completionLabel(meals.done, meals.target || 2)}
                   </Text>
                   <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                     Meals
@@ -448,7 +538,7 @@ export default function HomeScreen() {
                 <View style={s.todayMetric}>
                   <PixelIcon name="pee" size={26} />
                   <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                    {status.counts.potty.done}/{status.counts.potty.target || 3}
+                    {completionLabel(status.counts.potty.done, status.counts.potty.target || 3)}
                   </Text>
                   <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                     Potty
@@ -505,6 +595,99 @@ export default function HomeScreen() {
               </Pressable>
             ))}
           </View>
+
+          <BoardCard tone="navy" style={s.questCard}>
+            <View style={s.questTop}>
+              <View>
+                <Text style={[s.questKicker, { color: colors.amber, fontFamily: "Fredoka_600SemiBold" }]}>
+                  Care quest
+                </Text>
+                <Text style={[s.questTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                  {questLine}
+                </Text>
+                <Text style={[s.questSub, { fontFamily: "Inter_600SemiBold" }]}>
+                  {careIntelligence.subtitle}
+                </Text>
+              </View>
+              <View style={s.questBadge}>
+                <PixelIcon name="heart" size={30} />
+              </View>
+            </View>
+            <View style={s.questProofGrid}>
+              {careIntelligence.metrics.slice(0, 3).map((metric) => (
+                <View key={metric.label} style={s.questProofTile}>
+                  <Text style={[s.questProofValue, { fontFamily: "Fredoka_700Bold" }]}>{metric.value}</Text>
+                  <Text style={[s.questProofLabel, { fontFamily: "Inter_700Bold" }]}>{metric.label}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={s.questMeterWrap}>
+              {Array.from({ length: 10 }).map((_, index) => {
+                const active = index < Math.round(careProgress / 10);
+                return (
+                  <View
+                    key={`quest-${index}`}
+                    style={[
+                      s.questPip,
+                      {
+                        backgroundColor: active ? colors.sage : "rgba(255,249,239,0.18)",
+                        borderColor: active ? colors.sage : "rgba(255,249,239,0.26)",
+                      },
+                    ]}
+                  />
+                );
+              })}
+            </View>
+            <View style={s.questMetaRow}>
+              <Text style={[s.questMeta, { fontFamily: "Inter_700Bold" }]}>
+                {careIntelligence.score}% Care IQ
+              </Text>
+              <Text style={[s.questMeta, { fontFamily: "Inter_600SemiBold" }]}>
+                {careIntelligence.confidenceScore}% log confidence
+              </Text>
+            </View>
+          </BoardCard>
+
+          <BoardCard style={s.statusCard}>
+            <BoardSectionHeader title="Phoenix status" action="View full report" />
+            <View style={s.meterStack}>
+              <StatusMeter
+                label="Energy"
+                icon="energy"
+                value={status.energy}
+                valueLabel={`${status.energy}%`}
+                tone={colors.sage}
+              />
+              <StatusMeter
+                label="Hunger"
+                icon="hunger"
+                value={hungerScore}
+                valueLabel={fed ? "Full" : "Hungry"}
+                tone={fed ? colors.sage : colors.copper}
+              />
+              <StatusMeter
+                label="Hydration"
+                icon="bile"
+                value={hydrationScore}
+                valueLabel="Good"
+                tone={colors.blueSignal}
+              />
+              <StatusMeter
+                label="Bile Risk"
+                icon="bile"
+                value={bileCount ? 46 : 82}
+                valueLabel={bile.status}
+                tone={bile.color}
+              />
+              <StatusMeter
+                label="Bond"
+                icon="bond"
+                value={bondScore}
+                valueLabel={bondLabel}
+                tone={colors.sage}
+              />
+            </View>
+          </BoardCard>
         </Animated.View>
       </ScrollView>
 
@@ -531,111 +714,247 @@ const s = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1 },
 
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
   headerButton: {
-    width: 38,
-    height: 38,
+    width: 42,
+    height: 42,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
   },
-  logoWrap: { flex: 1, alignItems: "center" },
-  greetingRow: {
-    marginTop: 14,
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  kicker: { fontSize: 11, letterSpacing: 0.8, textTransform: "uppercase" },
-  greeting: { fontSize: 21, lineHeight: 25, marginTop: 2 },
-  dateChip: {
-    flexDirection: "row",
+  badge: {
+    position: "absolute",
+    top: -6,
+    right: -5,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    justifyContent: "center",
+    paddingHorizontal: 4,
   },
-  dateText: { fontSize: 11 },
+  badgeText: { color: "#FFFFFF", fontSize: 10 },
+  logoWrap: { flex: 1, alignItems: "center", gap: 0 },
+  logoSub: { fontSize: 11.5, marginTop: -1 },
 
-  heroCard: { overflow: "hidden", marginBottom: 10 },
+  heroCard: {
+    overflow: "hidden",
+    marginBottom: 0,
+    borderWidth: 1,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+  },
   heroWrap: {
     width: "100%",
     aspectRatio: HERO_RATIO,
     position: "relative",
   },
-  heroImg: { width: "100%", height: "100%" },
-  heroLabel: {
-    position: "absolute",
-    top: 12,
-    left: 13,
-    backgroundColor: "rgba(255,249,239,0.88)",
-    borderRadius: 4,
+  presencePanel: {
+    width: "84%",
+    alignSelf: "flex-start",
+    marginTop: -30,
+    marginLeft: 12,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    shadowColor: "#081424",
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  presenceAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  presenceInitial: { color: "#FFFFFF", fontSize: 17 },
+  presenceCopy: { flex: 1, minWidth: 0 },
+  presenceText: { fontSize: 14 },
+  presenceSub: { fontSize: 11, marginTop: 2 },
+  avatarIdentityBar: {
+    minHeight: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingHorizontal: 11,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  avatarIdentityIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarIdentityCopy: { flex: 1, minWidth: 0 },
+  avatarIdentityTitle: { fontSize: 13 },
+  avatarIdentitySub: { fontSize: 11, marginTop: 1 },
+  statusTiles: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 10,
+  },
+  statusTile: {
+    flex: 1,
+    minHeight: 92,
+    borderWidth: 1,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 9,
+  },
+  statusTileIcon: {
+    width: 39,
+    height: 39,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 5,
+  },
+  statusTileLabel: { fontSize: 11, textAlign: "center" },
+  statusTileValue: { fontSize: 13, marginTop: 3, textAlign: "center" },
+
+  homeSplit: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "stretch",
+    marginBottom: 10,
+  },
+  homeSplitCard: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nextCard: { marginTop: 0 },
+  quickHomeCard: {
+    minHeight: 188,
+  },
+  homeQuickGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 8,
+  },
+  homeQuickTile: {
+    width: "48%",
+    minHeight: 54,
+    borderWidth: 1,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
     paddingVertical: 5,
+  },
+  homeQuickText: {
+    fontSize: 9.5,
+    textAlign: "center",
+  },
+  questCard: {
+    marginTop: 10,
+    marginBottom: 10,
+    padding: 14,
+    overflow: "hidden",
+  },
+  questTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  questKicker: { fontSize: 11, textTransform: "uppercase" },
+  questTitle: {
+    color: "#FFF9EF",
+    fontSize: 17,
+    lineHeight: 21,
+    marginTop: 2,
+    maxWidth: 245,
+  },
+  questSub: {
+    color: "rgba(255,249,239,0.78)",
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 5,
+    maxWidth: 245,
+  },
+  questBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,249,239,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.18)",
+  },
+  questProofGrid: {
+    flexDirection: "row",
+    gap: 7,
+    marginTop: 13,
+  },
+  questProofTile: {
+    flex: 1,
+    minHeight: 54,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.16)",
+    backgroundColor: "rgba(255,249,239,0.08)",
     paddingHorizontal: 8,
+    paddingVertical: 7,
+    justifyContent: "center",
   },
-  heroLabelText: { fontSize: 11, letterSpacing: 1, textTransform: "uppercase" },
-  speech: {
-    position: "absolute",
-    top: "18%",
-    left: "9%",
+  questProofValue: {
+    color: "#FFF9EF",
+    fontSize: 16,
   },
-  heroBottom: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    bottom: 10,
+  questProofLabel: {
+    color: "rgba(255,249,239,0.68)",
+    fontSize: 9,
+    lineHeight: 12,
+    marginTop: 1,
+    textTransform: "uppercase",
+  },
+  questMeterWrap: {
+    flexDirection: "row",
+    gap: 5,
+    marginTop: 13,
+  },
+  questPip: {
+    flex: 1,
+    height: 12,
+    borderWidth: 1,
+    borderRadius: 2,
+  },
+  questMetaRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
+    marginTop: 9,
   },
-  presenceChip: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 9,
+  questMeta: {
+    color: "rgba(255,249,239,0.82)",
+    fontSize: 11.5,
   },
-  presenceAvatar: {
-    width: 31,
-    height: 31,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  presenceInitial: { color: "#FFFFFF", fontSize: 14 },
-  presenceText: { fontSize: 12 },
-  presenceSub: { fontSize: 10, marginTop: 1 },
-  moodChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 9,
-  },
-  moodLabel: { fontSize: 9, textTransform: "uppercase", letterSpacing: 0.4 },
-  moodValue: { fontSize: 12 },
-
-  nextCard: { marginTop: 2, marginBottom: 10 },
   statusCard: { marginBottom: 10 },
   meterStack: { gap: 8 },
-  quickGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    rowGap: 9,
-  },
   cardGrid: { gap: 10, marginTop: 10 },
   gridCard: { minHeight: 124 },
   todayGrid: {

@@ -9,9 +9,15 @@ import React, {
   useState,
 } from "react";
 import { Platform, type ImageSourcePropType } from "react-native";
+import {
+  createDefaultAvatarConfig,
+  normalizeAvatarConfig,
+  type PetAvatarConfig,
+} from "@/lib/avatarStudio";
 import type { Mood } from "@/lib/phoenixStatus";
 
 const AVATAR_KEY = "woofwatcher.avatarSet.v1";
+const AVATAR_CONFIG_KEY = "woofwatcher.petAvatarConfig.v1";
 
 export const MOODS: Mood[] = ["happy", "excited", "calm", "anxious", "unwell"];
 
@@ -65,17 +71,24 @@ async function verifyAvatarSet(
 
 interface AvatarContextValue {
   avatarSet: AvatarSet | null;
+  avatarConfig: PetAvatarConfig;
   hasCustomAvatar: boolean;
+  hasConfiguredAvatar: boolean;
   isLoaded: boolean;
   getAvatarSource: (mood: Mood) => ImageSourcePropType;
   saveAvatarSet: (set: AvatarSet) => Promise<void>;
   clearAvatarSet: () => Promise<void>;
+  saveAvatarConfig: (config: PetAvatarConfig) => Promise<void>;
+  resetAvatarConfig: (petName?: string) => Promise<void>;
 }
 
 const AvatarContext = createContext<AvatarContextValue | null>(null);
 
 export function AvatarProvider({ children }: { children: React.ReactNode }) {
   const [avatarSet, setAvatarSet] = useState<AvatarSet | null>(null);
+  const [avatarConfig, setAvatarConfig] = useState<PetAvatarConfig>(() =>
+    createDefaultAvatarConfig("Phoenix"),
+  );
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -83,6 +96,7 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
 
     const load = async () => {
       let parsed: AvatarSet | null = null;
+      let parsedConfig: PetAvatarConfig | null = null;
       try {
         const raw = await AsyncStorage.getItem(AVATAR_KEY);
         if (raw) {
@@ -94,6 +108,15 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
       } catch {
         // ignore corrupt cache
         parsed = null;
+      }
+
+      try {
+        const rawConfig = await AsyncStorage.getItem(AVATAR_CONFIG_KEY);
+        if (rawConfig) {
+          parsedConfig = normalizeAvatarConfig(JSON.parse(rawConfig), "Phoenix");
+        }
+      } catch {
+        parsedConfig = null;
       }
 
       if (parsed) {
@@ -119,6 +142,7 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
 
       if (cancelled) return;
       setAvatarSet(parsed && Object.keys(parsed).length > 0 ? parsed : null);
+      setAvatarConfig(parsedConfig ?? createDefaultAvatarConfig("Phoenix"));
       setIsLoaded(true);
     };
 
@@ -152,18 +176,58 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.removeItem(AVATAR_KEY);
   }, []);
 
+  const saveAvatarConfig = useCallback(async (config: PetAvatarConfig) => {
+    const clean = normalizeAvatarConfig(
+      {
+        ...config,
+        updatedAt: new Date().toISOString(),
+      },
+      config.petName || "Phoenix",
+    );
+    setAvatarConfig(clean);
+    await AsyncStorage.setItem(AVATAR_CONFIG_KEY, JSON.stringify(clean));
+  }, []);
+
+  const resetAvatarConfig = useCallback(async (petName = "Phoenix") => {
+    const clean = createDefaultAvatarConfig(petName);
+    setAvatarConfig(clean);
+    await AsyncStorage.setItem(AVATAR_CONFIG_KEY, JSON.stringify(clean));
+  }, []);
+
   const hasCustomAvatar = !!avatarSet && Object.keys(avatarSet).length > 0;
+  const hasConfiguredAvatar =
+    avatarConfig.scanAssisted ||
+    avatarConfig.templateId !== "shepherd" ||
+    avatarConfig.collarId !== "forest-bandana" ||
+    avatarConfig.faceMarkingId !== "mask" ||
+    avatarConfig.coatPrimary !== "#1B1714" ||
+    avatarConfig.coatSecondary !== "#C99052";
 
   const value = useMemo(
     () => ({
       avatarSet,
+      avatarConfig,
       hasCustomAvatar,
+      hasConfiguredAvatar,
       isLoaded,
       getAvatarSource,
       saveAvatarSet,
       clearAvatarSet,
+      saveAvatarConfig,
+      resetAvatarConfig,
     }),
-    [avatarSet, hasCustomAvatar, isLoaded, getAvatarSource, saveAvatarSet, clearAvatarSet],
+    [
+      avatarSet,
+      avatarConfig,
+      hasCustomAvatar,
+      hasConfiguredAvatar,
+      isLoaded,
+      getAvatarSource,
+      saveAvatarSet,
+      clearAvatarSet,
+      saveAvatarConfig,
+      resetAvatarConfig,
+    ],
   );
 
   return <AvatarContext.Provider value={value}>{children}</AvatarContext.Provider>;

@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-06-17",
+  "previewUrl": "http://127.0.0.1:4192/portrait",
+  "route": "/portrait",
+  "title": "WoofWatcher",
+  "visibleProof": {
+    "hasAvatarStudio": true,
+    "hasPortraitStudio": false,
+    "hasSaveAvatar": true,
+    "hasTemplate": true,
+    "hasUploadCopy": true
+  },
+  "sampleText": [
+    "AVATAR STUDIO",
+    "Create the care twin",
+    "Upload photos to help us suggest your dog's pixel care twin, then approve and customize it.",
+    "TEMPLATE-BUILT",
+    "Phoenix's Pixel Twin",
+    "Phoenix: Shepherd, mask face, tall ears, template-built",
+    "Scan",
+    "Template",
+    "Customize",
+    "Emotes",
+    "BRING YOUR DOG IN",
+    "Save Avatar",
+    "True AI scanning plugs in later. This version ships the reliable character creator, scan suggestion, and emote-preview system first."
+  ],
+  "consoleErrors": []
+}

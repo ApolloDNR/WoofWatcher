@@ -15,13 +15,13 @@ import {
   Fraunces_700Bold,
 } from "@expo-google-fonts/fraunces";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/expo";
+import { ClerkProvider, ClerkLoaded } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { Text, View } from "react-native";
+import { Platform, StyleSheet, useColorScheme, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -30,19 +30,22 @@ import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CareProvider } from "@/context/CareContext";
 import { AvatarProvider } from "@/context/AvatarContext";
+import {
+  clerkProxyUrl,
+  clerkPublishableKey,
+  isClerkConfigured,
+  useWoofAuth,
+} from "@/lib/auth";
 
 SplashScreen.preventAutoHideAsync();
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
-const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
-
 const queryClient = new QueryClient();
 
 function AuthBridge() {
-  const { getToken } = useAuth();
+  const { getToken } = useWoofAuth();
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
     return () => setAuthTokenGetter(null);
@@ -51,7 +54,7 @@ function AuthBridge() {
 }
 
 function RootLayoutNav() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useWoofAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -59,6 +62,10 @@ function RootLayoutNav() {
   // in the web preview / simulator without logging in on every reload. Real
   // production builds (where __DEV__ is false) always enforce authentication.
   useEffect(() => {
+    if (!isClerkConfigured) {
+      if (segments[0] === "(auth)") router.replace("/(tabs)");
+      return;
+    }
     if (__DEV__) return;
     const inAuthGroup = segments[0] === "(auth)";
     if (!isSignedIn && !inAuthGroup) {
@@ -70,6 +77,7 @@ function RootLayoutNav() {
 
   return (
     <Stack
+      initialRouteName="(tabs)"
       screenOptions={{ headerBackTitle: "Back", headerTintColor: "#2E5846" }}
     >
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -114,46 +122,20 @@ function RootLayoutNav() {
   );
 }
 
-function MissingConfigScreen() {
+function AppFrame() {
+  if (Platform.OS !== "web") return <RootLayoutNav />;
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 24,
-          backgroundColor: "#F7F5F1",
-        }}
-      >
-        <Text
-          style={{
-            color: "#0F1F33",
-            fontFamily: "Inter_700Bold",
-            fontSize: 22,
-            textAlign: "center",
-          }}
-        >
-          WoofWatcher configuration is missing
-        </Text>
-        <Text
-          style={{
-            color: "#566052",
-            fontFamily: "Inter_400Regular",
-            fontSize: 15,
-            lineHeight: 22,
-            marginTop: 10,
-            textAlign: "center",
-          }}
-        >
-          Set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY before starting the mobile app.
-        </Text>
+    <View style={styles.webBackdrop}>
+      <View style={styles.webFrame}>
+        <RootLayoutNav />
       </View>
-    </GestureHandlerRootView>
+    </View>
   );
 }
 
 export default function RootLayout() {
+  const scheme = useColorScheme();
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -173,33 +155,58 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) return null;
-  if (!publishableKey) return <MissingConfigScreen />;
+
+  const app = (
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <AuthBridge />
+          <CareProvider>
+            <AvatarProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <KeyboardProvider>
+                  <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
+                  <AppFrame />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </AvatarProvider>
+          </CareProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </SafeAreaProvider>
+  );
+
+  if (!isClerkConfigured || !clerkPublishableKey) return app;
 
   return (
     <ClerkProvider
-      publishableKey={publishableKey}
+      publishableKey={clerkPublishableKey}
       tokenCache={tokenCache}
-      proxyUrl={proxyUrl}
+      proxyUrl={clerkProxyUrl}
     >
-      <ClerkLoaded>
-        <SafeAreaProvider>
-          <ErrorBoundary>
-            <QueryClientProvider client={queryClient}>
-              <AuthBridge />
-              <CareProvider>
-                <AvatarProvider>
-                  <GestureHandlerRootView style={{ flex: 1 }}>
-                    <KeyboardProvider>
-                      <StatusBar style="dark" />
-                      <RootLayoutNav />
-                    </KeyboardProvider>
-                  </GestureHandlerRootView>
-                </AvatarProvider>
-              </CareProvider>
-            </QueryClientProvider>
-          </ErrorBoundary>
-        </SafeAreaProvider>
-      </ClerkLoaded>
+      <ClerkLoaded>{app}</ClerkLoaded>
     </ClerkProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  webBackdrop: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#081A2A",
+    padding: 18,
+  },
+  webFrame: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 430,
+    maxHeight: 932,
+    overflow: "hidden",
+    backgroundColor: "#FFF9EF",
+    borderColor: "rgba(255, 249, 239, 0.18)",
+    borderRadius: 36,
+    borderWidth: 1,
+    boxShadow: "0 22px 70px rgba(0, 0, 0, 0.34)",
+  },
+});

@@ -83,6 +83,19 @@ function routineDateMs(r: Routine, now: number): number {
   return d.getTime();
 }
 
+function entryDetailValue(entry: Entry, key: string): unknown {
+  const details = entry.details;
+  if (!details || typeof details !== "object" || Array.isArray(details)) return undefined;
+  return (details as Record<string, unknown>)[key];
+}
+
+function isPendingMeal(entry: Entry): boolean {
+  if (normalizeCareEventType(entry.type, entry.details) !== "meal") return false;
+  const completion = String(entryDetailValue(entry, "mealCompletion") ?? "");
+  const lifecycle = String(entryDetailValue(entry, "mealLifecycle") ?? "");
+  return lifecycle === "outcome-pending" || completion === "served" || completion === "grazing";
+}
+
 export function getGreeting(now: number): { text: string; emoji: string } {
   const h = new Date(now).getHours();
   if (h < 12) return { text: "Good morning", emoji: "☀️" };
@@ -137,7 +150,16 @@ export function derivePhoenixStatus(
       types.includes(normalizeCareEventType(e.type, e.details)),
     ).length;
 
-  const meals: CountStat = dayStatus.counts.meals;
+  const mealTarget = dayStatus.counts.meals.target;
+  const completedMeals = todays.filter(
+    (entry) =>
+      normalizeCareEventType(entry.type, entry.details) === "meal" &&
+      !isPendingMeal(entry),
+  ).length;
+  const meals: CountStat = {
+    ...dayStatus.counts.meals,
+    done: Math.min(completedMeals, mealTarget || completedMeals),
+  };
   const walks: CountStat = dayStatus.counts.walks;
   const potty: CountStat = dayStatus.counts.potty;
   const training = dayStatus.counts.training;

@@ -18,7 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@clerk/expo";
+import { useWoofAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetMe,
@@ -27,10 +27,16 @@ import {
   useUpdateMe,
   getGetMeQueryKey,
 } from "@workspace/api-client-react";
-import { deriveHouseholdAccessPlan, deriveHouseholdResponsibility, getCareEventDefinition } from "@workspace/care-domain";
+import {
+  deriveCareIntelligence,
+  deriveHouseholdAccessPlan,
+  deriveHouseholdResponsibility,
+  getCareEventDefinition,
+} from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
 import { useAvatar } from "@/context/AvatarContext";
+import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
@@ -45,9 +51,9 @@ export default function MoreScreen() {
   const router = useRouter();
   const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
   const { dietProfile, profile, entries, routines, caregivers } = state;
-  const { getAvatarSource } = useAvatar();
+  const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
 
-  const { signOut } = useAuth();
+  const { signOut } = useWoofAuth();
   const queryClient = useQueryClient();
   const me = useGetMe();
   const updateHousehold = useUpdateHousehold();
@@ -56,10 +62,28 @@ export default function MoreScreen() {
 
   const household = me.data?.household;
   const members = me.data?.members ?? [];
-  const myName = me.data?.user.displayName?.trim() || "";
+  const myName = me.data?.user?.displayName?.trim() || "";
 
   const now = Date.now();
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const careIntelligence = useMemo(
+    () =>
+      deriveCareIntelligence({
+        entries,
+        routines,
+        caregivers,
+        now,
+      }),
+    [entries, routines, caregivers, now],
+  );
+  const petName =
+    profile.name && profile.name !== "My Dog"
+      ? profile.name
+      : "Phoenix";
+  const avatarTemplate = useMemo(
+    () => getAvatarTemplate(avatarConfig.templateId),
+    [avatarConfig.templateId],
+  );
 
   const streak = useMemo(() => {
     const days = new Set(entries.map((e) => e.occurredAt.slice(0, 10)));
@@ -171,6 +195,12 @@ export default function MoreScreen() {
       : householdAccess.status === "needs-roles"
         ? colors.copper
         : colors.sage;
+  const intelligenceTone =
+    careIntelligence.status === "needs-attention"
+      ? colors.amber
+      : careIntelligence.status === "excellent"
+        ? colors.sage
+        : colors.primary;
 
   const energyDots = Math.round(((status.energy - 35) / (96 - 35)) * 4) + 1;
 
@@ -219,7 +249,7 @@ export default function MoreScreen() {
     if (!household) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Share.share({
-      message: `Join our ${household.name} on WoofWatcher to help care for ${profile.name}. Invite code: ${household.inviteCode}`,
+      message: `Join our ${household.name} on WoofWatcher to help care for ${petName}. Invite code: ${household.inviteCode}`,
       title: "WoofWatcher invite",
     }).catch(() => Alert.alert("Invite code", household.inviteCode));
   };
@@ -289,7 +319,7 @@ export default function MoreScreen() {
   };
 
   const saveProfile = () => {
-    const name = pName.trim() || "My Dog";
+    const name = pName.trim() || "Phoenix";
     const w = parseFloat(pWeight);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     updateCareDoc((doc) => ({
@@ -383,14 +413,14 @@ export default function MoreScreen() {
       .slice(0, 5)
       .map((e) => {
         const label = getCareEventDefinition(e.type, e.details).label.toUpperCase();
-        return `  • ${label}: ${e.title}${e.note ? ` — ${e.note}` : ""}`;
+        return `  - ${label}: ${e.title}${e.note ? ` - ${e.note}` : ""}`;
       })
       .join("\n");
-    const routineLines = routines.map((r) => `  ${r.time} — ${r.label} (${r.owner})`).join("\n");
+    const routineLines = routines.map((r) => `  ${r.time} - ${r.label} (${r.owner})`).join("\n");
     const pass = [
-      `WOOFWATCHER CARE PASS — ${today}`,
+      `WOOFWATCHER CARE PASS - ${today}`,
       "",
-      `🐾 ${profile.name} (${profile.breed})`,
+      `${petName} (${profile.breed})`,
       `Weight: ${profile.weight.current} ${profile.weight.unit}`,
       `Focus: ${profile.careFocus}`,
       "",
@@ -407,10 +437,10 @@ export default function MoreScreen() {
       "RECENT LOG (last 5)",
       recentLines || "  (no entries)",
       "",
-      `⚠️  ${profile.vetBoundary}`,
+      `Care boundary: ${profile.vetBoundary}`,
     ].join("\n");
 
-    Share.share({ message: pass, title: `WoofWatcher Care Pass — ${profile.name}` }).catch(() =>
+    Share.share({ message: pass, title: `WoofWatcher Care Pass - ${petName}` }).catch(() =>
       Alert.alert("Care Pass", pass),
     );
   };
@@ -440,7 +470,7 @@ export default function MoreScreen() {
       icon: "heart",
       iconName: "chatbubbles",
       label: "WoofGuide Assistant",
-      sub: `Ask about ${profile.name}'s care, diet, and patterns`,
+      sub: `Ask about ${petName}'s care, diet, and patterns`,
       onPress: () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.push("/woofguide");
@@ -469,8 +499,8 @@ export default function MoreScreen() {
     {
       icon: "star",
       iconName: "color-palette",
-      label: "Portrait Studio",
-      sub: "Turn a photo into a hand-painted masterpiece",
+      label: "Avatar Studio",
+      sub: "Create a scan-assisted pixel care twin",
       onPress: () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.push("/portrait");
@@ -485,6 +515,41 @@ export default function MoreScreen() {
     },
   ];
 
+  const launchReadiness: {
+    iconName: keyof typeof Ionicons.glyphMap;
+    label: string;
+    value: string;
+    tone: string;
+    onPress?: () => void;
+  }[] = [
+    {
+      iconName: "phone-portrait-outline",
+      label: "iOS + Android",
+      value: "Expo/EAS profiles ready",
+      tone: colors.sage,
+    },
+    {
+      iconName: "shield-checkmark-outline",
+      label: "Safety Gates",
+      value: "Privacy review open",
+      tone: colors.amber,
+      onPress: () => router.push("/privacy"),
+    },
+    {
+      iconName: syncIcon,
+      label: "Care Sync",
+      value: syncDashboard.status === "attention" ? "Needs review" : syncDashboard.title,
+      tone: syncTone,
+    },
+    {
+      iconName: "diamond-outline",
+      label: "Plus",
+      value: "Checkout gated",
+      tone: colors.copper,
+      onPress: () => router.push("/premium"),
+    },
+  ];
+
   const H_PAD = 20;
 
   return (
@@ -496,16 +561,17 @@ export default function MoreScreen() {
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader
-            kicker="More"
-            title="Profile & Care Team"
-            subtitle={`Everything that keeps ${profile.name} thriving`}
-            icon="people-circle-outline"
+            kicker="WOOFWATCHER"
+            title="More"
+            subtitle={`Profile, household, launch gates, and every care tool for ${petName}`}
+            centered
+            plain
           />
 
           {/* Profile header card */}
           <View style={[s.profileCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             <LinearGradient
-              colors={[colors.primary, colors.sage]}
+              colors={[colors.brandNavy, colors.midnight]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={s.profileBanner}
@@ -515,9 +581,9 @@ export default function MoreScreen() {
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="Edit dog profile"
-              style={[s.profileEditBtn, { backgroundColor: "rgba(255,255,255,0.9)" }]}
+              style={[s.profileEditBtn, { backgroundColor: colors.ivory }]}
             >
-              <Ionicons name="pencil" size={14} color={colors.primary} />
+              <Ionicons name="pencil" size={14} color={colors.brandNavy} />
             </Pressable>
             <View style={s.profileAvatarWrap}>
               <View style={[s.profileAvatar, { backgroundColor: colors.card, borderColor: colors.card }]}>
@@ -525,8 +591,14 @@ export default function MoreScreen() {
               </View>
             </View>
             <View style={s.profileBody}>
-              <Text style={[s.profileName, { color: colors.foreground, fontFamily: DISPLAY }]}>{profile.name}</Text>
+              <Text style={[s.profileName, { color: colors.foreground, fontFamily: DISPLAY }]}>{petName}</Text>
               <Text style={[s.profileBreed, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{profile.breed}</Text>
+              <View style={[s.avatarIdentityPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                <Ionicons name={hasConfiguredAvatar ? "sparkles" : "color-palette-outline"} size={12} color={colors.primary} />
+                <Text style={[s.avatarIdentityText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  {avatarTemplate.label} care twin{avatarConfig.scanAssisted ? " - scan-assisted" : ""}
+                </Text>
+              </View>
               <View style={[s.profileStats, { borderTopColor: colors.border }]}>
                 <View style={s.profileStat}>
                   <Text style={[s.profileStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -553,8 +625,8 @@ export default function MoreScreen() {
           {/* Today's status strip */}
           <View style={[s.statusStrip, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
             <View style={[s.statusCell, { borderRightWidth: 1, borderRightColor: colors.border }]}>
-              <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{status.mood}</Text>
-              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Today's mood</Text>
+              <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{status.meta.label}</Text>
+              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Mood</Text>
             </View>
             <View style={s.statusCell}>
               <View style={s.statusEnergyRow}>
@@ -568,13 +640,145 @@ export default function MoreScreen() {
                   />
                 ))}
               </View>
-              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Energy level</Text>
+              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Energy level</Text>
             </View>
             <View style={[s.statusCell, { borderLeftWidth: 1, borderLeftColor: colors.border }]}>
               <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{todayLogCount}</Text>
-              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Logs today</Text>
+              <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Logs today</Text>
             </View>
           </View>
+
+          <BoardCard style={[s.moreBoardCard, { borderColor: intelligenceTone + "44" }]}>
+            <BoardSectionHeader
+              title="Care Intelligence"
+              accessory={
+                <View style={[s.intelligenceBadge, { backgroundColor: intelligenceTone + "18" }]}>
+                  <Text style={[s.intelligenceBadgeText, { color: intelligenceTone, fontFamily: "Inter_700Bold" }]}>
+                    {careIntelligence.score}% IQ
+                  </Text>
+                </View>
+              }
+            />
+            <View style={s.intelligenceTop}>
+              <View style={[s.intelligenceIcon, { backgroundColor: intelligenceTone + "18" }]}>
+                <Ionicons name="analytics-outline" size={20} color={intelligenceTone} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.intelligenceTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {careIntelligence.title}
+                </Text>
+                <Text style={[s.intelligenceSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {careIntelligence.subtitle}
+                </Text>
+              </View>
+            </View>
+            <View style={[s.intelligenceMeter, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View
+                style={[
+                  s.intelligenceMeterFill,
+                  { width: `${careIntelligence.score}%`, backgroundColor: intelligenceTone },
+                ]}
+              />
+            </View>
+            <View style={s.intelligenceGrid}>
+              {careIntelligence.metrics.map((metric) => (
+                <View key={metric.label} style={[s.intelligenceMetric, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[s.intelligenceMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {metric.value}
+                  </Text>
+                  <Text style={[s.intelligenceMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    {metric.label}
+                  </Text>
+                  <Text style={[s.intelligenceMetricDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {metric.detail}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Care Intelligence next action: ${careIntelligence.nextAction.label}`}
+              onPress={() => {
+                Haptics.selectionAsync();
+                if (careIntelligence.nextAction.kind === "retry-sync") {
+                  refresh();
+                } else if (careIntelligence.nextAction.kind === "handle-routine") {
+                  router.push("/calendar");
+                } else {
+                  router.push("/log");
+                }
+              }}
+              style={({ pressed }) => [
+                s.intelligenceAction,
+                { backgroundColor: intelligenceTone, opacity: pressed ? 0.82 : 1 },
+              ]}
+            >
+              <Text style={[s.intelligenceActionText, { fontFamily: "Inter_700Bold" }]}>
+                {careIntelligence.nextAction.label}
+              </Text>
+              <Ionicons name="chevron-forward" size={17} color="#FFFFFF" />
+            </Pressable>
+          </BoardCard>
+
+          <BoardCard style={s.moreBoardCard}>
+            <BoardSectionHeader
+              title="Launch Readiness"
+              accessory={
+                <View style={[s.launchBadge, { backgroundColor: colors.sage + "18" }]}>
+                  <Text style={[s.launchBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    INTERNAL PREVIEW
+                  </Text>
+                </View>
+              }
+            />
+            <View style={s.launchGrid}>
+              {launchReadiness.map((item) => {
+                const content = (
+                  <>
+                    <View style={[s.launchTileIcon, { backgroundColor: item.tone + "18" }]}>
+                      <Ionicons name={item.iconName} size={18} color={item.tone} />
+                    </View>
+                    <Text style={[s.launchTileLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {item.label}
+                    </Text>
+                    <Text style={[s.launchTileValue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      {item.value}
+                    </Text>
+                  </>
+                );
+                if (item.onPress) {
+                  return (
+                    <Pressable
+                      key={item.label}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        item.onPress?.();
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${item.label}. ${item.value}`}
+                      style={({ pressed }) => [
+                        s.launchTile,
+                        { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed ? 0.72 : 1 },
+                      ]}
+                    >
+                      {content}
+                    </Pressable>
+                  );
+                }
+                return (
+                  <View key={item.label} style={[s.launchTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    {content}
+                  </View>
+                );
+              })}
+            </View>
+            <View style={[s.launchNotice, { backgroundColor: colors.amber + "12", borderColor: colors.amber + "33" }]}>
+              <Ionicons name="lock-closed-outline" size={15} color={colors.amber} />
+              <Text style={[s.launchNoticeText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                Store submission waits on Apple, Google, Expo, privacy/legal, and Apollo approval. This build is being hardened for internal review first.
+              </Text>
+            </View>
+          </BoardCard>
 
           <Pressable
             onPress={() => {
@@ -1349,6 +1553,17 @@ const s = StyleSheet.create({
   profileBody: { alignItems: "center", paddingHorizontal: 20, paddingBottom: 20, paddingTop: 10 },
   profileName: { fontSize: 24, letterSpacing: -0.3 },
   profileBreed: { fontSize: 13.5, marginTop: 2, textAlign: "center" },
+  avatarIdentityPill: {
+    minHeight: 30,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 10,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  avatarIdentityText: { fontSize: 11.5 },
   profileStats: { flexDirection: "row", alignItems: "center", marginTop: 16, paddingTop: 16, borderTopWidth: 1, width: "100%" },
   profileStat: { flex: 1, alignItems: "center", paddingHorizontal: 8 },
   profileStatValue: { fontSize: 16, letterSpacing: -0.2, textAlign: "center" },
@@ -1358,6 +1573,63 @@ const s = StyleSheet.create({
   sectionLink: { fontSize: 14 },
   moreBoardCard: { marginTop: 14 },
   boardDivider: { borderTopWidth: 1, marginTop: 14 },
+
+  launchBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
+  launchBadgeText: { fontSize: 9.5, letterSpacing: 0.5 },
+  intelligenceBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
+  intelligenceBadgeText: { fontSize: 10, letterSpacing: 0.3, textTransform: "uppercase" },
+  intelligenceTop: { flexDirection: "row", alignItems: "center", gap: 12 },
+  intelligenceIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  intelligenceTitle: { fontSize: 16, letterSpacing: 0 },
+  intelligenceSummary: { fontSize: 12.5, lineHeight: 18, marginTop: 3 },
+  intelligenceMeter: { height: 12, borderRadius: 999, borderWidth: 1, marginTop: 14, overflow: "hidden" },
+  intelligenceMeterFill: { height: "100%", borderRadius: 999 },
+  intelligenceGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 },
+  intelligenceMetric: {
+    flexGrow: 1,
+    flexBasis: "47%",
+    minHeight: 82,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    justifyContent: "center",
+  },
+  intelligenceMetricValue: { fontSize: 17 },
+  intelligenceMetricLabel: { fontSize: 10.5, lineHeight: 13, marginTop: 2, textTransform: "uppercase" },
+  intelligenceMetricDetail: { fontSize: 11, lineHeight: 15, marginTop: 3 },
+  intelligenceAction: {
+    minHeight: 46,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 13,
+  },
+  intelligenceActionText: { color: "#FFFFFF", fontSize: 13.5 },
+  launchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
+  launchTile: {
+    flexGrow: 1,
+    flexBasis: "47%",
+    minHeight: 98,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+    justifyContent: "space-between",
+  },
+  launchTileIcon: { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  launchTileLabel: { fontSize: 12.5, marginTop: 8 },
+  launchTileValue: { fontSize: 11, lineHeight: 15, marginTop: 3 },
+  launchNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+    marginTop: 12,
+  },
+  launchNoticeText: { flex: 1, fontSize: 12, lineHeight: 17 },
 
   listCard: {
     borderRadius: 22,

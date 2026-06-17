@@ -16,7 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@clerk/expo";
+import { useWoofAuth } from "@/lib/auth";
 import {
   deriveCareReminderCenter,
   deriveHouseholdResponsibility,
@@ -29,6 +29,7 @@ import {
 import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { parseLocalDate } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -122,6 +123,18 @@ function reminderUrgencyLabel(urgency: string): string {
   return "Heads up";
 }
 
+function routinePixelIcon(type: string): PixelIconName {
+  const normalized = normalizeCareEventType(type);
+  if (normalized === "meal") return "meal";
+  if (normalized === "walk") return "walk";
+  if (normalized === "training") return "training";
+  if (normalized === "potty") return "pee";
+  if (normalized === "treat") return "treat";
+  if (normalized === "play") return "play";
+  if (normalized === "medication") return "medication";
+  return "clock";
+}
+
 interface SuggestedEvent {
   title: string;
   type: string;
@@ -137,12 +150,13 @@ export default function CalendarScreen() {
   const router = useRouter();
   const { state, updateCareDoc, addEntry } = useCare();
 
-  const { getToken } = useAuth();
+  const { getToken } = useWoofAuth();
   const { routines, calendarEvents, profile, entries, caregivers, records } = state;
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
   const now = Date.now();
   const today = todayISO();
+  const [scheduleTab, setScheduleTab] = useState<"today" | "tomorrow" | "week">("today");
 
   // Add-event modal
   const [addOpen, setAddOpen] = useState(false);
@@ -178,6 +192,31 @@ export default function CalendarScreen() {
     () => deriveRoutineBoard({ routines: sortedRoutines, entries, caregivers, now }),
     [sortedRoutines, entries, caregivers, now],
   );
+  const scheduleRows = useMemo(() => {
+    const fallback = [
+      { id: "breakfast", label: "Breakfast", type: "meal", time: "7:00 AM", detail: "1 1/4 cups", status: "done" as RoutineBoardStatus },
+      { id: "walk-am", label: "Walk", type: "walk", time: "8:00 AM", detail: "45 min", status: "done" as RoutineBoardStatus },
+      { id: "training", label: "Training", type: "training", time: "10:00 AM", detail: "15 min", status: "done" as RoutineBoardStatus },
+      { id: "alone", label: "Alone Time", type: "alone", time: "12:30 PM", detail: "1h 30m", status: "due" as RoutineBoardStatus },
+      { id: "walk-pm", label: "Walk", type: "walk", time: "5:30 PM", detail: "30 min", status: "upcoming" as RoutineBoardStatus },
+      { id: "dinner", label: "Dinner", type: "meal", time: "7:00 PM", detail: "1 1/4 cups", status: "upcoming" as RoutineBoardStatus },
+      { id: "snack", label: "Bedtime Snack", type: "meal", time: "9:00 PM", detail: "small", status: "upcoming" as RoutineBoardStatus },
+    ];
+    const rows = routineBoard.items.length
+      ? routineBoard.items.map((item) => ({
+          id: item.id,
+          label: item.label,
+          type: item.normalizedType,
+          time: item.time,
+          detail: item.owner || item.note || routineStatusLabel(item.status),
+          status: item.status,
+        }))
+      : fallback;
+    if (scheduleTab === "tomorrow") {
+      return rows.map((row) => ({ ...row, status: "upcoming" as RoutineBoardStatus }));
+    }
+    return rows;
+  }, [routineBoard.items, scheduleTab]);
   const householdResponsibility = useMemo(
     () => deriveHouseholdResponsibility({ routines: sortedRoutines, entries, caregivers, now }),
     [sortedRoutines, entries, caregivers, now],
@@ -457,6 +496,115 @@ export default function CalendarScreen() {
               setAddOpen(true);
             }}
           />
+
+          <BoardCard style={s.scheduleCard}>
+            <View style={s.scheduleTabs}>
+              {[
+                { key: "today" as const, label: "Today" },
+                { key: "tomorrow" as const, label: "Tomorrow" },
+                { key: "week" as const, label: "Week" },
+              ].map((tab) => {
+                const active = scheduleTab === tab.key;
+                return (
+                  <Pressable
+                    key={tab.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Show ${tab.label} plans`}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setScheduleTab(tab.key);
+                    }}
+                    style={[
+                      s.scheduleTab,
+                      {
+                        backgroundColor: active ? colors.brandNavy : colors.background,
+                        borderColor: active ? colors.brandNavy : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.scheduleTabText,
+                        {
+                          color: active ? colors.ivory : colors.navy,
+                          fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {tab.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={s.scheduleList}>
+              {scheduleRows.map((row, index) => {
+                const done = row.status === "done";
+                const sourceRoutine = routineBoard.items.find((item) => item.id === row.id);
+                return (
+                  <Pressable
+                    key={`${row.id}-${index}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${row.time} ${row.label}`}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      if (sourceRoutine) openBoardRoutine(sourceRoutine);
+                    }}
+                    style={[s.scheduleRow, index > 0 && { borderTopColor: colors.border, borderTopWidth: 1 }]}
+                  >
+                    <Text style={[s.scheduleTime, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                      {row.time}
+                    </Text>
+                    <PixelIcon name={routinePixelIcon(row.type)} size={25} />
+                    <View style={s.scheduleRowCopy}>
+                      <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {row.label}
+                      </Text>
+                      <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {scheduleTab === "week" ? `${dayLabel(today)} - ${row.detail}` : row.detail}
+                      </Text>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Mark ${row.label} done`}
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        if (sourceRoutine) logRoutineDone(sourceRoutine);
+                      }}
+                      style={[
+                        s.scheduleStatus,
+                        {
+                          borderColor: done ? colors.sage : colors.border,
+                          backgroundColor: done ? colors.sage : "transparent",
+                        },
+                      ]}
+                    >
+                      {done ? <Ionicons name="checkmark" size={13} color="#FFFFFF" /> : null}
+                    </Pressable>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add plan"
+              onPress={() => {
+                Haptics.selectionAsync();
+                openNewRoutine();
+              }}
+              style={({ pressed }) => [
+                s.scheduleAdd,
+                { backgroundColor: colors.brandNavy, opacity: pressed ? 0.88 : 1 },
+              ]}
+            >
+              <Ionicons name="add" size={17} color={colors.ivory} />
+              <Text style={[s.scheduleAddText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                Add Plan
+              </Text>
+            </Pressable>
+          </BoardCard>
 
           {/* WoofGuide discovery banner */}
           <Pressable
@@ -1049,6 +1197,58 @@ const s = StyleSheet.create({
   sugMeta: { fontSize: 12, marginTop: 2 },
   sugNote: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
   sugAdd: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+
+  scheduleCard: { marginBottom: 14 },
+  scheduleTabs: {
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 12,
+  },
+  scheduleTab: {
+    flex: 1,
+    minHeight: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scheduleTabText: { fontSize: 12.5 },
+  scheduleList: { marginTop: 2 },
+  scheduleRow: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 9,
+  },
+  scheduleTime: {
+    width: 66,
+    fontSize: 12,
+  },
+  scheduleRowCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  scheduleTitle: { fontSize: 13.5 },
+  scheduleDetail: { fontSize: 11.5, marginTop: 2 },
+  scheduleStatus: {
+    width: 21,
+    height: 21,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scheduleAdd: {
+    minHeight: 46,
+    borderRadius: 9,
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  scheduleAddText: { fontSize: 14 },
 
   plansBoardCard: { marginTop: 14 },
   routineHeaderAccessory: { flexDirection: "row", alignItems: "center", gap: 10 },

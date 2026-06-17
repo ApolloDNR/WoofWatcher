@@ -85,12 +85,12 @@ const darkTheme = {
   blueSignal: "#A8CBE8",
   stone: "#243044",
   ink: "#F7F2E8",
-  navy: "#081424",
+  navy: "#F7F2E8",
   midnight: "#0D182A",
   brandNavy: "#081424",
   shellNavy: "#0D182A",
-  cream: "#102C40",
-  ivory: "#0D182A",
+  cream: "#F7F2E8",
+  ivory: "#FFF9EF",
 };
 
 const pixelUi = {

@@ -29,6 +29,8 @@ export function BoardRouteHeader({
   onAction,
   actionDisabled,
   style,
+  centered,
+  plain,
 }: {
   kicker?: string;
   title: string;
@@ -41,11 +43,13 @@ export function BoardRouteHeader({
   onAction?: () => void;
   actionDisabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  centered?: boolean;
+  plain?: boolean;
 }) {
   const colors = useColors();
 
   return (
-    <View style={[styles.routeHeader, style]}>
+    <View style={[styles.routeHeader, centered && styles.routeHeaderCentered, style]}>
       {back ? (
         <Pressable
           accessibilityRole="button"
@@ -53,24 +57,36 @@ export function BoardRouteHeader({
           onPress={onBack}
           style={({ pressed }) => [
             styles.routeIconButton,
+            plain && styles.routeIconButtonPlain,
             {
-              backgroundColor: pressed ? colors.secondary : colors.card,
-              borderColor: colors.border,
+              backgroundColor: plain ? "transparent" : pressed ? colors.secondary : colors.card,
+              borderColor: plain ? "transparent" : colors.border,
             },
           ]}
         >
-          <Ionicons name="chevron-back" size={20} color={colors.navy} />
+          <Ionicons name="chevron-back" size={plain ? 24 : 20} color={colors.foreground} />
         </Pressable>
       ) : icon ? (
-        <View style={[styles.routeIconButton, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-          <Ionicons name={icon} size={20} color={colors.navy} />
+        <View
+          style={[
+            styles.routeIconButton,
+            plain && styles.routeIconButtonPlain,
+            {
+              backgroundColor: plain ? "transparent" : colors.secondary,
+              borderColor: plain ? "transparent" : colors.border,
+            },
+          ]}
+        >
+          <Ionicons name={icon} size={20} color={colors.foreground} />
         </View>
       ) : null}
-      <View style={styles.routeHeaderText}>
+      <View style={[styles.routeHeaderText, centered && styles.routeHeaderTextCentered]}>
         {kicker ? (
           <Text style={[styles.routeKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>{kicker}</Text>
         ) : null}
-        <Text style={[styles.routeTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{title}</Text>
+        <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: DISPLAY }]}>
+          {title}
+        </Text>
         {subtitle ? (
           <Text style={[styles.routeSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             {subtitle}
@@ -85,14 +101,15 @@ export function BoardRouteHeader({
           disabled={actionDisabled}
           style={({ pressed }) => [
             styles.routeIconButton,
+            plain && styles.routeIconButtonPlain,
             {
-              backgroundColor: pressed || actionDisabled ? colors.secondary : colors.card,
-              borderColor: colors.border,
+              backgroundColor: plain ? "transparent" : pressed || actionDisabled ? colors.secondary : colors.card,
+              borderColor: plain ? "transparent" : colors.border,
               opacity: actionDisabled ? 0.55 : 1,
             },
           ]}
         >
-          <Ionicons name={actionIcon} size={19} color={colors.navy} />
+          <Ionicons name={actionIcon} size={plain ? 21 : 19} color={colors.foreground} />
         </Pressable>
       ) : null}
     </View>
@@ -222,7 +239,7 @@ export function BoardSectionHeader({
   const colors = useColors();
   return (
     <View style={[styles.sectionHeader, style]}>
-      <Text style={[styles.sectionTitle, { color: colors.navy, fontFamily: DISPLAY_SEMI }, textStyle]}>
+      <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }, textStyle]}>
         {title}
       </Text>
       {accessory ? (
@@ -294,12 +311,18 @@ export function QuickActionTile({
   onPress,
   accessibilityLabel,
   accent,
+  style,
+  iconSize = 28,
+  labelStyle,
 }: {
   icon: PixelIconName;
   label: string;
   onPress: () => void;
   accessibilityLabel?: string;
   accent?: string;
+  style?: StyleProp<ViewStyle>;
+  iconSize?: number;
+  labelStyle?: StyleProp<TextStyle>;
 }) {
   const colors = useColors();
   return (
@@ -314,12 +337,15 @@ export function QuickActionTile({
           backgroundColor: pressed ? colors.secondary : colors.card,
           transform: [{ scale: pressed ? 0.97 : 1 }],
         },
+        style,
       ]}
     >
       <View style={[styles.quickIcon, { backgroundColor: accent ?? colors.secondary }]}>
-        <PixelIcon name={icon} size={28} />
+        <PixelIcon name={icon} size={iconSize} />
       </View>
-      <Text style={[styles.quickText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>{label}</Text>
+      <Text style={[styles.quickText, { color: colors.foreground, fontFamily: "Inter_700Bold" }, labelStyle]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -328,10 +354,10 @@ export function PixelSpeechBubble({ text, style }: { text: string; style?: Style
   const colors = useColors();
   return (
     <View style={[styles.bubbleWrap, style]} pointerEvents="none">
-      <View style={[styles.bubble, { backgroundColor: colors.ivory, borderColor: colors.navy }]}>
-        <Text style={[styles.bubbleText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>{text}</Text>
+      <View style={[styles.bubble, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.bubbleText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{text}</Text>
       </View>
-      <View style={[styles.bubbleTail, { backgroundColor: colors.ivory, borderColor: colors.navy }]} />
+      <View style={[styles.bubbleTail, { backgroundColor: colors.card, borderColor: colors.border }]} />
     </View>
   );
 }
@@ -395,6 +421,10 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 16,
   },
+  routeHeaderCentered: {
+    minHeight: 46,
+    marginBottom: 12,
+  },
   routeIconButton: {
     width: 42,
     height: 42,
@@ -403,9 +433,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  routeIconButtonPlain: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+  },
   routeHeaderText: {
     flex: 1,
     minWidth: 0,
+  },
+  routeHeaderTextCentered: {
+    alignItems: "center",
   },
   routeKicker: {
     fontSize: 10,
@@ -417,6 +455,10 @@ const styles = StyleSheet.create({
     fontSize: 26,
     lineHeight: 30,
     letterSpacing: 0,
+  },
+  routeTitleCentered: {
+    fontSize: 22,
+    lineHeight: 26,
   },
   routeSubtitle: {
     fontSize: 12.5,
@@ -526,24 +568,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   quickTile: {
-    width: "31.5%",
-    minHeight: 78,
+    width: "23.5%",
+    minHeight: 72,
     borderWidth: 1,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
-    paddingVertical: 9,
+    paddingVertical: 8,
   },
   quickIcon: {
-    width: 42,
-    height: 42,
+    width: 36,
+    height: 36,
     borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
   },
   quickText: {
-    fontSize: 10.5,
+    fontSize: 10,
   },
   bubbleWrap: {
     alignItems: "flex-start",
