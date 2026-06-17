@@ -507,6 +507,9 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /Accessories/);
   assert.match(avatarStudio, /Save Avatar/);
   assert.match(avatarStudio, /AVATAR_EMOTE_STATES/);
+  assert.match(avatarStudio, /PIXEL_ROOM_SOURCE/);
+  assert.match(avatarStudio, /phoenix-pixel-head\.png/);
+  assert.doesNotMatch(avatarStudio, /getAvatarSource\("happy"\)/);
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);
   assert.match(avatarModel, /buildMockScanSuggestion/);
@@ -515,6 +518,8 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarContext, /AVATAR_CONFIG_KEY/);
   assert.match(avatarContext, /saveAvatarConfig/);
   assert.match(avatarContext, /hasConfiguredAvatar/);
+  assert.match(avatarContext, /phoenix-pixel-happy\.png/);
+  assert.doesNotMatch(avatarContext, /assets\/phoenix\/phoenix-happy\.png/);
   assert.match(home, /avatarTemplate\.label/);
   assert.match(home, /Open Avatar Studio/);
   assert.match(more, /Avatar Studio/);

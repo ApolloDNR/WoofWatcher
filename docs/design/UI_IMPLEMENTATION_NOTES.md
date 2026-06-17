@@ -285,9 +285,12 @@ Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into 
 - Added mock scan review for Phoenix that suggests the Shepherd template and detected traits without claiming perfect AI generation.
 - Added coat-color, face-marking, accessory-slot, template, and emote preview controls.
 - Connected the saved avatar identity to Home and More so the Studio feeds the visible app experience.
+- Replaced the previous painted portrait fallback with pixel-derived Phoenix preview assets from the approved room board.
+- Added pixel mood defaults and a pixel head asset so Avatar Studio, WoofGuide, and default avatar rendering stay in the neo-retro pixel direction.
+- Added a no-dependency static preview server for Expo exports so stale dev tabs can be bypassed during design QA.
 
 Design boundary:
 
 - The route can say upload photos help suggest a care twin.
 - It cannot claim live AI scan or full custom sprite generation until those provider-backed systems are implemented.
-- Current previews use existing Phoenix art until final template/sprite assets are produced.
+- Current previews use pixel-derived Phoenix placeholders until final template/sprite assets are produced.

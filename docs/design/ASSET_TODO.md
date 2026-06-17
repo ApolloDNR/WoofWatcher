@@ -57,6 +57,7 @@ Use board 04 as the primary shell/layout target and boards 02/03 as the componen
 - Health/Bile Watch: board metric tiles and Bile Watch status pill.
 - Log, Plans, More, Records, WoofGuide, Avatar Studio: shared board route header slots ready for final icon/animation polish.
 - Avatar Studio: V1 template/config system is wired with scan-assisted mock suggestions, editable coat/face/accessory slots, emote preview, and local save. It still needs final template art and sprite/emote assets.
+- Pixel placeholder pack: `assets/avatar/pixel/` now contains derived Phoenix preview defaults so the shipped preview does not fall back to non-pixel painted portraits.
 
 Detailed handoff: `docs/design/CARE_TWIN_ASSET_PIPELINE.md`.
 
@@ -91,6 +92,20 @@ Initial accessory slots:
 - fx: heart sparkles.
 
 Do not generate every template as one-off unrelated art. Each template needs the same visual language, bottom-center anchor, and accessory slot logic.
+
+## Current Pixel Placeholder Pack
+
+These are acceptable for internal preview only and should be replaced by production artwork before store launch:
+
+- `assets/avatar/pixel/phoenix-pixel-avatar.png`
+- `assets/avatar/pixel/phoenix-pixel-head.png`
+- `assets/avatar/pixel/phoenix-pixel-happy.png`
+- `assets/avatar/pixel/phoenix-pixel-excited.png`
+- `assets/avatar/pixel/phoenix-pixel-calm.png`
+- `assets/avatar/pixel/phoenix-pixel-anxious.png`
+- `assets/avatar/pixel/phoenix-pixel-unwell.png`
+
+They are derived from the approved pixel room board, so they keep the preview visually aligned while the final sprite/template pack is being produced.
 
 ## Production Sprite Manifest Needed Next
 

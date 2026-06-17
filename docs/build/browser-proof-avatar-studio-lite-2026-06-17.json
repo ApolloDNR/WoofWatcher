@@ -1,14 +1,29 @@
 {
   "checkedAt": "2026-06-17",
-  "previewUrl": "http://127.0.0.1:4192/portrait",
+  "previewUrl": "http://127.0.0.1:4198/portrait",
   "route": "/portrait",
   "title": "WoofWatcher",
   "visibleProof": {
     "hasAvatarStudio": true,
+    "hasCareTwinCard": true,
+    "hasPixelTwin": true,
     "hasPortraitStudio": false,
     "hasSaveAvatar": true,
     "hasTemplate": true,
-    "hasUploadCopy": true
+    "hasUploadCopy": true,
+    "usesPixelAssets": true,
+    "usesOldPaintedAvatar": false
+  },
+  "assetProof": {
+    "room": "assets/board/hero.png",
+    "pixelHead": "assets/avatar/pixel/phoenix-pixel-head.png",
+    "pixelMoodDefaults": [
+      "assets/avatar/pixel/phoenix-pixel-happy.png",
+      "assets/avatar/pixel/phoenix-pixel-excited.png",
+      "assets/avatar/pixel/phoenix-pixel-calm.png",
+      "assets/avatar/pixel/phoenix-pixel-anxious.png",
+      "assets/avatar/pixel/phoenix-pixel-unwell.png"
+    ]
   },
   "sampleText": [
     "AVATAR STUDIO",
@@ -25,5 +40,12 @@
     "Save Avatar",
     "True AI scanning plugs in later. This version ships the reliable character creator, scan suggestion, and emote-preview system first."
   ],
-  "consoleErrors": []
+  "consoleErrors": [],
+  "layoutProof": {
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "horizontalOverflow": false
+  }
 }

@@ -44,6 +44,8 @@ import {
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const PIXEL_ROOM_SOURCE = require("@/assets/board/hero.png");
+const PIXEL_HEAD_SOURCE = require("@/assets/avatar/pixel/phoenix-pixel-head.png");
 
 type Phase = "idle" | "working" | "result";
 type StudioTab = "scan" | "template" | "customize" | "emotes";
@@ -132,7 +134,6 @@ export default function PortraitScreen() {
   const { state } = useCare();
   const {
     avatarConfig,
-    getAvatarSource,
     hasCustomAvatar,
     hasConfiguredAvatar,
     saveAvatarConfig,
@@ -295,7 +296,7 @@ export default function PortraitScreen() {
             {sourceUri ? (
               <Image source={{ uri: sourceUri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
             ) : (
-              <Image source={getAvatarSource("happy")} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
+              <Image source={PIXEL_ROOM_SOURCE} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
             )}
             <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(8,26,42,0.44)" }]} />
             <Animated.View style={[s.scanBand, { transform: [{ translateY: scanTranslate }] }]}>
@@ -321,7 +322,22 @@ export default function PortraitScreen() {
           </BoardCard>
         ) : (
           <BoardCard padded={false} style={s.heroPreview}>
-            <Image source={getAvatarSource("happy")} style={s.heroImg} contentFit="cover" transition={200} />
+            <Image source={PIXEL_ROOM_SOURCE} style={s.heroImg} contentFit="cover" transition={200} />
+            <View style={s.pixelFrameOverlay} pointerEvents="none">
+              <View style={[s.pixelIdCard, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
+                <Image source={PIXEL_HEAD_SOURCE} style={s.pixelHead} contentFit="cover" transition={160} />
+                <View style={s.pixelIdCopy}>
+                  <Text style={[s.pixelIdKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>CARE TWIN</Text>
+                  <Text style={[s.pixelIdName, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
+                  <View style={s.pixelLevelRow}>
+                    <View style={[s.pixelLevelPip, { backgroundColor: colors.sage }]} />
+                    <View style={[s.pixelLevelPip, { backgroundColor: colors.sage }]} />
+                    <View style={[s.pixelLevelPip, { backgroundColor: colors.sage }]} />
+                    <View style={[s.pixelLevelPip, { backgroundColor: colors.stone }]} />
+                  </View>
+                </View>
+              </View>
+            </View>
             <LinearGradient
               colors={["transparent", "rgba(8,26,42,0.84)"]}
               style={s.savedScrim}
@@ -557,7 +573,23 @@ export default function PortraitScreen() {
               {AVATAR_EMOTE_STATES.map((emote) => (
                 <View key={emote} style={s.moodChip}>
                   <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
-                    <Image source={getAvatarSource(emote === "not_feeling_well" ? "unwell" : "happy")} style={s.moodThumb} contentFit="cover" transition={150} />
+                    <Image source={PIXEL_HEAD_SOURCE} style={s.moodThumb} contentFit="cover" transition={150} />
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        s.moodWash,
+                        {
+                          backgroundColor:
+                            emote === "not_feeling_well"
+                              ? "rgba(201,99,88,0.22)"
+                              : emote === "anxious" || emote === "home_alone"
+                              ? "rgba(168,203,232,0.22)"
+                              : emote === "sleepy" || emote === "calm"
+                              ? "rgba(109,163,111,0.18)"
+                              : "rgba(216,168,82,0.12)",
+                        },
+                      ]}
+                    />
                     <View style={[s.emoteIcon, { backgroundColor: colors.ivory }]}>
                       <PixelIcon name={EMOTE_ICON[emote]} size={18} />
                     </View>
@@ -663,6 +695,42 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   heroImg: { width: "100%", height: "100%" },
+  pixelFrameOverlay: {
+    position: "absolute",
+    left: 14,
+    top: 14,
+    right: 14,
+    alignItems: "flex-end",
+  },
+  pixelIdCard: {
+    width: 184,
+    minHeight: 76,
+    borderRadius: 2,
+    borderWidth: 2,
+    padding: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  pixelHead: {
+    width: 54,
+    height: 54,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderColor: "#081424",
+    backgroundColor: "#F7F2E8",
+  },
+  pixelIdCopy: { flex: 1, minWidth: 0, gap: 2 },
+  pixelIdKicker: { fontSize: 8, letterSpacing: 0.6, textTransform: "uppercase" },
+  pixelIdName: { fontSize: 16, lineHeight: 18 },
+  pixelLevelRow: { flexDirection: "row", gap: 3, marginTop: 3 },
+  pixelLevelPip: {
+    width: 14,
+    height: 7,
+    borderRadius: 1,
+    borderWidth: 1,
+    borderColor: "rgba(8,20,36,0.22)",
+  },
   savedScrim: {
     position: "absolute",
     left: 0,
@@ -789,6 +857,9 @@ const s = StyleSheet.create({
     position: "relative",
   },
   moodThumb: { width: "100%", height: "100%" },
+  moodWash: {
+    ...StyleSheet.absoluteFillObject,
+  },
   emoteIcon: {
     position: "absolute",
     right: 5,

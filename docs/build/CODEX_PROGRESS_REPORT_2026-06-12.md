@@ -132,6 +132,13 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
   - The old `Portrait Studio` label is not visible.
   - Current browser console errors: none.
 - Screenshot capture was attempted three ways: full-page, viewport, and clipped mobile capture. All timed out at the browser capture layer with `Page.captureScreenshot`, so no screenshot artifact was produced in this environment.
+- Follow-up pixel-preview correction:
+  - Replaced the Avatar Studio painted portrait fallback with pixel-derived Phoenix assets from the approved room board.
+  - Added bundled pixel defaults for happy, excited, calm, anxious, and unwell moods.
+  - Added a pixel Phoenix head asset for Avatar Studio and WoofGuide.
+  - Re-exported the Expo web preview and verified `/portrait` at `http://127.0.0.1:4198/portrait` uses `assets/board/hero.png` plus `assets/avatar/pixel/phoenix-pixel-head.png`.
+  - Verified the stale painted `assets/phoenix/phoenix-happy` source is no longer present on Avatar Studio.
+  - Added `babel-preset-expo` as an explicit mobile dev dependency after Metro exposed that the preset was only present transitively in the pnpm store.
 
 ### Screens Completed
 
@@ -157,6 +164,17 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - `artifacts/woofwatcher-mobile/app/portrait.tsx`
 - `artifacts/woofwatcher-mobile/app/(tabs)/index.tsx`
 - `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/app/woofguide.tsx`
+- `artifacts/woofwatcher-mobile/package.json`
+- `pnpm-lock.yaml`
+- `artifacts/woofwatcher-mobile/assets/avatar/pixel/phoenix-pixel-avatar.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/pixel/phoenix-pixel-head.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/pixel/phoenix-pixel-happy.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/pixel/phoenix-pixel-excited.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/pixel/phoenix-pixel-calm.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/pixel/phoenix-pixel-anxious.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/pixel/phoenix-pixel-unwell.png`
+- `artifacts/woofwatcher-mobile/scripts/serve-static-preview.js`
 - `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
 - `docs/design/AVATAR_STUDIO_IMPLEMENTATION.md`
 - `docs/design/ASSET_TODO.md`
@@ -177,11 +195,12 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
   - Command: `artifacts/woofwatcher-mobile/node_modules/.bin/tsc.cmd -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
   - Result: passed.
 - Expo web export:
-  - Command: `expo export --platform web --output-dir .expo-smoke --clear`
+  - Command: `node node_modules/expo/bin/cli export --platform web --output-dir .expo-smoke --clear`
   - Result: passed, exported `.expo-smoke`.
+  - Local note: this shell lacks `pnpm` and `node` on PATH, so verification used the bundled Node runtime and the already-installed pnpm package path for `babel-preset-expo`.
 - Browser verification:
-  - Route: `http://127.0.0.1:4192/portrait`
-  - Result: passed DOM/content checks and had zero console errors.
+  - Route: `http://127.0.0.1:4198/portrait`
+  - Result: passed DOM/content checks, pixel-asset checks, old-painted-avatar absence checks, horizontal-overflow check, and had zero console errors.
 - GitHub Actions:
   - Commit: `cd659a3`
   - Run: `27716191817`
@@ -191,7 +210,7 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 
 - Final dogless room backgrounds are still required before the layered sprite room can replace the baked hero art.
 - Production Phoenix sprite strips are still required for true walking, breathing, eating, sleeping, anxious, proud, and not-well loops.
-- Avatar templates currently ship as data/config and existing Phoenix art placeholders; App Store-quality per-template art packs remain a visual-asset task.
+- Avatar templates currently ship as data/config and pixel-derived Phoenix placeholders; App Store-quality per-template art packs remain a visual-asset task.
 - Scan-to-avatar is intentionally not live AI yet. V1 uses a truthful mock/suggestion flow so the pipeline can receive real vision/image analysis later without changing the saved config model.
 - Public launch still needs production auth/cloud storage decisions, privacy/legal review, App Store and Google Play account setup, icons, splash, screenshots, store copy, release signing, TestFlight/internal testing, and Apollo approval.
 - GitHub Actions remote verification is blocked until Apollo fixes the GitHub account payment/spending-limit issue.

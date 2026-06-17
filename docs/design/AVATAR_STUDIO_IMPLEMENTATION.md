@@ -45,6 +45,8 @@ The config is saved locally through `AvatarContext` under `woofwatcher.petAvatar
 
 Existing custom mood image sets remain supported under `woofwatcher.avatarSet.v1`.
 
+Default preview assets now use the pixel-derived Phoenix pack in `assets/avatar/pixel/` instead of the earlier painted Phoenix portrait placeholders.
+
 ## Template Library
 
 The current launch template set:
@@ -168,7 +170,7 @@ Room assets should eventually follow:
 
 ## Current Limitations
 
-- The Studio uses existing Phoenix mood art as the preview placeholder.
+- The Studio uses pixel-derived Phoenix placeholders as the preview art until the final template/sprite pack exists.
 - Final template artwork is not present yet.
 - Final dogless rooms and transparent sprite strips are not present yet.
 - Live image analysis is not wired yet.
