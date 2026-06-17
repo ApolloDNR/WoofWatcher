@@ -182,6 +182,10 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Browser verification:
   - Route: `http://127.0.0.1:4192/portrait`
   - Result: passed DOM/content checks and had zero console errors.
+- GitHub Actions:
+  - Commit: `cd659a3`
+  - Run: `27716191817`
+  - Result: remote verification did not start. GitHub reported an account billing/spending-limit blocker, not a code/test failure.
 
 ### Remaining Blockers
 
@@ -190,6 +194,7 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Avatar templates currently ship as data/config and existing Phoenix art placeholders; App Store-quality per-template art packs remain a visual-asset task.
 - Scan-to-avatar is intentionally not live AI yet. V1 uses a truthful mock/suggestion flow so the pipeline can receive real vision/image analysis later without changing the saved config model.
 - Public launch still needs production auth/cloud storage decisions, privacy/legal review, App Store and Google Play account setup, icons, splash, screenshots, store copy, release signing, TestFlight/internal testing, and Apollo approval.
+- GitHub Actions remote verification is blocked until Apollo fixes the GitHub account payment/spending-limit issue.
 
 ### Next Best Pass
 
