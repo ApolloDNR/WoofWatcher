@@ -200,6 +200,13 @@ Still needed for a full App Store avatar system:
 - emote stills for the remaining unfinished launch templates and reusable body classes.
 - template-specific sprite strips for major body classes.
 
+Initial Retriever live sprite strips are now wired as the first non-Phoenix template animation pack, registered through `avatarTemplateSpriteAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered in `/portrait` when the selected template recommends Retriever and the mood state maps to a live loop:
+
+- `assets/avatar/templates/retriever/sprites/idle-tail-wag-strip.png` - live, 2048x256, 8 frames, used for happy/calm/proud preview states.
+- `assets/avatar/templates/retriever/sprites/walk-loop-strip.png` - live, 2048x256, 8 frames, used for excited/bored preview states.
+
+The first Retriever walk pass is acceptable as a production plumbing proof, but should be reviewed on-device before final store polish because the movement includes a front-to-side read that may need a cleaner gait pass.
+
 Initial accessory slots:
 
 - neck: forest bandana, navy collar, copper collar, heart tag, trail bandana. Status: transparent PixelLab 85x85 inventory icons live.
@@ -248,7 +255,7 @@ Next required asset pass:
 - Replace the first-pass derived room variants with final illustrated dark/night, bedtime, health-watch, and home-alone scenes.
 - Inspect and improve any action strip that does not read strongly enough at phone size, especially walk/eat/drink where future prop layers can make the action clearer.
 - Inspect the subscription seed idle/walk strips in native/mobile preview before deciding whether they should replace or supplement the current approved seated sprite family.
-- Derive the dark-mode, badge/logo refinements, running footer sprite, true overlay-aligned accessory layers, and remaining unfinished template emote packs from the approved identity system instead of generating unrelated one-off dogs.
+- Derive the dark-mode, badge/logo refinements, running footer sprite, true overlay-aligned accessory layers, remaining unfinished template emote packs, and remaining live template sprite packs from the approved identity system instead of generating unrelated one-off dogs.
 
 ## Production Sprite Manifest Needed Next
 

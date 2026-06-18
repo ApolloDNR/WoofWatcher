@@ -55,6 +55,7 @@ import {
   getAvatarTemplateDisplaySource,
   getAvatarTemplateEmoteSource,
 } from "@/lib/avatarTemplateAssets";
+import { getAvatarTemplateSpritePreview } from "@/lib/avatarTemplateSpriteAssets";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle } from "@/lib/pixelRendering";
@@ -271,8 +272,16 @@ export default function PortraitScreen() {
   );
   const previewMood = useMemo(() => deriveAvatarPreviewMood(previewEmote), [previewEmote]);
   const previewMotion = useMemo(() => deriveAvatarPreviewMotion(draft.templateId, previewEmote), [draft.templateId, previewEmote]);
-  const previewSpriteTrack = previewMotion.spriteAction ? CARE_TWIN_SPRITE_MANIFEST[previewMotion.spriteAction] : null;
-  const previewSpriteAsset = previewMotion.spriteAction ? getCareTwinSpriteAsset(previewMotion.spriteAction) : null;
+  const templateSpritePreview = useMemo(
+    () => getAvatarTemplateSpritePreview(draft.templateId, previewEmote),
+    [draft.templateId, previewEmote],
+  );
+  const careTwinPreviewTrack = previewMotion.spriteAction ? CARE_TWIN_SPRITE_MANIFEST[previewMotion.spriteAction] : null;
+  const careTwinPreviewAsset = previewMotion.spriteAction ? getCareTwinSpriteAsset(previewMotion.spriteAction) : null;
+  const previewSpriteTrack = templateSpritePreview?.track ?? careTwinPreviewTrack;
+  const previewSpriteAsset = templateSpritePreview?.asset ?? careTwinPreviewAsset;
+  const previewIsSprite = Boolean(previewSpriteTrack && previewSpriteAsset);
+  const previewMotionLabel = templateSpritePreview?.label ?? previewMotion.label;
   const avatarSummary = describeAvatarConfig(draft);
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
   const avatarMotion = useMemo(
@@ -453,11 +462,11 @@ export default function PortraitScreen() {
                   >
                     <Image
                       source={selectedTemplateBase}
-                      style={[s.templateHeroDog, pixelImageStyle, previewMotion.mode === "sprite" ? s.templateHeroDogGhost : null]}
+                      style={[s.templateHeroDog, pixelImageStyle, previewIsSprite ? s.templateHeroDogGhost : null]}
                       contentFit="contain"
                       transition={180}
                     />
-                    {previewMotion.mode === "sprite" && previewSpriteTrack ? (
+                    {previewIsSprite && previewSpriteTrack ? (
                       <SpriteSheetPlayer
                         asset={previewSpriteAsset}
                         track={previewSpriteTrack}
@@ -522,7 +531,7 @@ export default function PortraitScreen() {
                   </View>
                   <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.92)", borderColor: colors.border }]}>
                     <Text style={[s.templateHeroKicker, { color: previewMood.chipColor, fontFamily: "Inter_700Bold" }]}>
-                      {previewMotion.label}
+                      {previewMotionLabel}
                     </Text>
                     <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
                     <Text style={[s.templateHeroMood, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>

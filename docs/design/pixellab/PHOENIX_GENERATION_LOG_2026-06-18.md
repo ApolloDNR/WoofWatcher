@@ -492,3 +492,20 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/not-feeling-well.png` from `171074b3-552c-4b35-8fad-7b454b59349a`.
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
 - Status: generated, downloaded, visually checked, registered, wired into the Avatar Studio Mood set through selected-template emote routing, and covered by mobile readiness tests. This is the first compact-body still-emote layer; remaining templates/body classes still need packs and sprite strips.
+
+### Retriever Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `animate_object`
+- Source object ID: `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `b0928f23-0fba-48cc-9747-948c55aa7508`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/472ae20c-5dc4-496a-b0e7-7cafe29d147c/animations/b0928f23-0fba-48cc-9747-948c55aa7508/unknown/{i}.png`.
+  - Walk loop: animation ID `ef112930-422e-4bf4-8947-616a42ca0272`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/472ae20c-5dc4-496a-b0e7-7cafe29d147c/animations/ef112930-422e-4bf4-8947-616a42ca0272/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, registered, wired into Avatar Studio through template-specific sprite preview routing, and included in the static Expo web export. The idle strip is a usable first live template loop. The walk strip is a first-pass movement proof and should be phone-reviewed/refined because it includes a front-to-side motion read.

@@ -507,6 +507,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateAssets.ts"),
     "utf8",
   );
+  const avatarTemplateSpriteAssets = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateSpriteAssets.ts"),
+    "utf8",
+  );
   const avatarPreviewModel = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarPreviewModel.ts"),
     "utf8",
@@ -595,9 +599,31 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /SpriteSheetPlayer/);
   assert.match(avatarStudio, /CARE_TWIN_SPRITE_MANIFEST/);
   assert.match(avatarStudio, /getCareTwinSpriteAsset/);
+  assert.match(avatarStudio, /getAvatarTemplateSpritePreview/);
   assert.match(avatarStudio, /avatar-studio-live-sprite-preview/);
   assert.match(avatarPreviewModel, /Animated Phoenix pack/);
   assert.match(avatarPreviewModel, /Starter still preview/);
+  assert.match(avatarTemplateSpriteAssets, /AVATAR_TEMPLATE_SPRITE_ASSETS/);
+  assert.match(avatarTemplateSpriteAssets, /retriever:[\s\S]*idle-tail-wag/);
+  assert.match(avatarTemplateSpriteAssets, /retriever:[\s\S]*walk-loop/);
+  assert.match(avatarTemplateSpriteAssets, /getAvatarTemplateSpritePreview/);
+  for (const fileName of ["idle-tail-wag-strip.png", "walk-loop-strip.png"]) {
+    assert.match(avatarTemplateSpriteAssets, new RegExp(`assets/avatar/templates/retriever/sprites/${fileName}`));
+    const size = readPngSize(
+      join(
+        process.cwd(),
+        "artifacts",
+        "woofwatcher-mobile",
+        "assets",
+        "avatar",
+        "templates",
+        "retriever",
+        "sprites",
+        fileName,
+      ),
+    );
+    assert.deepEqual(size, { width: 2048, height: 256 }, `${fileName} should be an 8-frame 256px-slot Retriever sprite strip`);
+  }
   assert.match(avatarStudio, /getAvatarTemplateAccessorySource\(draft\.templateId, layer\.id\)/);
   assert.match(avatarStudio, /getAvatarTemplateEmoteSource\(draft\.templateId, previewEmote\)/);
   assert.match(avatarStudio, /templateBandana/);

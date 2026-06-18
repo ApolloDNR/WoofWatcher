@@ -93,6 +93,11 @@ const templateAccessories = [
   ["shepherd", "heart-sparkles"],
 ];
 
+const templateSprites = [
+  ["retriever", "idle-tail-wag-strip.png", 8, 256, 256],
+  ["retriever", "walk-loop-strip.png", 8, 256, 256],
+];
+
 const avatarAccessories = [
   "forest-bandana",
   "navy-collar",
@@ -232,6 +237,24 @@ function checkTemplateAccessory([templateId, accessoryId]) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
+function checkTemplateSprite([templateId, fileName, frames, frameWidth, frameHeight]) {
+  const file = path.join(templateDir, templateId, "sprites", fileName);
+  if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
+
+  const size = readPngSize(file);
+  const expectedWidth = frames * frameWidth;
+  const expectedHeight = frameHeight;
+  if (size.width !== expectedWidth || size.height !== expectedHeight) {
+    return {
+      type: "invalid",
+      file: path.relative(root, file),
+      message: `expected ${expectedWidth}x${expectedHeight}, got ${size.width}x${size.height}`,
+    };
+  }
+
+  return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
+}
+
 function checkAvatarAccessory(accessoryId) {
   const file = path.join(accessoryDir, `${accessoryId}.png`);
   if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
@@ -258,6 +281,7 @@ const results = [
     emotes.map((emoteId) => checkTemplateEmote(templateId, emoteId)),
   ),
   ...templateAccessories.map(checkTemplateAccessory),
+  ...templateSprites.map(checkTemplateSprite),
   ...avatarAccessories.map(checkAvatarAccessory),
 ];
 const missing = results.filter((result) => result.type === "missing");
