@@ -126,6 +126,8 @@ Current evidence, 2026-06-14: Mobile Avatar Studio now uses shared board anatomy
 
 Current evidence, 2026-06-18: Mobile Avatar Studio now separates template thumbnails from production-scale template base stills. The first Shepherd, Retriever, Husky, and Doodle base PNGs render in the hero preview with subtle breathing motion, while unfinished templates fall back safely to the live Phoenix room or thumbnail registry.
 
+Current evidence, 2026-06-18: Mobile Avatar Studio now surfaces template pack truth per choice, not only in aggregate. Template cards show pack-stage labels, accessory tiles mark `Live art ready` versus `Art pending`, and mood chips mark `Live mood` versus `Still preview`, so owners can see exactly which breeds have real production art before they save a care twin.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

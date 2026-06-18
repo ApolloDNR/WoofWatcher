@@ -12,9 +12,10 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-18:
 
-- PASS: 237 focused tests with the command above.
-- PASS: mobile TypeScript check with bundled Node and workspace TypeScript.
-- PASS: PixelLab asset verifier checked 39 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
+- PASS: 230 focused tests with the command above.
+- PASS: PixelLab asset verifier checked 56 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
+- PASS: focused Avatar Studio readiness and mobile static QA now verify pack-stage labels plus live-vs-pending accessory and mood states.
+- LIMIT: mobile TypeScript could not run in this checkout because `node_modules/typescript` is missing (`tsc-missing`).
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` is currently blocked before job start by the account billing/spending-limit issue documented in `docs/BLOCKERS_FOR_APOLLO.md`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 
 ## Required Automated Coverage

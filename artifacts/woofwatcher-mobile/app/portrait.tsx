@@ -55,7 +55,11 @@ import {
   getAvatarTemplateDisplaySource,
   getAvatarTemplateEmoteSource,
 } from "@/lib/avatarTemplateAssets";
-import { getAvatarTemplateReadiness } from "@/lib/avatarTemplateReadiness";
+import {
+  getAvatarTemplateReadiness,
+  isAvatarTemplateAccessoryLive,
+  isAvatarTemplateEmoteLive,
+} from "@/lib/avatarTemplateReadiness";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
@@ -490,10 +494,13 @@ export default function PortraitScreen() {
                     </Text>
                     <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
                     <Text style={[s.templateHeroMood, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      {emoteLabel(previewEmote)} | {templateReadiness.accessoryStatus}
+                      {templateReadiness.stageLabel} | {emoteLabel(previewEmote)}
                     </Text>
                     <Text style={[s.templateHeroMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      {templateReadiness.emoteStatus}
+                      {templateReadiness.stageDetail}
+                    </Text>
+                    <Text style={[s.templateHeroMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      {templateReadiness.accessoryStatus} | {templateReadiness.emoteStatus}
                     </Text>
                   </View>
                 </View>
@@ -625,6 +632,7 @@ export default function PortraitScreen() {
               {AVATAR_TEMPLATES.map((template) => {
                 const active = draft.templateId === template.id;
                 const tone = templateColor(template.id);
+                const templateReadiness = getAvatarTemplateReadiness(template.id);
                 return (
                   <Pressable
                     key={template.id}
@@ -663,6 +671,9 @@ export default function PortraitScreen() {
                     </View>
                     <Text style={[s.templateTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                       {template.label}
+                    </Text>
+                    <Text style={[s.templateBadge, { color: tone, fontFamily: "Inter_700Bold" }]}>
+                      {templateReadiness.stageLabel}
                     </Text>
                     <Text style={[s.templateSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       {template.subtitle}
@@ -744,6 +755,7 @@ export default function PortraitScreen() {
               <View style={s.accessoryGrid}>
                 {AVATAR_ACCESSORIES.map((item) => {
                   const active = Object.values(draft.accessorySlots).includes(item.id);
+                  const liveArtReady = isAvatarTemplateAccessoryLive(draft.templateId, item.id);
                   return (
                     <Pressable
                       key={item.id}
@@ -766,6 +778,17 @@ export default function PortraitScreen() {
                       <Text style={[s.accessorySlot, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                         {item.slot}
                       </Text>
+                      <Text
+                        style={[
+                          s.accessoryStatus,
+                          {
+                            color: liveArtReady ? colors.sage : colors.mutedForeground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {liveArtReady ? "Live art ready" : "Art pending"}
+                      </Text>
                     </Pressable>
                   );
                 })}
@@ -787,6 +810,7 @@ export default function PortraitScreen() {
                 const active = previewEmote === emote;
                 const moodPreview = deriveAvatarPreviewMood(emote);
                 const moodStill = getAvatarTemplateEmoteSource(draft.templateId, emote);
+                const liveMoodReady = isAvatarTemplateEmoteLive(draft.templateId, emote);
                 return (
                   <Pressable
                     key={emote}
@@ -842,6 +866,17 @@ export default function PortraitScreen() {
                       ]}
                     >
                       {emoteLabel(emote)}
+                    </Text>
+                    <Text
+                      style={[
+                        s.moodChipStatus,
+                        {
+                          color: liveMoodReady ? colors.sage : colors.mutedForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      {liveMoodReady ? "Live mood" : "Still preview"}
                     </Text>
                   </Pressable>
                 );
@@ -1149,6 +1184,7 @@ const s = StyleSheet.create({
     borderColor: "#FFF9EF",
   },
   templateTitle: { fontSize: 13.5 },
+  templateBadge: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
   templateSub: { fontSize: 11.5, lineHeight: 16 },
   swatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   swatch: {
@@ -1181,6 +1217,7 @@ const s = StyleSheet.create({
   accessoryDot: { width: 18, height: 18, borderRadius: 5 },
   accessoryLabel: { fontSize: 12.5 },
   accessorySlot: { fontSize: 10, textTransform: "uppercase" },
+  accessoryStatus: { fontSize: 10.5, textTransform: "uppercase" },
   moodGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   moodChip: { width: "30.9%", alignItems: "center" },
   moodThumbWrap: {
@@ -1207,6 +1244,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   moodChipLabel: { fontSize: 10.5, textAlign: "center" },
+  moodChipStatus: { fontSize: 9.5, textTransform: "uppercase", textAlign: "center", marginTop: 2 },
   tipBoard: { marginTop: 2 },
   tipText: { fontSize: 12.5, lineHeight: 18, textAlign: "center" },
   toast: {

@@ -598,8 +598,16 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /avatar-studio-live-sprite-preview/);
   assert.match(avatarTemplateReadiness, /Animated Phoenix pack/);
   assert.match(avatarTemplateReadiness, /Starter still preview/);
+  assert.match(avatarTemplateReadiness, /Animated pack ready/);
+  assert.match(avatarTemplateReadiness, /Base art live/);
   assert.match(avatarTemplateReadiness, /Production overlays pending/);
   assert.match(avatarTemplateReadiness, /Production moods pending/);
+  assert.match(avatarStudio, /templateReadiness\.stageLabel/);
+  assert.match(avatarStudio, /templateReadiness\.stageDetail/);
+  assert.match(avatarStudio, /Live art ready/);
+  assert.match(avatarStudio, /Art pending/);
+  assert.match(avatarStudio, /Live mood/);
+  assert.match(avatarStudio, /Still preview/);
   assert.match(avatarStudio, /getAvatarTemplateAccessorySource\(draft\.templateId, layer\.id\)/);
   assert.match(avatarStudio, /getAvatarTemplateEmoteSource\(draft\.templateId, previewEmote\)/);
   assert.match(avatarStudio, /templateAccessoryLayer/);

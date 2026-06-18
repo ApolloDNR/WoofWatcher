@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-18: Avatar Studio Must Show Pack Stage On Each Choice
+
+Decision: Avatar Studio should expose production-pack truth at the choice level, not only as a summary. Template cards, accessory slots, and mood chips should label whether a breed pack is base-only, art-partial, or animated, and whether each accessory or mood has live file-backed art today.
+
+Reason: As more breed packs come online, aggregate counters alone make it too easy to overread readiness. Owners need to know which exact customization choices are backed by real art before saving a care twin, and Apollo has been explicit that WoofWatcher must not imply production progress that has not actually shipped.
+
+Owner: Codex.
+
+Revisit trigger: Most launch templates ship full overlay/emote/sprite packs, or a richer in-studio art browser replaces the current readiness labels.
+
 ### 2026-06-18: Avatar Studio Must Not Fake Production Overlay Readiness
 
 Decision: Avatar Studio should render live accessory/emote art only when a template has real file-backed pack assets, and unfinished templates should say that production overlays or moods are still pending instead of drawing generic stand-in costume shapes.

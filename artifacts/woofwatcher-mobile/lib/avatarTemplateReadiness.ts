@@ -31,7 +31,10 @@ const LIVE_EMOTE_IDS: Partial<Record<AvatarTemplateId, string[]>> = {
   shepherd: [...AVATAR_EMOTE_STATES],
 };
 
+export type AvatarTemplatePackStage = "base" | "art-partial" | "animated";
+
 export interface AvatarTemplateReadiness {
+  packStage: AvatarTemplatePackStage;
   hasBaseArt: boolean;
   liveAccessoryCount: number;
   totalAccessoryCount: number;
@@ -39,6 +42,8 @@ export interface AvatarTemplateReadiness {
   totalEmoteCount: number;
   hasAnimatedPreview: boolean;
   previewLabel: string;
+  stageLabel: string;
+  stageDetail: string;
   accessoryStatus: string;
   emoteStatus: string;
 }
@@ -51,8 +56,14 @@ export function getAvatarTemplateReadiness(templateId: AvatarTemplateId): Avatar
   const liveEmoteIds = new Set(LIVE_EMOTE_IDS[templateId] ?? []);
   const liveEmoteCount = AVATAR_EMOTE_STATES.filter((emote) => liveEmoteIds.has(emote)).length;
   const hasAnimatedPreview = templateId === "shepherd";
+  const packStage: AvatarTemplatePackStage = hasAnimatedPreview
+    ? "animated"
+    : liveAccessoryCount > 0 || liveEmoteCount > 0
+    ? "art-partial"
+    : "base";
 
   return {
+    packStage,
     hasBaseArt: LIVE_BASE_TEMPLATES.includes(templateId),
     liveAccessoryCount,
     totalAccessoryCount,
@@ -60,6 +71,18 @@ export function getAvatarTemplateReadiness(templateId: AvatarTemplateId): Avatar
     totalEmoteCount,
     hasAnimatedPreview,
     previewLabel: hasAnimatedPreview ? "Animated Phoenix pack" : "Starter still preview",
+    stageLabel:
+      packStage === "animated"
+        ? "Animated pack ready"
+        : packStage === "art-partial"
+        ? "Art pack in progress"
+        : "Base art live",
+    stageDetail:
+      packStage === "animated"
+        ? "Overlays, moods, and sprite preview are live."
+        : packStage === "art-partial"
+        ? "Some overlays or moods are live; sprite strips are still finishing."
+        : "Base pose is live; overlays, moods, and sprite strips are still pending.",
     accessoryStatus:
       liveAccessoryCount > 0
         ? `${liveAccessoryCount}/${totalAccessoryCount} live overlays`
@@ -69,4 +92,12 @@ export function getAvatarTemplateReadiness(templateId: AvatarTemplateId): Avatar
         ? `${liveEmoteCount}/${totalEmoteCount} live moods`
         : "Production moods pending",
   };
+}
+
+export function isAvatarTemplateAccessoryLive(templateId: AvatarTemplateId, accessoryId: string): boolean {
+  return Boolean(LIVE_ACCESSORY_IDS[templateId]?.includes(accessoryId));
+}
+
+export function isAvatarTemplateEmoteLive(templateId: AvatarTemplateId, emote: string): boolean {
+  return Boolean(LIVE_EMOTE_IDS[templateId]?.includes(emote));
 }
