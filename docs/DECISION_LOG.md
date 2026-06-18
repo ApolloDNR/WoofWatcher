@@ -969,6 +969,22 @@ Owner: Codex.
 
 Revisit trigger: Final accessory overlays, emote stills, or live template sprite packs replace the temporary code-layered preview contract.
 
+### 2026-06-18: Avatar Studio Prefers Registered Overlay And Emote PNG Assets
+
+Decision: Avatar Studio should prefer file-backed template accessory overlays and emote stills whenever a template pack provides them, while preserving the existing shape-based fallback for templates that are still waiting on production art.
+
+Reason: The first Shepherd/Phoenix overlay and emote pack needs to be a real runtime contract, not only a note in the queue. Registering those PNGs in `avatarTemplateAssets.ts` and enforcing them in the verifier lets the mobile preview show truthful PixelLab-backed art today while keeping the remaining breeds shippable through the existing fallback path.
+
+Consequences:
+
+- `avatarTemplateAssets.ts` now registers shepherd accessory overlays plus a 10-state shepherd emote still pack.
+- `app/portrait.tsx` prefers those real PNG layers for the hero preview and mood chips before it falls back to the older code-drawn shapes.
+- `verify-pixellab-assets.js` and the mobile readiness suite now treat the first accessory and emote pack as required production assets.
+
+Owner: Codex.
+
+Revisit trigger: Retriever, Husky, Doodle, and the remaining template packs ship matching overlay/emote assets or move to full sprite-driven previews.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

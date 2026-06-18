@@ -100,12 +100,12 @@ Stop only for:
 
 ## Current Next Slice
 
-As of 2026-06-18, the current queue points to native runtime QA and premium polish. The mobile app now has a registered full Phoenix sprite manifest, first-pass dogless room variants, PixelLab frame-to-strip tooling, room-variant tooling, a 12-item Avatar Studio template preview catalog, the first Shepherd/Retriever/Husky/Doodle template base still pack, premium board anatomy across the core routes, release-grade Expo identity, EAS profiles, local-first care workflows, report/handoff surfaces, medication/water/walk/potty/training/alone-time/weight/grooming derivations, and bounded WoofGuide drafts.
+As of 2026-06-18, the current queue points to native runtime QA and premium polish. The mobile app now has a registered full Phoenix sprite manifest, first-pass dogless room variants, PixelLab frame-to-strip tooling, room-variant tooling, a 12-item Avatar Studio template preview catalog, a full 12-template base still pack, the first Shepherd/Phoenix accessory overlay PNG pack, the first Shepherd/Phoenix 10-state emote still pack, premium board anatomy across the core routes, release-grade Expo identity, EAS profiles, local-first care workflows, report/handoff surfaces, medication/water/walk/potty/training/alone-time/weight/grooming derivations, and bounded WoofGuide drafts.
 
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA when provider/runtime access is available.
 2. Replace first-pass derived room variants with final illustrated room art.
-3. Continue production-scale Avatar Studio template packs: accessory layers, emote stills, and sprite strips now that the full 12-template base pack is registered.
+3. Continue production-scale Avatar Studio template packs: shepherd sprite strips that match the new still pack, then accessory layers and emote stills for Retriever, Husky, Doodle, and the remaining launch templates.
 4. Continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.

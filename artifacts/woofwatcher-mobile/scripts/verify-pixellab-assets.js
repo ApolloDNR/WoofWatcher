@@ -59,6 +59,29 @@ const templateBases = [
   "mixed",
 ];
 
+const templateAccessories = [
+  ["shepherd", "forest-bandana"],
+  ["shepherd", "navy-collar"],
+  ["shepherd", "birthday-hat"],
+  ["shepherd", "sleepy-mask"],
+  ["shepherd", "training-vest"],
+  ["shepherd", "cozy-bed"],
+  ["shepherd", "heart-sparkles"],
+];
+
+const templateEmotes = [
+  ["shepherd", "happy"],
+  ["shepherd", "calm"],
+  ["shepherd", "excited"],
+  ["shepherd", "bored"],
+  ["shepherd", "hungry"],
+  ["shepherd", "anxious"],
+  ["shepherd", "sleepy"],
+  ["shepherd", "proud"],
+  ["shepherd", "home_alone"],
+  ["shepherd", "not_feeling_well"],
+];
+
 function readPngSize(file) {
   const buffer = fs.readFileSync(file);
   const signature = buffer.subarray(0, 8).toString("hex");
@@ -137,11 +160,45 @@ function checkTemplateBase(templateId) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
+function checkTemplateAccessory([templateId, accessoryId]) {
+  const file = path.join(templateDir, templateId, "accessories", `${accessoryId}.png`);
+  if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
+
+  const size = readPngSize(file);
+  if (size.width !== 170 || size.height !== 170) {
+    return {
+      type: "invalid",
+      file: path.relative(root, file),
+      message: `expected 170x170, got ${size.width}x${size.height}`,
+    };
+  }
+
+  return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
+}
+
+function checkTemplateEmote([templateId, emoteId]) {
+  const file = path.join(templateDir, templateId, "emotes", `${emoteId}.png`);
+  if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
+
+  const size = readPngSize(file);
+  if (size.width !== 170 || size.height !== 170) {
+    return {
+      type: "invalid",
+      file: path.relative(root, file),
+      message: `expected 170x170, got ${size.width}x${size.height}`,
+    };
+  }
+
+  return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
+}
+
 const results = [
   ...sprites.map(checkSprite),
   ...rooms.map(checkRoom),
   ...templatePreviews.map(checkTemplatePreview),
   ...templateBases.map(checkTemplateBase),
+  ...templateAccessories.map(checkTemplateAccessory),
+  ...templateEmotes.map(checkTemplateEmote),
 ];
 const missing = results.filter((result) => result.type === "missing");
 const invalid = results.filter((result) => result.type === "invalid");

@@ -42,9 +42,37 @@ Template to PixelLab object map:
 - `slender/base.png`: `f6e41dfd-c01e-4f3a-904a-480425e8427f`
 - `mixed/base.png`: `faf7a705-1eaa-4119-bdae-5156772c5453`
 
+Shepherd accessory + emote overlay pack generated: 2026-06-18
+Source basis: Phoenix approved still pack under `assets/avatar/phoenix/approved/`
+Format: transparent PNG, 170x170px.
+
+Live shepherd accessory overlays:
+
+- `shepherd/accessories/forest-bandana.png`
+- `shepherd/accessories/navy-collar.png`
+- `shepherd/accessories/birthday-hat.png`
+- `shepherd/accessories/sleepy-mask.png`
+- `shepherd/accessories/training-vest.png`
+- `shepherd/accessories/cozy-bed.png`
+- `shepherd/accessories/heart-sparkles.png`
+
+Live shepherd emote stills:
+
+- `shepherd/emotes/happy.png`
+- `shepherd/emotes/calm.png`
+- `shepherd/emotes/excited.png`
+- `shepherd/emotes/bored.png`
+- `shepherd/emotes/hungry.png`
+- `shepherd/emotes/anxious.png`
+- `shepherd/emotes/sleepy.png`
+- `shepherd/emotes/proud.png`
+- `shepherd/emotes/home_alone.png`
+- `shepherd/emotes/not_feeling_well.png`
+
 Rules:
 
 - Keep previews transparent and character-only.
 - Do not bake accessories into template previews.
 - Full template packs should later add `base.png`, emotes, and sprite strips under the same template folder.
 - `base.png` is the production-scale character still for Avatar Studio preview. It is not a walk/eat/sleep sprite strip.
+- Accessory overlays and emote stills should stay slot-compatible with the registered base pose for that template.

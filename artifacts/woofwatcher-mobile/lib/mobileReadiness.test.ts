@@ -527,6 +527,27 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     "slender",
     "mixed",
   ];
+  const shepherdAccessoryIds = [
+    "forest-bandana",
+    "navy-collar",
+    "birthday-hat",
+    "sleepy-mask",
+    "training-vest",
+    "cozy-bed",
+    "heart-sparkles",
+  ];
+  const shepherdEmoteIds = [
+    "happy",
+    "calm",
+    "excited",
+    "bored",
+    "hungry",
+    "anxious",
+    "sleepy",
+    "proud",
+    "home_alone",
+    "not_feeling_well",
+  ];
 
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{\[s\.canvasCard/);
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{s\.heroPreview\}/);
@@ -552,14 +573,21 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.doesNotMatch(avatarStudio, /getAvatarSource\("happy"\)/);
   assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_PREVIEW_ASSETS/);
   assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_BASE_ASSETS/);
+  assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_ACCESSORY_ASSETS/);
+  assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_EMOTE_ASSETS/);
   assert.match(avatarTemplateAssets, /pixellab-template-preview/);
   assert.match(avatarTemplateAssets, /pixellab-template-base/);
+  assert.match(avatarTemplateAssets, /pixellab-template-accessory/);
+  assert.match(avatarTemplateAssets, /pixellab-template-emote/);
   assert.match(avatarStudio, /deriveAvatarPreviewAccessories/);
   assert.match(avatarStudio, /deriveAvatarPreviewMood/);
   assert.match(avatarStudio, /previewEmote/);
-  assert.match(avatarStudio, /LAYERED PREVIEW/);
+  assert.match(avatarStudio, /PIXELLAB PREVIEW/);
+  assert.match(avatarStudio, /getAvatarTemplateAccessorySource\(draft\.templateId, layer\.id\)/);
+  assert.match(avatarStudio, /getAvatarTemplateEmoteSource\(draft\.templateId, previewEmote\)/);
   assert.match(avatarStudio, /templateBandana/);
   assert.match(avatarStudio, /templateVest/);
+  assert.match(avatarStudio, /templateAccessoryLayer/);
   assert.match(avatarStudio, /Preview \$\{emoteLabel\(emote\)\} mood/);
   for (const templateId of templateIds) {
     assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));
@@ -574,6 +602,46 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
       join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", templateId, "base.png"),
     );
     assert.deepEqual(size, { width: 170, height: 170 }, `${templateId} base should be a PixelLab 170x170 character base`);
+  }
+  for (const accessoryId of shepherdAccessoryIds) {
+    assert.match(
+      avatarTemplateAssets,
+      new RegExp(`"${accessoryId}":[\\s\\S]*assets/avatar/templates/shepherd/accessories/${accessoryId}\\.png`),
+    );
+    const size = readPngSize(
+      join(
+        process.cwd(),
+        "artifacts",
+        "woofwatcher-mobile",
+        "assets",
+        "avatar",
+        "templates",
+        "shepherd",
+        "accessories",
+        `${accessoryId}.png`,
+      ),
+    );
+    assert.deepEqual(size, { width: 170, height: 170 }, `${accessoryId} overlay should be a 170x170 transparent PNG`);
+  }
+  for (const emoteId of shepherdEmoteIds) {
+    assert.match(
+      avatarTemplateAssets,
+      new RegExp(`${emoteId}:[\\s\\S]*assets/avatar/templates/shepherd/emotes/${emoteId}\\.png`),
+    );
+    const size = readPngSize(
+      join(
+        process.cwd(),
+        "artifacts",
+        "woofwatcher-mobile",
+        "assets",
+        "avatar",
+        "templates",
+        "shepherd",
+        "emotes",
+        `${emoteId}.png`,
+      ),
+    );
+    assert.deepEqual(size, { width: 170, height: 170 }, `${emoteId} emote should be a 170x170 transparent PNG`);
   }
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);
@@ -627,8 +695,10 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(phaseOne, /transparent background/);
   assert.match(verifier, /PixelLab asset check complete/);
   assert.match(verifier, /readUInt32BE\(16\)/);
+  assert.match(verifier, /templateAccessories/);
+  assert.match(verifier, /templateEmotes/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, 12 Avatar Studio template preview thumbnails, and the full 12-template base still pack now exist locally/);
+  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, 12 Avatar Studio template preview thumbnails, the full 12-template base still pack, the first shepherd accessory overlay PNG pack, and the first shepherd 10-state emote still pack now exist locally/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
 

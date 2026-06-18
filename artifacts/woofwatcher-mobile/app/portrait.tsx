@@ -45,8 +45,10 @@ import {
   type PetAvatarConfig,
 } from "@/lib/avatarStudio";
 import {
+  getAvatarTemplateAccessorySource,
   getAvatarTemplateBaseSource,
   getAvatarTemplateDisplaySource,
+  getAvatarTemplateEmoteSource,
 } from "@/lib/avatarTemplateAssets";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
@@ -246,8 +248,17 @@ export default function PortraitScreen() {
 
   const selectedTemplate = getAvatarTemplate(draft.templateId);
   const selectedTemplateBase = getAvatarTemplateBaseSource(draft.templateId);
+  const selectedTemplateEmote = getAvatarTemplateEmoteSource(draft.templateId, previewEmote);
   const selectedTemplateCardSource = selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
   const previewAccessories = useMemo(() => deriveAvatarPreviewAccessories(draft), [draft]);
+  const previewAccessoryLayers = useMemo(
+    () =>
+      previewAccessories.map((layer) => ({
+        ...layer,
+        source: getAvatarTemplateAccessorySource(draft.templateId, layer.id),
+      })),
+    [draft.templateId, previewAccessories],
+  );
   const previewMood = useMemo(() => deriveAvatarPreviewMood(previewEmote), [previewEmote]);
   const avatarSummary = describeAvatarConfig(draft);
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
@@ -392,7 +403,20 @@ export default function PortraitScreen() {
                 <View style={s.templatePreviewStage}>
                   <Image source={PIXEL_ROOM_SOURCE} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
                   <View style={[s.templateMoodAura, { backgroundColor: previewMood.auraColor }]} pointerEvents="none" />
-                  {previewAccessories.some((layer) => layer.kind === "bed") ? (
+                  {previewAccessoryLayers.some((layer) => layer.kind === "bed" && layer.source) ? (
+                    previewAccessoryLayers
+                      .filter((layer) => layer.kind === "bed" && layer.source)
+                      .map((layer) => (
+                        <Image
+                          key={layer.id}
+                          source={layer.source}
+                          style={s.templateAccessoryLayer}
+                          contentFit="contain"
+                          transition={150}
+                          pointerEvents="none"
+                        />
+                      ))
+                  ) : previewAccessories.some((layer) => layer.kind === "bed") ? (
                     <View
                       style={[
                         s.templateAccessoryBed,
@@ -414,8 +438,25 @@ export default function PortraitScreen() {
                       },
                     ]}
                   >
-                    <Image source={selectedTemplateBase} style={s.templateHeroDog} contentFit="contain" transition={180} />
-                    {previewAccessories.map((layer) => {
+                    <Image
+                      source={selectedTemplateEmote ?? selectedTemplateBase}
+                      style={s.templateHeroDog}
+                      contentFit="contain"
+                      transition={180}
+                    />
+                    {previewAccessoryLayers.map((layer) => {
+                      if (layer.kind !== "bed" && layer.source) {
+                        return (
+                          <Image
+                            key={layer.id}
+                            source={layer.source}
+                            style={s.templateAccessoryLayer}
+                            contentFit="contain"
+                            transition={150}
+                            pointerEvents="none"
+                          />
+                        );
+                      }
                       switch (layer.kind) {
                         case "bandana":
                           return <View key={layer.id} style={[s.templateBandana, { backgroundColor: layer.tone }]} pointerEvents="none" />;
@@ -450,11 +491,13 @@ export default function PortraitScreen() {
                     </Text>
                   </View>
                   <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.92)", borderColor: colors.border }]}>
-                    <Text style={[s.templateHeroKicker, { color: previewMood.chipColor, fontFamily: "Inter_700Bold" }]}>LAYERED PREVIEW</Text>
+                    <Text style={[s.templateHeroKicker, { color: previewMood.chipColor, fontFamily: "Inter_700Bold" }]}>
+                      {selectedTemplateEmote ? "PIXELLAB PREVIEW" : "LAYERED PREVIEW"}
+                    </Text>
                     <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
                     <Text style={[s.templateHeroMood, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       {emoteLabel(previewEmote)}
-                      {previewAccessories.length ? ` • ${previewAccessories.length} live layer${previewAccessories.length === 1 ? "" : "s"}` : ""}
+                      {previewAccessories.length ? ` | ${previewAccessories.length} live layer${previewAccessories.length === 1 ? "" : "s"}` : ""}
                     </Text>
                   </View>
                 </View>
@@ -737,6 +780,7 @@ export default function PortraitScreen() {
               {AVATAR_EMOTE_STATES.map((emote) => {
                 const active = previewEmote === emote;
                 const moodPreview = deriveAvatarPreviewMood(emote);
+                const moodStill = getAvatarTemplateEmoteSource(draft.templateId, emote);
                 return (
                   <Pressable
                     key={emote}
@@ -755,12 +799,13 @@ export default function PortraitScreen() {
                         },
                       ]}
                     >
-                    <Image source={PIXEL_HEAD_SOURCE} style={s.moodThumb} contentFit="cover" transition={150} />
+                    <Image source={moodStill ?? PIXEL_HEAD_SOURCE} style={s.moodThumb} contentFit="contain" transition={150} />
                     <View
                       pointerEvents="none"
                       style={[
                         s.moodWash,
                         {
+                          opacity: moodStill ? 0.24 : 1,
                           backgroundColor:
                             emote === "not_feeling_well"
                               ? "rgba(201,99,88,0.22)"
@@ -906,6 +951,11 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
   },
   templateHeroDog: {
+    width: "100%",
+    height: "100%",
+  },
+  templateAccessoryLayer: {
+    position: "absolute",
     width: "100%",
     height: "100%",
   },
