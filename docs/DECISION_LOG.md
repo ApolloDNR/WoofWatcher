@@ -981,14 +981,32 @@ Reason: A video-game-like care twin needs readable body-language states. The moo
 
 Consequences:
 
-- `/portrait` now imports `getPhoenixEmoteAsset` and uses the selected emote in the large preview when the Phoenix/Shepherd pack is active.
+- `/portrait` now imports selected-template emote helpers and uses the completed pack art/copy when the active template has a registered emote pack.
 - The first Phoenix emote pack covers Happy, Calm, Excited, Bored, Hungry, Anxious, Sleepy, Proud, Home Alone, and Not Feeling Well.
 - `verify-pixellab-assets.js` and mobile readiness tests now protect every emote PNG as a 170x170 asset.
 - Non-Phoenix template packs still need emotes, sprites, and accessory overlays.
 
 Owner: Codex.
 
-Revisit trigger: Figma/Fable/PixelLab ships a fully composited avatar renderer or body-class emote packs replace the Phoenix-only still pack.
+Revisit trigger: Figma/Fable/PixelLab ships a fully composited avatar renderer or body-class emote packs replace the current single-template still packs.
+
+### 2026-06-18: Avatar Studio Mood Routing Uses The Selected Template Pack
+
+Decision: Avatar Studio mood previews should resolve through `getAvatarEmoteAsset(draft, state)` using the selected template and emote pack. Phoenix/Shepherd uses `phoenix-shepherd`, Retriever uses `retriever-starter`, and unfinished templates fall back to their own base stills until a completed pack exists.
+
+Reason: Apollo called out the wrong-dog problem directly: non-Phoenix avatars cannot feel like a real care twin if the Mood set quietly displays Phoenix. Selected-template routing keeps the app honest, prepares the renderer for breed/body-class packs, and prevents a premium character creator from feeling like a reskinned placeholder.
+
+Consequences:
+
+- `AvatarEmotePackId` now includes `retriever-starter`.
+- The Retriever launch template recommends the Retriever pack.
+- `/portrait` mood preview labels and accessibility labels use the selected template.
+- PixelLab asset verification and mobile readiness tests protect the 10 Retriever emote PNGs.
+- Remaining templates still need emote/sprite packs, but their fallback now uses their own base still instead of Phoenix art.
+
+Owner: Codex.
+
+Revisit trigger: The app moves from static emote stills to a fully composited sprite/emote renderer, or PixelLab/Figma produces shared body-class packs for multiple templates.
 
 ## Open Decisions For Apollo
 

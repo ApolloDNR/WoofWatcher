@@ -19,7 +19,7 @@ export type AvatarFaceMarkingId = "none" | "mask" | "blaze" | "muzzle" | "eyebro
 export type AvatarMuzzleTypeId = "dark" | "light" | "spotted" | "short" | "long";
 export type AvatarCollarId = "forest-bandana" | "navy-collar" | "copper-collar" | "sage-bandana" | "none";
 export type AvatarTagId = "heart" | "bone" | "shield" | "round" | "none";
-export type AvatarEmotePackId = "starter-care-twin" | "phoenix-shepherd";
+export type AvatarEmotePackId = "starter-care-twin" | "phoenix-shepherd" | "retriever-starter";
 export type AvatarEmoteState =
   | "happy"
   | "calm"
@@ -119,7 +119,7 @@ export const AVATAR_TEMPLATES: AvatarTemplate[] = [
     bodyClass: "sporting",
     defaultEarTypeId: "floppy",
     defaultMuzzleTypeId: "long",
-    recommendedEmotePackId: "starter-care-twin",
+    recommendedEmotePackId: "retriever-starter",
     anchorNotes: "Bottom-center body with stable wagging tail anchor.",
   },
   {
@@ -295,7 +295,7 @@ export function normalizeAvatarConfig(input: unknown, petName = "Phoenix"): PetA
       data.accessorySlots && typeof data.accessorySlots === "object" && !Array.isArray(data.accessorySlots)
         ? { ...fallback.accessorySlots, ...data.accessorySlots }
         : fallback.accessorySlots,
-    emotePackId: data.emotePackId === "starter-care-twin" || data.emotePackId === "phoenix-shepherd"
+    emotePackId: data.emotePackId === "starter-care-twin" || data.emotePackId === "phoenix-shepherd" || data.emotePackId === "retriever-starter"
       ? data.emotePackId
       : templateDefaults.recommendedEmotePackId,
     scanAssisted: Boolean(data.scanAssisted),

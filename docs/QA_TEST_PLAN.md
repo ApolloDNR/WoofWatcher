@@ -138,6 +138,7 @@ Latest local evidence, 2026-06-18:
 65. Open Log, search by caregiver, route/place, medication detail, and sticky-note text, then combine search with type chips and confirm the summary and empty state update correctly.
 66. Open Records Medication History, search by medicine, dose, caregiver, and note text, then switch Taken, Skipped, Missed, and Needs review filters and confirm summary and empty-state copy update correctly.
 67. Open Avatar Studio, switch to Emotes, tap each Phoenix mood state, and confirm the mood grid uses the corresponding PixelLab emote art instead of the same head crop with a color wash while the top hero remains the live Studio care-twin room.
+68. Switch Avatar Studio to the Retriever template, open Emotes, and confirm all 10 moods use the Retriever starter pack instead of Phoenix art. Switch to an unfinished template and confirm it falls back to that template's own base still rather than the wrong dog.
 
 ## Missing QA
 
@@ -145,7 +146,7 @@ Latest local evidence, 2026-06-18:
 - API integration tests.
 - Auth onboarding smoke.
 - Visual regression or screenshot review.
-- Rive/Lottie/Reanimated avatar asset runtime checks and a native-device visual pass for the PixelLab emote pack.
+- Rive/Lottie/Reanimated avatar asset runtime checks and a native-device visual pass for the PixelLab Phoenix and Retriever emote packs.
 - Full accessibility pass for contrast, dynamic type, keyboard flow, touch targets, and native screen-reader traversal. Static labels for critical mobile actions are now covered.
 - Document upload/security tests.
 - Self-serve provider-backed account deletion tests.

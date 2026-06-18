@@ -408,7 +408,7 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `ac03ab66-d872-4ac6-a8e9-9b83f9828fe7` - bored pose too similar to default.
   - `799136e4-e617-4187-880c-62078df88661` - hungry pose too subtle at phone size.
   - `2032e8a9-6e52-4504-8ac4-38dd69c7957c` - not-feeling-well pose too similar to default.
-- Status: generated, downloaded, registered, wired into the Avatar Studio Mood set, and covered by PixelLab asset verification. The first Phoenix/Shepherd still-emote layer is live; non-Phoenix template emotes, accessory overlays, and mood transition strips remain.
+- Status: generated, downloaded, registered, wired into the Avatar Studio Mood set, and covered by PixelLab asset verification. The first Phoenix/Shepherd still-emote layer is live; remaining non-Retriever template emotes, accessory overlays, and mood transition strips remain.
 
 ### Subscription Seed Animation Strips
 
@@ -424,3 +424,25 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
 - Output format: two transparent 2048x256 PNG strips with eight 256px frame slots.
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
 - Status: local production seed strips for movement review. They are not promoted over the current approved seated Home sprite family until phone-size proportions, anchor, and mockup fit are approved.
+
+### Retriever Avatar Studio Emote Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_object_state`
+- Source object ID: `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
+- Output format: 10 transparent 170x170 PNG emote stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/happy.png` from `5e24a03f-73dc-4684-b4c3-ddc91f8db9f9`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/calm.png` from `b5983708-e550-472f-9189-5ac9bec7d191`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/excited.png` from `e4aae138-1c54-4cf1-88c7-613dc62d1184`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/bored.png` from `e29b6096-6f06-4f14-80c8-aec1c839ee2d`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/hungry.png` from `7afaace0-d865-4d94-ba17-b5a2b93a57a1`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/anxious.png` from `87bda871-3929-4378-ac3f-7ef1d98318d5`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/sleepy.png` from `2be863b6-a1b7-422b-ae26-cd82676cdc38`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/proud.png` from `88e6bf65-fc70-4fc8-bc58-d70a0672e671`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/home-alone.png` from `52215717-34b7-4ebf-a354-2c628eb0559d`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/not-feeling-well.png` from `a48f574d-fb49-4198-ad9b-96ac47df7e5f`.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
+- Status: generated, downloaded, registered, wired into the Avatar Studio Mood set through selected-template emote routing, and covered by mobile readiness tests. This is the first non-Phoenix still-emote layer; remaining templates/body classes still need packs.

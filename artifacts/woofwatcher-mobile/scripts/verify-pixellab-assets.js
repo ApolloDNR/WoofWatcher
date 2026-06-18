@@ -75,6 +75,10 @@ const phoenixEmotes = [
   "not-feeling-well",
 ];
 
+const templateEmotes = {
+  retriever: ["happy", "calm", "excited", "bored", "hungry", "anxious", "sleepy", "proud", "home-alone", "not-feeling-well"],
+};
+
 const avatarAccessories = [
   "forest-bandana",
   "navy-collar",
@@ -182,6 +186,22 @@ function checkPhoenixEmote(emoteId) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
+function checkTemplateEmote(templateId, emoteId) {
+  const file = path.join(templateDir, templateId, "emotes", `${emoteId}.png`);
+  if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
+
+  const size = readPngSize(file);
+  if (size.width !== 170 || size.height !== 170) {
+    return {
+      type: "invalid",
+      file: path.relative(root, file),
+      message: `expected 170x170, got ${size.width}x${size.height}`,
+    };
+  }
+
+  return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
+}
+
 function checkAvatarAccessory(accessoryId) {
   const file = path.join(accessoryDir, `${accessoryId}.png`);
   if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
@@ -204,6 +224,9 @@ const results = [
   ...templatePreviews.map(checkTemplatePreview),
   ...templateBases.map(checkTemplateBase),
   ...phoenixEmotes.map(checkPhoenixEmote),
+  ...Object.entries(templateEmotes).flatMap(([templateId, emotes]) =>
+    emotes.map((emoteId) => checkTemplateEmote(templateId, emoteId)),
+  ),
   ...avatarAccessories.map(checkAvatarAccessory),
 ];
 const missing = results.filter((result) => result.type === "missing");

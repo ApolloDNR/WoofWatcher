@@ -29,7 +29,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarAccessoryAsset } from "@/lib/avatarAccessoryAssets";
-import { getPhoenixEmoteAsset } from "@/lib/avatarEmoteAssets";
+import { getAvatarEmoteAsset, getAvatarEmotePackLabel } from "@/lib/avatarEmoteAssets";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import {
   AVATAR_ACCESSORIES,
@@ -221,7 +221,8 @@ export default function PortraitScreen() {
 
   const selectedTemplate = getAvatarTemplate(draft.templateId);
   const selectedTemplateBase = getAvatarTemplateBaseSource(draft.templateId);
-  const usePhoenixEmotePreview = activeTab === "emotes" && draft.emotePackId === "phoenix-shepherd";
+  const selectedEmoteAsset = getAvatarEmoteAsset(draft, previewEmote);
+  const useCompletedEmotePreview = activeTab === "emotes" && selectedEmoteAsset.complete;
   const selectedTemplateCardSource = selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
   const heroAvatarSummary = `${selectedTemplate.label} template - ${draft.faceMarkingId.replace(/-/g, " ")} face, ${draft.earTypeId.replace(/-/g, " ")} ears.`;
   const selectedAccessoryIds = useMemo(
@@ -253,7 +254,7 @@ export default function PortraitScreen() {
       : activeTab === "customize"
       ? "Make me yours."
       : "I'm ready!";
-  const heroHudTitle = usePhoenixEmotePreview ? emoteLabel(previewEmote) : selectedTemplate.label;
+  const heroHudTitle = useCompletedEmotePreview ? emoteLabel(previewEmote) : selectedTemplate.label;
 
   const ensurePermission = async (camera: boolean) => {
     if (Platform.OS === "web") return true;
@@ -691,17 +692,17 @@ export default function PortraitScreen() {
 
         {activeTab === "emotes" ? (
           <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader title="Mood set" action={draft.emotePackId === "phoenix-shepherd" ? "Phoenix pack" : "Starter"} />
+            <BoardSectionHeader title="Mood set" action={getAvatarEmotePackLabel(draft.emotePackId)} />
             <View style={s.moodGrid}>
               {AVATAR_EMOTE_STATES.map((emote) => {
                 const active = previewEmote === emote;
-                const asset = getPhoenixEmoteAsset(emote);
+                const asset = getAvatarEmoteAsset(draft, emote);
                 return (
                   <Pressable
                     key={emote}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
-                    accessibilityLabel={`Preview Phoenix ${emoteLabel(emote)} emote`}
+                    accessibilityLabel={`Preview ${selectedTemplate.label} ${emoteLabel(emote)} emote`}
                     onPress={() => {
                       Haptics.selectionAsync().catch(() => {});
                       setPreviewEmote(emote);

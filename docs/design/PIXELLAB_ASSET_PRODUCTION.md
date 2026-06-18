@@ -219,9 +219,26 @@ These are transparent 170x170 PixelLab Phoenix states for the Avatar Studio Mood
 
 Remaining emote work:
 
-- Generate starter emote packs for non-Phoenix launch templates.
-- Decide whether non-Shepherd breeds share body-class emotes or require one pack per template.
+- Generate starter emote packs for the remaining non-Retriever launch templates or shared body classes.
+- Decide whether the remaining non-Shepherd breeds share body-class emotes or require one pack per template.
 - Add matching short animation strips after still-state approval.
+
+### Phase 4C.1 - Retriever Starter Emote Pack
+
+The first non-Phoenix PixelLab emote still pack is live:
+
+- `assets/avatar/templates/retriever/emotes/happy.png` from PixelLab object `5e24a03f-73dc-4684-b4c3-ddc91f8db9f9`.
+- `assets/avatar/templates/retriever/emotes/calm.png` from PixelLab object `b5983708-e550-472f-9189-5ac9bec7d191`.
+- `assets/avatar/templates/retriever/emotes/excited.png` from PixelLab object `e4aae138-1c54-4cf1-88c7-613dc62d1184`.
+- `assets/avatar/templates/retriever/emotes/bored.png` from PixelLab object `e29b6096-6f06-4f14-80c8-aec1c839ee2d`.
+- `assets/avatar/templates/retriever/emotes/hungry.png` from PixelLab object `7afaace0-d865-4d94-ba17-b5a2b93a57a1`.
+- `assets/avatar/templates/retriever/emotes/anxious.png` from PixelLab object `87bda871-3929-4378-ac3f-7ef1d98318d5`.
+- `assets/avatar/templates/retriever/emotes/sleepy.png` from PixelLab object `2be863b6-a1b7-422b-ae26-cd82676cdc38`.
+- `assets/avatar/templates/retriever/emotes/proud.png` from PixelLab object `88e6bf65-fc70-4fc8-bc58-d70a0672e671`.
+- `assets/avatar/templates/retriever/emotes/home-alone.png` from PixelLab object `52215717-34b7-4ebf-a354-2c628eb0559d`.
+- `assets/avatar/templates/retriever/emotes/not-feeling-well.png` from PixelLab object `a48f574d-fb49-4198-ad9b-96ac47df7e5f`.
+
+These are transparent 170x170 PixelLab Retriever states for the Avatar Studio Mood set. The Retriever template now recommends `retriever-starter`; `/portrait` resolves mood art through the selected template and emote pack rather than hard-coding Phoenix art.
 
 ### Phase 4D - Avatar Accessory Inventory Pack
 
@@ -296,9 +313,9 @@ from:
 artifacts/woofwatcher-mobile
 ```
 
-This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Avatar Studio accessory inventory icons, and the two subscription seed strips.
+This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Retriever emote stills, Avatar Studio accessory inventory icons, and the two subscription seed strips.
 
-Latest local evidence, 2026-06-18: `ok=61 missing=0 invalid=0`.
+Latest local evidence, 2026-06-18: `ok=71 missing=0 invalid=0`.
 
 Use:
 
