@@ -484,15 +484,29 @@ export default function HomeScreen() {
                     PHOENIX HOME
                   </Text>
                   <Text numberOfLines={1} style={[s.heroConsoleTitle, { color: colors.navy, fontFamily: "Fredoka_700Bold" }]}>
-                    Live care twin
+                    Phoenix Room
                   </Text>
                 </View>
               </View>
-              <View style={[s.heroConsoleBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                <Text style={[s.heroConsoleBadgeText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                  {avatarMotion.label}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
+                onPress={() => router.push("/portrait")}
+                style={({ pressed }) => [
+                  s.heroStudioButton,
+                  {
+                    backgroundColor: pressed ? colors.secondary : colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text style={[s.heroStudioKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                  Care Twin
                 </Text>
-              </View>
+                <Text numberOfLines={1} style={[s.heroStudioTitle, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                  {avatarTemplate.label}
+                </Text>
+              </Pressable>
             </View>
             <View style={s.heroWrap}>
               <LivingPhoenixRoom
@@ -529,26 +543,6 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={17} color={colors.navy} />
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
-            onPress={() => router.push("/portrait")}
-            style={[s.avatarIdentityBar, { backgroundColor: colors.card, borderColor: colors.border }]}
-          >
-            <View style={[s.avatarIdentityIcon, { backgroundColor: colors.secondary }]}>
-              <PixelIcon name="heart" size={22} />
-            </View>
-            <View style={s.avatarIdentityCopy}>
-              <Text style={[s.avatarIdentityTitle, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                {avatarTemplate.label} care twin
-              </Text>
-              <Text style={[s.avatarIdentitySub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                {avatarConfig.scanAssisted ? "Scan-assisted traits saved" : "Template ready - customize Phoenix"}
-              </Text>
-            </View>
-            <Ionicons name="color-palette-outline" size={18} color={colors.navy} />
           </Pressable>
 
           <View style={s.statusTiles}>
@@ -874,17 +868,23 @@ const s = StyleSheet.create({
     lineHeight: 20,
     marginTop: 1,
   },
-  heroConsoleBadge: {
-    maxWidth: 132,
-    minHeight: 32,
-    borderRadius: 6,
+  heroStudioButton: {
+    width: 116,
+    minHeight: 39,
+    borderRadius: 7,
     borderWidth: 1,
     paddingHorizontal: 9,
-    alignItems: "center",
+    paddingVertical: 6,
     justifyContent: "center",
   },
-  heroConsoleBadgeText: {
-    fontSize: 11,
+  heroStudioKicker: {
+    fontSize: 8.5,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  heroStudioTitle: {
+    fontSize: 11.5,
+    marginTop: 2,
   },
   heroWrap: {
     width: "100%",
@@ -921,26 +921,6 @@ const s = StyleSheet.create({
   presenceCopy: { flex: 1, minWidth: 0 },
   presenceText: { fontSize: 14 },
   presenceSub: { fontSize: 11, marginTop: 2 },
-  avatarIdentityBar: {
-    minHeight: 48,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 11,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  avatarIdentityIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarIdentityCopy: { flex: 1, minWidth: 0 },
-  avatarIdentityTitle: { fontSize: 13 },
-  avatarIdentitySub: { fontSize: 11, marginTop: 1 },
   statusTiles: {
     flexDirection: "row",
     gap: 8,

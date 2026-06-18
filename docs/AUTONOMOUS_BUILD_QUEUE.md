@@ -111,6 +111,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 103. DONE 2026-06-18: Generated a subscription-backed PixelLab south-facing bark strip from the approved Phoenix character rig, registered it as `bark-loop`, and wired Phoenix Home room taps to momentarily swap the main care twin sprite into a bark reaction instead of spawning a second avatar.
 104. DONE 2026-06-18: Generated, normalized, registered, and tested the first non-Phoenix live Avatar Studio sprite pack for Retriever, including idle-tail-wag and walk-loop strips. Avatar Studio now routes selected Retriever happy/calm/proud and excited/bored previews through template-specific sprite assets instead of Phoenix-only sprite tracks or still-only fallback.
 105. NEXT: Continue template sprite packs for Husky/Spitz, Bully, Doodle, and the remaining launch templates, and improve the Retriever walk-loop if native/visual QA shows the first-pass front-to-side movement reads more like a turn cycle than a clean walk.
+106. DONE 2026-06-18: Polished the mobile Phoenix Home first screen toward the locked Option B board by renaming the hero to Phoenix Room, folding the Avatar Studio/Care Twin CTA into the hero console header, removing the extra first-screen care-twin identity bar, and trimming the in-room live HUD to the most important four vitals so the main dog scene has more visual room.
 
 ## Cadence
 

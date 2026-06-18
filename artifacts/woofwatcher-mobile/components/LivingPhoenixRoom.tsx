@@ -218,7 +218,7 @@ export function LivingPhoenixRoom({
   const hudAccent = HUD_TONE_COLOR[plan.hudTone] ?? theme.accent;
   const roomStats = useMemo<PhoenixRoomStat[]>(
     () =>
-      statusReadouts?.slice(0, 5) ?? [
+      statusReadouts?.slice(0, 4) ?? [
         {
           label: "Mood",
           value: plan.moodLabel,
@@ -490,7 +490,7 @@ export function LivingPhoenixRoom({
       <View style={styles.topHud} pointerEvents="none">
         <View style={[styles.liveChip, { backgroundColor: "rgba(8, 26, 42, 0.88)", borderColor: "rgba(255,249,239,0.22)" }]}>
           <Animated.View style={[styles.liveDot, { backgroundColor: hudAccent }, activeZoneStyle]} />
-          <Text style={styles.liveText}>LIVE CARE TWIN</Text>
+          <Text style={styles.liveText}>LIVE</Text>
         </View>
         {!isStudio ? (
           <Animated.View

@@ -233,9 +233,13 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(home, /avatarMotion\.speech/);
   assert.match(home, /setRoomReaction/);
   assert.match(home, /avatarMotion\.line/);
-  assert.match(room, /LIVE CARE TWIN/);
+  assert.match(home, /Phoenix Room/);
+  assert.match(home, /heroStudioButton/);
+  assert.doesNotMatch(home, /avatarIdentityBar/);
+  assert.match(room, /<Text style=\{styles\.liveText\}>LIVE<\/Text>/);
   assert.match(room, /reactionProgress/);
   assert.match(room, /energyBlocks/);
+  assert.match(room, /statusReadouts\?\.slice\(0, 4\)/);
   assert.match(room, /Phoenix room/);
   assert.match(room, /deriveCareTwinScene/);
   assert.match(room, /plan\.tapVerb/);
