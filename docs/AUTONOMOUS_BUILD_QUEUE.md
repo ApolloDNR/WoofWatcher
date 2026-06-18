@@ -108,6 +108,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 100. NEXT: Continue Avatar Studio production packs by generating template-matched sprite strips and overlay/emote packs for Retriever, Husky, Bully, Doodle, and the remaining launch templates so their previews can graduate from still-only to live animated production packs.
 101. DONE 2026-06-18: Mobile Phoenix Home now has a tighter Option B-style live care twin console: the room card carries a dedicated PHOENIX HOME header, in-scene status HUD, mood/energy/hunger/hydration/bond readouts, and repositioned speech bubble so the dog remains the main character instead of competing with a second avatar. Avatar Studio now forces template, emote, room, accessory, card, and mood thumbnail images through crisp pixel rendering on web.
 102. NEXT: Generate and wire true template-matched sprite strips for Retriever, Husky, Bully, Doodle, and the remaining launch templates so every prebuilt avatar can breathe, idle, walk, sleep, and emote as live game sprites instead of relying on still previews.
+103. DONE 2026-06-18: Generated a subscription-backed PixelLab south-facing bark strip from the approved Phoenix character rig, registered it as `bark-loop`, and wired Phoenix Home room taps to momentarily swap the main care twin sprite into a bark reaction instead of spawning a second avatar.
 
 ## Cadence
 

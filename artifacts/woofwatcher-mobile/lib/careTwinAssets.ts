@@ -133,6 +133,15 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameWidth: 256,
     frameHeight: 256,
   },
+  "bark-loop": {
+    source: bundledAsset("assets/avatar/phoenix/pixellab-bark-south-strip.png", () =>
+      require("@/assets/avatar/phoenix/pixellab-bark-south-strip.png"),
+    ),
+    columns: 6,
+    rows: 1,
+    frameWidth: 256,
+    frameHeight: 256,
+  },
 };
 
 export const CARE_TWIN_ROOM_VARIANT_ASSETS = {

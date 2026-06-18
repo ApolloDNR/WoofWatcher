@@ -418,12 +418,14 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
 - PixelLab templates:
   - `idle`
   - `walk-8-frames`
+  - `bark`
 - Local assets:
   - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-idle-south-strip.png`
   - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-walk-south-strip.png`
-- Output format: two transparent 2048x256 PNG strips with eight 256px frame slots.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-bark-south-strip.png`
+- Output format: two transparent 2048x256 PNG strips with eight 256px frame slots, plus one transparent 1536x256 PNG bark strip with six 256px frame slots.
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
-- Status: local production seed strips for movement review. They are not promoted over the current approved seated Home sprite family until phone-size proportions, anchor, and mockup fit are approved.
+- Status: local production seed strips for movement review. Idle and walk are not promoted over the current approved seated Home sprite family until phone-size proportions, anchor, and mockup fit are approved. Bark is wired as a momentary room-tap reaction so the main dog feels alive without adding a second avatar.
 
 ### Retriever Avatar Studio Emote Pack 1
 

@@ -23,6 +23,7 @@ test("enables layered sprite rendering when production sprite and dogless room a
 
 test("registers finished PixelLab sprite strips and a dogless room layer", () => {
   assert.deepEqual(Object.keys(CARE_TWIN_SPRITE_ASSETS).sort(), [
+    "bark-loop",
     "celebrate-hop",
     "comfort-loop",
     "drink-loop",

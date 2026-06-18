@@ -15,7 +15,8 @@ export type CareTwinSpriteAction =
   | "sleep-loop"
   | "comfort-loop"
   | "celebrate-hop"
-  | "health-watch";
+  | "health-watch"
+  | "bark-loop";
 
 export interface CareTwinSpriteTrack {
   key: CareTwinSpriteAction;
@@ -167,6 +168,17 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
     requiredAsset: "assets/avatar/phoenix/health-watch-strip.png",
     fallbackAnimation: "comfort",
     notes: "Careful low-energy watch state; calm, non-diagnostic presentation.",
+  },
+  "bark-loop": {
+    key: "bark-loop",
+    frameCount: 6,
+    fps: 10,
+    loop: false,
+    anchor: "bottom-center",
+    slotSize: 256,
+    requiredAsset: "assets/avatar/phoenix/pixellab-bark-south-strip.png",
+    fallbackAnimation: "idle",
+    notes: "Short PixelLab south-facing bark reaction for direct room taps; use as a momentary swap, not an idle loop.",
   },
 };
 

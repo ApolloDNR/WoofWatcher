@@ -412,6 +412,18 @@ export default function HomeScreen() {
     showToast(`${item.title} logged`);
   };
 
+  const tapPhoenixRoom = () => {
+    setRoomReaction({
+      id: Date.now(),
+      icon: "heart",
+      label: "Phoenix barked",
+      detail: "She heard you.",
+      tone: colors.brandNavy,
+      spriteAction: "bark-loop",
+    });
+    showToast(avatarMotion.line);
+  };
+
   const fade = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(fade, {
@@ -492,7 +504,7 @@ export default function HomeScreen() {
                 nextLabel={avatarMotion.label}
                 reaction={roomReaction}
                 statusReadouts={roomStats}
-                onPress={() => showToast(avatarMotion.line)}
+                onPress={tapPhoenixRoom}
               />
             </View>
           </BoardCard>

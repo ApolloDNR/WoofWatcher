@@ -31,7 +31,13 @@ import {
   getCareTwinRoomLayer,
   getCareTwinSpriteAsset,
 } from "@/lib/careTwinAssets";
-import { deriveCareTwinScene, type AvatarRoomZone, type CareTwinHudTone } from "@/lib/avatarLifeEngine";
+import {
+  CARE_TWIN_SPRITE_MANIFEST,
+  deriveCareTwinScene,
+  type AvatarRoomZone,
+  type CareTwinHudTone,
+  type CareTwinSpriteAction,
+} from "@/lib/avatarLifeEngine";
 import type { AvatarMotionModel } from "@/lib/avatarMotion";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import type { Mood } from "@/lib/phoenixStatus";
@@ -60,6 +66,7 @@ export interface PhoenixRoomReaction {
   label: string;
   detail?: string;
   tone?: string;
+  spriteAction?: CareTwinSpriteAction;
 }
 
 export interface PhoenixRoomStat {
@@ -238,6 +245,12 @@ export function LivingPhoenixRoom({
   );
   const [activeReaction, setActiveReaction] = useState<PhoenixRoomReaction | null>(reaction ?? null);
   const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeSpriteTrack = activeReaction?.spriteAction
+    ? CARE_TWIN_SPRITE_MANIFEST[activeReaction.spriteAction] ?? plan.spriteTrack
+    : plan.spriteTrack;
+  const activeSpriteAsset = activeReaction?.spriteAction
+    ? getCareTwinSpriteAsset(activeReaction.spriteAction) ?? spriteAsset
+    : spriteAsset;
 
   const breath = useSharedValue(0);
   const walkCycle = useSharedValue(0);
@@ -422,9 +435,10 @@ export function LivingPhoenixRoom({
         >
           <View style={[styles.spriteGroundShadow, { backgroundColor: theme.glow }]} />
           <SpriteSheetPlayer
-            asset={spriteAsset}
+            key={activeReaction?.spriteAction ? `${activeReaction.id}-${activeReaction.spriteAction}` : activeSpriteTrack.key}
+            asset={activeSpriteAsset}
             height={spriteZone.height}
-            track={plan.spriteTrack}
+            track={activeSpriteTrack}
             width={spriteZone.width}
           />
         </Animated.View>

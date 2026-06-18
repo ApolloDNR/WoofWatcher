@@ -31,6 +31,8 @@ V2 update: Apollo added a PixelLab subscription and the new selected main-avatar
 
 Subscription seed strip update: the PixelLab character `f0c6169b-88c0-4428-9089-31c0565c4129` now has verified local animation seed strips at `assets/avatar/phoenix/pixellab-idle-south-strip.png` and `assets/avatar/phoenix/pixellab-walk-south-strip.png`. These are movement-review assets, not the approved Home replacement yet.
 
+Subscription tap-reaction update: the same PixelLab character now has a verified local bark reaction strip at `assets/avatar/phoenix/pixellab-bark-south-strip.png`. This is wired as a momentary room-tap reaction so the main care twin briefly barks without introducing a second avatar.
+
 ## Locked Reference Boards
 
 Apollo's current selected UI references are versioned here:
@@ -262,6 +264,7 @@ Create these as transparent PNG sprite strips, each frame in a 256px slot, align
 - `assets/avatar/phoenix/comfort-loop-strip.png`: 8 frames, 6 fps, loop. Status: live.
 - `assets/avatar/phoenix/celebrate-hop-strip.png`: 8 frames, 9 fps, one-shot reward. Status: live.
 - `assets/avatar/phoenix/health-watch-strip.png`: 8 frames, 5 fps, loop. Status: live.
+- `assets/avatar/phoenix/pixellab-bark-south-strip.png`: 6 frames, 10 fps, one-shot tap reaction. Status: live as a supplemental subscription-backed reaction strip.
 
 Sprite pipeline rule: start from one approved in-game Phoenix seed frame, generate each full strip at once, normalize with one shared scale, preserve transparency, and inspect in-engine before approving.
 
