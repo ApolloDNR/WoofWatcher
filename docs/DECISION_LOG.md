@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-18: Avatar Studio Uses Live Phoenix Motion Only Where Production Sprite Packs Exist
+
+Decision: Avatar Studio should animate the shepherd/Phoenix template with the real Phoenix sprite rig, while templates that only have base stills remain on explicit still-preview labeling until their own sprite packs are produced.
+
+Reason: The repo already contains a complete registered Phoenix sprite manifest, but only the shepherd/Phoenix template has matching production art coverage today. Reusing that live rig makes the canonical care twin feel more alive now without falsely implying that Retriever, Husky, Doodle, and the rest already have production animation packs.
+
+Owner: Codex.
+
+Revisit trigger: Additional breed-specific sprite packs ship, or a unified template animation renderer replaces the current Phoenix-only preview contract.
+
 ### 2026-06-17: PixelLab Is The Production Asset Pipeline For Phoenix
 
 Decision: WoofWatcher will use PixelLab for the production Phoenix identity, transparent sprite strips, dogless rooms, template previews, and accessory packs. PixelLab secrets stay local or backend-only and must never be placed in the Expo app, PWA, GitHub, screenshots, or docs.

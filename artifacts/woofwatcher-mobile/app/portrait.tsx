@@ -25,11 +25,16 @@ import {
 } from "@/components/board/BoardPrimitives";
 import { LivingPhoenixRoom } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
-import { deriveAvatarPreviewAccessories, deriveAvatarPreviewMood } from "@/lib/avatarPreviewModel";
+import {
+  deriveAvatarPreviewAccessories,
+  deriveAvatarPreviewMood,
+  deriveAvatarPreviewMotion,
+} from "@/lib/avatarPreviewModel";
 import {
   AVATAR_ACCESSORIES,
   AVATAR_EMOTE_STATES,
@@ -50,6 +55,8 @@ import {
   getAvatarTemplateDisplaySource,
   getAvatarTemplateEmoteSource,
 } from "@/lib/avatarTemplateAssets";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -66,6 +73,8 @@ const SCAN_LINES = [
   "Matching a pixel template...",
   "Preparing owner review...",
 ];
+
+const HERO_TEMPLATE_SPRITE_SIZE = 220;
 
 const COAT_SWATCHES = [
   "#1B1714",
@@ -260,6 +269,9 @@ export default function PortraitScreen() {
     [draft.templateId, previewAccessories],
   );
   const previewMood = useMemo(() => deriveAvatarPreviewMood(previewEmote), [previewEmote]);
+  const previewMotion = useMemo(() => deriveAvatarPreviewMotion(draft.templateId, previewEmote), [draft.templateId, previewEmote]);
+  const previewSpriteTrack = previewMotion.spriteAction ? CARE_TWIN_SPRITE_MANIFEST[previewMotion.spriteAction] : null;
+  const previewSpriteAsset = previewMotion.spriteAction ? getCareTwinSpriteAsset(previewMotion.spriteAction) : null;
   const avatarSummary = describeAvatarConfig(draft);
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
   const avatarMotion = useMemo(
@@ -439,11 +451,28 @@ export default function PortraitScreen() {
                     ]}
                   >
                     <Image
-                      source={selectedTemplateEmote ?? selectedTemplateBase}
-                      style={s.templateHeroDog}
+                      source={selectedTemplateBase}
+                      style={[s.templateHeroDog, previewMotion.mode === "sprite" ? s.templateHeroDogGhost : null]}
                       contentFit="contain"
                       transition={180}
                     />
+                    {previewMotion.mode === "sprite" && previewSpriteTrack ? (
+                      <SpriteSheetPlayer
+                        asset={previewSpriteAsset}
+                        track={previewSpriteTrack}
+                        width={HERO_TEMPLATE_SPRITE_SIZE}
+                        height={HERO_TEMPLATE_SPRITE_SIZE}
+                        style={s.templateHeroSprite}
+                        testID="avatar-studio-live-sprite-preview"
+                      />
+                    ) : selectedTemplateEmote ? (
+                      <Image
+                        source={selectedTemplateEmote}
+                        style={s.templateHeroDog}
+                        contentFit="contain"
+                        transition={180}
+                      />
+                    ) : null}
                     {previewAccessoryLayers.map((layer) => {
                       if (layer.kind !== "bed" && layer.source) {
                         return (
@@ -492,7 +521,7 @@ export default function PortraitScreen() {
                   </View>
                   <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.92)", borderColor: colors.border }]}>
                     <Text style={[s.templateHeroKicker, { color: previewMood.chipColor, fontFamily: "Inter_700Bold" }]}>
-                      {selectedTemplateEmote ? "PIXELLAB PREVIEW" : "LAYERED PREVIEW"}
+                      {previewMotion.label}
                     </Text>
                     <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
                     <Text style={[s.templateHeroMood, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
@@ -953,6 +982,13 @@ const s = StyleSheet.create({
   templateHeroDog: {
     width: "100%",
     height: "100%",
+  },
+  templateHeroDogGhost: {
+    opacity: 0.16,
+  },
+  templateHeroSprite: {
+    position: "absolute",
+    bottom: 0,
   },
   templateAccessoryLayer: {
     position: "absolute",

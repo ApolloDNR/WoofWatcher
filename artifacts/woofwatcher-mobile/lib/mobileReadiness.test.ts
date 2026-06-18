@@ -507,6 +507,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateAssets.ts"),
     "utf8",
   );
+  const avatarPreviewModel = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarPreviewModel.ts"),
+    "utf8",
+  );
   const avatarContext = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "AvatarContext.tsx"),
     "utf8",
@@ -581,8 +585,14 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarTemplateAssets, /pixellab-template-emote/);
   assert.match(avatarStudio, /deriveAvatarPreviewAccessories/);
   assert.match(avatarStudio, /deriveAvatarPreviewMood/);
+  assert.match(avatarStudio, /deriveAvatarPreviewMotion/);
   assert.match(avatarStudio, /previewEmote/);
-  assert.match(avatarStudio, /PIXELLAB PREVIEW/);
+  assert.match(avatarStudio, /SpriteSheetPlayer/);
+  assert.match(avatarStudio, /CARE_TWIN_SPRITE_MANIFEST/);
+  assert.match(avatarStudio, /getCareTwinSpriteAsset/);
+  assert.match(avatarStudio, /avatar-studio-live-sprite-preview/);
+  assert.match(avatarPreviewModel, /Animated Phoenix pack/);
+  assert.match(avatarPreviewModel, /Starter still preview/);
   assert.match(avatarStudio, /getAvatarTemplateAccessorySource\(draft\.templateId, layer\.id\)/);
   assert.match(avatarStudio, /getAvatarTemplateEmoteSource\(draft\.templateId, previewEmote\)/);
   assert.match(avatarStudio, /templateBandana/);

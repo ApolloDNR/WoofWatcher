@@ -1,10 +1,12 @@
 import {
   AVATAR_ACCESSORIES,
+  type AvatarTemplateId,
   type AvatarAccessoryOption,
   type AvatarAccessorySlots,
   type AvatarEmoteState,
   type PetAvatarConfig,
 } from "./avatarStudio.ts";
+import type { CareTwinSpriteAction } from "./avatarLifeEngine.ts";
 
 export type AvatarPreviewLayerKind = "bandana" | "collar" | "hat" | "mask" | "vest" | "bed" | "sparkles";
 
@@ -20,6 +22,12 @@ export interface AvatarPreviewMoodModel {
   auraColor: string;
   chipColor: string;
   copy: string;
+}
+
+export interface AvatarPreviewMotionModel {
+  mode: "sprite" | "still";
+  label: string;
+  spriteAction: CareTwinSpriteAction | null;
 }
 
 export function deriveAvatarPreviewAccessories(config: PetAvatarConfig): AvatarPreviewAccessoryLayer[] {
@@ -61,6 +69,25 @@ export function deriveAvatarPreviewMood(emote: AvatarEmoteState): AvatarPreviewM
   }
 }
 
+export function deriveAvatarPreviewMotion(
+  templateId: AvatarTemplateId,
+  emote: AvatarEmoteState,
+): AvatarPreviewMotionModel {
+  if (templateId !== "shepherd") {
+    return {
+      mode: "still",
+      label: "Starter still preview",
+      spriteAction: null,
+    };
+  }
+
+  return {
+    mode: "sprite",
+    label: "Animated Phoenix pack",
+    spriteAction: mapPreviewEmoteToSpriteAction(emote),
+  };
+}
+
 function deriveAccessoryLayerKind(item: AvatarAccessoryOption): AvatarPreviewLayerKind {
   if (item.id.includes("bandana")) return "bandana";
   if (item.id.includes("collar")) return "collar";
@@ -69,4 +96,28 @@ function deriveAccessoryLayerKind(item: AvatarAccessoryOption): AvatarPreviewLay
   if (item.id.includes("vest")) return "vest";
   if (item.id.includes("bed")) return "bed";
   return "sparkles";
+}
+
+function mapPreviewEmoteToSpriteAction(emote: AvatarEmoteState): CareTwinSpriteAction {
+  switch (emote) {
+    case "happy":
+    case "calm":
+      return "tail-wag";
+    case "excited":
+    case "proud":
+      return "celebrate-hop";
+    case "bored":
+      return "ear-perk";
+    case "hungry":
+      return "eat-loop";
+    case "anxious":
+    case "home_alone":
+      return "comfort-loop";
+    case "sleepy":
+      return "sleep-loop";
+    case "not_feeling_well":
+      return "health-watch";
+    default:
+      return "idle-breathe";
+  }
 }

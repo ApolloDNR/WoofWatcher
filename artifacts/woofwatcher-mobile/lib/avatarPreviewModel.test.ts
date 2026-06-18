@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createDefaultAvatarConfig } from "./avatarStudio.ts";
-import { deriveAvatarPreviewAccessories, deriveAvatarPreviewMood } from "./avatarPreviewModel.ts";
+import {
+  deriveAvatarPreviewAccessories,
+  deriveAvatarPreviewMood,
+  deriveAvatarPreviewMotion,
+} from "./avatarPreviewModel.ts";
 
 test("derives layered preview accessories from configured slots", () => {
   const config = createDefaultAvatarConfig("Phoenix");
@@ -54,4 +58,20 @@ test("derives preview mood copy and colors", () => {
     chipColor: "#7DA4C7",
     copy: "Waiting by the door.",
   });
+});
+
+test("uses the live Phoenix sprite pack for shepherd mood previews", () => {
+  const motion = deriveAvatarPreviewMotion("shepherd", "excited");
+
+  assert.equal(motion.mode, "sprite");
+  assert.equal(motion.label, "Animated Phoenix pack");
+  assert.equal(motion.spriteAction, "celebrate-hop");
+});
+
+test("keeps unfinished templates on truthful still previews", () => {
+  const motion = deriveAvatarPreviewMotion("retriever", "calm");
+
+  assert.equal(motion.mode, "still");
+  assert.equal(motion.label, "Starter still preview");
+  assert.equal(motion.spriteAction, null);
 });
