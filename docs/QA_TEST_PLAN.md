@@ -14,7 +14,7 @@ Latest local evidence, 2026-06-18:
 
 - PASS: 237 focused tests with the command above.
 - PASS: mobile TypeScript check with bundled Node and workspace TypeScript.
-- PASS: PixelLab asset verifier checked 61 Phoenix room/sprite/template/emote/accessory/seed-strip assets with 0 missing and 0 invalid.
+- PASS: PixelLab asset verifier checked 91 Phoenix room/sprite/template/emote/accessory/seed-strip assets with 0 missing and 0 invalid.
 - PASS: Expo web export completed through the package-local Expo CLI and Metro resolver patch.
 - PASS: Headless Chrome visual smoke captured `/portrait` and Home from the exported web build.
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` is currently blocked before job start by the account billing/spending-limit issue documented in `docs/BLOCKERS_FOR_APOLLO.md`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
@@ -140,6 +140,7 @@ Latest local evidence, 2026-06-18:
 67. Open Avatar Studio, switch to Emotes, tap each Phoenix mood state, and confirm the mood grid uses the corresponding PixelLab emote art instead of the same head crop with a color wash while the top hero remains the live Studio care-twin room.
 68. Switch Avatar Studio to the Retriever template, open Emotes, and confirm all 10 moods use the Retriever starter pack instead of Phoenix art. Switch to an unfinished template and confirm it falls back to that template's own base still rather than the wrong dog.
 69. Switch Avatar Studio to the Husky / Spitz template, open Emotes, and confirm all 10 moods use the Husky starter pack, including Home Alone and Not Feeling Well, with no Retriever or Phoenix fallback art.
+70. Switch Avatar Studio to the Bully template, open Emotes, and confirm all 10 moods use the Bully starter pack, including Home Alone and Not Feeling Well, with no Husky, Retriever, or Phoenix fallback art.
 
 ## Missing QA
 
@@ -147,7 +148,7 @@ Latest local evidence, 2026-06-18:
 - API integration tests.
 - Auth onboarding smoke.
 - Visual regression or screenshot review.
-- Rive/Lottie/Reanimated avatar asset runtime checks and a native-device visual pass for the PixelLab Phoenix, Retriever, and Husky emote packs.
+- Rive/Lottie/Reanimated avatar asset runtime checks and a native-device visual pass for the PixelLab Phoenix, Retriever, Husky, and Bully emote packs.
 - Full accessibility pass for contrast, dynamic type, keyboard flow, touch targets, and native screen-reader traversal. Static labels for critical mobile actions are now covered.
 - Document upload/security tests.
 - Self-serve provider-backed account deletion tests.

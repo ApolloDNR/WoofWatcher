@@ -468,3 +468,25 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/not-feeling-well.png` from `3af5005a-8a5b-485a-8d3d-caeb67fdd927`.
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
 - Status: generated, downloaded, registered, wired into the Avatar Studio Mood set through selected-template emote routing, and covered by mobile readiness tests. This is the first spitz/working-body still-emote layer; remaining templates/body classes still need packs.
+
+### Bully Avatar Studio Emote Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_object_state`
+- Source object ID: `25c648c4-6e26-4c8e-8b65-6fb94e7c10b4`
+- Output format: 10 transparent 170x170 PNG emote stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/happy.png` from `5623a7f7-53c9-4016-8151-43f2fad7e501`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/calm.png` from `dd2f10b2-905f-4e46-91f6-16ca9168aefd`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/excited.png` from `37c9af58-89ad-403c-bb04-113c98a5bc1b`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/bored.png` from `cfb7f686-205a-48b4-ac87-53519d1f0181`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/hungry.png` from `80e3e425-8678-4216-90df-d51a9af1eb0a`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/anxious.png` from `1c011c1d-7732-4dac-863f-1832f249cf79`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/sleepy.png` from `8b2d35c3-70c9-459d-ad0a-5d8da56ddb34`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/proud.png` from `88ac8cb1-aaf9-4b4f-bc7b-6f6a73fa6d31`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/home-alone.png` from `15420aec-4dd6-447e-bee7-b4754b159f47`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/not-feeling-well.png` from `171074b3-552c-4b35-8fad-7b454b59349a`.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
+- Status: generated, downloaded, visually checked, registered, wired into the Avatar Studio Mood set through selected-template emote routing, and covered by mobile readiness tests. This is the first compact-body still-emote layer; remaining templates/body classes still need packs and sprite strips.

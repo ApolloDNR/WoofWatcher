@@ -257,6 +257,23 @@ The Husky/Spitz PixelLab emote still pack is live:
 
 These are transparent 170x170 PixelLab Husky/Spitz states for the Avatar Studio Mood set. The Husky template now recommends `husky-starter`; `/portrait` resolves the pack through the same selected-template routing used by Phoenix and Retriever.
 
+### Phase 4C.3 - Bully Starter Emote Pack
+
+The Bully compact-body PixelLab emote still pack is live:
+
+- `assets/avatar/templates/bully/emotes/happy.png` from PixelLab object `5623a7f7-53c9-4016-8151-43f2fad7e501`.
+- `assets/avatar/templates/bully/emotes/calm.png` from PixelLab object `dd2f10b2-905f-4e46-91f6-16ca9168aefd`.
+- `assets/avatar/templates/bully/emotes/excited.png` from PixelLab object `37c9af58-89ad-403c-bb04-113c98a5bc1b`.
+- `assets/avatar/templates/bully/emotes/bored.png` from PixelLab object `cfb7f686-205a-48b4-ac87-53519d1f0181`.
+- `assets/avatar/templates/bully/emotes/hungry.png` from PixelLab object `80e3e425-8678-4216-90df-d51a9af1eb0a`.
+- `assets/avatar/templates/bully/emotes/anxious.png` from PixelLab object `1c011c1d-7732-4dac-863f-1832f249cf79`.
+- `assets/avatar/templates/bully/emotes/sleepy.png` from PixelLab object `8b2d35c3-70c9-459d-ad0a-5d8da56ddb34`.
+- `assets/avatar/templates/bully/emotes/proud.png` from PixelLab object `88ac8cb1-aaf9-4b4f-bc7b-6f6a73fa6d31`.
+- `assets/avatar/templates/bully/emotes/home-alone.png` from PixelLab object `15420aec-4dd6-447e-bee7-b4754b159f47`.
+- `assets/avatar/templates/bully/emotes/not-feeling-well.png` from PixelLab object `171074b3-552c-4b35-8fad-7b454b59349a`.
+
+These are transparent 170x170 PixelLab Bully states for the Avatar Studio Mood set. The Bully template now recommends `bully-starter`; `/portrait` resolves the compact-body pack through the same selected-template routing used by Phoenix, Retriever, and Husky. Latest local PixelLab asset verification checks 91 assets with 0 missing and 0 invalid.
+
 ### Phase 4D - Avatar Accessory Inventory Pack
 
 The first PixelLab accessory inventory pack is live:
@@ -330,9 +347,9 @@ from:
 artifacts/woofwatcher-mobile
 ```
 
-This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Retriever emote stills, Husky emote stills, Avatar Studio accessory inventory icons, and the two subscription seed strips.
+This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Retriever emote stills, Husky emote stills, Bully emote stills, Avatar Studio accessory inventory icons, and the two subscription seed strips.
 
-Latest local evidence, 2026-06-18: `ok=81 missing=0 invalid=0`.
+Latest local evidence, 2026-06-18: `ok=91 missing=0 invalid=0`.
 
 Use:
 

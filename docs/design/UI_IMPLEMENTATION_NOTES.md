@@ -403,6 +403,22 @@ Remaining visual work:
 - Add short sprite strips for Retriever/Husky/body-class motion once still states are approved.
 - Add true overlay-aligned accessory layers across templates.
 
+## 2026-06-18 Bully Starter Emote Pack Pass
+
+Added the first compact-body Avatar Studio pack:
+
+- Generated and selected a complete 10-state Bully emote still pack for Happy, Calm, Excited, Bored, Hungry, Anxious, Sleepy, Proud, Home Alone, and Not Feeling Well.
+- Re-ran the Home Alone and Not Feeling Well prompts with stronger emotional reads before accepting the final files.
+- Added `bully-starter` to the avatar config contract and made the Bully template recommend that pack.
+- Extended `avatarEmoteAssets.ts` selected-template routing so Bully uses Bully states, Husky uses Husky states, Retriever uses Retriever states, Phoenix/Shepherd uses Phoenix states, and unfinished templates keep honest base-art fallback.
+- Extended readiness coverage and PixelLab asset verification so all Bully emote PNGs are checked as 170x170 assets.
+
+Remaining visual work:
+
+- Generate emote packs for the remaining launch templates or shared body classes.
+- Add short sprite strips for Retriever/Husky/Bully/body-class motion once still states are approved.
+- Add true overlay-aligned accessory layers across templates.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

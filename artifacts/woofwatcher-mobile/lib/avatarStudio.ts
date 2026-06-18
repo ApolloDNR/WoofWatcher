@@ -19,7 +19,12 @@ export type AvatarFaceMarkingId = "none" | "mask" | "blaze" | "muzzle" | "eyebro
 export type AvatarMuzzleTypeId = "dark" | "light" | "spotted" | "short" | "long";
 export type AvatarCollarId = "forest-bandana" | "navy-collar" | "copper-collar" | "sage-bandana" | "none";
 export type AvatarTagId = "heart" | "bone" | "shield" | "round" | "none";
-export type AvatarEmotePackId = "starter-care-twin" | "phoenix-shepherd" | "retriever-starter" | "husky-starter";
+export type AvatarEmotePackId =
+  | "starter-care-twin"
+  | "phoenix-shepherd"
+  | "retriever-starter"
+  | "husky-starter"
+  | "bully-starter";
 export type AvatarEmoteState =
   | "happy"
   | "calm"
@@ -139,7 +144,7 @@ export const AVATAR_TEMPLATES: AvatarTemplate[] = [
     bodyClass: "compact",
     defaultEarTypeId: "rose",
     defaultMuzzleTypeId: "short",
-    recommendedEmotePackId: "starter-care-twin",
+    recommendedEmotePackId: "bully-starter",
     anchorNotes: "Bottom-center anchor; shorter body height and wider collar placement.",
   },
   {
@@ -295,9 +300,14 @@ export function normalizeAvatarConfig(input: unknown, petName = "Phoenix"): PetA
       data.accessorySlots && typeof data.accessorySlots === "object" && !Array.isArray(data.accessorySlots)
         ? { ...fallback.accessorySlots, ...data.accessorySlots }
         : fallback.accessorySlots,
-    emotePackId: data.emotePackId === "starter-care-twin" || data.emotePackId === "phoenix-shepherd" || data.emotePackId === "retriever-starter" || data.emotePackId === "husky-starter"
-      ? data.emotePackId
-      : templateDefaults.recommendedEmotePackId,
+    emotePackId:
+      data.emotePackId === "starter-care-twin" ||
+      data.emotePackId === "phoenix-shepherd" ||
+      data.emotePackId === "retriever-starter" ||
+      data.emotePackId === "husky-starter" ||
+      data.emotePackId === "bully-starter"
+        ? data.emotePackId
+        : templateDefaults.recommendedEmotePackId,
     scanAssisted: Boolean(data.scanAssisted),
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : fallback.updatedAt,
   };

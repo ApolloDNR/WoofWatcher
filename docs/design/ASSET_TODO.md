@@ -180,6 +180,19 @@ Initial Husky/Spitz emote stills are live as the first spitz/working-body 170x17
 - `assets/avatar/templates/husky/emotes/home-alone.png` - live.
 - `assets/avatar/templates/husky/emotes/not-feeling-well.png` - live.
 
+Initial Bully emote stills are live as the first compact-body 170x170 mood pack, registered through `avatarEmoteAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered in `/portrait` when the selected template recommends `bully-starter`:
+
+- `assets/avatar/templates/bully/emotes/happy.png` - live.
+- `assets/avatar/templates/bully/emotes/calm.png` - live.
+- `assets/avatar/templates/bully/emotes/excited.png` - live.
+- `assets/avatar/templates/bully/emotes/bored.png` - live.
+- `assets/avatar/templates/bully/emotes/hungry.png` - live.
+- `assets/avatar/templates/bully/emotes/anxious.png` - live.
+- `assets/avatar/templates/bully/emotes/sleepy.png` - live.
+- `assets/avatar/templates/bully/emotes/proud.png` - live.
+- `assets/avatar/templates/bully/emotes/home-alone.png` - live.
+- `assets/avatar/templates/bully/emotes/not-feeling-well.png` - live.
+
 Still needed for a full App Store avatar system:
 
 - emote stills for the remaining unfinished launch templates and reusable body classes.

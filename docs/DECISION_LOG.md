@@ -992,16 +992,16 @@ Revisit trigger: Figma/Fable/PixelLab ships a fully composited avatar renderer o
 
 ### 2026-06-18: Avatar Studio Mood Routing Uses The Selected Template Pack
 
-Decision: Avatar Studio mood previews should resolve through `getAvatarEmoteAsset(draft, state)` using the selected template and emote pack. Phoenix/Shepherd uses `phoenix-shepherd`, Retriever uses `retriever-starter`, Husky/Spitz uses `husky-starter`, and unfinished templates fall back to their own base stills until a completed pack exists.
+Decision: Avatar Studio mood previews should resolve through `getAvatarEmoteAsset(draft, state)` using the selected template and emote pack. Phoenix/Shepherd uses `phoenix-shepherd`, Retriever uses `retriever-starter`, Husky/Spitz uses `husky-starter`, Bully uses `bully-starter`, and unfinished templates fall back to their own base stills until a completed pack exists.
 
 Reason: Apollo called out the wrong-dog problem directly: non-Phoenix avatars cannot feel like a real care twin if the Mood set quietly displays Phoenix. Selected-template routing keeps the app honest, prepares the renderer for breed/body-class packs, and prevents a premium character creator from feeling like a reskinned placeholder.
 
 Consequences:
 
-- `AvatarEmotePackId` now includes `retriever-starter` and `husky-starter`.
-- The Retriever launch template recommends the Retriever pack; the Husky / Spitz launch template recommends the Husky pack.
+- `AvatarEmotePackId` now includes `retriever-starter`, `husky-starter`, and `bully-starter`.
+- The Retriever launch template recommends the Retriever pack; the Husky / Spitz launch template recommends the Husky pack; the Bully launch template recommends the Bully pack.
 - `/portrait` mood preview labels and accessibility labels use the selected template.
-- PixelLab asset verification and mobile readiness tests protect the 10 Retriever emote PNGs and 10 Husky emote PNGs.
+- PixelLab asset verification and mobile readiness tests protect the 10 Retriever emote PNGs, 10 Husky emote PNGs, and 10 Bully emote PNGs.
 - Remaining templates still need emote/sprite packs, but their fallback now uses their own base still instead of Phoenix art.
 
 Owner: Codex.

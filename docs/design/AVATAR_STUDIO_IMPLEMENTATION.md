@@ -166,6 +166,29 @@ artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/
 
 The Husky template now recommends `husky-starter`. This gives Avatar Studio a visually distinct pointed-ear/spitz pack and further proves that mood art is selected by template instead of being a Phoenix-only skin.
 
+## Bully Starter Emote Pack
+
+The third non-Phoenix production emote pack is live for the Bully compact-body launch template:
+
+- Happy
+- Calm
+- Excited
+- Bored
+- Hungry
+- Anxious
+- Sleepy
+- Proud
+- Home Alone
+- Not Feeling Well
+
+Each state is a transparent 170x170 PNG under:
+
+```text
+artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/
+```
+
+The Bully template now recommends `bully-starter`. This gives Avatar Studio its first compact-body starter pack, so selected-template mood previews now cover Shepherd/Phoenix, Retriever, Husky/Spitz, and Bully instead of collapsing back to one generic avatar.
+
 ## Accessory Inventory Pack
 
 The first accessory pack is live as transparent 85x85 PixelLab inventory art under:

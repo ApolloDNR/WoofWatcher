@@ -12,6 +12,7 @@ export type AvatarEmoteAssetStyle =
   | "pixellab-phoenix-emote"
   | "pixellab-retriever-emote"
   | "pixellab-husky-emote"
+  | "pixellab-bully-emote"
   | "template-base-emote-fallback";
 
 export interface AvatarEmoteAsset {
@@ -278,11 +279,95 @@ export const HUSKY_STARTER_EMOTE_ASSETS: Partial<Record<AvatarEmoteState, Avatar
   },
 };
 
+export const BULLY_STARTER_EMOTE_ASSETS: Partial<Record<AvatarEmoteState, AvatarEmoteAsset>> = {
+  happy: {
+    source: require("@/assets/avatar/templates/bully/emotes/happy.png"),
+    path: "assets/avatar/templates/bully/emotes/happy.png",
+    style: "pixellab-bully-emote",
+    objectId: "5623a7f7-53c9-4016-8151-43f2fad7e501",
+    description: "Happy Bully starter state for compact-body care twin moments.",
+    complete: true,
+  },
+  calm: {
+    source: require("@/assets/avatar/templates/bully/emotes/calm.png"),
+    path: "assets/avatar/templates/bully/emotes/calm.png",
+    style: "pixellab-bully-emote",
+    objectId: "dd2f10b2-905f-4e46-91f6-16ca9168aefd",
+    description: "Calm Bully starter state for settled household moments.",
+    complete: true,
+  },
+  excited: {
+    source: require("@/assets/avatar/templates/bully/emotes/excited.png"),
+    path: "assets/avatar/templates/bully/emotes/excited.png",
+    style: "pixellab-bully-emote",
+    objectId: "37c9af58-89ad-403c-bb04-113c98a5bc1b",
+    description: "Excited Bully starter state for playful care moments.",
+    complete: true,
+  },
+  bored: {
+    source: require("@/assets/avatar/templates/bully/emotes/bored.png"),
+    path: "assets/avatar/templates/bully/emotes/bored.png",
+    style: "pixellab-bully-emote",
+    objectId: "cfb7f686-205a-48b4-ac87-53519d1f0181",
+    description: "Bored Bully starter state for under-stimulated moments.",
+    complete: true,
+  },
+  hungry: {
+    source: require("@/assets/avatar/templates/bully/emotes/hungry.png"),
+    path: "assets/avatar/templates/bully/emotes/hungry.png",
+    style: "pixellab-bully-emote",
+    objectId: "80e3e425-8678-4216-90df-d51a9af1eb0a",
+    description: "Hungry Bully starter state with a readable food cue.",
+    complete: true,
+  },
+  anxious: {
+    source: require("@/assets/avatar/templates/bully/emotes/anxious.png"),
+    path: "assets/avatar/templates/bully/emotes/anxious.png",
+    style: "pixellab-bully-emote",
+    objectId: "1c011c1d-7732-4dac-863f-1832f249cf79",
+    description: "Anxious Bully starter state for watchful household moments.",
+    complete: true,
+  },
+  sleepy: {
+    source: require("@/assets/avatar/templates/bully/emotes/sleepy.png"),
+    path: "assets/avatar/templates/bully/emotes/sleepy.png",
+    style: "pixellab-bully-emote",
+    objectId: "8b2d35c3-70c9-459d-ad0a-5d8da56ddb34",
+    description: "Sleepy Bully starter state for rest and quiet hours.",
+    complete: true,
+  },
+  proud: {
+    source: require("@/assets/avatar/templates/bully/emotes/proud.png"),
+    path: "assets/avatar/templates/bully/emotes/proud.png",
+    style: "pixellab-bully-emote",
+    objectId: "88ac8cb1-aaf9-4b4f-bc7b-6f6a73fa6d31",
+    description: "Proud Bully starter state for training wins and streaks.",
+    complete: true,
+  },
+  home_alone: {
+    source: require("@/assets/avatar/templates/bully/emotes/home-alone.png"),
+    path: "assets/avatar/templates/bully/emotes/home-alone.png",
+    style: "pixellab-bully-emote",
+    objectId: "15420aec-4dd6-447e-bee7-b4754b159f47",
+    description: "Home-alone Bully starter state for presence tracking.",
+    complete: true,
+  },
+  not_feeling_well: {
+    source: require("@/assets/avatar/templates/bully/emotes/not-feeling-well.png"),
+    path: "assets/avatar/templates/bully/emotes/not-feeling-well.png",
+    style: "pixellab-bully-emote",
+    objectId: "171074b3-552c-4b35-8fad-7b454b59349a",
+    description: "Low-energy Bully starter state for non-diagnostic health watch moments.",
+    complete: true,
+  },
+};
+
 const PACK_LABELS: Record<AvatarEmotePackId, string> = {
   "starter-care-twin": "Starter",
   "phoenix-shepherd": "Phoenix pack",
   "retriever-starter": "Retriever pack",
   "husky-starter": "Husky pack",
+  "bully-starter": "Bully pack",
 };
 
 export function getPhoenixEmoteAsset(state: AvatarEmoteState): PhoenixEmoteAsset {
@@ -311,6 +396,11 @@ export function getAvatarEmoteAsset(
     if (huskyAsset) return huskyAsset;
   }
 
+  if (avatar.emotePackId === "bully-starter" && avatar.templateId === "bully") {
+    const bullyAsset = BULLY_STARTER_EMOTE_ASSETS[state];
+    if (bullyAsset) return bullyAsset;
+  }
+
   const templateAsset = AVATAR_TEMPLATE_BASE_ASSETS[avatar.templateId] ?? AVATAR_TEMPLATE_BASE_ASSETS.mixed;
   const label = state.replace(/_/g, " ");
   return {
@@ -326,5 +416,6 @@ export function getCompletedAvatarEmoteCount(packId: AvatarEmotePackId): number 
   if (packId === "phoenix-shepherd") return AVATAR_EMOTE_STATES.length;
   if (packId === "retriever-starter") return Object.keys(RETRIEVER_STARTER_EMOTE_ASSETS).length;
   if (packId === "husky-starter") return Object.keys(HUSKY_STARTER_EMOTE_ASSETS).length;
+  if (packId === "bully-starter") return Object.keys(BULLY_STARTER_EMOTE_ASSETS).length;
   return 0;
 }
