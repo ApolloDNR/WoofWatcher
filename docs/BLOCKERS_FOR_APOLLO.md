@@ -12,6 +12,7 @@
 ## Accounts And Secrets
 
 - GitHub Actions billing/spending limit: the 2026-06-18 `WoofWatcher Verify` push run `27751926674` for commit `61122c0` did not start because GitHub reported recent account payments failed or the spending limit needs to be increased. Local focused tests, mobile typecheck, PixelLab asset verification, Expo web export from prior release checks, and browser DOM verification from prior release checks passed, but CI cannot provide authoritative remote verification until GitHub billing is fixed.
+- Local Expo web export in the premium revenue builder worktree is currently blocked by a dependency junction/tooling issue: the local Expo CLI reaches Metro but cannot resolve `expo-router/entry.js` through the older `projects/woofwatcher` node_modules junction. The 2026-06-18 accessory pass still passed PixelLab asset verification, focused tests, and mobile TypeScript locally; native/browser visual QA should be rerun after dependencies are relinked or installed normally.
 - Clerk production configuration.
 - Database/Supabase production configuration.
 - Storage provider for records and generated reports.

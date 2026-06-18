@@ -223,6 +223,29 @@ Remaining emote work:
 - Decide whether non-Shepherd breeds share body-class emotes or require one pack per template.
 - Add matching short animation strips after still-state approval.
 
+### Phase 4D - Avatar Accessory Inventory Pack
+
+The first PixelLab accessory inventory pack is live:
+
+- `assets/avatar/accessories/forest-bandana.png` from PixelLab object `fa81f98c-0cad-4df2-9671-4b5be32c6f34`.
+- `assets/avatar/accessories/navy-collar.png` from PixelLab object `670d848c-78ef-4150-9c91-0b893bc071e0`.
+- `assets/avatar/accessories/copper-collar.png` from PixelLab object `63af7c6f-36df-4290-ac45-ac714f026b3b`.
+- `assets/avatar/accessories/heart-tag.png` from PixelLab object `29b375ca-5fc6-42d6-a3ec-26e618204c6a`.
+- `assets/avatar/accessories/trail-bandana.png` from PixelLab object `a54244ac-76c8-49c2-82bf-949aaa9648c4`.
+- `assets/avatar/accessories/birthday-hat.png` from PixelLab object `2a22670b-2736-4412-b2ac-b3ee3a3238a6`.
+- `assets/avatar/accessories/sleepy-mask.png` from PixelLab object `e106649d-5e30-4be1-ab3d-9f49e3b9ff3c`.
+- `assets/avatar/accessories/training-vest.png` from PixelLab object `5b4248e7-f293-42ad-84e2-c4827e064f43`.
+- `assets/avatar/accessories/cozy-bed.png` from PixelLab object `698b7c8c-89b1-411e-8314-29e14701c453`.
+- `assets/avatar/accessories/heart-sparkles.png` from PixelLab object `e3790a9a-a5be-4ba2-b60d-d13970624b23`.
+
+These are transparent 85x85 PixelLab inventory icons for the Avatar Studio Customize tab. The app registers them through `avatarAccessoryAssets.ts`; `/portrait` now renders accessory art in the slot grid and hero equipped-loadout rail.
+
+Remaining accessory work:
+
+- Generate true 170x170 transparent overlay layers that align with the bottom-center avatar anchor.
+- Decide which accessories are baked into Phoenix-specific sprite packs versus drawn as runtime overlays.
+- Add per-template fit checks for long-body, small, compact, and floppy-ear templates.
+
 ### Phase 5 - Dogless Rooms
 
 Create Phoenix-free backgrounds:
@@ -259,7 +282,7 @@ from:
 artifacts/woofwatcher-mobile
 ```
 
-This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, and Phoenix emote stills.
+This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, and Avatar Studio accessory inventory icons.
 
 Use:
 

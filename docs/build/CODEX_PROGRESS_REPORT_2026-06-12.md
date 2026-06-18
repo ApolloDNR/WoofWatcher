@@ -221,3 +221,49 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 2. Register the first production sprite strip set in `careTwinAssets.ts`.
 3. Give Avatar Studio production-ready template thumbnail art for Shepherd plus 2-3 other launch templates.
 4. Run real-device Expo QA on iPhone and Android once release accounts/dev-client setup is available.
+
+## 2026-06-18 PixelLab Accessory Inventory Pass
+
+### What Changed
+
+- Generated and promoted a 10-item PixelLab transparent accessory inventory pack for Avatar Studio.
+- Added `avatarAccessoryAssets.ts` as the registry for forest bandana, navy collar, copper collar, heart tag, trail bandana, birthday hat, sleepy mask, training vest, cozy bed, and heart sparkles.
+- Reworked `/portrait` Customize accessories from color-dot placeholders into real pixel inventory tiles with slot labels, free/plus labels, active checks, and tap-to-clear slot behavior.
+- Added a hero equipped-loadout rail so the selected avatar feels more like a game character loadout.
+- Extended the PixelLab asset verifier and mobile readiness tests to require the accessory pack and prevent silent regression.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/portrait.tsx`
+- `artifacts/woofwatcher-mobile/lib/avatarAccessoryAssets.ts`
+- `artifacts/woofwatcher-mobile/lib/avatarStudio.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+- `artifacts/woofwatcher-mobile/assets/avatar/accessories/*.png`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/design/ASSET_TODO.md`
+- `docs/design/AVATAR_STUDIO_IMPLEMENTATION.md`
+- `docs/design/PIXELLAB_ASSET_PRODUCTION.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- PixelLab asset verification:
+  - Command: `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=59 missing=0 invalid=0`.
+- Focused behavior/readiness tests:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts`
+  - Result: passed, 237 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+- Expo web export:
+  - Command attempted through the local Expo CLI.
+  - Result: blocked by local dependency junction/tooling. Metro could not resolve `expo-router/entry.js` through the old `projects/woofwatcher` node_modules junction even though the direct file exists on disk.
+
+### Remaining Work
+
+- Generate true 170x170 overlay-aligned accessory layers for runtime costume fitting.
+- Generate non-Phoenix/body-class emote packs.
+- Replace first-pass room variants with final illustrated PixelLab/Figma-quality room art.
+- Run native iOS/Android safe-area and screenshot QA when real device/simulator access is available.

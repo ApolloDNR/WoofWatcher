@@ -120,6 +120,29 @@ artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/
 
 The app registers the pack in `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`. The `/portrait` Mood set now uses those real image assets, and tapping a mood updates the large hero preview instead of tinting the same head crop.
 
+## Accessory Inventory Pack
+
+The first accessory pack is live as transparent 85x85 PixelLab inventory art under:
+
+```text
+artifacts/woofwatcher-mobile/assets/avatar/accessories/
+```
+
+The live pack includes:
+
+- forest bandana
+- navy collar
+- copper collar
+- heart tag
+- trail bandana
+- birthday hat
+- sleepy mask
+- training vest
+- cozy bed
+- heart sparkles
+
+The app registers the pack in `artifacts/woofwatcher-mobile/lib/avatarAccessoryAssets.ts`. The `/portrait` Customize tab now renders the real accessory art instead of color-dot placeholders, treats taps as slot toggles, and shows a hero equipped-loadout rail so the customization flow feels like a real game inventory.
+
 ## Accessory Slots
 
 Accessories are modeled as equipment slots, not loose stickers:
@@ -207,6 +230,8 @@ The first production avatar family should match the locked boards:
 
 The v2 family now includes the seated main avatar, sleep/rest avatar, anxious/home-alone avatar, proud/happy avatar, WoofGuide side avatar, badge/logo head crop, full registered Phoenix sprite manifest, first-pass dogless room variants, the 12-template preview thumbnail pack, the full 12-template production base still pack, and a 10-state Phoenix/Shepherd emote still pack. Final illustrated room variants, accessory layers, and non-Phoenix template-specific emotes/sprites are still needed before the scan/customization story will feel App Store ready.
 
+The v2 accessory inventory now includes the first 10 transparent PixelLab accessory icons. True overlay-aligned costume/accessory layers are still needed before accessories can sit perfectly on every avatar body type during live animation.
+
 ## Asset Naming
 
 Template assets should eventually follow:
@@ -218,7 +243,8 @@ Template assets should eventually follow:
 
 Accessory assets should eventually follow:
 
-- `assets/avatar/accessories/{slot}/{id}.png`
+- `assets/avatar/accessories/{id}.png` for current 85x85 inventory icons.
+- `assets/avatar/accessories/overlays/{templateOrBodyClass}/{id}.png` for future 170x170 bottom-center overlay layers.
 
 Room assets should eventually follow:
 
@@ -227,17 +253,19 @@ Room assets should eventually follow:
 ## Current Limitations
 
 - The Studio uses the PixelLab Phoenix v2 approved pack, live layered room preview, PixelLab template preview thumbnails, all 12 PixelLab template base stills, and the Phoenix/Shepherd emote pack for current previews.
+- The Customize tab uses the 10-item PixelLab accessory inventory icon pack and a hero equipped-loadout rail.
 - First-pass non-Phoenix breed template thumbnails and all 12 template base stills are present, but their emote/sprite packs are not complete yet.
 - The dogless day room, first-pass dogless variants, and full registered Phoenix sprite manifest are live; final illustrated room variants still need approval/replacement.
 - Live image analysis is not wired yet.
 - True layered room sprite switching is live for registered sprite actions through `careTwinAssets.ts`.
+- Runtime accessory overlays are not fit-tested across all body classes yet; current accessories are inventory/loadout art, not per-frame costume layers.
 
 ## Quality Gate
 
 Before public launch, Avatar Studio needs:
 
 - final Phoenix seed frame. Status: v2 seed exists.
-- at least one polished full template pack. Status: Phoenix/Shepherd now has base/emote stills and registered sprite actions; accessory overlays and non-Phoenix emote/sprite packs still needed.
+- at least one polished full template pack. Status: Phoenix/Shepherd now has base/emote stills, registered sprite actions, and accessory inventory icons; true overlay layers and non-Phoenix emote/sprite packs still needed.
 - dogless room background. Status: day room and first-pass variants exist; final illustrated variants still needed.
 - transparent sprite/emote assets. Status: Phoenix v2 still states, 10 Avatar Studio emotes, and full registered sprite manifest exist.
 - no duplicate Phoenix rendering

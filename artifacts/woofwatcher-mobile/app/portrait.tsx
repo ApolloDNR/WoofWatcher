@@ -28,6 +28,7 @@ import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { getAvatarAccessoryAsset } from "@/lib/avatarAccessoryAssets";
 import { getPhoenixEmoteAsset } from "@/lib/avatarEmoteAssets";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import {
@@ -251,6 +252,14 @@ export default function PortraitScreen() {
   const selectedTemplateHeroSource = usePhoenixEmotePreview ? selectedEmoteAsset.source : selectedTemplateBase;
   const selectedTemplateCardSource = selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
   const avatarSummary = describeAvatarConfig(draft);
+  const selectedAccessoryIds = useMemo(
+    () => new Set(Object.values(draft.accessorySlots).filter(Boolean)),
+    [draft.accessorySlots],
+  );
+  const equippedAccessories = useMemo(
+    () => AVATAR_ACCESSORIES.filter((item) => selectedAccessoryIds.has(item.id)),
+    [selectedAccessoryIds],
+  );
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
   const avatarMotion = useMemo(
     () =>
@@ -317,12 +326,23 @@ export default function PortraitScreen() {
 
   const setAccessory = (item: AvatarAccessoryOption) => {
     Haptics.selectionAsync().catch(() => {});
-    setDraft((current) =>
-      updateConfig(current, {
-        accessorySlots: { [item.slot]: item.id },
-        collarId: item.slot === "neck" && item.id.includes("collar") ? (item.id as PetAvatarConfig["collarId"]) : current.collarId,
-      }),
-    );
+    setDraft((current) => {
+      const nextSlots = { ...current.accessorySlots };
+      const alreadyEquipped = nextSlots[item.slot] === item.id;
+      if (alreadyEquipped) {
+        delete nextSlots[item.slot];
+      } else {
+        nextSlots[item.slot] = item.id;
+      }
+
+      return updateConfig(current, {
+        accessorySlots: nextSlots,
+        collarId:
+          !alreadyEquipped && item.slot === "neck" && item.id.includes("collar")
+            ? (item.id as PetAvatarConfig["collarId"])
+            : current.collarId,
+      });
+    });
   };
 
   const saveDraft = async () => {
@@ -417,6 +437,41 @@ export default function PortraitScreen() {
                   <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.92)", borderColor: colors.border }]}>
                     <Text style={[s.templateHeroKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>{heroHudKicker}</Text>
                     <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{heroHudTitle}</Text>
+                  </View>
+                  <View
+                    style={[
+                      s.loadoutDock,
+                      {
+                        backgroundColor: "rgba(255,249,239,0.94)",
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[s.loadoutKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>EQUIPPED</Text>
+                    <View style={s.loadoutRail}>
+                      {(equippedAccessories.length ? equippedAccessories : AVATAR_ACCESSORIES.slice(0, 3)).slice(0, 4).map((item) => {
+                        const asset = getAvatarAccessoryAsset(item.id);
+                        const equipped = selectedAccessoryIds.has(item.id);
+                        return (
+                          <View
+                            key={`loadout-${item.id}`}
+                            style={[
+                              s.loadoutSlot,
+                              {
+                                backgroundColor: equipped ? item.tone + "20" : colors.background,
+                                borderColor: equipped ? item.tone : colors.border,
+                              },
+                            ]}
+                          >
+                            {asset ? (
+                              <Image source={asset.source} style={s.loadoutIcon} contentFit="contain" transition={120} />
+                            ) : (
+                              <View style={[s.loadoutFallback, { backgroundColor: item.tone }]} />
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
                   </View>
                 </View>
               ) : (
@@ -657,10 +712,27 @@ export default function PortraitScreen() {
             </BoardCard>
 
             <BoardCard style={s.avatarBoard}>
-              <BoardSectionHeader title="Accessories" action="Slots" />
+              <BoardSectionHeader title="Accessories" action={`${equippedAccessories.length} equipped`} />
+              <View style={[s.equippedBar, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                <View style={s.equippedCopy}>
+                  <Text style={[s.equippedKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>Avatar loadout</Text>
+                  <Text style={[s.equippedText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    Tap a slot to equip or tap again to clear it.
+                  </Text>
+                </View>
+                <View style={s.equippedMiniRail}>
+                  {equippedAccessories.slice(0, 3).map((item) => {
+                    const asset = getAvatarAccessoryAsset(item.id);
+                    return asset ? (
+                      <Image key={`mini-${item.id}`} source={asset.source} style={s.equippedMiniIcon} contentFit="contain" transition={120} />
+                    ) : null;
+                  })}
+                </View>
+              </View>
               <View style={s.accessoryGrid}>
                 {AVATAR_ACCESSORIES.map((item) => {
-                  const active = Object.values(draft.accessorySlots).includes(item.id);
+                  const active = selectedAccessoryIds.has(item.id);
+                  const asset = getAvatarAccessoryAsset(item.id);
                   return (
                     <Pressable
                       key={item.id}
@@ -676,12 +748,31 @@ export default function PortraitScreen() {
                         },
                       ]}
                     >
-                      <View style={[s.accessoryDot, { backgroundColor: item.tone }]} />
+                      <View
+                        style={[
+                          s.accessoryArtWrap,
+                          {
+                            backgroundColor: active ? colors.ivory : item.tone + "12",
+                            borderColor: active ? item.tone : colors.border,
+                          },
+                        ]}
+                      >
+                        {asset ? (
+                          <Image source={asset.source} style={s.accessoryArt} contentFit="contain" transition={130} />
+                        ) : (
+                          <View style={[s.accessoryDot, { backgroundColor: item.tone }]} />
+                        )}
+                        {active ? (
+                          <View style={[s.accessoryCheck, { backgroundColor: item.tone }]}>
+                            <Ionicons name="checkmark" size={12} color="#FFF9EF" />
+                          </View>
+                        ) : null}
+                      </View>
                       <Text style={[s.accessoryLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                         {item.label}
                       </Text>
-                      <Text style={[s.accessorySlot, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                        {item.slot}
+                      <Text style={[s.accessorySlot, { color: active ? item.tone : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        {item.slot} / {item.launchTier === "free" ? "free" : "plus"}
                       </Text>
                     </Pressable>
                   );
@@ -881,6 +972,29 @@ const s = StyleSheet.create({
   },
   templateHeroKicker: { fontSize: 8.5, letterSpacing: 0.8, textTransform: "uppercase" },
   templateHeroTitle: { fontSize: 17, lineHeight: 20 },
+  loadoutDock: {
+    position: "absolute",
+    left: 16,
+    bottom: 74,
+    maxWidth: 166,
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    gap: 5,
+  },
+  loadoutKicker: { fontSize: 8, letterSpacing: 0.8, textTransform: "uppercase" },
+  loadoutRail: { flexDirection: "row", gap: 6 },
+  loadoutSlot: {
+    width: 33,
+    height: 33,
+    borderRadius: 5,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadoutIcon: { width: 29, height: 29 },
+  loadoutFallback: { width: 16, height: 16, borderRadius: 4 },
   pixelFrameOverlay: {
     position: "absolute",
     left: 14,
@@ -1036,16 +1150,55 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   optionText: { fontSize: 12 },
+  equippedBar: {
+    minHeight: 58,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  equippedCopy: { flex: 1, minWidth: 0, gap: 3 },
+  equippedKicker: { fontSize: 9.5, letterSpacing: 0.8, textTransform: "uppercase" },
+  equippedText: { fontSize: 11.5, lineHeight: 16 },
+  equippedMiniRail: { flexDirection: "row", alignItems: "center", gap: 4, minWidth: 74, justifyContent: "flex-end" },
+  equippedMiniIcon: { width: 28, height: 28 },
   accessoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   accessoryTile: {
     flexBasis: "47.5%",
     flexGrow: 1,
-    minHeight: 82,
+    minHeight: 128,
     borderRadius: 8,
     borderWidth: 1,
     padding: 10,
     justifyContent: "center",
-    gap: 5,
+    gap: 7,
+  },
+  accessoryArtWrap: {
+    width: "100%",
+    aspectRatio: 1.34,
+    borderRadius: 7,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    position: "relative",
+  },
+  accessoryArt: { width: "88%", height: "88%" },
+  accessoryCheck: {
+    position: "absolute",
+    right: 5,
+    top: 5,
+    width: 21,
+    height: 21,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: "#FFF9EF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   accessoryDot: { width: 18, height: 18, borderRadius: 5 },
   accessoryLabel: { fontSize: 12.5 },

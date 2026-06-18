@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, "..");
 const spriteDir = path.join(root, "assets", "avatar", "phoenix");
 const roomDir = path.join(root, "assets", "avatar", "rooms");
 const templateDir = path.join(root, "assets", "avatar", "templates");
+const accessoryDir = path.join(root, "assets", "avatar", "accessories");
 
 const sprites = [
   ["idle-breathe-strip.png", 8, 256, 256],
@@ -70,6 +71,19 @@ const phoenixEmotes = [
   "proud",
   "home-alone",
   "not-feeling-well",
+];
+
+const avatarAccessories = [
+  "forest-bandana",
+  "navy-collar",
+  "copper-collar",
+  "heart-tag",
+  "trail-bandana",
+  "birthday-hat",
+  "sleepy-mask",
+  "training-vest",
+  "cozy-bed",
+  "heart-sparkles",
 ];
 
 function readPngSize(file) {
@@ -166,12 +180,29 @@ function checkPhoenixEmote(emoteId) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
+function checkAvatarAccessory(accessoryId) {
+  const file = path.join(accessoryDir, `${accessoryId}.png`);
+  if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
+
+  const size = readPngSize(file);
+  if (size.width !== 85 || size.height !== 85) {
+    return {
+      type: "invalid",
+      file: path.relative(root, file),
+      message: `expected 85x85, got ${size.width}x${size.height}`,
+    };
+  }
+
+  return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
+}
+
 const results = [
   ...sprites.map(checkSprite),
   ...rooms.map(checkRoom),
   ...templatePreviews.map(checkTemplatePreview),
   ...templateBases.map(checkTemplateBase),
   ...phoenixEmotes.map(checkPhoenixEmote),
+  ...avatarAccessories.map(checkAvatarAccessory),
 ];
 const missing = results.filter((result) => result.type === "missing");
 const invalid = results.filter((result) => result.type === "invalid");

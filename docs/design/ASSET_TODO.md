@@ -159,12 +159,14 @@ Still needed for a full App Store avatar system:
 
 Initial accessory slots:
 
-- neck: forest bandana, navy collar, copper collar, heart tag, trail bandana.
-- head: birthday hat.
-- face: sleepy mask.
-- body: training vest.
-- room: cozy bed.
-- fx: heart sparkles.
+- neck: forest bandana, navy collar, copper collar, heart tag, trail bandana. Status: transparent PixelLab 85x85 inventory icons live.
+- head: birthday hat. Status: transparent PixelLab 85x85 inventory icon live.
+- face: sleepy mask. Status: transparent PixelLab 85x85 inventory icon live.
+- body: training vest. Status: transparent PixelLab 85x85 inventory icon live.
+- room: cozy bed. Status: transparent PixelLab 85x85 inventory icon live.
+- fx: heart sparkles. Status: transparent PixelLab 85x85 inventory icon live.
+
+The first accessory inventory pack is registered through `avatarAccessoryAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered by `/portrait` as real accessory thumbnails plus a hero equipped-loadout rail.
 
 Do not generate every template as one-off unrelated art. Each template needs the same visual language, bottom-center anchor, and accessory slot logic.
 
@@ -202,7 +204,7 @@ Next required asset pass:
 - Improve or upscale the v2 seated Phoenix main avatar if Apollo wants an even closer board-05/06 match.
 - Replace the first-pass derived room variants with final illustrated dark/night, bedtime, health-watch, and home-alone scenes.
 - Inspect and improve any action strip that does not read strongly enough at phone size, especially walk/eat/drink where future prop layers can make the action clearer.
-- Derive the dark-mode, badge/logo refinements, running footer sprite, accessory overlays, and non-Phoenix template emote packs from the approved identity system instead of generating unrelated one-off dogs.
+- Derive the dark-mode, badge/logo refinements, running footer sprite, true overlay-aligned accessory layers, and non-Phoenix template emote packs from the approved identity system instead of generating unrelated one-off dogs.
 
 ## Production Sprite Manifest Needed Next
 

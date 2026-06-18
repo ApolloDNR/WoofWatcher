@@ -511,6 +511,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarEmoteAssets.ts"),
     "utf8",
   );
+  const avatarAccessoryAssets = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarAccessoryAssets.ts"),
+    "utf8",
+  );
   const avatarContext = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "AvatarContext.tsx"),
     "utf8",
@@ -543,6 +547,18 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     "home-alone",
     "not-feeling-well",
   ];
+  const accessoryFileNames = [
+    "forest-bandana",
+    "navy-collar",
+    "copper-collar",
+    "heart-tag",
+    "trail-bandana",
+    "birthday-hat",
+    "sleepy-mask",
+    "training-vest",
+    "cozy-bed",
+    "heart-sparkles",
+  ];
 
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{\[s\.canvasCard/);
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{s\.heroPreview\}/);
@@ -561,8 +577,13 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /getAvatarTemplateBaseSource\(draft\.templateId\)/);
   assert.match(avatarStudio, /getAvatarTemplateDisplaySource\(template\.id\)/);
   assert.match(avatarStudio, /getPhoenixEmoteAsset/);
+  assert.match(avatarStudio, /getAvatarAccessoryAsset/);
   assert.match(avatarStudio, /previewEmote/);
   assert.match(avatarStudio, /selectedTemplateHeroSource/);
+  assert.match(avatarStudio, /selectedAccessoryIds/);
+  assert.match(avatarStudio, /equippedAccessories/);
+  assert.match(avatarStudio, /loadoutDock/);
+  assert.match(avatarStudio, /accessoryArtWrap/);
   assert.match(avatarStudio, /accessibilityLabel=\{`Preview Phoenix \$\{emoteLabel\(emote\)\} emote`\}/);
   assert.match(avatarStudio, /templateHeroDogWrap/);
   assert.match(avatarStudio, /s\.templateArtWrap/);
@@ -577,6 +598,8 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarTemplateAssets, /pixellab-template-base/);
   assert.match(avatarEmoteAssets, /PHOENIX_EMOTE_ASSETS/);
   assert.match(avatarEmoteAssets, /pixellab-phoenix-emote/);
+  assert.match(avatarAccessoryAssets, /AVATAR_ACCESSORY_ASSETS/);
+  assert.match(avatarAccessoryAssets, /pixellab-avatar-accessory/);
   for (const templateId of templateIds) {
     assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));
     const size = readPngSize(
@@ -597,6 +620,13 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
       join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "phoenix", "approved", "emotes", `${fileName}.png`),
     );
     assert.deepEqual(size, { width: 170, height: 170 }, `${fileName} emote should be a PixelLab 170x170 Phoenix state`);
+  }
+  for (const fileName of accessoryFileNames) {
+    assert.match(avatarAccessoryAssets, new RegExp(`assets/avatar/accessories/${fileName}\\.png`));
+    const size = readPngSize(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "accessories", `${fileName}.png`),
+    );
+    assert.deepEqual(size, { width: 85, height: 85 }, `${fileName} accessory should be a PixelLab 85x85 inventory icon`);
   }
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);

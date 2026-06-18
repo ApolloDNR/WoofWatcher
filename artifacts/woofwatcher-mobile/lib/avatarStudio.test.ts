@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   AVATAR_ACCESSORIES,
@@ -33,6 +35,10 @@ test("defines the launch template library for scan-assisted dog avatars", () => 
 
 test("keeps avatar customization as slots instead of loose stickers", () => {
   const slots = new Set(AVATAR_ACCESSORIES.map((item) => item.slot));
+  const accessoryAssets = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarAccessoryAssets.ts"),
+    "utf8",
+  );
 
   assert.ok(slots.has("neck"));
   assert.ok(slots.has("head"));
@@ -41,6 +47,9 @@ test("keeps avatar customization as slots instead of loose stickers", () => {
   assert.ok(slots.has("room"));
   assert.ok(slots.has("fx"));
   assert.ok(AVATAR_ACCESSORIES.some((item) => item.launchTier === "plus-ready"));
+  for (const item of AVATAR_ACCESSORIES) {
+    assert.match(accessoryAssets, new RegExp(`"${item.id}":[\\s\\S]*slot: "${item.slot}"`));
+  }
 });
 
 test("creates and normalizes a Phoenix-first avatar config", () => {
