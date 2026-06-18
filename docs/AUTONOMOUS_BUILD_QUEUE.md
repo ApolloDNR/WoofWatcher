@@ -106,6 +106,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 98. DONE 2026-06-18: Generated, downloaded, visually checked, registered, and tested the Bully 10-state Avatar Studio emote pack. Bully templates now recommend `bully-starter`, compact-body selected-template routing is live, and PixelLab asset verification now checks 91 local production assets with 0 missing and 0 invalid.
 99. DONE 2026-06-18: Merged main's Shepherd/Phoenix overlay and live preview work into the premium builder path. Avatar Studio now prefers file-backed Shepherd accessory overlays and Shepherd emote stills, uses the live Phoenix sprite rig for Shepherd mood states, and keeps unfinished templates on truthful still previews.
 100. NEXT: Continue Avatar Studio production packs by generating template-matched sprite strips and overlay/emote packs for Retriever, Husky, Bully, Doodle, and the remaining launch templates so their previews can graduate from still-only to live animated production packs.
+101. DONE 2026-06-18: Mobile Phoenix Home now has a tighter Option B-style live care twin console: the room card carries a dedicated PHOENIX HOME header, in-scene status HUD, mood/energy/hunger/hydration/bond readouts, and repositioned speech bubble so the dog remains the main character instead of competing with a second avatar. Avatar Studio now forces template, emote, room, accessory, card, and mood thumbnail images through crisp pixel rendering on web.
+102. NEXT: Generate and wire true template-matched sprite strips for Retriever, Husky, Bully, Doodle, and the remaining launch templates so every prebuilt avatar can breathe, idle, walk, sleep, and emote as live game sprites instead of relying on still previews.
 
 ## Cadence
 

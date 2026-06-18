@@ -57,6 +57,7 @@ import {
 } from "@/lib/avatarTemplateAssets";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -384,7 +385,7 @@ export default function PortraitScreen() {
             {sourceUri ? (
               <Image source={{ uri: sourceUri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
             ) : (
-              <Image source={PIXEL_ROOM_SOURCE} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
+              <Image source={PIXEL_ROOM_SOURCE} style={[StyleSheet.absoluteFill, pixelImageStyle]} contentFit="cover" transition={220} />
             )}
             <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(8,26,42,0.44)" }]} />
             <Animated.View style={[s.scanBand, { transform: [{ translateY: scanTranslate }] }]}>
@@ -413,7 +414,7 @@ export default function PortraitScreen() {
             <View style={s.liveRoomStage}>
               {selectedTemplateBase ? (
                 <View style={s.templatePreviewStage}>
-                  <Image source={PIXEL_ROOM_SOURCE} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
+                  <Image source={PIXEL_ROOM_SOURCE} style={[StyleSheet.absoluteFill, pixelImageStyle]} contentFit="cover" transition={220} />
                   <View style={[s.templateMoodAura, { backgroundColor: previewMood.auraColor }]} pointerEvents="none" />
                   {previewAccessoryLayers.some((layer) => layer.kind === "bed" && layer.source) ? (
                     previewAccessoryLayers
@@ -422,7 +423,7 @@ export default function PortraitScreen() {
                         <Image
                           key={layer.id}
                           source={layer.source}
-                          style={s.templateAccessoryLayer}
+                          style={[s.templateAccessoryLayer, pixelImageStyle]}
                           contentFit="contain"
                           transition={150}
                           pointerEvents="none"
@@ -452,7 +453,7 @@ export default function PortraitScreen() {
                   >
                     <Image
                       source={selectedTemplateBase}
-                      style={[s.templateHeroDog, previewMotion.mode === "sprite" ? s.templateHeroDogGhost : null]}
+                      style={[s.templateHeroDog, pixelImageStyle, previewMotion.mode === "sprite" ? s.templateHeroDogGhost : null]}
                       contentFit="contain"
                       transition={180}
                     />
@@ -468,7 +469,7 @@ export default function PortraitScreen() {
                     ) : selectedTemplateEmote ? (
                       <Image
                         source={selectedTemplateEmote}
-                        style={s.templateHeroDog}
+                        style={[s.templateHeroDog, pixelImageStyle]}
                         contentFit="contain"
                         transition={180}
                       />
@@ -479,7 +480,7 @@ export default function PortraitScreen() {
                           <Image
                             key={layer.id}
                             source={layer.source}
-                            style={s.templateAccessoryLayer}
+                            style={[s.templateAccessoryLayer, pixelImageStyle]}
                             contentFit="contain"
                             transition={150}
                             pointerEvents="none"
@@ -543,7 +544,7 @@ export default function PortraitScreen() {
             </View>
             <View style={s.pixelFrameOverlay} pointerEvents="none">
               <View style={[s.pixelIdCard, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
-                <Image source={selectedTemplateCardSource} style={s.pixelHead} contentFit="contain" transition={160} />
+                <Image source={selectedTemplateCardSource} style={[s.pixelHead, pixelImageStyle]} contentFit="contain" transition={160} />
                 <View style={s.pixelIdCopy}>
                   <Text style={[s.pixelIdKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>CARE TWIN</Text>
                   <Text style={[s.pixelIdName, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
@@ -684,7 +685,7 @@ export default function PortraitScreen() {
                     >
                       <Image
                         source={getAvatarTemplateDisplaySource(template.id)}
-                        style={s.templateArt}
+                        style={[s.templateArt, pixelImageStyle]}
                         contentFit="contain"
                         transition={140}
                       />
@@ -828,7 +829,7 @@ export default function PortraitScreen() {
                         },
                       ]}
                     >
-                    <Image source={moodStill ?? PIXEL_HEAD_SOURCE} style={s.moodThumb} contentFit="contain" transition={150} />
+                    <Image source={moodStill ?? PIXEL_HEAD_SOURCE} style={[s.moodThumb, pixelImageStyle]} contentFit="contain" transition={150} />
                     <View
                       pointerEvents="none"
                       style={[

@@ -21,7 +21,11 @@ import {
   QuickActionTile,
   StatusMeter,
 } from "@/components/board/BoardPrimitives";
-import { LivingPhoenixRoom, type PhoenixRoomReaction } from "@/components/LivingPhoenixRoom";
+import {
+  LivingPhoenixRoom,
+  type PhoenixRoomReaction,
+  type PhoenixRoomStat,
+} from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import { useAvatar } from "@/context/AvatarContext";
@@ -257,6 +261,63 @@ export default function HomeScreen() {
       ? { status: "Low Risk", sub: "Everything looks good", color: colors.sage }
       : { status: "Watch", sub: `${bileCount} flagged today`, color: colors.amber };
 
+  const roomStats = useMemo<PhoenixRoomStat[]>(
+    () => [
+      {
+        label: "Mood",
+        value: status.meta.label,
+        icon: moodIcon,
+        tone: status.mood === "unwell" ? colors.rose : status.mood === "anxious" ? colors.amber : colors.sage,
+        progress: status.mood === "unwell" ? 44 : status.mood === "anxious" ? 62 : 92,
+      },
+      {
+        label: "Energy",
+        value: `${status.energy}%`,
+        icon: "energy",
+        tone: colors.sage,
+        progress: status.energy,
+      },
+      {
+        label: "Hunger",
+        value: hungerLabel,
+        icon: "hunger",
+        tone: fed ? colors.sage : colors.copper,
+        progress: hungerScore,
+      },
+      {
+        label: "Hydration",
+        value: "Good",
+        icon: "bile",
+        tone: colors.blueSignal,
+        progress: hydrationScore,
+      },
+      {
+        label: "Bond",
+        value: bondLabel,
+        icon: "heart",
+        tone: colors.rose,
+        progress: bondScore,
+      },
+    ],
+    [
+      bondLabel,
+      bondScore,
+      colors.amber,
+      colors.blueSignal,
+      colors.copper,
+      colors.rose,
+      colors.sage,
+      fed,
+      hungerLabel,
+      hungerScore,
+      hydrationScore,
+      moodIcon,
+      status.energy,
+      status.meta.label,
+      status.mood,
+    ],
+  );
+
   const aloneMinutes = useMemo(
     () =>
       state.entries
@@ -403,6 +464,24 @@ export default function HomeScreen() {
           </View>
 
           <BoardCard padded={false} style={s.heroCard}>
+            <View style={[s.heroConsoleHeader, { backgroundColor: colors.ivory, borderBottomColor: colors.border }]}>
+              <View style={s.heroConsoleTitleRow}>
+                <PixelIcon name="heart" size={22} />
+                <View style={s.heroConsoleCopy}>
+                  <Text style={[s.heroConsoleKicker, { color: colors.copper, fontFamily: "Fredoka_600SemiBold" }]}>
+                    PHOENIX HOME
+                  </Text>
+                  <Text numberOfLines={1} style={[s.heroConsoleTitle, { color: colors.navy, fontFamily: "Fredoka_700Bold" }]}>
+                    Live care twin
+                  </Text>
+                </View>
+              </View>
+              <View style={[s.heroConsoleBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                <Text style={[s.heroConsoleBadgeText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                  {avatarMotion.label}
+                </Text>
+              </View>
+            </View>
             <View style={s.heroWrap}>
               <LivingPhoenixRoom
                 mood={avatarMotion.avatarMood}
@@ -412,6 +491,7 @@ export default function HomeScreen() {
                 presenceLabel={`${petName} with ${caregiver}`}
                 nextLabel={avatarMotion.label}
                 reaction={roomReaction}
+                statusReadouts={roomStats}
                 onPress={() => showToast(avatarMotion.line)}
               />
             </View>
@@ -751,6 +831,48 @@ const s = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
+  },
+  heroConsoleHeader: {
+    minHeight: 58,
+    borderBottomWidth: 1,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  heroConsoleTitleRow: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  heroConsoleCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  heroConsoleKicker: {
+    fontSize: 10,
+    letterSpacing: 0.9,
+  },
+  heroConsoleTitle: {
+    fontSize: 17,
+    lineHeight: 20,
+    marginTop: 1,
+  },
+  heroConsoleBadge: {
+    maxWidth: 132,
+    minHeight: 32,
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroConsoleBadgeText: {
+    fontSize: 11,
   },
   heroWrap: {
     width: "100%",

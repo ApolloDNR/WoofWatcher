@@ -62,6 +62,14 @@ export interface PhoenixRoomReaction {
   tone?: string;
 }
 
+export interface PhoenixRoomStat {
+  label: string;
+  value: string;
+  icon: PixelIconName;
+  tone?: string;
+  progress?: number;
+}
+
 interface Props {
   mood: Mood;
   motion: AvatarMotionModel;
@@ -70,6 +78,7 @@ interface Props {
   presenceLabel: string;
   nextLabel: string;
   reaction?: PhoenixRoomReaction | null;
+  statusReadouts?: readonly PhoenixRoomStat[];
   onPress?: () => void;
   presentation?: "home" | "studio";
 }
@@ -155,6 +164,12 @@ function energyBlocks(value: number): boolean[] {
   return Array.from({ length: 8 }).map((_, index) => index < filled);
 }
 
+function readoutBlocks(value?: number): boolean[] {
+  const normalized = Math.max(0, Math.min(100, value ?? 0));
+  const filled = Math.max(0, Math.min(7, Math.round((normalized / 100) * 7)));
+  return Array.from({ length: 7 }).map((_, index) => index < filled);
+}
+
 function speechLines(speech: string): string[] {
   return speech
     .split("\n")
@@ -171,6 +186,7 @@ export function LivingPhoenixRoom({
   presenceLabel,
   nextLabel,
   reaction,
+  statusReadouts,
   onPress,
   presentation = "home",
 }: Props) {
@@ -193,6 +209,33 @@ export function LivingPhoenixRoom({
   const animateBakedScene = !roomStageReady && !layeredStageReady;
   const lines = useMemo(() => speechLines(speech), [speech]);
   const hudAccent = HUD_TONE_COLOR[plan.hudTone] ?? theme.accent;
+  const roomStats = useMemo<PhoenixRoomStat[]>(
+    () =>
+      statusReadouts?.slice(0, 5) ?? [
+        {
+          label: "Mood",
+          value: plan.moodLabel,
+          icon: theme.status,
+          tone: theme.accent,
+          progress: mood === "unwell" ? 42 : mood === "anxious" ? 58 : 86,
+        },
+        {
+          label: "Energy",
+          value: `${Math.round(energy)}%`,
+          icon: "energy",
+          tone: theme.accent,
+          progress: energy,
+        },
+        {
+          label: "Cue",
+          value: plan.recommendedActionLabel,
+          icon: zone.icon,
+          tone: hudAccent,
+          progress: plan.scenePhase === "idle" ? 72 : 88,
+        },
+      ],
+    [energy, hudAccent, mood, plan.moodLabel, plan.recommendedActionLabel, plan.scenePhase, statusReadouts, theme.accent, theme.status, zone.icon],
+  );
   const [activeReaction, setActiveReaction] = useState<PhoenixRoomReaction | null>(reaction ?? null);
   const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -450,6 +493,44 @@ export function LivingPhoenixRoom({
       </View>
 
       {!isStudio ? (
+        <View style={[styles.roomStatsPanel, { backgroundColor: "rgba(255,249,239,0.93)", borderColor: "rgba(8,26,42,0.18)" }]}>
+          <View style={styles.roomStatsHeader}>
+            <Text style={[styles.roomStatsTitle, { color: colors.navy }]}>STATUS</Text>
+            <View style={[styles.roomStatsSignal, { backgroundColor: hudAccent }]} />
+          </View>
+          {roomStats.map((stat) => (
+            <View key={stat.label} style={styles.roomStatRow}>
+              <PixelIcon name={stat.icon} size={15} />
+              <View style={styles.roomStatCopy}>
+                <View style={styles.roomStatTop}>
+                  <Text numberOfLines={1} style={[styles.roomStatLabel, { color: colors.navy }]}>
+                    {stat.label}
+                  </Text>
+                  <Text numberOfLines={1} style={[styles.roomStatValue, { color: stat.tone ?? hudAccent }]}>
+                    {stat.value}
+                  </Text>
+                </View>
+                <View style={styles.roomStatBlocks}>
+                  {readoutBlocks(stat.progress).map((active, index) => (
+                    <View
+                      key={`${stat.label}-${index}`}
+                      style={[
+                        styles.roomStatBlock,
+                        {
+                          backgroundColor: active ? stat.tone ?? hudAccent : colors.muted,
+                          borderColor: active ? stat.tone ?? hudAccent : colors.border,
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {!isStudio ? (
         <View style={[styles.speechBubble, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
           {(lines.length ? lines : ["I'm ready."]).map((line) => (
             <Text key={line} style={[styles.speechText, { color: colors.navy }]}>
@@ -653,10 +734,10 @@ const styles = StyleSheet.create({
   },
   speechBubble: {
     position: "absolute",
-    top: "16%",
-    right: "5%",
-    width: "44%",
-    minHeight: 82,
+    top: 50,
+    left: 18,
+    width: "43%",
+    minHeight: 78,
     borderRadius: 2,
     borderWidth: 2,
     paddingHorizontal: 12,
@@ -691,6 +772,78 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     zIndex: 5,
+  },
+  roomStatsPanel: {
+    position: "absolute",
+    top: 48,
+    right: 12,
+    width: 126,
+    borderRadius: 4,
+    borderWidth: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    gap: 7,
+    zIndex: 6,
+    shadowColor: "#081424",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+  },
+  roomStatsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 6,
+  },
+  roomStatsTitle: {
+    fontFamily: "Fredoka_700Bold",
+    fontSize: 9,
+    letterSpacing: 0.8,
+  },
+  roomStatsSignal: {
+    width: 20,
+    height: 7,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: "rgba(8,26,42,0.2)",
+  },
+  roomStatRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  roomStatCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+  },
+  roomStatTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  roomStatLabel: {
+    flex: 1,
+    minWidth: 0,
+    fontFamily: "Inter_700Bold",
+    fontSize: 8.5,
+    textTransform: "uppercase",
+  },
+  roomStatValue: {
+    maxWidth: 48,
+    fontFamily: "Fredoka_700Bold",
+    fontSize: 10,
+  },
+  roomStatBlocks: {
+    flexDirection: "row",
+    gap: 2,
+  },
+  roomStatBlock: {
+    flex: 1,
+    height: 8,
+    minWidth: 4,
+    borderRadius: 1,
+    borderWidth: 1,
   },
   statusPatchCopy: {
     gap: 1,
