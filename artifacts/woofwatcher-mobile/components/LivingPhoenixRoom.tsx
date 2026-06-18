@@ -45,6 +45,14 @@ const STATE_SCENES: Record<Mood, ImageSourcePropType> = {
   unwell: ROOM_SCENE,
 };
 
+const PHOENIX_FALLBACK_AVATARS: Record<Mood, ImageSourcePropType> = {
+  happy: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2.png"),
+  excited: require("@/assets/avatar/phoenix/approved/phoenix-proud-happy-v2.png"),
+  calm: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2.png"),
+  anxious: require("@/assets/avatar/phoenix/approved/phoenix-home-alone-anxious-v2.png"),
+  unwell: require("@/assets/avatar/phoenix/approved/phoenix-sleep-rest-v2.png"),
+};
+
 export interface PhoenixRoomReaction {
   id: number;
   icon: PixelIconName;
@@ -174,7 +182,11 @@ export function LivingPhoenixRoom({
   const roomLayer = useMemo(() => getCareTwinRoomLayer(mood), [mood]);
   const layerReadiness = useMemo(() => getCareTwinLayerReadiness(plan.spriteAction, mood), [mood, plan.spriteAction]);
   const layeredStageReady = layerReadiness.layeredReady && Boolean(spriteAsset && roomLayer);
-  const stageSource = layeredStageReady && roomLayer ? roomLayer.source : sceneSource;
+  const roomStageReady = Boolean(roomLayer);
+  const stageSource = roomLayer?.source ?? sceneSource;
+  const fallbackAvatarSource = PHOENIX_FALLBACK_AVATARS[mood];
+  const useFallbackAvatarLayer = roomStageReady && !layeredStageReady;
+  const animateBakedScene = !roomStageReady && !layeredStageReady;
   const lines = useMemo(() => speechLines(speech), [speech]);
   const hudAccent = HUD_TONE_COLOR[plan.hudTone] ?? theme.accent;
   const [activeReaction, setActiveReaction] = useState<PhoenixRoomReaction | null>(reaction ?? null);
@@ -327,7 +339,7 @@ export function LivingPhoenixRoom({
       <Animated.Image
         source={stageSource}
         resizeMode="cover"
-        style={[styles.scene, layeredStageReady ? null : sceneMotionStyle]}
+        style={[styles.scene, animateBakedScene ? sceneMotionStyle : null]}
       />
       <LinearGradient
         colors={[theme.wash, "rgba(255,249,239,0)", "rgba(8,20,36,0.28)"]}
@@ -367,6 +379,30 @@ export function LivingPhoenixRoom({
             height={spriteZone.height}
             track={plan.spriteTrack}
             width={spriteZone.width}
+          />
+        </Animated.View>
+      ) : null}
+
+      {useFallbackAvatarLayer ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.spriteRig,
+            {
+              left: spriteZone.left,
+              top: spriteZone.top,
+              width: spriteZone.width,
+              height: spriteZone.height,
+            },
+            spriteRigStyle,
+          ]}
+          testID="care-twin-fallback-avatar-rig"
+        >
+          <View style={[styles.spriteGroundShadow, { backgroundColor: theme.glow }]} />
+          <Animated.Image
+            source={fallbackAvatarSource}
+            resizeMode="contain"
+            style={styles.fallbackAvatar}
           />
         </Animated.View>
       ) : null}
@@ -545,6 +581,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     opacity: 0.35,
     transform: [{ scaleX: 1.25 }],
+  },
+  fallbackAvatar: {
+    width: "100%",
+    height: "100%",
   },
   spark: {
     position: "absolute",

@@ -236,6 +236,10 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(room, /getCareTwinLayerReadiness/);
   assert.match(room, /layeredStageReady/);
   assert.match(room, /care-twin-layered-sprite-rig/);
+  assert.match(room, /PHOENIX_FALLBACK_AVATARS/);
+  assert.match(room, /useFallbackAvatarLayer/);
+  assert.match(room, /care-twin-fallback-avatar-rig/);
+  assert.match(room, /roomLayer\?\.source \?\? sceneSource/);
   assert.match(room, /ROOM_ZONES/);
   assert.match(room, /STATE_SCENES/);
   assert.match(room, /sceneMotionStyle/);
