@@ -14,7 +14,7 @@ Latest local evidence, 2026-06-18:
 
 - PASS: 237 focused tests with the command above.
 - PASS: mobile TypeScript check with bundled Node and workspace TypeScript.
-- PASS: PixelLab asset verifier checked 31 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
+- PASS: PixelLab asset verifier checked 39 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` is currently blocked before job start by the account billing/spending-limit issue documented in `docs/BLOCKERS_FOR_APOLLO.md`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 
 ## Required Automated Coverage

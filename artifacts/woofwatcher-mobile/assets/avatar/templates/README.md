@@ -33,6 +33,14 @@ Template to PixelLab object map:
 - `retriever/base.png`: `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
 - `husky/base.png`: `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
 - `doodle/base.png`: `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
+- `bully/base.png`: `19c0de83-fd9a-4cea-a8c0-719cc6d05c48`
+- `terrier/base.png`: `8f45fa96-9f37-44c3-bdf6-a9e8990aad52`
+- `hound/base.png`: `611f9723-733d-4636-9c17-31cfc31a16bb`
+- `toy/base.png`: `19c35278-7028-4064-882d-715a6b741652`
+- `spaniel/base.png`: `b67cf12f-99f7-4038-8f52-e1c9aa3b6575`
+- `dachshund/base.png`: `1aea4cf3-8e3e-485a-8ae3-eb5e501ee599`
+- `slender/base.png`: `f6e41dfd-c01e-4f3a-904a-480425e8427f`
+- `mixed/base.png`: `faf7a705-1eaa-4119-bdae-5156772c5453`
 
 Rules:
 

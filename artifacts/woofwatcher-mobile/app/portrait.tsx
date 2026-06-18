@@ -29,6 +29,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
+import { deriveAvatarPreviewAccessories, deriveAvatarPreviewMood } from "@/lib/avatarPreviewModel";
 import {
   AVATAR_ACCESSORIES,
   AVATAR_EMOTE_STATES,
@@ -152,6 +153,7 @@ export default function PortraitScreen() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [activeTab, setActiveTab] = useState<StudioTab>("scan");
   const [draft, setDraft] = useState<PetAvatarConfig>(() => avatarConfig);
+  const [previewEmote, setPreviewEmote] = useState<AvatarEmoteState>("happy");
   const [sourceUri, setSourceUri] = useState<string | null>(null);
   const [scanLine, setScanLine] = useState(0);
   const [savedToast, setSavedToast] = useState<string | null>(null);
@@ -245,6 +247,8 @@ export default function PortraitScreen() {
   const selectedTemplate = getAvatarTemplate(draft.templateId);
   const selectedTemplateBase = getAvatarTemplateBaseSource(draft.templateId);
   const selectedTemplateCardSource = selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
+  const previewAccessories = useMemo(() => deriveAvatarPreviewAccessories(draft), [draft]);
+  const previewMood = useMemo(() => deriveAvatarPreviewMood(previewEmote), [previewEmote]);
   const avatarSummary = describeAvatarConfig(draft);
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
   const avatarMotion = useMemo(
@@ -263,6 +267,12 @@ export default function PortraitScreen() {
   const reticleOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.34, 0.84] });
   const templateLift = templateLife.interpolate({ inputRange: [0, 1], outputRange: [0, -5] });
   const templateScale = templateLife.interpolate({ inputRange: [0, 1], outputRange: [1, 1.018] });
+  const heroSpeech =
+    activeTab === "emotes"
+      ? previewMood.copy
+      : activeTab === "customize"
+      ? "Make me yours."
+      : "I'm ready!";
 
   const ensurePermission = async (camera: boolean) => {
     if (Platform.OS === "web") return true;
@@ -381,6 +391,16 @@ export default function PortraitScreen() {
               {selectedTemplateBase ? (
                 <View style={s.templatePreviewStage}>
                   <Image source={PIXEL_ROOM_SOURCE} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
+                  <View style={[s.templateMoodAura, { backgroundColor: previewMood.auraColor }]} pointerEvents="none" />
+                  {previewAccessories.some((layer) => layer.kind === "bed") ? (
+                    <View
+                      style={[
+                        s.templateAccessoryBed,
+                        { backgroundColor: previewAccessories.find((layer) => layer.kind === "bed")?.tone ?? colors.stone },
+                      ]}
+                      pointerEvents="none"
+                    />
+                  ) : null}
                   <LinearGradient
                     colors={["rgba(255,249,239,0.08)", "rgba(8,26,42,0.16)"]}
                     style={StyleSheet.absoluteFill}
@@ -395,15 +415,47 @@ export default function PortraitScreen() {
                     ]}
                   >
                     <Image source={selectedTemplateBase} style={s.templateHeroDog} contentFit="contain" transition={180} />
+                    {previewAccessories.map((layer) => {
+                      switch (layer.kind) {
+                        case "bandana":
+                          return <View key={layer.id} style={[s.templateBandana, { backgroundColor: layer.tone }]} pointerEvents="none" />;
+                        case "collar":
+                          return <View key={layer.id} style={[s.templateCollar, { borderColor: layer.tone }]} pointerEvents="none" />;
+                        case "hat":
+                          return (
+                            <View key={layer.id} style={[s.templateHatWrap, { borderBottomColor: layer.tone }]} pointerEvents="none">
+                              <View style={[s.templateHatPom, { backgroundColor: layer.tone }]} />
+                            </View>
+                          );
+                        case "mask":
+                          return <View key={layer.id} style={[s.templateMask, { backgroundColor: layer.tone }]} pointerEvents="none" />;
+                        case "vest":
+                          return <View key={layer.id} style={[s.templateVest, { backgroundColor: layer.tone }]} pointerEvents="none" />;
+                        case "sparkles":
+                          return (
+                            <View key={layer.id} style={s.templateSparkleCluster} pointerEvents="none">
+                              <View style={[s.templateSparkle, s.templateSparkleOne, { backgroundColor: layer.tone }]} />
+                              <View style={[s.templateSparkle, s.templateSparkleTwo, { backgroundColor: layer.tone }]} />
+                              <View style={[s.templateSparkle, s.templateSparkleThree, { backgroundColor: layer.tone }]} />
+                            </View>
+                          );
+                        default:
+                          return null;
+                      }
+                    })}
                   </Animated.View>
                   <View style={[s.templateSpeech, { backgroundColor: colors.ivory, borderColor: colors.navy }]}>
                     <Text style={[s.templateSpeechText, { color: colors.navy, fontFamily: DISPLAY }]}>
-                      {activeTab === "emotes" ? "Try my moods." : activeTab === "customize" ? "Make me yours." : "I'm ready!"}
+                      {heroSpeech}
                     </Text>
                   </View>
                   <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.92)", borderColor: colors.border }]}>
-                    <Text style={[s.templateHeroKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>BASE ART</Text>
+                    <Text style={[s.templateHeroKicker, { color: previewMood.chipColor, fontFamily: "Inter_700Bold" }]}>LAYERED PREVIEW</Text>
                     <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
+                    <Text style={[s.templateHeroMood, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      {emoteLabel(previewEmote)}
+                      {previewAccessories.length ? ` • ${previewAccessories.length} live layer${previewAccessories.length === 1 ? "" : "s"}` : ""}
+                    </Text>
                   </View>
                 </View>
               ) : (
@@ -682,9 +734,27 @@ export default function PortraitScreen() {
           <BoardCard style={s.avatarBoard}>
             <BoardSectionHeader title="Mood set" action={draft.emotePackId === "phoenix-shepherd" ? "Phoenix pack" : "Starter"} />
             <View style={s.moodGrid}>
-              {AVATAR_EMOTE_STATES.map((emote) => (
-                <View key={emote} style={s.moodChip}>
-                  <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
+              {AVATAR_EMOTE_STATES.map((emote) => {
+                const active = previewEmote === emote;
+                const moodPreview = deriveAvatarPreviewMood(emote);
+                return (
+                  <Pressable
+                    key={emote}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Preview ${emoteLabel(emote)} mood`}
+                    onPress={() => setPreviewEmote(emote)}
+                    style={s.moodChip}
+                  >
+                    <View
+                      style={[
+                        s.moodThumbWrap,
+                        {
+                          borderColor: active ? moodPreview.chipColor : colors.border,
+                          backgroundColor: active ? moodPreview.auraColor : colors.card,
+                        },
+                      ]}
+                    >
                     <Image source={PIXEL_HEAD_SOURCE} style={s.moodThumb} contentFit="cover" transition={150} />
                     <View
                       pointerEvents="none"
@@ -705,12 +775,21 @@ export default function PortraitScreen() {
                     <View style={[s.emoteIcon, { backgroundColor: colors.ivory }]}>
                       <PixelIcon name={EMOTE_ICON[emote]} size={18} />
                     </View>
-                  </View>
-                  <Text style={[s.moodChipLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {emoteLabel(emote)}
-                  </Text>
-                </View>
-              ))}
+                    </View>
+                    <Text
+                      style={[
+                        s.moodChipLabel,
+                        {
+                          color: active ? colors.foreground : colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {emoteLabel(emote)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </BoardCard>
         ) : null}
@@ -830,6 +909,96 @@ const s = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  templateMoodAura: {
+    position: "absolute",
+    left: 40,
+    right: 40,
+    top: 24,
+    bottom: 56,
+    borderRadius: 120,
+  },
+  templateAccessoryBed: {
+    position: "absolute",
+    bottom: 28,
+    left: "50%",
+    marginLeft: -62,
+    width: 124,
+    height: 28,
+    borderRadius: 18,
+    opacity: 0.48,
+  },
+  templateBandana: {
+    position: "absolute",
+    top: 88,
+    width: 48,
+    height: 18,
+    borderRadius: 10,
+    opacity: 0.94,
+  },
+  templateCollar: {
+    position: "absolute",
+    top: 90,
+    width: 44,
+    height: 14,
+    borderRadius: 9,
+    borderWidth: 3,
+    backgroundColor: "rgba(255,249,239,0.72)",
+  },
+  templateHatWrap: {
+    position: "absolute",
+    top: 2,
+    left: "50%",
+    marginLeft: -18,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 18,
+    borderRightWidth: 18,
+    borderBottomWidth: 28,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    transform: [{ rotate: "-6deg" }],
+  },
+  templateHatPom: {
+    position: "absolute",
+    top: -8,
+    left: -5,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  templateMask: {
+    position: "absolute",
+    top: 60,
+    width: 56,
+    height: 16,
+    borderRadius: 10,
+    opacity: 0.82,
+  },
+  templateVest: {
+    position: "absolute",
+    top: 98,
+    width: 58,
+    height: 38,
+    borderRadius: 16,
+    opacity: 0.76,
+  },
+  templateSparkleCluster: {
+    position: "absolute",
+    top: 40,
+    right: 12,
+    width: 42,
+    height: 38,
+  },
+  templateSparkle: {
+    position: "absolute",
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    opacity: 0.92,
+  },
+  templateSparkleOne: { top: 4, right: 5 },
+  templateSparkleTwo: { top: 14, left: 4 },
+  templateSparkleThree: { bottom: 2, right: 14 },
   templateSpeech: {
     position: "absolute",
     left: 24,
@@ -854,6 +1023,7 @@ const s = StyleSheet.create({
   },
   templateHeroKicker: { fontSize: 8.5, letterSpacing: 0.8, textTransform: "uppercase" },
   templateHeroTitle: { fontSize: 17, lineHeight: 20 },
+  templateHeroMood: { fontSize: 11, lineHeight: 14 },
   pixelFrameOverlay: {
     position: "absolute",
     left: 14,

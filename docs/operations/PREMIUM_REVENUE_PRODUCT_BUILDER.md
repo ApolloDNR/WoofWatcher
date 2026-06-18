@@ -106,6 +106,6 @@ Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA when provider/runtime access is available.
 2. Replace first-pass derived room variants with final illustrated room art.
-3. Continue production-scale Avatar Studio template packs: remaining template base art, emotes/sprites, and accessory layers.
+3. Continue production-scale Avatar Studio template packs: accessory layers, emote stills, and sprite strips now that the full 12-template base pack is registered.
 4. Continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.

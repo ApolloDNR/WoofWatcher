@@ -953,6 +953,22 @@ Owner: Codex.
 
 Revisit trigger: A final Figma/Fable/PixelLab component renderer replaces static base stills with fully composited template bodies or live sprite previews.
 
+### 2026-06-18: Avatar Studio Can Treat All 12 Launch Templates As Base-Art Ready
+
+Decision: Avatar Studio now registers `base.png` for every launch template instead of mixing four production stills with thumbnail fallbacks, and the creator preview may show layered mood/accessory overlays on top of those base stills while accessory PNG packs are still in production.
+
+Reason: The remaining thumbnail fallbacks made the template picker feel premium while the hero preview still looked unfinished for most breeds. A complete 12-template base pack gives the character creator a consistent production-scale review surface now, and code-layered overlays let customization choices feel alive without pretending the final accessory art packs already exist.
+
+Consequences:
+
+- `avatarTemplateAssets.ts` now registers base stills for all 12 launch templates.
+- `verify-pixellab-assets.js` and the mobile readiness suite now treat all 12 `base.png` files as required assets.
+- Avatar Studio's hero preview can show selected mood and accessory state as a truthful layered preview while final overlay PNGs and sprite packs remain separate asset work.
+
+Owner: Codex.
+
+Revisit trigger: Final accessory overlays, emote stills, or live template sprite packs replace the temporary code-layered preview contract.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

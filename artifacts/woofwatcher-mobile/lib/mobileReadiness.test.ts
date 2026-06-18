@@ -554,6 +554,13 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_BASE_ASSETS/);
   assert.match(avatarTemplateAssets, /pixellab-template-preview/);
   assert.match(avatarTemplateAssets, /pixellab-template-base/);
+  assert.match(avatarStudio, /deriveAvatarPreviewAccessories/);
+  assert.match(avatarStudio, /deriveAvatarPreviewMood/);
+  assert.match(avatarStudio, /previewEmote/);
+  assert.match(avatarStudio, /LAYERED PREVIEW/);
+  assert.match(avatarStudio, /templateBandana/);
+  assert.match(avatarStudio, /templateVest/);
+  assert.match(avatarStudio, /Preview \$\{emoteLabel\(emote\)\} mood/);
   for (const templateId of templateIds) {
     assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));
     const size = readPngSize(
@@ -561,7 +568,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     );
     assert.deepEqual(size, { width: 85, height: 85 }, `${templateId} preview should be a PixelLab 85x85 thumbnail`);
   }
-  for (const templateId of ["shepherd", "retriever", "husky", "doodle"]) {
+  for (const templateId of templateIds) {
     assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/base\\.png`));
     const size = readPngSize(
       join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", templateId, "base.png"),
@@ -621,7 +628,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(verifier, /PixelLab asset check complete/);
   assert.match(verifier, /readUInt32BE\(16\)/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, 12 Avatar Studio template preview thumbnails, and the first Shepherd\/Retriever\/Husky\/Doodle template base stills/);
+  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, 12 Avatar Studio template preview thumbnails, and the full 12-template base still pack now exist locally/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
 
