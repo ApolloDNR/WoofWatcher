@@ -117,7 +117,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 109. DONE 2026-06-18: Generated, normalized, visually checked, registered, and tested the Doodle live Avatar Studio sprite pack. Doodle now has idle/tail-wag and standing-source walk loops, with the strongest non-Phoenix walk read so far.
 110. DONE 2026-06-18: Generated, normalized, visually checked, registered, and tested the Terrier live Avatar Studio sprite pack. Terrier now has idle/tail-wag and standing-source walk loops, and Avatar Studio now shows live/still template readiness badges plus a live-template count so unfinished templates feel intentionally in production instead of broken.
 111. DONE 2026-06-18: Generated, normalized, visually checked, registered, and tested the Hound live Avatar Studio sprite pack. Hound now has idle/tail-wag and standing-source side-view walk loops, and the Avatar Studio live-template routing/pixel-stage polish now treats all completed template packs as animated care twins instead of still previews.
-112. NEXT: Continue template sprite packs for Dachshund, Spaniel, Toy Breed, Slender, and Mixed Breed, using a standing source pose before walk-loop generation when the base still is seated; also improve Retriever/Husky/Bully/Doodle/Terrier/Hound gait loops if native/visual QA shows they need cleaner phone-size motion.
+112. DONE 2026-06-18: Generated, normalized, visually checked, registered, and tested the Dachshund live Avatar Studio sprite pack. Dachshund now has idle/tail-wag and long-body side-view walk loops, expanding live prebuilt avatars to seven launch templates.
+113. NEXT: Continue template sprite packs for Spaniel, Toy Breed, Slender, and Mixed Breed, using a standing source pose before walk-loop generation when the base still is seated or front-facing; also improve Retriever/Husky/Bully/Doodle/Terrier/Hound/Dachshund gait loops if native/visual QA shows they need cleaner phone-size motion.
 
 ## Cadence
 

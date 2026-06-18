@@ -385,8 +385,23 @@ Tightened the care-twin creator toward the Option B neo-retro digital pet boards
 Remaining visual work:
 
 - Capture native iOS/Android screenshots for final safe-area, animation pacing, and phone-size sprite proportion QA.
-- Continue PixelLab template sprite packs for Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed.
+- Continue PixelLab template sprite packs for Spaniel, Toy, Slender, and Mixed Breed.
 - Add artist-reviewed overlay alignment for accessories so hats/collars/bandanas stay locked to each breed's body anchor.
+
+## 2026-06-18 Dachshund Live Sprite Pack Pass
+
+Added the first long-body Avatar Studio live template pack:
+
+- Generated a PixelLab side-view Dachshund live source from the approved base template and accepted it over a prompt-only backup source because the silhouette and palette were stronger.
+- Promoted two transparent 2048x256 sprite strips under `assets/avatar/templates/dachshund/sprites/`: `idle-tail-wag-strip.png` and `walk-loop-strip.png`.
+- Registered the Dachshund pack in `avatarTemplateSpriteAssets.ts`, added it to the live-template preview model, and moved the still-preview regression test to Spaniel.
+- Extended `verify-pixellab-assets.js` and mobile readiness coverage so Dachshund live strips must remain present at 8-frame, 256px-slot dimensions.
+
+Remaining visual work:
+
+- Generate live sprite packs for Spaniel, Toy Breed, Slender, and Mixed Breed.
+- Add Dachshund emote stills and overlay-aligned accessories after the remaining body-class motion packs are complete.
+- Native phone-size QA should confirm the short-leg walk loop reads clearly in the Avatar Studio room.
 
 ## 2026-06-18 Retriever Starter Emote Pack Pass
 

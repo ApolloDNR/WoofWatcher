@@ -605,3 +605,23 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
 - UX update: `/portrait` now treats completed live template packs as animated preview citizens in the motion model and adds a tighter pixel-stage floor/live chip so the selected care twin reads as one in-scene game sprite.
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. The Hound side-view walk has a clean first-pass gait and should receive native phone-size timing review before final store polish.
+
+### Dachshund Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_object_state`, `create_1_direction_object` for backup comparison, `select_object_frames`, then `animate_object`.
+- Source base object ID: `8fbb402b-579d-478c-bcad-fd21e61cf530`
+- Accepted side-view live source object ID: `ebd40e4b-2e60-413d-a892-aa4a845ffba5`
+- Backup prompt-only review object ID: `76daf76c-e688-4294-9954-de4b32566669`
+- Backup selected object ID, not used for final local strips: `80b50c41-cf3c-44d2-b26e-606da8e362dd`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `67c0f82b-f46f-4740-a954-a700b75c910e`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ebd40e4b-2e60-413d-a892-aa4a845ffba5/animations/67c0f82b-f46f-4740-a954-a700b75c910e/unknown/{i}.png`.
+  - Walk loop: animation ID `1a49feec-30dd-4a1c-a8c2-907abd759fa0`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ebd40e4b-2e60-413d-a892-aa4a845ffba5/animations/1a49feec-30dd-4a1c-a8c2-907abd759fa0/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/dachshund/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. The accepted source preserves the long-body silhouette better than the prompt-only backup and gives Dachshund its own live game-style motion instead of a still preview.

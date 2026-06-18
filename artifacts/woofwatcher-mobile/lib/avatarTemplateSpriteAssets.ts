@@ -66,6 +66,42 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       },
     },
   },
+  dachshund: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Dachshund live idle",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png"),
+      ),
+      track: {
+        key: "dachshund:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Dachshund side-view idle breathing and soft tail wag loop.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Dachshund walk loop",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/dachshund/sprites/walk-loop-strip.png"),
+      ),
+      track: {
+        key: "dachshund:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/dachshund/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Dachshund long-body side-view walking-in-place loop for live Avatar Studio preview.",
+      },
+    },
+  },
   doodle: {
     "idle-tail-wag": {
       action: "idle-tail-wag",

@@ -77,7 +77,7 @@ test("uses live template sprite packs for completed launch breed previews", () =
 });
 
 test("keeps unfinished templates on truthful still previews", () => {
-  const motion = deriveAvatarPreviewMotion("dachshund", "calm");
+  const motion = deriveAvatarPreviewMotion("spaniel", "calm");
 
   assert.equal(motion.mode, "still");
   assert.equal(motion.label, "Starter still preview");

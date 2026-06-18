@@ -12,6 +12,7 @@ export type AvatarPreviewLayerKind = "bandana" | "collar" | "hat" | "mask" | "ve
 
 const LIVE_TEMPLATE_PACKS = new Set<AvatarTemplateId>([
   "bully",
+  "dachshund",
   "doodle",
   "hound",
   "husky",
