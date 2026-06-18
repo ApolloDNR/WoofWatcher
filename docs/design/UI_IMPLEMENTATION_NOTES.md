@@ -294,6 +294,21 @@ Expanded the care-twin runtime from proof-of-life loops into full state coverage
 - Added first-pass dogless room variants for night, bedtime, health-watch, and home-alone, then routed sprite actions to the appropriate room mood.
 - Kept final illustrated room variants and native device motion QA as the next visual quality gates.
 
+## 2026-06-18 Avatar Studio Live Care Twin Preview Pass
+
+Moved Avatar Studio closer to the selected neo-retro boards:
+
+- Replaced the generic board hero preview on `/portrait` with the same `LivingPhoenixRoom` layered renderer used by Phoenix Home.
+- Pointed the scan fallback image at the dogless PixelLab room instead of `assets/board/hero.png`.
+- Derived Avatar Studio preview mood from the real care state via `derivePhoenixStatus` and `deriveAvatarMotion`, so the studio inherits the same living dog behavior as Home.
+- Added readiness coverage that requires `LivingPhoenixRoom`, PixelLab room art, and the motion/status models on Avatar Studio while forbidding the old board hero reference.
+
+Remaining visual work:
+
+- Replace template tiles with real breed/template preview art instead of icon placeholders.
+- Add accessory sprites for collars, bandanas, hats, glasses, and props.
+- Run visual QA on a live device/browser preview once the local preview server and package-manager path are available.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

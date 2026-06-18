@@ -23,10 +23,12 @@ import {
   BoardRouteHeader,
   BoardSectionHeader,
 } from "@/components/board/BoardPrimitives";
+import { LivingPhoenixRoom } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import {
   AVATAR_ACCESSORIES,
   AVATAR_EMOTE_STATES,
@@ -41,10 +43,10 @@ import {
   type AvatarTemplateId,
   type PetAvatarConfig,
 } from "@/lib/avatarStudio";
+import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
 const DISPLAY = "Fredoka_700Bold";
-const DISPLAY_SEMI = "Fredoka_600SemiBold";
-const PIXEL_ROOM_SOURCE = require("@/assets/board/hero.png");
+const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day.png");
 const PIXEL_HEAD_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main-head-v2.png");
 
 type Phase = "idle" | "working" | "result";
@@ -149,6 +151,7 @@ export default function PortraitScreen() {
   const [sourceUri, setSourceUri] = useState<string | null>(null);
   const [scanLine, setScanLine] = useState(0);
   const [savedToast, setSavedToast] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const scanSuggestion = useMemo(() => buildMockScanSuggestion(petName), [petName]);
 
   const scanAnim = useRef(new Animated.Value(0)).current;
@@ -157,6 +160,11 @@ export default function PortraitScreen() {
   useEffect(() => {
     setDraft(avatarConfig);
   }, [avatarConfig]);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (phase !== "working") return;
@@ -206,6 +214,19 @@ export default function PortraitScreen() {
 
   const selectedTemplate = getAvatarTemplate(draft.templateId);
   const avatarSummary = describeAvatarConfig(draft);
+  const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const avatarMotion = useMemo(
+    () =>
+      deriveAvatarMotion({
+        entries: state.entries,
+        routines: state.routines,
+        caregivers: state.caregivers,
+        now,
+        energy: status.energy,
+      }),
+    [state.entries, state.routines, state.caregivers, now, status.energy],
+  );
+  const caregiver = state.caregivers[0]?.name ?? "Emma";
   const scanTranslate = scanAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 250] });
   const reticleOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.34, 0.84] });
 
@@ -322,7 +343,16 @@ export default function PortraitScreen() {
           </BoardCard>
         ) : (
           <BoardCard padded={false} style={s.heroPreview}>
-            <Image source={PIXEL_ROOM_SOURCE} style={s.heroImg} contentFit="cover" transition={200} />
+            <View style={s.liveRoomStage}>
+              <LivingPhoenixRoom
+                mood={avatarMotion.avatarMood}
+                motion={avatarMotion}
+                speech={activeTab === "emotes" ? "Try my moods." : activeTab === "customize" ? "Make me Phoenix." : "I'm ready."}
+                energy={status.energy}
+                presenceLabel={`${petName} with ${caregiver}`}
+                nextLabel={activeTab === "scan" ? "Scan or choose a template" : selectedTemplate.label}
+              />
+            </View>
             <View style={s.pixelFrameOverlay} pointerEvents="none">
               <View style={[s.pixelIdCard, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
                 <Image source={PIXEL_HEAD_SOURCE} style={s.pixelHead} contentFit="cover" transition={160} />
@@ -693,8 +723,13 @@ const s = StyleSheet.create({
     overflow: "hidden",
     aspectRatio: 0.96,
     marginBottom: 12,
+    backgroundColor: "#081424",
+    position: "relative",
   },
-  heroImg: { width: "100%", height: "100%" },
+  liveRoomStage: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden",
+  },
   pixelFrameOverlay: {
     position: "absolute",
     left: 14,

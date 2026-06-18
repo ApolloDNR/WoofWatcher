@@ -512,7 +512,12 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /Save Avatar/);
   assert.match(avatarStudio, /AVATAR_EMOTE_STATES/);
   assert.match(avatarStudio, /PIXEL_ROOM_SOURCE/);
+  assert.match(avatarStudio, /LivingPhoenixRoom/);
+  assert.match(avatarStudio, /deriveAvatarMotion/);
+  assert.match(avatarStudio, /derivePhoenixStatus/);
+  assert.match(avatarStudio, /phoenix-room-day\.png/);
   assert.match(avatarStudio, /phoenix-main-head-v2\.png/);
+  assert.doesNotMatch(avatarStudio, /assets\/board\/hero\.png/);
   assert.doesNotMatch(avatarStudio, /getAvatarSource\("happy"\)/);
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);

@@ -93,7 +93,7 @@ Use board 05 as the primary Phoenix Home/avatar target and board 06 as the suppo
 - Layered sprite runtime: `SpriteSheetPlayer` can crop and animate registered sprite strips. `careTwinAssets.ts` now registers idle-breathe, tail-wag, ear-perk, walk, eat, drink, sleep, comfort, celebrate, health-watch, the day room, and first-pass night/bedtime/health/home-alone room variants.
 - Health/Bile Watch: board metric tiles and Bile Watch status pill.
 - Log, Plans, More, Records, WoofGuide, Avatar Studio: shared board route header slots ready for final icon/animation polish.
-- Avatar Studio: V1 template/config system is wired with scan-assisted mock suggestions, editable coat/face/accessory slots, emote preview, and local save. It still needs final template art and sprite/emote assets.
+- Avatar Studio: V1 template/config system is wired with scan-assisted mock suggestions, editable coat/face/accessory slots, emote preview, local save, and the live layered `LivingPhoenixRoom` preview. It still needs final breed template art, accessory sprites, and stronger prop-specific emote assets.
 - Pixel placeholder pack: `assets/avatar/pixel/` is now fallback/reference only.
 - PixelLab v2 approved pack: `assets/avatar/phoenix/approved/` is the active default app avatar set.
 - PixelLab v2 live sprite strips: `assets/avatar/phoenix/idle-breathe-strip.png`, `tail-wag-strip.png`, `ear-perk-strip.png`, `walk-loop-strip.png`, `eat-loop-strip.png`, `drink-loop-strip.png`, `sleep-loop-strip.png`, `comfort-loop-strip.png`, `celebrate-hop-strip.png`, and `health-watch-strip.png`.
