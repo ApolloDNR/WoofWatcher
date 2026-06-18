@@ -55,6 +55,7 @@ import {
   getAvatarTemplateDisplaySource,
   getAvatarTemplateEmoteSource,
 } from "@/lib/avatarTemplateAssets";
+import { getAvatarTemplateReadiness } from "@/lib/avatarTemplateReadiness";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
@@ -257,8 +258,10 @@ export default function PortraitScreen() {
 
   const selectedTemplate = getAvatarTemplate(draft.templateId);
   const selectedTemplateBase = getAvatarTemplateBaseSource(draft.templateId);
+  const selectedTemplateDisplaySource = getAvatarTemplateDisplaySource(draft.templateId);
   const selectedTemplateEmote = getAvatarTemplateEmoteSource(draft.templateId, previewEmote);
   const selectedTemplateCardSource = selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
+  const templateReadiness = useMemo(() => getAvatarTemplateReadiness(draft.templateId), [draft.templateId]);
   const previewAccessories = useMemo(() => deriveAvatarPreviewAccessories(draft), [draft]);
   const previewAccessoryLayers = useMemo(
     () =>
@@ -415,28 +418,18 @@ export default function PortraitScreen() {
                 <View style={s.templatePreviewStage}>
                   <Image source={PIXEL_ROOM_SOURCE} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
                   <View style={[s.templateMoodAura, { backgroundColor: previewMood.auraColor }]} pointerEvents="none" />
-                  {previewAccessoryLayers.some((layer) => layer.kind === "bed" && layer.source) ? (
-                    previewAccessoryLayers
-                      .filter((layer) => layer.kind === "bed" && layer.source)
-                      .map((layer) => (
-                        <Image
-                          key={layer.id}
-                          source={layer.source}
-                          style={s.templateAccessoryLayer}
-                          contentFit="contain"
-                          transition={150}
-                          pointerEvents="none"
-                        />
-                      ))
-                  ) : previewAccessories.some((layer) => layer.kind === "bed") ? (
-                    <View
-                      style={[
-                        s.templateAccessoryBed,
-                        { backgroundColor: previewAccessories.find((layer) => layer.kind === "bed")?.tone ?? colors.stone },
-                      ]}
-                      pointerEvents="none"
-                    />
-                  ) : null}
+                  {previewAccessoryLayers
+                    .filter((layer) => layer.kind === "bed" && layer.source)
+                    .map((layer) => (
+                      <Image
+                        key={layer.id}
+                        source={layer.source}
+                        style={s.templateAccessoryLayer}
+                        contentFit="contain"
+                        transition={150}
+                        pointerEvents="none"
+                      />
+                    ))}
                   <LinearGradient
                     colors={["rgba(255,249,239,0.08)", "rgba(8,26,42,0.16)"]}
                     style={StyleSheet.absoluteFill}
@@ -473,46 +466,18 @@ export default function PortraitScreen() {
                         transition={180}
                       />
                     ) : null}
-                    {previewAccessoryLayers.map((layer) => {
-                      if (layer.kind !== "bed" && layer.source) {
-                        return (
-                          <Image
-                            key={layer.id}
-                            source={layer.source}
-                            style={s.templateAccessoryLayer}
-                            contentFit="contain"
-                            transition={150}
-                            pointerEvents="none"
-                          />
-                        );
-                      }
-                      switch (layer.kind) {
-                        case "bandana":
-                          return <View key={layer.id} style={[s.templateBandana, { backgroundColor: layer.tone }]} pointerEvents="none" />;
-                        case "collar":
-                          return <View key={layer.id} style={[s.templateCollar, { borderColor: layer.tone }]} pointerEvents="none" />;
-                        case "hat":
-                          return (
-                            <View key={layer.id} style={[s.templateHatWrap, { borderBottomColor: layer.tone }]} pointerEvents="none">
-                              <View style={[s.templateHatPom, { backgroundColor: layer.tone }]} />
-                            </View>
-                          );
-                        case "mask":
-                          return <View key={layer.id} style={[s.templateMask, { backgroundColor: layer.tone }]} pointerEvents="none" />;
-                        case "vest":
-                          return <View key={layer.id} style={[s.templateVest, { backgroundColor: layer.tone }]} pointerEvents="none" />;
-                        case "sparkles":
-                          return (
-                            <View key={layer.id} style={s.templateSparkleCluster} pointerEvents="none">
-                              <View style={[s.templateSparkle, s.templateSparkleOne, { backgroundColor: layer.tone }]} />
-                              <View style={[s.templateSparkle, s.templateSparkleTwo, { backgroundColor: layer.tone }]} />
-                              <View style={[s.templateSparkle, s.templateSparkleThree, { backgroundColor: layer.tone }]} />
-                            </View>
-                          );
-                        default:
-                          return null;
-                      }
-                    })}
+                    {previewAccessoryLayers
+                      .filter((layer) => layer.kind !== "bed" && layer.source)
+                      .map((layer) => (
+                        <Image
+                          key={layer.id}
+                          source={layer.source}
+                          style={s.templateAccessoryLayer}
+                          contentFit="contain"
+                          transition={150}
+                          pointerEvents="none"
+                        />
+                      ))}
                   </Animated.View>
                   <View style={[s.templateSpeech, { backgroundColor: colors.ivory, borderColor: colors.navy }]}>
                     <Text style={[s.templateSpeechText, { color: colors.navy, fontFamily: DISPLAY }]}>
@@ -525,8 +490,10 @@ export default function PortraitScreen() {
                     </Text>
                     <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
                     <Text style={[s.templateHeroMood, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      {emoteLabel(previewEmote)}
-                      {previewAccessories.length ? ` | ${previewAccessories.length} live layer${previewAccessories.length === 1 ? "" : "s"}` : ""}
+                      {emoteLabel(previewEmote)} | {templateReadiness.accessoryStatus}
+                    </Text>
+                    <Text style={[s.templateHeroMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      {templateReadiness.emoteStatus}
                     </Text>
                   </View>
                 </View>
@@ -769,6 +736,11 @@ export default function PortraitScreen() {
 
             <BoardCard style={s.avatarBoard}>
               <BoardSectionHeader title="Accessories" action="Slots" />
+              <Text style={[s.sectionHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {templateReadiness.liveAccessoryCount > 0
+                  ? `${templateReadiness.accessoryStatus}. Missing slots stay configurable now and get real art as each breed pack ships.`
+                  : "This template saves accessory choices now. Production overlay art is still pending for its breed pack."}
+              </Text>
               <View style={s.accessoryGrid}>
                 {AVATAR_ACCESSORIES.map((item) => {
                   const active = Object.values(draft.accessorySlots).includes(item.id);
@@ -804,7 +776,12 @@ export default function PortraitScreen() {
 
         {activeTab === "emotes" ? (
           <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader title="Mood set" action={draft.emotePackId === "phoenix-shepherd" ? "Phoenix pack" : "Starter"} />
+            <BoardSectionHeader title="Mood set" action={templateReadiness.emoteStatus} />
+            <Text style={[s.sectionHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {templateReadiness.hasAnimatedPreview
+                ? "Shepherd uses the live Phoenix sprite rig where production strips already exist."
+                : "This template stays on truthful still previews until its emote pack and animation strips are produced."}
+            </Text>
             <View style={s.moodGrid}>
               {AVATAR_EMOTE_STATES.map((emote) => {
                 const active = previewEmote === emote;
@@ -828,13 +805,18 @@ export default function PortraitScreen() {
                         },
                       ]}
                     >
-                    <Image source={moodStill ?? PIXEL_HEAD_SOURCE} style={s.moodThumb} contentFit="contain" transition={150} />
+                      <Image
+                        source={moodStill ?? selectedTemplateDisplaySource}
+                        style={s.moodThumb}
+                        contentFit="contain"
+                        transition={150}
+                      />
                     <View
                       pointerEvents="none"
                       style={[
                         s.moodWash,
                         {
-                          opacity: moodStill ? 0.24 : 1,
+                          opacity: moodStill ? 0.24 : 0.42,
                           backgroundColor:
                             emote === "not_feeling_well"
                               ? "rgba(201,99,88,0.22)"
@@ -1003,88 +985,6 @@ const s = StyleSheet.create({
     bottom: 56,
     borderRadius: 120,
   },
-  templateAccessoryBed: {
-    position: "absolute",
-    bottom: 28,
-    left: "50%",
-    marginLeft: -62,
-    width: 124,
-    height: 28,
-    borderRadius: 18,
-    opacity: 0.48,
-  },
-  templateBandana: {
-    position: "absolute",
-    top: 88,
-    width: 48,
-    height: 18,
-    borderRadius: 10,
-    opacity: 0.94,
-  },
-  templateCollar: {
-    position: "absolute",
-    top: 90,
-    width: 44,
-    height: 14,
-    borderRadius: 9,
-    borderWidth: 3,
-    backgroundColor: "rgba(255,249,239,0.72)",
-  },
-  templateHatWrap: {
-    position: "absolute",
-    top: 2,
-    left: "50%",
-    marginLeft: -18,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 18,
-    borderRightWidth: 18,
-    borderBottomWidth: 28,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-    transform: [{ rotate: "-6deg" }],
-  },
-  templateHatPom: {
-    position: "absolute",
-    top: -8,
-    left: -5,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  templateMask: {
-    position: "absolute",
-    top: 60,
-    width: 56,
-    height: 16,
-    borderRadius: 10,
-    opacity: 0.82,
-  },
-  templateVest: {
-    position: "absolute",
-    top: 98,
-    width: 58,
-    height: 38,
-    borderRadius: 16,
-    opacity: 0.76,
-  },
-  templateSparkleCluster: {
-    position: "absolute",
-    top: 40,
-    right: 12,
-    width: 42,
-    height: 38,
-  },
-  templateSparkle: {
-    position: "absolute",
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    opacity: 0.92,
-  },
-  templateSparkleOne: { top: 4, right: 5 },
-  templateSparkleTwo: { top: 14, left: 4 },
-  templateSparkleThree: { bottom: 2, right: 14 },
   templateSpeech: {
     position: "absolute",
     left: 24,
@@ -1110,6 +1010,7 @@ const s = StyleSheet.create({
   templateHeroKicker: { fontSize: 8.5, letterSpacing: 0.8, textTransform: "uppercase" },
   templateHeroTitle: { fontSize: 17, lineHeight: 20 },
   templateHeroMood: { fontSize: 11, lineHeight: 14 },
+  templateHeroMeta: { fontSize: 10.5, lineHeight: 13 },
   pixelFrameOverlay: {
     position: "absolute",
     left: 14,
@@ -1265,6 +1166,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   optionText: { fontSize: 12 },
+  sectionHint: { fontSize: 12.5, lineHeight: 18, marginBottom: 10 },
   accessoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   accessoryTile: {
     flexBasis: "47.5%",

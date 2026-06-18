@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-18: Avatar Studio Must Not Fake Production Overlay Readiness
+
+Decision: Avatar Studio should render live accessory/emote art only when a template has real file-backed pack assets, and unfinished templates should say that production overlays or moods are still pending instead of drawing generic stand-in costume shapes.
+
+Reason: The dog-care twin needs to feel premium and trustworthy. Generic fallback costume art makes Retriever, Husky, Doodle, and the remaining breeds look more finished than they are, which creates the same fake-progress problem Apollo keeps rejecting elsewhere in the product.
+
+Owner: Codex.
+
+Revisit trigger: Additional breed packs ship with real overlay/emote files, or the team approves a separate clearly-labeled wireframe preview mode for unfinished templates.
+
 ### 2026-06-18: Avatar Studio Uses Live Phoenix Motion Only Where Production Sprite Packs Exist
 
 Decision: Avatar Studio should animate the shepherd/Phoenix template with the real Phoenix sprite rig, while templates that only have base stills remain on explicit still-preview labeling until their own sprite packs are produced.

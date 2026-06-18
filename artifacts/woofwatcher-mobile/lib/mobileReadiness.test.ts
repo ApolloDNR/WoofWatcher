@@ -511,6 +511,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarPreviewModel.ts"),
     "utf8",
   );
+  const avatarTemplateReadiness = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateReadiness.ts"),
+    "utf8",
+  );
   const avatarContext = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "AvatarContext.tsx"),
     "utf8",
@@ -586,18 +590,21 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /deriveAvatarPreviewAccessories/);
   assert.match(avatarStudio, /deriveAvatarPreviewMood/);
   assert.match(avatarStudio, /deriveAvatarPreviewMotion/);
+  assert.match(avatarStudio, /getAvatarTemplateReadiness/);
   assert.match(avatarStudio, /previewEmote/);
   assert.match(avatarStudio, /SpriteSheetPlayer/);
   assert.match(avatarStudio, /CARE_TWIN_SPRITE_MANIFEST/);
   assert.match(avatarStudio, /getCareTwinSpriteAsset/);
   assert.match(avatarStudio, /avatar-studio-live-sprite-preview/);
-  assert.match(avatarPreviewModel, /Animated Phoenix pack/);
-  assert.match(avatarPreviewModel, /Starter still preview/);
+  assert.match(avatarTemplateReadiness, /Animated Phoenix pack/);
+  assert.match(avatarTemplateReadiness, /Starter still preview/);
+  assert.match(avatarTemplateReadiness, /Production overlays pending/);
+  assert.match(avatarTemplateReadiness, /Production moods pending/);
   assert.match(avatarStudio, /getAvatarTemplateAccessorySource\(draft\.templateId, layer\.id\)/);
   assert.match(avatarStudio, /getAvatarTemplateEmoteSource\(draft\.templateId, previewEmote\)/);
-  assert.match(avatarStudio, /templateBandana/);
-  assert.match(avatarStudio, /templateVest/);
   assert.match(avatarStudio, /templateAccessoryLayer/);
+  assert.match(avatarStudio, /This template saves accessory choices now\. Production overlay art is still pending for its breed pack\./);
+  assert.match(avatarStudio, /This template stays on truthful still previews until its emote pack and animation strips are produced\./);
   assert.match(avatarStudio, /Preview \$\{emoteLabel\(emote\)\} mood/);
   for (const templateId of templateIds) {
     assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));

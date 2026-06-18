@@ -7,6 +7,7 @@ import {
   type PetAvatarConfig,
 } from "./avatarStudio.ts";
 import type { CareTwinSpriteAction } from "./avatarLifeEngine.ts";
+import { getAvatarTemplateReadiness } from "./avatarTemplateReadiness.ts";
 
 export type AvatarPreviewLayerKind = "bandana" | "collar" | "hat" | "mask" | "vest" | "bed" | "sparkles";
 
@@ -73,17 +74,19 @@ export function deriveAvatarPreviewMotion(
   templateId: AvatarTemplateId,
   emote: AvatarEmoteState,
 ): AvatarPreviewMotionModel {
-  if (templateId !== "shepherd") {
+  const readiness = getAvatarTemplateReadiness(templateId);
+
+  if (!readiness.hasAnimatedPreview) {
     return {
       mode: "still",
-      label: "Starter still preview",
+      label: readiness.previewLabel,
       spriteAction: null,
     };
   }
 
   return {
     mode: "sprite",
-    label: "Animated Phoenix pack",
+    label: readiness.previewLabel,
     spriteAction: mapPreviewEmoteToSpriteAction(emote),
   };
 }
