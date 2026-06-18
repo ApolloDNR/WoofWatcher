@@ -10,6 +10,7 @@ import Animated, {
 
 import type { CareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import type { CareTwinSpriteTrack } from "@/lib/avatarLifeEngine";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 
 interface Props {
   asset: CareTwinSpriteAsset | null;
@@ -92,6 +93,7 @@ export function SpriteSheetPlayer({
             width: frameMetrics.sheetWidth,
             height: frameMetrics.sheetHeight,
           },
+          pixelImageStyle,
           sheetStyle,
         ]}
       />

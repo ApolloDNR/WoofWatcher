@@ -12,21 +12,21 @@
 ## Accounts And Secrets
 
 - GitHub Actions billing/spending limit: the 2026-06-18 `WoofWatcher Verify` push run `27751926674` for commit `61122c0` did not start because GitHub reported recent account payments failed or the spending limit needs to be increased. Local focused tests, mobile typecheck, PixelLab asset verification, Expo web export from prior release checks, and browser DOM verification from prior release checks passed, but CI cannot provide authoritative remote verification until GitHub billing is fixed.
-- Local Expo web export in the premium revenue builder worktree is currently blocked by a dependency junction/tooling issue: the local Expo CLI reaches Metro but cannot resolve `expo-router/entry.js` through the older `projects/woofwatcher` node_modules junction. The 2026-06-18 accessory pass still passed PixelLab asset verification, focused tests, and mobile TypeScript locally; native/browser visual QA should be rerun after dependencies are relinked or installed normally.
+- Local Expo web export in the premium revenue builder worktree is no longer blocked. The package-local Expo CLI plus Metro resolver patch exported the app successfully on 2026-06-18. Native iOS/Android simulator or device QA is still required before release confidence.
 - Clerk production configuration.
 - Database/Supabase production configuration.
 - Storage provider for records and generated reports.
 - Document upload/storage rules for real record files; local metadata, reminders, and visible storage gates exist, but production file storage is not approved/configured.
 - AI provider key and model policy.
-- PixelLab secret hygiene. A PixelLab bearer token was visible in a screenshot on 2026-06-17, so it should stay revoked/regenerated and never be committed. PixelLab MCP is now callable in Codex, Apollo has an active subscription, and the Phoenix v2 seed/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, 12 Avatar Studio template preview thumbnails, the full 12-template base still pack, and the first Phoenix/Shepherd 10-state emote pack now exist locally. Remaining asset blockers are final visual approval, replacing first-pass derived room variants with fully illustrated PixelLab/Figma-quality variants, finishing non-Phoenix emote packs, accessory overlays, body-class sprite packs, and native runtime QA, not MCP access or credits.
+- PixelLab secret hygiene. A PixelLab bearer token was visible in a screenshot on 2026-06-17, so it should stay revoked/regenerated and never be committed. PixelLab MCP is now callable in Codex, Apollo has an active subscription, and the Phoenix v2 seed/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, 12 Avatar Studio template preview thumbnails, the full 12-template base still pack, and the first Phoenix/Shepherd 10-state emote pack now exist locally, plus the 10-item accessory inventory pack and two subscription seed animation strips. Remaining asset blockers are final visual approval, replacing first-pass derived room variants with fully illustrated PixelLab/Figma-quality variants, finishing non-Phoenix emote packs, accessory overlays, body-class sprite packs, and native runtime QA, not MCP access or credits.
 - Provider-backed WoofGuide generation, source citations, and permission-aware assistant writes require the AI provider key/model policy plus privacy/account safety rules. Current WoofGuide actions are deterministic owner-reviewed drafts only.
 - Expo/EAS, Apple Developer, and Google Play Console accounts. The repo now has EAS build/submit profiles and a mobile release runbook, but no provider account credentials or store submission approval are available to Codex.
 - Vercel/API deployment target if applicable.
 
 ## Development Environment
 
-- Local Windows shell currently lacks `pnpm`, `npm`, `corepack`, and `node_modules`, so `pnpm run typecheck` cannot run locally even though zero-install Node behavior tests pass.
-- Codex could not attach to the in-app Browser target during the 2026-06-13 visual QA attempt (`iab` unavailable), so local screenshot/runtime verification is still pending in Fable/Replit or another browser-capable environment.
+- The local Windows shell still relies on the bundled Node runtime and package-local CLIs instead of a normal global `pnpm`/`npm` setup. Current focused tests, mobile TypeScript, PixelLab asset verification, and Expo web export pass through those paths.
+- The 2026-06-13 in-app Browser attach blocker is superseded for web visual smoke: headless Chrome captured `/portrait` and Home from the exported build on 2026-06-18. Native iOS/Android visual QA is still pending.
 
 ## Legal, Privacy, And Safety
 

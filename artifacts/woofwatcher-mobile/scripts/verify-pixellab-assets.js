@@ -20,6 +20,8 @@ const sprites = [
   ["comfort-loop-strip.png", 8, 256, 256],
   ["celebrate-hop-strip.png", 8, 256, 256],
   ["health-watch-strip.png", 8, 256, 256],
+  ["pixellab-idle-south-strip.png", 8, 256, 256],
+  ["pixellab-walk-south-strip.png", 8, 256, 256],
 ];
 
 const rooms = [

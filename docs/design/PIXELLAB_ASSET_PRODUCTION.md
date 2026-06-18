@@ -215,7 +215,7 @@ The first Phoenix/Shepherd emote pack is live:
 - `assets/avatar/phoenix/approved/emotes/home-alone.png` from the approved home-alone/anxious state.
 - `assets/avatar/phoenix/approved/emotes/not-feeling-well.png` from PixelLab object `39e8b2d9-da66-496b-83c6-8755bcad7d23`.
 
-These are transparent 170x170 PixelLab Phoenix states for the Avatar Studio Mood set. The app registers them through `avatarEmoteAssets.ts`; `/portrait` now uses the selected emote as the large hero preview when the Phoenix/Shepherd pack is active.
+These are transparent 170x170 PixelLab Phoenix states for the Avatar Studio Mood set. The app registers them through `avatarEmoteAssets.ts`; `/portrait` now uses those assets in the Mood set and keeps the selected state available for future hero animation switching.
 
 Remaining emote work:
 
@@ -238,13 +238,27 @@ The first PixelLab accessory inventory pack is live:
 - `assets/avatar/accessories/cozy-bed.png` from PixelLab object `698b7c8c-89b1-411e-8314-29e14701c453`.
 - `assets/avatar/accessories/heart-sparkles.png` from PixelLab object `e3790a9a-a5be-4ba2-b60d-d13970624b23`.
 
-These are transparent 85x85 PixelLab inventory icons for the Avatar Studio Customize tab. The app registers them through `avatarAccessoryAssets.ts`; `/portrait` now renders accessory art in the slot grid and hero equipped-loadout rail.
+These are transparent 85x85 PixelLab inventory icons for the Avatar Studio Customize tab. The app registers them through `avatarAccessoryAssets.ts`; `/portrait` now renders accessory art in the slot grid.
 
 Remaining accessory work:
 
 - Generate true 170x170 transparent overlay layers that align with the bottom-center avatar anchor.
 - Decide which accessories are baked into Phoenix-specific sprite packs versus drawn as runtime overlays.
 - Add per-template fit checks for long-body, small, compact, and floppy-ear templates.
+
+### Phase 4E - Subscription Seed Animation Strips
+
+Apollo's PixelLab subscription is active and the first subscription-backed seed animation strips are local:
+
+- PixelLab character ID: `f0c6169b-88c0-4428-9089-31c0565c4129`.
+- Template: `idle`.
+- Local strip: `assets/avatar/phoenix/pixellab-idle-south-strip.png`.
+- Template: `walk-8-frames`.
+- Local strip: `assets/avatar/phoenix/pixellab-walk-south-strip.png`.
+
+Both strips are 2048x256 PNGs with eight 256px frame slots and are covered by `verify-pixellab-assets.js`.
+
+Status: these are local production seed strips for future movement testing. They are not promoted over the current approved seated Home sprite family until Apollo approves their phone-size proportions, anchor, and mockup fit.
 
 ### Phase 5 - Dogless Rooms
 
@@ -282,7 +296,9 @@ from:
 artifacts/woofwatcher-mobile
 ```
 
-This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, and Avatar Studio accessory inventory icons.
+This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Avatar Studio accessory inventory icons, and the two subscription seed strips.
+
+Latest local evidence, 2026-06-18: `ok=61 missing=0 invalid=0`.
 
 Use:
 

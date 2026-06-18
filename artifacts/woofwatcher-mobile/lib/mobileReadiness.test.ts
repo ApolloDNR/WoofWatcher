@@ -242,6 +242,7 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(room, /plan\.recommendedActionLabel/);
   assert.match(room, /plan\.scenePhase/);
   assert.match(room, /SpriteSheetPlayer/);
+  assert.match(room, /pixelImageStyle/);
   assert.match(room, /getCareTwinLayerReadiness/);
   assert.match(room, /layeredStageReady/);
   assert.match(room, /care-twin-layered-sprite-rig/);
@@ -271,6 +272,7 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(lifeEngine, /animation: "walk"/);
   assert.match(spritePlayer, /export function SpriteSheetPlayer/);
   assert.match(spritePlayer, /frameProgress/);
+  assert.match(spritePlayer, /pixelImageStyle/);
   assert.match(spritePlayer, /withRepeat/);
   assert.match(spritePlayer, /overflow: "hidden"/);
   assert.match(careTwinAssets, /CARE_TWIN_SPRITE_ASSETS/);
@@ -515,6 +517,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarAccessoryAssets.ts"),
     "utf8",
   );
+  const livingRoom = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "LivingPhoenixRoom.tsx"),
+    "utf8",
+  );
   const avatarContext = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "AvatarContext.tsx"),
     "utf8",
@@ -579,16 +585,19 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /getPhoenixEmoteAsset/);
   assert.match(avatarStudio, /getAvatarAccessoryAsset/);
   assert.match(avatarStudio, /previewEmote/);
-  assert.match(avatarStudio, /selectedTemplateHeroSource/);
   assert.match(avatarStudio, /selectedAccessoryIds/);
   assert.match(avatarStudio, /equippedAccessories/);
-  assert.match(avatarStudio, /loadoutDock/);
+  assert.match(avatarStudio, /presentation="studio"/);
   assert.match(avatarStudio, /accessoryArtWrap/);
   assert.match(avatarStudio, /accessibilityLabel=\{`Preview Phoenix \$\{emoteLabel\(emote\)\} emote`\}/);
-  assert.match(avatarStudio, /templateHeroDogWrap/);
+  assert.match(avatarStudio, /speech=\{heroSpeech\}/);
+  assert.match(livingRoom, /LIVE CARE TWIN/);
+  assert.match(avatarStudio, /pixelImageStyle/);
   assert.match(avatarStudio, /s\.templateArtWrap/);
   assert.match(avatarStudio, /phoenix-room-day\.png/);
   assert.match(avatarStudio, /phoenix-main-head-v2\.png/);
+  assert.doesNotMatch(avatarStudio, /BASE ART/);
+  assert.doesNotMatch(avatarStudio, /selectedTemplateHeroSource/);
   assert.doesNotMatch(avatarStudio, /assets\/board\/hero\.png/);
   assert.doesNotMatch(avatarStudio, /getAvatarSource\("happy"\)/);
   assert.doesNotMatch(avatarStudio, /Image source=\{PIXEL_HEAD_SOURCE\} style=\{s\.moodThumb\}/);

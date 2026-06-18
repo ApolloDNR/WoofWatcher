@@ -100,7 +100,7 @@ Stop only for:
 
 ## Current Next Slice
 
-As of 2026-06-18, the current queue points to native runtime QA and premium polish. The mobile app now has a registered full Phoenix sprite manifest, first-pass dogless room variants, PixelLab frame-to-strip tooling, room-variant tooling, a 12-item Avatar Studio template preview catalog, a full 12-template Avatar Studio base still pack, the first Phoenix/Shepherd 10-state emote pack, a 10-item PixelLab accessory inventory pack, premium board anatomy across the core routes, release-grade Expo identity, EAS profiles, local-first care workflows, report/handoff surfaces, medication/water/walk/potty/training/alone-time/weight/grooming derivations, and bounded WoofGuide drafts.
+As of 2026-06-18, the current queue points to native runtime QA and premium polish. The mobile app now has a registered full Phoenix sprite manifest, first-pass dogless room variants, PixelLab frame-to-strip tooling, room-variant tooling, two subscription seed strips for movement review, crisp pixel rendering on web image paths, a cleaned Avatar Studio `LivingPhoenixRoom` Studio presentation, a 12-item Avatar Studio template preview catalog, a full 12-template Avatar Studio base still pack, the first Phoenix/Shepherd 10-state emote pack, a 10-item PixelLab accessory inventory pack, premium board anatomy across the core routes, release-grade Expo identity, EAS profiles, local-first care workflows, report/handoff surfaces, medication/water/walk/potty/training/alone-time/weight/grooming derivations, and bounded WoofGuide drafts. Expo web export is locally working again in the premium revenue builder worktree through the package-local Expo CLI and Metro resolver patch.
 
 Next highest-impact work:
 

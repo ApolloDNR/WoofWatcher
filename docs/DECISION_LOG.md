@@ -22,6 +22,26 @@ Owner: Apollo and Codex.
 
 Revisit trigger: PixelLab cannot produce a consistent approved Phoenix identity, generation cost becomes impractical, or Apollo selects a dedicated pixel artist/toolchain instead.
 
+### 2026-06-18: Avatar Studio Uses The Living Room In Studio Presentation
+
+Decision: Mobile Avatar Studio should use `LivingPhoenixRoom` with `presentation="studio"` as its primary hero instead of a static template portrait, old board hero image, or Home HUD clone.
+
+Reason: Apollo wants the dog to feel alive like a video-game care twin, but the Studio screen cannot carry Home-specific status docks that clip or compete with the creator workflow. A dedicated Studio presentation keeps one animated Phoenix, preserves the premium neo-retro room feel, and avoids duplicate-avatar or pasted-on art.
+
+Owner: Codex.
+
+Revisit trigger: A final native game scene renderer, Figma design system, or PixelLab sprite-family pack replaces the current React Native room renderer.
+
+### 2026-06-18: Subscription Seed Strips Stay In Review Until Phone-Size Approval
+
+Decision: The PixelLab subscription-generated `pixellab-idle-south-strip.png` and `pixellab-walk-south-strip.png` are verified local seed strips, but they should not replace the current approved seated Home sprite family until Apollo approves their phone-size proportions, bottom-center anchor, and mockup fit.
+
+Reason: Candidate D is useful as movement exploration, but Apollo's target boards favor a larger expressive Phoenix. Promoting a smaller directional strip too early could make the app feel less premium even if the file is technically valid.
+
+Owner: Apollo and Codex.
+
+Revisit trigger: Device preview confirms the seed strips look closer to boards 05/06 than the current seated v2 sprite family, or PixelLab produces a stronger large-body movement set.
+
 ### 2026-06-18: First Layered Phoenix Sprite Runtime Is Live
 
 Decision: Phoenix Home may render the first true layered care-twin scene using the dogless day room plus the registered `idle-breathe`, `tail-wag`, and `sleep-loop` Phoenix sprite strips.

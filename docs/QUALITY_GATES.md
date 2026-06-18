@@ -124,7 +124,7 @@ Current evidence, 2026-06-14: Mobile Premium now uses shared board anatomy for W
 
 Current evidence, 2026-06-14: Mobile Avatar Studio now uses shared board anatomy for the animated scan canvas, live/generated avatar preview, mood-state set, and photo guidance while preserving library/camera generation, saved avatar state, and revert-to-default behavior.
 
-Current evidence, 2026-06-18: Mobile Avatar Studio now separates template thumbnails from production-scale template base stills. All 12 launch template base PNGs render through the hero preview with subtle breathing motion, while the registry still keeps safe fallbacks for future unfinished templates.
+Current evidence, 2026-06-18: Mobile Avatar Studio now separates template thumbnails from production-scale template base stills, then uses the cleaned live `LivingPhoenixRoom` Studio presentation as the primary hero so `/portrait` keeps one living care twin without Home HUD overlap. All 12 launch template base PNGs remain registered for the ID card, picker, and fallback/reference previews.
 
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
@@ -258,7 +258,7 @@ Current evidence, 2026-06-13: Expo/EAS build and submit profiles now exist for i
 
 Current evidence, 2026-06-08: Focused tests now cover the Home avatar motion state model and static wiring check. Native animation runtime verification, Rive/Lottie/Reanimated asset QA, and screenshot review remain open.
 
-Current evidence, 2026-06-18: PixelLab asset verification now checks the full Phoenix sprite manifest, dogless room variants, 12 template previews, 12 template base stills, and the first 10-state Phoenix/Shepherd emote pack. Mobile readiness tests also verify Avatar Studio uses `avatarEmoteAssets.ts` and that mood taps drive the hero preview instead of reusing one head crop for every state.
+Current evidence, 2026-06-18: PixelLab asset verification now checks 61 assets across the full Phoenix sprite manifest, dogless room variants, 12 template previews, 12 template base stills, the first 10-state Phoenix/Shepherd emote pack, the 10-item accessory inventory pack, and two subscription seed animation strips. Mobile readiness tests also verify Avatar Studio uses `avatarEmoteAssets.ts`, applies crisp pixel image rendering, and uses the Studio presentation of `LivingPhoenixRoom` instead of the old static hero path.
 
 Current evidence, 2026-06-13: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, Household Responsibility derivation/mobile wiring, Household Access derivation/mobile wiring, Care Log Audit Trail derivation/mobile wiring, Full Log search derivation/mobile wiring, Medication History search/filter derivation/mobile wiring, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, Alone Time derivation/report/mobile wiring, Weight Trend derivation/report/mobile wiring, Grooming Care derivation/mobile wiring, Reminder Center derivation/mobile wiring/action routing, static mobile wiring, EAS profile readiness, and mobile release runbook coverage. Local focused tests pass at 195 tests. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.
 

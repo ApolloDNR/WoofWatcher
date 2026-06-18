@@ -33,6 +33,7 @@ import {
 } from "@/lib/careTwinAssets";
 import { deriveCareTwinScene, type AvatarRoomZone, type CareTwinHudTone } from "@/lib/avatarLifeEngine";
 import type { AvatarMotionModel } from "@/lib/avatarMotion";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 import type { Mood } from "@/lib/phoenixStatus";
 
 const ROOM_SCENE = require("@/assets/board/hero.png");
@@ -70,6 +71,7 @@ interface Props {
   nextLabel: string;
   reaction?: PhoenixRoomReaction | null;
   onPress?: () => void;
+  presentation?: "home" | "studio";
 }
 
 type PercentString = `${number}%`;
@@ -170,10 +172,12 @@ export function LivingPhoenixRoom({
   nextLabel,
   reaction,
   onPress,
+  presentation = "home",
 }: Props) {
   const colors = useColors();
   const theme = MOOD_THEME[mood];
   const plan = useMemo(() => deriveCareTwinScene(motion), [motion]);
+  const isStudio = presentation === "studio";
   const zone = ROOM_ZONES[plan.zone];
   const focusSpot = FOCUS_SPOTS[plan.zone];
   const spriteZone = SPRITE_STAGE_ZONES[plan.zone];
@@ -339,7 +343,7 @@ export function LivingPhoenixRoom({
       <Animated.Image
         source={stageSource}
         resizeMode="cover"
-        style={[styles.scene, animateBakedScene ? sceneMotionStyle : null]}
+        style={[styles.scene, pixelImageStyle, animateBakedScene ? sceneMotionStyle : null]}
       />
       <LinearGradient
         colors={[theme.wash, "rgba(255,249,239,0)", "rgba(8,20,36,0.28)"]}
@@ -402,7 +406,7 @@ export function LivingPhoenixRoom({
           <Animated.Image
             source={fallbackAvatarSource}
             resizeMode="contain"
-            style={styles.fallbackAvatar}
+            style={[styles.fallbackAvatar, pixelImageStyle]}
           />
         </Animated.View>
       ) : null}
@@ -431,34 +435,40 @@ export function LivingPhoenixRoom({
           <Animated.View style={[styles.liveDot, { backgroundColor: hudAccent }, activeZoneStyle]} />
           <Text style={styles.liveText}>LIVE CARE TWIN</Text>
         </View>
-        <Animated.View
-          style={[
-            styles.zoneChip,
-            { backgroundColor: "rgba(255,249,239,0.93)", borderColor: theme.accent },
-            activeZoneStyle,
-          ]}
-        >
-          <PixelIcon name={zone.icon} size={15} />
-          <Text style={[styles.zoneChipText, { color: colors.navy }]}>{zone.label}</Text>
-        </Animated.View>
+        {!isStudio ? (
+          <Animated.View
+            style={[
+              styles.zoneChip,
+              { backgroundColor: "rgba(255,249,239,0.93)", borderColor: theme.accent },
+              activeZoneStyle,
+            ]}
+          >
+            <PixelIcon name={zone.icon} size={15} />
+            <Text style={[styles.zoneChipText, { color: colors.navy }]}>{zone.label}</Text>
+          </Animated.View>
+        ) : null}
       </View>
 
-      <View style={[styles.speechBubble, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
-        {(lines.length ? lines : ["I'm ready."]).map((line) => (
-          <Text key={line} style={[styles.speechText, { color: colors.navy }]}>
-            {line}
-          </Text>
-        ))}
-        <View style={[styles.speechTail, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]} />
-      </View>
-
-      <View style={[styles.statusPatch, { backgroundColor: "rgba(8,26,42,0.78)", borderColor: "rgba(255,249,239,0.2)" }]}>
-        <PixelIcon name={theme.status} size={22} />
-        <View style={styles.statusPatchCopy}>
-          <Text style={styles.statusPatchKicker}>{plan.scenePhase.replace("-", " ")}</Text>
-          <Text style={styles.statusPatchValue}>{plan.moodLabel}</Text>
+      {!isStudio ? (
+        <View style={[styles.speechBubble, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
+          {(lines.length ? lines : ["I'm ready."]).map((line) => (
+            <Text key={line} style={[styles.speechText, { color: colors.navy }]}>
+              {line}
+            </Text>
+          ))}
+          <View style={[styles.speechTail, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]} />
         </View>
-      </View>
+      ) : null}
+
+      {!isStudio ? (
+        <View style={[styles.statusPatch, { backgroundColor: "rgba(8,26,42,0.78)", borderColor: "rgba(255,249,239,0.2)" }]}>
+          <PixelIcon name={theme.status} size={22} />
+          <View style={styles.statusPatchCopy}>
+            <Text style={styles.statusPatchKicker}>{plan.scenePhase.replace("-", " ")}</Text>
+            <Text style={styles.statusPatchValue}>{plan.moodLabel}</Text>
+          </View>
+        </View>
+      ) : null}
 
       {isWalking ? (
         <Animated.View pointerEvents="none" style={[styles.walkMarks, shimmerStyle]}>
@@ -506,40 +516,44 @@ export function LivingPhoenixRoom({
         </Animated.View>
       ) : null}
 
-      <View style={[styles.roomDock, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: "rgba(8,26,42,0.12)" }]}>
-        <View style={styles.dockColumn}>
-          <Text style={[styles.dockKicker, { color: colors.mutedForeground }]}>Presence</Text>
-          <Text numberOfLines={1} style={[styles.dockText, { color: colors.navy }]}>{presenceLabel}</Text>
-        </View>
-        <View style={[styles.dockDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.dockColumn}>
-          <Text style={[styles.dockKicker, { color: colors.mutedForeground }]}>Care cue</Text>
-          <Text numberOfLines={1} style={[styles.dockText, { color: colors.navy }]}>{plan.recommendedActionLabel}</Text>
-        </View>
-        <View style={[styles.dockDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.energyDock}>
-          <Text style={[styles.dockKicker, { color: colors.mutedForeground }]}>Energy</Text>
-          <View style={styles.energyBlocks}>
-            {energyBlocks(energy).map((active, index) => (
-              <View
-                key={`energy-${index}`}
-                style={[
-                  styles.energyBlock,
-                  {
-                    backgroundColor: active ? theme.accent : colors.muted,
-                    borderColor: active ? theme.accent : colors.border,
-                  },
-                ]}
-              />
-            ))}
+      {!isStudio ? (
+        <View style={[styles.roomDock, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: "rgba(8,26,42,0.12)" }]}>
+          <View style={styles.dockColumn}>
+            <Text style={[styles.dockKicker, { color: colors.mutedForeground }]}>Presence</Text>
+            <Text numberOfLines={1} style={[styles.dockText, { color: colors.navy }]}>{presenceLabel}</Text>
+          </View>
+          <View style={[styles.dockDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.dockColumn}>
+            <Text style={[styles.dockKicker, { color: colors.mutedForeground }]}>Care cue</Text>
+            <Text numberOfLines={1} style={[styles.dockText, { color: colors.navy }]}>{plan.recommendedActionLabel}</Text>
+          </View>
+          <View style={[styles.dockDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.energyDock}>
+            <Text style={[styles.dockKicker, { color: colors.mutedForeground }]}>Energy</Text>
+            <View style={styles.energyBlocks}>
+              {energyBlocks(energy).map((active, index) => (
+                <View
+                  key={`energy-${index}`}
+                  style={[
+                    styles.energyBlock,
+                    {
+                      backgroundColor: active ? theme.accent : colors.muted,
+                      borderColor: active ? theme.accent : colors.border,
+                    },
+                  ]}
+                />
+              ))}
+            </View>
           </View>
         </View>
-      </View>
+      ) : null}
 
-      <View style={[styles.nextChip, { backgroundColor: "rgba(8,26,42,0.86)", borderColor: "rgba(255,249,239,0.2)" }]}>
-        <PixelIcon name={zone.icon} size={18} />
-        <Text numberOfLines={1} style={styles.nextText}>{plan.activityLabel} - {nextLabel}</Text>
-      </View>
+      {!isStudio ? (
+        <View style={[styles.nextChip, { backgroundColor: "rgba(8,26,42,0.86)", borderColor: "rgba(255,249,239,0.2)" }]}>
+          <PixelIcon name={zone.icon} size={18} />
+          <Text numberOfLines={1} style={styles.nextText}>{plan.activityLabel} - {nextLabel}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }

@@ -45,7 +45,7 @@ The config is saved locally through `AvatarContext` under `woofwatcher.petAvatar
 
 Existing custom mood image sets remain supported under `woofwatcher.avatarSet.v1`.
 
-Default preview assets now use the PixelLab Phoenix v2 approved pack in `assets/avatar/phoenix/approved/`, the live layered room renderer, the first Avatar Studio template preview pack, the full first-pass production-scale template base pack in `assets/avatar/templates/`, and the Phoenix/Shepherd emote still pack in `assets/avatar/phoenix/approved/emotes/`. The older pixel-derived Phoenix pack in `assets/avatar/pixel/` remains fallback/reference only. The PixelLab Candidate D rotations are archived as directional movement exploration only.
+Default preview assets now use the PixelLab Phoenix v2 approved pack in `assets/avatar/phoenix/approved/`, the live layered room renderer, the first Avatar Studio template preview pack, the full first-pass production-scale template base pack in `assets/avatar/templates/`, and the Phoenix/Shepherd emote still pack in `assets/avatar/phoenix/approved/emotes/`. The main Avatar Studio hero now uses `LivingPhoenixRoom` with `presentation="studio"` so it keeps one living care twin without the Home-specific HUD. Template base stills and emotes support the ID card, template picker, mood grid, and future sprite-family previews. The older pixel-derived Phoenix pack in `assets/avatar/pixel/` remains fallback/reference only. The PixelLab Candidate D rotations are archived as directional movement exploration only.
 
 ## Template Library
 
@@ -95,7 +95,7 @@ The full first-pass production-scale template base still set is live at:
 - `artifacts/woofwatcher-mobile/assets/avatar/templates/slender/base.png`
 - `artifacts/woofwatcher-mobile/assets/avatar/templates/mixed/base.png`
 
-The app registers base stills in `avatarTemplateAssets.ts`, uses them for the Avatar Studio hero preview, and still keeps safe thumbnail/live-room fallbacks for future templates.
+The app registers base stills in `avatarTemplateAssets.ts`, uses them for the Avatar Studio ID card, template picker, and fallback/reference previews, and keeps the live room as the primary hero experience.
 
 ## Phoenix Emote Pack
 
@@ -118,7 +118,7 @@ Each state is a transparent 170x170 PNG under:
 artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/
 ```
 
-The app registers the pack in `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`. The `/portrait` Mood set now uses those real image assets, and tapping a mood updates the large hero preview instead of tinting the same head crop.
+The app registers the pack in `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`. The `/portrait` Mood set now uses those real image assets instead of tinting the same head crop; the live room remains the main hero surface while the selected mood feeds the Studio copy and future animation handoff.
 
 ## Accessory Inventory Pack
 
@@ -141,7 +141,7 @@ The live pack includes:
 - cozy bed
 - heart sparkles
 
-The app registers the pack in `artifacts/woofwatcher-mobile/lib/avatarAccessoryAssets.ts`. The `/portrait` Customize tab now renders the real accessory art instead of color-dot placeholders, treats taps as slot toggles, and shows a hero equipped-loadout rail so the customization flow feels like a real game inventory.
+The app registers the pack in `artifacts/woofwatcher-mobile/lib/avatarAccessoryAssets.ts`. The `/portrait` Customize tab now renders the real accessory art instead of color-dot placeholders and treats taps as slot toggles so the customization flow feels like a real game inventory.
 
 ## Accessory Slots
 
@@ -186,7 +186,7 @@ The mobile `/portrait` route is now visually and semantically Avatar Studio:
    - Proud
    - Home Alone
    - Not Feeling Well
-   - Tapping a mood previews that actual Phoenix emote in the hero stage.
+   - Tapping a mood previews the actual Phoenix emote in the mood grid and prepares the state contract for future hero animation switching.
 
 5. Save Avatar
    - Saves the editable avatar config.
@@ -232,6 +232,13 @@ The v2 family now includes the seated main avatar, sleep/rest avatar, anxious/ho
 
 The v2 accessory inventory now includes the first 10 transparent PixelLab accessory icons. True overlay-aligned costume/accessory layers are still needed before accessories can sit perfectly on every avatar body type during live animation.
 
+The 2026-06-18 subscription seed pass also produced two additional PixelLab animation strips from Candidate D for reference and future movement testing:
+
+- `assets/avatar/phoenix/pixellab-idle-south-strip.png`
+- `assets/avatar/phoenix/pixellab-walk-south-strip.png`
+
+These are verified production seed strips, but they are not promoted above the current approved seated Phoenix Home sprite family until Apollo approves their phone-size proportions and anchor.
+
 ## Asset Naming
 
 Template assets should eventually follow:
@@ -252,13 +259,14 @@ Room assets should eventually follow:
 
 ## Current Limitations
 
-- The Studio uses the PixelLab Phoenix v2 approved pack, live layered room preview, PixelLab template preview thumbnails, all 12 PixelLab template base stills, and the Phoenix/Shepherd emote pack for current previews.
-- The Customize tab uses the 10-item PixelLab accessory inventory icon pack and a hero equipped-loadout rail.
+- The Studio uses the PixelLab Phoenix v2 approved pack, a cleaned live layered room preview, PixelLab template preview thumbnails, all 12 PixelLab template base stills, the Phoenix/Shepherd emote pack, and crisp web pixel rendering for current previews.
+- The Customize tab uses the 10-item PixelLab accessory inventory icon pack.
 - First-pass non-Phoenix breed template thumbnails and all 12 template base stills are present, but their emote/sprite packs are not complete yet.
 - The dogless day room, first-pass dogless variants, and full registered Phoenix sprite manifest are live; final illustrated room variants still need approval/replacement.
 - Live image analysis is not wired yet.
 - True layered room sprite switching is live for registered sprite actions through `careTwinAssets.ts`.
 - Runtime accessory overlays are not fit-tested across all body classes yet; current accessories are inventory/loadout art, not per-frame costume layers.
+- Expo web export and Chrome visual smoke now pass in this worktree. Native iOS/Android device QA is still required before public launch.
 
 ## Quality Gate
 

@@ -29,6 +29,8 @@ Current design read: Candidate D is better than A/B/C as a small directional spr
 
 V2 update: Apollo added a PixelLab subscription and the new selected main-avatar seed is `phoenix-main-avatar-v2.png`, generated from PixelLab object `4f318d58-7166-4b0a-b202-2896eed1e0dc`. The app now uses the v2 approved still pack for default avatar surfaces and has a full registered layered sprite manifest plus first-pass dogless room variants.
 
+Subscription seed strip update: the PixelLab character `f0c6169b-88c0-4428-9089-31c0565c4129` now has verified local animation seed strips at `assets/avatar/phoenix/pixellab-idle-south-strip.png` and `assets/avatar/phoenix/pixellab-walk-south-strip.png`. These are movement-review assets, not the approved Home replacement yet.
+
 ## Locked Reference Boards
 
 Apollo's current selected UI references are versioned here:
@@ -93,7 +95,7 @@ Use board 05 as the primary Phoenix Home/avatar target and board 06 as the suppo
 - Layered sprite runtime: `SpriteSheetPlayer` can crop and animate registered sprite strips. `careTwinAssets.ts` now registers idle-breathe, tail-wag, ear-perk, walk, eat, drink, sleep, comfort, celebrate, health-watch, the day room, and first-pass night/bedtime/health/home-alone room variants.
 - Health/Bile Watch: board metric tiles and Bile Watch status pill.
 - Log, Plans, More, Records, WoofGuide, Avatar Studio: shared board route header slots ready for final icon/animation polish.
-- Avatar Studio: V1 template/config system is wired with scan-assisted mock suggestions, editable coat/face/accessory slots, emote preview, local save, and the live layered `LivingPhoenixRoom` preview. It still needs final breed template art, accessory sprites, and stronger prop-specific emote assets.
+- Avatar Studio: V1 template/config system is wired with scan-assisted mock suggestions, editable coat/face/accessory slots, emote preview, local save, crisp pixel rendering, and the live layered `LivingPhoenixRoom` Studio preview. It still needs final breed template art, overlay-aligned accessory sprites, and stronger prop-specific emote assets.
 - Pixel placeholder pack: `assets/avatar/pixel/` is now fallback/reference only.
 - PixelLab v2 approved pack: `assets/avatar/phoenix/approved/` is the active default app avatar set.
 - PixelLab v2 live sprite strips: `assets/avatar/phoenix/idle-breathe-strip.png`, `tail-wag-strip.png`, `ear-perk-strip.png`, `walk-loop-strip.png`, `eat-loop-strip.png`, `drink-loop-strip.png`, `sleep-loop-strip.png`, `comfort-loop-strip.png`, `celebrate-hop-strip.png`, and `health-watch-strip.png`.
@@ -166,7 +168,7 @@ Initial accessory slots:
 - room: cozy bed. Status: transparent PixelLab 85x85 inventory icon live.
 - fx: heart sparkles. Status: transparent PixelLab 85x85 inventory icon live.
 
-The first accessory inventory pack is registered through `avatarAccessoryAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered by `/portrait` as real accessory thumbnails plus a hero equipped-loadout rail.
+The first accessory inventory pack is registered through `avatarAccessoryAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered by `/portrait` as real accessory thumbnails.
 
 Do not generate every template as one-off unrelated art. Each template needs the same visual language, bottom-center anchor, and accessory slot logic.
 
@@ -204,6 +206,7 @@ Next required asset pass:
 - Improve or upscale the v2 seated Phoenix main avatar if Apollo wants an even closer board-05/06 match.
 - Replace the first-pass derived room variants with final illustrated dark/night, bedtime, health-watch, and home-alone scenes.
 - Inspect and improve any action strip that does not read strongly enough at phone size, especially walk/eat/drink where future prop layers can make the action clearer.
+- Inspect the subscription seed idle/walk strips in native/mobile preview before deciding whether they should replace or supplement the current approved seated sprite family.
 - Derive the dark-mode, badge/logo refinements, running footer sprite, true overlay-aligned accessory layers, and non-Phoenix template emote packs from the approved identity system instead of generating unrelated one-off dogs.
 
 ## Production Sprite Manifest Needed Next

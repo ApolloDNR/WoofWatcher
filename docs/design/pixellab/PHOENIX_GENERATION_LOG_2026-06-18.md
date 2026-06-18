@@ -409,3 +409,18 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `799136e4-e617-4187-880c-62078df88661` - hungry pose too subtle at phone size.
   - `2032e8a9-6e52-4504-8ac4-38dd69c7957c` - not-feeling-well pose too similar to default.
 - Status: generated, downloaded, registered, wired into the Avatar Studio Mood set, and covered by PixelLab asset verification. The first Phoenix/Shepherd still-emote layer is live; non-Phoenix template emotes, accessory overlays, and mood transition strips remain.
+
+### Subscription Seed Animation Strips
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab character ID: `f0c6169b-88c0-4428-9089-31c0565c4129`
+- PixelLab templates:
+  - `idle`
+  - `walk-8-frames`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-idle-south-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-walk-south-strip.png`
+- Output format: two transparent 2048x256 PNG strips with eight 256px frame slots.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
+- Status: local production seed strips for movement review. They are not promoted over the current approved seated Home sprite family until phone-size proportions, anchor, and mockup fit are approved.

@@ -229,7 +229,7 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Generated and promoted a 10-item PixelLab transparent accessory inventory pack for Avatar Studio.
 - Added `avatarAccessoryAssets.ts` as the registry for forest bandana, navy collar, copper collar, heart tag, trail bandana, birthday hat, sleepy mask, training vest, cozy bed, and heart sparkles.
 - Reworked `/portrait` Customize accessories from color-dot placeholders into real pixel inventory tiles with slot labels, free/plus labels, active checks, and tap-to-clear slot behavior.
-- Added a hero equipped-loadout rail so the selected avatar feels more like a game character loadout.
+- Added an early hero equipped-loadout rail experiment so the selected avatar felt more like a game character loadout. This was superseded by the cleaner Studio presentation pass, which keeps the accessory inventory inside Customize and avoids hero overlap.
 - Extended the PixelLab asset verifier and mobile readiness tests to require the accessory pack and prevent silent regression.
 
 ### Files Changed In This Slice
@@ -250,7 +250,7 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 
 - PixelLab asset verification:
   - Command: `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
-  - Result: passed, `ok=59 missing=0 invalid=0`.
+  - Result at the time: passed, `ok=59 missing=0 invalid=0`. This was superseded by the later `ok=61 missing=0 invalid=0` verification after the subscription seed strips were added.
 - Focused behavior/readiness tests:
   - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts`
   - Result: passed, 237 tests.
@@ -259,7 +259,7 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
   - Result: passed.
 - Expo web export:
   - Command attempted through the local Expo CLI.
-  - Result: blocked by local dependency junction/tooling. Metro could not resolve `expo-router/entry.js` through the old `projects/woofwatcher` node_modules junction even though the direct file exists on disk.
+  - Result at the time: blocked by local dependency junction/tooling. This was superseded by the 2026-06-18 Pixel Rendering And Studio Presentation Pass below, which fixed the premium revenue builder worktree's Expo export path.
 
 ### Remaining Work
 
@@ -267,3 +267,62 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Generate non-Phoenix/body-class emote packs.
 - Replace first-pass room variants with final illustrated PixelLab/Figma-quality room art.
 - Run native iOS/Android safe-area and screenshot QA when real device/simulator access is available.
+
+## 2026-06-18 Pixel Rendering And Studio Presentation Pass
+
+### What Changed
+
+- Used the active PixelLab subscription path to generate and stitch two local production seed animation strips from PixelLab character `f0c6169b-88c0-4428-9089-31c0565c4129`:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-idle-south-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-walk-south-strip.png`
+- Added `pixelRendering.ts` and applied crisp pixel image rendering to the live room, sprite player, Avatar Studio hero, template, accessory, and emote image paths.
+- Updated `LivingPhoenixRoom` with a Studio presentation mode so `/portrait` can use one live animated care twin without Home HUD overlap.
+- Reworked the Avatar Studio hero to keep the live pixel room, a compact pixel ID card, and concise copy, while removing the old static template preview/loadout hero path.
+- Fixed the premium revenue builder worktree's Metro resolver so the package-local Expo CLI can export the mobile app despite the local dependency junction.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/portrait.tsx`
+- `artifacts/woofwatcher-mobile/components/LivingPhoenixRoom.tsx`
+- `artifacts/woofwatcher-mobile/components/SpriteSheetPlayer.tsx`
+- `artifacts/woofwatcher-mobile/lib/pixelRendering.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `artifacts/woofwatcher-mobile/metro.config.js`
+- `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+- `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-idle-south-strip.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-walk-south-strip.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/phoenix/README.md`
+- `design-qa.md`
+- `docs/design/AVATAR_STUDIO_IMPLEMENTATION.md`
+- `docs/design/PIXELLAB_ASSET_PRODUCTION.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/BLOCKERS_FOR_APOLLO.md`
+- `docs/QUALITY_GATES.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/DECISION_LOG.md`
+
+### Tests And Checks Run
+
+- PixelLab asset verification:
+  - Command: `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=61 missing=0 invalid=0`.
+- Focused behavior/readiness tests:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts`
+  - Result: passed, 237 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+- Expo web export:
+  - Command: package-local Expo CLI export through bundled Node on PATH.
+  - Result: passed, exported `.expo-smoke`.
+- Chrome visual smoke:
+  - Routes: `/portrait` and Home from the exported web build.
+  - Result: passed. `/portrait` showed the cleaned live Studio hero with one pixel Phoenix, no HUD collision, and no visible overlay clipping.
+
+### Remaining Work
+
+- Native iOS/Android safe-area, frame-rate, touch-target, and screenshot QA.
+- Final illustrated PixelLab/Figma-quality night, bedtime, health-watch, and home-alone room variants.
+- Non-Phoenix/body-class emote packs, sprite strips, and true overlay-aligned accessory layers.
+- Remote GitHub Actions verification remains blocked until Apollo fixes the GitHub account billing/spending-limit issue.

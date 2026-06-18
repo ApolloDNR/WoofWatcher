@@ -355,6 +355,23 @@ Remaining visual work:
 - Add accessory overlay PNGs and anchor checks for emote states.
 - Add short animation strips for mood transitions after still states are visually approved.
 
+## 2026-06-18 Pixel Rendering And Studio Presentation Pass
+
+Cleaned up the Avatar Studio runtime after Apollo's PixelLab subscription became active:
+
+- Added `pixelRendering.ts` and applied it to room, sprite, template, accessory, and emote image paths so web previews keep nearest-neighbor pixel crispness instead of browser smoothing.
+- Updated `LivingPhoenixRoom` with `presentation="studio"` so Avatar Studio can reuse the living care-twin renderer without Home-only HUD overlays, duplicate avatar framing, or clipped status docks.
+- Updated `/portrait` to use the Studio presentation as the primary hero, keeping the top pixel ID card and concise hero copy while removing the old static preview/loadout hero path.
+- Added the first subscription-backed PixelLab seed animation strips for future movement testing: `pixellab-idle-south-strip.png` and `pixellab-walk-south-strip.png`.
+- Fixed the premium revenue builder worktree's Metro resolver and package-local Expo CLI path so Expo web export works again through the local dependency junction.
+- Verified `/portrait` and Home with a headless Chrome visual smoke against the exported web build.
+
+Remaining visual work:
+
+- Run native iOS/Android safe-area and frame-rate QA.
+- Replace first-pass derived room variants with final illustrated PixelLab/Figma-quality scenes.
+- Generate non-Phoenix template emote/sprite packs and true overlay-aligned accessory layers.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:
