@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-18: Avatar Studio Uses Live Phoenix Motion Only Where Production Sprite Packs Exist
+
+Decision: Avatar Studio should animate the shepherd/Phoenix template with the real Phoenix sprite rig, while templates that only have base stills remain on explicit still-preview labeling until their own sprite packs are produced.
+
+Reason: The repo already contains a complete registered Phoenix sprite manifest, but only the shepherd/Phoenix template has matching production art coverage today. Reusing that live rig makes the canonical care twin feel more alive now without falsely implying that Retriever, Husky, Doodle, and the rest already have production animation packs.
+
+Owner: Codex.
+
+Revisit trigger: Additional breed-specific sprite packs ship, or a unified template animation renderer replaces the current Phoenix-only preview contract.
+
 ### 2026-06-17: PixelLab Is The Production Asset Pipeline For Phoenix
 
 Decision: WoofWatcher will use PixelLab for the production Phoenix identity, transparent sprite strips, dogless rooms, template previews, and accessory packs. PixelLab secrets stay local or backend-only and must never be placed in the Expo app, PWA, GitHub, screenshots, or docs.
@@ -973,40 +983,38 @@ Owner: Codex.
 
 Revisit trigger: A final Figma/Fable/PixelLab component renderer replaces static base stills with fully composited template bodies or live sprite previews.
 
-### 2026-06-18: Phoenix Emotes Use A Registered Mood Asset Pack
+### 2026-06-18: Avatar Studio Can Treat All 12 Launch Templates As Base-Art Ready
 
-Decision: Avatar Studio Phoenix/Shepherd mood states should resolve through `avatarEmoteAssets.ts` and approved 170x170 PNG files under `assets/avatar/phoenix/approved/emotes/`, rather than reusing one head crop with tint overlays.
+Decision: Avatar Studio now registers `base.png` for every launch template instead of mixing four production stills with thumbnail fallbacks, and the creator preview may show layered mood/accessory overlays on top of those base stills while accessory PNG packs are still in production.
 
-Reason: A video-game-like care twin needs readable body-language states. The mood grid should show real Phoenix states and the hero preview should respond when a caregiver taps a mood.
-
-Consequences:
-
-- `/portrait` now imports selected-template emote helpers and uses the completed pack art/copy when the active template has a registered emote pack.
-- The first Phoenix emote pack covers Happy, Calm, Excited, Bored, Hungry, Anxious, Sleepy, Proud, Home Alone, and Not Feeling Well.
-- `verify-pixellab-assets.js` and mobile readiness tests now protect every emote PNG as a 170x170 asset.
-- Non-Phoenix template packs still need emotes, sprites, and accessory overlays.
-
-Owner: Codex.
-
-Revisit trigger: Figma/Fable/PixelLab ships a fully composited avatar renderer or body-class emote packs replace the current single-template still packs.
-
-### 2026-06-18: Avatar Studio Mood Routing Uses The Selected Template Pack
-
-Decision: Avatar Studio mood previews should resolve through `getAvatarEmoteAsset(draft, state)` using the selected template and emote pack. Phoenix/Shepherd uses `phoenix-shepherd`, Retriever uses `retriever-starter`, Husky/Spitz uses `husky-starter`, Bully uses `bully-starter`, and unfinished templates fall back to their own base stills until a completed pack exists.
-
-Reason: Apollo called out the wrong-dog problem directly: non-Phoenix avatars cannot feel like a real care twin if the Mood set quietly displays Phoenix. Selected-template routing keeps the app honest, prepares the renderer for breed/body-class packs, and prevents a premium character creator from feeling like a reskinned placeholder.
+Reason: The remaining thumbnail fallbacks made the template picker feel premium while the hero preview still looked unfinished for most breeds. A complete 12-template base pack gives the character creator a consistent production-scale review surface now, and code-layered overlays let customization choices feel alive without pretending the final accessory art packs already exist.
 
 Consequences:
 
-- `AvatarEmotePackId` now includes `retriever-starter`, `husky-starter`, and `bully-starter`.
-- The Retriever launch template recommends the Retriever pack; the Husky / Spitz launch template recommends the Husky pack; the Bully launch template recommends the Bully pack.
-- `/portrait` mood preview labels and accessibility labels use the selected template.
-- PixelLab asset verification and mobile readiness tests protect the 10 Retriever emote PNGs, 10 Husky emote PNGs, and 10 Bully emote PNGs.
-- Remaining templates still need emote/sprite packs, but their fallback now uses their own base still instead of Phoenix art.
+- `avatarTemplateAssets.ts` now registers base stills for all 12 launch templates.
+- `verify-pixellab-assets.js` and the mobile readiness suite now treat all 12 `base.png` files as required assets.
+- Avatar Studio's hero preview can show selected mood and accessory state as a truthful layered preview while final overlay PNGs and sprite packs remain separate asset work.
 
 Owner: Codex.
 
-Revisit trigger: The app moves from static emote stills to a fully composited sprite/emote renderer, or PixelLab/Figma produces shared body-class packs for multiple templates.
+Revisit trigger: Final accessory overlays, emote stills, or live template sprite packs replace the temporary code-layered preview contract.
+
+### 2026-06-18: Avatar Studio Prefers Registered Overlay And Emote PNG Assets
+
+Decision: Avatar Studio should prefer file-backed template accessory overlays and emote stills whenever a template pack provides them, while preserving the existing shape-based fallback for templates that are still waiting on production art. Shepherd/Phoenix now has registered overlay and emote PNGs; Retriever, Husky/Spitz, and Bully now have registered 10-state template emote packs.
+
+Reason: Apollo called out the wrong-dog problem directly: non-Phoenix avatars cannot feel like a real care twin if the Mood set quietly displays Phoenix. Registering those PNGs in `avatarTemplateAssets.ts` and enforcing them in the verifier lets the mobile preview show truthful PixelLab-backed art today while keeping the remaining breeds shippable through the existing fallback path.
+
+Consequences:
+
+- `avatarTemplateAssets.ts` now registers Shepherd accessory overlays plus Shepherd, Retriever, Husky/Spitz, and Bully emote still packs.
+- `AvatarEmotePackId` now includes `retriever-starter`, `husky-starter`, and `bully-starter`; those templates recommend their matching packs.
+- `app/portrait.tsx` prefers real PNG layers for the hero preview and mood chips before it falls back to the older code-drawn shapes or base stills.
+- `verify-pixellab-assets.js` and the mobile readiness suite now treat the first overlay pack and all four live emote packs as required production assets.
+
+Owner: Codex.
+
+Revisit trigger: Doodle and the remaining template packs ship matching overlay/emote assets or move to full sprite-driven previews.
 
 ## Open Decisions For Apollo
 

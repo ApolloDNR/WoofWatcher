@@ -42,9 +42,70 @@ Template to PixelLab object map:
 - `slender/base.png`: `efa34067-c258-4105-9da4-73d0907f36b5`
 - `mixed/base.png`: `c63ef688-cc17-4f7f-94d2-8504606213b5`
 
+Shepherd accessory + emote overlay pack generated: 2026-06-18
+Source basis: Phoenix approved still pack under `assets/avatar/phoenix/approved/`
+Format: transparent PNG, 170x170px.
+
+Live shepherd accessory overlays:
+
+- `shepherd/accessories/forest-bandana.png`
+- `shepherd/accessories/navy-collar.png`
+- `shepherd/accessories/birthday-hat.png`
+- `shepherd/accessories/sleepy-mask.png`
+- `shepherd/accessories/training-vest.png`
+- `shepherd/accessories/cozy-bed.png`
+- `shepherd/accessories/heart-sparkles.png`
+
+Live shepherd emote stills:
+
+- `shepherd/emotes/happy.png`
+- `shepherd/emotes/calm.png`
+- `shepherd/emotes/excited.png`
+- `shepherd/emotes/bored.png`
+- `shepherd/emotes/hungry.png`
+- `shepherd/emotes/anxious.png`
+- `shepherd/emotes/sleepy.png`
+- `shepherd/emotes/proud.png`
+- `shepherd/emotes/home_alone.png`
+- `shepherd/emotes/not_feeling_well.png`
+
+Live template emote still packs:
+
+- `retriever/emotes/happy.png`
+- `retriever/emotes/calm.png`
+- `retriever/emotes/excited.png`
+- `retriever/emotes/bored.png`
+- `retriever/emotes/hungry.png`
+- `retriever/emotes/anxious.png`
+- `retriever/emotes/sleepy.png`
+- `retriever/emotes/proud.png`
+- `retriever/emotes/home-alone.png`
+- `retriever/emotes/not-feeling-well.png`
+- `husky/emotes/happy.png`
+- `husky/emotes/calm.png`
+- `husky/emotes/excited.png`
+- `husky/emotes/bored.png`
+- `husky/emotes/hungry.png`
+- `husky/emotes/anxious.png`
+- `husky/emotes/sleepy.png`
+- `husky/emotes/proud.png`
+- `husky/emotes/home-alone.png`
+- `husky/emotes/not-feeling-well.png`
+- `bully/emotes/happy.png`
+- `bully/emotes/calm.png`
+- `bully/emotes/excited.png`
+- `bully/emotes/bored.png`
+- `bully/emotes/hungry.png`
+- `bully/emotes/anxious.png`
+- `bully/emotes/sleepy.png`
+- `bully/emotes/proud.png`
+- `bully/emotes/home-alone.png`
+- `bully/emotes/not-feeling-well.png`
+
 Rules:
 
 - Keep previews transparent and character-only.
 - Do not bake accessories into template previews.
 - Full template packs should later add emotes and sprite strips under the same template folder.
 - `base.png` is the production-scale character still for Avatar Studio preview. It is not a walk/eat/sleep sprite strip.
+- Accessory overlays and emote stills should stay slot-compatible with the registered base pose for that template.

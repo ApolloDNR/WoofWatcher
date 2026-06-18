@@ -104,6 +104,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 96. DONE 2026-06-18: Generated, downloaded, registered, and tested the first non-Phoenix Retriever 10-state Avatar Studio emote pack. Retriever templates now recommend `retriever-starter`, `/portrait` routes Mood set art through the selected template/emote pack, and unfinished templates fall back to their own base stills instead of borrowing Phoenix mood art.
 97. DONE 2026-06-18: Generated, downloaded, registered, and tested the Husky/Spitz 10-state Avatar Studio emote pack. Husky templates now recommend `husky-starter`, selected-template routing covers the first visually distinct spitz/working-body pack, and PixelLab asset verification checked 81 local production assets at that pass.
 98. DONE 2026-06-18: Generated, downloaded, visually checked, registered, and tested the Bully 10-state Avatar Studio emote pack. Bully templates now recommend `bully-starter`, compact-body selected-template routing is live, and PixelLab asset verification now checks 91 local production assets with 0 missing and 0 invalid.
+99. DONE 2026-06-18: Merged main's Shepherd/Phoenix overlay and live preview work into the premium builder path. Avatar Studio now prefers file-backed Shepherd accessory overlays and Shepherd emote stills, uses the live Phoenix sprite rig for Shepherd mood states, and keeps unfinished templates on truthful still previews.
+100. NEXT: Continue Avatar Studio production packs by generating template-matched sprite strips and overlay/emote packs for Retriever, Husky, Bully, Doodle, and the remaining launch templates so their previews can graduate from still-only to live animated production packs.
 
 ## Cadence
 

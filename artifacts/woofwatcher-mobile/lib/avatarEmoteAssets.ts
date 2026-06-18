@@ -401,11 +401,14 @@ export function getAvatarEmoteAsset(
     if (bullyAsset) return bullyAsset;
   }
 
-  const templateAsset = AVATAR_TEMPLATE_BASE_ASSETS[avatar.templateId] ?? AVATAR_TEMPLATE_BASE_ASSETS.mixed;
+  const templateAsset =
+    AVATAR_TEMPLATE_BASE_ASSETS[avatar.templateId] ??
+    AVATAR_TEMPLATE_BASE_ASSETS.mixed ??
+    AVATAR_TEMPLATE_BASE_ASSETS.shepherd;
   const label = state.replace(/_/g, " ");
   return {
     source: getAvatarTemplateDisplaySource(avatar.templateId),
-    path: templateAsset.path,
+    path: templateAsset?.path ?? "assets/avatar/templates/shepherd/base.png",
     style: "template-base-emote-fallback",
     description: `Starter ${label} preview uses the selected template base until that emote is generated.`,
     complete: false,

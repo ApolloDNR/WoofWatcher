@@ -76,10 +76,21 @@ const phoenixEmotes = [
 ];
 
 const templateEmotes = {
+  shepherd: ["happy", "calm", "excited", "bored", "hungry", "anxious", "sleepy", "proud", "home_alone", "not_feeling_well"],
   retriever: ["happy", "calm", "excited", "bored", "hungry", "anxious", "sleepy", "proud", "home-alone", "not-feeling-well"],
   husky: ["happy", "calm", "excited", "bored", "hungry", "anxious", "sleepy", "proud", "home-alone", "not-feeling-well"],
   bully: ["happy", "calm", "excited", "bored", "hungry", "anxious", "sleepy", "proud", "home-alone", "not-feeling-well"],
 };
+
+const templateAccessories = [
+  ["shepherd", "forest-bandana"],
+  ["shepherd", "navy-collar"],
+  ["shepherd", "birthday-hat"],
+  ["shepherd", "sleepy-mask"],
+  ["shepherd", "training-vest"],
+  ["shepherd", "cozy-bed"],
+  ["shepherd", "heart-sparkles"],
+];
 
 const avatarAccessories = [
   "forest-bandana",
@@ -204,6 +215,22 @@ function checkTemplateEmote(templateId, emoteId) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
+function checkTemplateAccessory([templateId, accessoryId]) {
+  const file = path.join(templateDir, templateId, "accessories", `${accessoryId}.png`);
+  if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
+
+  const size = readPngSize(file);
+  if (size.width !== 170 || size.height !== 170) {
+    return {
+      type: "invalid",
+      file: path.relative(root, file),
+      message: `expected 170x170, got ${size.width}x${size.height}`,
+    };
+  }
+
+  return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
+}
+
 function checkAvatarAccessory(accessoryId) {
   const file = path.join(accessoryDir, `${accessoryId}.png`);
   if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
@@ -229,6 +256,7 @@ const results = [
   ...Object.entries(templateEmotes).flatMap(([templateId, emotes]) =>
     emotes.map((emoteId) => checkTemplateEmote(templateId, emoteId)),
   ),
+  ...templateAccessories.map(checkTemplateAccessory),
   ...avatarAccessories.map(checkAvatarAccessory),
 ];
 const missing = results.filter((result) => result.type === "missing");
