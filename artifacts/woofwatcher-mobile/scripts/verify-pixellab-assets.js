@@ -44,6 +44,13 @@ const templatePreviews = [
   "mixed",
 ];
 
+const templateBases = [
+  "shepherd",
+  "retriever",
+  "husky",
+  "doodle",
+];
+
 function readPngSize(file) {
   const buffer = fs.readFileSync(file);
   const signature = buffer.subarray(0, 8).toString("hex");
@@ -106,10 +113,27 @@ function checkTemplatePreview(templateId) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
+function checkTemplateBase(templateId) {
+  const file = path.join(templateDir, templateId, "base.png");
+  if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
+
+  const size = readPngSize(file);
+  if (size.width !== 170 || size.height !== 170) {
+    return {
+      type: "invalid",
+      file: path.relative(root, file),
+      message: `expected 170x170, got ${size.width}x${size.height}`,
+    };
+  }
+
+  return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
+}
+
 const results = [
   ...sprites.map(checkSprite),
   ...rooms.map(checkRoom),
   ...templatePreviews.map(checkTemplatePreview),
+  ...templateBases.map(checkTemplateBase),
 ];
 const missing = results.filter((result) => result.type === "missing");
 const invalid = results.filter((result) => result.type === "invalid");

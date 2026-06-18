@@ -5,10 +5,10 @@ The first production template pack should be Phoenix's Shepherd/Belgian Shepherd
 Current files:
 
 - `preview.png` - live PixelLab launch thumbnail.
+- `base.png` - live PixelLab 170x170 Avatar Studio base still.
 
 Needed files:
 
-- `base.png`
 - `emotes/happy.png`
 - `emotes/calm.png`
 - `emotes/excited.png`

@@ -333,3 +333,20 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/slender/preview.png` from `3d5e306e-2cf1-4fd1-99b7-ecfb47f9c8b4`
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/mixed/preview.png` from `29dd78da-57d2-4609-953a-25b1c07ce71d`
 - Status: generated, visually reviewed as a coherent first-pass launch template thumbnail set, registered in the mobile Avatar Studio template picker, and protected by readiness tests. Full template base/emote/sprite packs are still future work.
+
+### Avatar Studio Template Base Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_1_direction_object`
+- Review object ID: `3e5f7877-7382-49de-b3fc-1f74c75631ec`
+- Tag: `woofwatcher-avatar-template-base-pack-2026-06-18`
+- Cost: 25 generations
+- Output format: 4 selected transparent 170x170 PNG base stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/shepherd/base.png` from `4a979556-9f07-4660-b3bf-831fed6030c0`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/base.png` from `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/base.png` from `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/doodle/base.png` from `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
+- Status: generated, visually reviewed as a coherent first production-scale base set, registered in the mobile Avatar Studio preview stage, and protected by readiness tests. Remaining templates, emote stills, sprite strips, and accessory overlays are still future work.

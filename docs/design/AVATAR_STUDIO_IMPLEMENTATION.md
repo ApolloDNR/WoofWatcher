@@ -45,7 +45,7 @@ The config is saved locally through `AvatarContext` under `woofwatcher.petAvatar
 
 Existing custom mood image sets remain supported under `woofwatcher.avatarSet.v1`.
 
-Default preview assets now use the PixelLab Phoenix v2 approved pack in `assets/avatar/phoenix/approved/`, the live layered room renderer, and the first Avatar Studio template preview pack in `assets/avatar/templates/`. The older pixel-derived Phoenix pack in `assets/avatar/pixel/` remains fallback/reference only. The PixelLab Candidate D rotations are archived as directional movement exploration only.
+Default preview assets now use the PixelLab Phoenix v2 approved pack in `assets/avatar/phoenix/approved/`, the live layered room renderer, the first Avatar Studio template preview pack, and the first production-scale template base pack in `assets/avatar/templates/`. The older pixel-derived Phoenix pack in `assets/avatar/pixel/` remains fallback/reference only. The PixelLab Candidate D rotations are archived as directional movement exploration only.
 
 ## Template Library
 
@@ -79,6 +79,15 @@ artifacts/woofwatcher-mobile/assets/avatar/templates/{templateId}/preview.png
 ```
 
 The app registers those previews in `artifacts/woofwatcher-mobile/lib/avatarTemplateAssets.ts` and renders them in the `/portrait` template picker.
+
+The first production-scale template base stills are live at:
+
+- `artifacts/woofwatcher-mobile/assets/avatar/templates/shepherd/base.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/base.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/base.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/templates/doodle/base.png`
+
+The app registers base stills in `avatarTemplateAssets.ts`, uses them for the Avatar Studio hero preview when present, and falls back to the template thumbnail or live Phoenix room for templates that do not have base art yet.
 
 ## Accessory Slots
 
@@ -164,7 +173,7 @@ The first production avatar family should match the locked boards:
 - `docs/design/reference/woofwatcher-pixel-reference-board-05-neo-retro-digital-pet.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-06-ecosystem-supporting-pages.png`
 
-The v2 family now includes the seated main avatar, sleep/rest avatar, anxious/home-alone avatar, proud/happy avatar, WoofGuide side avatar, badge/logo head crop, full registered Phoenix sprite manifest, first-pass dogless room variants, and the 12-template preview thumbnail pack. Final illustrated room variants, production-scale template base art, accessory layers, and template-specific emotes/sprites are still needed before the scan/customization story will feel App Store ready.
+The v2 family now includes the seated main avatar, sleep/rest avatar, anxious/home-alone avatar, proud/happy avatar, WoofGuide side avatar, badge/logo head crop, full registered Phoenix sprite manifest, first-pass dogless room variants, the 12-template preview thumbnail pack, and a first four-template production base pack. Final illustrated room variants, the remaining template base art, accessory layers, and template-specific emotes/sprites are still needed before the scan/customization story will feel App Store ready.
 
 ## Asset Naming
 
@@ -185,8 +194,8 @@ Room assets should eventually follow:
 
 ## Current Limitations
 
-- The Studio uses the PixelLab Phoenix v2 approved pack, live layered room preview, and PixelLab template preview thumbnails for current previews.
-- First-pass non-Phoenix breed template thumbnails are present, but full base/emote/sprite packs are not present yet.
+- The Studio uses the PixelLab Phoenix v2 approved pack, live layered room preview, PixelLab template preview thumbnails, and four PixelLab template base stills for current previews.
+- First-pass non-Phoenix breed template thumbnails are present, and Shepherd/Retriever/Husky/Doodle base stills are present, but full base/emote/sprite packs are not complete yet.
 - The dogless day room, first-pass dogless variants, and full registered Phoenix sprite manifest are live; final illustrated room variants still need approval/replacement.
 - Live image analysis is not wired yet.
 - True layered room sprite switching is live for registered sprite actions through `careTwinAssets.ts`.
@@ -196,7 +205,7 @@ Room assets should eventually follow:
 Before public launch, Avatar Studio needs:
 
 - final Phoenix seed frame. Status: v2 seed exists.
-- at least one polished full template pack. Status: 12 template preview thumbnails exist; base/emote/sprite packs still needed.
+- at least one polished full template pack. Status: 12 template preview thumbnails exist; Shepherd/Retriever/Husky/Doodle base stills exist; emote/sprite packs still needed.
 - dogless room background. Status: day room and first-pass variants exist; final illustrated variants still needed.
 - transparent sprite/emote assets. Status: Phoenix v2 still states plus full registered sprite manifest exist.
 - no duplicate Phoenix rendering

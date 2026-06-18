@@ -936,6 +936,23 @@ Owner: Codex.
 
 Revisit trigger: Figma/Fable/PixelLab produces production-scale template packs or the Avatar Studio renderer moves from thumbnail previews to fully composited template bodies.
 
+### 2026-06-18: Avatar Templates Use Separate Preview And Base Asset Tiers
+
+Decision: Avatar Studio template art now has two registered tiers: `preview.png` thumbnails for compact pickers and `base.png` character stills for the larger creator preview stage. The first base tier covers Shepherd, Retriever, Husky, and Doodle.
+
+Reason: Enlarging 85x85 thumbnails makes Avatar Studio feel cheap and undermines the "real-life digital pet" promise. A separate 170x170 base tier gives the app a production-shaped character creator path while leaving room for emote stills, sprite strips, and accessory overlays under the same template folders.
+
+Consequences:
+
+- `avatarTemplateAssets.ts` registers `AVATAR_TEMPLATE_BASE_ASSETS` separately from `AVATAR_TEMPLATE_PREVIEW_ASSETS`.
+- `/portrait` shows selected template base art when it exists and falls back safely for unfinished templates.
+- `verify-pixellab-assets.js` now checks the first four template base PNGs.
+- Remaining launch templates still need base art, emotes, sprites, and accessory overlays.
+
+Owner: Codex.
+
+Revisit trigger: A final Figma/Fable/PixelLab component renderer replaces static base stills with fully composited template bodies or live sprite previews.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

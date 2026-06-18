@@ -124,9 +124,16 @@ Initial template previews are live as a PixelLab-generated 85x85 launch thumbnai
 - `assets/avatar/templates/slender/preview.png` - live.
 - `assets/avatar/templates/mixed/preview.png` - live.
 
+Initial production-scale base stills are live as a PixelLab-generated 170x170 base pack, registered through `avatarTemplateAssets.ts`, verified by `verify-pixellab-assets.js`, and used by `/portrait` when the selected template has base art:
+
+- `assets/avatar/templates/shepherd/base.png` - live.
+- `assets/avatar/templates/retriever/base.png` - live.
+- `assets/avatar/templates/husky/base.png` - live.
+- `assets/avatar/templates/doodle/base.png` - live.
+
 Still needed for a full App Store avatar system:
 
-- `base.png` for each template at production scale.
+- `base.png` for Bully, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed at production scale.
 - emote stills for each template.
 - template-specific sprite strips for major body classes.
 

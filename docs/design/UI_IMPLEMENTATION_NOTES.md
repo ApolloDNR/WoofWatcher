@@ -320,9 +320,25 @@ Upgraded the Template tab from icon placeholders into a real character catalog:
 
 Remaining visual work:
 
-- Generate production-scale template `base.png` files.
+- Generate production-scale template `base.png` files for Bully, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed.
 - Add template-specific emotes/sprites for launch body classes.
 - Add accessory layer PNGs for neck/head/face/body/room/fx slots.
+
+## 2026-06-18 Avatar Studio Base Art Pass
+
+Turned the Template tab into a stronger character creator preview:
+
+- Generated and promoted PixelLab 170x170 base stills for Shepherd, Retriever, Husky, and Doodle.
+- Split the template asset registry into `preview` and `base` tiers so thumbnails stay compact and hero previews use production-scale character art.
+- Updated `/portrait` so the selected template renders its base still in the hero stage when available, with a subtle breathing motion and fallback to the live Phoenix room for unfinished templates.
+- Updated the template picker to prefer base art where available while keeping all 12 template previews registered.
+- Added readiness coverage that checks the first base PNG files exist as 170x170 assets and that Avatar Studio uses the base/display registry.
+
+Remaining visual work:
+
+- Complete base stills for the other eight templates.
+- Generate template-specific emote stills and sprite strips.
+- Generate accessory overlay PNGs for neck/head/face/body/room/fx slots.
 
 ## 2026-06-17 Avatar Studio Lite Pass
 

@@ -43,7 +43,10 @@ import {
   type AvatarTemplateId,
   type PetAvatarConfig,
 } from "@/lib/avatarStudio";
-import { getAvatarTemplatePreviewSource } from "@/lib/avatarTemplateAssets";
+import {
+  getAvatarTemplateBaseSource,
+  getAvatarTemplateDisplaySource,
+} from "@/lib/avatarTemplateAssets";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -157,6 +160,7 @@ export default function PortraitScreen() {
 
   const scanAnim = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0)).current;
+  const templateLife = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setDraft(avatarConfig);
@@ -213,7 +217,34 @@ export default function PortraitScreen() {
     };
   }, [phase, pulse, scanAnim, scanSuggestion.suggestedConfig]);
 
+  useEffect(() => {
+    const lifeLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(templateLife, {
+          toValue: 1,
+          duration: 1600,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+        Animated.timing(templateLife, {
+          toValue: 0,
+          duration: 1600,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+      ]),
+    );
+    lifeLoop.start();
+
+    return () => {
+      lifeLoop.stop();
+      templateLife.setValue(0);
+    };
+  }, [templateLife]);
+
   const selectedTemplate = getAvatarTemplate(draft.templateId);
+  const selectedTemplateBase = getAvatarTemplateBaseSource(draft.templateId);
+  const selectedTemplateCardSource = selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
   const avatarSummary = describeAvatarConfig(draft);
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
   const avatarMotion = useMemo(
@@ -230,6 +261,8 @@ export default function PortraitScreen() {
   const caregiver = state.caregivers[0]?.name ?? "Emma";
   const scanTranslate = scanAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 250] });
   const reticleOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.34, 0.84] });
+  const templateLift = templateLife.interpolate({ inputRange: [0, 1], outputRange: [0, -5] });
+  const templateScale = templateLife.interpolate({ inputRange: [0, 1], outputRange: [1, 1.018] });
 
   const ensurePermission = async (camera: boolean) => {
     if (Platform.OS === "web") return true;
@@ -345,18 +378,48 @@ export default function PortraitScreen() {
         ) : (
           <BoardCard padded={false} style={s.heroPreview}>
             <View style={s.liveRoomStage}>
-              <LivingPhoenixRoom
-                mood={avatarMotion.avatarMood}
-                motion={avatarMotion}
-                speech={activeTab === "emotes" ? "Try my moods." : activeTab === "customize" ? "Make me Phoenix." : "I'm ready."}
-                energy={status.energy}
-                presenceLabel={`${petName} with ${caregiver}`}
-                nextLabel={activeTab === "scan" ? "Scan or choose a template" : selectedTemplate.label}
-              />
+              {selectedTemplateBase ? (
+                <View style={s.templatePreviewStage}>
+                  <Image source={PIXEL_ROOM_SOURCE} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
+                  <LinearGradient
+                    colors={["rgba(255,249,239,0.08)", "rgba(8,26,42,0.16)"]}
+                    style={StyleSheet.absoluteFill}
+                    pointerEvents="none"
+                  />
+                  <Animated.View
+                    style={[
+                      s.templateHeroDogWrap,
+                      {
+                        transform: [{ translateY: templateLift }, { scale: templateScale }],
+                      },
+                    ]}
+                  >
+                    <Image source={selectedTemplateBase} style={s.templateHeroDog} contentFit="contain" transition={180} />
+                  </Animated.View>
+                  <View style={[s.templateSpeech, { backgroundColor: colors.ivory, borderColor: colors.navy }]}>
+                    <Text style={[s.templateSpeechText, { color: colors.navy, fontFamily: DISPLAY }]}>
+                      {activeTab === "emotes" ? "Try my moods." : activeTab === "customize" ? "Make me yours." : "I'm ready!"}
+                    </Text>
+                  </View>
+                  <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.92)", borderColor: colors.border }]}>
+                    <Text style={[s.templateHeroKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>BASE ART</Text>
+                    <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
+                  </View>
+                </View>
+              ) : (
+                <LivingPhoenixRoom
+                  mood={avatarMotion.avatarMood}
+                  motion={avatarMotion}
+                  speech={activeTab === "emotes" ? "Try my moods." : activeTab === "customize" ? "Make me Phoenix." : "I'm ready."}
+                  energy={status.energy}
+                  presenceLabel={`${petName} with ${caregiver}`}
+                  nextLabel={activeTab === "scan" ? "Scan or choose a template" : selectedTemplate.label}
+                />
+              )}
             </View>
             <View style={s.pixelFrameOverlay} pointerEvents="none">
               <View style={[s.pixelIdCard, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
-                <Image source={PIXEL_HEAD_SOURCE} style={s.pixelHead} contentFit="cover" transition={160} />
+                <Image source={selectedTemplateCardSource} style={s.pixelHead} contentFit="contain" transition={160} />
                 <View style={s.pixelIdCopy}>
                   <Text style={[s.pixelIdKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>CARE TWIN</Text>
                   <Text style={[s.pixelIdName, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
@@ -496,7 +559,7 @@ export default function PortraitScreen() {
                       ]}
                     >
                       <Image
-                        source={getAvatarTemplatePreviewSource(template.id)}
+                        source={getAvatarTemplateDisplaySource(template.id)}
                         style={s.templateArt}
                         contentFit="contain"
                         transition={140}
@@ -749,6 +812,48 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
   },
+  templatePreviewStage: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden",
+    backgroundColor: "#EDE7DC",
+  },
+  templateHeroDogWrap: {
+    position: "absolute",
+    left: 34,
+    right: 34,
+    bottom: 62,
+    height: "62%",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  templateHeroDog: {
+    width: "100%",
+    height: "100%",
+  },
+  templateSpeech: {
+    position: "absolute",
+    left: 24,
+    top: 52,
+    maxWidth: "62%",
+    borderRadius: 6,
+    borderWidth: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  templateSpeechText: { fontSize: 17, lineHeight: 21 },
+  templateHeroHud: {
+    position: "absolute",
+    right: 16,
+    bottom: 76,
+    minWidth: 104,
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 2,
+  },
+  templateHeroKicker: { fontSize: 8.5, letterSpacing: 0.8, textTransform: "uppercase" },
+  templateHeroTitle: { fontSize: 17, lineHeight: 20 },
   pixelFrameOverlay: {
     position: "absolute",
     left: 14,

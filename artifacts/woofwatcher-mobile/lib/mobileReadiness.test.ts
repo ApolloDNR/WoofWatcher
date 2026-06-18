@@ -542,20 +542,31 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /LivingPhoenixRoom/);
   assert.match(avatarStudio, /deriveAvatarMotion/);
   assert.match(avatarStudio, /derivePhoenixStatus/);
-  assert.match(avatarStudio, /getAvatarTemplatePreviewSource\(template\.id\)/);
+  assert.match(avatarStudio, /getAvatarTemplateBaseSource\(draft\.templateId\)/);
+  assert.match(avatarStudio, /getAvatarTemplateDisplaySource\(template\.id\)/);
+  assert.match(avatarStudio, /templateHeroDogWrap/);
   assert.match(avatarStudio, /s\.templateArtWrap/);
   assert.match(avatarStudio, /phoenix-room-day\.png/);
   assert.match(avatarStudio, /phoenix-main-head-v2\.png/);
   assert.doesNotMatch(avatarStudio, /assets\/board\/hero\.png/);
   assert.doesNotMatch(avatarStudio, /getAvatarSource\("happy"\)/);
   assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_PREVIEW_ASSETS/);
+  assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_BASE_ASSETS/);
   assert.match(avatarTemplateAssets, /pixellab-template-preview/);
+  assert.match(avatarTemplateAssets, /pixellab-template-base/);
   for (const templateId of templateIds) {
     assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));
     const size = readPngSize(
       join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", templateId, "preview.png"),
     );
     assert.deepEqual(size, { width: 85, height: 85 }, `${templateId} preview should be a PixelLab 85x85 thumbnail`);
+  }
+  for (const templateId of ["shepherd", "retriever", "husky", "doodle"]) {
+    assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/base\\.png`));
+    const size = readPngSize(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", templateId, "base.png"),
+    );
+    assert.deepEqual(size, { width: 170, height: 170 }, `${templateId} base should be a PixelLab 170x170 character base`);
   }
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);
@@ -610,7 +621,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(verifier, /PixelLab asset check complete/);
   assert.match(verifier, /readUInt32BE\(16\)/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, and 12 Avatar Studio template preview thumbnails/);
+  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, 12 Avatar Studio template preview thumbnails, and the first Shepherd\/Retriever\/Husky\/Doodle template base stills/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
 

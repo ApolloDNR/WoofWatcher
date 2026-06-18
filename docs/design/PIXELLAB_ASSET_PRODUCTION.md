@@ -175,6 +175,23 @@ The first launch preview pack is live:
 
 These are transparent 85x85 PixelLab thumbnails for the Avatar Studio picker. Full template packs still need production-scale `base.png`, emotes, and sprite strips.
 
+### Phase 4B - Avatar Template Base Art
+
+The first production-scale template base pack is live:
+
+- `assets/avatar/templates/shepherd/base.png` from PixelLab object `4a979556-9f07-4660-b3bf-831fed6030c0`
+- `assets/avatar/templates/retriever/base.png` from PixelLab object `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
+- `assets/avatar/templates/husky/base.png` from PixelLab object `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
+- `assets/avatar/templates/doodle/base.png` from PixelLab object `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
+
+These are transparent 170x170 PixelLab character stills for the Avatar Studio preview stage. The app registers them through `avatarTemplateAssets.ts` and falls back to preview thumbnails for templates that do not have `base.png` yet.
+
+Full template packs still need:
+
+- `emotes/{state}.png` for each template.
+- `sprites/{action}-strip.png` for each template or body-class family.
+- accessory overlays that align to the same bottom-center avatar anchor.
+
 ### Phase 5 - Dogless Rooms
 
 Create Phoenix-free backgrounds:

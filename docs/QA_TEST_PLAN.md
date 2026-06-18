@@ -10,11 +10,12 @@ Run focused behavior tests:
 
 CI must pass `WoofWatcher Verify` on `main`.
 
-Latest local evidence, 2026-06-13:
+Latest local evidence, 2026-06-18:
 
-- PASS: 195 focused tests with the command above.
-- BLOCKED LOCALLY: `pnpm run build:ci` could not run because `pnpm` is unavailable in the current Windows shell. Direct `tsc --noEmit --pretty false` is also blocked because `tsc` is unavailable in the current Windows shell.
-- REMOTE CI: GitHub Actions `WoofWatcher Verify` must pass on `main` after each pushed slice. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
+- PASS: 237 focused tests with the command above.
+- PASS: mobile TypeScript check with bundled Node and workspace TypeScript.
+- PASS: PixelLab asset verifier checked 31 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
+- REMOTE CI: GitHub Actions `WoofWatcher Verify` is currently blocked before job start by the account billing/spending-limit issue documented in `docs/BLOCKERS_FOR_APOLLO.md`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 
 ## Required Automated Coverage
 

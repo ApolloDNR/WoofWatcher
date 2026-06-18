@@ -1,8 +1,8 @@
-# Avatar Template Preview Pack
+# Avatar Template Asset Pack
 
-These are the first PixelLab launch thumbnails for Avatar Studio's template picker.
+These are the first PixelLab launch assets for Avatar Studio's template picker and template-preview stage.
 
-Generated: 2026-06-18
+Preview pack generated: 2026-06-18
 PixelLab source review object: `692b49bd-53dd-4256-a427-dc4dca21853d`
 Tag: `woofwatcher-avatar-template-preview-2026-06-18`
 Format: transparent PNG, 85x85px.
@@ -22,8 +22,21 @@ Template to PixelLab object map:
 - `slender/preview.png`: `3d5e306e-2cf1-4fd1-99b7-ecfb47f9c8b4`
 - `mixed/preview.png`: `29dd78da-57d2-4609-953a-25b1c07ce71d`
 
+Base pack generated: 2026-06-18
+PixelLab source review object: `3e5f7877-7382-49de-b3fc-1f74c75631ec`
+Tag: `woofwatcher-avatar-template-base-pack-2026-06-18`
+Format: transparent PNG, 170x170px.
+
+Template to PixelLab object map:
+
+- `shepherd/base.png`: `4a979556-9f07-4660-b3bf-831fed6030c0`
+- `retriever/base.png`: `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
+- `husky/base.png`: `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
+- `doodle/base.png`: `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
+
 Rules:
 
 - Keep previews transparent and character-only.
 - Do not bake accessories into template previews.
 - Full template packs should later add `base.png`, emotes, and sprite strips under the same template folder.
+- `base.png` is the production-scale character still for Avatar Studio preview. It is not a walk/eat/sleep sprite strip.
