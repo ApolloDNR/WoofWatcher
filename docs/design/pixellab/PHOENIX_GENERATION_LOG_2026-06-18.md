@@ -509,3 +509,22 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/sprites/walk-loop-strip.png`
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Status: generated, normalized, registered, wired into Avatar Studio through template-specific sprite preview routing, and included in the static Expo web export. The idle strip is a usable first live template loop. The walk strip is a first-pass movement proof and should be phone-reviewed/refined because it includes a front-to-side motion read.
+
+### Husky Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `animate_object`, then `create_object_state` plus `animate_object` for the corrected walk source.
+- Source object ID: `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
+- Standing walk source object ID: `6f981773-f54b-400d-8f8e-099c32ea259d`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `01564c1a-12f1-4ca6-81c5-7040a6f14b07`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7/animations/01564c1a-12f1-4ca6-81c5-7040a6f14b07/unknown/{i}.png`.
+  - Rejected seated walk attempt: animation ID `6a44263b-d4d2-44d7-b6fa-fd31863a4dfc`, source object `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`. This was not accepted because visual inspection showed a mostly seated expression loop instead of a walk.
+  - Accepted standing-source walk loop: animation ID `be7c3d19-df7d-4e36-9469-834ce5730679`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/6f981773-f54b-400d-8f8e-099c32ea259d/animations/be7c3d19-df7d-4e36-9469-834ce5730679/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, wired into Avatar Studio through template-specific sprite preview routing, and ready for static Expo export verification. Future body-class walk loops should start from a standing source pose when the base still is seated.

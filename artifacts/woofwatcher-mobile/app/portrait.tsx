@@ -994,7 +994,7 @@ const s = StyleSheet.create({
     height: "100%",
   },
   templateHeroDogGhost: {
-    opacity: 0.16,
+    opacity: 0,
   },
   templateHeroSprite: {
     position: "absolute",

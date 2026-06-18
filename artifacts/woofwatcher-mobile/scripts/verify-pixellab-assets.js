@@ -94,6 +94,8 @@ const templateAccessories = [
 ];
 
 const templateSprites = [
+  ["husky", "idle-tail-wag-strip.png", 8, 256, 256],
+  ["husky", "walk-loop-strip.png", 8, 256, 256],
   ["retriever", "idle-tail-wag-strip.png", 8, 256, 256],
   ["retriever", "walk-loop-strip.png", 8, 256, 256],
 ];

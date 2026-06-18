@@ -30,6 +30,42 @@ function spriteAsset(source: ImageSourcePropType): CareTwinSpriteAsset {
 export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
   Record<AvatarTemplateId, Partial<Record<AvatarTemplateSpriteAction, AvatarTemplateSpritePackItem>>>
 > = {
+  husky: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Husky live idle",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png"),
+      ),
+      track: {
+        key: "husky:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Husky/Spitz idle breathing and soft tail wag loop.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Husky walk loop",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/husky/sprites/walk-loop-strip.png"),
+      ),
+      track: {
+        key: "husky:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/husky/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Husky/Spitz walking-in-place loop for live Avatar Studio preview.",
+      },
+    },
+  },
   retriever: {
     "idle-tail-wag": {
       action: "idle-tail-wag",

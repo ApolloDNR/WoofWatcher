@@ -207,6 +207,13 @@ Initial Retriever live sprite strips are now wired as the first non-Phoenix temp
 
 The first Retriever walk pass is acceptable as a production plumbing proof, but should be reviewed on-device before final store polish because the movement includes a front-to-side read that may need a cleaner gait pass.
 
+Initial Husky/Spitz live sprite strips are now wired as the first spitz/working-body animation pack, registered through `avatarTemplateSpriteAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered in `/portrait` when the selected template recommends Husky/Spitz and the mood state maps to a live loop:
+
+- `assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png` - live, 2048x256, 8 frames, used for happy/calm/proud preview states.
+- `assets/avatar/templates/husky/sprites/walk-loop-strip.png` - live, 2048x256, 8 frames, used for excited/bored preview states.
+
+The first Husky seated walk attempt was rejected because it did not read like a walk. The live walk strip now comes from a standing-source PixelLab state so future body-class walk loops should start from a standing source pose instead of a seated template still.
+
 Initial accessory slots:
 
 - neck: forest bandana, navy collar, copper collar, heart tag, trail bandana. Status: transparent PixelLab 85x85 inventory icons live.
