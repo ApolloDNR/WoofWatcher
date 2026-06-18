@@ -564,3 +564,44 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/doodle/sprites/walk-loop-strip.png`
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Status: generated, normalized, visually checked, registered, wired into Avatar Studio through template-specific sprite preview routing, and ready for static Expo export verification. The Doodle walk strip currently gives the strongest non-Phoenix game-walk read and should be used as a quality reference for future walk-loop prompts.
+
+### Terrier Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `animate_object`, `create_object_state`, then `animate_object` for the standing walk source.
+- Source object ID: `65f0ffbb-e811-49d4-be6d-c8f2b2abf0ce`
+- Standing walk source object ID: `ec13f68b-df30-4cc3-a73f-51c792f3ca17`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `44917f48-6d14-4d5c-ad96-091aea93f203`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/65f0ffbb-e811-49d4-be6d-c8f2b2abf0ce/animations/44917f48-6d14-4d5c-ad96-091aea93f203/unknown/{i}.png`.
+  - Standing-source walk loop: animation ID `e51be464-8eb8-4cec-b40e-a12f8ae184af`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ec13f68b-df30-4cc3-a73f-51c792f3ca17/animations/e51be464-8eb8-4cec-b40e-a12f8ae184af/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/terrier/sprites/walk-loop-strip.png`
+- UX update: `/portrait` now shows live/still readiness badges and a live-template count in the template picker, so unfinished templates are clearly labeled as still in production.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, wired into Avatar Studio through template-specific sprite preview routing, and ready for static Expo export verification. The walk loop has a readable small-terrier trot with some front-to-side turn, so it should receive native phone-size gait review before final store polish.
+
+### Hound Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_1_direction_object`, `select_object_frames`, `animate_object`, `create_object_state`, then `animate_object` for the standing walk source.
+- Source review object ID: `ed2780ce-34ac-41ae-8848-12e723a0e7b1`
+- Selected source object ID: `ad00f137-4857-465f-99a6-82fae38de2c9`
+- Standing walk source object ID: `9299721e-1376-4b3a-9de3-224e79b2735f`
+- Supplemental 8-direction character reference ID: `7a3d1bdb-14d6-44e1-8a46-b24fac3bbc3b`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `8e0a7ca7-5969-42c8-bd64-b71346ea957c`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ad00f137-4857-465f-99a6-82fae38de2c9/animations/8e0a7ca7-5969-42c8-bd64-b71346ea957c/unknown/{i}.png`.
+  - Standing-source walk loop: animation ID `eaf87717-3fba-4ff7-a2c3-ddee48728b43`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/9299721e-1376-4b3a-9de3-224e79b2735f/animations/eaf87717-3fba-4ff7-a2c3-ddee48728b43/unknown/{i}.png`.
+  - Rejected comparison strip: south-facing `walk-8-frames` from the supplemental 8-direction character. This was not accepted because it read too small/front-facing for the Avatar Studio side-view stage.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/hound/sprites/walk-loop-strip.png`
+- UX update: `/portrait` now treats completed live template packs as animated preview citizens in the motion model and adds a tighter pixel-stage floor/live chip so the selected care twin reads as one in-scene game sprite.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. The Hound side-view walk has a clean first-pass gait and should receive native phone-size timing review before final store polish.

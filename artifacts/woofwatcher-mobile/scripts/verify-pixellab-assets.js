@@ -98,10 +98,14 @@ const templateSprites = [
   ["bully", "walk-loop-strip.png", 8, 256, 256],
   ["doodle", "idle-tail-wag-strip.png", 8, 256, 256],
   ["doodle", "walk-loop-strip.png", 8, 256, 256],
+  ["hound", "idle-tail-wag-strip.png", 8, 256, 256],
+  ["hound", "walk-loop-strip.png", 8, 256, 256],
   ["husky", "idle-tail-wag-strip.png", 8, 256, 256],
   ["husky", "walk-loop-strip.png", 8, 256, 256],
   ["retriever", "idle-tail-wag-strip.png", 8, 256, 256],
   ["retriever", "walk-loop-strip.png", 8, 256, 256],
+  ["terrier", "idle-tail-wag-strip.png", 8, 256, 256],
+  ["terrier", "walk-loop-strip.png", 8, 256, 256],
 ];
 
 const avatarAccessories = [

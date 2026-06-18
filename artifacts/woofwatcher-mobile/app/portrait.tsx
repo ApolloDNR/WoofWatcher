@@ -55,7 +55,10 @@ import {
   getAvatarTemplateDisplaySource,
   getAvatarTemplateEmoteSource,
 } from "@/lib/avatarTemplateAssets";
-import { getAvatarTemplateSpritePreview } from "@/lib/avatarTemplateSpriteAssets";
+import {
+  getAvatarTemplateSpritePreview,
+  hasAvatarTemplateSpritePack,
+} from "@/lib/avatarTemplateSpriteAssets";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle } from "@/lib/pixelRendering";
@@ -76,7 +79,7 @@ const SCAN_LINES = [
   "Preparing owner review...",
 ];
 
-const HERO_TEMPLATE_SPRITE_SIZE = 220;
+const HERO_TEMPLATE_SPRITE_SIZE = 236;
 
 const COAT_SWATCHES = [
   "#1B1714",
@@ -258,6 +261,10 @@ export default function PortraitScreen() {
   }, [templateLife]);
 
   const selectedTemplate = getAvatarTemplate(draft.templateId);
+  const liveTemplateCount = useMemo(
+    () => AVATAR_TEMPLATES.filter((template) => hasAvatarTemplateSpritePack(template.id)).length,
+    [],
+  );
   const selectedTemplateBase = getAvatarTemplateBaseSource(draft.templateId);
   const selectedTemplateEmote = getAvatarTemplateEmoteSource(draft.templateId, previewEmote);
   const selectedTemplateCardSource = selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
@@ -452,6 +459,8 @@ export default function PortraitScreen() {
                     style={StyleSheet.absoluteFill}
                     pointerEvents="none"
                   />
+                  <View style={s.templatePixelFloor} pointerEvents="none" />
+                  <View style={s.templatePixelLines} pointerEvents="none" />
                   <Animated.View
                     style={[
                       s.templateHeroDogWrap,
@@ -529,7 +538,13 @@ export default function PortraitScreen() {
                       {heroSpeech}
                     </Text>
                   </View>
-                  <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.92)", borderColor: colors.border }]}>
+                  <View style={[s.templateLiveChip, { backgroundColor: colors.navy, borderColor: colors.copper }]}>
+                    <View style={[s.templateLiveDot, { backgroundColor: previewIsSprite ? colors.sage : colors.amber }]} />
+                    <Text style={[s.templateLiveChipText, { fontFamily: "Inter_700Bold" }]}>
+                      {previewIsSprite ? "LIVE" : "NEXT"}
+                    </Text>
+                  </View>
+                  <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
                     <Text style={[s.templateHeroKicker, { color: previewMood.chipColor, fontFamily: "Inter_700Bold" }]}>
                       {previewMotionLabel}
                     </Text>
@@ -663,11 +678,15 @@ export default function PortraitScreen() {
 
         {activeTab === "template" ? (
           <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader title="Choose base template" action={selectedTemplate.label} />
+            <BoardSectionHeader
+              title="Choose base template"
+              action={`${liveTemplateCount}/${AVATAR_TEMPLATES.length} live`}
+            />
             <View style={s.templateGrid}>
               {AVATAR_TEMPLATES.map((template) => {
                 const active = draft.templateId === template.id;
                 const tone = templateColor(template.id);
+                const liveSprite = hasAvatarTemplateSpritePack(template.id);
                 return (
                   <Pressable
                     key={template.id}
@@ -698,6 +717,27 @@ export default function PortraitScreen() {
                         contentFit="contain"
                         transition={140}
                       />
+                      <View
+                        style={[
+                          s.templateLiveBadge,
+                          {
+                            backgroundColor: liveSprite ? colors.brandNavy : colors.ivory,
+                            borderColor: liveSprite ? colors.brandNavy : colors.border,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.templateLiveBadgeText,
+                            {
+                              color: liveSprite ? "#FFF9EF" : colors.mutedForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {liveSprite ? "Live" : "Still"}
+                        </Text>
+                      </View>
                       {active ? (
                         <View style={[s.templateCheck, { backgroundColor: tone }]}>
                           <Ionicons name="checkmark" size={13} color="#FFF9EF" />
@@ -709,6 +749,17 @@ export default function PortraitScreen() {
                     </Text>
                     <Text style={[s.templateSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       {template.subtitle}
+                    </Text>
+                    <Text
+                      style={[
+                        s.templateSpriteNote,
+                        {
+                          color: liveSprite ? tone : colors.mutedForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      {liveSprite ? "Breathes and walks in preview" : "Sprite rig in production"}
                     </Text>
                   </Pressable>
                 );
@@ -980,12 +1031,31 @@ const s = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#EDE7DC",
   },
+  templatePixelFloor: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    bottom: 68,
+    height: 44,
+    borderRadius: 2,
+    backgroundColor: "rgba(109,163,111,0.22)",
+    borderWidth: 2,
+    borderColor: "rgba(8,20,36,0.18)",
+    transform: [{ scaleX: 1.08 }, { skewX: "-8deg" }],
+  },
+  templatePixelLines: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.12,
+    borderWidth: 2,
+    borderColor: "#081424",
+    margin: 10,
+  },
   templateHeroDogWrap: {
     position: "absolute",
-    left: 34,
-    right: 34,
-    bottom: 62,
-    height: "62%",
+    left: 18,
+    right: 18,
+    bottom: 58,
+    height: "70%",
     alignItems: "center",
     justifyContent: "flex-end",
   },
@@ -1106,6 +1176,28 @@ const s = StyleSheet.create({
     paddingVertical: 10,
   },
   templateSpeechText: { fontSize: 17, lineHeight: 21 },
+  templateLiveChip: {
+    position: "absolute",
+    left: 16,
+    bottom: 78,
+    minHeight: 28,
+    borderRadius: 4,
+    borderWidth: 2,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  templateLiveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 2,
+  },
+  templateLiveChipText: {
+    color: "#FFF9EF",
+    fontSize: 9,
+    letterSpacing: 0.8,
+  },
   templateHeroHud: {
     position: "absolute",
     right: 16,
@@ -1257,8 +1349,24 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#FFF9EF",
   },
+  templateLiveBadge: {
+    position: "absolute",
+    left: 6,
+    bottom: 6,
+    minHeight: 22,
+    borderRadius: 4,
+    borderWidth: 1,
+    paddingHorizontal: 7,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  templateLiveBadgeText: {
+    fontSize: 9,
+    textTransform: "uppercase",
+  },
   templateTitle: { fontSize: 13.5 },
   templateSub: { fontSize: 11.5, lineHeight: 16 },
+  templateSpriteNote: { fontSize: 10.5, lineHeight: 14, marginTop: "auto" },
   swatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   swatch: {
     width: 42,

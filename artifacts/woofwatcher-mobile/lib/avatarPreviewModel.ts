@@ -10,6 +10,15 @@ import type { CareTwinSpriteAction } from "./avatarLifeEngine.ts";
 
 export type AvatarPreviewLayerKind = "bandana" | "collar" | "hat" | "mask" | "vest" | "bed" | "sparkles";
 
+const LIVE_TEMPLATE_PACKS = new Set<AvatarTemplateId>([
+  "bully",
+  "doodle",
+  "hound",
+  "husky",
+  "retriever",
+  "terrier",
+]);
+
 export interface AvatarPreviewAccessoryLayer {
   id: string;
   label: string;
@@ -74,6 +83,14 @@ export function deriveAvatarPreviewMotion(
   emote: AvatarEmoteState,
 ): AvatarPreviewMotionModel {
   if (templateId !== "shepherd") {
+    if (LIVE_TEMPLATE_PACKS.has(templateId)) {
+      return {
+        mode: "sprite",
+        label: "Live template sprite pack",
+        spriteAction: null,
+      };
+    }
+
     return {
       mode: "still",
       label: "Starter still preview",

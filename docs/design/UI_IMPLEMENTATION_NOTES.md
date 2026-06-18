@@ -372,6 +372,22 @@ Remaining visual work:
 - Replace first-pass derived room variants with final illustrated PixelLab/Figma-quality scenes.
 - Generate remaining unfinished template emote/sprite packs and true overlay-aligned accessory layers.
 
+## 2026-06-18 Avatar Studio Live Template Routing Pass
+
+Tightened the care-twin creator toward the Option B neo-retro digital pet boards:
+
+- Updated the preview motion model so completed template sprite packs are treated as live animated previews instead of truthful-but-flat starter stills.
+- Expanded the `/portrait` hero stage with a stronger pixel-room floor, frame lines, and a compact live status chip so the selected care twin reads as one in-scene game sprite.
+- Kept the still template image hidden while a live sprite is active, preventing the double-avatar/ghost-avatar problem Apollo called out.
+- Rebuilt the Expo static web export and verified the route is serving locally at `http://127.0.0.1:4192/portrait`.
+- Browser DOM inspection confirmed the live Studio view is loading the Phoenix room, Shepherd base, and `tail-wag` sprite strip as the primary preview.
+
+Remaining visual work:
+
+- Capture native iOS/Android screenshots for final safe-area, animation pacing, and phone-size sprite proportion QA.
+- Continue PixelLab template sprite packs for Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed.
+- Add artist-reviewed overlay alignment for accessories so hats/collars/bandanas stay locked to each breed's body anchor.
+
 ## 2026-06-18 Retriever Starter Emote Pack Pass
 
 Expanded Avatar Studio beyond a Phoenix-only mood system:

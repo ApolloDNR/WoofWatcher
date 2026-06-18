@@ -228,6 +228,20 @@ Initial Doodle live sprite strips are now wired as the first curly/soft-body ani
 
 The Doodle walk strip follows the standing-source pattern and currently gives the strongest game-sprite walk read among the non-Phoenix template packs.
 
+Initial Terrier live sprite strips are now wired as the first small-body animation pack, registered through `avatarTemplateSpriteAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered in `/portrait` when the selected template recommends Terrier and the mood state maps to a live loop:
+
+- `assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png` - live, 2048x256, 8 frames, used for happy/calm/proud preview states.
+- `assets/avatar/templates/terrier/sprites/walk-loop-strip.png` - live, 2048x256, 8 frames, used for excited/bored preview states.
+
+The Terrier walk strip follows the standing-source pattern. It reads as a tiny terrier trot with some front-to-side turn, so it should get phone-size gait review before final store polish.
+
+Initial Hound live sprite strips are now wired as the first long-ear sporting-body animation pack, registered through `avatarTemplateSpriteAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered in `/portrait` when the selected template recommends Hound and the mood state maps to a live loop:
+
+- `assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png` - live, 2048x256, 8 frames, used for happy/calm/proud preview states.
+- `assets/avatar/templates/hound/sprites/walk-loop-strip.png` - live, 2048x256, 8 frames, used for excited/bored preview states.
+
+The Hound walk strip follows the standing-source pattern and currently has one of the cleaner side-view gait reads among the template packs. It should still get native phone-size timing review before final store polish.
+
 Initial accessory slots:
 
 - neck: forest bandana, navy collar, copper collar, heart tag, trail bandana. Status: transparent PixelLab 85x85 inventory icons live.

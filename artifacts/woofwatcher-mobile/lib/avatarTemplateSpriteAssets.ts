@@ -138,6 +138,42 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       },
     },
   },
+  hound: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Hound live idle",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png"),
+      ),
+      track: {
+        key: "hound:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Hound idle breathing with soft ear and tail motion.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Hound walk loop",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/hound/sprites/walk-loop-strip.png"),
+      ),
+      track: {
+        key: "hound:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/hound/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Hound standing-source side-view walk loop for live Avatar Studio preview.",
+      },
+    },
+  },
   retriever: {
     "idle-tail-wag": {
       action: "idle-tail-wag",
@@ -174,6 +210,42 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       },
     },
   },
+  terrier: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Terrier live idle",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png"),
+      ),
+      track: {
+        key: "terrier:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Terrier idle breathing and tiny tail/body wiggle loop.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Terrier walk loop",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/terrier/sprites/walk-loop-strip.png"),
+      ),
+      track: {
+        key: "terrier:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/terrier/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Terrier standing-source trot loop for live Avatar Studio preview.",
+      },
+    },
+  },
 };
 
 export function mapAvatarEmoteToTemplateSpriteAction(
@@ -201,6 +273,11 @@ export function getAvatarTemplateSpritePreview(
   const action = mapAvatarEmoteToTemplateSpriteAction(templateId, emote);
   if (!action) return null;
   return AVATAR_TEMPLATE_SPRITE_ASSETS[templateId]?.[action] ?? null;
+}
+
+export function hasAvatarTemplateSpritePack(templateId: AvatarTemplateId): boolean {
+  const pack = AVATAR_TEMPLATE_SPRITE_ASSETS[templateId];
+  return Boolean(pack?.["idle-tail-wag"] && pack?.["walk-loop"]);
 }
 
 export function listAvatarTemplateSpriteSlots(): AvatarTemplateSpritePackItem[] {
