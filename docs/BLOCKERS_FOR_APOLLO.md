@@ -11,7 +11,7 @@
 
 ## Accounts And Secrets
 
-- GitHub Actions billing/spending limit: the 2026-06-18 `WoofWatcher Verify` push run `27751926674` for commit `61122c0` did not start because GitHub reported recent account payments failed or the spending limit needs to be increased. Local focused tests, mobile typecheck, PixelLab asset verification, Expo web export from prior release checks, and browser DOM verification from prior release checks passed, but CI cannot provide authoritative remote verification until GitHub billing is fixed.
+- GitHub Actions billing/spending limit: the 2026-06-18 `WoofWatcher Verify` push run `27755647013` for commit `56096bf` did not start because GitHub reported recent account payments failed or the spending limit needs to be increased. Local focused tests and PixelLab asset verification passed for this slice, but CI cannot provide authoritative remote verification until GitHub billing is fixed.
 - Clerk production configuration.
 - Database/Supabase production configuration.
 - Storage provider for records and generated reports.
