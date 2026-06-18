@@ -546,3 +546,21 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/sprites/walk-loop-strip.png`
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Status: generated, normalized, visually checked, registered, wired into Avatar Studio through template-specific sprite preview routing, and ready for static Expo export verification.
+
+### Doodle Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `animate_object`, `create_object_state`, then `animate_object` for the standing walk source.
+- Source object ID: `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
+- Standing walk source object ID: `20a386e7-34a8-46f9-904a-3be540ee46b6`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `f2f8d9a4-6218-4c9a-ad31-087ecd4ff476`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/f5852e83-c2d1-4630-8e97-6a4cdb02260d/animations/f2f8d9a4-6218-4c9a-ad31-087ecd4ff476/unknown/{i}.png`.
+  - Standing-source walk loop: animation ID `329d8628-3c73-4e90-b577-4f47a2137f5f`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/20a386e7-34a8-46f9-904a-3be540ee46b6/animations/329d8628-3c73-4e90-b577-4f47a2137f5f/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/doodle/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, wired into Avatar Studio through template-specific sprite preview routing, and ready for static Expo export verification. The Doodle walk strip currently gives the strongest non-Phoenix game-walk read and should be used as a quality reference for future walk-loop prompts.

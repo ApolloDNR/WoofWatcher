@@ -66,6 +66,42 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       },
     },
   },
+  doodle: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Doodle live idle",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png"),
+      ),
+      track: {
+        key: "doodle:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Doodle idle breathing and soft tail wag loop.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Doodle walk loop",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/doodle/sprites/walk-loop-strip.png"),
+      ),
+      track: {
+        key: "doodle:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/doodle/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Doodle standing-source walking-in-place loop for live Avatar Studio preview.",
+      },
+    },
+  },
   husky: {
     "idle-tail-wag": {
       action: "idle-tail-wag",

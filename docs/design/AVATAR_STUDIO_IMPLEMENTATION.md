@@ -297,7 +297,7 @@ The first production avatar family should match the locked boards:
 - `docs/design/reference/woofwatcher-pixel-reference-board-05-neo-retro-digital-pet.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-06-ecosystem-supporting-pages.png`
 
-The v2 family now includes the seated main avatar, sleep/rest avatar, anxious/home-alone avatar, proud/happy avatar, WoofGuide side avatar, badge/logo head crop, full registered Phoenix sprite manifest, first-pass dogless room variants, the 12-template preview thumbnail pack, the full 12-template production base still pack, a 10-state Phoenix/Shepherd emote still pack, a 10-state Retriever starter emote pack, a 10-state Husky/Spitz starter emote pack, the Retriever, Husky/Spitz, and Bully live sprite strip packs for idle/tail-wag and walk preview states. Final illustrated room variants, accessory layers, and remaining template/body-class emotes/sprites are still needed before the scan/customization story will feel App Store ready.
+The v2 family now includes the seated main avatar, sleep/rest avatar, anxious/home-alone avatar, proud/happy avatar, WoofGuide side avatar, badge/logo head crop, full registered Phoenix sprite manifest, first-pass dogless room variants, the 12-template preview thumbnail pack, the full 12-template production base still pack, a 10-state Phoenix/Shepherd emote still pack, a 10-state Retriever starter emote pack, a 10-state Husky/Spitz starter emote pack, and the Retriever, Husky/Spitz, Bully, and Doodle live sprite strip packs for idle/tail-wag and walk preview states. Final illustrated room variants, accessory layers, and remaining template/body-class emotes/sprites are still needed before the scan/customization story will feel App Store ready.
 
 The v2 accessory inventory now includes the first 10 transparent PixelLab accessory icons. True overlay-aligned costume/accessory layers are still needed before accessories can sit perfectly on every avatar body type during live animation.
 
@@ -311,8 +311,10 @@ The 2026-06-18 subscription seed pass also produced two additional PixelLab anim
 - `assets/avatar/templates/husky/sprites/walk-loop-strip.png`
 - `assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png`
 - `assets/avatar/templates/bully/sprites/walk-loop-strip.png`
+- `assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png`
+- `assets/avatar/templates/doodle/sprites/walk-loop-strip.png`
 
-These are verified production seed strips. The Phoenix subscription strips are not promoted above the current approved seated Phoenix Home sprite family until Apollo approves their phone-size proportions and anchor. The Retriever strips are live in Avatar Studio as the first non-Phoenix template animation pack; the walk loop still needs phone-size gait review. The Husky/Spitz and Bully walk strips use standing-source states, which is now the preferred production pattern for future body-class walk loops when the base still is seated.
+These are verified production seed strips. The Phoenix subscription strips are not promoted above the current approved seated Phoenix Home sprite family until Apollo approves their phone-size proportions and anchor. The Retriever strips are live in Avatar Studio as the first non-Phoenix template animation pack; the walk loop still needs phone-size gait review. The Husky/Spitz, Bully, and Doodle walk strips use standing-source states, which is now the preferred production pattern for future body-class walk loops when the base still is seated.
 
 When `getAvatarTemplateSpritePreview` returns a live sprite, the Avatar Studio hero suppresses the still-template ghost layer so the preview reads as one living care twin instead of a still dog plus a moving dog.
 

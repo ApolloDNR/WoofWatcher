@@ -221,6 +221,13 @@ Initial Bully live sprite strips are now wired as the first compact-body animati
 
 The Bully walk strip follows the standing-source pattern, because the base template still is seated.
 
+Initial Doodle live sprite strips are now wired as the first curly/soft-body animation pack, registered through `avatarTemplateSpriteAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered in `/portrait` when the selected template recommends Doodle and the mood state maps to a live loop:
+
+- `assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png` - live, 2048x256, 8 frames, used for happy/calm/proud preview states.
+- `assets/avatar/templates/doodle/sprites/walk-loop-strip.png` - live, 2048x256, 8 frames, used for excited/bored preview states.
+
+The Doodle walk strip follows the standing-source pattern and currently gives the strongest game-sprite walk read among the non-Phoenix template packs.
+
 Initial accessory slots:
 
 - neck: forest bandana, navy collar, copper collar, heart tag, trail bandana. Status: transparent PixelLab 85x85 inventory icons live.
