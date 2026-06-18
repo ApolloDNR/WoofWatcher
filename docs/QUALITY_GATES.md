@@ -124,7 +124,7 @@ Current evidence, 2026-06-14: Mobile Premium now uses shared board anatomy for W
 
 Current evidence, 2026-06-14: Mobile Avatar Studio now uses shared board anatomy for the animated scan canvas, live/generated avatar preview, mood-state set, and photo guidance while preserving library/camera generation, saved avatar state, and revert-to-default behavior.
 
-Current evidence, 2026-06-18: Mobile Avatar Studio now separates template thumbnails from production-scale template base stills. The first Shepherd, Retriever, Husky, and Doodle base PNGs render in the hero preview with subtle breathing motion, while unfinished templates fall back safely to the live Phoenix room or thumbnail registry.
+Current evidence, 2026-06-18: Mobile Avatar Studio now separates template thumbnails from production-scale template base stills. All 12 launch template base PNGs render through the hero preview with subtle breathing motion, while the registry still keeps safe fallbacks for future unfinished templates.
 
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 

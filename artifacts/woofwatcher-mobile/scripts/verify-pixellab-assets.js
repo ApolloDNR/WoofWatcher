@@ -48,7 +48,15 @@ const templateBases = [
   "shepherd",
   "retriever",
   "husky",
+  "bully",
   "doodle",
+  "terrier",
+  "hound",
+  "dachshund",
+  "spaniel",
+  "toy",
+  "slender",
+  "mixed",
 ];
 
 function readPngSize(file) {

@@ -349,4 +349,38 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/base.png` from `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/base.png` from `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/doodle/base.png` from `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
-- Status: generated, visually reviewed as a coherent first production-scale base set, registered in the mobile Avatar Studio preview stage, and protected by readiness tests. Remaining templates, emote stills, sprite strips, and accessory overlays are still future work.
+- Status: generated, visually reviewed as a coherent first production-scale base set, registered in the mobile Avatar Studio preview stage, and protected by readiness tests. Remaining base templates were completed in packs 2 and 3 below.
+
+### Avatar Studio Template Base Pack 2
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_1_direction_object`
+- Review object ID: `eae9f9d1-83ea-4f8d-9ea6-af81db200d18`
+- Tag: `woofwatcher-avatar-template-base-pack-2026-06-18`
+- Cost: 25 generations
+- Output format: 4 selected transparent 170x170 PNG base stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/base.png` from `25c648c4-6e26-4c8e-8b65-6fb94e7c10b4`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/terrier/base.png` from `65f0ffbb-e811-49d4-be6d-c8f2b2abf0ce`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/hound/base.png` from `7f8a712d-c65c-4d1c-835a-5f79b5500ff7`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/dachshund/base.png` from `8fbb402b-579d-478c-bcad-fd21e61cf530`
+- Status: generated, selected, downloaded, visually checked in a 12-template contact sheet, registered, and covered by PixelLab asset verification.
+
+### Avatar Studio Template Base Pack 3
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_1_direction_object`
+- Review object ID: `06af8c0e-a3fe-411a-bab9-9535648a7f29`
+- Tag: `woofwatcher-avatar-template-base-pack-2026-06-18`
+- Cost: 25 generations
+- Output format: 4 selected transparent 170x170 PNG base stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/spaniel/base.png` from `b85934b2-d1cc-4b89-b4e9-0342520ec73a`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/toy/base.png` from `995d0da0-6469-42ea-9855-7caed01584c2`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/slender/base.png` from `efa34067-c258-4105-9da4-73d0907f36b5`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/mixed/base.png` from `c63ef688-cc17-4f7f-94d2-8504606213b5`
+- Status: generated, selected, downloaded, visually checked in a 12-template contact sheet, registered, and covered by PixelLab asset verification. The launch template base-still layer is now complete; emote stills, sprite strips, and accessories remain.

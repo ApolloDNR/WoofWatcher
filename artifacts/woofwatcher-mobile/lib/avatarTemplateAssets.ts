@@ -77,7 +77,7 @@ export const AVATAR_TEMPLATE_PREVIEW_ASSETS: Record<AvatarTemplateId, AvatarTemp
   },
 };
 
-export const AVATAR_TEMPLATE_BASE_ASSETS: Partial<Record<AvatarTemplateId, AvatarTemplateBaseAsset>> = {
+export const AVATAR_TEMPLATE_BASE_ASSETS: Record<AvatarTemplateId, AvatarTemplateBaseAsset> = {
   shepherd: {
     source: require("@/assets/avatar/templates/shepherd/base.png"),
     path: "assets/avatar/templates/shepherd/base.png",
@@ -93,9 +93,49 @@ export const AVATAR_TEMPLATE_BASE_ASSETS: Partial<Record<AvatarTemplateId, Avata
     path: "assets/avatar/templates/husky/base.png",
     style: "pixellab-template-base",
   },
+  bully: {
+    source: require("@/assets/avatar/templates/bully/base.png"),
+    path: "assets/avatar/templates/bully/base.png",
+    style: "pixellab-template-base",
+  },
   doodle: {
     source: require("@/assets/avatar/templates/doodle/base.png"),
     path: "assets/avatar/templates/doodle/base.png",
+    style: "pixellab-template-base",
+  },
+  terrier: {
+    source: require("@/assets/avatar/templates/terrier/base.png"),
+    path: "assets/avatar/templates/terrier/base.png",
+    style: "pixellab-template-base",
+  },
+  hound: {
+    source: require("@/assets/avatar/templates/hound/base.png"),
+    path: "assets/avatar/templates/hound/base.png",
+    style: "pixellab-template-base",
+  },
+  dachshund: {
+    source: require("@/assets/avatar/templates/dachshund/base.png"),
+    path: "assets/avatar/templates/dachshund/base.png",
+    style: "pixellab-template-base",
+  },
+  spaniel: {
+    source: require("@/assets/avatar/templates/spaniel/base.png"),
+    path: "assets/avatar/templates/spaniel/base.png",
+    style: "pixellab-template-base",
+  },
+  toy: {
+    source: require("@/assets/avatar/templates/toy/base.png"),
+    path: "assets/avatar/templates/toy/base.png",
+    style: "pixellab-template-base",
+  },
+  slender: {
+    source: require("@/assets/avatar/templates/slender/base.png"),
+    path: "assets/avatar/templates/slender/base.png",
+    style: "pixellab-template-base",
+  },
+  mixed: {
+    source: require("@/assets/avatar/templates/mixed/base.png"),
+    path: "assets/avatar/templates/mixed/base.png",
     style: "pixellab-template-base",
   },
 };

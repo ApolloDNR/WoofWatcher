@@ -173,18 +173,26 @@ The first launch preview pack is live:
 - `assets/avatar/templates/slender/preview.png`
 - `assets/avatar/templates/mixed/preview.png`
 
-These are transparent 85x85 PixelLab thumbnails for the Avatar Studio picker. Full template packs still need production-scale `base.png`, emotes, and sprite strips.
+These are transparent 85x85 PixelLab thumbnails for the Avatar Studio picker. Full template packs still need emotes and sprite strips.
 
 ### Phase 4B - Avatar Template Base Art
 
-The first production-scale template base pack is live:
+The full first-pass production-scale template base pack is live:
 
 - `assets/avatar/templates/shepherd/base.png` from PixelLab object `4a979556-9f07-4660-b3bf-831fed6030c0`
 - `assets/avatar/templates/retriever/base.png` from PixelLab object `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
 - `assets/avatar/templates/husky/base.png` from PixelLab object `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
+- `assets/avatar/templates/bully/base.png` from PixelLab object `25c648c4-6e26-4c8e-8b65-6fb94e7c10b4`
 - `assets/avatar/templates/doodle/base.png` from PixelLab object `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
+- `assets/avatar/templates/terrier/base.png` from PixelLab object `65f0ffbb-e811-49d4-be6d-c8f2b2abf0ce`
+- `assets/avatar/templates/hound/base.png` from PixelLab object `7f8a712d-c65c-4d1c-835a-5f79b5500ff7`
+- `assets/avatar/templates/dachshund/base.png` from PixelLab object `8fbb402b-579d-478c-bcad-fd21e61cf530`
+- `assets/avatar/templates/spaniel/base.png` from PixelLab object `b85934b2-d1cc-4b89-b4e9-0342520ec73a`
+- `assets/avatar/templates/toy/base.png` from PixelLab object `995d0da0-6469-42ea-9855-7caed01584c2`
+- `assets/avatar/templates/slender/base.png` from PixelLab object `efa34067-c258-4105-9da4-73d0907f36b5`
+- `assets/avatar/templates/mixed/base.png` from PixelLab object `c63ef688-cc17-4f7f-94d2-8504606213b5`
 
-These are transparent 170x170 PixelLab character stills for the Avatar Studio preview stage. The app registers them through `avatarTemplateAssets.ts` and falls back to preview thumbnails for templates that do not have `base.png` yet.
+These are transparent 170x170 PixelLab character stills for the Avatar Studio preview stage. The app registers them through `avatarTemplateAssets.ts`; every launch template now has a production-scale base still.
 
 Full template packs still need:
 

@@ -45,6 +45,12 @@ import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/bo
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
+type HouseholdMemberSummary = {
+  displayName?: string | null;
+  email?: string | null;
+  role?: string | null;
+};
+
 export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -61,7 +67,7 @@ export default function MoreScreen() {
   const updateMe = useUpdateMe();
 
   const household = me.data?.household;
-  const members = me.data?.members ?? [];
+  const members: HouseholdMemberSummary[] = me.data?.members ?? [];
   const myName = me.data?.user?.displayName?.trim() || "";
 
   const now = Date.now();

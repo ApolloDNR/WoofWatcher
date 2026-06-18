@@ -23,7 +23,7 @@ Template to PixelLab object map:
 - `mixed/preview.png`: `29dd78da-57d2-4609-953a-25b1c07ce71d`
 
 Base pack generated: 2026-06-18
-PixelLab source review object: `3e5f7877-7382-49de-b3fc-1f74c75631ec`
+PixelLab source review objects: `3e5f7877-7382-49de-b3fc-1f74c75631ec`, `eae9f9d1-83ea-4f8d-9ea6-af81db200d18`, `06af8c0e-a3fe-411a-bab9-9535648a7f29`
 Tag: `woofwatcher-avatar-template-base-pack-2026-06-18`
 Format: transparent PNG, 170x170px.
 
@@ -32,11 +32,19 @@ Template to PixelLab object map:
 - `shepherd/base.png`: `4a979556-9f07-4660-b3bf-831fed6030c0`
 - `retriever/base.png`: `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
 - `husky/base.png`: `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
+- `bully/base.png`: `25c648c4-6e26-4c8e-8b65-6fb94e7c10b4`
 - `doodle/base.png`: `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
+- `terrier/base.png`: `65f0ffbb-e811-49d4-be6d-c8f2b2abf0ce`
+- `hound/base.png`: `7f8a712d-c65c-4d1c-835a-5f79b5500ff7`
+- `dachshund/base.png`: `8fbb402b-579d-478c-bcad-fd21e61cf530`
+- `spaniel/base.png`: `b85934b2-d1cc-4b89-b4e9-0342520ec73a`
+- `toy/base.png`: `995d0da0-6469-42ea-9855-7caed01584c2`
+- `slender/base.png`: `efa34067-c258-4105-9da4-73d0907f36b5`
+- `mixed/base.png`: `c63ef688-cc17-4f7f-94d2-8504606213b5`
 
 Rules:
 
 - Keep previews transparent and character-only.
 - Do not bake accessories into template previews.
-- Full template packs should later add `base.png`, emotes, and sprite strips under the same template folder.
+- Full template packs should later add emotes and sprite strips under the same template folder.
 - `base.png` is the production-scale character still for Avatar Studio preview. It is not a walk/eat/sleep sprite strip.
