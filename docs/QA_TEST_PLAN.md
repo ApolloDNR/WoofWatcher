@@ -135,6 +135,7 @@ Latest local evidence, 2026-06-18:
 64. Tap Reminder Center rows and confirm they route to the expected concrete workflow: routine edit, Records, Medication log, or Grooming log with the composer type preselected.
 65. Open Log, search by caregiver, route/place, medication detail, and sticky-note text, then combine search with type chips and confirm the summary and empty state update correctly.
 66. Open Records Medication History, search by medicine, dose, caregiver, and note text, then switch Taken, Skipped, Missed, and Needs review filters and confirm summary and empty-state copy update correctly.
+67. Open Avatar Studio, switch to Emotes, tap each Phoenix mood state, and confirm the large hero dog changes to the corresponding PixelLab emote instead of showing the same head crop with a color wash.
 
 ## Missing QA
 
@@ -142,7 +143,7 @@ Latest local evidence, 2026-06-18:
 - API integration tests.
 - Auth onboarding smoke.
 - Visual regression or screenshot review.
-- Rive/Lottie/Reanimated avatar asset runtime checks.
+- Rive/Lottie/Reanimated avatar asset runtime checks and a native-device visual pass for the PixelLab emote pack.
 - Full accessibility pass for contrast, dynamic type, keyboard flow, touch targets, and native screen-reader traversal. Static labels for critical mobile actions are now covered.
 - Document upload/security tests.
 - Self-serve provider-backed account deletion tests.

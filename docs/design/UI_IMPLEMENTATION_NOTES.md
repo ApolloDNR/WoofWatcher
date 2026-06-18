@@ -338,6 +338,23 @@ Remaining visual work:
 - Generate template-specific emote stills and sprite strips.
 - Generate accessory overlay PNGs for neck/head/face/body/room/fx slots.
 
+## 2026-06-18 Avatar Studio Phoenix Emote Pack Pass
+
+Moved the Mood set from repeated head art into a real PixelLab state preview:
+
+- Generated and promoted five new Phoenix emote stills: calm, excited, bored, hungry, and not-feeling-well.
+- Normalized existing approved v2 states into the same emote folder for happy, anxious, sleepy, proud, and home-alone.
+- Added `avatarEmoteAssets.ts` as the explicit app registry for the 10-state Phoenix/Shepherd pack.
+- Updated `/portrait` so tapping a mood tile changes the large hero dog image and speech/HUD copy.
+- Removed the old mood-grid pattern that reused `PIXEL_HEAD_SOURCE` for every state with a color wash.
+- Extended `verify-pixellab-assets.js` and mobile readiness tests so every Phoenix emote must exist as a 170x170 PNG.
+
+Remaining visual work:
+
+- Generate matching emote packs for non-Phoenix launch templates or decide on shared body-class packs.
+- Add accessory overlay PNGs and anchor checks for emote states.
+- Add short animation strips for mood transitions after still states are visually approved.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

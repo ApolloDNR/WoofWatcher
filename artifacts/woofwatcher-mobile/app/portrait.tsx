@@ -28,6 +28,7 @@ import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { getPhoenixEmoteAsset } from "@/lib/avatarEmoteAssets";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import {
   AVATAR_ACCESSORIES,
@@ -155,6 +156,7 @@ export default function PortraitScreen() {
   const [sourceUri, setSourceUri] = useState<string | null>(null);
   const [scanLine, setScanLine] = useState(0);
   const [savedToast, setSavedToast] = useState<string | null>(null);
+  const [previewEmote, setPreviewEmote] = useState<AvatarEmoteState>("happy");
   const [now, setNow] = useState(() => Date.now());
   const scanSuggestion = useMemo(() => buildMockScanSuggestion(petName), [petName]);
 
@@ -244,6 +246,9 @@ export default function PortraitScreen() {
 
   const selectedTemplate = getAvatarTemplate(draft.templateId);
   const selectedTemplateBase = getAvatarTemplateBaseSource(draft.templateId);
+  const selectedEmoteAsset = getPhoenixEmoteAsset(previewEmote);
+  const usePhoenixEmotePreview = activeTab === "emotes" && draft.emotePackId === "phoenix-shepherd";
+  const selectedTemplateHeroSource = usePhoenixEmotePreview ? selectedEmoteAsset.source : selectedTemplateBase;
   const selectedTemplateCardSource = selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
   const avatarSummary = describeAvatarConfig(draft);
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
@@ -263,6 +268,14 @@ export default function PortraitScreen() {
   const reticleOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.34, 0.84] });
   const templateLift = templateLife.interpolate({ inputRange: [0, 1], outputRange: [0, -5] });
   const templateScale = templateLife.interpolate({ inputRange: [0, 1], outputRange: [1, 1.018] });
+  const heroSpeech =
+    activeTab === "emotes"
+      ? `${emoteLabel(previewEmote)} mode.`
+      : activeTab === "customize"
+      ? "Make me yours."
+      : "I'm ready!";
+  const heroHudKicker = usePhoenixEmotePreview ? "LIVE EMOTE" : "BASE ART";
+  const heroHudTitle = usePhoenixEmotePreview ? emoteLabel(previewEmote) : selectedTemplate.label;
 
   const ensurePermission = async (camera: boolean) => {
     if (Platform.OS === "web") return true;
@@ -378,7 +391,7 @@ export default function PortraitScreen() {
         ) : (
           <BoardCard padded={false} style={s.heroPreview}>
             <View style={s.liveRoomStage}>
-              {selectedTemplateBase ? (
+              {selectedTemplateHeroSource ? (
                 <View style={s.templatePreviewStage}>
                   <Image source={PIXEL_ROOM_SOURCE} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
                   <LinearGradient
@@ -394,16 +407,16 @@ export default function PortraitScreen() {
                       },
                     ]}
                   >
-                    <Image source={selectedTemplateBase} style={s.templateHeroDog} contentFit="contain" transition={180} />
+                    <Image source={selectedTemplateHeroSource} style={s.templateHeroDog} contentFit="contain" transition={180} />
                   </Animated.View>
                   <View style={[s.templateSpeech, { backgroundColor: colors.ivory, borderColor: colors.navy }]}>
                     <Text style={[s.templateSpeechText, { color: colors.navy, fontFamily: DISPLAY }]}>
-                      {activeTab === "emotes" ? "Try my moods." : activeTab === "customize" ? "Make me yours." : "I'm ready!"}
+                      {heroSpeech}
                     </Text>
                   </View>
                   <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.92)", borderColor: colors.border }]}>
-                    <Text style={[s.templateHeroKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>BASE ART</Text>
-                    <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
+                    <Text style={[s.templateHeroKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>{heroHudKicker}</Text>
+                    <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{heroHudTitle}</Text>
                   </View>
                 </View>
               ) : (
@@ -682,35 +695,49 @@ export default function PortraitScreen() {
           <BoardCard style={s.avatarBoard}>
             <BoardSectionHeader title="Mood set" action={draft.emotePackId === "phoenix-shepherd" ? "Phoenix pack" : "Starter"} />
             <View style={s.moodGrid}>
-              {AVATAR_EMOTE_STATES.map((emote) => (
-                <View key={emote} style={s.moodChip}>
-                  <View style={[s.moodThumbWrap, { borderColor: colors.border }]}>
-                    <Image source={PIXEL_HEAD_SOURCE} style={s.moodThumb} contentFit="cover" transition={150} />
+              {AVATAR_EMOTE_STATES.map((emote) => {
+                const active = previewEmote === emote;
+                const asset = getPhoenixEmoteAsset(emote);
+                return (
+                  <Pressable
+                    key={emote}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Preview Phoenix ${emoteLabel(emote)} emote`}
+                    onPress={() => {
+                      Haptics.selectionAsync().catch(() => {});
+                      setPreviewEmote(emote);
+                    }}
+                    style={({ pressed }) => [s.moodChip, { opacity: pressed ? 0.7 : 1 }]}
+                  >
                     <View
-                      pointerEvents="none"
                       style={[
-                        s.moodWash,
+                        s.moodThumbWrap,
                         {
-                          backgroundColor:
-                            emote === "not_feeling_well"
-                              ? "rgba(201,99,88,0.22)"
-                              : emote === "anxious" || emote === "home_alone"
-                              ? "rgba(168,203,232,0.22)"
-                              : emote === "sleepy" || emote === "calm"
-                              ? "rgba(109,163,111,0.18)"
-                              : "rgba(216,168,82,0.12)",
+                          backgroundColor: active ? colors.ivory : colors.background,
+                          borderColor: active ? colors.copper : colors.border,
                         },
                       ]}
-                    />
-                    <View style={[s.emoteIcon, { backgroundColor: colors.ivory }]}>
-                      <PixelIcon name={EMOTE_ICON[emote]} size={18} />
+                    >
+                      <Image source={asset.source} style={s.moodThumb} contentFit="contain" transition={150} />
+                      <View style={[s.emoteIcon, { backgroundColor: colors.ivory, borderColor: active ? colors.copper : colors.border }]}>
+                        <PixelIcon name={EMOTE_ICON[emote]} size={18} />
+                      </View>
                     </View>
-                  </View>
-                  <Text style={[s.moodChipLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {emoteLabel(emote)}
-                  </Text>
-                </View>
-              ))}
+                    <Text
+                      style={[
+                        s.moodChipLabel,
+                        {
+                          color: active ? colors.foreground : colors.mutedForeground,
+                          fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {emoteLabel(emote)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </BoardCard>
         ) : null}
@@ -1033,11 +1060,10 @@ const s = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 6,
     position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  moodThumb: { width: "100%", height: "100%" },
-  moodWash: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  moodThumb: { width: "94%", height: "94%" },
   emoteIcon: {
     position: "absolute",
     right: 5,
@@ -1045,6 +1071,7 @@ const s = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 7,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },

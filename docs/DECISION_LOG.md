@@ -953,6 +953,23 @@ Owner: Codex.
 
 Revisit trigger: A final Figma/Fable/PixelLab component renderer replaces static base stills with fully composited template bodies or live sprite previews.
 
+### 2026-06-18: Phoenix Emotes Use A Registered Mood Asset Pack
+
+Decision: Avatar Studio Phoenix/Shepherd mood states should resolve through `avatarEmoteAssets.ts` and approved 170x170 PNG files under `assets/avatar/phoenix/approved/emotes/`, rather than reusing one head crop with tint overlays.
+
+Reason: A video-game-like care twin needs readable body-language states. The mood grid should show real Phoenix states and the hero preview should respond when a caregiver taps a mood.
+
+Consequences:
+
+- `/portrait` now imports `getPhoenixEmoteAsset` and uses the selected emote in the large preview when the Phoenix/Shepherd pack is active.
+- The first Phoenix emote pack covers Happy, Calm, Excited, Bored, Hungry, Anxious, Sleepy, Proud, Home Alone, and Not Feeling Well.
+- `verify-pixellab-assets.js` and mobile readiness tests now protect every emote PNG as a 170x170 asset.
+- Non-Phoenix template packs still need emotes, sprites, and accessory overlays.
+
+Owner: Codex.
+
+Revisit trigger: Figma/Fable/PixelLab ships a fully composited avatar renderer or body-class emote packs replace the Phoenix-only still pack.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

@@ -139,9 +139,22 @@ Initial production-scale base stills are live as a PixelLab-generated 170x170 ba
 - `assets/avatar/templates/slender/base.png` - live.
 - `assets/avatar/templates/mixed/base.png` - live.
 
+Initial Phoenix/Shepherd emote stills are live as a PixelLab-generated and normalized 170x170 mood pack, registered through `avatarEmoteAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered in the `/portrait` Mood set preview:
+
+- `assets/avatar/phoenix/approved/emotes/happy.png` - live.
+- `assets/avatar/phoenix/approved/emotes/calm.png` - live.
+- `assets/avatar/phoenix/approved/emotes/excited.png` - live.
+- `assets/avatar/phoenix/approved/emotes/bored.png` - live.
+- `assets/avatar/phoenix/approved/emotes/hungry.png` - live.
+- `assets/avatar/phoenix/approved/emotes/anxious.png` - live.
+- `assets/avatar/phoenix/approved/emotes/sleepy.png` - live.
+- `assets/avatar/phoenix/approved/emotes/proud.png` - live.
+- `assets/avatar/phoenix/approved/emotes/home-alone.png` - live.
+- `assets/avatar/phoenix/approved/emotes/not-feeling-well.png` - live.
+
 Still needed for a full App Store avatar system:
 
-- emote stills for each template.
+- emote stills for non-Phoenix launch templates and reusable body classes.
 - template-specific sprite strips for major body classes.
 
 Initial accessory slots:
@@ -189,7 +202,7 @@ Next required asset pass:
 - Improve or upscale the v2 seated Phoenix main avatar if Apollo wants an even closer board-05/06 match.
 - Replace the first-pass derived room variants with final illustrated dark/night, bedtime, health-watch, and home-alone scenes.
 - Inspect and improve any action strip that does not read strongly enough at phone size, especially walk/eat/drink where future prop layers can make the action clearer.
-- Derive the sleeping, WoofGuide, dark-mode, badge/logo, and running footer variants from the approved identity instead of generating unrelated one-off dogs.
+- Derive the dark-mode, badge/logo refinements, running footer sprite, accessory overlays, and non-Phoenix template emote packs from the approved identity system instead of generating unrelated one-off dogs.
 
 ## Production Sprite Manifest Needed Next
 

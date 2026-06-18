@@ -384,3 +384,28 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/slender/base.png` from `efa34067-c258-4105-9da4-73d0907f36b5`
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/mixed/base.png` from `c63ef688-cc17-4f7f-94d2-8504606213b5`
 - Status: generated, selected, downloaded, visually checked in a 12-template contact sheet, registered, and covered by PixelLab asset verification. The launch template base-still layer is now complete; emote stills, sprite strips, and accessories remain.
+
+### Phoenix Avatar Studio Emote Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_object_state`
+- Source object ID: `4f318d58-7166-4b0a-b202-2896eed1e0dc`
+- Output format: 10 transparent 170x170 PNG emote stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/happy.png` from the approved proud/happy state.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/calm.png` from `f690d72e-5efb-4931-ad76-d2f4a739ff87`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/excited.png` from `bfe8bee5-5fa8-415c-b63e-2d71faa9725e`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/bored.png` from `b74aea82-806a-410c-acc5-1247cbde970c`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/hungry.png` from `2f1a7800-0414-44e7-94d0-fb986ca22343`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/anxious.png` from the approved home-alone/anxious state.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/sleepy.png` from the approved sleep/rest state.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/proud.png` from the approved proud/happy state.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/home-alone.png` from the approved home-alone/anxious state.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/not-feeling-well.png` from `39e8b2d9-da66-496b-83c6-8755bcad7d23`.
+- Rejected first-pass object IDs:
+  - `ac03ab66-d872-4ac6-a8e9-9b83f9828fe7` - bored pose too similar to default.
+  - `799136e4-e617-4187-880c-62078df88661` - hungry pose too subtle at phone size.
+  - `2032e8a9-6e52-4504-8ac4-38dd69c7957c` - not-feeling-well pose too similar to default.
+- Status: generated, downloaded, registered, wired into the Avatar Studio Mood set, and covered by PixelLab asset verification. The first Phoenix/Shepherd still-emote layer is live; non-Phoenix template emotes, accessory overlays, and mood transition strips remain.

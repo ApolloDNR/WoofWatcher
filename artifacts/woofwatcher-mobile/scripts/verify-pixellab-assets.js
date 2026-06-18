@@ -59,6 +59,19 @@ const templateBases = [
   "mixed",
 ];
 
+const phoenixEmotes = [
+  "happy",
+  "calm",
+  "excited",
+  "bored",
+  "hungry",
+  "anxious",
+  "sleepy",
+  "proud",
+  "home-alone",
+  "not-feeling-well",
+];
+
 function readPngSize(file) {
   const buffer = fs.readFileSync(file);
   const signature = buffer.subarray(0, 8).toString("hex");
@@ -137,11 +150,28 @@ function checkTemplateBase(templateId) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
+function checkPhoenixEmote(emoteId) {
+  const file = path.join(spriteDir, "approved", "emotes", `${emoteId}.png`);
+  if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
+
+  const size = readPngSize(file);
+  if (size.width !== 170 || size.height !== 170) {
+    return {
+      type: "invalid",
+      file: path.relative(root, file),
+      message: `expected 170x170, got ${size.width}x${size.height}`,
+    };
+  }
+
+  return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
+}
+
 const results = [
   ...sprites.map(checkSprite),
   ...rooms.map(checkRoom),
   ...templatePreviews.map(checkTemplatePreview),
   ...templateBases.map(checkTemplateBase),
+  ...phoenixEmotes.map(checkPhoenixEmote),
 ];
 const missing = results.filter((result) => result.type === "missing");
 const invalid = results.filter((result) => result.type === "invalid");

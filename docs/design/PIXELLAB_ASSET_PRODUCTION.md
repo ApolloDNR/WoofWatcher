@@ -200,6 +200,29 @@ Full template packs still need:
 - `sprites/{action}-strip.png` for each template or body-class family.
 - accessory overlays that align to the same bottom-center avatar anchor.
 
+### Phase 4C - Phoenix Emote Pack
+
+The first Phoenix/Shepherd emote pack is live:
+
+- `assets/avatar/phoenix/approved/emotes/happy.png` from the approved proud/happy state.
+- `assets/avatar/phoenix/approved/emotes/calm.png` from PixelLab object `f690d72e-5efb-4931-ad76-d2f4a739ff87`.
+- `assets/avatar/phoenix/approved/emotes/excited.png` from PixelLab object `bfe8bee5-5fa8-415c-b63e-2d71faa9725e`.
+- `assets/avatar/phoenix/approved/emotes/bored.png` from PixelLab object `b74aea82-806a-410c-acc5-1247cbde970c`.
+- `assets/avatar/phoenix/approved/emotes/hungry.png` from PixelLab object `2f1a7800-0414-44e7-94d0-fb986ca22343`.
+- `assets/avatar/phoenix/approved/emotes/anxious.png` from the approved home-alone/anxious state.
+- `assets/avatar/phoenix/approved/emotes/sleepy.png` from the approved sleep/rest state.
+- `assets/avatar/phoenix/approved/emotes/proud.png` from the approved proud/happy state.
+- `assets/avatar/phoenix/approved/emotes/home-alone.png` from the approved home-alone/anxious state.
+- `assets/avatar/phoenix/approved/emotes/not-feeling-well.png` from PixelLab object `39e8b2d9-da66-496b-83c6-8755bcad7d23`.
+
+These are transparent 170x170 PixelLab Phoenix states for the Avatar Studio Mood set. The app registers them through `avatarEmoteAssets.ts`; `/portrait` now uses the selected emote as the large hero preview when the Phoenix/Shepherd pack is active.
+
+Remaining emote work:
+
+- Generate starter emote packs for non-Phoenix launch templates.
+- Decide whether non-Shepherd breeds share body-class emotes or require one pack per template.
+- Add matching short animation strips after still-state approval.
+
 ### Phase 5 - Dogless Rooms
 
 Create Phoenix-free backgrounds:
@@ -236,7 +259,7 @@ from:
 artifacts/woofwatcher-mobile
 ```
 
-This verifies the registered Phoenix sprite strips, dogless room files, and Avatar Studio template previews.
+This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, and Phoenix emote stills.
 
 Use:
 

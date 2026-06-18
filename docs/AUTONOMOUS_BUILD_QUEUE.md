@@ -95,7 +95,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 87. NEXT: Native iOS/Android runtime QA with real Expo/EAS account access, simulator/device screenshots, safe-area checks, frame-rate review, and App Store/Play Store readiness.
 88. DONE 2026-06-18: Avatar Studio template catalog pass generated, promoted, downloaded, registered, and tested 12 PixelLab preview thumbnails for Shepherd, Retriever, Husky, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed.
 89. DONE 2026-06-18: Generated, promoted, downloaded, registered, and tested the full 12-template Avatar Studio production base still pack for Shepherd, Retriever, Husky, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed.
-90. NEXT: Continue Avatar Studio production packs by generating the first Shepherd/Phoenix emote stills, body-class sprite strips, and accessory layer PNGs that align to the same bottom-center avatar anchor.
+90. DONE 2026-06-18: Generated, downloaded, registered, and tested the first Phoenix/Shepherd Avatar Studio emote still pack for Happy, Calm, Excited, Bored, Hungry, Anxious, Sleepy, Proud, Home Alone, and Not Feeling Well, and wired `/portrait` Mood set taps into the large hero preview.
+91. NEXT: Continue Avatar Studio production packs by generating non-Phoenix/body-class emote packs, body-class sprite strips, and accessory layer PNGs that align to the same bottom-center avatar anchor.
 
 ## Cadence
 

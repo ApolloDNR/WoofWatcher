@@ -19,6 +19,21 @@ Approved v2 state assets:
 - `phoenix-sleep-rest-v2.png`
 - `phoenix-woofguide-bust-v2.png`
 
+Approved v2 Avatar Studio emote pack:
+
+- `emotes/happy.png` - normalized from the approved proud/happy state.
+- `emotes/calm.png` - PixelLab object `f690d72e-5efb-4931-ad76-d2f4a739ff87`.
+- `emotes/excited.png` - PixelLab object `bfe8bee5-5fa8-415c-b63e-2d71faa9725e`.
+- `emotes/bored.png` - PixelLab object `b74aea82-806a-410c-acc5-1247cbde970c`.
+- `emotes/hungry.png` - PixelLab object `2f1a7800-0414-44e7-94d0-fb986ca22343`.
+- `emotes/anxious.png` - normalized from the approved home-alone/anxious state.
+- `emotes/sleepy.png` - normalized from the approved sleep/rest state.
+- `emotes/proud.png` - normalized from the approved proud/happy state.
+- `emotes/home-alone.png` - normalized from the approved home-alone/anxious state.
+- `emotes/not-feeling-well.png` - PixelLab object `39e8b2d9-da66-496b-83c6-8755bcad7d23`.
+
+The emote pack is registered in `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts` and rendered by the Avatar Studio Mood set preview.
+
 Approved v2 animation proofs:
 
 - PixelLab animation group: `f3c893f9-028a-4b7a-94aa-d86399e0c364`
@@ -46,7 +61,7 @@ Apollo's newer visual target is the larger, more expressive Neo Retro Digital Pe
 - `docs/design/reference/woofwatcher-pixel-reference-board-05-neo-retro-digital-pet.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-06-ecosystem-supporting-pages.png`
 
-Use those boards for future production avatar passes. The v2 set now covers the large seated Home/default avatar, sleep/rest avatar, WoofGuide side avatar, badge/logo head, idle breathing, tail wag, ear perk, standing walk, eat, drink, sleep, comfort, celebrate, and health-watch loops. A running footer sprite and final illustrated room variants are still needed.
+Use those boards for future production avatar passes. The v2 set now covers the large seated Home/default avatar, sleep/rest avatar, WoofGuide side avatar, badge/logo head, Avatar Studio emote stills, idle breathing, tail wag, ear perk, standing walk, eat, drink, sleep, comfort, celebrate, and health-watch loops. A running footer sprite and final illustrated room variants are still needed.
 
 These files may still be useful as a secondary directional movement seed:
 

@@ -507,6 +507,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateAssets.ts"),
     "utf8",
   );
+  const avatarEmoteAssets = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarEmoteAssets.ts"),
+    "utf8",
+  );
   const avatarContext = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "AvatarContext.tsx"),
     "utf8",
@@ -527,6 +531,18 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     "slender",
     "mixed",
   ];
+  const emoteFileNames = [
+    "happy",
+    "calm",
+    "excited",
+    "bored",
+    "hungry",
+    "anxious",
+    "sleepy",
+    "proud",
+    "home-alone",
+    "not-feeling-well",
+  ];
 
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{\[s\.canvasCard/);
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{s\.heroPreview\}/);
@@ -544,16 +560,23 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /derivePhoenixStatus/);
   assert.match(avatarStudio, /getAvatarTemplateBaseSource\(draft\.templateId\)/);
   assert.match(avatarStudio, /getAvatarTemplateDisplaySource\(template\.id\)/);
+  assert.match(avatarStudio, /getPhoenixEmoteAsset/);
+  assert.match(avatarStudio, /previewEmote/);
+  assert.match(avatarStudio, /selectedTemplateHeroSource/);
+  assert.match(avatarStudio, /accessibilityLabel=\{`Preview Phoenix \$\{emoteLabel\(emote\)\} emote`\}/);
   assert.match(avatarStudio, /templateHeroDogWrap/);
   assert.match(avatarStudio, /s\.templateArtWrap/);
   assert.match(avatarStudio, /phoenix-room-day\.png/);
   assert.match(avatarStudio, /phoenix-main-head-v2\.png/);
   assert.doesNotMatch(avatarStudio, /assets\/board\/hero\.png/);
   assert.doesNotMatch(avatarStudio, /getAvatarSource\("happy"\)/);
+  assert.doesNotMatch(avatarStudio, /Image source=\{PIXEL_HEAD_SOURCE\} style=\{s\.moodThumb\}/);
   assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_PREVIEW_ASSETS/);
   assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_BASE_ASSETS/);
   assert.match(avatarTemplateAssets, /pixellab-template-preview/);
   assert.match(avatarTemplateAssets, /pixellab-template-base/);
+  assert.match(avatarEmoteAssets, /PHOENIX_EMOTE_ASSETS/);
+  assert.match(avatarEmoteAssets, /pixellab-phoenix-emote/);
   for (const templateId of templateIds) {
     assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));
     const size = readPngSize(
@@ -567,6 +590,13 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
       join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", templateId, "base.png"),
     );
     assert.deepEqual(size, { width: 170, height: 170 }, `${templateId} base should be a PixelLab 170x170 character base`);
+  }
+  for (const fileName of emoteFileNames) {
+    assert.match(avatarEmoteAssets, new RegExp(`assets/avatar/phoenix/approved/emotes/${fileName}\\.png`));
+    const size = readPngSize(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "phoenix", "approved", "emotes", `${fileName}.png`),
+    );
+    assert.deepEqual(size, { width: 170, height: 170 }, `${fileName} emote should be a PixelLab 170x170 Phoenix state`);
   }
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);
@@ -621,7 +651,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(verifier, /PixelLab asset check complete/);
   assert.match(verifier, /readUInt32BE\(16\)/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, 12 Avatar Studio template preview thumbnails, and the full 12-template base still pack/);
+  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, 12 Avatar Studio template preview thumbnails, the full 12-template base still pack, and the first Phoenix\/Shepherd 10-state emote pack/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
 
