@@ -284,6 +284,16 @@ Activated the first true game-style Phoenix layer:
 - Kept the asset-readiness gate so unfinished sprite actions do not render over the baked room art.
 - Updated the generation log, asset TODO, Avatar Studio notes, and care-twin pipeline docs with the live v2 asset state.
 
+## 2026-06-18 PixelLab V2 Full Sprite Manifest Pass
+
+Expanded the care-twin runtime from proof-of-life loops into full state coverage:
+
+- Added and registered `ear-perk`, `walk-loop`, `eat-loop`, `drink-loop`, `comfort-loop`, `celebrate-hop`, and `health-watch` strips.
+- Replaced the first seated walk attempt with a stronger full-body standing walk source and strip.
+- Added a PixelLab strip builder that downloads `{i}.png` frame templates, normalizes them into 256px bottom-center slots, and scrubs transparent matte RGB for cleaner previews.
+- Added first-pass dogless room variants for night, bedtime, health-watch, and home-alone, then routed sprite actions to the appropriate room mood.
+- Kept final illustrated room variants and native device motion QA as the next visual quality gates.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

@@ -31,6 +31,9 @@ Approved v2 animation proofs:
 - PixelLab sleep-loop animation group: `247f0406-4bf5-4b40-b32b-26842d0b816e`
 - Sleep-loop raw frames: `../animations/sleep-loop-v2/frame-*.png`
 - Sleep-loop production strip: `../sleep-loop-strip.png`
+- PixelLab standing walk source object: `7cbe5ec5-e3e6-4e14-9276-5837b75403e1`
+- Standing walk source: `phoenix-standing-walk-source-v2.png`
+- Standing walk production strip: `../walk-loop-strip.png`
 
 Use the v2 files for current app defaults and Avatar Studio previews.
 
@@ -43,7 +46,7 @@ Apollo's newer visual target is the larger, more expressive Neo Retro Digital Pe
 - `docs/design/reference/woofwatcher-pixel-reference-board-05-neo-retro-digital-pet.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-06-ecosystem-supporting-pages.png`
 
-Use those boards for future production avatar passes. The v2 set now covers the large seated Home/default avatar, sleep/rest avatar, WoofGuide side avatar, badge/logo head, idle breathing, tail wag, and sleep loop. Dark-mode room variants, action strips, and a running footer sprite are still needed.
+Use those boards for future production avatar passes. The v2 set now covers the large seated Home/default avatar, sleep/rest avatar, WoofGuide side avatar, badge/logo head, idle breathing, tail wag, ear perk, standing walk, eat, drink, sleep, comfort, celebrate, and health-watch loops. A running footer sprite and final illustrated room variants are still needed.
 
 These files may still be useful as a secondary directional movement seed:
 

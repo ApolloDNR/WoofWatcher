@@ -567,7 +567,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(verifier, /PixelLab asset check complete/);
   assert.match(verifier, /readUInt32BE\(16\)/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state plus idle, tail-wag, sleep-loop, and day dogless room assets/);
+  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, and first-pass dogless room variants/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
 

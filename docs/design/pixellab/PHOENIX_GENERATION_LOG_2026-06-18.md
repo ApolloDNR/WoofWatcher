@@ -13,6 +13,7 @@ Create Phase 1 Phoenix identity candidates for WoofWatcher's production care twi
 - After v2 identity review packs: 1,950 generations remaining before state/animation work was checked again.
 - After v2 seed, state pack, and idle animation: 1,865 generations remaining, 135 used of 2,000.
 - After tail-wag, sleep-loop, and dogless room background: 1,856 generations remaining, 144 used of 2,000.
+- Later on 2026-06-18, Codex queued the remaining v2 action strips from the approved v2 Phoenix sources. Re-check balance before the next large generation batch.
 
 ## Attempted But Rejected
 
@@ -253,3 +254,57 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
 - Local production room layer: `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-day.png`
 - Production sizing: upscaled nearest-neighbor to 800x600 for the asset verifier and mobile stage rendering.
 - Status: generated and registered as the shared dogless room layer for current moods
+
+### V2 Action Strip Expansion
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab source objects:
+  - Main seated Phoenix: `4f318d58-7166-4b0a-b202-2896eed1e0dc`
+  - Home-alone/anxious Phoenix: `bc0121cd-0a35-45e9-9665-f9a10e87426a`
+  - Proud/happy Phoenix: `7cd658e1-84a7-4991-ac69-bac0a1a9c9ac`
+- PixelLab animation groups:
+  - `ear-perk`: `1152c1f0-a9b0-4a53-8ca4-ee5f7bd2d57b`
+  - `walk-loop`: `c4dca12e-024c-4003-a266-ea45a8ad129f`
+  - `eat-loop`: `a78ced66-e86c-4456-83e2-4479f9e28ea6`
+  - `drink-loop`: `2de4e6a7-d850-4e80-b488-17d372c91780`
+  - `comfort-loop`: `51ae7a6b-852c-45ed-a15d-0d97cf71280d`
+  - `celebrate-hop`: `1c20cff5-f383-4abb-8a80-22febb83d91d`
+  - `health-watch`: `7fb9bfaa-7736-4ddd-9572-4095bd33af81`
+- Local production strips:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/ear-perk-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/walk-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/eat-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/drink-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/comfort-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/celebrate-hop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/health-watch-strip.png`
+- Local tooling:
+  - `artifacts/woofwatcher-mobile/scripts/build-pixellab-sprite-strip.js`
+- Status: generated, normalized into fixed 256px slots, registered in `careTwinAssets.ts`, and verified for dimensions. The first walk strip stayed too seated in visual review, so a standing walk source replacement pass was started.
+
+### V2 Standing Walk Source
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_object_state`
+- PixelLab object ID: `7cbe5ec5-e3e6-4e14-9276-5837b75403e1`
+- Source object: `4f318d58-7166-4b0a-b202-2896eed1e0dc`
+- Local file:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/phoenix-standing-walk-source-v2.png`
+- Standing walk animation group: `c237cd43-423b-494a-b972-c01f9b976da9`
+- Production strip: `artifacts/woofwatcher-mobile/assets/avatar/phoenix/walk-loop-strip.png`
+- Status: generated and saved as a better full-body movement source. The `walk-loop-v2-standing` animation replaced the first seated walk attempt, and the strip builder now clears PixelLab's transparent-frame matte RGB for cleaner downstream previews.
+
+### First-Pass Dogless Room Variants
+
+- Date: 2026-06-18
+- Operator: Codex
+- Source: `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-day.png`
+- Local tooling: `artifacts/woofwatcher-mobile/scripts/derive-pixellab-room-variants.js`
+- Output:
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-night.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-bedtime.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-health-watch.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-home-alone.png`
+- Status: generated locally as runtime-ready first-pass variants and registered for room-state routing. Replace with final illustrated PixelLab/Figma-quality variants before store-quality launch.

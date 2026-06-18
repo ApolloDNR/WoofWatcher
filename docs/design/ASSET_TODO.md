@@ -27,7 +27,7 @@ Candidate IDs:
 
 Current design read: Candidate D is better than A/B/C as a small directional sprite, but it is not close enough to the boards 05/06 main avatar and ecosystem direction. Treat it as archived movement-sprite exploration, not the final Phoenix avatar.
 
-V2 update: Apollo added a PixelLab subscription and the new selected main-avatar seed is `phoenix-main-avatar-v2.png`, generated from PixelLab object `4f318d58-7166-4b0a-b202-2896eed1e0dc`. The app now uses the v2 approved still pack for default avatar surfaces and the first live layered sprite set.
+V2 update: Apollo added a PixelLab subscription and the new selected main-avatar seed is `phoenix-main-avatar-v2.png`, generated from PixelLab object `4f318d58-7166-4b0a-b202-2896eed1e0dc`. The app now uses the v2 approved still pack for default avatar surfaces and has a full registered layered sprite manifest plus first-pass dogless room variants.
 
 ## Locked Reference Boards
 
@@ -45,7 +45,7 @@ Use board 05 as the primary Phoenix Home/avatar target and board 06 as the suppo
 ## Needed For v1.5
 
 - Final Phoenix pixel avatar base. Status: v2 main seed exists and is wired into app defaults.
-- Live layered Home room. Status: `assets/avatar/rooms/phoenix-room-day.png` exists and is registered as the shared dogless room layer.
+- Live layered Home room. Status: `assets/avatar/rooms/phoenix-room-day.png` exists, and first-pass dogless variants exist for night, bedtime, health-watch, and home-alone.
 - Production Phoenix asset family matching boards 05/06:
   - large seated Home avatar - v2 live
   - sleep/rest avatar - v2 live
@@ -64,7 +64,7 @@ Use board 05 as the primary Phoenix Home/avatar target and board 06 as the suppo
   - Proud
   - Home Alone
   - Not Feeling Well
-- Pixel room backgrounds for Home and Avatar Studio. Status: day dogless Home room live; night, bedtime, health-watch, home-alone, and Avatar Studio room variants still needed.
+- Pixel room backgrounds for Home and Avatar Studio. Status: day dogless Home room live; first-pass night, bedtime, health-watch, and home-alone variants live; final illustrated variants and Avatar Studio-specific room art still needed.
 - Pixel icon set for navigation and quick log actions.
 - Status meters and badge sprites.
 - Speech bubble and emote sprites.
@@ -90,13 +90,13 @@ Use board 05 as the primary Phoenix Home/avatar target and board 06 as the suppo
 
 - Phoenix Home: `LivingPhoenixRoom` now has a Reanimated care-twin runtime with room-zone mapping, breathing, state cues, mood patch, reaction bursts, speech bubble, and HUD overlays.
 - Care Twin Engine: `artifacts/woofwatcher-mobile/lib/avatarLifeEngine.ts` now exposes `CARE_TWIN_SPRITE_MANIFEST`, `deriveCareTwinScene`, scene phases, priority needs, sprite actions, HUD tones, and tap verbs.
-- Layered sprite runtime: `SpriteSheetPlayer` can crop and animate registered sprite strips. `careTwinAssets.ts` now registers idle-breathe, tail-wag, sleep-loop, and the dogless day room layer.
+- Layered sprite runtime: `SpriteSheetPlayer` can crop and animate registered sprite strips. `careTwinAssets.ts` now registers idle-breathe, tail-wag, ear-perk, walk, eat, drink, sleep, comfort, celebrate, health-watch, the day room, and first-pass night/bedtime/health/home-alone room variants.
 - Health/Bile Watch: board metric tiles and Bile Watch status pill.
 - Log, Plans, More, Records, WoofGuide, Avatar Studio: shared board route header slots ready for final icon/animation polish.
 - Avatar Studio: V1 template/config system is wired with scan-assisted mock suggestions, editable coat/face/accessory slots, emote preview, and local save. It still needs final template art and sprite/emote assets.
 - Pixel placeholder pack: `assets/avatar/pixel/` is now fallback/reference only.
 - PixelLab v2 approved pack: `assets/avatar/phoenix/approved/` is the active default app avatar set.
-- PixelLab v2 live sprite strips: `assets/avatar/phoenix/idle-breathe-strip.png`, `tail-wag-strip.png`, and `sleep-loop-strip.png`.
+- PixelLab v2 live sprite strips: `assets/avatar/phoenix/idle-breathe-strip.png`, `tail-wag-strip.png`, `ear-perk-strip.png`, `walk-loop-strip.png`, `eat-loop-strip.png`, `drink-loop-strip.png`, `sleep-loop-strip.png`, `comfort-loop-strip.png`, `celebrate-hop-strip.png`, and `health-watch-strip.png`.
 - PixelLab Candidate D pack: `assets/avatar/phoenix/approved/` is archived as directional movement exploration only.
 
 Detailed handoff: `docs/design/CARE_TWIN_ASSET_PIPELINE.md`.
@@ -167,8 +167,8 @@ These are seed rotations, not final main-avatar assets and not final animation s
 Next required asset pass:
 
 - Improve or upscale the v2 seated Phoenix main avatar if Apollo wants an even closer board-05/06 match.
-- Generate dark-mode/dogless room variants so the layered Home runtime can render Phoenix separately without duplicate dogs across all scene moods.
-- Expand from the v2 idle-breathe/tail-wag/sleep proof into anxious, proud, walk, eat, drink, health-watch, and celebration strips.
+- Replace the first-pass derived room variants with final illustrated dark/night, bedtime, health-watch, and home-alone scenes.
+- Inspect and improve any action strip that does not read strongly enough at phone size, especially walk/eat/drink where future prop layers can make the action clearer.
 - Derive the sleeping, WoofGuide, dark-mode, badge/logo, and running footer variants from the approved identity instead of generating unrelated one-off dogs.
 
 ## Production Sprite Manifest Needed Next
@@ -177,14 +177,14 @@ Create these as transparent PNG sprite strips, each frame in a 256px slot, align
 
 - `assets/avatar/phoenix/idle-breathe-strip.png`: 8 frames, 6 fps, loop. Status: live.
 - `assets/avatar/phoenix/tail-wag-strip.png`: 8 frames, 8 fps, loop. Status: live.
-- `assets/avatar/phoenix/ear-perk-strip.png`: 6 frames, 7 fps, one-shot cue.
-- `assets/avatar/phoenix/walk-loop-strip.png`: 10 frames, 10 fps, loop.
-- `assets/avatar/phoenix/eat-loop-strip.png`: 8 frames, 7 fps, loop.
-- `assets/avatar/phoenix/drink-loop-strip.png`: 8 frames, 7 fps, loop.
+- `assets/avatar/phoenix/ear-perk-strip.png`: 6 frames, 7 fps, one-shot cue. Status: live.
+- `assets/avatar/phoenix/walk-loop-strip.png`: 10 frames, 10 fps, loop. Status: live from the v2 standing walk source for a stronger walking read.
+- `assets/avatar/phoenix/eat-loop-strip.png`: 8 frames, 7 fps, loop. Status: live.
+- `assets/avatar/phoenix/drink-loop-strip.png`: 8 frames, 7 fps, loop. Status: live.
 - `assets/avatar/phoenix/sleep-loop-strip.png`: 8 frames, 5 fps, loop. Status: live.
-- `assets/avatar/phoenix/comfort-loop-strip.png`: 8 frames, 6 fps, loop.
-- `assets/avatar/phoenix/celebrate-hop-strip.png`: 8 frames, 9 fps, one-shot reward.
-- `assets/avatar/phoenix/health-watch-strip.png`: 8 frames, 5 fps, loop.
+- `assets/avatar/phoenix/comfort-loop-strip.png`: 8 frames, 6 fps, loop. Status: live.
+- `assets/avatar/phoenix/celebrate-hop-strip.png`: 8 frames, 9 fps, one-shot reward. Status: live.
+- `assets/avatar/phoenix/health-watch-strip.png`: 8 frames, 5 fps, loop. Status: live.
 
 Sprite pipeline rule: start from one approved in-game Phoenix seed frame, generate each full strip at once, normalize with one shared scale, preserve transparency, and inspect in-engine before approving.
 
@@ -192,8 +192,8 @@ Sprite pipeline rule: start from one approved in-game Phoenix seed frame, genera
 
 The current Home runtime now supports true layered sprite animation. It uses a dogless room layer plus transparent Phoenix strips for finished actions. For the full video-game feel, the app still needs the remaining production assets with separated layers:
 
-- Additional dogless room backgrounds for night, bedtime, health watch, and home-alone.
-- Transparent Phoenix loops for walk, eating, drinking, anxious glance, low-energy/health watch, proud celebration, and home-alone waiting.
+- Final illustrated dogless room backgrounds for night, bedtime, health watch, and home-alone to replace first-pass derived variants.
+- Optional improved Phoenix loops and prop layers for walk, eating, drinking, anxious glance, low-energy/health watch, proud celebration, and home-alone waiting after runtime/device QA.
 - Optional foreground props such as bowl, rug, bed, window, door, toy, and sparkle layers.
 
 `avatarLifeEngine.ts` drives the state decisions while `LivingPhoenixRoom.tsx` renders the registered layered sprite tracks.

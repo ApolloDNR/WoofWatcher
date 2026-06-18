@@ -901,6 +901,24 @@ Owner: Codex.
 
 Revisit trigger: Apollo supplies final template art, a production image-analysis provider is approved, or a pixel artist/Fable/Replit produces consistent template and sprite packs.
 
+### 2026-06-18: Register Full Phoenix Sprite Manifest With First-Pass Room Variants
+
+Decision: WoofWatcher should now render layered Phoenix for every current care-twin sprite action using registered transparent strips, while first-pass dogless room variants cover night, bedtime, health-watch, and home-alone states until final illustrated rooms replace them.
+
+Reason: The app needed to move past proof-of-life animation into a complete video-game-style runtime contract. Registering all ten sprite actions lets Home respond to care state with the real Phoenix layer instead of falling back to the old baked room composition, while first-pass room variants keep state routing functional without waiting for final art.
+
+Consequences:
+
+- `careTwinAssets.ts` now registers all current `CARE_TWIN_SPRITE_MANIFEST` actions.
+- `LivingPhoenixRoom` passes the active sprite action into room selection.
+- `build-pixellab-sprite-strip.js` is the reproducible PixelLab frame-to-strip path.
+- `derive-pixellab-room-variants.js` creates runtime-ready but replaceable room variants from the day room.
+- Native device QA and final illustrated room variants remain required before store-quality launch.
+
+Owner: Codex.
+
+Revisit trigger: Final Rive/Lottie assets, a hand-authored PixelLab/Figma room pack, or a more advanced in-game room renderer replaces these PNG layer assets.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

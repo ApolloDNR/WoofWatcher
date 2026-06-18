@@ -24,20 +24,20 @@ The next generation pass did target the larger seated care-twin avatar and suppo
 PixelLab balance is no longer blocked:
 
 - Apollo added a PixelLab subscription on 2026-06-18.
-- PixelLab reported 1,856 generations remaining after the v2 seed, state pack, idle animation, tail-wag animation, sleep-loop animation, and first dogless room layer.
+- PixelLab reported 1,856 generations remaining after the v2 seed, state pack, idle animation, tail-wag animation, sleep-loop animation, and first dogless room layer. Additional action strips were generated later in the same 2026-06-18 production pass.
 - Approved v2 seed object: `4f318d58-7166-4b0a-b202-2896eed1e0dc`.
-- Current next blocker: remaining room variants and remaining sprite strips, not credits or MCP access.
+- Current next blocker: final visual approval and native runtime QA, not credits, MCP access, room file presence, or sprite file presence.
 
 ## Goal
 
 Make Phoenix feel like a real video-game care twin without lowering visual quality.
 
-The app now has the runtime for layered sprite animation and the first live asset group:
+The app now has the runtime for layered sprite animation and the first complete registered asset group:
 
-1. Dogless day room background: `assets/avatar/rooms/phoenix-room-day.png`.
-2. Transparent Phoenix sprite strips: `idle-breathe-strip.png`, `tail-wag-strip.png`, and `sleep-loop-strip.png`.
+1. Dogless room backgrounds: `phoenix-room-day.png`, `phoenix-room-night.png`, `phoenix-room-bedtime.png`, `phoenix-room-health-watch.png`, and `phoenix-room-home-alone.png`.
+2. Transparent Phoenix sprite strips: `idle-breathe-strip.png`, `tail-wag-strip.png`, `ear-perk-strip.png`, `walk-loop-strip.png`, `eat-loop-strip.png`, `drink-loop-strip.png`, `sleep-loop-strip.png`, `comfort-loop-strip.png`, `celebrate-hop-strip.png`, and `health-watch-strip.png`.
 
-This prevents the duplicate-avatar look and lets Home render Phoenix as the animated character layer for finished actions. Remaining actions continue to fall back through the life engine until their strips are generated and registered.
+This prevents the duplicate-avatar look and lets Home render Phoenix as the animated character layer for every current care-twin action. First-pass derived room variants are runtime-ready, but final illustrated variants should still replace them before store-quality launch.
 
 ## What Apollo Needs To Provide Or Generate
 
@@ -78,10 +78,10 @@ Create the same room/patio scene without Phoenix baked into it.
 Needed later in code:
 
 - `assets/avatar/rooms/phoenix-room-day.png`
-- optional future states:
   - `phoenix-room-night.png`
   - `phoenix-room-bedtime.png`
   - `phoenix-room-health-watch.png`
+  - `phoenix-room-home-alone.png`
 
 The room should match the current board style: warm interior, window/patio depth, cozy objects, strong pixel charm, no heavy UI text inside the art.
 
@@ -97,14 +97,14 @@ Required files:
 
 - `idle-breathe-strip.png` - live
 - `tail-wag-strip.png` - live
-- `ear-perk-strip.png`
-- `walk-loop-strip.png`
-- `eat-loop-strip.png`
-- `drink-loop-strip.png`
+- `ear-perk-strip.png` - live
+- `walk-loop-strip.png` - live from the v2 standing walk source for a stronger walk read
+- `eat-loop-strip.png` - live
+- `drink-loop-strip.png` - live
 - `sleep-loop-strip.png` - live
-- `comfort-loop-strip.png`
-- `celebrate-hop-strip.png`
-- `health-watch-strip.png`
+- `comfort-loop-strip.png` - live
+- `celebrate-hop-strip.png` - live
+- `health-watch-strip.png` - live
 
 Rules:
 
@@ -165,7 +165,13 @@ Example:
 
 Also register dogless room assets in the same file.
 
-Do not register future sprite strips before a matching dogless room exists. The runtime intentionally requires both pieces before it renders layered Phoenix.
+Do not register future sprite strips before a matching dogless room exists. The runtime intentionally requires both pieces before it renders layered Phoenix. As of the 2026-06-18 pass, `careTwinAssets.ts` has registered all current sprite actions and routes sleep, comfort, health-watch, anxious, and normal states to appropriate room variants.
+
+## Local Asset Scripts
+
+- `npm run build:pixellab-sprite-strip` downloads a PixelLab `{i}.png` frame URL template and stitches selected frames into a fixed 256px-slot horizontal strip.
+- `npm run build:pixellab-room-variants` derives first-pass night, bedtime, health-watch, and home-alone room variants from the approved dogless day room.
+- `npm run verify:pixellab-assets` checks sprite strip dimensions and required room files.
 
 ## Quality Gate
 

@@ -9,7 +9,9 @@
     "smoke:web": "node scripts/smoke-web-export.js",
     "serve": "node server/serve.js",
     "fetch:pixellab-output": "node scripts/fetch-pixellab-output.js",
-    "verify:pixellab-assets": "node scripts/verify-pixellab-assets.js --allow-missing",
+    "build:pixellab-sprite-strip": "node scripts/build-pixellab-sprite-strip.js",
+    "build:pixellab-room-variants": "node scripts/derive-pixellab-room-variants.js",
+    "verify:pixellab-assets": "node scripts/verify-pixellab-assets.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

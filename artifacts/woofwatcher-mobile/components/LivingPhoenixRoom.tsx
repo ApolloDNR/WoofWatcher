@@ -179,7 +179,7 @@ export function LivingPhoenixRoom({
   const spriteZone = SPRITE_STAGE_ZONES[plan.zone];
   const sceneSource = STATE_SCENES[mood];
   const spriteAsset = useMemo(() => getCareTwinSpriteAsset(plan.spriteAction), [plan.spriteAction]);
-  const roomLayer = useMemo(() => getCareTwinRoomLayer(mood), [mood]);
+  const roomLayer = useMemo(() => getCareTwinRoomLayer(mood, plan.spriteAction), [mood, plan.spriteAction]);
   const layerReadiness = useMemo(() => getCareTwinLayerReadiness(plan.spriteAction, mood), [mood, plan.spriteAction]);
   const layeredStageReady = layerReadiness.layeredReady && Boolean(spriteAsset && roomLayer);
   const roomStageReady = Boolean(roomLayer);

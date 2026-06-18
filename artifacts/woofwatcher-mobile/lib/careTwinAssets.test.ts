@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { CARE_TWIN_SPRITE_MANIFEST, type CareTwinSpriteAction } from "./avatarLifeEngine.ts";
 import {
   CARE_TWIN_DOGLESS_ROOM_ASSETS,
+  CARE_TWIN_ROOM_VARIANT_ASSETS,
   CARE_TWIN_SPRITE_ASSETS,
   getCareTwinLayerReadiness,
   getCareTwinRoomLayer,
@@ -22,9 +23,16 @@ test("enables layered sprite rendering when production sprite and dogless room a
 
 test("registers finished PixelLab sprite strips and a dogless room layer", () => {
   assert.deepEqual(Object.keys(CARE_TWIN_SPRITE_ASSETS).sort(), [
+    "celebrate-hop",
+    "comfort-loop",
+    "drink-loop",
+    "ear-perk",
+    "eat-loop",
+    "health-watch",
     "idle-breathe",
     "sleep-loop",
     "tail-wag",
+    "walk-loop",
   ]);
   assert.deepEqual(Object.keys(CARE_TWIN_DOGLESS_ROOM_ASSETS).sort(), [
     "anxious",
@@ -33,18 +41,38 @@ test("registers finished PixelLab sprite strips and a dogless room layer", () =>
     "happy",
     "unwell",
   ]);
+  assert.deepEqual(Object.keys(CARE_TWIN_ROOM_VARIANT_ASSETS).sort(), [
+    "bedtime",
+    "day",
+    "healthWatch",
+    "homeAlone",
+    "night",
+  ]);
   assert.equal(getCareTwinSpriteAsset("tail-wag")?.frameWidth, 256);
-  assert.equal(getCareTwinSpriteAsset("walk-loop"), null);
+  assert.equal(getCareTwinSpriteAsset("walk-loop")?.columns, 10);
+  assert.equal(getCareTwinSpriteAsset("ear-perk")?.columns, 6);
   assert.equal(getCareTwinRoomLayer("happy")?.description.includes("Dogless"), true);
 });
 
-test("reports unfinished sprite tracks without disabling the dogless room layer", () => {
+test("routes care twin sprite states to the right dogless room mood variant", () => {
+  assert.equal(getCareTwinRoomLayer("calm", "sleep-loop"), CARE_TWIN_ROOM_VARIANT_ASSETS.bedtime);
+  assert.equal(getCareTwinRoomLayer("happy", "comfort-loop"), CARE_TWIN_ROOM_VARIANT_ASSETS.homeAlone);
+  assert.equal(getCareTwinRoomLayer("happy", "health-watch"), CARE_TWIN_ROOM_VARIANT_ASSETS.healthWatch);
+  assert.equal(getCareTwinRoomLayer("anxious", "ear-perk"), CARE_TWIN_ROOM_VARIANT_ASSETS.night);
+  assert.equal(getCareTwinRoomLayer("happy", "tail-wag"), CARE_TWIN_ROOM_VARIANT_ASSETS.day);
+});
+
+test("keeps every production sprite track layer-ready with the shared dogless room", () => {
   const readiness = getCareTwinLayerReadiness("walk-loop", "happy");
 
-  assert.equal(readiness.layeredReady, false);
-  assert.equal(readiness.spriteReady, false);
+  assert.equal(readiness.layeredReady, true);
+  assert.equal(readiness.spriteReady, true);
   assert.equal(readiness.roomReady, true);
-  assert.deepEqual(readiness.missing, [CARE_TWIN_SPRITE_MANIFEST["walk-loop"].requiredAsset]);
+  assert.deepEqual(readiness.missing, []);
+
+  for (const action of Object.keys(CARE_TWIN_SPRITE_MANIFEST) as CareTwinSpriteAction[]) {
+    assert.equal(getCareTwinLayerReadiness(action, "happy").layeredReady, true, action);
+  }
 });
 
 test("mirrors the sprite manifest into asset slots for Fable and artist handoff", () => {
