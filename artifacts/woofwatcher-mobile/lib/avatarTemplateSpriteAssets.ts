@@ -30,6 +30,42 @@ function spriteAsset(source: ImageSourcePropType): CareTwinSpriteAsset {
 export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
   Record<AvatarTemplateId, Partial<Record<AvatarTemplateSpriteAction, AvatarTemplateSpritePackItem>>>
 > = {
+  bully: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Bully live idle",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png"),
+      ),
+      track: {
+        key: "bully:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Bully idle breathing and soft body/tail wiggle loop.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Bully walk loop",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/bully/sprites/walk-loop-strip.png"),
+      ),
+      track: {
+        key: "bully:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/bully/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Bully standing-source walking-in-place loop for live Avatar Studio preview.",
+      },
+    },
+  },
   husky: {
     "idle-tail-wag": {
       action: "idle-tail-wag",

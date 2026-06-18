@@ -113,7 +113,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 105. DONE 2026-06-18: Superseded by item 108 after Husky/Spitz graduated from still-only to live sprite preview coverage; Bully, Doodle, remaining launch templates, and gait refinements continue as the next animation work.
 106. DONE 2026-06-18: Polished the mobile Phoenix Home first screen toward the locked Option B board by renaming the hero to Phoenix Room, folding the Avatar Studio/Care Twin CTA into the hero console header, removing the extra first-screen care-twin identity bar, and trimming the in-room live HUD to the most important four vitals so the main dog scene has more visual room.
 107. DONE 2026-06-18: Generated, normalized, visually checked, registered, and tested the Husky/Spitz live Avatar Studio sprite pack. The accepted walk loop now comes from a standing-source PixelLab state after rejecting a seated walk attempt, and Avatar Studio suppresses the still-template ghost while a live sprite is active so the preview reads as one care twin.
-108. NEXT: Continue template sprite packs for Bully, Doodle, and the remaining launch templates, using a standing source pose before walk-loop generation when the base still is seated; also improve Retriever/Husky gait loops if native/visual QA shows they need cleaner phone-size motion.
+108. DONE 2026-06-18: Generated, normalized, visually checked, registered, and tested the Bully live Avatar Studio sprite pack. Bully now has idle/tail-wag and standing-source walk loops, expanding live prebuilt avatars to Retriever, Husky/Spitz, and compact-body families.
+109. NEXT: Continue template sprite packs for Doodle and the remaining launch templates, using a standing source pose before walk-loop generation when the base still is seated; also improve Retriever/Husky/Bully gait loops if native/visual QA shows they need cleaner phone-size motion.
 
 ## Cadence
 

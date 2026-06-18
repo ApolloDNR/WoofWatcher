@@ -528,3 +528,21 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/sprites/walk-loop-strip.png`
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Status: generated, normalized, visually checked, registered, wired into Avatar Studio through template-specific sprite preview routing, and ready for static Expo export verification. Future body-class walk loops should start from a standing source pose when the base still is seated.
+
+### Bully Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `animate_object`, `create_object_state`, then `animate_object` for the standing walk source.
+- Source object ID: `25c648c4-6e26-4c8e-8b65-6fb94e7c10b4`
+- Standing walk source object ID: `63a12770-2e23-4e1b-bf9d-ba4aa2556018`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `dcd03bf7-9bcc-443e-9bae-a705a62179a6`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/25c648c4-6e26-4c8e-8b65-6fb94e7c10b4/animations/dcd03bf7-9bcc-443e-9bae-a705a62179a6/unknown/{i}.png`.
+  - Standing-source walk loop: animation ID `0e35a98b-b8c3-46ef-bf30-c5fe30a6270d`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/63a12770-2e23-4e1b-bf9d-ba4aa2556018/animations/0e35a98b-b8c3-46ef-bf30-c5fe30a6270d/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, wired into Avatar Studio through template-specific sprite preview routing, and ready for static Expo export verification.
