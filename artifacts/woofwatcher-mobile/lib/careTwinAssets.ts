@@ -38,20 +38,54 @@ export interface CareTwinLayerReadiness {
   missing: readonly string[];
 }
 
-// Intentionally empty until production transparent Phoenix strips exist.
-// When assets land, add static Metro-safe requires here, for example:
-// "tail-wag": {
-//   source: require("@/assets/avatar/phoenix/tail-wag-strip.png"),
-//   columns: 8,
-//   rows: 1,
-//   frameWidth: 256,
-//   frameHeight: 256,
-// },
-export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareTwinSpriteAsset>> = {};
+function bundledAsset(path: string, source: () => ImageSourcePropType): ImageSourcePropType {
+  return typeof require === "function" ? source() : { uri: path };
+}
 
-// Intentionally empty until dogless room layers exist. Do not point these at the
-// current board hero because that image already contains Phoenix.
-export const CARE_TWIN_DOGLESS_ROOM_ASSETS: Partial<Record<Mood, CareTwinRoomLayerAsset>> = {};
+export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareTwinSpriteAsset>> = {
+  "idle-breathe": {
+    source: bundledAsset("assets/avatar/phoenix/idle-breathe-strip.png", () =>
+      require("@/assets/avatar/phoenix/idle-breathe-strip.png"),
+    ),
+    columns: 8,
+    rows: 1,
+    frameWidth: 256,
+    frameHeight: 256,
+  },
+  "tail-wag": {
+    source: bundledAsset("assets/avatar/phoenix/tail-wag-strip.png", () =>
+      require("@/assets/avatar/phoenix/tail-wag-strip.png"),
+    ),
+    columns: 8,
+    rows: 1,
+    frameWidth: 256,
+    frameHeight: 256,
+  },
+  "sleep-loop": {
+    source: bundledAsset("assets/avatar/phoenix/sleep-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/sleep-loop-strip.png"),
+    ),
+    columns: 8,
+    rows: 1,
+    frameWidth: 256,
+    frameHeight: 256,
+  },
+};
+
+const DAY_ROOM: CareTwinRoomLayerAsset = {
+  source: bundledAsset("assets/avatar/rooms/phoenix-room-day.png", () =>
+    require("@/assets/avatar/rooms/phoenix-room-day.png"),
+  ),
+  description: "Dogless neo-retro Phoenix room with empty rug for layered sprite animation.",
+};
+
+export const CARE_TWIN_DOGLESS_ROOM_ASSETS: Partial<Record<Mood, CareTwinRoomLayerAsset>> = {
+  happy: DAY_ROOM,
+  excited: DAY_ROOM,
+  calm: DAY_ROOM,
+  anxious: DAY_ROOM,
+  unwell: DAY_ROOM,
+};
 
 export function getCareTwinSpriteAsset(action: CareTwinSpriteAction): CareTwinSpriteAsset | null {
   return CARE_TWIN_SPRITE_ASSETS[action] ?? null;

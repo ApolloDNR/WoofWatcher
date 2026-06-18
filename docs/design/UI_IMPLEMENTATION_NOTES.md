@@ -247,8 +247,8 @@ Moved Phoenix Home from a static board image toward a real care-twin runtime:
 
 Remaining visual work:
 
-- Replace the current single-stage animated room with final dogless room backgrounds plus transparent Phoenix pixel sprite sheets when those assets exist.
-- Add true sprite loops for tail wag, walk, sit, lie down, ears/glance, eat/drink, proud sparkle, and home-alone waiting.
+- Replace the remaining fallback states with dogless room variants plus transparent Phoenix pixel sprite sheets.
+- Add true sprite loops for walk, sit, ears/glance, eat/drink, proud sparkle, and home-alone waiting.
 - Run native iOS/Android visual QA for motion timing, safe area, and frame rate once simulator/device access is available.
 
 ## 2026-06-16 Care Twin Engine And Sprite Manifest Pass
@@ -263,7 +263,7 @@ Locked the next video-game foundation without reintroducing a pasted-on second d
 
 Implementation note:
 
-- Until dogless backgrounds and transparent Phoenix strips exist, the app intentionally animates the single approved room art. This keeps the main dog visually coherent and avoids the duplicate-avatar problem. The engine is ready for layered sprite rendering as soon as the asset set lands.
+- The app intentionally falls back to the single approved room art for actions whose dogless room or Phoenix strip is not ready. This keeps the main dog visually coherent and avoids the duplicate-avatar problem while allowing finished tracks to use layered sprite rendering.
 
 ## 2026-06-16 Layered Sprite Runtime Pass
 
@@ -274,6 +274,15 @@ Added the real runtime seam for video-game Phoenix animation:
 - Wired `LivingPhoenixRoom` to switch to layered rendering only when both a dogless room layer and the selected Phoenix sprite strip are registered.
 - Preserved the current single-stage room animation as the fallback so Home does not show duplicate Phoenix art while final assets are missing.
 - Added `docs/design/CARE_TWIN_ASSET_PIPELINE.md` and `assets/avatar/phoenix/README.md` so Apollo, Fable, Replit, or an artist can generate and register the exact assets.
+
+## 2026-06-18 PixelLab V2 Layered Asset Pass
+
+Activated the first true game-style Phoenix layer:
+
+- Registered PixelLab `idle-breathe`, `tail-wag`, and `sleep-loop` strips in `careTwinAssets.ts`.
+- Registered `assets/avatar/rooms/phoenix-room-day.png` as the shared dogless day room layer.
+- Kept the asset-readiness gate so unfinished sprite actions do not render over the baked room art.
+- Updated the generation log, asset TODO, Avatar Studio notes, and care-twin pipeline docs with the live v2 asset state.
 
 ## 2026-06-17 Avatar Studio Lite Pass
 

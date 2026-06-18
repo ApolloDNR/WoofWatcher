@@ -45,7 +45,7 @@ import {
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const PIXEL_ROOM_SOURCE = require("@/assets/board/hero.png");
-const PIXEL_HEAD_SOURCE = require("@/assets/avatar/pixel/phoenix-pixel-head.png");
+const PIXEL_HEAD_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main-head-v2.png");
 
 type Phase = "idle" | "working" | "result";
 type StudioTab = "scan" | "template" | "customize" | "emotes";

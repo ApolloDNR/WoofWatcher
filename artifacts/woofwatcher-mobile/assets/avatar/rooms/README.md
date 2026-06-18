@@ -6,7 +6,7 @@ Phoenix must not be baked into these images. The app's layered runtime only work
 
 Target files:
 
-- `phoenix-room-day.png`
+- `phoenix-room-day.png` - live PixelLab dogless room layer.
 - `phoenix-room-night.png`
 - `phoenix-room-bedtime.png`
 - `phoenix-room-health-watch.png`
@@ -20,3 +20,10 @@ Rules:
 - Keep composition readable on mobile.
 - Register approved room layers in `artifacts/woofwatcher-mobile/lib/careTwinAssets.ts`.
 
+Current source/mask used for the live day room:
+
+- `phoenix-room-day-inpaint-source-192.png`
+- `phoenix-room-day-inpaint-mask-192.png`
+- `phoenix-room-day-pixellab-400x300.png` - raw PixelLab room output.
+
+`phoenix-room-day.png` is the nearest-neighbor 800x600 production version used by the verifier and app runtime.

@@ -8,6 +8,7 @@
     "build": "node scripts/build.js",
     "smoke:web": "node scripts/smoke-web-export.js",
     "serve": "node server/serve.js",
+    "fetch:pixellab-output": "node scripts/fetch-pixellab-output.js",
     "verify:pixellab-assets": "node scripts/verify-pixellab-assets.js --allow-missing",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

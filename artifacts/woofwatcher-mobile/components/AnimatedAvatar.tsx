@@ -126,6 +126,7 @@ export function AnimatedAvatar({ mood, speech, onTap }: Props) {
   const prevMood = useRef<Mood>(mood);
 
   // Tap reaction — one-shot, no idle motion.
+  const idle = useSharedValue(0);
   const tap = useSharedValue(0);
 
   const [bark, setBark] = useState<string | null>(null);
@@ -134,6 +135,18 @@ export function AnimatedAvatar({ mood, speech, onTap }: Props) {
   const hour = new Date().getHours();
   const phase = dayPhaseGradient(hour);
   const tint = MOOD_TINT[displayMood];
+
+  useEffect(() => {
+    idle.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1320, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 1320, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    );
+    return () => cancelAnimation(idle);
+  }, [idle]);
 
   // Mood change cross-fade
   useEffect(() => {
@@ -171,7 +184,11 @@ export function AnimatedAvatar({ mood, speech, onTap }: Props) {
   };
 
   const tapStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + tap.value * 0.035 }, { translateY: -tap.value * 4 }],
+    transform: [
+      { translateY: -idle.value * 3 - tap.value * 4 },
+      { scaleX: 1 + idle.value * 0.012 + tap.value * 0.03 },
+      { scaleY: 1 - idle.value * 0.008 + tap.value * 0.018 },
+    ],
   }));
 
   const topStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
@@ -185,12 +202,12 @@ export function AnimatedAvatar({ mood, speech, onTap }: Props) {
       {/* still dog scene — previous emotion underneath, current fades in on top */}
       <Animated.View style={[StyleSheet.absoluteFill, tapStyle]} pointerEvents="none">
         {crossfading && (
-          <Animated.Image source={prevSource} style={styles.scene} resizeMode="cover" />
+          <Animated.Image source={prevSource} style={styles.scene} resizeMode="contain" />
         )}
         <Animated.Image
           source={currentSource}
           style={[styles.scene, StyleSheet.absoluteFill, topStyle]}
-          resizeMode="cover"
+          resizeMode="contain"
         />
       </Animated.View>
 

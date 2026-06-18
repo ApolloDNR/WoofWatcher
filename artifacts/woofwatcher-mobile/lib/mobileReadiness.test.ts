@@ -508,7 +508,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /Save Avatar/);
   assert.match(avatarStudio, /AVATAR_EMOTE_STATES/);
   assert.match(avatarStudio, /PIXEL_ROOM_SOURCE/);
-  assert.match(avatarStudio, /phoenix-pixel-head\.png/);
+  assert.match(avatarStudio, /phoenix-main-head-v2\.png/);
   assert.doesNotMatch(avatarStudio, /getAvatarSource\("happy"\)/);
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);
@@ -518,7 +518,9 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarContext, /AVATAR_CONFIG_KEY/);
   assert.match(avatarContext, /saveAvatarConfig/);
   assert.match(avatarContext, /hasConfiguredAvatar/);
-  assert.match(avatarContext, /phoenix-pixel-happy\.png/);
+  assert.match(avatarContext, /phoenix-main-avatar-v2\.png/);
+  assert.match(avatarContext, /phoenix-home-alone-anxious-v2\.png/);
+  assert.match(avatarContext, /phoenix-sleep-rest-v2\.png/);
   assert.doesNotMatch(avatarContext, /assets\/phoenix\/phoenix-happy\.png/);
   assert.match(home, /avatarTemplate\.label/);
   assert.match(home, /Open Avatar Studio/);
@@ -556,11 +558,12 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(pixelLab, /PixelLab is the WoofWatcher production asset path/);
   assert.match(pixelLab, /Never commit that config file/);
   assert.match(pixelLab, /Do not call PixelLab from the mobile client/);
-  assert.match(phaseOne, /Create no more than four Phoenix identity candidates/);
+  assert.match(phaseOne, /Create no more than four Phoenix main-avatar identity candidates/);
   assert.match(phaseOne, /transparent background/);
   assert.match(verifier, /PixelLab asset check complete/);
   assert.match(verifier, /readUInt32BE\(16\)/);
-  assert.match(blockers, /PixelLab token rotation and local MCP setup/);
+  assert.match(blockers, /PixelLab secret hygiene/);
+  assert.match(blockers, /Phoenix v2 seed\/state plus idle, tail-wag, sleep-loop, and day dogless room assets/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
 

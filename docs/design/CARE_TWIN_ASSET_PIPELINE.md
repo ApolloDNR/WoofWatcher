@@ -2,16 +2,42 @@
 
 Date: 2026-06-16
 
+## Live PixelLab Production Status - 2026-06-18
+
+PixelLab MCP is connected in Codex and Phase 1 candidate production has started.
+
+Current artifacts:
+
+- `docs/design/pixellab/PHOENIX_GENERATION_LOG_2026-06-18.md`
+- `docs/design/pixellab/phoenix-identity-review-2026-06-18.html`
+- `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/candidate-a-*.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/candidate-b-*.png`
+- `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/candidate-c-*.png`
+
+Candidate D is now archived as a functional directional movement seed only. It is not the approved main-avatar style because Apollo wants the richer seated Neo Retro Digital Pet look from:
+
+- `docs/design/reference/woofwatcher-pixel-reference-board-05-neo-retro-digital-pet.png`
+- `docs/design/reference/woofwatcher-pixel-reference-board-06-ecosystem-supporting-pages.png`
+
+The next generation pass did target the larger seated care-twin avatar and supporting ecosystem family first. Directional RPG-style sprites should remain secondary and should be derived later from the approved main avatar, not used as the main identity.
+
+PixelLab balance is no longer blocked:
+
+- Apollo added a PixelLab subscription on 2026-06-18.
+- PixelLab reported 1,856 generations remaining after the v2 seed, state pack, idle animation, tail-wag animation, sleep-loop animation, and first dogless room layer.
+- Approved v2 seed object: `4f318d58-7166-4b0a-b202-2896eed1e0dc`.
+- Current next blocker: remaining room variants and remaining sprite strips, not credits or MCP access.
+
 ## Goal
 
 Make Phoenix feel like a real video-game care twin without lowering visual quality.
 
-The app now has the runtime for layered sprite animation, but layered rendering stays disabled until both asset groups exist:
+The app now has the runtime for layered sprite animation and the first live asset group:
 
-1. A dogless room background.
-2. Transparent Phoenix sprite strips.
+1. Dogless day room background: `assets/avatar/rooms/phoenix-room-day.png`.
+2. Transparent Phoenix sprite strips: `idle-breathe-strip.png`, `tail-wag-strip.png`, and `sleep-loop-strip.png`.
 
-This prevents the duplicate-avatar look.
+This prevents the duplicate-avatar look and lets Home render Phoenix as the animated character layer for finished actions. Remaining actions continue to fall back through the life engine until their strips are generated and registered.
 
 ## What Apollo Needs To Provide Or Generate
 
@@ -34,6 +60,17 @@ Pick one in-game Phoenix frame that is final enough to become the identity lock:
 
 Do not generate every animation from different prompts. Start from this one approved frame.
 
+The approved frame must look like it belongs in boards 05/06: larger, expressive, premium neo-retro digital pet proportions with Phoenix's black saddle, dark mask, sage bandana, collar, and copper heart tag clearly readable.
+
+Required supporting family after the identity lock:
+
+- seated Home avatar
+- sleep/rest avatar
+- WoofGuide side avatar
+- dark-mode room avatar
+- badge/logo head
+- running footer sprite
+
 ### 2. Dogless Room Background
 
 Create the same room/patio scene without Phoenix baked into it.
@@ -48,6 +85,8 @@ Needed later in code:
 
 The room should match the current board style: warm interior, window/patio depth, cozy objects, strong pixel charm, no heavy UI text inside the art.
 
+Create at least a day room and dark/night room so the Home and dark-mode/supporting-page looks can share the same care-twin identity without duplicate dogs.
+
 ### 3. Phoenix Sprite Strips
 
 Put final strips in:
@@ -56,13 +95,13 @@ Put final strips in:
 
 Required files:
 
-- `idle-breathe-strip.png`
-- `tail-wag-strip.png`
+- `idle-breathe-strip.png` - live
+- `tail-wag-strip.png` - live
 - `ear-perk-strip.png`
 - `walk-loop-strip.png`
 - `eat-loop-strip.png`
 - `drink-loop-strip.png`
-- `sleep-loop-strip.png`
+- `sleep-loop-strip.png` - live
 - `comfort-loop-strip.png`
 - `celebrate-hop-strip.png`
 - `health-watch-strip.png`
@@ -126,7 +165,7 @@ Example:
 
 Also register dogless room assets in the same file.
 
-Do not register sprite strips before the dogless room exists. The runtime intentionally requires both pieces before it renders layered Phoenix.
+Do not register future sprite strips before a matching dogless room exists. The runtime intentionally requires both pieces before it renders layered Phoenix.
 
 ## Quality Gate
 

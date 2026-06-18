@@ -11,23 +11,40 @@ import {
   listCareTwinSpriteSlots,
 } from "./careTwinAssets.ts";
 
-test("keeps layered sprite rendering disabled until sprite and dogless room assets both exist", () => {
+test("enables layered sprite rendering when production sprite and dogless room assets exist", () => {
   const readiness = getCareTwinLayerReadiness("tail-wag", "happy");
+
+  assert.equal(readiness.layeredReady, true);
+  assert.equal(readiness.spriteReady, true);
+  assert.equal(readiness.roomReady, true);
+  assert.deepEqual(readiness.missing, []);
+});
+
+test("registers finished PixelLab sprite strips and a dogless room layer", () => {
+  assert.deepEqual(Object.keys(CARE_TWIN_SPRITE_ASSETS).sort(), [
+    "idle-breathe",
+    "sleep-loop",
+    "tail-wag",
+  ]);
+  assert.deepEqual(Object.keys(CARE_TWIN_DOGLESS_ROOM_ASSETS).sort(), [
+    "anxious",
+    "calm",
+    "excited",
+    "happy",
+    "unwell",
+  ]);
+  assert.equal(getCareTwinSpriteAsset("tail-wag")?.frameWidth, 256);
+  assert.equal(getCareTwinSpriteAsset("walk-loop"), null);
+  assert.equal(getCareTwinRoomLayer("happy")?.description.includes("Dogless"), true);
+});
+
+test("reports unfinished sprite tracks without disabling the dogless room layer", () => {
+  const readiness = getCareTwinLayerReadiness("walk-loop", "happy");
 
   assert.equal(readiness.layeredReady, false);
   assert.equal(readiness.spriteReady, false);
-  assert.equal(readiness.roomReady, false);
-  assert.deepEqual(readiness.missing, [
-    "dogless-room-layer",
-    CARE_TWIN_SPRITE_MANIFEST["tail-wag"].requiredAsset,
-  ]);
-});
-
-test("keeps optional asset registries empty until production-safe art is supplied", () => {
-  assert.deepEqual(Object.keys(CARE_TWIN_SPRITE_ASSETS), []);
-  assert.deepEqual(Object.keys(CARE_TWIN_DOGLESS_ROOM_ASSETS), []);
-  assert.equal(getCareTwinSpriteAsset("walk-loop"), null);
-  assert.equal(getCareTwinRoomLayer("happy"), null);
+  assert.equal(readiness.roomReady, true);
+  assert.deepEqual(readiness.missing, [CARE_TWIN_SPRITE_MANIFEST["walk-loop"].requiredAsset]);
 });
 
 test("mirrors the sprite manifest into asset slots for Fable and artist handoff", () => {
@@ -47,6 +64,6 @@ test("mirrors the sprite manifest into asset slots for Fable and artist handoff"
     assert.equal(slot.loop, track.loop);
     assert.equal(slot.anchor, "bottom-center");
     assert.equal(slot.slotSize, 256);
-    assert.equal(slot.assetReady, false);
+    assert.equal(slot.assetReady, Boolean(CARE_TWIN_SPRITE_ASSETS[slot.action]));
   }
 });

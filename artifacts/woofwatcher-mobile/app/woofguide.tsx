@@ -284,7 +284,7 @@ export default function WoofGuideScreen() {
             !loading ? (
               <View style={s.emptyArea}>
                 <View style={s.emptyIconContainer}>
-                  <Image source={require("@/assets/avatar/pixel/phoenix-pixel-head.png")} style={s.avatar} />
+                  <Image source={require("@/assets/avatar/phoenix/approved/phoenix-woofguide-bust-v2.png")} style={s.avatar} />
                 </View>
                 <BoardCard style={s.guideIntroCard}>
                   <BoardRouteHeader

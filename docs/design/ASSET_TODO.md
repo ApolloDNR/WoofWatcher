@@ -2,6 +2,33 @@
 
 Date: 2026-06-14
 
+## PixelLab Phase 1 Run - 2026-06-18
+
+PixelLab MCP is connected. The first Phase 1 Phoenix identity attempt produced directional candidates A-D, but Apollo rejected that style for the main avatar target.
+
+Candidate files are saved in:
+
+- `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/`
+
+Review board:
+
+- `docs/design/pixellab/phoenix-identity-review-2026-06-18.html`
+
+Generation log:
+
+- `docs/design/pixellab/PHOENIX_GENERATION_LOG_2026-06-18.md`
+
+Candidate IDs:
+
+- Candidate A: `43cde13a-7335-4ad4-9e54-52ca652f6608`
+- Candidate B: `c029278c-84e3-46a6-a485-1d4f38da6153`
+- Candidate C: `9a0f891f-77c3-4c4c-97f0-8d3569a2f415`
+- Candidate D: `f0c6169b-88c0-4428-9089-31c0565c4129` (refinement of A)
+
+Current design read: Candidate D is better than A/B/C as a small directional sprite, but it is not close enough to the boards 05/06 main avatar and ecosystem direction. Treat it as archived movement-sprite exploration, not the final Phoenix avatar.
+
+V2 update: Apollo added a PixelLab subscription and the new selected main-avatar seed is `phoenix-main-avatar-v2.png`, generated from PixelLab object `4f318d58-7166-4b0a-b202-2896eed1e0dc`. The app now uses the v2 approved still pack for default avatar surfaces and the first live layered sprite set.
+
 ## Locked Reference Boards
 
 Apollo's current selected UI references are versioned here:
@@ -10,12 +37,22 @@ Apollo's current selected UI references are versioned here:
 - `docs/design/reference/woofwatcher-pixel-reference-board-02.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-03.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-04.png`
+- `docs/design/reference/woofwatcher-pixel-reference-board-05-neo-retro-digital-pet.png`
+- `docs/design/reference/woofwatcher-pixel-reference-board-06-ecosystem-supporting-pages.png`
 
-Use board 04 as the primary shell/layout target and boards 02/03 as the component vocabulary target.
+Use board 05 as the primary Phoenix Home/avatar target and board 06 as the supporting-pages ecosystem target. Use board 04 as the primary shell/layout target and boards 02/03 as the component vocabulary target.
 
 ## Needed For v1.5
 
-- Final Phoenix pixel avatar base.
+- Final Phoenix pixel avatar base. Status: v2 main seed exists and is wired into app defaults.
+- Live layered Home room. Status: `assets/avatar/rooms/phoenix-room-day.png` exists and is registered as the shared dogless room layer.
+- Production Phoenix asset family matching boards 05/06:
+  - large seated Home avatar - v2 live
+  - sleep/rest avatar - v2 live
+  - WoofGuide side avatar - v2 live
+  - dark-mode room avatar
+  - badge/logo head - v2 live
+  - running footer sprite
 - Avatar states:
   - Happy
   - Calm
@@ -27,7 +64,7 @@ Use board 04 as the primary shell/layout target and boards 02/03 as the componen
   - Proud
   - Home Alone
   - Not Feeling Well
-- Pixel room backgrounds for Home and Avatar Studio.
+- Pixel room backgrounds for Home and Avatar Studio. Status: day dogless Home room live; night, bedtime, health-watch, home-alone, and Avatar Studio room variants still needed.
 - Pixel icon set for navigation and quick log actions.
 - Status meters and badge sprites.
 - Speech bubble and emote sprites.
@@ -53,11 +90,14 @@ Use board 04 as the primary shell/layout target and boards 02/03 as the componen
 
 - Phoenix Home: `LivingPhoenixRoom` now has a Reanimated care-twin runtime with room-zone mapping, breathing, state cues, mood patch, reaction bursts, speech bubble, and HUD overlays.
 - Care Twin Engine: `artifacts/woofwatcher-mobile/lib/avatarLifeEngine.ts` now exposes `CARE_TWIN_SPRITE_MANIFEST`, `deriveCareTwinScene`, scene phases, priority needs, sprite actions, HUD tones, and tap verbs.
-- Layered sprite runtime: `SpriteSheetPlayer` can crop and animate registered sprite strips, while `careTwinAssets.ts` keeps layered rendering disabled until both transparent Phoenix strips and dogless room layers are registered.
+- Layered sprite runtime: `SpriteSheetPlayer` can crop and animate registered sprite strips. `careTwinAssets.ts` now registers idle-breathe, tail-wag, sleep-loop, and the dogless day room layer.
 - Health/Bile Watch: board metric tiles and Bile Watch status pill.
 - Log, Plans, More, Records, WoofGuide, Avatar Studio: shared board route header slots ready for final icon/animation polish.
 - Avatar Studio: V1 template/config system is wired with scan-assisted mock suggestions, editable coat/face/accessory slots, emote preview, and local save. It still needs final template art and sprite/emote assets.
-- Pixel placeholder pack: `assets/avatar/pixel/` now contains derived Phoenix preview defaults so the shipped preview does not fall back to non-pixel painted portraits.
+- Pixel placeholder pack: `assets/avatar/pixel/` is now fallback/reference only.
+- PixelLab v2 approved pack: `assets/avatar/phoenix/approved/` is the active default app avatar set.
+- PixelLab v2 live sprite strips: `assets/avatar/phoenix/idle-breathe-strip.png`, `tail-wag-strip.png`, and `sleep-loop-strip.png`.
+- PixelLab Candidate D pack: `assets/avatar/phoenix/approved/` is archived as directional movement exploration only.
 
 Detailed handoff: `docs/design/CARE_TWIN_ASSET_PIPELINE.md`.
 
@@ -109,17 +149,39 @@ These are acceptable for internal preview only and should be replaced by product
 
 They are derived from the approved pixel room board, so they keep the preview visually aligned while the final sprite/template pack is being produced.
 
+## Current PixelLab Directional Seed Pack
+
+Candidate D is archived as a directional seed after Phase 1 review:
+
+- `assets/avatar/phoenix/approved/phoenix-seed-south.png`
+- `assets/avatar/phoenix/approved/phoenix-seed-east.png`
+- `assets/avatar/phoenix/approved/phoenix-seed-north.png`
+- `assets/avatar/phoenix/approved/phoenix-seed-west.png`
+- `assets/avatar/phoenix/approved/phoenix-seed-south-east.png`
+- `assets/avatar/phoenix/approved/phoenix-seed-north-east.png`
+- `assets/avatar/phoenix/approved/phoenix-seed-north-west.png`
+- `assets/avatar/phoenix/approved/phoenix-seed-south-west.png`
+
+These are seed rotations, not final main-avatar assets and not final animation strips. Do not promote Candidate D to the live main avatar.
+
+Next required asset pass:
+
+- Improve or upscale the v2 seated Phoenix main avatar if Apollo wants an even closer board-05/06 match.
+- Generate dark-mode/dogless room variants so the layered Home runtime can render Phoenix separately without duplicate dogs across all scene moods.
+- Expand from the v2 idle-breathe/tail-wag/sleep proof into anxious, proud, walk, eat, drink, health-watch, and celebration strips.
+- Derive the sleeping, WoofGuide, dark-mode, badge/logo, and running footer variants from the approved identity instead of generating unrelated one-off dogs.
+
 ## Production Sprite Manifest Needed Next
 
 Create these as transparent PNG sprite strips, each frame in a 256px slot, aligned bottom-center, same Phoenix silhouette/palette/bandana/proportions, no scenery, no labels, no poster composition:
 
-- `assets/avatar/phoenix/idle-breathe-strip.png`: 8 frames, 6 fps, loop.
-- `assets/avatar/phoenix/tail-wag-strip.png`: 8 frames, 8 fps, loop.
+- `assets/avatar/phoenix/idle-breathe-strip.png`: 8 frames, 6 fps, loop. Status: live.
+- `assets/avatar/phoenix/tail-wag-strip.png`: 8 frames, 8 fps, loop. Status: live.
 - `assets/avatar/phoenix/ear-perk-strip.png`: 6 frames, 7 fps, one-shot cue.
 - `assets/avatar/phoenix/walk-loop-strip.png`: 10 frames, 10 fps, loop.
 - `assets/avatar/phoenix/eat-loop-strip.png`: 8 frames, 7 fps, loop.
 - `assets/avatar/phoenix/drink-loop-strip.png`: 8 frames, 7 fps, loop.
-- `assets/avatar/phoenix/sleep-loop-strip.png`: 8 frames, 5 fps, loop.
+- `assets/avatar/phoenix/sleep-loop-strip.png`: 8 frames, 5 fps, loop. Status: live.
 - `assets/avatar/phoenix/comfort-loop-strip.png`: 8 frames, 6 fps, loop.
 - `assets/avatar/phoenix/celebrate-hop-strip.png`: 8 frames, 9 fps, one-shot reward.
 - `assets/avatar/phoenix/health-watch-strip.png`: 8 frames, 5 fps, loop.
@@ -128,16 +190,15 @@ Sprite pipeline rule: start from one approved in-game Phoenix seed frame, genera
 
 ## Asset Limitation To Solve Next
 
-The current Home runtime deliberately uses the board-accurate pixel room as one animated stage so the app does not show an ugly second pasted-on Phoenix. For the final video-game feel, the app needs production assets with separated layers:
+The current Home runtime now supports true layered sprite animation. It uses a dogless room layer plus transparent Phoenix strips for finished actions. For the full video-game feel, the app still needs the remaining production assets with separated layers:
 
-- Dogless room background.
-- Transparent Phoenix base sprite.
-- Phoenix sprite loops for idle breathing, happy tail wag, walk, eating, drinking, sleeping, anxious glance, low-energy/health watch, proud celebration, and home-alone waiting.
+- Additional dogless room backgrounds for night, bedtime, health watch, and home-alone.
+- Transparent Phoenix loops for walk, eating, drinking, anxious glance, low-energy/health watch, proud celebration, and home-alone waiting.
 - Optional foreground props such as bowl, rug, bed, window, door, toy, and sparkle layers.
 
-Once those assets exist, `avatarLifeEngine.ts` can keep driving the state decisions while `LivingPhoenixRoom.tsx` swaps from single-stage animation to true layered sprite animation.
+`avatarLifeEngine.ts` drives the state decisions while `LivingPhoenixRoom.tsx` renders the registered layered sprite tracks.
 
-The runtime swap is already coded behind an asset-readiness gate. Register assets in `artifacts/woofwatcher-mobile/lib/careTwinAssets.ts` only after both a dogless room layer and matching sprite strips are ready.
+Register future assets in `artifacts/woofwatcher-mobile/lib/careTwinAssets.ts` only after both a dogless room layer and matching sprite strips are ready.
 
 Use `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` to check file presence and PNG dimensions before registration.
 

@@ -22,6 +22,16 @@ Owner: Apollo and Codex.
 
 Revisit trigger: PixelLab cannot produce a consistent approved Phoenix identity, generation cost becomes impractical, or Apollo selects a dedicated pixel artist/toolchain instead.
 
+### 2026-06-18: First Layered Phoenix Sprite Runtime Is Live
+
+Decision: Phoenix Home may render the first true layered care-twin scene using the dogless day room plus the registered `idle-breathe`, `tail-wag`, and `sleep-loop` Phoenix sprite strips.
+
+Reason: The duplicate-avatar risk is solved for these states because `assets/avatar/rooms/phoenix-room-day.png` does not contain Phoenix and the v2 sprite strips are transparent, normalized, and registered in `careTwinAssets.ts`. This moves WoofWatcher from a baked animated room toward a real game-like care twin without showing a second dog.
+
+Owner: Codex.
+
+Revisit trigger: Apollo rejects the dogless day room art, a stronger board-accurate room layer replaces it, or remaining sprite actions are generated and need registration.
+
 ### 2026-06-16: Care Twin Animation Uses A Sprite Manifest Before Layered Runtime Swap
 
 Decision: Mobile Phoenix Home should keep the current single-stage room animation until dogless room backgrounds and transparent Phoenix sprite strips exist, while `avatarLifeEngine.ts` owns the Care Twin scene state, sprite actions, and `CARE_TWIN_SPRITE_MANIFEST`.

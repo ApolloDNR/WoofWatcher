@@ -59,16 +59,27 @@ Important: do not generate assets during verification. First confirm the availab
 
 ## Production Phases
 
-### Phase 1 - Phoenix Identity Lock
+### Phase 1 - Phoenix Main Avatar Identity Lock
 
-Goal: create no more than four Phoenix candidates and select one.
+Goal: create no more than four Phoenix main-avatar candidates and select one.
+
+The target is the larger seated/expressive Neo Retro Digital Pet avatar from:
+
+```text
+docs/design/reference/woofwatcher-pixel-reference-board-05-neo-retro-digital-pet.png
+docs/design/reference/woofwatcher-pixel-reference-board-06-ecosystem-supporting-pages.png
+```
+
+Board 05 is the primary Phoenix Home target. Board 06 is the ecosystem target for supporting pages: sleep/rest art, records/reports thumbnails, WoofGuide side avatar, dark-mode Phoenix room, badges, logo/app-icon head, and running footer sprite.
+
+Do not accept tiny RPG directional sprites as the main app avatar identity. Those belong to a later movement-sprite pass after the larger expressive identity is approved.
 
 Output:
 
 - Candidate PNGs in `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/`.
 - Contact sheet or HTML review page if supported by the active toolchain.
 - Generation log using `docs/design/pixellab/GENERATION_LOG_TEMPLATE.md`.
-- One approved identity in `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/`.
+- One approved main-avatar identity in `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/`.
 
 Use prompt:
 
@@ -79,6 +90,17 @@ Stop for Apollo approval before animation.
 ### Phase 2 - Animation Proof
 
 Goal: prove consistency on a tiny animation set before spending on the full pack.
+
+Start with the approved seated/expressive main avatar:
+
+- idle breathing / blink
+- happy tail wag
+- sleep/rest
+- home-alone anxious glance
+
+Only after that works, derive directional movement sprites.
+
+The first animation proof should preserve the board 05/06 proportions and emotional read. A tiny map-sprite walk cycle is not enough to approve Phase 2.
 
 Output:
 
@@ -94,6 +116,15 @@ Use prompt:
 Stop for in-app inspection before full pack.
 
 ### Phase 3 - Full Animation Pack
+
+The full pack must feel like one WoofWatcher ecosystem, not separate one-off dogs. Required still/scene variants before or alongside strips:
+
+- large seated Home avatar
+- sleep/rest avatar for Alone Time and reports
+- WoofGuide side avatar
+- dark-mode room avatar
+- badge/logo head
+- running footer sprite
 
 Required sprite strips:
 
@@ -184,4 +215,3 @@ WoofWatcher mobile app
 ```
 
 Secrets belong only on the backend.
-

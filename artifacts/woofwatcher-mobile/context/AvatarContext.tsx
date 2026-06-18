@@ -22,11 +22,11 @@ const AVATAR_CONFIG_KEY = "woofwatcher.petAvatarConfig.v1";
 export const MOODS: Mood[] = ["happy", "excited", "calm", "anxious", "unwell"];
 
 const DEFAULT_SOURCES: Record<Mood, ImageSourcePropType> = {
-  happy: require("@/assets/avatar/pixel/phoenix-pixel-happy.png"),
-  excited: require("@/assets/avatar/pixel/phoenix-pixel-excited.png"),
-  calm: require("@/assets/avatar/pixel/phoenix-pixel-calm.png"),
-  anxious: require("@/assets/avatar/pixel/phoenix-pixel-anxious.png"),
-  unwell: require("@/assets/avatar/pixel/phoenix-pixel-unwell.png"),
+  happy: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2.png"),
+  excited: require("@/assets/avatar/phoenix/approved/phoenix-proud-happy-v2.png"),
+  calm: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2.png"),
+  anxious: require("@/assets/avatar/phoenix/approved/phoenix-home-alone-anxious-v2.png"),
+  unwell: require("@/assets/avatar/phoenix/approved/phoenix-sleep-rest-v2.png"),
 };
 
 export type AvatarSet = Partial<Record<Mood, string>>;
