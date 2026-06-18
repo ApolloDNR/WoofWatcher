@@ -67,11 +67,13 @@ test("creates and normalizes a Phoenix-first avatar config", () => {
   assert.equal(config.templateId, "shepherd");
   assert.equal(config.emotePackId, "phoenix-shepherd");
   assert.equal(AVATAR_TEMPLATES.find((template) => template.id === "retriever")?.recommendedEmotePackId, "retriever-starter");
+  assert.equal(AVATAR_TEMPLATES.find((template) => template.id === "husky")?.recommendedEmotePackId, "husky-starter");
   assert.equal(normalized.templateId, "shepherd");
   assert.equal(normalized.earTypeId, "tall");
   assert.equal(normalized.accessorySlots.head, "birthday-hat");
   assert.equal(normalized.accessorySlots.neck, "forest-bandana");
   assert.equal(normalizeAvatarConfig({ templateId: "retriever", emotePackId: "retriever-starter" }, "Scout").emotePackId, "retriever-starter");
+  assert.equal(normalizeAvatarConfig({ templateId: "husky", emotePackId: "husky-starter" }, "Nova").emotePackId, "husky-starter");
 });
 
 test("keeps scan-assisted copy truthful and owner-approved", () => {

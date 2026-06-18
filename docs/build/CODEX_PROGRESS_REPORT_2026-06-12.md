@@ -264,7 +264,7 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 ### Remaining Work
 
 - Generate true 170x170 overlay-aligned accessory layers for runtime costume fitting.
-- Generate remaining non-Retriever/body-class emote packs.
+- Generate remaining unfinished template/body-class emote packs.
 - Replace first-pass room variants with final illustrated PixelLab/Figma-quality room art.
 - Run native iOS/Android safe-area and screenshot QA when real device/simulator access is available.
 
@@ -324,7 +324,7 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 
 - Native iOS/Android safe-area, frame-rate, touch-target, and screenshot QA.
 - Final illustrated PixelLab/Figma-quality night, bedtime, health-watch, and home-alone room variants.
-- Remaining non-Retriever/body-class emote packs, sprite strips, and true overlay-aligned accessory layers.
+- Remaining unfinished template/body-class emote packs, sprite strips, and true overlay-aligned accessory layers.
 - Remote GitHub Actions verification remains blocked until Apollo fixes the GitHub account billing/spending-limit issue.
 
 ## 2026-06-18 Retriever Starter Emote Pack Pass
@@ -373,6 +373,55 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 ### Remaining Work
 
 - Native iOS/Android safe-area, frame-rate, touch-target, and screenshot QA.
-- Remaining non-Retriever/body-class emote packs, sprite strips, and true overlay-aligned accessory layers.
+- Remaining unfinished template/body-class emote packs, sprite strips, and true overlay-aligned accessory layers.
+- Final illustrated PixelLab/Figma-quality night, bedtime, health-watch, and home-alone room variants.
+- Remote GitHub Actions verification remains blocked until Apollo fixes the GitHub account billing/spending-limit issue.
+
+## 2026-06-18 Husky Starter Emote Pack Pass
+
+### What Changed
+
+- Generated, downloaded, and registered a second non-Phoenix 10-state Avatar Studio emote pack for the Husky / Spitz template.
+- Added `husky-starter` to the avatar config contract and made the Husky template recommend it.
+- Extended Avatar Studio selected-template mood routing so Husky, Retriever, and Phoenix/Shepherd each resolve to their own pack.
+- Extended PixelLab asset verification and mobile readiness checks so all Husky emotes are required as 170x170 PNGs.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`
+- `artifacts/woofwatcher-mobile/lib/avatarStudio.ts`
+- `artifacts/woofwatcher-mobile/lib/avatarStudio.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+- `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/*.png`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/BLOCKERS_FOR_APOLLO.md`
+- `docs/DECISION_LOG.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/ASSET_TODO.md`
+- `docs/design/AVATAR_STUDIO_IMPLEMENTATION.md`
+- `docs/design/PIXELLAB_ASSET_PRODUCTION.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/design/pixellab/PHOENIX_GENERATION_LOG_2026-06-18.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- PixelLab asset verification:
+  - Command: `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=81 missing=0 invalid=0`.
+- Focused behavior/readiness tests:
+  - Command: `node --experimental-strip-types --test --test-reporter=dot artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts`
+  - Result: passed.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+
+### Remaining Work
+
+- Native iOS/Android safe-area, frame-rate, touch-target, and screenshot QA.
+- Remaining unfinished template/body-class emote packs, sprite strips, and true overlay-aligned accessory layers.
 - Final illustrated PixelLab/Figma-quality night, bedtime, health-watch, and home-alone room variants.
 - Remote GitHub Actions verification remains blocked until Apollo fixes the GitHub account billing/spending-limit issue.

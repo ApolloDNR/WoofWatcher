@@ -219,7 +219,7 @@ These are transparent 170x170 PixelLab Phoenix states for the Avatar Studio Mood
 
 Remaining emote work:
 
-- Generate starter emote packs for the remaining non-Retriever launch templates or shared body classes.
+- Generate starter emote packs for the remaining unfinished launch templates or shared body classes.
 - Decide whether the remaining non-Shepherd breeds share body-class emotes or require one pack per template.
 - Add matching short animation strips after still-state approval.
 
@@ -239,6 +239,23 @@ The first non-Phoenix PixelLab emote still pack is live:
 - `assets/avatar/templates/retriever/emotes/not-feeling-well.png` from PixelLab object `a48f574d-fb49-4198-ad9b-96ac47df7e5f`.
 
 These are transparent 170x170 PixelLab Retriever states for the Avatar Studio Mood set. The Retriever template now recommends `retriever-starter`; `/portrait` resolves mood art through the selected template and emote pack rather than hard-coding Phoenix art.
+
+### Phase 4C.2 - Husky Starter Emote Pack
+
+The Husky/Spitz PixelLab emote still pack is live:
+
+- `assets/avatar/templates/husky/emotes/happy.png` from PixelLab object `43274fa6-510c-459c-8aab-7cc5f3a78d59`.
+- `assets/avatar/templates/husky/emotes/calm.png` from PixelLab object `151791e6-2aa1-45e9-9013-a743caa3349b`.
+- `assets/avatar/templates/husky/emotes/excited.png` from PixelLab object `01e04bc6-32b6-44bd-b97d-6201adc728f7`.
+- `assets/avatar/templates/husky/emotes/bored.png` from PixelLab object `a1b97cb6-1302-4dff-9981-4ce9b8550e82`.
+- `assets/avatar/templates/husky/emotes/hungry.png` from PixelLab object `8dcfd8f2-d981-45a5-b8fd-a3f1424bdaef`.
+- `assets/avatar/templates/husky/emotes/anxious.png` from PixelLab object `10ecc873-2e40-413a-b5b7-7bbda2a86a9a`.
+- `assets/avatar/templates/husky/emotes/sleepy.png` from PixelLab object `ed674bb8-5594-4bb0-877b-132c6e1212d0`.
+- `assets/avatar/templates/husky/emotes/proud.png` from PixelLab object `74fe802a-6f5a-4e3e-83a0-5e9de5c8f1cb`.
+- `assets/avatar/templates/husky/emotes/home-alone.png` from PixelLab object `aa79bc58-b3e2-4df5-9608-1556794bd5e7`.
+- `assets/avatar/templates/husky/emotes/not-feeling-well.png` from PixelLab object `3af5005a-8a5b-485a-8d3d-caeb67fdd927`.
+
+These are transparent 170x170 PixelLab Husky/Spitz states for the Avatar Studio Mood set. The Husky template now recommends `husky-starter`; `/portrait` resolves the pack through the same selected-template routing used by Phoenix and Retriever.
 
 ### Phase 4D - Avatar Accessory Inventory Pack
 
@@ -313,9 +330,9 @@ from:
 artifacts/woofwatcher-mobile
 ```
 
-This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Retriever emote stills, Avatar Studio accessory inventory icons, and the two subscription seed strips.
+This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Retriever emote stills, Husky emote stills, Avatar Studio accessory inventory icons, and the two subscription seed strips.
 
-Latest local evidence, 2026-06-18: `ok=71 missing=0 invalid=0`.
+Latest local evidence, 2026-06-18: `ok=81 missing=0 invalid=0`.
 
 Use:
 

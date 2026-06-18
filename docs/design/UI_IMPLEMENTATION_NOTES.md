@@ -370,7 +370,7 @@ Remaining visual work:
 
 - Run native iOS/Android safe-area and frame-rate QA.
 - Replace first-pass derived room variants with final illustrated PixelLab/Figma-quality scenes.
-- Generate remaining non-Retriever template emote/sprite packs and true overlay-aligned accessory layers.
+- Generate remaining unfinished template emote/sprite packs and true overlay-aligned accessory layers.
 
 ## 2026-06-18 Retriever Starter Emote Pack Pass
 
@@ -386,6 +386,21 @@ Remaining visual work:
 
 - Generate emote packs for the remaining launch templates or shared body classes.
 - Add short sprite strips for Retriever/body-class motion once still states are approved.
+- Add true overlay-aligned accessory layers across templates.
+
+## 2026-06-18 Husky Starter Emote Pack Pass
+
+Added a visually distinct spitz/working-body Avatar Studio pack:
+
+- Generated and promoted a complete 10-state Husky/Spitz emote still pack for Happy, Calm, Excited, Bored, Hungry, Anxious, Sleepy, Proud, Home Alone, and Not Feeling Well.
+- Added `husky-starter` to the avatar config contract and made the Husky / Spitz template recommend that pack.
+- Extended `avatarEmoteAssets.ts` selected-template routing so Husky uses Husky states, Retriever uses Retriever states, Phoenix/Shepherd uses Phoenix states, and unfinished templates keep honest base-art fallback.
+- Extended readiness coverage and PixelLab asset verification so all Husky emote PNGs are checked as 170x170 assets.
+
+Remaining visual work:
+
+- Generate emote packs for the remaining launch templates or shared body classes.
+- Add short sprite strips for Retriever/Husky/body-class motion once still states are approved.
 - Add true overlay-aligned accessory layers across templates.
 
 ## 2026-06-17 Avatar Studio Lite Pass

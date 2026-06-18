@@ -408,7 +408,7 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `ac03ab66-d872-4ac6-a8e9-9b83f9828fe7` - bored pose too similar to default.
   - `799136e4-e617-4187-880c-62078df88661` - hungry pose too subtle at phone size.
   - `2032e8a9-6e52-4504-8ac4-38dd69c7957c` - not-feeling-well pose too similar to default.
-- Status: generated, downloaded, registered, wired into the Avatar Studio Mood set, and covered by PixelLab asset verification. The first Phoenix/Shepherd still-emote layer is live; remaining non-Retriever template emotes, accessory overlays, and mood transition strips remain.
+- Status: generated, downloaded, registered, wired into the Avatar Studio Mood set, and covered by PixelLab asset verification. The first Phoenix/Shepherd still-emote layer is live; remaining unfinished template emotes, accessory overlays, and mood transition strips remain.
 
 ### Subscription Seed Animation Strips
 
@@ -446,3 +446,25 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/not-feeling-well.png` from `a48f574d-fb49-4198-ad9b-96ac47df7e5f`.
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
 - Status: generated, downloaded, registered, wired into the Avatar Studio Mood set through selected-template emote routing, and covered by mobile readiness tests. This is the first non-Phoenix still-emote layer; remaining templates/body classes still need packs.
+
+### Husky Avatar Studio Emote Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_object_state`
+- Source object ID: `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
+- Output format: 10 transparent 170x170 PNG emote stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/happy.png` from `43274fa6-510c-459c-8aab-7cc5f3a78d59`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/calm.png` from `151791e6-2aa1-45e9-9013-a743caa3349b`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/excited.png` from `01e04bc6-32b6-44bd-b97d-6201adc728f7`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/bored.png` from `a1b97cb6-1302-4dff-9981-4ce9b8550e82`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/hungry.png` from `8dcfd8f2-d981-45a5-b8fd-a3f1424bdaef`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/anxious.png` from `10ecc873-2e40-413a-b5b7-7bbda2a86a9a`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/sleepy.png` from `ed674bb8-5594-4bb0-877b-132c6e1212d0`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/proud.png` from `74fe802a-6f5a-4e3e-83a0-5e9de5c8f1cb`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/home-alone.png` from `aa79bc58-b3e2-4df5-9608-1556794bd5e7`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/not-feeling-well.png` from `3af5005a-8a5b-485a-8d3d-caeb67fdd927`.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
+- Status: generated, downloaded, registered, wired into the Avatar Studio Mood set through selected-template emote routing, and covered by mobile readiness tests. This is the first spitz/working-body still-emote layer; remaining templates/body classes still need packs.

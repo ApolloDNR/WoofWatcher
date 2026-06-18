@@ -45,7 +45,7 @@ The config is saved locally through `AvatarContext` under `woofwatcher.petAvatar
 
 Existing custom mood image sets remain supported under `woofwatcher.avatarSet.v1`.
 
-Default preview assets now use the PixelLab Phoenix v2 approved pack in `assets/avatar/phoenix/approved/`, the live layered room renderer, the first Avatar Studio template preview pack, the full first-pass production-scale template base pack in `assets/avatar/templates/`, the Phoenix/Shepherd emote still pack in `assets/avatar/phoenix/approved/emotes/`, and the first non-Phoenix Retriever emote still pack in `assets/avatar/templates/retriever/emotes/`. The main Avatar Studio hero now uses `LivingPhoenixRoom` with `presentation="studio"` so it keeps one living care twin without the Home-specific HUD. Template base stills and emotes support the ID card, template picker, mood grid, and future sprite-family previews. The older pixel-derived Phoenix pack in `assets/avatar/pixel/` remains fallback/reference only. The PixelLab Candidate D rotations are archived as directional movement exploration only.
+Default preview assets now use the PixelLab Phoenix v2 approved pack in `assets/avatar/phoenix/approved/`, the live layered room renderer, the first Avatar Studio template preview pack, the full first-pass production-scale template base pack in `assets/avatar/templates/`, the Phoenix/Shepherd emote still pack in `assets/avatar/phoenix/approved/emotes/`, the Retriever emote still pack in `assets/avatar/templates/retriever/emotes/`, and the Husky/Spitz emote still pack in `assets/avatar/templates/husky/emotes/`. The main Avatar Studio hero now uses `LivingPhoenixRoom` with `presentation="studio"` so it keeps one living care twin without the Home-specific HUD. Template base stills and emotes support the ID card, template picker, mood grid, and future sprite-family previews. The older pixel-derived Phoenix pack in `assets/avatar/pixel/` remains fallback/reference only. The PixelLab Candidate D rotations are archived as directional movement exploration only.
 
 ## Template Library
 
@@ -142,6 +142,29 @@ artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/
 ```
 
 The Retriever template now recommends `retriever-starter`. The app routes Mood set previews through `getAvatarEmoteAsset(draft, state)`, so a selected Retriever uses Retriever state art, a selected Phoenix/Shepherd uses Phoenix art, and unfinished templates fall back to their own base still instead of showing the wrong dog.
+
+## Husky Starter Emote Pack
+
+The second non-Phoenix production emote pack is live for the Husky / Spitz launch template:
+
+- Happy
+- Calm
+- Excited
+- Bored
+- Hungry
+- Anxious
+- Sleepy
+- Proud
+- Home Alone
+- Not Feeling Well
+
+Each state is a transparent 170x170 PNG under:
+
+```text
+artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/
+```
+
+The Husky template now recommends `husky-starter`. This gives Avatar Studio a visually distinct pointed-ear/spitz pack and further proves that mood art is selected by template instead of being a Phoenix-only skin.
 
 ## Accessory Inventory Pack
 
@@ -251,7 +274,7 @@ The first production avatar family should match the locked boards:
 - `docs/design/reference/woofwatcher-pixel-reference-board-05-neo-retro-digital-pet.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-06-ecosystem-supporting-pages.png`
 
-The v2 family now includes the seated main avatar, sleep/rest avatar, anxious/home-alone avatar, proud/happy avatar, WoofGuide side avatar, badge/logo head crop, full registered Phoenix sprite manifest, first-pass dogless room variants, the 12-template preview thumbnail pack, the full 12-template production base still pack, a 10-state Phoenix/Shepherd emote still pack, and a 10-state Retriever starter emote pack. Final illustrated room variants, accessory layers, and remaining template/body-class emotes/sprites are still needed before the scan/customization story will feel App Store ready.
+The v2 family now includes the seated main avatar, sleep/rest avatar, anxious/home-alone avatar, proud/happy avatar, WoofGuide side avatar, badge/logo head crop, full registered Phoenix sprite manifest, first-pass dogless room variants, the 12-template preview thumbnail pack, the full 12-template production base still pack, a 10-state Phoenix/Shepherd emote still pack, a 10-state Retriever starter emote pack, and a 10-state Husky/Spitz starter emote pack. Final illustrated room variants, accessory layers, and remaining template/body-class emotes/sprites are still needed before the scan/customization story will feel App Store ready.
 
 The v2 accessory inventory now includes the first 10 transparent PixelLab accessory icons. True overlay-aligned costume/accessory layers are still needed before accessories can sit perfectly on every avatar body type during live animation.
 
@@ -282,9 +305,9 @@ Room assets should eventually follow:
 
 ## Current Limitations
 
-- The Studio uses the PixelLab Phoenix v2 approved pack, a cleaned live layered room preview, PixelLab template preview thumbnails, all 12 PixelLab template base stills, the Phoenix/Shepherd emote pack, the Retriever starter emote pack, and crisp web pixel rendering for current previews.
+- The Studio uses the PixelLab Phoenix v2 approved pack, a cleaned live layered room preview, PixelLab template preview thumbnails, all 12 PixelLab template base stills, the Phoenix/Shepherd emote pack, the Retriever starter emote pack, the Husky/Spitz starter emote pack, and crisp web pixel rendering for current previews.
 - The Customize tab uses the 10-item PixelLab accessory inventory icon pack.
-- First-pass non-Phoenix breed template thumbnails, all 12 template base stills, and the Retriever starter emote pack are present, but the remaining template/body-class emote and sprite packs are not complete yet.
+- First-pass non-Phoenix breed template thumbnails, all 12 template base stills, the Retriever starter emote pack, and the Husky/Spitz starter emote pack are present, but the remaining template/body-class emote and sprite packs are not complete yet.
 - The dogless day room, first-pass dogless variants, and full registered Phoenix sprite manifest are live; final illustrated room variants still need approval/replacement.
 - Live image analysis is not wired yet.
 - True layered room sprite switching is live for registered sprite actions through `careTwinAssets.ts`.
@@ -296,9 +319,9 @@ Room assets should eventually follow:
 Before public launch, Avatar Studio needs:
 
 - final Phoenix seed frame. Status: v2 seed exists.
-- at least one polished full template pack. Status: Phoenix/Shepherd now has base/emote stills, registered sprite actions, and accessory inventory icons; Retriever now has base/emote stills; true overlay layers and remaining template/body-class emote/sprite packs are still needed.
+- at least one polished full template pack. Status: Phoenix/Shepherd now has base/emote stills, registered sprite actions, and accessory inventory icons; Retriever and Husky now have base/emote stills; true overlay layers and remaining template/body-class emote/sprite packs are still needed.
 - dogless room background. Status: day room and first-pass variants exist; final illustrated variants still needed.
-- transparent sprite/emote assets. Status: Phoenix v2 still states, 10 Phoenix Avatar Studio emotes, 10 Retriever Avatar Studio emotes, and the full registered Phoenix sprite manifest exist.
+- transparent sprite/emote assets. Status: Phoenix v2 still states, 10 Phoenix Avatar Studio emotes, 10 Retriever Avatar Studio emotes, 10 Husky Avatar Studio emotes, and the full registered Phoenix sprite manifest exist.
 - no duplicate Phoenix rendering
 - mobile safe-area QA
 - real screenshots from the preview or device

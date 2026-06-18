@@ -11,6 +11,7 @@ import { AVATAR_TEMPLATE_BASE_ASSETS, getAvatarTemplateDisplaySource } from "@/l
 export type AvatarEmoteAssetStyle =
   | "pixellab-phoenix-emote"
   | "pixellab-retriever-emote"
+  | "pixellab-husky-emote"
   | "template-base-emote-fallback";
 
 export interface AvatarEmoteAsset {
@@ -194,10 +195,94 @@ export const RETRIEVER_STARTER_EMOTE_ASSETS: Partial<Record<AvatarEmoteState, Av
   },
 };
 
+export const HUSKY_STARTER_EMOTE_ASSETS: Partial<Record<AvatarEmoteState, AvatarEmoteAsset>> = {
+  happy: {
+    source: require("@/assets/avatar/templates/husky/emotes/happy.png"),
+    path: "assets/avatar/templates/husky/emotes/happy.png",
+    style: "pixellab-husky-emote",
+    objectId: "43274fa6-510c-459c-8aab-7cc5f3a78d59",
+    description: "Happy Husky starter state for the first spitz/working-body pack.",
+    complete: true,
+  },
+  calm: {
+    source: require("@/assets/avatar/templates/husky/emotes/calm.png"),
+    path: "assets/avatar/templates/husky/emotes/calm.png",
+    style: "pixellab-husky-emote",
+    objectId: "151791e6-2aa1-45e9-9013-a743caa3349b",
+    description: "Calm Husky starter state for settled care moments.",
+    complete: true,
+  },
+  excited: {
+    source: require("@/assets/avatar/templates/husky/emotes/excited.png"),
+    path: "assets/avatar/templates/husky/emotes/excited.png",
+    style: "pixellab-husky-emote",
+    objectId: "01e04bc6-32b6-44bd-b97d-6201adc728f7",
+    description: "Excited Husky starter state for playful care moments.",
+    complete: true,
+  },
+  bored: {
+    source: require("@/assets/avatar/templates/husky/emotes/bored.png"),
+    path: "assets/avatar/templates/husky/emotes/bored.png",
+    style: "pixellab-husky-emote",
+    objectId: "a1b97cb6-1302-4dff-9981-4ce9b8550e82",
+    description: "Bored Husky starter state for under-stimulated moments.",
+    complete: true,
+  },
+  hungry: {
+    source: require("@/assets/avatar/templates/husky/emotes/hungry.png"),
+    path: "assets/avatar/templates/husky/emotes/hungry.png",
+    style: "pixellab-husky-emote",
+    objectId: "8dcfd8f2-d981-45a5-b8fd-a3f1424bdaef",
+    description: "Hungry Husky starter state with a readable food cue.",
+    complete: true,
+  },
+  anxious: {
+    source: require("@/assets/avatar/templates/husky/emotes/anxious.png"),
+    path: "assets/avatar/templates/husky/emotes/anxious.png",
+    style: "pixellab-husky-emote",
+    objectId: "10ecc873-2e40-413a-b5b7-7bbda2a86a9a",
+    description: "Anxious Husky starter state for watchful household moments.",
+    complete: true,
+  },
+  sleepy: {
+    source: require("@/assets/avatar/templates/husky/emotes/sleepy.png"),
+    path: "assets/avatar/templates/husky/emotes/sleepy.png",
+    style: "pixellab-husky-emote",
+    objectId: "ed674bb8-5594-4bb0-877b-132c6e1212d0",
+    description: "Sleepy Husky starter state for rest and quiet hours.",
+    complete: true,
+  },
+  proud: {
+    source: require("@/assets/avatar/templates/husky/emotes/proud.png"),
+    path: "assets/avatar/templates/husky/emotes/proud.png",
+    style: "pixellab-husky-emote",
+    objectId: "74fe802a-6f5a-4e3e-83a0-5e9de5c8f1cb",
+    description: "Proud Husky starter state for training wins and streaks.",
+    complete: true,
+  },
+  home_alone: {
+    source: require("@/assets/avatar/templates/husky/emotes/home-alone.png"),
+    path: "assets/avatar/templates/husky/emotes/home-alone.png",
+    style: "pixellab-husky-emote",
+    objectId: "aa79bc58-b3e2-4df5-9608-1556794bd5e7",
+    description: "Home-alone Husky starter state for presence tracking.",
+    complete: true,
+  },
+  not_feeling_well: {
+    source: require("@/assets/avatar/templates/husky/emotes/not-feeling-well.png"),
+    path: "assets/avatar/templates/husky/emotes/not-feeling-well.png",
+    style: "pixellab-husky-emote",
+    objectId: "3af5005a-8a5b-485a-8d3d-caeb67fdd927",
+    description: "Low-energy Husky starter state for non-diagnostic health watch moments.",
+    complete: true,
+  },
+};
+
 const PACK_LABELS: Record<AvatarEmotePackId, string> = {
   "starter-care-twin": "Starter",
   "phoenix-shepherd": "Phoenix pack",
   "retriever-starter": "Retriever pack",
+  "husky-starter": "Husky pack",
 };
 
 export function getPhoenixEmoteAsset(state: AvatarEmoteState): PhoenixEmoteAsset {
@@ -221,6 +306,11 @@ export function getAvatarEmoteAsset(
     if (retrieverAsset) return retrieverAsset;
   }
 
+  if (avatar.emotePackId === "husky-starter" && avatar.templateId === "husky") {
+    const huskyAsset = HUSKY_STARTER_EMOTE_ASSETS[state];
+    if (huskyAsset) return huskyAsset;
+  }
+
   const templateAsset = AVATAR_TEMPLATE_BASE_ASSETS[avatar.templateId] ?? AVATAR_TEMPLATE_BASE_ASSETS.mixed;
   const label = state.replace(/_/g, " ");
   return {
@@ -235,5 +325,6 @@ export function getAvatarEmoteAsset(
 export function getCompletedAvatarEmoteCount(packId: AvatarEmotePackId): number {
   if (packId === "phoenix-shepherd") return AVATAR_EMOTE_STATES.length;
   if (packId === "retriever-starter") return Object.keys(RETRIEVER_STARTER_EMOTE_ASSETS).length;
+  if (packId === "husky-starter") return Object.keys(HUSKY_STARTER_EMOTE_ASSETS).length;
   return 0;
 }

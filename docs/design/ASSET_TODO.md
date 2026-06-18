@@ -167,9 +167,22 @@ Initial Retriever emote stills are live as the first non-Phoenix 170x170 mood pa
 - `assets/avatar/templates/retriever/emotes/home-alone.png` - live.
 - `assets/avatar/templates/retriever/emotes/not-feeling-well.png` - live.
 
+Initial Husky/Spitz emote stills are live as the first spitz/working-body 170x170 mood pack, registered through `avatarEmoteAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered in `/portrait` when the selected template recommends `husky-starter`:
+
+- `assets/avatar/templates/husky/emotes/happy.png` - live.
+- `assets/avatar/templates/husky/emotes/calm.png` - live.
+- `assets/avatar/templates/husky/emotes/excited.png` - live.
+- `assets/avatar/templates/husky/emotes/bored.png` - live.
+- `assets/avatar/templates/husky/emotes/hungry.png` - live.
+- `assets/avatar/templates/husky/emotes/anxious.png` - live.
+- `assets/avatar/templates/husky/emotes/sleepy.png` - live.
+- `assets/avatar/templates/husky/emotes/proud.png` - live.
+- `assets/avatar/templates/husky/emotes/home-alone.png` - live.
+- `assets/avatar/templates/husky/emotes/not-feeling-well.png` - live.
+
 Still needed for a full App Store avatar system:
 
-- emote stills for the remaining non-Retriever launch templates and reusable body classes.
+- emote stills for the remaining unfinished launch templates and reusable body classes.
 - template-specific sprite strips for major body classes.
 
 Initial accessory slots:
@@ -220,7 +233,7 @@ Next required asset pass:
 - Replace the first-pass derived room variants with final illustrated dark/night, bedtime, health-watch, and home-alone scenes.
 - Inspect and improve any action strip that does not read strongly enough at phone size, especially walk/eat/drink where future prop layers can make the action clearer.
 - Inspect the subscription seed idle/walk strips in native/mobile preview before deciding whether they should replace or supplement the current approved seated sprite family.
-- Derive the dark-mode, badge/logo refinements, running footer sprite, true overlay-aligned accessory layers, and remaining non-Retriever template emote packs from the approved identity system instead of generating unrelated one-off dogs.
+- Derive the dark-mode, badge/logo refinements, running footer sprite, true overlay-aligned accessory layers, and remaining unfinished template emote packs from the approved identity system instead of generating unrelated one-off dogs.
 
 ## Production Sprite Manifest Needed Next
 
