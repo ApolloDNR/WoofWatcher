@@ -309,6 +309,21 @@ Remaining visual work:
 - Add accessory sprites for collars, bandanas, hats, glasses, and props.
 - Run visual QA on a live device/browser preview once the local preview server and package-manager path are available.
 
+## 2026-06-18 Avatar Studio Template Catalog Pass
+
+Upgraded the Template tab from icon placeholders into a real character catalog:
+
+- Generated and promoted a 12-item PixelLab template thumbnail pack covering Shepherd, Retriever, Husky, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed.
+- Added `avatarTemplateAssets.ts` as the explicit app registry for `assets/avatar/templates/{templateId}/preview.png`.
+- Replaced the template tile icon well in `/portrait` with the registered preview image, a stable art frame, and selected-state badge.
+- Added readiness coverage that checks every template preview file exists as an 85x85 PNG and that Avatar Studio uses the preview registry.
+
+Remaining visual work:
+
+- Generate production-scale template `base.png` files.
+- Add template-specific emotes/sprites for launch body classes.
+- Add accessory layer PNGs for neck/head/face/body/room/fx slots.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

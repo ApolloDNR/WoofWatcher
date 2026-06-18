@@ -156,6 +156,25 @@ Create separate equipment layers:
 
 Accessories must stay slot-based. Do not bake accessories into unrelated one-off character art.
 
+### Phase 4A - Avatar Template Previews
+
+The first launch preview pack is live:
+
+- `assets/avatar/templates/shepherd/preview.png`
+- `assets/avatar/templates/retriever/preview.png`
+- `assets/avatar/templates/husky/preview.png`
+- `assets/avatar/templates/bully/preview.png`
+- `assets/avatar/templates/doodle/preview.png`
+- `assets/avatar/templates/terrier/preview.png`
+- `assets/avatar/templates/hound/preview.png`
+- `assets/avatar/templates/dachshund/preview.png`
+- `assets/avatar/templates/spaniel/preview.png`
+- `assets/avatar/templates/toy/preview.png`
+- `assets/avatar/templates/slender/preview.png`
+- `assets/avatar/templates/mixed/preview.png`
+
+These are transparent 85x85 PixelLab thumbnails for the Avatar Studio picker. Full template packs still need production-scale `base.png`, emotes, and sprite strips.
+
 ### Phase 5 - Dogless Rooms
 
 Create Phoenix-free backgrounds:
@@ -191,6 +210,8 @@ from:
 ```text
 artifacts/woofwatcher-mobile
 ```
+
+This verifies the registered Phoenix sprite strips, dogless room files, and Avatar Studio template previews.
 
 Use:
 

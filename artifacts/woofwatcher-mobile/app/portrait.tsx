@@ -43,6 +43,7 @@ import {
   type AvatarTemplateId,
   type PetAvatarConfig,
 } from "@/lib/avatarStudio";
+import { getAvatarTemplatePreviewSource } from "@/lib/avatarTemplateAssets";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -485,8 +486,26 @@ export default function PortraitScreen() {
                       },
                     ]}
                   >
-                    <View style={[s.templateIcon, { backgroundColor: tone + "22" }]}>
-                      <PixelIcon name={template.id === "shepherd" ? "heart" : "happy"} size={24} />
+                    <View
+                      style={[
+                        s.templateArtWrap,
+                        {
+                          backgroundColor: active ? colors.ivory : tone + "12",
+                          borderColor: active ? tone : colors.border,
+                        },
+                      ]}
+                    >
+                      <Image
+                        source={getAvatarTemplatePreviewSource(template.id)}
+                        style={s.templateArt}
+                        contentFit="contain"
+                        transition={140}
+                      />
+                      {active ? (
+                        <View style={[s.templateCheck, { backgroundColor: tone }]}>
+                          <Ionicons name="checkmark" size={13} color="#FFF9EF" />
+                        </View>
+                      ) : null}
                     </View>
                     <Text style={[s.templateTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                       {template.label}
@@ -835,18 +854,37 @@ const s = StyleSheet.create({
   templateTile: {
     flexBasis: "48%",
     flexGrow: 1,
-    minHeight: 150,
+    minHeight: 178,
     borderRadius: 8,
     borderWidth: 1,
     padding: 10,
     gap: 7,
   },
-  templateIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
+  templateArtWrap: {
+    width: "100%",
+    aspectRatio: 1.26,
+    borderRadius: 6,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+    position: "relative",
+  },
+  templateArt: {
+    width: "92%",
+    height: "92%",
+  },
+  templateCheck: {
+    position: "absolute",
+    right: 6,
+    top: 6,
+    width: 23,
+    height: 23,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFF9EF",
   },
   templateTitle: { fontSize: 13.5 },
   templateSub: { fontSize: 11.5, lineHeight: 16 },

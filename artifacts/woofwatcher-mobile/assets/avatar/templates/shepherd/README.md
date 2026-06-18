@@ -2,9 +2,12 @@
 
 The first production template pack should be Phoenix's Shepherd/Belgian Shepherd mix.
 
+Current files:
+
+- `preview.png` - live PixelLab launch thumbnail.
+
 Needed files:
 
-- `preview.png`
 - `base.png`
 - `emotes/happy.png`
 - `emotes/calm.png`

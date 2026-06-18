@@ -30,6 +30,15 @@ function routeExists(route: string): boolean {
   return [direct, grouped, tab, auth].some((candidate) => existsSync(candidate));
 }
 
+function readPngSize(path: string): { width: number; height: number } {
+  const buffer = readFileSync(path);
+  assert.equal(buffer.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", `${path} should be a PNG`);
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+  };
+}
+
 test("registers the critical mobile routes and tabs", () => {
   const rootLayout = readAppFile("_layout.tsx");
   const tabLayout = readAppFile(join("(tabs)", "_layout.tsx"));
@@ -494,12 +503,30 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarStudio.ts"),
     "utf8",
   );
+  const avatarTemplateAssets = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateAssets.ts"),
+    "utf8",
+  );
   const avatarContext = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "AvatarContext.tsx"),
     "utf8",
   );
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
+  const templateIds = [
+    "shepherd",
+    "retriever",
+    "husky",
+    "bully",
+    "doodle",
+    "terrier",
+    "hound",
+    "dachshund",
+    "spaniel",
+    "toy",
+    "slender",
+    "mixed",
+  ];
 
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{\[s\.canvasCard/);
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{s\.heroPreview\}/);
@@ -515,10 +542,21 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /LivingPhoenixRoom/);
   assert.match(avatarStudio, /deriveAvatarMotion/);
   assert.match(avatarStudio, /derivePhoenixStatus/);
+  assert.match(avatarStudio, /getAvatarTemplatePreviewSource\(template\.id\)/);
+  assert.match(avatarStudio, /s\.templateArtWrap/);
   assert.match(avatarStudio, /phoenix-room-day\.png/);
   assert.match(avatarStudio, /phoenix-main-head-v2\.png/);
   assert.doesNotMatch(avatarStudio, /assets\/board\/hero\.png/);
   assert.doesNotMatch(avatarStudio, /getAvatarSource\("happy"\)/);
+  assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_PREVIEW_ASSETS/);
+  assert.match(avatarTemplateAssets, /pixellab-template-preview/);
+  for (const templateId of templateIds) {
+    assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));
+    const size = readPngSize(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", templateId, "preview.png"),
+    );
+    assert.deepEqual(size, { width: 85, height: 85 }, `${templateId} preview should be a PixelLab 85x85 thumbnail`);
+  }
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);
   assert.match(avatarModel, /buildMockScanSuggestion/);
@@ -572,7 +610,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(verifier, /PixelLab asset check complete/);
   assert.match(verifier, /readUInt32BE\(16\)/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, and first-pass dogless room variants/);
+  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, and 12 Avatar Studio template preview thumbnails/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
 

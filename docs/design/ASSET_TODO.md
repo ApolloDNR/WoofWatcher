@@ -105,24 +105,30 @@ PixelLab production handoff: `docs/design/PIXELLAB_ASSET_PRODUCTION.md`.
 
 Avatar Studio implementation notes: `docs/design/AVATAR_STUDIO_IMPLEMENTATION.md`.
 
-## Avatar Studio Template Assets Needed
+## Avatar Studio Template Assets
 
 Start with a polished Phoenix/Shepherd pack, then expand to the launch template set.
 
-Initial template previews:
+Initial template previews are live as a PixelLab-generated 85x85 launch thumbnail pack, registered through `artifacts/woofwatcher-mobile/lib/avatarTemplateAssets.ts` and rendered in `/portrait`:
 
-- `assets/avatar/templates/shepherd/preview.png`
-- `assets/avatar/templates/retriever/preview.png`
-- `assets/avatar/templates/husky/preview.png`
-- `assets/avatar/templates/bully/preview.png`
-- `assets/avatar/templates/doodle/preview.png`
-- `assets/avatar/templates/terrier/preview.png`
-- `assets/avatar/templates/hound/preview.png`
-- `assets/avatar/templates/dachshund/preview.png`
-- `assets/avatar/templates/spaniel/preview.png`
-- `assets/avatar/templates/toy/preview.png`
-- `assets/avatar/templates/slender/preview.png`
-- `assets/avatar/templates/mixed/preview.png`
+- `assets/avatar/templates/shepherd/preview.png` - live.
+- `assets/avatar/templates/retriever/preview.png` - live.
+- `assets/avatar/templates/husky/preview.png` - live.
+- `assets/avatar/templates/bully/preview.png` - live.
+- `assets/avatar/templates/doodle/preview.png` - live.
+- `assets/avatar/templates/terrier/preview.png` - live.
+- `assets/avatar/templates/hound/preview.png` - live.
+- `assets/avatar/templates/dachshund/preview.png` - live.
+- `assets/avatar/templates/spaniel/preview.png` - live.
+- `assets/avatar/templates/toy/preview.png` - live.
+- `assets/avatar/templates/slender/preview.png` - live.
+- `assets/avatar/templates/mixed/preview.png` - live.
+
+Still needed for a full App Store avatar system:
+
+- `base.png` for each template at production scale.
+- emote stills for each template.
+- template-specific sprite strips for major body classes.
 
 Initial accessory slots:
 

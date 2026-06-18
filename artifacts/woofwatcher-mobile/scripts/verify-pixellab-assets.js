@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, "..");
 
 const spriteDir = path.join(root, "assets", "avatar", "phoenix");
 const roomDir = path.join(root, "assets", "avatar", "rooms");
+const templateDir = path.join(root, "assets", "avatar", "templates");
 
 const sprites = [
   ["idle-breathe-strip.png", 8, 256, 256],
@@ -26,6 +27,21 @@ const rooms = [
   "phoenix-room-bedtime.png",
   "phoenix-room-health-watch.png",
   "phoenix-room-home-alone.png",
+];
+
+const templatePreviews = [
+  "shepherd",
+  "retriever",
+  "husky",
+  "bully",
+  "doodle",
+  "terrier",
+  "hound",
+  "dachshund",
+  "spaniel",
+  "toy",
+  "slender",
+  "mixed",
 ];
 
 function readPngSize(file) {
@@ -74,7 +90,27 @@ function checkRoom(fileName) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
-const results = [...sprites.map(checkSprite), ...rooms.map(checkRoom)];
+function checkTemplatePreview(templateId) {
+  const file = path.join(templateDir, templateId, "preview.png");
+  if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
+
+  const size = readPngSize(file);
+  if (size.width !== 85 || size.height !== 85) {
+    return {
+      type: "invalid",
+      file: path.relative(root, file),
+      message: `expected 85x85, got ${size.width}x${size.height}`,
+    };
+  }
+
+  return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
+}
+
+const results = [
+  ...sprites.map(checkSprite),
+  ...rooms.map(checkRoom),
+  ...templatePreviews.map(checkTemplatePreview),
+];
 const missing = results.filter((result) => result.type === "missing");
 const invalid = results.filter((result) => result.type === "invalid");
 const ok = results.filter((result) => result.type === "ok");

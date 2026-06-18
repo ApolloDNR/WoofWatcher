@@ -45,7 +45,7 @@ The config is saved locally through `AvatarContext` under `woofwatcher.petAvatar
 
 Existing custom mood image sets remain supported under `woofwatcher.avatarSet.v1`.
 
-Default preview assets now use the PixelLab Phoenix v2 approved pack in `assets/avatar/phoenix/approved/`. The older pixel-derived Phoenix pack in `assets/avatar/pixel/` remains fallback/reference only. The PixelLab Candidate D rotations are archived as directional movement exploration only.
+Default preview assets now use the PixelLab Phoenix v2 approved pack in `assets/avatar/phoenix/approved/`, the live layered room renderer, and the first Avatar Studio template preview pack in `assets/avatar/templates/`. The older pixel-derived Phoenix pack in `assets/avatar/pixel/` remains fallback/reference only. The PixelLab Candidate D rotations are archived as directional movement exploration only.
 
 ## Template Library
 
@@ -71,6 +71,14 @@ Each template includes:
 - default muzzle type
 - recommended emote pack
 - bottom-center animation anchor notes
+
+Each launch template now has a first-pass PixelLab preview thumbnail at:
+
+```text
+artifacts/woofwatcher-mobile/assets/avatar/templates/{templateId}/preview.png
+```
+
+The app registers those previews in `artifacts/woofwatcher-mobile/lib/avatarTemplateAssets.ts` and renders them in the `/portrait` template picker.
 
 ## Accessory Slots
 
@@ -156,7 +164,7 @@ The first production avatar family should match the locked boards:
 - `docs/design/reference/woofwatcher-pixel-reference-board-05-neo-retro-digital-pet.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-06-ecosystem-supporting-pages.png`
 
-The v2 family now includes the seated main avatar, sleep/rest avatar, anxious/home-alone avatar, proud/happy avatar, WoofGuide side avatar, badge/logo head crop, idle-breathe strip, tail-wag strip, sleep-loop strip, and a first dogless day room. Dark-mode room variants, a running footer sprite, and more action strips are still needed before the scan/customization story will feel App Store ready.
+The v2 family now includes the seated main avatar, sleep/rest avatar, anxious/home-alone avatar, proud/happy avatar, WoofGuide side avatar, badge/logo head crop, full registered Phoenix sprite manifest, first-pass dogless room variants, and the 12-template preview thumbnail pack. Final illustrated room variants, production-scale template base art, accessory layers, and template-specific emotes/sprites are still needed before the scan/customization story will feel App Store ready.
 
 ## Asset Naming
 
@@ -177,9 +185,9 @@ Room assets should eventually follow:
 
 ## Current Limitations
 
-- The Studio uses the PixelLab Phoenix v2 approved pack for current Phoenix previews.
-- Final non-Phoenix breed template artwork is not present yet.
-- The first dogless day room and three Phoenix sprite strips are live; remaining room variants and action strips are not present yet.
+- The Studio uses the PixelLab Phoenix v2 approved pack, live layered room preview, and PixelLab template preview thumbnails for current previews.
+- First-pass non-Phoenix breed template thumbnails are present, but full base/emote/sprite packs are not present yet.
+- The dogless day room, first-pass dogless variants, and full registered Phoenix sprite manifest are live; final illustrated room variants still need approval/replacement.
 - Live image analysis is not wired yet.
 - True layered room sprite switching is live for registered sprite actions through `careTwinAssets.ts`.
 
@@ -188,9 +196,9 @@ Room assets should eventually follow:
 Before public launch, Avatar Studio needs:
 
 - final Phoenix seed frame. Status: v2 seed exists.
-- at least one polished template pack
-- dogless room background. Status: day room exists; night/health/home-alone variants still needed.
-- transparent sprite/emote assets. Status: Phoenix v2 still states plus idle, tail-wag, and sleep-loop strips exist.
+- at least one polished full template pack. Status: 12 template preview thumbnails exist; base/emote/sprite packs still needed.
+- dogless room background. Status: day room and first-pass variants exist; final illustrated variants still needed.
+- transparent sprite/emote assets. Status: Phoenix v2 still states plus full registered sprite manifest exist.
 - no duplicate Phoenix rendering
 - mobile safe-area QA
 - real screenshots from the preview or device

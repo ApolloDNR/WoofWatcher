@@ -308,3 +308,28 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-health-watch.png`
   - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-home-alone.png`
 - Status: generated locally as runtime-ready first-pass variants and registered for room-state routing. Replace with final illustrated PixelLab/Figma-quality variants before store-quality launch.
+
+### Avatar Studio Template Preview Pack
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_1_direction_object`
+- Review object ID: `692b49bd-53dd-4256-a427-dc4dca21853d`
+- Tag: `woofwatcher-avatar-template-preview-2026-06-18`
+- Cost: 25 generations
+- Output format: 12 selected transparent 85x85 PNG thumbnails.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/shepherd/preview.png` from `7afe5bc8-8452-4e60-acda-56025dad7cb2`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/preview.png` from `31b0491c-637d-4a77-8a8d-8144cb4eebfb`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/preview.png` from `26cc4384-c269-40f6-8598-ec7af79c8c99`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/preview.png` from `8a1181e4-75ba-4c05-ad3a-4a402b484cfa`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/doodle/preview.png` from `95639c70-1314-42c7-ae8c-3abe809892b6`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/terrier/preview.png` from `6a525c1d-20ed-49e7-bd6e-8d218da207ef`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/hound/preview.png` from `542a71da-8b6e-41fe-84c3-76ad6a7a0bb2`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/dachshund/preview.png` from `5e63c845-6ae9-44b9-ba8f-3b41611f4565`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/spaniel/preview.png` from `32e5dcfd-8b8e-4931-9e70-58637955e784`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/toy/preview.png` from `0605ba11-08b7-483d-8a08-6ad68a5752f6`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/slender/preview.png` from `3d5e306e-2cf1-4fd1-99b7-ecfb47f9c8b4`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/mixed/preview.png` from `29dd78da-57d2-4609-953a-25b1c07ce71d`
+- Status: generated, visually reviewed as a coherent first-pass launch template thumbnail set, registered in the mobile Avatar Studio template picker, and protected by readiness tests. Full template base/emote/sprite packs are still future work.

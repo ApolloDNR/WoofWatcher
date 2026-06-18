@@ -919,6 +919,23 @@ Owner: Codex.
 
 Revisit trigger: Final Rive/Lottie assets, a hand-authored PixelLab/Figma room pack, or a more advanced in-game room renderer replaces these PNG layer assets.
 
+### 2026-06-18: Avatar Templates Use A Registered Preview Asset Pack
+
+Decision: Avatar Studio launch templates should resolve through a stable preview asset registry at `avatarTemplateAssets.ts`, with one transparent PixelLab thumbnail per template under `assets/avatar/templates/{templateId}/preview.png`.
+
+Reason: The template picker is a core part of the "bring your real dog into the app" promise. Generic icons make it feel like a settings screen; registered dog thumbnails make it feel like a character creator while preserving a clean path for future base art, emotes, sprites, and accessories.
+
+Consequences:
+
+- `/portrait` renders template art through `getAvatarTemplatePreviewSource`.
+- The first 12 launch templates have PixelLab-generated 85x85 preview thumbnails.
+- Readiness tests verify every preview exists and remains wired to Avatar Studio.
+- Full production template packs still need base, emote, sprite, and accessory layers.
+
+Owner: Codex.
+
+Revisit trigger: Figma/Fable/PixelLab produces production-scale template packs or the Avatar Studio renderer moves from thumbnail previews to fully composited template bodies.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
