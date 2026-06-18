@@ -17,6 +17,7 @@
 - Storage provider for records and generated reports.
 - Document upload/storage rules for real record files; local metadata, reminders, and visible storage gates exist, but production file storage is not approved/configured.
 - AI provider key and model policy.
+- PixelLab token rotation and local MCP setup. A PixelLab bearer token was visible in a screenshot on 2026-06-17, so it should be revoked/regenerated before use. PixelLab is the preferred Phoenix sprite/template production path, but the MCP server is not callable in this Codex session until Apollo adds it to local Codex config and restarts Codex.
 - Provider-backed WoofGuide generation, source citations, and permission-aware assistant writes require the AI provider key/model policy plus privacy/account safety rules. Current WoofGuide actions are deterministic owner-reviewed drafts only.
 - Expo/EAS, Apple Developer, and Google Play Console accounts. The repo now has EAS build/submit profiles and a mobile release runbook, but no provider account credentials or store submission approval are available to Codex.
 - Vercel/API deployment target if applicable.

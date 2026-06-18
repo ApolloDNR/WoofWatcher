@@ -15,6 +15,10 @@ This prevents the duplicate-avatar look.
 
 ## What Apollo Needs To Provide Or Generate
 
+PixelLab is now the preferred production path for the assets below. See:
+
+`docs/design/PIXELLAB_ASSET_PRODUCTION.md`
+
 ### 1. Approved Phoenix Seed Frame
 
 Pick one in-game Phoenix frame that is final enough to become the identity lock:
@@ -75,6 +79,12 @@ Rules:
 
 ## How To Ask Fable, Replit, Or An Artist
 
+For PixelLab-specific generation prompts, use:
+
+- `docs/design/pixellab/PHASE_1_PHOENIX_IDENTITY_PROMPT.md`
+- `docs/design/pixellab/PHASE_2_ANIMATION_PROOF_PROMPT.md`
+- `docs/design/pixellab/GENERATION_LOG_TEMPLATE.md`
+
 Use this prompt:
 
 ```text
@@ -119,6 +129,13 @@ Also register dogless room assets in the same file.
 Do not register sprite strips before the dogless room exists. The runtime intentionally requires both pieces before it renders layered Phoenix.
 
 ## Quality Gate
+
+Run the PixelLab asset verifier before registering final assets:
+
+```text
+cd artifacts/woofwatcher-mobile
+node scripts/verify-pixellab-assets.js
+```
 
 Before approving assets:
 

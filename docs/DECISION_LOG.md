@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-17: PixelLab Is The Production Asset Pipeline For Phoenix
+
+Decision: WoofWatcher will use PixelLab for the production Phoenix identity, transparent sprite strips, dogless rooms, template previews, and accessory packs. PixelLab secrets stay local or backend-only and must never be placed in the Expo app, PWA, GitHub, screenshots, or docs.
+
+Reason: The app already has a tested care-twin state engine, sprite manifest, and layered runtime gate, but the missing piece is high-quality consistent pixel art. PixelLab's character and animation workflow matches the production need better than ad hoc generated portraits or hand-cropped placeholders.
+
+Owner: Apollo and Codex.
+
+Revisit trigger: PixelLab cannot produce a consistent approved Phoenix identity, generation cost becomes impractical, or Apollo selects a dedicated pixel artist/toolchain instead.
+
 ### 2026-06-16: Care Twin Animation Uses A Sprite Manifest Before Layered Runtime Swap
 
 Decision: Mobile Phoenix Home should keep the current single-stage room animation until dogless room backgrounds and transparent Phoenix sprite strips exist, while `avatarLifeEngine.ts` owns the Care Twin scene state, sprite actions, and `CARE_TWIN_SPRITE_MANIFEST`.

@@ -61,6 +61,8 @@ Use board 04 as the primary shell/layout target and boards 02/03 as the componen
 
 Detailed handoff: `docs/design/CARE_TWIN_ASSET_PIPELINE.md`.
 
+PixelLab production handoff: `docs/design/PIXELLAB_ASSET_PRODUCTION.md`.
+
 Avatar Studio implementation notes: `docs/design/AVATAR_STUDIO_IMPLEMENTATION.md`.
 
 ## Avatar Studio Template Assets Needed
@@ -136,6 +138,8 @@ The current Home runtime deliberately uses the board-accurate pixel room as one 
 Once those assets exist, `avatarLifeEngine.ts` can keep driving the state decisions while `LivingPhoenixRoom.tsx` swaps from single-stage animation to true layered sprite animation.
 
 The runtime swap is already coded behind an asset-readiness gate. Register assets in `artifacts/woofwatcher-mobile/lib/careTwinAssets.ts` only after both a dogless room layer and matching sprite strips are ready.
+
+Use `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` to check file presence and PNG dimensions before registration.
 
 ## Source Control Rule
 

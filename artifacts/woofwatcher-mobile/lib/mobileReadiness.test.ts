@@ -530,6 +530,40 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.doesNotMatch(avatarStudio, /canvasCard: \{[^\n]*(shadowOpacity|elevation)/);
 });
 
+test("documents PixelLab as the secure Phoenix asset production path", () => {
+  const packageJson = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "package.json"),
+    "utf8",
+  );
+  const pixelLab = readFileSync(
+    join(process.cwd(), "docs", "design", "PIXELLAB_ASSET_PRODUCTION.md"),
+    "utf8",
+  );
+  const phaseOne = readFileSync(
+    join(process.cwd(), "docs", "design", "pixellab", "PHASE_1_PHOENIX_IDENTITY_PROMPT.md"),
+    "utf8",
+  );
+  const verifier = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "scripts", "verify-pixellab-assets.js"),
+    "utf8",
+  );
+  const blockers = readFileSync(
+    join(process.cwd(), "docs", "BLOCKERS_FOR_APOLLO.md"),
+    "utf8",
+  );
+
+  assert.match(packageJson, /verify:pixellab-assets/);
+  assert.match(pixelLab, /PixelLab is the WoofWatcher production asset path/);
+  assert.match(pixelLab, /Never commit that config file/);
+  assert.match(pixelLab, /Do not call PixelLab from the mobile client/);
+  assert.match(phaseOne, /Create no more than four Phoenix identity candidates/);
+  assert.match(phaseOne, /transparent background/);
+  assert.match(verifier, /PixelLab asset check complete/);
+  assert.match(verifier, /readUInt32BE\(16\)/);
+  assert.match(blockers, /PixelLab token rotation and local MCP setup/);
+  assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
+});
+
 test("keeps Setup onboarding on shared board anatomy", () => {
   const setup = readAppFile("setup.tsx");
 

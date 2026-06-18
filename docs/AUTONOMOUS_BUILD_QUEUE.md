@@ -89,6 +89,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 81. DONE 2026-06-16: Mobile now has the layered sprite runtime seam: `SpriteSheetPlayer` animates registered strips, `careTwinAssets.ts` gates rendering until both dogless room and transparent Phoenix strips exist, Home switches to layered rendering only when safe, and `docs/design/CARE_TWIN_ASSET_PIPELINE.md` tells Apollo/Fable/Replit exactly how to produce and register assets.
 82. DONE 2026-06-17: Mobile Avatar Studio Lite now has a real template-based care-twin backbone: `PetAvatarConfig`, 12 dog templates, accessory slots, emote state inventory, mock scan suggestion, local config persistence, a Scan/Template/Customize/Emotes Studio flow, and Home/More identity wiring without claiming live AI scan.
 83. NEXT: Continue deep route-by-route visual polish and runtime screenshot QA for the mobile app; prioritize final dogless room, transparent Phoenix sprite sheets, first polished Shepherd template pack, real Avatar Studio template artwork, and native safe-area/device QA.
+84. NEXT: PixelLab Phoenix Asset Production Phase 1. After Apollo rotates the exposed PixelLab token and connects the MCP server locally, verify the connector without spending generations, then create no more than four Phoenix identity candidates in `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/` using `docs/design/pixellab/PHASE_1_PHOENIX_IDENTITY_PROMPT.md`, log every generation, and stop for approval.
 
 ## Cadence
 
