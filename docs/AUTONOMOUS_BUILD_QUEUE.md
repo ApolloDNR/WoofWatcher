@@ -95,7 +95,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 87. NEXT: Native iOS/Android runtime QA with real Expo/EAS account access, simulator/device screenshots, safe-area checks, frame-rate review, and App Store/Play Store readiness.
 88. DONE 2026-06-18: Avatar Studio template catalog pass generated, promoted, downloaded, registered, and tested 12 PixelLab preview thumbnails for Shepherd, Retriever, Husky, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed.
 89. DONE 2026-06-19: Avatar Studio now applies the full file-backed launch-pack contract across every non-shepherd launch template. Bully, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed now join Retriever, Husky, and Doodle with 10 accessory overlays, 10 mood stills, and seven registered animated preview strips, while Shepherd/Phoenix remains the benchmark live pack.
-90. NEXT: Continue native safe-area and device runtime QA, then replace the first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art.
+90. IN PROGRESS 2026-06-19: Native safe-area/runtime QA now has a shared code baseline. The floating tab shell, primary tab routes, and Avatar Studio use shared safe-area spacing helpers with focused coverage, so the remaining work is real simulator/device screenshots, frame-rate review, and final runtime inspection before replacing the first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art.
 
 ## Cadence
 

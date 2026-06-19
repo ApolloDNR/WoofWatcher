@@ -37,6 +37,7 @@ import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -589,6 +590,7 @@ export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
   const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
   const me = useGetMe();
   const routeParams = useLocalSearchParams<{ type?: string | string[] }>();
@@ -1377,7 +1379,7 @@ export default function LogScreen() {
       <ScrollView
         ref={scrollRef}
         style={s.container}
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: 130, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: bottomScrollPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

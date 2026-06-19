@@ -5,6 +5,7 @@ import React from "react";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { getFloatingTabChromeMetrics } from "@/lib/mobileLayout";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -28,8 +29,9 @@ function CenterPaw() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const chrome = getFloatingTabChromeMetrics(insets.bottom, Platform.OS === "web");
   return (
-    <View pointerEvents="box-none" style={[s.fabWrap, { bottom: (insets.bottom || 10) + 26 }]}>
+    <View pointerEvents="box-none" style={[s.fabWrap, { bottom: chrome.fabBottom }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Quick log"
@@ -58,6 +60,8 @@ function CenterPaw() {
 export default function TabLayout() {
   const colors = useColors();
   const isWeb = Platform.OS === "web";
+  const insets = useSafeAreaInsets();
+  const chrome = getFloatingTabChromeMetrics(insets.bottom, isWeb);
 
   return (
     <View style={{ flex: 1 }}>
@@ -78,8 +82,8 @@ export default function TabLayout() {
             position: "absolute",
             left: 12,
             right: 12,
-            bottom: isWeb ? 12 : 8,
-            height: isWeb ? 78 : 72,
+            bottom: chrome.tabBarBottom,
+            height: chrome.tabBarHeight,
             backgroundColor: colors.card,
             borderTopWidth: 0,
             borderRadius: 28,

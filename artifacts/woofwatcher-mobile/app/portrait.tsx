@@ -30,6 +30,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
+import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import {
   deriveAvatarPreviewAccessories,
   deriveAvatarPreviewMood,
@@ -170,6 +171,7 @@ export default function PortraitScreen() {
 
   const petName = state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
   const topInset = Platform.OS === "web" ? 20 : insets.top;
+  const bottomScrollPadding = getStandaloneRouteBottomPadding(insets.bottom);
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [activeTab, setActiveTab] = useState<StudioTab>("scan");
@@ -394,7 +396,7 @@ export default function PortraitScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: 72, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: bottomScrollPadding, paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >

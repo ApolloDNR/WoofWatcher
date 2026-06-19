@@ -401,6 +401,35 @@ test("extends the mobile pixel board system across core v1.5 routes", () => {
   }
 });
 
+test("keeps floating tab safe-area spacing on shared mobile layout helpers", () => {
+  const tabLayout = readAppFile(join("(tabs)", "_layout.tsx"));
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const avatarStudio = readAppFile("portrait.tsx");
+  const mobileLayout = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "mobileLayout.ts"),
+    "utf8",
+  );
+
+  assert.match(mobileLayout, /export function getFloatingTabChromeMetrics/);
+  assert.match(mobileLayout, /export function getTabbedRouteBottomPadding/);
+  assert.match(mobileLayout, /export function getStandaloneRouteBottomPadding/);
+  assert.match(tabLayout, /getFloatingTabChromeMetrics/);
+
+  for (const source of [home, calendar, health, log, more, records]) {
+    assert.match(source, /getTabbedRouteBottomPadding/);
+    assert.match(source, /paddingBottom: bottomScrollPadding/);
+  }
+
+  assert.match(avatarStudio, /getStandaloneRouteBottomPadding/);
+  assert.match(avatarStudio, /paddingBottom: bottomScrollPadding/);
+  assert.doesNotMatch(avatarStudio, /paddingBottom: 72/);
+});
+
 test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const plans = readAppFile(join("(tabs)", "calendar.tsx"));

@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-19: Safe-Area Clearance Should Come From One Mobile Layout Contract
+
+Decision: The floating bottom-tab shell, the main tabbed routes, and Avatar Studio should all derive bottom clearance from shared mobile layout helpers instead of route-by-route magic numbers such as `128`, `130`, `142`, or `72`.
+
+Reason: The current queue is blocked on real simulator/device QA, but code inspection already showed inconsistent bottom spacing across Home, Log, Plans, Health, More, Records, and Avatar Studio. Centralizing the spacing contract reduces the chance of the floating shell or home indicator covering primary actions on notched devices and gives the upcoming runtime screenshot pass a stable baseline to validate.
+
+Owner: Codex.
+
+Revisit trigger: The navigation shell changes height or shape, a final native design system replaces the current floating tab chrome, or device QA shows a specific route needs stronger per-screen clearance than the shared contract provides.
+
 ### 2026-06-19: Launch Template Packs Should All Share One Animated Preview Contract
 
 Decision: Bully, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed should now promote from base-only to the same full overlay, mood-still, and generated preview-strip contract already used by Retriever, Husky, and Doodle, instead of leaving most launch breeds in a long-lived still-only state.

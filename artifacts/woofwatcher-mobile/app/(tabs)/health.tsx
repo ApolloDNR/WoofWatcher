@@ -14,6 +14,7 @@ import {
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -88,6 +89,7 @@ export default function HealthScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
   const { state } = useCare();
   const now = Date.now();
   const [activeTab, setActiveTab] = useState<HealthTab>("health");
@@ -225,7 +227,7 @@ export default function HealthScreen() {
         style={s.container}
         contentContainerStyle={{
           paddingTop: (Platform.OS === "web" ? 24 : insets.top) + 8,
-          paddingBottom: 128,
+          paddingBottom: bottomScrollPadding,
           paddingHorizontal: 18,
         }}
         showsVerticalScrollIndicator={false}
