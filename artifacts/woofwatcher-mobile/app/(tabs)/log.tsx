@@ -37,6 +37,7 @@ import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -332,17 +333,16 @@ const LAUNCHER_TABS: { key: LauncherTab; label: string }[] = [
 const LAUNCHER_ACTIONS: LauncherAction[] = [
   { label: "Meal", type: "meal", icon: "meal", tab: "favorites" },
   { label: "Walk", type: "walk", icon: "walk", tab: "favorites" },
-  { label: "Pee", type: "potty", icon: "pee", tab: "favorites", preset: { kind: "pee", condition: "normal" } },
-  { label: "Poo", type: "potty", icon: "poo", tab: "favorites", preset: { kind: "poop", condition: "normal" } },
+  { label: "Potty", type: "potty", icon: "pee", tab: "favorites" },
   { label: "Training", type: "training", icon: "training", tab: "favorites" },
   { label: "Treat", type: "treat", icon: "treat", tab: "favorites" },
   { label: "Play", type: "play", icon: "play", tab: "favorites" },
+  { label: "Water", type: "water", icon: "bile", tab: "favorites" },
   { label: "Vomit", type: "symptom", icon: "vomit", tab: "health", preset: { what: "vomit", severity: "watch" } },
   { label: "Medication", type: "medication", icon: "medication", tab: "health" },
   { label: "Alone Time", type: "alone", icon: "clock", tab: "household" },
   { label: "Anxious", type: "mood", icon: "anxious", tab: "health", preset: { mood: "anxious" } },
   { label: "Note", type: "note", icon: "note", tab: "household" },
-  { label: "Water", type: "water", icon: "bile", tab: "all" },
   { label: "Weight", type: "weight", icon: "health", tab: "health" },
   { label: "Grooming", type: "grooming", icon: "happy", tab: "all" },
 ];
@@ -585,6 +585,30 @@ function mealOutcomeNeedsEatenAmount(value: string): boolean {
   return value === "partial";
 }
 
+type DetailMealOutcome = "complete" | "most" | "skipped" | "grazing";
+
+const DETAIL_MEAL_OUTCOMES: { id: DetailMealOutcome; label: string }[] = [
+  { id: "complete", label: "Ate all" },
+  { id: "most", label: "Ate most" },
+  { id: "skipped", label: "Refused" },
+  { id: "grazing", label: "Still grazing" },
+];
+
+function detailNumber(details: Record<string, unknown>, key: string): number | null {
+  const value = details[key];
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") return parseNonNegativeNumber(value);
+  return null;
+}
+
+function isPendingMealEntry(entry: Entry): boolean {
+  if (normalizeCareEventType(entry.type, entry.details) !== "meal") return false;
+  const details = isDetailRecord(entry.details) ? entry.details : {};
+  const completion = String(details.mealCompletion ?? "").toLowerCase();
+  const lifecycle = String(details.mealLifecycle ?? "").toLowerCase();
+  return completion === "served" || completion === "grazing" || lifecycle === "outcome-pending";
+}
+
 export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -708,6 +732,7 @@ export default function LogScreen() {
   const [promptMode, setPromptMode] = useState<"post-log" | "sticky">("post-log");
   const promptRef = useRef<TextInput>(null);
   const scrollRef = useRef<ScrollView>(null);
+  const [lastQuickLog, setLastQuickLog] = useState<{ id: string; title: string } | null>(null);
 
   // Entry editor
   const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
@@ -1193,6 +1218,64 @@ export default function LogScreen() {
     Haptics.selectionAsync();
   }, []);
 
+  const updateMealOutcomeFromDetail = useCallback(
+    (entry: Entry, outcome: DetailMealOutcome) => {
+      const existing = isDetailRecord(entry.details) ? entry.details : {};
+      const nowIso = new Date().toISOString();
+      const servedAmount = detailNumber(existing, "servedAmount") ?? detailNumber(existing, "servingAmount");
+      const servedUnit =
+        typeof existing.servedUnit === "string"
+          ? existing.servedUnit
+          : typeof existing.servingUnit === "string"
+            ? existing.servingUnit
+            : "cup";
+      const eatenAmount =
+        outcome === "complete"
+          ? servedAmount
+          : outcome === "most" && servedAmount != null
+            ? Math.round(servedAmount * 80) / 100
+            : outcome === "skipped"
+              ? 0
+              : null;
+      const label = DETAIL_MEAL_OUTCOMES.find((item) => item.id === outcome)?.label ?? mealCompletionLabel(outcome);
+      const baseTitle = entry.title.split(" - ")[0] || entry.title || "Meal";
+      const nextDetails = appendCareAuditEvent(
+        {
+          ...existing,
+          mealCompletion: outcome,
+          mealLifecycle: outcome === "grazing" ? "outcome-pending" : "outcome-recorded",
+          outcomeAt: nowIso,
+          outcomeBy: caregiver,
+          trustState: "confirmed",
+          confirmationRequired: false,
+          ...(eatenAmount != null
+            ? {
+                eatenAmount,
+                eatenUnit: servedUnit,
+              }
+            : {}),
+        },
+        {
+          id: auditId(),
+          action: "updated",
+          caregiver,
+          occurredAt: nowIso,
+          summary: `${caregiver} updated meal outcome on "${entry.title}" to ${label}.`,
+          changes: ["mealCompletion", "mealLifecycle", "outcomeAt"],
+        },
+      );
+
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      updateEntry(entry.id, {
+        title: `${baseTitle} - ${label}`,
+        details: nextDetails,
+        ...(eatenAmount != null ? { amount: String(eatenAmount) } : {}),
+        ...(outcome === "skipped" ? { severity: "watch" } : {}),
+      });
+    },
+    [caregiver, updateEntry],
+  );
+
   const shareEntryHandoff = useCallback((e: Entry) => {
     const message = buildEntryHandoffMessage(e);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1360,6 +1443,43 @@ export default function LogScreen() {
     }
   };
 
+  const openDetailedLauncherAction = (action: LauncherAction) => {
+    selectLauncherAction(action);
+    scrollRef.current?.scrollTo({ y: 620, animated: true });
+  };
+
+  const handleQuickLauncherAction = (action: LauncherAction) => {
+    const policy = getQuickLogPolicy(action.type);
+    if (policy.tapBehavior === "detail-required") {
+      openDetailedLauncherAction(action);
+      return;
+    }
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const role = state.caregivers.find((person) => person.name === caregiver)?.role;
+    const entry = buildQuickLogEntry(
+      {
+        type: action.type,
+        title: action.label,
+        mood: action.preset?.mood,
+        severity: action.preset?.severity,
+      },
+      state,
+      { caregiver, caregiverRole: role, now },
+    );
+    const id = addEntry(entry);
+    setLastQuickLog({ id, title: entry.title });
+    setSelectedLauncherKey(launcherActionKey(action));
+    setSelectedType(action.type);
+  };
+
+  const undoLastQuickLog = () => {
+    if (!lastQuickLog) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void deleteEntry(lastQuickLog.id);
+    setLastQuickLog(null);
+  };
+
   const selectMoodLauncher = (mood: (typeof MOOD_LAUNCHER)[number]) => {
     Haptics.selectionAsync();
     pendingChoicePreset.current = { mood: mood.mood, moodTone: mood.key };
@@ -1441,9 +1561,10 @@ export default function LogScreen() {
                   <Pressable
                     key={`${action.label}-${action.type}`}
                     accessibilityRole="button"
-                    accessibilityLabel={`Prepare ${action.label} log`}
+                    accessibilityLabel={`Quick log ${action.label}. Long press for details.`}
                     accessibilityState={{ selected: active }}
-                    onPress={() => selectLauncherAction(action)}
+                    onPress={() => handleQuickLauncherAction(action)}
+                    onLongPress={() => openDetailedLauncherAction(action)}
                     style={({ pressed }) => [
                       s.launcherTile,
                       {
@@ -1485,6 +1606,44 @@ export default function LogScreen() {
                 );
               })}
             </View>
+
+            {lastQuickLog ? (
+              <View style={[s.quickFeedback, { backgroundColor: colors.sage + "12", borderColor: colors.sage + "44" }]}>
+                <View style={s.quickFeedbackCopy}>
+                  <Text style={[s.quickFeedbackTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    {lastQuickLog.title} logged
+                  </Text>
+                  <Text style={[s.quickFeedbackSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Quick tap saved it. Add details when this care moment needs proof.
+                  </Text>
+                </View>
+                <View style={s.quickFeedbackActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Undo ${lastQuickLog.title} quick log`}
+                    onPress={undoLastQuickLog}
+                    style={[s.quickFeedbackButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  >
+                    <Text style={[s.quickFeedbackButtonText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      Undo
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Add details to ${lastQuickLog.title}`}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setDetailEntryId(lastQuickLog.id);
+                    }}
+                    style={[s.quickFeedbackButton, { backgroundColor: colors.brandNavy, borderColor: colors.brandNavy }]}
+                  >
+                    <Text style={[s.quickFeedbackButtonText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                      Add details
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
 
             <View style={[s.moodPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Text style={[s.moodQuestion, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
@@ -2541,6 +2700,42 @@ export default function LogScreen() {
                   </View>
                 ) : null}
 
+                {isPendingMealEntry(detailEntry) ? (
+                  <View style={[s.mealOutcomePanel, { backgroundColor: colors.sage + "10", borderColor: colors.sage + "3D" }]}>
+                    <View style={s.mealOutcomeHeader}>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[s.detailSectionLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                          UPDATE OUTCOME
+                        </Text>
+                        <Text style={[s.mealOutcomeHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          Close this open meal loop when Phoenix finishes or refuses.
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={s.mealOutcomeActions}>
+                      {DETAIL_MEAL_OUTCOMES.map((outcome) => (
+                        <Pressable
+                          key={outcome.id}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Update meal outcome: ${outcome.label}`}
+                          onPress={() => updateMealOutcomeFromDetail(detailEntry, outcome.id)}
+                          style={({ pressed }) => [
+                            s.mealOutcomeButton,
+                            {
+                              backgroundColor: pressed ? colors.sage + "22" : colors.background,
+                              borderColor: colors.sage + "44",
+                            },
+                          ]}
+                        >
+                          <Text style={[s.mealOutcomeButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                            {outcome.label}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                ) : null}
+
                 <View style={s.detailGrid}>
                   {detailRows.length > 0 ? (
                     detailRows.map((row) => (
@@ -2904,6 +3099,38 @@ const s = StyleSheet.create({
   moodOptionText: {
     fontSize: 10,
   },
+  quickFeedback: {
+    borderWidth: 1,
+    borderRadius: 9,
+    padding: 11,
+    gap: 10,
+  },
+  quickFeedbackCopy: {
+    gap: 2,
+  },
+  quickFeedbackTitle: {
+    fontSize: 13.5,
+  },
+  quickFeedbackSub: {
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  quickFeedbackActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  quickFeedbackButton: {
+    flex: 1,
+    minHeight: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  quickFeedbackButtonText: {
+    fontSize: 12.5,
+  },
   launcherCta: {
     minHeight: 48,
     borderRadius: 8,
@@ -3154,6 +3381,43 @@ const s = StyleSheet.create({
   detailMeta: { fontSize: 12.5, marginTop: 3 },
   detailNotice: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 15, padding: 11, marginBottom: 12 },
   detailNoticeText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
+  mealOutcomePanel: {
+    borderWidth: 1,
+    borderRadius: 15,
+    padding: 12,
+    marginBottom: 12,
+  },
+  mealOutcomeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  mealOutcomeHint: {
+    fontSize: 12.5,
+    lineHeight: 17,
+    marginTop: -2,
+  },
+  mealOutcomeActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  mealOutcomeButton: {
+    flexGrow: 1,
+    flexBasis: "47%",
+    minHeight: 38,
+    borderWidth: 1,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  mealOutcomeButtonText: {
+    fontSize: 12.5,
+    textAlign: "center",
+  },
   detailGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 4 },
   detailField: { width: "48%", borderWidth: 1, borderRadius: 15, padding: 12 },
   detailFieldWide: { width: "100%", borderWidth: 1, borderRadius: 15, padding: 12 },

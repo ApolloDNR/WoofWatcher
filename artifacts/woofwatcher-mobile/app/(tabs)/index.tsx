@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { deriveCareIntelligence, normalizeCareEventType, type CareEventDetails } from "@workspace/care-domain";
+import { deriveCareIntelligence, normalizeCareEventType, type CareEventDetails, type CareEventType } from "@workspace/care-domain";
 
 import {
   BoardCard,
@@ -34,6 +34,7 @@ import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import type { CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
+import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 
 const HERO_RATIO = 1.05;
@@ -42,7 +43,7 @@ interface QuickItem {
   key: string;
   icon: PixelIconName;
   label: string;
-  type: string;
+  type: CareEventType;
   title: string;
   mood?: string;
   severity?: string;
@@ -53,7 +54,7 @@ interface QuickItem {
 const HOME_QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal", spriteAction: "eat-loop" },
   { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk", spriteAction: "walk-loop" },
-  { key: "pee", icon: "pee", label: "Pee", type: "potty", title: "Potty - Pee", spriteAction: "ear-perk" },
+  { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty", spriteAction: "ear-perk" },
   { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water", spriteAction: "drink-loop" },
   { key: "training", icon: "training", label: "Training", type: "training", title: "Training win", spriteAction: "celebrate-hop" },
   { key: "treat", icon: "treat", label: "Treat", type: "treat", title: "Treat", spriteAction: "celebrate-hop" },
@@ -393,17 +394,26 @@ export default function HomeScreen() {
       router.push(item.route);
       return;
     }
+    const policy = getQuickLogPolicy(item.type);
+    if (policy.tapBehavior === "detail-required") {
+      router.push(`/log?type=${item.type}` as never);
+      return;
+    }
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    addEntry({
-      type: item.type,
-      title: item.title,
-      caregiver,
-      occurredAt: new Date().toISOString(),
-      mood: item.mood,
-      severity: item.severity,
-    });
+    const role = state.caregivers.find((person) => person.name === caregiver)?.role;
+    const entry = buildQuickLogEntry(
+      {
+        type: item.type,
+        title: item.title,
+        mood: item.mood,
+        severity: item.severity,
+      },
+      state,
+      { caregiver, caregiverRole: role, now },
+    );
+    addEntry(entry);
     setRoomReaction({
       id: Date.now(),
       icon: item.icon,

@@ -476,6 +476,16 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.match(log, /Care IQ/);
   assert.match(log, /moodTone/);
   assert.match(log, /flexBasis: "47\.5%"/);
+  assert.match(log, /buildQuickLogEntry/);
+  assert.match(log, /getQuickLogPolicy/);
+  assert.match(log, /handleQuickLauncherAction/);
+  assert.match(log, /openDetailedLauncherAction/);
+  assert.match(log, /onLongPress=\{\(\) => openDetailedLauncherAction\(action\)\}/);
+  assert.match(log, /\{ label: "Potty", type: "potty"/);
+  assert.doesNotMatch(log, /\{ label: "Pee", type: "potty"/);
+  assert.doesNotMatch(log, /\{ label: "Poo", type: "potty"/);
+  assert.match(log, /Undo/);
+  assert.match(log, /Add details/);
 });
 
 test("keeps Quick Log search and timeline on shared board card anatomy", () => {
@@ -1054,6 +1064,10 @@ test("keeps hydration visible from Home quick log to Records", () => {
 
   assert.match(home, /type: "water"/);
   assert.match(home, /label: "Water"/);
+  assert.match(home, /buildQuickLogEntry/);
+  assert.match(home, /getQuickLogPolicy/);
+  assert.match(home, /label: "Potty"/);
+  assert.doesNotMatch(home, /\{ key: "pee"/);
   assert.match(records, /deriveWaterHydration/);
   assert.match(records, /waterHydration/);
   assert.match(records, /Hydration/);
@@ -1187,6 +1201,11 @@ test("keeps care log audit trails wired into Log edit, sticky note, delete, and 
   assert.match(log, /getCareAuditTrail/);
   assert.match(log, /detailAuditTrail/);
   assert.match(log, /Audit trail/);
+  assert.match(log, /updateMealOutcomeFromDetail/);
+  assert.match(log, /Ate all/);
+  assert.match(log, /Ate most/);
+  assert.match(log, /Refused/);
+  assert.match(log, /Still grazing/);
   assert.match(log, /sticky-note-added/);
   assert.match(log, /updated/);
   assert.match(log, /Delete failed/);

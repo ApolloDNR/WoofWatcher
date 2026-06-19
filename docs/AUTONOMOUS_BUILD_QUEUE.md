@@ -137,6 +137,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 129. NEXT: Run the upgraded QA route on iOS and Android, share/export the per-device QA report, attach the required screenshots, then fix the first visually obvious issue in stage crop, sprite scale, loop timing, or gait quality before generating more PixelLab art.
 130. DONE 2026-06-19: Subscription-backed Option B redesign pass wired a clean dogless PixelLab day room into Home and Avatar Studio, registered Shepherd/Phoenix as a live Avatar Studio sprite pack using the approved Option B idle and walk strips, and moved sprite-action room staging into tested `careTwinStage.ts` logic so meals, water, walks, health/rest, and comfort route Phoenix to the correct game-stage zones.
 131. NEXT: Review PixelLab pro character `be24cc90-7a69-4859-b9b2-42e73a2124cd` when it completes, but only promote it if it clearly beats the current hard-pixel Option B Phoenix runtime family and can produce matching transparent animation strips.
+132. DONE 2026-06-19: Locked the Quick Log care-event doctrine into the mobile runtime. Tap now quick-logs safe defaults, long press opens the detailed composer path, medication/vomit route to detail-first safety flows, Meal starts a served/outcome-pending lifecycle with later outcome updates, Potty is the parent event with outcomes underneath, quick logs carry trust/confirmation metadata, Home uses the same builder as Log, and tests guard the doctrine.
+133. NEXT: Build the full structured edit/detail sheet stack for every care log, including photo proof, confirmation/rejection flows, correction history UI, and the complete Leaving Home/I'm Home Alone Time timer with return-outcome check-in.
 
 ## Cadence
 

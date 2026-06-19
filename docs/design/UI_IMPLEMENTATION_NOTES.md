@@ -518,6 +518,23 @@ Remaining visual work:
 - Add short sprite strips for Retriever/Husky/Bully/body-class motion once still states are approved.
 - Add true overlay-aligned accessory layers across templates.
 
+## 2026-06-19 Quick Log Doctrine Pass
+
+Locked the mobile logging UX to the product doctrine:
+
+- Tap on Log launcher tiles now creates a structured quick log when it is safe to do so.
+- Long press on a launcher tile opens the detailed composer instead of relying on unsupported hard-press behavior.
+- Medication and health/vomit-style logs route to the detailed sheet by default so the app does not fake safety-critical proof.
+- Meal quick logs now record `served` with `mealLifecycle: outcome-pending`, served amount, expected portion, household visibility, trust state, and confirmation metadata instead of pretending the dog ate everything.
+- The Home quick-log buttons now use the same `buildQuickLogEntry` contract as the Log route, so Home, diet progress, Care IQ, pending meal loops, and reports consume the same event shape.
+- Potty is now the launcher parent action; pee/poop remain outcomes inside the detailed potty model.
+- The Log detail sheet can close an open meal loop with Ate all, Ate most, Refused, or Still grazing while preserving audit history.
+
+Remaining UX work:
+
+- Add a richer structured edit sheet for every log type, including exact eaten amount edits, medication proof/photo, potty consistency, and walk session updates.
+- Implement the full Leaving Home / I'm Home alone-time timer flow as a first-class household status action.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

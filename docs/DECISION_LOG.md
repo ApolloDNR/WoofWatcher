@@ -1058,6 +1058,24 @@ Owner: Codex.
 
 Revisit trigger: Native phone-size QA shows room/sprite scale or stage cropping issues, or a stronger Figma/PixelLab final room set replaces these candidates.
 
+### 2026-06-19: Logging Is Instant By Default, Detailed When Needed, And Correctable Afterward
+
+Decision: WoofWatcher mobile logging uses tap for safe quick logs, long press for the detailed composer, and detail-required routing for medication and health/vomit-style logs. Meal logs use a served to outcome lifecycle. Potty remains the parent action, with pee/poop/accident/condition as outcomes or detail fields. Quick logs carry trust and confirmation metadata from creation.
+
+Reason: Apollo locked the product rule that care logging must be effortless without becoming careless. A tap should handle the common safe action in under five seconds, but serious care moments need enough structure to support household trust, reports, vets, sitters, and later AI summaries.
+
+Consequences:
+
+- `quickLogEntry.ts` now owns the tested quick-log policy and default care-event shape.
+- Home and Log quick actions both use the same builder so progress outputs, pending meal loops, Care IQ, reports, and records receive consistent data.
+- Medication and health/vomit logs open the detailed composer instead of creating misleading one-tap proof.
+- The Log detail sheet can update a pending meal outcome while preserving audit history.
+- Future UI polish must not reintroduce Pee/Poo as top-level launcher actions; they are Potty outcomes.
+
+Owner: Codex.
+
+Revisit trigger: The full structured edit sheet, photo proof, voice/talk-to-log, or cloud role permissions introduce a stronger event contract that still preserves this doctrine.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildQuickLogEntry, type QuickLogState } from "./quickLogEntry.ts";
+import { buildQuickLogEntry, getQuickLogPolicy, type QuickLogState } from "./quickLogEntry.ts";
 
 process.env.TZ = "America/Los_Angeles";
 
@@ -28,7 +28,7 @@ function state(overrides: Partial<QuickLogState> = {}): QuickLogState {
   };
 }
 
-test("meal quick log attaches the open meal routine and full portion detail", () => {
+test("meal quick log starts an outcome-pending served meal lifecycle", () => {
   const entry = buildQuickLogEntry(
     { type: "meal", title: "Meal" },
     state(),
@@ -44,13 +44,28 @@ test("meal quick log attaches the open meal routine and full portion detail", ()
     routineLabel: "Breakfast",
     routineTime: "7:30 AM",
     expectedPortion: "1 cup",
-    mealCompletion: "complete",
+    mealCompletion: "served",
+    mealLifecycle: "outcome-pending",
+    logInteraction: "quick-tap",
+    trustState: "confirmed",
+    confirmationRequired: false,
     householdVisible: true,
     servedAmount: 1,
     servedUnit: "cup",
-    eatenAmount: 1,
-    eatenUnit: "cup",
   });
+});
+
+test("kid quick logs stay household-visible but require adult confirmation", () => {
+  const entry = buildQuickLogEntry(
+    { type: "meal", title: "Meal" },
+    state(),
+    { caregiver: "Maya", caregiverRole: "Kid", now: NOW },
+  );
+
+  assert.equal(entry.type, "meal");
+  assert.equal(entry.details?.trustState, "pending-confirmation");
+  assert.equal(entry.details?.confirmationRequired, true);
+  assert.equal(entry.details?.confirmationReason, "kid-log");
 });
 
 test("medication quick log attaches the open medication routine and dose detail", () => {
@@ -87,6 +102,10 @@ test("medication quick log attaches the open medication routine and dose detail"
     routineTime: "9:00 AM",
     dose: "1 tablet with breakfast",
     medicationOutcome: "taken",
+    logInteraction: "detail-sheet",
+    trustState: "confirmed",
+    confirmationRequired: true,
+    confirmationReason: "safety-critical",
     householdVisible: true,
   });
 });
@@ -115,6 +134,9 @@ test("walk quick log attaches the open walk routine after breakfast is handled",
     routineId: "walk",
     routineLabel: "Morning walk",
     routineTime: "8:30 AM",
+    logInteraction: "quick-tap",
+    trustState: "confirmed",
+    confirmationRequired: false,
     householdVisible: true,
   });
 });
@@ -152,11 +174,14 @@ test("water quick log records a household-visible fresh water refill", () => {
     routineLabel: "Fresh water",
     routineTime: "8:45 AM",
     waterAmount: "refill",
+    logInteraction: "quick-tap",
+    trustState: "confirmed",
+    confirmationRequired: false,
     householdVisible: true,
   });
 });
 
-test("potty quick log records household-visible potty evidence", () => {
+test("potty quick log records a parent potty attempt instead of pretending pee or poop happened", () => {
   const entry = buildQuickLogEntry(
     { type: "potty", title: "Potty break" },
     state({
@@ -196,8 +221,13 @@ test("potty quick log records household-visible potty evidence", () => {
     routineId: "potty",
     routineLabel: "Potty break",
     routineTime: "8:50 AM",
+    pottyOutcome: "attempt",
+    logInteraction: "quick-tap",
+    trustState: "confirmed",
+    confirmationRequired: false,
     householdVisible: true,
   });
+  assert.equal(entry.details?.kind, undefined);
 });
 
 test("meal quick log does not satisfy a future meal routine too early", () => {
@@ -224,6 +254,15 @@ test("meal quick log does not satisfy a future meal routine too early", () => {
 
   assert.equal(entry.title, "Meal");
   assert.equal(entry.details?.routineId, undefined);
-  assert.equal(entry.details?.mealCompletion, "complete");
+  assert.equal(entry.details?.mealCompletion, "served");
+  assert.equal(entry.details?.mealLifecycle, "outcome-pending");
   assert.equal(entry.details?.householdVisible, true);
+});
+
+test("quick log policy keeps safety-critical logs in the detail sheet", () => {
+  assert.equal(getQuickLogPolicy("meal").tapBehavior, "quick-log");
+  assert.equal(getQuickLogPolicy("meal").longPressBehavior, "detail-sheet");
+  assert.equal(getQuickLogPolicy("medication").tapBehavior, "detail-required");
+  assert.equal(getQuickLogPolicy("vomit").tapBehavior, "detail-required");
+  assert.equal(getQuickLogPolicy("potty").detailContract, "parent-outcome");
 });

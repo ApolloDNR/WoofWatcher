@@ -39,6 +39,7 @@ export interface QuickLogState {
 
 export interface QuickLogBuildOptions {
   caregiver: string;
+  caregiverRole?: CareLogActorRole;
   now?: number;
 }
 
@@ -51,6 +52,41 @@ export interface QuickLogBuiltEntry {
   mood?: string;
   severity?: string;
   details?: Record<string, unknown>;
+}
+
+export type CareLogActorRole =
+  | "Adult Admin"
+  | "Adult"
+  | "Teen"
+  | "Kid"
+  | "Sitter"
+  | "Trainer"
+  | "Vet Viewer"
+  | string;
+
+export type CareLogTrustState =
+  | "confirmed"
+  | "pending-confirmation"
+  | "estimated"
+  | "corrected"
+  | "rejected";
+
+export type QuickLogTapBehavior = "quick-log" | "detail-required";
+export type QuickLogLongPressBehavior = "detail-sheet";
+export type QuickLogDetailContract =
+  | "simple"
+  | "served-outcome"
+  | "parent-outcome"
+  | "safety-critical"
+  | "health-context";
+
+export interface QuickLogPolicy {
+  type: CareEventType;
+  tapBehavior: QuickLogTapBehavior;
+  longPressBehavior: QuickLogLongPressBehavior;
+  detailContract: QuickLogDetailContract;
+  quickLabel: string;
+  requiresConfirmation: boolean;
 }
 
 function statusRank(routine: RoutineBoardItem): number {
@@ -116,6 +152,84 @@ function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
 
+function normalizeRole(role: CareLogActorRole | null | undefined): string {
+  return clean(role).toLowerCase();
+}
+
+function roleRequiresConfirmation(role: CareLogActorRole | null | undefined): "kid-log" | "helper-log" | null {
+  const normalized = normalizeRole(role);
+  if (normalized === "kid") return "kid-log";
+  if (normalized === "sitter" || normalized === "trainer") return "helper-log";
+  return null;
+}
+
+export function getQuickLogPolicy(type: string | null | undefined): QuickLogPolicy {
+  const normalizedType = normalizeCareEventType(type);
+  if (normalizedType === "meal") {
+    return {
+      type: normalizedType,
+      tapBehavior: "quick-log",
+      longPressBehavior: "detail-sheet",
+      detailContract: "served-outcome",
+      quickLabel: "usual meal served",
+      requiresConfirmation: false,
+    };
+  }
+  if (normalizedType === "potty") {
+    return {
+      type: normalizedType,
+      tapBehavior: "quick-log",
+      longPressBehavior: "detail-sheet",
+      detailContract: "parent-outcome",
+      quickLabel: "potty attempt",
+      requiresConfirmation: false,
+    };
+  }
+  if (normalizedType === "medication") {
+    return {
+      type: normalizedType,
+      tapBehavior: "detail-required",
+      longPressBehavior: "detail-sheet",
+      detailContract: "safety-critical",
+      quickLabel: "medication detail",
+      requiresConfirmation: true,
+    };
+  }
+  if (normalizedType === "vomit" || normalizedType === "symptom") {
+    return {
+      type: normalizedType,
+      tapBehavior: "detail-required",
+      longPressBehavior: "detail-sheet",
+      detailContract: "health-context",
+      quickLabel: "health detail",
+      requiresConfirmation: true,
+    };
+  }
+  return {
+    type: normalizedType,
+    tapBehavior: "quick-log",
+    longPressBehavior: "detail-sheet",
+    detailContract: "simple",
+    quickLabel: "quick log",
+    requiresConfirmation: false,
+  };
+}
+
+function trustDetails(policy: QuickLogPolicy, role: CareLogActorRole | null | undefined): Record<string, unknown> {
+  const roleReason = roleRequiresConfirmation(role);
+  const confirmationRequired = Boolean(roleReason) || policy.requiresConfirmation;
+  return {
+    logInteraction: policy.tapBehavior === "detail-required" ? "detail-sheet" : "quick-tap",
+    trustState: roleReason ? "pending-confirmation" : "confirmed",
+    confirmationRequired,
+    ...(roleReason
+      ? { confirmationReason: roleReason }
+      : policy.requiresConfirmation
+        ? { confirmationReason: "safety-critical" }
+        : {}),
+  };
+}
+
 export function buildQuickLogEntry(
   item: QuickLogConfig,
   state: QuickLogState,
@@ -124,12 +238,17 @@ export function buildQuickLogEntry(
   const now = options.now ?? Date.now();
   const normalizedType = normalizeCareEventType(item.type);
   const routine = nextOpenRoutineOfType(state, normalizedType, now);
-  const details: Record<string, unknown> = routineDetails(routine);
+  const policy = getQuickLogPolicy(normalizedType);
+  const details: Record<string, unknown> = {
+    ...routineDetails(routine),
+    ...trustDetails(policy, options.caregiverRole),
+  };
   let amount: string | undefined;
 
   if (normalizedType === "meal") {
     const expectedPortion = state.dietProfile.normalPortion?.trim() ?? "";
-    details.mealCompletion = "complete";
+    details.mealCompletion = "served";
+    details.mealLifecycle = "outcome-pending";
     details.householdVisible = true;
     if (expectedPortion) details.expectedPortion = expectedPortion;
 
@@ -137,8 +256,6 @@ export function buildQuickLogEntry(
     if (parsed) {
       details.servedAmount = parsed.amount;
       details.servedUnit = parsed.unit;
-      details.eatenAmount = parsed.amount;
-      details.eatenUnit = parsed.unit;
       amount = portionAmountText(parsed.amount);
     }
   }
@@ -160,6 +277,7 @@ export function buildQuickLogEntry(
   }
 
   if (normalizedType === "potty") {
+    details.pottyOutcome = "attempt";
     details.householdVisible = true;
   }
 

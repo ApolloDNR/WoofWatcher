@@ -369,6 +369,9 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Mobile TypeScript:
   - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
   - Result: passed.
+- Diff hygiene:
+  - Command: `git diff --check`
+  - Result: passed; Git only reported normal Windows line-ending warnings.
 
 ### Remaining Work
 
@@ -473,3 +476,48 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Remaining unfinished template/body-class emote packs, sprite strips, and true overlay-aligned accessory layers.
 - Final illustrated PixelLab/Figma-quality night, bedtime, health-watch, and home-alone room variants.
 - Remote GitHub Actions verification remains blocked until Apollo fixes the GitHub account billing/spending-limit issue.
+
+## 2026-06-19 Quick Log Doctrine And Care-Event Pass
+
+### What Changed
+
+- Added a tested quick-log policy contract for tap behavior, long-press detail behavior, detail-required safety logs, parent/outcome Potty, meal served/outcome lifecycle, trust states, and role-aware confirmation.
+- Changed quick Meal logs from "complete" to "served / outcome pending" with expected portion, served amount, household visibility, and trust metadata.
+- Changed Potty quick logs to record a parent potty attempt instead of pretending pee or poop happened from the top-level launcher.
+- Wired Log launcher tap to create safe structured quick logs, long press to open the detailed composer, and safety-critical medication/health logs to detail-required behavior.
+- Added quick-log Undo and Add details feedback after tap logging.
+- Wired Home quick actions through the same quick-log builder so Home logs feed diet progress, Care IQ, pending meal loops, records, and reports consistently.
+- Added detail-sheet meal outcome updates for open meals: Ate all, Ate most, Refused, and Still grazing, with audit trail updates.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/index.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/log.tsx`
+- `artifacts/woofwatcher-mobile/lib/quickLogEntry.ts`
+- `artifacts/woofwatcher-mobile/lib/quickLogEntry.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/DECISION_LOG.md`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+
+### Tests And Checks Run
+
+- Focused quick-log behavior:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/quickLogEntry.test.ts`
+  - Result: passed.
+- Mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed.
+- Full local behavior/readiness suite:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 239 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+
+### Remaining Work
+
+- Structured edit sheets still need exact field editing for every log type, including photos/proof.
+- Alone Time still needs the full Leaving Home / I'm Home timer flow.
+- Native iOS/Android safe-area, touch, and phone-size QA remains required before launch approval.
