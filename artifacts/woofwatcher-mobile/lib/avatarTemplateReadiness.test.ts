@@ -59,6 +59,34 @@ test("applies the same partial-pack contract to husky and doodle", () => {
   }
 });
 
+test("derives explicit live and pending production lists for partial packs", () => {
+  const readiness = getAvatarTemplateReadiness("retriever");
+
+  assert.deepEqual(readiness.liveAccessoryIds, [
+    "forest-bandana",
+    "navy-collar",
+    "copper-collar",
+    "heart-tag",
+    "trail-bandana",
+    "birthday-hat",
+    "cozy-bed",
+    "heart-sparkles",
+  ]);
+  assert.deepEqual(readiness.pendingAccessoryIds, ["sleepy-mask", "training-vest"]);
+  assert.deepEqual(readiness.liveEmoteIds, [
+    "happy",
+    "calm",
+    "excited",
+    "sleepy",
+    "proud",
+    "home_alone",
+    "not_feeling_well",
+  ]);
+  assert.deepEqual(readiness.pendingEmoteIds, ["bored", "hungry", "anxious"]);
+  assert.equal(readiness.packSummaryLabel, "Production now");
+  assert.equal(readiness.nextPackLabel, "Next pack");
+});
+
 test("distinguishes live accessory and emote slots from pending ones", () => {
   assert.equal(isAvatarTemplateAccessoryLive("shepherd", "forest-bandana"), true);
   assert.equal(isAvatarTemplateAccessoryLive("shepherd", "trail-bandana"), false);

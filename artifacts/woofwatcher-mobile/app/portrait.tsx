@@ -122,6 +122,10 @@ function emoteLabel(state: AvatarEmoteState): string {
     .join(" ");
 }
 
+function accessoryLabel(accessoryId: string): string {
+  return AVATAR_ACCESSORIES.find((accessory) => accessory.id === accessoryId)?.label ?? accessoryId;
+}
+
 function updateConfig(config: PetAvatarConfig, patch: Partial<PetAvatarConfig>): PetAvatarConfig {
   return {
     ...config,
@@ -283,6 +287,22 @@ export default function PortraitScreen() {
   const previewSpriteAsset = previewMotion.spriteAction ? getCareTwinSpriteAsset(previewMotion.spriteAction) : null;
   const avatarSummary = describeAvatarConfig(draft);
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const liveAccessoryLabels = useMemo(
+    () => templateReadiness.liveAccessoryIds.map((accessoryId) => accessoryLabel(accessoryId)),
+    [templateReadiness.liveAccessoryIds],
+  );
+  const pendingAccessoryLabels = useMemo(
+    () => templateReadiness.pendingAccessoryIds.map((accessoryId) => accessoryLabel(accessoryId)),
+    [templateReadiness.pendingAccessoryIds],
+  );
+  const liveEmoteLabels = useMemo(
+    () => templateReadiness.liveEmoteIds.map((emote) => emoteLabel(emote)),
+    [templateReadiness.liveEmoteIds],
+  );
+  const pendingEmoteLabels = useMemo(
+    () => templateReadiness.pendingEmoteIds.map((emote) => emoteLabel(emote)),
+    [templateReadiness.pendingEmoteIds],
+  );
   const avatarMotion = useMemo(
     () =>
       deriveAvatarMotion({
@@ -636,6 +656,34 @@ export default function PortraitScreen() {
         {activeTab === "template" ? (
           <BoardCard style={s.avatarBoard}>
             <BoardSectionHeader title="Choose base template" action={selectedTemplate.label} />
+            <Text style={[s.sectionHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {templatePack.focusDetail}
+            </Text>
+            <View style={s.packSummaryRow}>
+              <View style={[s.packSummaryCard, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                <Text style={[s.packSummaryLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                  {templateReadiness.packSummaryLabel}
+                </Text>
+                <Text style={[s.packSummaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  {templateReadiness.previewLabel}
+                </Text>
+                <Text style={[s.packSummaryText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {templateReadiness.accessoryStatus} and {templateReadiness.emoteStatus}.
+                </Text>
+              </View>
+              <View style={[s.packSummaryCard, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                <Text style={[s.packSummaryLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                  {templateReadiness.nextPackLabel}
+                </Text>
+                <Text style={[s.packSummaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  {templateReadiness.hasAnimatedPreview
+                    ? "Remaining breeds still need parity."
+                    : templateReadiness.packStage === "art-partial"
+                    ? "Finish pending overlays, moods, and animation strips."
+                    : "Add first overlays, moods, and animation strips."}
+                </Text>
+              </View>
+            </View>
             <View style={s.templateGrid}>
               {AVATAR_TEMPLATES.map((template) => {
                 const active = draft.templateId === template.id;
@@ -767,6 +815,42 @@ export default function PortraitScreen() {
                   ? `${templateReadiness.accessoryStatus}. Missing slots stay configurable now and get real art as each breed pack ships.`
                   : `This template saves accessory choices now. ${templatePack.focusDetail}`}
               </Text>
+              <View style={s.packChipSection}>
+                <Text style={[s.packChipLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>Live overlays now</Text>
+                <View style={s.packChipRow}>
+                  {liveAccessoryLabels.length > 0 ? (
+                    liveAccessoryLabels.map((label) => (
+                      <View key={label} style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                        <Text style={[s.packChipText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                      <Text style={[s.packChipText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        Base art only
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+              <View style={s.packChipSection}>
+                <Text style={[s.packChipLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>Next pack</Text>
+                <View style={s.packChipRow}>
+                  {pendingAccessoryLabels.length > 0 ? (
+                    pendingAccessoryLabels.map((label) => (
+                      <View key={label} style={[s.packChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <Text style={[s.packChipText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          {label}
+                        </Text>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                      <Text style={[s.packChipText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Overlay set live</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
               <View style={s.accessoryGrid}>
                 {AVATAR_ACCESSORIES.map((item) => {
                   const active = Object.values(draft.accessorySlots).includes(item.id);
@@ -820,6 +904,42 @@ export default function PortraitScreen() {
                 ? "Shepherd uses the live Phoenix sprite rig where production strips already exist."
                 : `${templatePack.focusDetail} This template stays on truthful still previews until its emote pack and animation strips are produced.`}
             </Text>
+            <View style={s.packChipSection}>
+              <Text style={[s.packChipLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                {templateReadiness.packSummaryLabel}
+              </Text>
+              <View style={s.packChipRow}>
+                {liveEmoteLabels.length > 0 ? (
+                  liveEmoteLabels.map((label) => (
+                    <View key={label} style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                      <Text style={[s.packChipText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
+                    </View>
+                  ))
+                ) : (
+                  <View style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                    <Text style={[s.packChipText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      Still preview only
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            <View style={s.packChipSection}>
+              <Text style={[s.packChipLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>Moods landing next</Text>
+              <View style={s.packChipRow}>
+                {pendingEmoteLabels.length > 0 ? (
+                  pendingEmoteLabels.map((label) => (
+                    <View key={label} style={[s.packChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <Text style={[s.packChipText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
+                    </View>
+                  ))
+                ) : (
+                  <View style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                    <Text style={[s.packChipText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Mood set live</Text>
+                  </View>
+                )}
+              </View>
+            </View>
             <View style={s.moodGrid}>
               {AVATAR_EMOTE_STATES.map((emote) => {
                 const active = previewEmote === emote;
@@ -1203,6 +1323,29 @@ const s = StyleSheet.create({
   templatePackFocus: { fontSize: 10.5, lineHeight: 13 },
   templateSub: { fontSize: 11.5, lineHeight: 16 },
   templateFocusDetail: { fontSize: 10.5, lineHeight: 14 },
+  packSummaryRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
+  packSummaryCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  packSummaryLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  packSummaryText: { fontSize: 11.5, lineHeight: 16 },
+  packChipSection: { gap: 8, marginBottom: 12 },
+  packChipLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  packChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  packChip: {
+    minHeight: 32,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    justifyContent: "center",
+  },
+  packChipText: { fontSize: 11.5, lineHeight: 15 },
   swatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   swatch: {
     width: 42,

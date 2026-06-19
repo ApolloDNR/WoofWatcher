@@ -10,22 +10,36 @@ export interface AvatarTemplateReadiness {
   totalAccessoryCount: number;
   liveEmoteCount: number;
   totalEmoteCount: number;
+  liveAccessoryIds: string[];
+  pendingAccessoryIds: string[];
+  liveEmoteIds: typeof AVATAR_EMOTE_STATES;
+  pendingEmoteIds: typeof AVATAR_EMOTE_STATES;
   hasAnimatedPreview: boolean;
   previewLabel: string;
   stageLabel: string;
   stageDetail: string;
   accessoryStatus: string;
   emoteStatus: string;
+  packSummaryLabel: string;
+  nextPackLabel: string;
 }
 
 export function getAvatarTemplateReadiness(templateId: AvatarTemplateId): AvatarTemplateReadiness {
   const pack = getAvatarTemplatePack(templateId);
   const totalAccessoryCount = AVATAR_ACCESSORIES.length;
   const liveAccessoryIds = new Set(pack.liveAccessoryIds);
-  const liveAccessoryCount = AVATAR_ACCESSORIES.filter((accessory) => liveAccessoryIds.has(accessory.id)).length;
+  const liveAccessoryList = AVATAR_ACCESSORIES.filter((accessory) => liveAccessoryIds.has(accessory.id)).map(
+    (accessory) => accessory.id,
+  );
+  const pendingAccessoryList = AVATAR_ACCESSORIES.filter((accessory) => !liveAccessoryIds.has(accessory.id)).map(
+    (accessory) => accessory.id,
+  );
+  const liveAccessoryCount = liveAccessoryList.length;
   const totalEmoteCount = AVATAR_EMOTE_STATES.length;
   const liveEmoteIds = new Set(pack.liveEmoteIds);
-  const liveEmoteCount = AVATAR_EMOTE_STATES.filter((emote) => liveEmoteIds.has(emote)).length;
+  const liveEmoteList = AVATAR_EMOTE_STATES.filter((emote) => liveEmoteIds.has(emote));
+  const pendingEmoteList = AVATAR_EMOTE_STATES.filter((emote) => !liveEmoteIds.has(emote));
+  const liveEmoteCount = liveEmoteList.length;
   const hasAnimatedPreview = pack.hasAnimatedPreview;
   const packStage: AvatarTemplatePackStage = hasAnimatedPreview
     ? "animated"
@@ -40,6 +54,10 @@ export function getAvatarTemplateReadiness(templateId: AvatarTemplateId): Avatar
     totalAccessoryCount,
     liveEmoteCount,
     totalEmoteCount,
+    liveAccessoryIds: liveAccessoryList,
+    pendingAccessoryIds: pendingAccessoryList,
+    liveEmoteIds: liveEmoteList,
+    pendingEmoteIds: pendingEmoteList,
     hasAnimatedPreview,
     previewLabel: hasAnimatedPreview ? "Animated Phoenix pack" : "Starter still preview",
     stageLabel:
@@ -62,6 +80,8 @@ export function getAvatarTemplateReadiness(templateId: AvatarTemplateId): Avatar
       liveEmoteCount > 0
         ? `${liveEmoteCount}/${totalEmoteCount} live moods`
         : "Production moods pending",
+    packSummaryLabel: "Production now",
+    nextPackLabel: "Next pack",
   };
 }
 

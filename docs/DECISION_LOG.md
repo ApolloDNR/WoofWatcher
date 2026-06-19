@@ -62,6 +62,14 @@ Owner: Codex.
 
 Revisit trigger: Additional breed-specific sprite packs ship, or a unified template animation renderer replaces the current Phoenix-only preview contract.
 
+### 2026-06-19: Avatar Studio Should Separate Production Now From Next Pack
+
+Decision: Avatar Studio should present partial-pack breeds with an explicit `Production now` versus `Next pack` breakdown so owners can see the exact live overlays and moods before selecting them, instead of inferring readiness from counts alone.
+
+Reason: Retriever, Husky, and Doodle now have meaningful but incomplete art coverage. Counts such as `8/10 live overlays` are truthful, but they still force the owner to guess which two accessories or which three moods are pending. Listing the live set and the pending-next set makes the studio more trustworthy and keeps the family-dog wave understandable while animation strips are still unfinished.
+
+Revisit trigger: The remaining launch breeds receive partial or animated packs, or the pack contract expands beyond overlays, moods, and animated strips.
+
 ### 2026-06-17: PixelLab Is The Production Asset Pipeline For Phoenix
 
 Decision: WoofWatcher will use PixelLab for the production Phoenix identity, transparent sprite strips, dogless rooms, template previews, and accessory packs. PixelLab secrets stay local or backend-only and must never be placed in the Expo app, PWA, GitHub, screenshots, or docs.

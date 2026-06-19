@@ -639,6 +639,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /templateAccessoryLayer/);
   assert.match(avatarStudio, /templatePack\.focusLabel/);
   assert.match(avatarStudio, /templatePack\.focusDetail/);
+  assert.match(avatarStudio, /templateReadiness\.packSummaryLabel/);
+  assert.match(avatarStudio, /templateReadiness\.nextPackLabel/);
+  assert.match(avatarStudio, /Live overlays now/);
+  assert.match(avatarStudio, /Moods landing next/);
   assert.match(avatarStudio, /This template stays on truthful still previews until its emote pack and animation strips are produced\./);
   assert.match(avatarStudio, /Preview \$\{emoteLabel\(emote\)\} mood/);
   assert.match(avatarTemplatePackManifest, /retriever[\s\S]*productionFocus: "next"/);
