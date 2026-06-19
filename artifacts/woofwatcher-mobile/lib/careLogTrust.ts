@@ -10,6 +10,7 @@ export type CareLogTrustState =
 export type CareLogReviewAction = "confirm" | "reject" | "request-photo" | "mark-corrected";
 export type CareLogInteraction = "quick-tap" | "detail-sheet";
 export type CareLogAttentionTone = "amber" | "copper" | "rose" | "sage";
+export type CareLogProofSource = "camera" | "library" | "manual";
 
 export interface CareLogTrustEntryLike {
   id?: string;
@@ -34,6 +35,8 @@ export interface CareLogTrustReview {
   reasonLabel: string;
   helperText: string;
   proofStatus: string | null;
+  proofAttachmentName: string | null;
+  proofStorageStatus: string | null;
   actions: CareLogTrustReviewActionOption[];
 }
 
@@ -48,6 +51,15 @@ export interface CareLogTrustReviewOptions {
 export interface CareLogTrustReviewPatch {
   severity?: string;
   details: Record<string, unknown>;
+}
+
+export interface CareLogPhotoProofAttachmentOptions {
+  caregiver: string;
+  uri: string;
+  fileName?: string | null;
+  source?: CareLogProofSource;
+  now?: number;
+  note?: string;
 }
 
 export interface CareLogTrustDefaultsOptions {
@@ -168,6 +180,8 @@ export function getCareLogAttentionChips(entry: CareLogTrustEntryLike): CareLogA
   }
   if (proofStatus === "requested") {
     addChip(chips, { id: "photo-requested", label: "Photo requested", tone: "copper" });
+  } else if (proofStatus === "attached") {
+    addChip(chips, { id: "proof-attached", label: "Proof attached", tone: "sage" });
   } else if (proofStatus === "not-attached" && (proofPolicy || normalizedType === "medication")) {
     addChip(chips, { id: "proof-needed", label: "Proof needed", tone: "copper" });
   }
@@ -196,16 +210,21 @@ function statusLabel(state: CareLogTrustState, confirmationRequired: boolean, pr
   if (proofStatus === "requested") return "Photo requested";
   if (state === "estimated") return "Estimated";
   if (confirmationRequired || state === "pending-confirmation") return "Needs adult confirmation";
+  if (proofStatus === "attached") return "Photo attached";
   return "Confirmed";
 }
 
 function helperText(state: CareLogTrustState, confirmationRequired: boolean, canReview: boolean, proofStatus: string): string {
+  if (proofStatus === "attached" && (confirmationRequired || state === "pending-confirmation")) {
+    return "Photo proof is attached. An adult owner can review and confirm the medication log.";
+  }
   if (!canReview && (confirmationRequired || state === "pending-confirmation")) {
     return "An adult owner can confirm, correct, or request proof for this log.";
   }
   if (state === "rejected") return "This log stays in history, but the household should not treat it as confirmed care.";
   if (state === "corrected") return "This log was corrected so the care record keeps the original trail.";
   if (proofStatus === "requested") return "Photo proof has been requested before this log is confirmed.";
+  if (proofStatus === "attached") return "Photo proof is attached to this log. Cloud file storage is still provider-gated.";
   if (confirmationRequired || state === "pending-confirmation") {
     return "Review this log before it drives household handoff, medication, or report decisions.";
   }
@@ -222,6 +241,8 @@ export function getCareLogTrustReview(
   const state = trustState(details.trustState, confirmationRequired);
   const visible = state !== "confirmed" || confirmationRequired || Boolean(proofStatus);
   const canReview = visible && canReviewCareLogTrust(reviewerRole);
+  const proofAttachmentName = clean(details.photoProofAttachmentName);
+  const proofStorageStatus = clean(details.photoProofStorageStatus).toLowerCase();
 
   return {
     visible,
@@ -231,6 +252,8 @@ export function getCareLogTrustReview(
     reasonLabel: reasonLabel(details.confirmationReason),
     helperText: helperText(state, confirmationRequired, canReview, proofStatus),
     proofStatus: proofStatus || null,
+    proofAttachmentName: proofAttachmentName || null,
+    proofStorageStatus: proofStorageStatus || null,
     actions: visible ? REVIEW_ACTIONS.map((action) => ({ ...action })) : [],
   };
 }
@@ -244,6 +267,49 @@ function summaryFor(action: CareLogReviewAction, reviewer: string, title: string
   if (action === "reject") return `${reviewer} rejected "${title}" until the household corrects it.`;
   if (action === "request-photo") return `${reviewer} requested photo proof for "${title}".`;
   return `${reviewer} marked "${title}" corrected in the shared care record.`;
+}
+
+export function buildCareLogPhotoProofAttachmentPatch(
+  entry: CareLogTrustEntryLike,
+  options: CareLogPhotoProofAttachmentOptions,
+): CareLogTrustReviewPatch | null {
+  const uri = clean(options.uri);
+  if (!uri) return null;
+
+  const caregiver = clean(options.caregiver) || "Care team";
+  const title = clean(entry.title) || "Care log";
+  const occurredAt = iso(options.now);
+  const existing = entryDetails(entry);
+  const existingState = trustState(existing.trustState, existing.confirmationRequired === true);
+  const confirmationRequired = existing.confirmationRequired === true || existingState === "pending-confirmation";
+  const fileName = clean(options.fileName) || "Care proof photo";
+  const note = clean(options.note);
+  const source = options.source ?? "library";
+  const nextDetails = {
+    ...existing,
+    trustState: existingState,
+    confirmationRequired,
+    photoProofStatus: "attached",
+    photoProofAttachmentUri: uri,
+    photoProofAttachmentName: fileName,
+    photoProofSource: source,
+    photoProofStorageStatus: "local-only",
+    photoProofStorageNote: "Attachment is saved as a local URI until provider-backed storage is enabled.",
+    photoProofAttachedBy: caregiver,
+    photoProofAttachedAt: occurredAt,
+    ...(note ? { photoProofAttachmentNote: note } : {}),
+  };
+
+  return {
+    details: appendCareAuditEvent(nextDetails, {
+      id: `proof_attached_${occurredAt.replace(/[^0-9a-z]/gi, "")}`,
+      action: "updated",
+      caregiver,
+      occurredAt,
+      summary: `${caregiver} attached photo proof for "${title}".`,
+      changes: ["photoProofStatus", "photoProofAttachmentUri", "photoProofAttachedAt"],
+    }),
+  };
 }
 
 export function buildCareLogTrustReviewPatch(

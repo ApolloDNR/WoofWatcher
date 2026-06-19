@@ -584,6 +584,23 @@ Design intent:
 - Keep high-trust care moments visible while preserving the fast tap/long-press logging rhythm.
 - Give Fable/Replit a clear chip vocabulary to polish without changing the underlying trust behavior.
 
+## 2026-06-19 Medication Proof Attachment Seam Pass
+
+The medication Trust review panel now has a real local proof attachment seam:
+
+- Proof-needed medication logs can open the image picker from the detail sheet.
+- Attaching a proof photo stores local URI/name/source metadata, attached-by/at metadata, local-only storage status, and an audit event.
+- The log remains pending adult confirmation after proof is attached; a photo is evidence, not automatic approval.
+- Timeline chips now include Proof attached so owners can tell that evidence exists before opening the sheet.
+- The detail panel shows the attachment name and the explicit storage boundary: Local-only proof saved. Cloud storage is not enabled yet.
+- Raw attachment URI and storage metadata stay hidden from generic detail rows so the UI remains owner-readable.
+
+Design intent:
+
+- Make medication proof feel serious and concrete without pretending cloud document storage exists.
+- Keep the next visual pass focused on the Trust review panel, timeline chips, and attachment action as one coherent medication workflow.
+- Preserve the future upload seam for Supabase/storage or another approved provider.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

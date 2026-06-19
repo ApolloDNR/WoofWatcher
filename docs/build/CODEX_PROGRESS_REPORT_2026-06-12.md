@@ -655,3 +655,51 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Add richer structured edit sheets for potty pee/stool detail and walk session start/finish updates.
 - Expand correction history UI beyond the compact trust panel and audit trail.
 - Native iOS/Android safe-area, touch, notification, and phone-size QA remains required before launch approval.
+
+## 2026-06-19 Medication Proof Attachment Seam Pass
+
+### What Changed
+
+- Added a tested care-log photo-proof attachment patch for medication and other proof-requested logs.
+- Attaching proof records a local URI, attachment name, source, local-only storage status, attached-by/at metadata, and an audit event.
+- Attaching proof does not auto-confirm medication. The log remains pending adult confirmation until an owner reviews it.
+- Timeline chips now distinguish Proof needed from Proof attached, so the household can tell whether the missing evidence loop is closed.
+- Log detail Trust review now exposes an Attach proof photo action using Expo ImagePicker.
+- The proof panel shows the attached file name and explicitly says Local-only proof saved. Cloud storage is not enabled yet.
+- Raw proof attachment URI/storage fields stay out of generic detail rows and remain presented through the Trust review workflow.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/log.tsx`
+- `artifacts/woofwatcher-mobile/lib/careLogTrust.ts`
+- `artifacts/woofwatcher-mobile/lib/careLogTrust.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/DECISION_LOG.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
+- `docs/BLOCKERS_FOR_APOLLO.md`
+
+### Tests And Checks Run
+
+- Care log trust behavior:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/careLogTrust.test.ts`
+  - Result: passed, 12 tests.
+- Mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 62 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+- Full local behavior/readiness suite:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 257 tests.
+
+### Remaining Work
+
+- Add provider-backed file upload/storage so proof survives across devices and reports.
+- Add richer structured edit sheets for potty pee/stool detail and walk session start/finish updates.
+- Expand correction history UI beyond the compact trust panel and audit trail.
+- Native iOS/Android safe-area, touch, notification, and phone-size QA remains required before launch approval.

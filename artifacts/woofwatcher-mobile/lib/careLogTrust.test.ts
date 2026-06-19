@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildCareLogPhotoProofAttachmentPatch,
   buildCareLogTrustReviewPatch,
   buildCareLogTrustDefaults,
   getCareLogAttentionChips,
@@ -220,4 +221,88 @@ test("derives timeline attention chips for unresolved trust and proof loops", ()
     ),
     [{ id: "outcome-pending", label: "Outcome pending", tone: "sage" }],
   );
+});
+
+test("attaches local photo proof without confirming safety-critical medication logs", () => {
+  const patch = buildCareLogPhotoProofAttachmentPatch(
+    entry({
+      id: "med_2",
+      type: "medication",
+      title: "Medication - Heartgard",
+      caregiver: "Jordan",
+      details: {
+        householdVisible: true,
+        trustState: "pending-confirmation",
+        confirmationRequired: true,
+        confirmationReason: "safety-critical",
+        photoProofStatus: "not-attached",
+        photoProofPolicy: "medication-proof",
+      },
+    }),
+    {
+      caregiver: "Jordan",
+      uri: "file:///local/heartgard-proof.jpg",
+      fileName: "heartgard-proof.jpg",
+      source: "library",
+      now: NOW,
+    },
+  );
+
+  assert.ok(patch);
+  assert.equal(patch.details.trustState, "pending-confirmation");
+  assert.equal(patch.details.confirmationRequired, true);
+  assert.equal(patch.details.photoProofStatus, "attached");
+  assert.equal(patch.details.photoProofAttachmentUri, "file:///local/heartgard-proof.jpg");
+  assert.equal(patch.details.photoProofAttachmentName, "heartgard-proof.jpg");
+  assert.equal(patch.details.photoProofSource, "library");
+  assert.equal(patch.details.photoProofStorageStatus, "local-only");
+  assert.equal(patch.details.photoProofAttachedBy, "Jordan");
+  assert.equal(patch.details.photoProofAttachedAt, "2026-06-19T23:45:00.000Z");
+  assert.match(String(patch.details.auditTrail?.[0]?.summary), /Jordan attached photo proof for "Medication - Heartgard"/);
+  assert.deepEqual(patch.details.auditTrail?.[0]?.changes, [
+    "photoProofStatus",
+    "photoProofAttachmentUri",
+    "photoProofAttachedAt",
+  ]);
+});
+
+test("rejects blank photo proof attachment uri", () => {
+  assert.equal(
+    buildCareLogPhotoProofAttachmentPatch(entry(), {
+      caregiver: "Jordan",
+      uri: "   ",
+      source: "library",
+      now: NOW,
+    }),
+    null,
+  );
+});
+
+test("shows attached proof while keeping medication confirmation visible", () => {
+  const medicationWithProof = entry({
+    type: "medication",
+    title: "Medication - Heartgard",
+    details: {
+      trustState: "pending-confirmation",
+      confirmationRequired: true,
+      confirmationReason: "safety-critical",
+      photoProofStatus: "attached",
+      photoProofPolicy: "medication-proof",
+      photoProofAttachmentName: "heartgard-proof.jpg",
+      photoProofStorageStatus: "local-only",
+    },
+  });
+
+  assert.deepEqual(getCareLogAttentionChips(medicationWithProof), [
+    { id: "needs-review", label: "Needs review", tone: "amber" },
+    { id: "proof-attached", label: "Proof attached", tone: "sage" },
+  ]);
+
+  const review = getCareLogTrustReview(medicationWithProof, "Adult");
+
+  assert.equal(review.statusLabel, "Needs adult confirmation");
+  assert.equal(review.proofStatus, "attached");
+  assert.equal(review.proofAttachmentName, "heartgard-proof.jpg");
+  assert.equal(review.proofStorageStatus, "local-only");
+  assert.match(review.helperText, /Photo proof is attached/);
 });

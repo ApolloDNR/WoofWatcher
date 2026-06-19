@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -45,6 +46,7 @@ import {
   type AloneTimeReturnOutcome,
 } from "@/lib/aloneTimeSession";
 import {
+  buildCareLogPhotoProofAttachmentPatch,
   buildCareLogTrustDefaults,
   buildCareLogTrustReviewPatch,
   getCareLogAttentionChips,
@@ -383,6 +385,7 @@ const ENTRY_ATTENTION_CHIP_COPY: Record<string, string> = {
   "proof-needed": "Proof needed",
   "photo-requested": "Photo requested",
   "outcome-pending": "Outcome pending",
+  "proof-attached": "Proof attached",
   rejected: "Rejected",
   corrected: "Corrected",
   estimated: "Estimated",
@@ -471,6 +474,14 @@ const DETAIL_SKIP_KEYS = new Set([
   "photoProofRequestedAt",
   "photoProofNote",
   "photoProofPolicy",
+  "photoProofAttachmentUri",
+  "photoProofAttachmentName",
+  "photoProofAttachmentNote",
+  "photoProofSource",
+  "photoProofStorageStatus",
+  "photoProofStorageNote",
+  "photoProofAttachedBy",
+  "photoProofAttachedAt",
 ]);
 
 const DETAIL_LABELS: Record<string, string> = {
@@ -1394,6 +1405,41 @@ export default function LogScreen() {
     },
     [caregiver, currentCaregiverRole, detailEntry, now, updateEntry],
   );
+
+  const handleAttachProof = useCallback(async () => {
+    if (!detailEntry) return;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.78,
+      });
+      if (result.canceled || !result.assets[0]?.uri) return;
+
+      const asset = result.assets[0];
+      const fileName =
+        typeof (asset as { fileName?: unknown }).fileName === "string"
+          ? (asset as { fileName: string }).fileName
+          : "Medication proof photo";
+      const patch = buildCareLogPhotoProofAttachmentPatch(detailEntry, {
+        caregiver,
+        uri: asset.uri,
+        fileName,
+        source: "library",
+        now,
+      });
+
+      if (!patch) {
+        Alert.alert("Proof not attached", "Choose a clear photo before saving proof to this log.");
+        return;
+      }
+
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      updateEntry(detailEntry.id, patch);
+    } catch {
+      Alert.alert("Photo unavailable", "Attach proof later. Medication logs stay pending until an owner confirms them.");
+    }
+  }, [caregiver, detailEntry, now, updateEntry]);
 
   const logSearch = useMemo(
     () => deriveCareLogSearch({ entries: state.entries, query: searchText, type: filter }),
@@ -2975,10 +3021,41 @@ export default function LogScreen() {
                     {detailTrustReview.proofStatus ? (
                       <View style={[s.trustProofRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
                         <Ionicons name="camera-outline" size={15} color={colors.copper} />
-                        <Text style={[s.trustProofText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                          Proof status: {humanizeKey(detailTrustReview.proofStatus)}
-                        </Text>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={[s.trustProofText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                            Proof status: {humanizeKey(detailTrustReview.proofStatus)}
+                          </Text>
+                          {detailTrustReview.proofAttachmentName ? (
+                            <Text numberOfLines={1} style={[s.trustProofMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                              {detailTrustReview.proofAttachmentName}
+                            </Text>
+                          ) : null}
+                          {detailTrustReview.proofStorageStatus === "local-only" ? (
+                            <Text style={[s.trustProofMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+                              Local-only proof saved. Cloud storage is not enabled yet.
+                            </Text>
+                          ) : null}
+                        </View>
                       </View>
+                    ) : null}
+                    {detailTrustReview.proofStatus && detailTrustReview.proofStatus !== "attached" ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Attach proof photo to care log"
+                        onPress={handleAttachProof}
+                        style={({ pressed }) => [
+                          s.trustProofAttachButton,
+                          {
+                            backgroundColor: pressed ? colors.copper + "1F" : colors.background,
+                            borderColor: colors.copper + "44",
+                          },
+                        ]}
+                      >
+                        <Ionicons name="image-outline" size={15} color={colors.copper} />
+                        <Text style={[s.trustProofAttachText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          Attach proof photo
+                        </Text>
+                      </Pressable>
                     ) : null}
                     {detailTrustReview.canReview ? (
                       <View style={s.trustActionGrid}>
@@ -3840,7 +3917,20 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     marginTop: 10,
   },
-  trustProofText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
+  trustProofText: { fontSize: 12.5, lineHeight: 17 },
+  trustProofMeta: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
+  trustProofAttachButton: {
+    minHeight: 40,
+    borderWidth: 1,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    marginTop: 10,
+    paddingHorizontal: 12,
+  },
+  trustProofAttachText: { fontSize: 12.5, textAlign: "center" },
   trustActionGrid: {
     flexDirection: "row",
     flexWrap: "wrap",

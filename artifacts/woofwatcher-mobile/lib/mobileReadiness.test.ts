@@ -1231,19 +1231,25 @@ test("keeps care log audit trails wired into Log edit, sticky note, delete, and 
 test("keeps care log trust review wired into Log detail flows", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
+  assert.match(log, /ImagePicker/);
+  assert.match(log, /buildCareLogPhotoProofAttachmentPatch/);
   assert.match(log, /buildCareLogTrustReviewPatch/);
   assert.match(log, /buildCareLogTrustDefaults/);
   assert.match(log, /getCareLogAttentionChips/);
   assert.match(log, /getCareLogTrustReview/);
   assert.match(log, /detailTrustReview/);
   assert.match(log, /entryAttentionChips/);
+  assert.match(log, /handleAttachProof/);
   assert.match(log, /handleTrustReview/);
   assert.match(log, /Trust review/);
+  assert.match(log, /Attach proof photo/);
+  assert.match(log, /Local-only proof saved/);
   assert.match(log, /Confirm/);
   assert.match(log, /Reject/);
   assert.match(log, /Request photo/);
   assert.match(log, /Mark corrected/);
   assert.match(log, /Proof needed/);
+  assert.match(log, /Proof attached/);
   assert.match(log, /Needs review/);
 });
 

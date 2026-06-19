@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-19:
 
-- PASS: 244 focused tests with the command above.
+- PASS: 257 focused tests with the command above.
 - PASS: mobile TypeScript check with bundled Node and workspace TypeScript.
 - PASS: PixelLab asset verifier checked 148 Phoenix room/sprite/template/emote/accessory/seed-strip/Option B runtime assets with 0 missing and 0 invalid.
 - PASS: Expo web export completed through the package-local Expo CLI and Metro resolver patch.
@@ -26,6 +26,7 @@ Latest local evidence, 2026-06-19:
 - Meal progress and meal completion fields.
 - Medication adherence for taken, due, missed, and upcoming medication routines, including private-log exclusion and Records mobile wiring.
 - Medication quick-log and full Log composer defaults for routine dose, taken/skipped outcome, household visibility, and skipped-medication adherence behavior.
+- Medication proof attachment seams for local proof URI/name/source, local-only storage status, proof-attached timeline state, audit history, and explicit owner confirmation after proof is attached.
 - Medication follow-ups for missed doses, due-now doses, refill records, notification-rule copy, Records mobile wiring, and Care Pass report language.
 - Medication history for recent household-visible medication logs, including dose, outcome, caregiver, routine id, note, private-log exclusion, medicine/dose/caregiver/note search, taken/skipped/missed/needs-review outcome filters, filtered summary copy, empty-state copy, and Records mobile wiring.
 - Water quick-log defaults for household-visible fresh-water refills.
@@ -80,67 +81,69 @@ Latest local evidence, 2026-06-19:
 7. Confirm a private meal log stays out of shared household routine status.
 8. Add a medication routine, use Home quick log for Meds, and confirm it records the matching routine, dose, taken outcome, and household visibility.
 9. Use the Log medication composer and confirm the Medication routine panel, dose field, taken/skipped choice, and household visibility toggle are visible.
-10. Confirm Records Medication Plan shows taken status, dose, logged-by context, and adherence percentage after a visible taken medication log.
-11. Confirm a skipped medication log does not count as taken, a private medication log does not satisfy the household Medication Plan, and an overdue unlogged medication becomes missed.
-12. Add a medication refill record with a near due date and confirm Records Medication Follow-ups shows the refill action and notification-rule copy.
-13. Preview the vet Care Pass and confirm Medication includes adherence status, taken/upcoming doses, and refill follow-up language.
-14. Confirm Records Medication History shows recent visible taken/skipped medication logs with dose, caregiver, relative time, and notes, while private medication logs stay out.
-15. Use Home Quick Log for Water and confirm it records a household-visible fresh-water refill.
-16. Confirm Records Hydration updates refill-equivalent progress, caregivers, latest water log, and next-step copy after water logs.
-17. Preview a Care Pass and confirm the Hydration section summarizes today without making medical claims.
-18. Use Home Quick Log for Walk and confirm it records a household-visible walk routine log.
-19. Add a walk with duration, place/route, distance, dog interactions, social outcome notes, and household visibility; confirm Records Walk Activity updates minutes, places, latest walk, and next-step copy.
-20. Log the same route more than once and confirm Records Saved Routes groups the route, shows visits, average duration, dog interactions, suggested use, and the latest social note.
-21. Mark a walk private and confirm it stays out of shared Walk Activity, Saved Routes, routine status, and Care Pass route context.
-22. Preview a trainer or sitter Care Pass and confirm Walk Activity includes route/place, dog interaction context, and Saved Routes.
-23. Confirm Records Care Trends summarizes the last 7 days, meal completion, walk minutes, and review signals while ignoring private logs.
-24. Preview a Care Pass and confirm Care Trends adds weekly context without making medical claims.
-25. Add a Training log with skill/cue, win/practice/struggle outcome, duration, next-practice note, sticky note, and household visibility.
-26. Confirm Records Training Progress updates sessions, minutes, wins, skills, latest session, and next-practice guidance while ignoring private training logs.
-27. Preview a trainer Care Pass and confirm Training Progress includes session count, skills, latest outcome, trigger/context when present, and next-practice notes.
-28. Use Home Quick Log for Potty and confirm it records household-visible potty routine evidence.
-29. Add a potty log with pee/poop kind, soft/off condition, stool color, accident/urgent/straining context, and a sticky note; confirm Records Potty Health updates pee, poop, review count, color/context detail, latest detail, and stool detail next-step copy.
-30. Preview a vet or sitter Care Pass and confirm Potty Health summarizes stool color and potty context without making medical claims.
-31. Add sticky note to a log.
-32. Add vaccine, insurance, microchip, vet, receipt, and document records.
-33. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.
-34. Preview and share sitter/vet/trainer/caregiver Care Pass.
-35. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
-36. Confirm report history stores shared Care Pass with printable export metadata, separate resend action, and printable-source share action.
-37. Ask WoofGuide about recent changes and verify non-diagnostic wording.
-38. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
-39. Open Privacy & Safety from More, share the care-data export, and confirm it includes care data counts without auth/session tokens.
-40. Prepare an account deletion request and confirm it is non-destructive and says manual review/export first.
-41. Confirm AI disclosure, document storage rules, and payment launch blockers are visible.
-42. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
-43. Confirm the Home avatar motion row changes for a recent meal, upcoming walk, overdue routine, quiet hours, low energy, and Health Watch signal.
-44. Force offline or failed sync state and confirm the Log shows the Offline Outbox banner, retryable create/update counts, pending count, failed-sync message, and Retry sync action.
-45. Open More and confirm Sync Health shows household status, care-log count, care-team count, outbox waiting count, next-step guidance, and a refresh/retry action with accessible label.
-46. Edit profile, routine, record, or report state offline or during a stale refresh; confirm the newer local care document is kept and pushed back instead of overwritten by older server data.
-47. Open Calendar and confirm Household Responsibility shows handled/open/overdue/unassigned routine counts plus the next household step.
-48. Open More and confirm Responsibility Center shows the same household next step, member routine loads, visible log counts, and routes to Calendar.
-49. Create a log, add a sticky note, edit its title or note, open details, and confirm Audit trail shows create, sticky-note, and edit evidence.
-50. Delete a log and confirm a separate deleted-log audit note appears without counting as a health or routine-completion event.
-51. Add an Alone Time log with duration, return state, trigger/context, calming support, recovery minutes, sticky note, and household visibility.
-52. Confirm Records Alone Time updates status, minutes, anxious/distress counts, triggers, supports, latest context, and next-step copy while private alone logs stay out.
-53. Preview a sitter/trainer Care Pass and confirm Alone Time summarizes the latest return state, recovery, trigger, and calming support without diagnosing anxiety.
-54. Add two visible Weight logs and one private Weight log; confirm Records Weight Trend uses only visible weigh-ins for the chart and goal distance.
-55. Update the weight goal and confirm Records shows the correct to-go/over-goal copy.
-56. Preview a vet Care Pass and confirm Weight Trend includes current weight, goal, latest weigh-in, and owner-reported context language.
-57. Open More and confirm Household Access shows synced members, invite-needed caregivers, routine-only owners, and the correct invite code state.
-58. Add a local caregiver and assign a routine to someone not in the synced account member list; confirm Household Access marks them as invite needed instead of silently treating them as synced.
-59. Confirm the Household Access invite action is disabled without an invite code and uses the share action when a household invite code exists.
-60. Add a Grooming log with type, duration, coat/skin note, product or groomer context, next due date, sticky note, and household visibility.
-61. Confirm Records Grooming Care updates status, minutes, type counts, products, next due date, latest context, and next-step copy while private grooming logs stay out.
-62. Preview a sitter or vet Care Pass and confirm Grooming Care summarizes latest grooming, product context, next due date, and owner-reported/non-diagnostic boundary language.
-63. Open Calendar and confirm Reminder Center combines overdue routines, missed/due medication follow-ups, due-soon records, and grooming due dates into one owner action list with urgent/watch/total counts and no claim that real push notifications are enabled.
-64. Tap Reminder Center rows and confirm they route to the expected concrete workflow: routine edit, Records, Medication log, or Grooming log with the composer type preselected.
-65. Open Log, search by caregiver, route/place, medication detail, and sticky-note text, then combine search with type chips and confirm the summary and empty state update correctly.
-66. Open Records Medication History, search by medicine, dose, caregiver, and note text, then switch Taken, Skipped, Missed, and Needs review filters and confirm summary and empty-state copy update correctly.
-67. Open Avatar Studio, switch to Emotes, tap each Phoenix mood state, and confirm the mood grid uses the corresponding PixelLab emote art instead of the same head crop with a color wash while the top hero remains the live Studio care-twin room.
-68. Switch Avatar Studio to the Retriever template, open Emotes, and confirm all 10 moods use the Retriever starter pack instead of Phoenix art. Switch to an unfinished template and confirm it falls back to that template's own base still rather than the wrong dog.
-69. Switch Avatar Studio to the Husky / Spitz template, open Emotes, and confirm all 10 moods use the Husky starter pack, including Home Alone and Not Feeling Well, with no Retriever or Phoenix fallback art.
-70. Switch Avatar Studio to the Bully template, open Emotes, and confirm all 10 moods use the Bully starter pack, including Home Alone and Not Feeling Well, with no Husky, Retriever, or Phoenix fallback art.
+10. Open a pending medication log, attach proof from the photo library, and confirm the detail sheet shows Proof status: Attached, the attachment name, and Local-only proof saved without marking the log confirmed.
+11. Confirm the timeline changes from Proof needed to Proof attached while Needs review remains until an adult owner confirms the medication log.
+12. Confirm Records Medication Plan shows taken status, dose, logged-by context, and adherence percentage after a visible taken medication log.
+13. Confirm a skipped medication log does not count as taken, a private medication log does not satisfy the household Medication Plan, and an overdue unlogged medication becomes missed.
+14. Add a medication refill record with a near due date and confirm Records Medication Follow-ups shows the refill action and notification-rule copy.
+15. Preview the vet Care Pass and confirm Medication includes adherence status, taken/upcoming doses, and refill follow-up language.
+16. Confirm Records Medication History shows recent visible taken/skipped medication logs with dose, caregiver, relative time, and notes, while private medication logs stay out.
+17. Use Home Quick Log for Water and confirm it records a household-visible fresh-water refill.
+18. Confirm Records Hydration updates refill-equivalent progress, caregivers, latest water log, and next-step copy after water logs.
+19. Preview a Care Pass and confirm the Hydration section summarizes today without making medical claims.
+20. Use Home Quick Log for Walk and confirm it records a household-visible walk routine log.
+21. Add a walk with duration, place/route, distance, dog interactions, social outcome notes, and household visibility; confirm Records Walk Activity updates minutes, places, latest walk, and next-step copy.
+22. Log the same route more than once and confirm Records Saved Routes groups the route, shows visits, average duration, dog interactions, suggested use, and the latest social note.
+23. Mark a walk private and confirm it stays out of shared Walk Activity, Saved Routes, routine status, and Care Pass route context.
+24. Preview a trainer or sitter Care Pass and confirm Walk Activity includes route/place, dog interaction context, and Saved Routes.
+25. Confirm Records Care Trends summarizes the last 7 days, meal completion, walk minutes, and review signals while ignoring private logs.
+26. Preview a Care Pass and confirm Care Trends adds weekly context without making medical claims.
+27. Add a Training log with skill/cue, win/practice/struggle outcome, duration, next-practice note, sticky note, and household visibility.
+28. Confirm Records Training Progress updates sessions, minutes, wins, skills, latest session, and next-practice guidance while ignoring private training logs.
+29. Preview a trainer Care Pass and confirm Training Progress includes session count, skills, latest outcome, trigger/context when present, and next-practice notes.
+30. Use Home Quick Log for Potty and confirm it records household-visible potty routine evidence.
+31. Add a potty log with pee/poop kind, soft/off condition, stool color, accident/urgent/straining context, and a sticky note; confirm Records Potty Health updates pee, poop, review count, color/context detail, latest detail, and stool detail next-step copy.
+32. Preview a vet or sitter Care Pass and confirm Potty Health summarizes stool color and potty context without making medical claims.
+33. Add sticky note to a log.
+34. Add vaccine, insurance, microchip, vet, receipt, and document records.
+35. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.
+36. Preview and share sitter/vet/trainer/caregiver Care Pass.
+37. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
+38. Confirm report history stores shared Care Pass with printable export metadata, separate resend action, and printable-source share action.
+39. Ask WoofGuide about recent changes and verify non-diagnostic wording.
+40. Open WoofGuide suggested actions and confirm owner review appears before saving a meal log, creating a reminder, inserting a vet note, or reviewing Care Pass.
+41. Open Privacy & Safety from More, share the care-data export, and confirm it includes care data counts without auth/session tokens.
+42. Prepare an account deletion request and confirm it is non-destructive and says manual review/export first.
+43. Confirm AI disclosure, document storage rules, and payment launch blockers are visible.
+44. Review Health Watch pattern cards and confirm evidence, owner next steps, and vet-boundary language are visible.
+45. Confirm the Home avatar motion row changes for a recent meal, upcoming walk, overdue routine, quiet hours, low energy, and Health Watch signal.
+46. Force offline or failed sync state and confirm the Log shows the Offline Outbox banner, retryable create/update counts, pending count, failed-sync message, and Retry sync action.
+47. Open More and confirm Sync Health shows household status, care-log count, care-team count, outbox waiting count, next-step guidance, and a refresh/retry action with accessible label.
+48. Edit profile, routine, record, or report state offline or during a stale refresh; confirm the newer local care document is kept and pushed back instead of overwritten by older server data.
+49. Open Calendar and confirm Household Responsibility shows handled/open/overdue/unassigned routine counts plus the next household step.
+50. Open More and confirm Responsibility Center shows the same household next step, member routine loads, visible log counts, and routes to Calendar.
+51. Create a log, add a sticky note, edit its title or note, open details, and confirm Audit trail shows create, sticky-note, and edit evidence.
+52. Delete a log and confirm a separate deleted-log audit note appears without counting as a health or routine-completion event.
+53. Add an Alone Time log with duration, return state, trigger/context, calming support, recovery minutes, sticky note, and household visibility.
+54. Confirm Records Alone Time updates status, minutes, anxious/distress counts, triggers, supports, latest context, and next-step copy while private alone logs stay out.
+55. Preview a sitter/trainer Care Pass and confirm Alone Time summarizes the latest return state, recovery, trigger, and calming support without diagnosing anxiety.
+56. Add two visible Weight logs and one private Weight log; confirm Records Weight Trend uses only visible weigh-ins for the chart and goal distance.
+57. Update the weight goal and confirm Records shows the correct to-go/over-goal copy.
+58. Preview a vet Care Pass and confirm Weight Trend includes current weight, goal, latest weigh-in, and owner-reported context language.
+59. Open More and confirm Household Access shows synced members, invite-needed caregivers, routine-only owners, and the correct invite code state.
+60. Add a local caregiver and assign a routine to someone not in the synced account member list; confirm Household Access marks them as invite needed instead of silently treating them as synced.
+61. Confirm the Household Access invite action is disabled without an invite code and uses the share action when a household invite code exists.
+62. Add a Grooming log with type, duration, coat/skin note, product or groomer context, next due date, sticky note, and household visibility.
+63. Confirm Records Grooming Care updates status, minutes, type counts, products, next due date, latest context, and next-step copy while private grooming logs stay out.
+64. Preview a sitter or vet Care Pass and confirm Grooming Care summarizes latest grooming, product context, next due date, and owner-reported/non-diagnostic boundary language.
+65. Open Calendar and confirm Reminder Center combines overdue routines, missed/due medication follow-ups, due-soon records, and grooming due dates into one owner action list with urgent/watch/total counts and no claim that real push notifications are enabled.
+66. Tap Reminder Center rows and confirm they route to the expected concrete workflow: routine edit, Records, Medication log, or Grooming log with the composer type preselected.
+67. Open Log, search by caregiver, route/place, medication detail, and sticky-note text, then combine search with type chips and confirm the summary and empty state update correctly.
+68. Open Records Medication History, search by medicine, dose, caregiver, and note text, then switch Taken, Skipped, Missed, and Needs review filters and confirm summary and empty-state copy update correctly.
+69. Open Avatar Studio, switch to Emotes, tap each Phoenix mood state, and confirm the mood grid uses the corresponding PixelLab emote art instead of the same head crop with a color wash while the top hero remains the live Studio care-twin room.
+70. Switch Avatar Studio to the Retriever template, open Emotes, and confirm all 10 moods use the Retriever starter pack instead of Phoenix art. Switch to an unfinished template and confirm it falls back to that template's own base still rather than the wrong dog.
+71. Switch Avatar Studio to the Husky / Spitz template, open Emotes, and confirm all 10 moods use the Husky starter pack, including Home Alone and Not Feeling Well, with no Retriever or Phoenix fallback art.
+72. Switch Avatar Studio to the Bully template, open Emotes, and confirm all 10 moods use the Bully starter pack, including Home Alone and Not Feeling Well, with no Husky, Retriever, or Phoenix fallback art.
 
 ## Missing QA
 

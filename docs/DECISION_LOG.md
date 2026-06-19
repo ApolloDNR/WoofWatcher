@@ -1131,6 +1131,24 @@ Owner: Codex.
 
 Revisit trigger: Server-backed roles, real attachments, medication proof policy, or talk-to-log command parsing introduce a stronger event creation pipeline that still preserves consistent trust defaults.
 
+### 2026-06-19: Medication Proof Can Be Attached Locally, But Does Not Confirm Care
+
+Decision: Medication proof attachment is a local evidence seam, not an approval action. A caregiver can attach a proof photo URI to a medication log, but the log remains pending adult confirmation until an owner explicitly reviews it. The UI must label this as local-only until provider-backed storage is approved and implemented.
+
+Reason: Medication is a high-trust household workflow. Photo evidence helps owners verify what happened, but a local image URI is not durable cloud proof, not cross-device storage, and not a substitute for owner review.
+
+Consequences:
+
+- `careLogTrust.ts` owns the proof attachment patch and audit event.
+- Attached proof records URI/name/source, attached-by/at, local-only storage status, and a proof-attached timeline chip.
+- The Log detail sheet can attach proof through Expo ImagePicker and shows the storage boundary in the Trust review panel.
+- Proof attachment does not clear `confirmationRequired`; Confirm/Reject/Mark corrected remain explicit owner actions.
+- Future Supabase/storage work should replace the local URI with durable storage metadata without changing the owner-facing trust contract.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed file storage, medication proof policy, Access Pass permissions, or Care Pass report attachments become production scope.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

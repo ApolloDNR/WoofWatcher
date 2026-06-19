@@ -54,6 +54,8 @@ Current evidence, 2026-06-11: Medication History excludes private medication log
 
 Current evidence, 2026-06-11: Medication History search and outcome filters make skipped and missed medication evidence easier to find without exposing private medication logs.
 
+Current evidence, 2026-06-19: Medication proof attachment now records local photo proof URI/name/source, local-only storage status, attached-by/at metadata, audit history, and proof-attached timeline state while keeping medication logs pending adult confirmation until owner review.
+
 Current evidence, 2026-06-11: Hydration status ignores private water logs and shows caregiver participation in Records, keeping daily water care visible as household evidence.
 
 Current evidence, 2026-06-11: Walk Activity ignores private walk logs and shows caregiver participation, places, and social outcome notes in Records, keeping dog park and walker context visible to the household.
