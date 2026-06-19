@@ -62,6 +62,8 @@ Use the v1.5 palette:
 - Use segmented HUD meters for energy, hunger, hydration, bile risk, bond, and similar status signals.
 - Use pixel icons and Phoenix room art as product identity, but keep care copy readable.
 - No button should be introduced unless it has a real action, route, or honest setup explanation.
+- Phoenix should read as hard-pixel game art, not a soft illustration or photo-derived portrait. If a user uploads a dog photo, show it as a scan reference only; the avatar hero must stay a PixelLab/template care twin.
+- Do not promote a new still dog into Home unless the matching animation strips exist. The live care twin should remain one coherent sprite family, not a still avatar plus mismatched motion.
 
 ## 2026-06-14 Mobile Foundation Pass
 
@@ -371,6 +373,23 @@ Remaining visual work:
 - Run native iOS/Android safe-area and frame-rate QA.
 - Replace first-pass derived room variants with final illustrated PixelLab/Figma-quality scenes.
 - Generate remaining unfinished template emote/sprite packs and true overlay-aligned accessory layers.
+
+## 2026-06-18 Option B Phoenix Source Pass
+
+Recentered the Phoenix identity around Apollo's hard-pixel Option B board:
+
+- Generated a focused PixelLab review pack targeting a crisp German Shepherd / Belgian Shepherd WoofWatcher mascot with sage bandana, copper heart tag, navy outline, and transparent background.
+- Selected and downloaded `assets/avatar/phoenix/candidates/option-b-seated.png` and `assets/avatar/phoenix/candidates/option-b-standing.png`.
+- Generated and normalized `assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png` and `assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png`.
+- Wired the common happy/tail-wag and walk room states to those Option B strips so the first-screen dog reads closer to the mockups.
+- Added those source candidates and proof strips to asset verification and mobile readiness checks.
+- Updated Avatar Studio so uploaded photos remain reference proof during scan assist instead of becoming the soft hero image.
+- Kept the remaining v2 action states in place until Option B has a coherent full normalized animation pack.
+
+Remaining visual work:
+
+- Review the Option B happy/tail-wag and walk motion at phone size.
+- Generate matching Option B sleep, comfort/home-alone, health-watch, eat, drink, ear-perk, and celebration strips before replacing the full live Phoenix family.
 
 ## 2026-06-18 Avatar Studio Live Template Routing Pass
 

@@ -76,6 +76,17 @@ const phoenixEmotes = [
   "not-feeling-well",
 ];
 
+const crispAssets = [
+  ["assets/avatar/phoenix/approved/phoenix-main-avatar-v2-crisp.png", 680, 680],
+  ["assets/avatar/phoenix/approved/phoenix-main-head-v2-crisp.png", 1024, 1024],
+  ["assets/avatar/templates/shepherd/base-crisp.png", 680, 680],
+  ["assets/avatar/templates/shepherd/preview-crisp.png", 340, 340],
+  ["assets/avatar/phoenix/candidates/option-b-seated.png", 170, 170],
+  ["assets/avatar/phoenix/candidates/option-b-standing.png", 170, 170],
+  ["assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png", 2048, 256],
+  ["assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png", 2048, 256],
+];
+
 const templateEmotes = {
   shepherd: ["happy", "calm", "excited", "bored", "hungry", "anxious", "sleepy", "proud", "home_alone", "not_feeling_well"],
   retriever: ["happy", "calm", "excited", "bored", "hungry", "anxious", "sleepy", "proud", "home-alone", "not-feeling-well"],
@@ -225,6 +236,22 @@ function checkPhoenixEmote(emoteId) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
+function checkCrispAsset([relativePath, expectedWidth, expectedHeight]) {
+  const file = path.join(root, relativePath);
+  if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
+
+  const size = readPngSize(file);
+  if (size.width !== expectedWidth || size.height !== expectedHeight) {
+    return {
+      type: "invalid",
+      file: path.relative(root, file),
+      message: `expected ${expectedWidth}x${expectedHeight}, got ${size.width}x${size.height}`,
+    };
+  }
+
+  return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
+}
+
 function checkTemplateEmote(templateId, emoteId) {
   const file = path.join(templateDir, templateId, "emotes", `${emoteId}.png`);
   if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
@@ -297,6 +324,7 @@ const results = [
   ...templatePreviews.map(checkTemplatePreview),
   ...templateBases.map(checkTemplateBase),
   ...phoenixEmotes.map(checkPhoenixEmote),
+  ...crispAssets.map(checkCrispAsset),
   ...Object.entries(templateEmotes).flatMap(([templateId, emotes]) =>
     emotes.map((emoteId) => checkTemplateEmote(templateId, emoteId)),
   ),

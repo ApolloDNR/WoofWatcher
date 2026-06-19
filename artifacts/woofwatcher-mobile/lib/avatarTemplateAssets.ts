@@ -28,8 +28,8 @@ export interface AvatarTemplateEmoteAsset {
 
 export const AVATAR_TEMPLATE_PREVIEW_ASSETS: Record<AvatarTemplateId, AvatarTemplatePreviewAsset> = {
   shepherd: {
-    source: require("@/assets/avatar/templates/shepherd/preview.png"),
-    path: "assets/avatar/templates/shepherd/preview.png",
+    source: require("@/assets/avatar/templates/shepherd/preview-crisp.png"),
+    path: "assets/avatar/templates/shepherd/preview-crisp.png",
     style: "pixellab-template-preview",
   },
   retriever: {
@@ -91,8 +91,8 @@ export const AVATAR_TEMPLATE_PREVIEW_ASSETS: Record<AvatarTemplateId, AvatarTemp
 
 export const AVATAR_TEMPLATE_BASE_ASSETS: Partial<Record<AvatarTemplateId, AvatarTemplateBaseAsset>> = {
   shepherd: {
-    source: require("@/assets/avatar/templates/shepherd/base.png"),
-    path: "assets/avatar/templates/shepherd/base.png",
+    source: require("@/assets/avatar/templates/shepherd/base-crisp.png"),
+    path: "assets/avatar/templates/shepherd/base-crisp.png",
     style: "pixellab-template-base",
   },
   retriever: {

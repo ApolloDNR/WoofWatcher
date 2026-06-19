@@ -311,6 +311,22 @@ Both strips are 2048x256 PNGs with eight 256px frame slots and are covered by `v
 
 Status: these are local production seed strips for future movement testing. They are not promoted over the current approved seated Home sprite family until Apollo approves their phone-size proportions, anchor, and mockup fit.
 
+### Phase 4F - Option B Hard-Pixel Phoenix Redesign Source
+
+Apollo re-confirmed that the avatar should look closer to the Option B Neo Retro Digital Pet boards: crisp, hard pixel clusters, clear navy outline, sage bandana, copper heart tag, and no soft/painterly portrait treatment.
+
+The selected PixelLab review objects are now archived locally as the next production identity source:
+
+- Review object: `28564860-9f83-48d7-9a30-23e0f157d68e`
+- Seated source object: `83b452c4-4321-4a86-830f-8ef337798cee`
+- Standing source object: `4646c92b-753f-4fe7-8837-c7e9d1b82eef`
+- Local seated source: `assets/avatar/phoenix/candidates/option-b-seated.png`
+- Local standing source: `assets/avatar/phoenix/candidates/option-b-standing.png`
+- Local idle proof strip: `assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png`
+- Local walk proof strip: `assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png`
+
+The common happy and walk runtime states now use the Option B proof strips so the main Home experience trends toward Apollo's hard-pixel mockup. The remaining Phoenix actions still need matching Option B strips before the v2 family can be fully retired: sleep, comfort/home-alone, health-watch, eat, drink, ear-perk, and celebration.
+
 ### Phase 5 - Dogless Rooms
 
 Create Phoenix-free backgrounds:
@@ -347,9 +363,9 @@ from:
 artifacts/woofwatcher-mobile
 ```
 
-This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Retriever emote stills, Husky emote stills, Bully emote stills, Avatar Studio accessory inventory icons, and the two subscription seed strips.
+This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Retriever emote stills, Husky emote stills, Bully emote stills, Avatar Studio accessory inventory icons, the two subscription seed strips, the crisp display upscales, and the Option B redesign source candidates.
 
-Latest local evidence, 2026-06-18: `ok=91 missing=0 invalid=0`.
+Latest local evidence, 2026-06-18: run `node scripts/verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` after every asset import and expect no missing or invalid files.
 
 Use:
 

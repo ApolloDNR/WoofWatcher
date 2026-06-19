@@ -281,6 +281,8 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(careTwinAssets, /CARE_TWIN_DOGLESS_ROOM_ASSETS/);
   assert.match(careTwinAssets, /dogless-room-layer/);
   assert.match(careTwinAssets, /listCareTwinSpriteSlots/);
+  assert.match(careTwinAssets, /option-b-idle-tail-wag-strip\.png/);
+  assert.match(careTwinAssets, /option-b-walk-loop-strip\.png/);
   assert.doesNotMatch(room, /PhoenixSpriteRig/);
   assert.doesNotMatch(room, /SPRITE LOOP/);
   assert.doesNotMatch(room, /deriveAvatarSpritePlan/);
@@ -585,7 +587,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /templateHeroDogWrap/);
   assert.match(avatarStudio, /s\.templateArtWrap/);
   assert.match(avatarStudio, /phoenix-room-day\.png/);
-  assert.match(avatarStudio, /phoenix-main-head-v2\.png/);
+  assert.match(avatarStudio, /phoenix-main-head-v2-crisp\.png/);
+  assert.match(avatarStudio, /selectedTemplateStillSource/);
+  assert.match(avatarStudio, /PHOTO REFERENCE/);
+  assert.match(avatarStudio, /Building a pixel twin, not using the photo as the avatar/);
   assert.doesNotMatch(avatarStudio, /assets\/board\/hero\.png/);
   assert.doesNotMatch(avatarStudio, /getAvatarSource\("happy"\)/);
   assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_PREVIEW_ASSETS/);
@@ -616,6 +621,8 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /liveTemplateCount/);
   assert.match(avatarStudio, /templateLiveBadge/);
   assert.match(avatarStudio, /Sprite rig in production/);
+  assert.match(avatarTemplateAssets, /assets\/avatar\/templates\/shepherd\/preview-crisp\.png/);
+  assert.match(avatarTemplateAssets, /assets\/avatar\/templates\/shepherd\/base-crisp\.png/);
   assert.match(avatarTemplateSpriteAssets, /bully:[\s\S]*idle-tail-wag/);
   assert.match(avatarTemplateSpriteAssets, /bully:[\s\S]*walk-loop/);
   assert.match(avatarTemplateSpriteAssets, /dachshund:[\s\S]*idle-tail-wag/);
@@ -680,15 +687,59 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /templateVest/);
   assert.match(avatarStudio, /templateAccessoryLayer/);
   assert.match(avatarStudio, /Preview \$\{emoteLabel\(emote\)\} mood/);
+  for (const [fileName, expected] of [
+    ["phoenix-main-avatar-v2-crisp.png", { width: 680, height: 680 }],
+    ["phoenix-main-head-v2-crisp.png", { width: 1024, height: 1024 }],
+  ] as const) {
+    const size = readPngSize(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "phoenix", "approved", fileName),
+    );
+    assert.deepEqual(size, expected, `${fileName} should be a nearest-neighbor crisp Phoenix asset`);
+  }
+  for (const [fileName, expected] of [
+    ["option-b-seated.png", { width: 170, height: 170 }],
+    ["option-b-standing.png", { width: 170, height: 170 }],
+  ] as const) {
+    const size = readPngSize(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "phoenix", "candidates", fileName),
+    );
+    assert.deepEqual(size, expected, `${fileName} should stay archived as a PixelLab Option B source candidate`);
+  }
+  for (const [fileName, expected] of [
+    ["option-b-idle-tail-wag-strip.png", { width: 2048, height: 256 }],
+    ["option-b-walk-loop-strip.png", { width: 2048, height: 256 }],
+  ] as const) {
+    const size = readPngSize(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "phoenix", "candidates", fileName),
+    );
+    assert.deepEqual(size, expected, `${fileName} should stay archived as an 8-frame Option B animation proof`);
+  }
+  for (const [fileName, expected] of [
+    ["preview-crisp.png", { width: 340, height: 340 }],
+    ["base-crisp.png", { width: 680, height: 680 }],
+  ] as const) {
+    const size = readPngSize(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", "shepherd", fileName),
+    );
+    assert.deepEqual(size, expected, `${fileName} should be a nearest-neighbor crisp shepherd asset`);
+  }
   for (const templateId of templateIds) {
-    assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));
+    const registryPreviewPath = templateId === "shepherd" ? "preview-crisp" : "preview";
+    assert.match(
+      avatarTemplateAssets,
+      new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/${registryPreviewPath}\\.png`),
+    );
     const size = readPngSize(
       join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", templateId, "preview.png"),
     );
     assert.deepEqual(size, { width: 85, height: 85 }, `${templateId} preview should be a PixelLab 85x85 thumbnail`);
   }
   for (const templateId of templateIds) {
-    assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/base\\.png`));
+    const registryBasePath = templateId === "shepherd" ? "base-crisp" : "base";
+    assert.match(
+      avatarTemplateAssets,
+      new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/${registryBasePath}\\.png`),
+    );
     const size = readPngSize(
       join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", templateId, "base.png"),
     );
@@ -811,7 +862,8 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(verifier, /templateAccessories/);
   assert.match(verifier, /templateEmotes/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, 12 Avatar Studio template preview thumbnails, the full 12-template base still pack, the first shepherd accessory overlay PNG pack, the first shepherd 10-state emote still pack, and the Retriever, Husky\/Spitz, and Bully 10-state template emote packs now exist locally/);
+  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, Option B hard-pixel source frames plus common happy\/walk proof strips/);
+  assert.match(blockers, /12 Avatar Studio template preview thumbnails, the full 12-template base still pack, the first shepherd accessory overlay PNG pack, the first shepherd 10-state emote still pack, and the Retriever, Husky\/Spitz, and Bully 10-state template emote packs now exist locally/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
 

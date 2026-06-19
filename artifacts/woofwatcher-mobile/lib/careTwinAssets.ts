@@ -53,8 +53,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "tail-wag": {
-    source: bundledAsset("assets/avatar/phoenix/tail-wag-strip.png", () =>
-      require("@/assets/avatar/phoenix/tail-wag-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png", () =>
+      require("@/assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -71,10 +71,10 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "walk-loop": {
-    source: bundledAsset("assets/avatar/phoenix/walk-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/walk-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png"),
     ),
-    columns: 10,
+    columns: 8,
     rows: 1,
     frameWidth: 256,
     frameHeight: 256,

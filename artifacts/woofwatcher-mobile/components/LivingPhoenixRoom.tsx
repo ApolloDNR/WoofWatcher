@@ -53,9 +53,9 @@ const STATE_SCENES: Record<Mood, ImageSourcePropType> = {
 };
 
 const PHOENIX_FALLBACK_AVATARS: Record<Mood, ImageSourcePropType> = {
-  happy: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2.png"),
+  happy: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2-crisp.png"),
   excited: require("@/assets/avatar/phoenix/approved/phoenix-proud-happy-v2.png"),
-  calm: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2.png"),
+  calm: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2-crisp.png"),
   anxious: require("@/assets/avatar/phoenix/approved/phoenix-home-alone-anxious-v2.png"),
   unwell: require("@/assets/avatar/phoenix/approved/phoenix-sleep-rest-v2.png"),
 };

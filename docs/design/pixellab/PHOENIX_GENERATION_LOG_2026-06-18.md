@@ -201,6 +201,30 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/phoenix-main-head-v2.png`
 - Status: wired into app defaults and Avatar Studio head/icon surfaces
 
+### Option B Hard-Pixel Redesign Review Pack
+
+- Date: 2026-06-18
+- Phase: Option B visual correction / next Phoenix identity source
+- Operator: Codex
+- PixelLab tool: `create_1_direction_object`, then `select_object_frames`
+- Review object ID: `28564860-9f83-48d7-9a30-23e0f157d68e`
+- Cost: 25 generations
+- Prompt target: crisp Option B WoofWatcher Phoenix mascot, German Shepherd / Belgian Shepherd mix, sage bandana, copper heart tag, navy outline, hard pixel clusters, transparent background, not painterly and not a soft portrait.
+- Selected frames: `0` and `1`
+- Selected object IDs:
+  - seated source: `83b452c4-4321-4a86-830f-8ef337798cee`
+  - standing source: `4646c92b-753f-4fe7-8837-c7e9d1b82eef`
+- Local files:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-seated.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-standing.png`
+- Animation jobs:
+  - seated idle/tail-wag group `29653c52-e674-44a6-a060-47de53639c43`, animation `e8ee095e-7cff-45b6-85c8-0b68d07b339e`
+  - standing walk-loop group `d943ef3e-8833-4149-82d7-0782ab094c4a`, animation `957f02db-170c-458e-ad3e-85101c7b93cd`
+- Local proof strips:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png`
+- Status: selected, downloaded, normalized into 8-frame 256px-slot proof strips, and wired into the common happy/tail-wag and walk runtime assets. The remaining v2 action family stays live until matching Option B sleep, comfort, health-watch, eat, drink, ear-perk, and celebration strips exist.
+
 ### V2 State Assets
 
 - Sleep/rest object ID: `5ff99e4b-b2ca-4a4f-96b3-8da9a661c367`

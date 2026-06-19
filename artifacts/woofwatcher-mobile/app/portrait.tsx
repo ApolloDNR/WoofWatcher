@@ -66,7 +66,7 @@ import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
 const DISPLAY = "Fredoka_700Bold";
 const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day.png");
-const PIXEL_HEAD_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main-head-v2.png");
+const PIXEL_HEAD_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main-head-v2-crisp.png");
 
 type Phase = "idle" | "working" | "result";
 type StudioTab = "scan" | "template" | "customize" | "emotes";
@@ -267,7 +267,8 @@ export default function PortraitScreen() {
   );
   const selectedTemplateBase = getAvatarTemplateBaseSource(draft.templateId);
   const selectedTemplateEmote = getAvatarTemplateEmoteSource(draft.templateId, previewEmote);
-  const selectedTemplateCardSource = selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
+  const selectedTemplateStillSource = selectedTemplateEmote ?? selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
+  const selectedTemplateCardSource = selectedTemplateEmote ?? selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
   const previewAccessories = useMemo(() => deriveAvatarPreviewAccessories(draft), [draft]);
   const previewAccessoryLayers = useMemo(
     () =>
@@ -398,11 +399,7 @@ export default function PortraitScreen() {
 
         {phase === "working" ? (
           <BoardCard padded={false} style={[s.canvasCard, { borderColor: colors.border }]}>
-            {sourceUri ? (
-              <Image source={{ uri: sourceUri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
-            ) : (
-              <Image source={PIXEL_ROOM_SOURCE} style={[StyleSheet.absoluteFill, pixelImageStyle]} contentFit="cover" transition={220} />
-            )}
+            <Image source={PIXEL_ROOM_SOURCE} style={[StyleSheet.absoluteFill, pixelImageStyle]} contentFit="cover" transition={220} />
             <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(8,26,42,0.44)" }]} />
             <Animated.View style={[s.scanBand, { transform: [{ translateY: scanTranslate }] }]}>
               <LinearGradient
@@ -419,6 +416,19 @@ export default function PortraitScreen() {
             </Animated.View>
             <View style={s.workingCopy}>
               <BoardPill label="Scan assist mock" icon="scan-outline" tone={colors.amber} active />
+              {sourceUri ? (
+                <View style={[s.sourceProofCard, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.copper }]}>
+                  <Image source={{ uri: sourceUri }} style={s.sourceProofImage} contentFit="cover" transition={160} />
+                  <View style={s.sourceProofCopy}>
+                    <Text style={[s.sourceProofKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                      PHOTO REFERENCE
+                    </Text>
+                    <Text style={[s.sourceProofText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                      Building a pixel twin, not using the photo as the avatar.
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
               <Text style={[s.workingText, { color: "#FFF9EF", fontFamily: DISPLAY }]}>{SCAN_LINES[scanLine]}</Text>
               <Text style={[s.workingHint, { color: "rgba(255,249,239,0.82)", fontFamily: "Inter_600SemiBold" }]}>
                 This suggests traits only. You approve the final avatar.
@@ -470,7 +480,7 @@ export default function PortraitScreen() {
                     ]}
                   >
                     <Image
-                      source={selectedTemplateBase}
+                      source={selectedTemplateStillSource}
                       style={[s.templateHeroDog, pixelImageStyle, previewIsSprite ? s.templateHeroDogGhost : null]}
                       contentFit="contain"
                       transition={180}
@@ -483,13 +493,6 @@ export default function PortraitScreen() {
                         height={HERO_TEMPLATE_SPRITE_SIZE}
                         style={s.templateHeroSprite}
                         testID="avatar-studio-live-sprite-preview"
-                      />
-                    ) : selectedTemplateEmote ? (
-                      <Image
-                        source={selectedTemplateEmote}
-                        style={[s.templateHeroDog, pixelImageStyle]}
-                        contentFit="contain"
-                        transition={180}
                       />
                     ) : null}
                     {previewAccessoryLayers.map((layer) => {
@@ -1012,6 +1015,37 @@ const s = StyleSheet.create({
     right: 18,
     bottom: 18,
     gap: 8,
+  },
+  sourceProofCard: {
+    minHeight: 70,
+    borderRadius: 4,
+    borderWidth: 2,
+    padding: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#081424",
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  sourceProofImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 3,
+  },
+  sourceProofCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  sourceProofKicker: {
+    fontSize: 8.5,
+    letterSpacing: 0.8,
+  },
+  sourceProofText: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   workingText: { fontSize: 25, lineHeight: 30 },
   workingHint: { fontSize: 13, lineHeight: 18 },

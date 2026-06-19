@@ -29,6 +29,8 @@ Current design read: Candidate D is better than A/B/C as a small directional spr
 
 V2 update: Apollo added a PixelLab subscription and the new selected main-avatar seed is `phoenix-main-avatar-v2.png`, generated from PixelLab object `4f318d58-7166-4b0a-b202-2896eed1e0dc`. The app now uses the v2 approved still pack for default avatar surfaces and has a full registered layered sprite manifest plus first-pass dogless room variants.
 
+Option B source update: Apollo re-confirmed the avatar should match the hard-pixel Neo Retro Digital Pet boards more closely. PixelLab review object `28564860-9f83-48d7-9a30-23e0f157d68e` produced two selected source frames now archived locally as `assets/avatar/phoenix/candidates/option-b-seated.png` from object `83b452c4-4321-4a86-830f-8ef337798cee` and `assets/avatar/phoenix/candidates/option-b-standing.png` from object `4646c92b-753f-4fe7-8837-c7e9d1b82eef`. The first normalized proof strips, `assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png` and `assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png`, are now wired into the common happy/tail-wag and walk runtime states. The remaining v2 sprite family should stay for actions without a matching Option B strip.
+
 Subscription seed strip update: the PixelLab character `f0c6169b-88c0-4428-9089-31c0565c4129` now has verified local animation seed strips at `assets/avatar/phoenix/pixellab-idle-south-strip.png` and `assets/avatar/phoenix/pixellab-walk-south-strip.png`. These are movement-review assets, not the approved Home replacement yet.
 
 Subscription tap-reaction update: the same PixelLab character now has a verified local bark reaction strip at `assets/avatar/phoenix/pixellab-bark-south-strip.png`. This is wired as a momentary room-tap reaction so the main care twin briefly barks without introducing a second avatar.
@@ -312,6 +314,7 @@ These are seed rotations, not final main-avatar assets and not final animation s
 Next required asset pass:
 
 - Improve or upscale the v2 seated Phoenix main avatar if Apollo wants an even closer board-05/06 match.
+- Continue the full Option B Phoenix animation proof from `option-b-seated.png` and `option-b-standing.png`; happy/tail-wag and walk are locally wired, while sleep, comfort/home-alone, health-watch, eat, drink, ear-perk, and celebration still need coherent Option B replacements.
 - Replace the first-pass derived room variants with final illustrated dark/night, bedtime, health-watch, and home-alone scenes.
 - Inspect and improve any action strip that does not read strongly enough at phone size, especially walk/eat/drink where future prop layers can make the action clearer.
 - Inspect the subscription seed idle/walk strips in native/mobile preview before deciding whether they should replace or supplement the current approved seated sprite family.

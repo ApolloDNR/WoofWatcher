@@ -50,7 +50,8 @@ test("registers finished PixelLab sprite strips and a dogless room layer", () =>
     "night",
   ]);
   assert.equal(getCareTwinSpriteAsset("tail-wag")?.frameWidth, 256);
-  assert.equal(getCareTwinSpriteAsset("walk-loop")?.columns, 10);
+  assert.equal(getCareTwinSpriteAsset("tail-wag")?.columns, 8);
+  assert.equal(getCareTwinSpriteAsset("walk-loop")?.columns, 8);
   assert.equal(getCareTwinSpriteAsset("ear-perk")?.columns, 6);
   assert.equal(getCareTwinRoomLayer("happy")?.description.includes("Dogless"), true);
 });
