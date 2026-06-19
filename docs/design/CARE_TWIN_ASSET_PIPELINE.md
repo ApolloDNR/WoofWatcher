@@ -88,12 +88,10 @@ The room should match the current board style: warm interior, window/patio depth
 Create at least a day room and dark/night room so the Home and dark-mode/supporting-page looks can share the same care-twin identity without duplicate dogs.
 
 2026-06-19 room status: day is live, and PixelLab final-candidate night,
-health-watch, and home-alone rooms are now wired as dogless 800x600 runtime
-layers. Bedtime remains the only first-pass derived room variant and needs a
-clean final PixelLab/Figma-quality replacement before store polish. Rejected
-PixelLab attempts included isometric drift, baked-in dogs, visible text, and
-watermark-like marks; do not register future rooms until they pass those visual
-checks.
+bedtime, health-watch, and home-alone rooms are now wired as dogless 800x600
+runtime layers. Rejected PixelLab attempts included isometric drift, baked-in
+dogs, visible text, and watermark-like marks; do not register future rooms
+until they pass those visual checks.
 
 ### 3. Phoenix Sprite Strips
 

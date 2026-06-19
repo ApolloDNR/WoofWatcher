@@ -760,15 +760,18 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
 - PixelLab tool: `create_map_object`.
 - Accepted map object IDs:
   - Night: `ee1156d6-0ff6-495d-9e3b-847a86f0cd5b`
+  - Bedtime: `f5b8dc3d-e034-41f4-b9f7-f988166e9fb0`
   - Health Watch: `be27ec74-b390-47f2-9c32-9a690a7e3b38`
   - Home Alone: `762d57a1-ea40-4d92-b7c2-ac8b7d897e73`
 - Local source assets:
   - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-night-pixellab-source.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-bedtime-pixellab-source.png`
   - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-health-watch-pixellab-source.png`
   - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-home-alone-pixellab-source.png`
   - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-day-dogless-style-source-192.png`
 - Runtime assets:
   - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-night.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-bedtime.png`
   - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-health-watch.png`
   - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-home-alone.png`
 - Rejected attempts:
@@ -776,4 +779,4 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - Home-alone attempts with baked-in dogs or watermark-like marks were rejected.
   - Night attempts with baked-in dogs were rejected.
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
-- Status: night, health-watch, and home-alone final candidates are downloaded, visually checked, normalized to 800x600 nearest-neighbor runtime layers, and wired through existing `careTwinAssets.ts` filenames. Bedtime remains the only first-pass derived room variant pending a clean dogless final candidate.
+- Status: night, bedtime, health-watch, and home-alone final candidates are downloaded, visually checked, normalized to 800x600 nearest-neighbor runtime layers, and wired through existing `careTwinAssets.ts` filenames. This completes replacement of the first-pass derived state room variants; native phone-size QA still needs to approve room/sprite proportions and stage cropping.

@@ -879,7 +879,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(verifier, /templateAccessories/);
   assert.match(verifier, /templateEmotes/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, PixelLab final-candidate night\/health-watch\/home-alone rooms, the full current Option B hard-pixel Phoenix runtime candidate family/);
+  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, PixelLab final-candidate night\/bedtime\/health-watch\/home-alone rooms, the full current Option B hard-pixel Phoenix runtime candidate family/);
   assert.match(blockers, /12 Avatar Studio template preview thumbnails, the full 12-template base still pack, the first shepherd accessory overlay PNG pack, the first shepherd 10-state emote still pack, and the Retriever, Husky\/Spitz, and Bully 10-state template emote packs now exist locally/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });

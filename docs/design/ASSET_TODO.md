@@ -315,7 +315,7 @@ Next required asset pass:
 
 - Improve or upscale the v2 seated Phoenix main avatar if Apollo wants an even closer board-05/06 match.
 - Run native phone-size QA on the wired Option B Phoenix family and decide which loops need refinement before final approved-path promotion.
-- Replace the remaining first-pass derived bedtime room variant with a final illustrated scene. The 2026-06-19 PixelLab room pass accepted and wired final-candidate dogless night, health-watch, and home-alone scenes.
+- Run native phone-size QA on the full dogless room set. The 2026-06-19 PixelLab room pass accepted and wired final-candidate dogless night, bedtime, health-watch, and home-alone scenes.
 - Inspect and improve any action strip that does not read strongly enough at phone size, especially walk/eat/drink where future prop layers can make the action clearer.
 - Inspect the subscription seed idle/walk strips in native/mobile preview before deciding whether they should replace or supplement the current approved seated sprite family.
 - Derive the dark-mode, badge/logo refinements, running footer sprite, true overlay-aligned accessory layers, remaining unfinished template emote packs, and any refined gait loops from the approved identity system instead of generating unrelated one-off dogs.
@@ -342,7 +342,7 @@ Sprite pipeline rule: start from one approved in-game Phoenix seed frame, genera
 
 The current Home runtime now supports true layered sprite animation. It uses a dogless room layer plus transparent Phoenix strips for finished actions. For the full video-game feel, the app still needs the remaining production assets with separated layers:
 
-- Final illustrated dogless bedtime room background to replace the remaining first-pass derived variant. Night, health watch, and home-alone are now PixelLab final candidates and still need native phone-size approval.
+- Native phone-size approval for the full PixelLab final-candidate room set: night, bedtime, health watch, and home-alone.
 - Optional improved Phoenix loops and prop layers for walk, eating, drinking, anxious glance, low-energy/health watch, proud celebration, and home-alone waiting after runtime/device QA.
 - Optional foreground props such as bowl, rug, bed, window, door, toy, and sparkle layers.
 

@@ -1035,14 +1035,13 @@ Revisit trigger: Apollo rejects an Option B loop in phone-size QA, or a stronger
 
 ### 2026-06-19: Room Variants Must Stay Dogless Even When PixelLab Adds More Detail
 
-Decision: The live care-twin stage may graduate PixelLab room variants only when the room is dogless, text-free, watermark-free, and keeps an open center area for the animated Phoenix layer. The 2026-06-19 pass accepted night, health-watch, and home-alone final candidates and kept bedtime on the older derived variant until a clean final room exists.
+Decision: The live care-twin stage may graduate PixelLab room variants only when the room is dogless, text-free, watermark-free, and keeps an open center area for the animated Phoenix layer. The 2026-06-19 pass accepted night, bedtime, health-watch, and home-alone final candidates.
 
 Reason: WoofWatcher's game feel depends on one living care twin, not a baked background dog plus an animated dog. Apollo explicitly rejected duplicate/ugly secondary avatar behavior, so richer room art cannot break the layered runtime contract.
 
 Consequences:
 
-- `phoenix-room-night.png`, `phoenix-room-health-watch.png`, and `phoenix-room-home-alone.png` are now PixelLab final-candidate runtime layers.
-- `phoenix-room-bedtime.png` remains a first-pass derived variant until a clean final dogless bedtime scene passes visual review.
+- `phoenix-room-night.png`, `phoenix-room-bedtime.png`, `phoenix-room-health-watch.png`, and `phoenix-room-home-alone.png` are now PixelLab final-candidate runtime layers.
 - Future room generations should be rejected if they contain dogs, readable text, watermark-like marks, or a perspective that makes the sprite stage feel disconnected.
 
 Owner: Codex.
