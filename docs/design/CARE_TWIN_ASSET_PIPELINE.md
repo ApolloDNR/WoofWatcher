@@ -27,7 +27,7 @@ PixelLab balance is no longer blocked:
 - PixelLab reported 1,856 generations remaining after the v2 seed, state pack, idle animation, tail-wag animation, sleep-loop animation, and first dogless room layer. Additional action strips were generated later in the same 2026-06-18 production pass.
 - Approved v2 seed object: `4f318d58-7166-4b0a-b202-2896eed1e0dc`.
 - Current next blocker: final visual approval and native runtime QA, not credits, MCP access, room file presence, or sprite file presence.
-- Avatar Studio's next family-dog wave now has repo-native partial packs too: Retriever, Husky, and Doodle each have file-backed accessory overlays plus mood stills, while sprite-strip promotion still remains the next asset step for those breeds.
+- Avatar Studio's next family-dog wave is now live as repo-native full packs: Retriever, Husky, and Doodle each have file-backed accessory overlays, the full mood still set, and generated preview strips, so the next asset step moves to the remaining launch breeds instead of finishing those three.
 
 ## Goal
 

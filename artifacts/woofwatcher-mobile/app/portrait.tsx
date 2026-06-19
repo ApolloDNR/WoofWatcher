@@ -55,6 +55,7 @@ import {
   getAvatarTemplateDisplaySource,
   getAvatarTemplateEmoteSource,
 } from "@/lib/avatarTemplateAssets";
+import { getAvatarTemplateSpriteAsset } from "@/lib/avatarTemplateSpriteAssets";
 import {
   getAvatarTemplateReadiness,
   isAvatarTemplateAccessoryLive,
@@ -62,7 +63,6 @@ import {
 } from "@/lib/avatarTemplateReadiness";
 import { getAvatarTemplatePack } from "@/lib/avatarTemplatePackManifest";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
-import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -284,7 +284,9 @@ export default function PortraitScreen() {
   const previewMood = useMemo(() => deriveAvatarPreviewMood(previewEmote), [previewEmote]);
   const previewMotion = useMemo(() => deriveAvatarPreviewMotion(draft.templateId, previewEmote), [draft.templateId, previewEmote]);
   const previewSpriteTrack = previewMotion.spriteAction ? CARE_TWIN_SPRITE_MANIFEST[previewMotion.spriteAction] : null;
-  const previewSpriteAsset = previewMotion.spriteAction ? getCareTwinSpriteAsset(previewMotion.spriteAction) : null;
+  const previewSpriteAsset = previewMotion.spriteAction
+    ? getAvatarTemplateSpriteAsset(draft.templateId, previewMotion.spriteAction)
+    : null;
   const avatarSummary = describeAvatarConfig(draft);
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
   const liveAccessoryLabels = useMemo(

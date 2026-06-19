@@ -515,6 +515,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarPreviewModel.ts"),
     "utf8",
   );
+  const avatarTemplateSprites = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateSpriteAssets.ts"),
+    "utf8",
+  );
   const avatarTemplateReadiness = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateReadiness.ts"),
     "utf8",
@@ -618,15 +622,18 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /previewEmote/);
   assert.match(avatarStudio, /SpriteSheetPlayer/);
   assert.match(avatarStudio, /CARE_TWIN_SPRITE_MANIFEST/);
-  assert.match(avatarStudio, /getCareTwinSpriteAsset/);
+  assert.match(avatarStudio, /getAvatarTemplateSpriteAsset/);
   assert.match(avatarStudio, /avatar-studio-live-sprite-preview/);
-  assert.match(avatarTemplateReadiness, /Animated Phoenix pack/);
+  assert.match(avatarTemplateReadiness, /Animated care twin pack/);
   assert.match(avatarTemplateReadiness, /Starter still preview/);
   assert.match(avatarTemplateReadiness, /Animated pack ready/);
   assert.match(avatarTemplateReadiness, /Art pack in progress/);
   assert.match(avatarTemplateReadiness, /Base art live/);
   assert.match(avatarTemplateReadiness, /Production overlays pending/);
   assert.match(avatarTemplateReadiness, /Production moods pending/);
+  assert.match(avatarTemplateSprites, /getAvatarTemplateSpriteAsset/);
+  assert.match(avatarTemplateSprites, /listAvatarTemplateSpriteSlots/);
+  assert.match(avatarTemplateSprites, /assets\/avatar\/templates\/retriever\/sprites\/tail-wag-strip\.png/);
   assert.match(avatarStudio, /templateReadiness\.stageLabel/);
   assert.match(avatarStudio, /templateReadiness\.stageDetail/);
   assert.match(avatarStudio, /Live art ready/);
@@ -645,11 +652,11 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /Moods landing next/);
   assert.match(avatarStudio, /This template stays on truthful still previews until its emote pack and animation strips are produced\./);
   assert.match(avatarStudio, /Preview \$\{emoteLabel\(emote\)\} mood/);
-  assert.match(avatarTemplatePackManifest, /retriever[\s\S]*productionFocus: "next"/);
-  assert.match(avatarTemplatePackManifest, /husky[\s\S]*productionFocus: "next"/);
-  assert.match(avatarTemplatePackManifest, /doodle[\s\S]*productionFocus: "next"/);
-  assert.match(avatarTemplatePackManifest, /focusLabel: "Partial pack live"/);
-  assert.match(avatarTemplatePackManifest, /focusLabel: "Queued after family-dog wave"/);
+  assert.match(avatarTemplatePackManifest, /retriever[\s\S]*productionFocus: "live"/);
+  assert.match(avatarTemplatePackManifest, /husky[\s\S]*productionFocus: "live"/);
+  assert.match(avatarTemplatePackManifest, /doodle[\s\S]*productionFocus: "live"/);
+  assert.match(avatarTemplatePackManifest, /focusLabel: "Animated family pack live"/);
+  assert.match(avatarTemplatePackManifest, /focusLabel: "Queued for the next wave"/);
   for (const templateId of templateIds) {
     assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));
     const size = readPngSize(

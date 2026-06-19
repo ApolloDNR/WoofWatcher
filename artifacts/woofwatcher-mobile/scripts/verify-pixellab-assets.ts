@@ -44,6 +44,18 @@ const templateAccessories = templateEntries.flatMap((entry) =>
 const templateEmotes = templateEntries.flatMap((entry) =>
   entry.liveEmoteIds.map((emoteId) => [entry.templateId, emoteId] as const),
 );
+const templateSpriteActions: [string, number, number, number][] = [
+  ["tail-wag-strip.png", 8, 256, 256],
+  ["ear-perk-strip.png", 6, 256, 256],
+  ["eat-loop-strip.png", 8, 256, 256],
+  ["sleep-loop-strip.png", 8, 256, 256],
+  ["comfort-loop-strip.png", 8, 256, 256],
+  ["celebrate-hop-strip.png", 8, 256, 256],
+  ["health-watch-strip.png", 8, 256, 256],
+];
+const templateSprites = templateEntries
+  .filter((entry) => entry.hasAnimatedPreview && entry.templateId !== "shepherd")
+  .flatMap((entry) => templateSpriteActions.map((sprite) => [entry.templateId, ...sprite] as const));
 
 function readPngSize(file: string) {
   const buffer = fs.readFileSync(file);
@@ -155,6 +167,30 @@ function checkTemplateEmote([templateId, emoteId]: readonly [string, string]) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
+function checkTemplateSprite([
+  templateId,
+  fileName,
+  frames,
+  frameWidth,
+  frameHeight,
+]: readonly [string, string, number, number, number]) {
+  const file = path.join(templateDir, templateId, "sprites", fileName);
+  if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
+
+  const size = readPngSize(file);
+  const expectedWidth = frames * frameWidth;
+  const expectedHeight = frameHeight;
+  if (size.width !== expectedWidth || size.height !== expectedHeight) {
+    return {
+      type: "invalid",
+      file: path.relative(root, file),
+      message: `expected ${expectedWidth}x${expectedHeight}, got ${size.width}x${size.height}`,
+    };
+  }
+
+  return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
+}
+
 const results = [
   ...sprites.map(checkSprite),
   ...rooms.map(checkRoom),
@@ -162,6 +198,7 @@ const results = [
   ...templateBases.map(checkTemplateBase),
   ...templateAccessories.map(checkTemplateAccessory),
   ...templateEmotes.map(checkTemplateEmote),
+  ...templateSprites.map(checkTemplateSprite),
 ];
 const missing = results.filter((result) => result.type === "missing");
 const invalid = results.filter((result) => result.type === "invalid");

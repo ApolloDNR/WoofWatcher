@@ -10,12 +10,12 @@ Run focused behavior tests:
 
 CI must pass `WoofWatcher Verify` on `main`.
 
-Latest local evidence, 2026-06-18:
+Latest local evidence, 2026-06-19:
 
-- PASS: 231 focused tests with the command above.
-- PASS: PixelLab asset verifier now checks 101 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
-- PASS: focused Avatar Studio readiness and mobile static QA now verify pack-stage labels plus live-vs-pending accessory and mood states.
-- PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the partial Retriever/Husky/Doodle packs, and the PixelLab verifier to one source of truth.
+- PASS: 234 focused tests with the command above.
+- PASS: PixelLab asset verifier now checks 137 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
+- PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
+- PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated Retriever/Husky/Doodle family packs, and the PixelLab verifier to one source of truth.
 - LIMIT: mobile TypeScript could not run in this checkout because `node_modules/typescript` is missing (`tsc-missing`).
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` is currently blocked before job start by the account billing/spending-limit issue documented in `docs/BLOCKERS_FOR_APOLLO.md`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 

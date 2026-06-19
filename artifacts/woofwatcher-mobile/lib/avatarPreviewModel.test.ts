@@ -64,14 +64,14 @@ test("uses the live Phoenix sprite pack for shepherd mood previews", () => {
   const motion = deriveAvatarPreviewMotion("shepherd", "excited");
 
   assert.equal(motion.mode, "sprite");
-  assert.equal(motion.label, "Animated Phoenix pack");
+  assert.equal(motion.label, "Animated care twin pack");
   assert.equal(motion.spriteAction, "celebrate-hop");
 });
 
-test("keeps unfinished templates on truthful still previews", () => {
+test("uses the animated family pack for retriever mood previews", () => {
   const motion = deriveAvatarPreviewMotion("retriever", "calm");
 
-  assert.equal(motion.mode, "still");
-  assert.equal(motion.label, "Starter still preview");
-  assert.equal(motion.spriteAction, null);
+  assert.equal(motion.mode, "sprite");
+  assert.equal(motion.label, "Animated care twin pack");
+  assert.equal(motion.spriteAction, "tail-wag");
 });

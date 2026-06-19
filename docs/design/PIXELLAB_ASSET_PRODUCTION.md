@@ -199,7 +199,7 @@ Retriever, Husky, and Doodle now also have a truthful partial-pack seam in the r
 - file-backed accessory overlays for `forest-bandana`, `trail-bandana`, `navy-collar`, `copper-collar`, `heart-tag`, `birthday-hat`, `cozy-bed`, and `heart-sparkles`
 - file-backed mood stills for `happy`, `calm`, `excited`, `sleepy`, `proud`, `home_alone`, and `not_feeling_well`
 
-These partial packs are intentionally not animated. Avatar Studio labels them `Art pack in progress` until sprite strips exist.
+Those first partial packs have now been promoted to full family packs in the repo: Retriever, Husky, and Doodle each have the complete overlay set, the full mood still set, and generated animated preview strips. Use the same contract for the remaining launch breeds rather than reopening a partial-only state for these three.
 
 ### Phase 5 - Dogless Rooms
 

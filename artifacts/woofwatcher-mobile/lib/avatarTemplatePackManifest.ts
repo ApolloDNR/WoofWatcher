@@ -23,7 +23,20 @@ const SHEPHERD_ACCESSORY_IDS = [
   "heart-sparkles",
 ] as const;
 
-const SHEPHERD_EMOTE_IDS = [
+const FULL_FAMILY_WAVE_ACCESSORY_IDS = [
+  "forest-bandana",
+  "navy-collar",
+  "copper-collar",
+  "heart-tag",
+  "trail-bandana",
+  "birthday-hat",
+  "sleepy-mask",
+  "training-vest",
+  "cozy-bed",
+  "heart-sparkles",
+] as const;
+
+const FULL_EMOTE_IDS = [
   "happy",
   "calm",
   "excited",
@@ -36,57 +49,36 @@ const SHEPHERD_EMOTE_IDS = [
   "not_feeling_well",
 ] as const satisfies readonly AvatarEmoteState[];
 
-const NEXT_WAVE_ACCESSORY_IDS = [
-  "forest-bandana",
-  "trail-bandana",
-  "navy-collar",
-  "copper-collar",
-  "heart-tag",
-  "birthday-hat",
-  "cozy-bed",
-  "heart-sparkles",
-] as const;
-
-const NEXT_WAVE_EMOTE_IDS = [
-  "happy",
-  "calm",
-  "excited",
-  "sleepy",
-  "proud",
-  "home_alone",
-  "not_feeling_well",
-] as const satisfies readonly AvatarEmoteState[];
-
 export const AVATAR_TEMPLATE_PACK_MANIFEST = {
   shepherd: {
     templateId: "shepherd",
     hasBaseArt: true,
     liveAccessoryIds: [...SHEPHERD_ACCESSORY_IDS],
-    liveEmoteIds: [...SHEPHERD_EMOTE_IDS],
+    liveEmoteIds: [...FULL_EMOTE_IDS],
     hasAnimatedPreview: true,
     productionFocus: "live",
     focusLabel: "Live Phoenix pack",
-    focusDetail: "The shepherd pack is the production benchmark with live overlays, moods, and sprite preview.",
+    focusDetail: "The shepherd pack remains the benchmark care twin with live overlays, moods, and the original Phoenix sprite preview.",
   },
   retriever: {
     templateId: "retriever",
     hasBaseArt: true,
-    liveAccessoryIds: [...NEXT_WAVE_ACCESSORY_IDS],
-    liveEmoteIds: [...NEXT_WAVE_EMOTE_IDS],
-    hasAnimatedPreview: false,
-    productionFocus: "next",
-    focusLabel: "Partial pack live",
-    focusDetail: "Retriever now has file-backed overlays and mood stills; animated sprite strips are the next promotion step.",
+    liveAccessoryIds: [...FULL_FAMILY_WAVE_ACCESSORY_IDS],
+    liveEmoteIds: [...FULL_EMOTE_IDS],
+    hasAnimatedPreview: true,
+    productionFocus: "live",
+    focusLabel: "Animated family pack live",
+    focusDetail: "Retriever now has the full family-pack contract: live overlays, all mood stills, and generated template strips for animated preview.",
   },
   husky: {
     templateId: "husky",
     hasBaseArt: true,
-    liveAccessoryIds: [...NEXT_WAVE_ACCESSORY_IDS],
-    liveEmoteIds: [...NEXT_WAVE_EMOTE_IDS],
-    hasAnimatedPreview: false,
-    productionFocus: "next",
-    focusLabel: "Partial pack live",
-    focusDetail: "Husky now has file-backed overlays and mood stills; tail and full animated strip clearance still need the next pass.",
+    liveAccessoryIds: [...FULL_FAMILY_WAVE_ACCESSORY_IDS],
+    liveEmoteIds: [...FULL_EMOTE_IDS],
+    hasAnimatedPreview: true,
+    productionFocus: "live",
+    focusLabel: "Animated family pack live",
+    focusDetail: "Husky now has live overlays, the full mood set, and template animation strips so preview motion no longer falls back to still-only review.",
   },
   bully: {
     templateId: "bully",
@@ -95,18 +87,18 @@ export const AVATAR_TEMPLATE_PACK_MANIFEST = {
     liveEmoteIds: [],
     hasAnimatedPreview: false,
     productionFocus: "queued",
-    focusLabel: "Queued after family-dog wave",
-    focusDetail: "Bully keeps truthful base art now while the next live packs focus on the three highest-demand family-dog templates.",
+    focusLabel: "Queued for the next wave",
+    focusDetail: "Bully keeps truthful base art now while the next production pass moves beyond the finished family-dog animated packs.",
   },
   doodle: {
     templateId: "doodle",
     hasBaseArt: true,
-    liveAccessoryIds: [...NEXT_WAVE_ACCESSORY_IDS],
-    liveEmoteIds: [...NEXT_WAVE_EMOTE_IDS],
-    hasAnimatedPreview: false,
-    productionFocus: "next",
-    focusLabel: "Partial pack live",
-    focusDetail: "Doodle now has file-backed overlays and mood stills; animated curls and motion strips are still the next pack step.",
+    liveAccessoryIds: [...FULL_FAMILY_WAVE_ACCESSORY_IDS],
+    liveEmoteIds: [...FULL_EMOTE_IDS],
+    hasAnimatedPreview: true,
+    productionFocus: "live",
+    focusLabel: "Animated family pack live",
+    focusDetail: "Doodle now has live overlays, the full mood set, and generated template strips that keep the curly body class animated in preview.",
   },
   terrier: {
     templateId: "terrier",
@@ -115,8 +107,8 @@ export const AVATAR_TEMPLATE_PACK_MANIFEST = {
     liveEmoteIds: [],
     hasAnimatedPreview: false,
     productionFocus: "queued",
-    focusLabel: "Queued after family-dog wave",
-    focusDetail: "Terrier stays on base art until the next family-dog packs land and the pack queue opens for smaller body classes.",
+    focusLabel: "Queued for the next wave",
+    focusDetail: "Terrier stays on base art until the next live pack pass opens for smaller body classes after the family-dog promotion.",
   },
   hound: {
     templateId: "hound",
@@ -125,8 +117,8 @@ export const AVATAR_TEMPLATE_PACK_MANIFEST = {
     liveEmoteIds: [],
     hasAnimatedPreview: false,
     productionFocus: "queued",
-    focusLabel: "Queued after family-dog wave",
-    focusDetail: "Hound remains base-art ready while the next production sprint finishes the family-dog launch templates first.",
+    focusLabel: "Queued for the next wave",
+    focusDetail: "Hound remains base-art ready while the next production sprint moves from the family-dog trio into the rest of launch breeds.",
   },
   dachshund: {
     templateId: "dachshund",
@@ -135,8 +127,8 @@ export const AVATAR_TEMPLATE_PACK_MANIFEST = {
     liveEmoteIds: [],
     hasAnimatedPreview: false,
     productionFocus: "queued",
-    focusLabel: "Queued after family-dog wave",
-    focusDetail: "Dachshund needs a dedicated long-body animation pass, so it stays queued after the current family-dog pack targets.",
+    focusLabel: "Queued for the next wave",
+    focusDetail: "Dachshund needs its own long-body strip pass, so it stays queued after the first animated family packs land.",
   },
   spaniel: {
     templateId: "spaniel",
@@ -145,8 +137,8 @@ export const AVATAR_TEMPLATE_PACK_MANIFEST = {
     liveEmoteIds: [],
     hasAnimatedPreview: false,
     productionFocus: "queued",
-    focusLabel: "Queued after family-dog wave",
-    focusDetail: "Spaniel remains truthful base art while the next live pack work stays focused on Retriever, Husky, and Doodle.",
+    focusLabel: "Queued for the next wave",
+    focusDetail: "Spaniel remains truthful base art while the next live pack work shifts to the remaining launch breeds after the family-dog promotion.",
   },
   toy: {
     templateId: "toy",
@@ -155,8 +147,8 @@ export const AVATAR_TEMPLATE_PACK_MANIFEST = {
     liveEmoteIds: [],
     hasAnimatedPreview: false,
     productionFocus: "queued",
-    focusLabel: "Queued after family-dog wave",
-    focusDetail: "Toy Breed keeps its base pose live now; production overlays and moods wait until the main family-dog pack wave is complete.",
+    focusLabel: "Queued for the next wave",
+    focusDetail: "Toy Breed keeps its base pose live now; production overlays, moods, and strips wait until the broader launch queue opens.",
   },
   slender: {
     templateId: "slender",
@@ -165,8 +157,8 @@ export const AVATAR_TEMPLATE_PACK_MANIFEST = {
     liveEmoteIds: [],
     hasAnimatedPreview: false,
     productionFocus: "queued",
-    focusLabel: "Queued after family-dog wave",
-    focusDetail: "Slender stays queued because its gait and accessory anchors need a separate motion pass after the next priority wave.",
+    focusLabel: "Queued for the next wave",
+    focusDetail: "Slender stays queued because its gait and accessory anchors still need a separate motion pass after the family-dog promotion.",
   },
   mixed: {
     templateId: "mixed",
@@ -175,8 +167,8 @@ export const AVATAR_TEMPLATE_PACK_MANIFEST = {
     liveEmoteIds: [],
     hasAnimatedPreview: false,
     productionFocus: "queued",
-    focusLabel: "Queued after family-dog wave",
-    focusDetail: "Mixed Breed remains a trustworthy base-only fallback until the highest-demand named packs have live overlays and moods.",
+    focusLabel: "Queued for the next wave",
+    focusDetail: "Mixed Breed remains a trustworthy base-only fallback until the remaining named launch packs receive live overlays, moods, and strips.",
   },
 } satisfies Record<AvatarTemplateId, AvatarTemplatePackManifestEntry>;
 

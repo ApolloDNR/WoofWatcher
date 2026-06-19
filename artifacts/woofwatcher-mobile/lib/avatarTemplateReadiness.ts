@@ -59,7 +59,7 @@ export function getAvatarTemplateReadiness(templateId: AvatarTemplateId): Avatar
     liveEmoteIds: liveEmoteList,
     pendingEmoteIds: pendingEmoteList,
     hasAnimatedPreview,
-    previewLabel: hasAnimatedPreview ? "Animated Phoenix pack" : "Starter still preview",
+    previewLabel: hasAnimatedPreview ? "Animated care twin pack" : "Starter still preview",
     stageLabel:
       packStage === "animated"
         ? "Animated pack ready"

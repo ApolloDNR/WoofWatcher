@@ -223,6 +223,16 @@ export const AVATAR_TEMPLATE_ACCESSORY_ASSETS: Partial<
       path: "assets/avatar/templates/retriever/accessories/birthday-hat.png",
       style: "pixellab-template-accessory",
     },
+    "sleepy-mask": {
+      source: require("@/assets/avatar/templates/retriever/accessories/sleepy-mask.png"),
+      path: "assets/avatar/templates/retriever/accessories/sleepy-mask.png",
+      style: "pixellab-template-accessory",
+    },
+    "training-vest": {
+      source: require("@/assets/avatar/templates/retriever/accessories/training-vest.png"),
+      path: "assets/avatar/templates/retriever/accessories/training-vest.png",
+      style: "pixellab-template-accessory",
+    },
     "cozy-bed": {
       source: require("@/assets/avatar/templates/retriever/accessories/cozy-bed.png"),
       path: "assets/avatar/templates/retriever/accessories/cozy-bed.png",
@@ -265,6 +275,16 @@ export const AVATAR_TEMPLATE_ACCESSORY_ASSETS: Partial<
       path: "assets/avatar/templates/husky/accessories/birthday-hat.png",
       style: "pixellab-template-accessory",
     },
+    "sleepy-mask": {
+      source: require("@/assets/avatar/templates/husky/accessories/sleepy-mask.png"),
+      path: "assets/avatar/templates/husky/accessories/sleepy-mask.png",
+      style: "pixellab-template-accessory",
+    },
+    "training-vest": {
+      source: require("@/assets/avatar/templates/husky/accessories/training-vest.png"),
+      path: "assets/avatar/templates/husky/accessories/training-vest.png",
+      style: "pixellab-template-accessory",
+    },
     "cozy-bed": {
       source: require("@/assets/avatar/templates/husky/accessories/cozy-bed.png"),
       path: "assets/avatar/templates/husky/accessories/cozy-bed.png",
@@ -305,6 +325,16 @@ export const AVATAR_TEMPLATE_ACCESSORY_ASSETS: Partial<
     "birthday-hat": {
       source: require("@/assets/avatar/templates/doodle/accessories/birthday-hat.png"),
       path: "assets/avatar/templates/doodle/accessories/birthday-hat.png",
+      style: "pixellab-template-accessory",
+    },
+    "sleepy-mask": {
+      source: require("@/assets/avatar/templates/doodle/accessories/sleepy-mask.png"),
+      path: "assets/avatar/templates/doodle/accessories/sleepy-mask.png",
+      style: "pixellab-template-accessory",
+    },
+    "training-vest": {
+      source: require("@/assets/avatar/templates/doodle/accessories/training-vest.png"),
+      path: "assets/avatar/templates/doodle/accessories/training-vest.png",
       style: "pixellab-template-accessory",
     },
     "cozy-bed": {
@@ -391,6 +421,21 @@ export const AVATAR_TEMPLATE_EMOTE_ASSETS: Partial<
       path: "assets/avatar/templates/retriever/emotes/excited.png",
       style: "pixellab-template-emote",
     },
+    bored: {
+      source: require("@/assets/avatar/templates/retriever/emotes/bored.png"),
+      path: "assets/avatar/templates/retriever/emotes/bored.png",
+      style: "pixellab-template-emote",
+    },
+    hungry: {
+      source: require("@/assets/avatar/templates/retriever/emotes/hungry.png"),
+      path: "assets/avatar/templates/retriever/emotes/hungry.png",
+      style: "pixellab-template-emote",
+    },
+    anxious: {
+      source: require("@/assets/avatar/templates/retriever/emotes/anxious.png"),
+      path: "assets/avatar/templates/retriever/emotes/anxious.png",
+      style: "pixellab-template-emote",
+    },
     sleepy: {
       source: require("@/assets/avatar/templates/retriever/emotes/sleepy.png"),
       path: "assets/avatar/templates/retriever/emotes/sleepy.png",
@@ -428,6 +473,21 @@ export const AVATAR_TEMPLATE_EMOTE_ASSETS: Partial<
       path: "assets/avatar/templates/husky/emotes/excited.png",
       style: "pixellab-template-emote",
     },
+    bored: {
+      source: require("@/assets/avatar/templates/husky/emotes/bored.png"),
+      path: "assets/avatar/templates/husky/emotes/bored.png",
+      style: "pixellab-template-emote",
+    },
+    hungry: {
+      source: require("@/assets/avatar/templates/husky/emotes/hungry.png"),
+      path: "assets/avatar/templates/husky/emotes/hungry.png",
+      style: "pixellab-template-emote",
+    },
+    anxious: {
+      source: require("@/assets/avatar/templates/husky/emotes/anxious.png"),
+      path: "assets/avatar/templates/husky/emotes/anxious.png",
+      style: "pixellab-template-emote",
+    },
     sleepy: {
       source: require("@/assets/avatar/templates/husky/emotes/sleepy.png"),
       path: "assets/avatar/templates/husky/emotes/sleepy.png",
@@ -463,6 +523,21 @@ export const AVATAR_TEMPLATE_EMOTE_ASSETS: Partial<
     excited: {
       source: require("@/assets/avatar/templates/doodle/emotes/excited.png"),
       path: "assets/avatar/templates/doodle/emotes/excited.png",
+      style: "pixellab-template-emote",
+    },
+    bored: {
+      source: require("@/assets/avatar/templates/doodle/emotes/bored.png"),
+      path: "assets/avatar/templates/doodle/emotes/bored.png",
+      style: "pixellab-template-emote",
+    },
+    hungry: {
+      source: require("@/assets/avatar/templates/doodle/emotes/hungry.png"),
+      path: "assets/avatar/templates/doodle/emotes/hungry.png",
+      style: "pixellab-template-emote",
+    },
+    anxious: {
+      source: require("@/assets/avatar/templates/doodle/emotes/anxious.png"),
+      path: "assets/avatar/templates/doodle/emotes/anxious.png",
       style: "pixellab-template-emote",
     },
     sleepy: {

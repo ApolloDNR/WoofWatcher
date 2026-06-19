@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-19: Family-Dog Templates Should Promote Straight From Partial Packs To Full Animated Packs
+
+Decision: Once Retriever, Husky, and Doodle had credible partial overlays and mood stills, WoofWatcher should finish their full family packs in one pass by adding the remaining overlay slots, the remaining mood stills, and generated preview strips together instead of introducing another long-lived half-ready state.
+
+Reason: Apollo has been explicit that WoofWatcher should not imply more production progress than actually exists. Finishing the family-dog trio in one coherent slice keeps the UI truthful, lets the verifier enforce one complete contract, and shifts the next queue step to the remaining launch breeds instead of keeping Retriever/Husky/Doodle stuck in `Art pack in progress`.
+
+Owner: Codex.
+
+Revisit trigger: Artist-provided breed strips replace the current generated preview-strip seam, or the remaining launch breeds need a different promotion path than the family-dog trio used.
+
 ### 2026-06-18: Family-Dog Templates Can Ship Truthful Partial Packs Before Animation
 
 Decision: Retriever, Husky, and Doodle may ship file-backed accessory overlays and mood stills before their animated sprite strips are ready, as long as Avatar Studio labels them `Art pack in progress` and keeps animated preview explicitly false.

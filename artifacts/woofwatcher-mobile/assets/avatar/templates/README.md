@@ -77,3 +77,12 @@ Rules:
 - `base.png` is the production-scale character still for Avatar Studio preview. It is not a walk/eat/sleep sprite strip.
 - Accessory overlays and emote stills should stay slot-compatible with the registered base pose for that template.
 - Live-pack status and next-pack priority now belong in `artifacts/woofwatcher-mobile/lib/avatarTemplatePackManifest.ts`. Update that manifest before changing Avatar Studio readiness copy or verifier expectations.
+
+Family-dog promotion generated: 2026-06-19
+Source basis: the registered `base.png` family-dog templates plus the repo-native pack generator in `artifacts/woofwatcher-mobile/scripts/generate-template-partial-packs.ps1`.
+
+Retriever, Husky, and Doodle now each include:
+
+- `accessories/` with the full 10-slot launch overlay set
+- `emotes/` with the full 10-state mood still set
+- `sprites/` with `tail-wag-strip.png`, `ear-perk-strip.png`, `eat-loop-strip.png`, `sleep-loop-strip.png`, `comfort-loop-strip.png`, `celebrate-hop-strip.png`, and `health-watch-strip.png`
