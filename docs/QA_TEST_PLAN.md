@@ -163,6 +163,12 @@ expected sprite action, dogless room variant, zone, scene phase, priority need,
 and layered readiness. The human device checklist lives in
 `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`.
 
+Current evidence, 2026-06-19: the mobile app now has a development/internal
+`/care-twin-qa` route that renders the full care-twin matrix with the production
+`LivingPhoenixRoom` component. More links to `Care Twin QA` only under
+`__DEV__`, and `mobileReadiness.test.ts` protects route registration, matrix
+usage, and the native QA prompt surface.
+
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.
 

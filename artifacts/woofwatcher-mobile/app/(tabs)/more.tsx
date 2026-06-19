@@ -512,6 +512,20 @@ export default function MoreScreen() {
         router.push("/portrait");
       },
     },
+    ...(__DEV__
+      ? [
+          {
+            icon: "star" as PulseIconName,
+            iconName: "phone-portrait-outline" as keyof typeof Ionicons.glyphMap,
+            label: "Care Twin QA",
+            sub: "Internal device review for Phoenix room states and sprite loops",
+            onPress: () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/care-twin-qa" as never);
+            },
+          },
+        ]
+      : []),
     {
       icon: "paw",
       iconName: "card",

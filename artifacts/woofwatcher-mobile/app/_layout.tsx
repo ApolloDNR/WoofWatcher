@@ -118,6 +118,14 @@ function RootLayoutNav() {
           headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
+      <Stack.Screen
+        name="care-twin-qa"
+        options={{
+          title: "Care Twin QA",
+          presentation: "card",
+          headerStyle: { backgroundColor: "#F7F5F1" },
+        }}
+      />
     </Stack>
   );
 }

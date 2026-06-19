@@ -43,7 +43,7 @@ test("registers the critical mobile routes and tabs", () => {
   const rootLayout = readAppFile("_layout.tsx");
   const tabLayout = readAppFile(join("(tabs)", "_layout.tsx"));
 
-  for (const route of ["portrait", "setup", "woofguide", "premium", "privacy"]) {
+  for (const route of ["portrait", "setup", "woofguide", "premium", "privacy", "care-twin-qa"]) {
     assert.match(rootLayout, new RegExp(`name="${route}"`), `${route} stack screen should be registered`);
     assert.ok(existsSync(join(APP_DIR, `${route}.tsx`)), `${route} route file should exist`);
   }
@@ -144,6 +144,22 @@ test("keeps critical mobile actions accessible to screen readers", () => {
   assert.match(more, /accessibilityLabel="Sign out of WoofWatcher"/);
 });
 
+test("registers the care twin native QA route for device review", () => {
+  const rootLayout = readAppFile("_layout.tsx");
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const qaRoute = readAppFile("care-twin-qa.tsx");
+
+  assert.match(rootLayout, /name="care-twin-qa"/);
+  assert.match(more, /router\.push\("\/care-twin-qa" as never\)/);
+  assert.match(more, /__DEV__/);
+  assert.match(qaRoute, /listCareTwinRuntimeQaScenarios/);
+  assert.match(qaRoute, /evaluateCareTwinRuntimeQaScenario/);
+  assert.match(qaRoute, /LivingPhoenixRoom/);
+  assert.match(qaRoute, /nativeQaPrompt/);
+  assert.match(qaRoute, /testID=\{`care-twin-qa-stage-\$\{result\.scenario\.id\}`\}/);
+  assert.match(qaRoute, /One care twin\. Twelve states\./);
+});
+
 test("shows premium entitlement policy before checkout is enabled", () => {
   const premium = readAppFile("premium.tsx");
 
@@ -236,7 +252,7 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(home, /Phoenix Room/);
   assert.match(home, /heroStudioButton/);
   assert.doesNotMatch(home, /avatarIdentityBar/);
-  assert.match(room, /<Text style=\{styles\.liveText\}>LIVE<\/Text>/);
+  assert.match(room, /<Text style=\{styles\.liveText\}>PHOENIX ROOM<\/Text>/);
   assert.match(room, /reactionProgress/);
   assert.match(room, /energyBlocks/);
   assert.match(room, /statusReadouts\?\.slice\(0, 4\)/);

@@ -7,6 +7,17 @@ Source of truth in code:
 - `artifacts/woofwatcher-mobile/lib/careTwinAssets.ts`
 - `CARE_TWIN_RUNTIME_QA_SCENARIOS`
 - `evaluateCareTwinRuntimeQaScenario`
+- `artifacts/woofwatcher-mobile/app/care-twin-qa.tsx`
+
+## In-App QA Route
+
+Open `/care-twin-qa` in a development or internal Expo build. The route renders
+all 12 matrix scenarios using the production `LivingPhoenixRoom` component, the
+registered dogless room layers, and the registered Phoenix sprite strips.
+
+The route is linked from More as `Care Twin QA` only in development builds, so
+it is available for Apollo/device testers without becoming normal user-facing
+product clutter.
 
 ## Purpose
 
@@ -43,11 +54,12 @@ For every scenario below:
 ## Pass Evidence To Capture
 
 - iPhone small viewport screenshot of Home idle.
-- iPhone small viewport screenshot of Health Watch state.
-- Android small viewport screenshot of bedtime/sleep state.
+- iPhone small viewport screenshot of `/care-twin-qa` happy idle.
+- iPhone small viewport screenshot of `/care-twin-qa` Health Watch state.
+- Android small viewport screenshot of `/care-twin-qa` bedtime/sleep state.
 - Avatar Studio screenshot with one live template selected.
 - Notes for any clipped sprite, weak gait, unreadable action, duplicate dog, or room/sprite scale mismatch.
 
 ## Current Limitation
 
-This Windows worktree can run static tests, TypeScript, PixelLab asset verification, and Expo web export. It cannot produce authoritative native simulator proof without iOS/Android runtime access.
+This Windows worktree can run static tests, TypeScript, PixelLab asset verification, and Expo web export. It now also ships an in-app QA route for device review, but it still cannot produce authoritative native simulator proof without iOS/Android runtime access.
