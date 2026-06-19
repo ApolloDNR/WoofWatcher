@@ -246,6 +246,42 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       },
     },
   },
+  spaniel: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Spaniel live idle",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png"),
+      ),
+      track: {
+        key: "spaniel:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Spaniel idle breathing with floppy-ear and tail motion.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Spaniel walk loop",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/spaniel/sprites/walk-loop-strip.png"),
+      ),
+      track: {
+        key: "spaniel:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/spaniel/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Spaniel side-view walking-in-place loop for live Avatar Studio preview.",
+      },
+    },
+  },
   terrier: {
     "idle-tail-wag": {
       action: "idle-tail-wag",

@@ -17,6 +17,7 @@ const LIVE_TEMPLATE_PACKS = new Set<AvatarTemplateId>([
   "hound",
   "husky",
   "retriever",
+  "spaniel",
   "terrier",
 ]);
 

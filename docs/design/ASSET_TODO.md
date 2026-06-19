@@ -249,6 +249,13 @@ Initial Dachshund live sprite strips are now wired as the first long-body animat
 
 The Dachshund walk strip uses a PixelLab side-view standing source created from the approved base template, so it keeps the long-body silhouette instead of trying to animate the front-facing base still.
 
+Initial Spaniel live sprite strips are now wired as a long-ear sporting-body animation pack, registered through `avatarTemplateSpriteAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered in `/portrait` when the selected template recommends Spaniel and the mood state maps to a live loop:
+
+- `assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png` - live, 2048x256, 8 frames, used for happy/calm/proud preview states.
+- `assets/avatar/templates/spaniel/sprites/walk-loop-strip.png` - live, 2048x256, 8 frames, used for excited/bored preview states.
+
+The Spaniel pack uses a PixelLab side-view standing source created from the approved front-facing base template, matching the preferred production pattern for seated/base catalog art.
+
 Initial accessory slots:
 
 - neck: forest bandana, navy collar, copper collar, heart tag, trail bandana. Status: transparent PixelLab 85x85 inventory icons live.

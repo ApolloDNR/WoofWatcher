@@ -385,7 +385,7 @@ Tightened the care-twin creator toward the Option B neo-retro digital pet boards
 Remaining visual work:
 
 - Capture native iOS/Android screenshots for final safe-area, animation pacing, and phone-size sprite proportion QA.
-- Continue PixelLab template sprite packs for Spaniel, Toy, Slender, and Mixed Breed.
+- Continue PixelLab template sprite packs for Toy, Slender, and Mixed Breed.
 - Add artist-reviewed overlay alignment for accessories so hats/collars/bandanas stay locked to each breed's body anchor.
 
 ## 2026-06-18 Dachshund Live Sprite Pack Pass
@@ -399,9 +399,24 @@ Added the first long-body Avatar Studio live template pack:
 
 Remaining visual work:
 
-- Generate live sprite packs for Spaniel, Toy Breed, Slender, and Mixed Breed.
+- Generate live sprite packs for Toy Breed, Slender, and Mixed Breed.
 - Add Dachshund emote stills and overlay-aligned accessories after the remaining body-class motion packs are complete.
 - Native phone-size QA should confirm the short-leg walk loop reads clearly in the Avatar Studio room.
+
+## 2026-06-18 Spaniel Live Sprite Pack Pass
+
+Added a long-ear sporting-body Avatar Studio live template pack:
+
+- Generated a PixelLab side-view Spaniel live source from the approved front-facing base template so the walk loop starts from a real game-sprite stance.
+- Promoted two transparent 2048x256 sprite strips under `assets/avatar/templates/spaniel/sprites/`: `idle-tail-wag-strip.png` and `walk-loop-strip.png`.
+- Registered the Spaniel pack in `avatarTemplateSpriteAssets.ts`, added it to the live-template preview model, and moved the still-preview regression test to Toy Breed.
+- Extended `verify-pixellab-assets.js` and mobile readiness coverage so Spaniel live strips must remain present at 8-frame, 256px-slot dimensions.
+
+Remaining visual work:
+
+- Generate live sprite packs for Toy Breed, Slender, and Mixed Breed.
+- Add Spaniel emote stills and overlay-aligned accessories after the remaining body-class motion packs are complete.
+- Native phone-size QA should confirm the floppy-ear idle and walk rhythm stays readable in the Avatar Studio room.
 
 ## 2026-06-18 Retriever Starter Emote Pack Pass
 

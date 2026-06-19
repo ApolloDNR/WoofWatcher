@@ -628,10 +628,12 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarTemplateSpriteAssets, /husky:[\s\S]*walk-loop/);
   assert.match(avatarTemplateSpriteAssets, /retriever:[\s\S]*idle-tail-wag/);
   assert.match(avatarTemplateSpriteAssets, /retriever:[\s\S]*walk-loop/);
+  assert.match(avatarTemplateSpriteAssets, /spaniel:[\s\S]*idle-tail-wag/);
+  assert.match(avatarTemplateSpriteAssets, /spaniel:[\s\S]*walk-loop/);
   assert.match(avatarTemplateSpriteAssets, /terrier:[\s\S]*idle-tail-wag/);
   assert.match(avatarTemplateSpriteAssets, /terrier:[\s\S]*walk-loop/);
   assert.match(avatarTemplateSpriteAssets, /getAvatarTemplateSpritePreview/);
-  for (const templateId of ["bully", "dachshund", "doodle", "hound", "husky", "retriever", "terrier"]) {
+  for (const templateId of ["bully", "dachshund", "doodle", "hound", "husky", "retriever", "spaniel", "terrier"]) {
     for (const fileName of ["idle-tail-wag-strip.png", "walk-loop-strip.png"]) {
       assert.match(avatarTemplateSpriteAssets, new RegExp(`assets/avatar/templates/${templateId}/sprites/${fileName}`));
       const size = readPngSize(

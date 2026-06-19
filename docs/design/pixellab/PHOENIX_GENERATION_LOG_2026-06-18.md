@@ -625,3 +625,21 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/dachshund/sprites/walk-loop-strip.png`
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. The accepted source preserves the long-body silhouette better than the prompt-only backup and gives Dachshund its own live game-style motion instead of a still preview.
+
+### Spaniel Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_object_state`, then `animate_object`.
+- Source base object ID: `b85934b2-d1cc-4b89-b4e9-0342520ec73a`
+- Accepted side-view live source object ID: `fd7de1c0-f821-4a8c-889c-098417d7d2a1`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `3e5b2a81-bcf5-4a5e-8516-4000147207c9`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/fd7de1c0-f821-4a8c-889c-098417d7d2a1/animations/3e5b2a81-bcf5-4a5e-8516-4000147207c9/unknown/{i}.png`.
+  - Walk loop: animation ID `25ca7161-8e0b-4b96-8518-3f7dd5a06611`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/fd7de1c0-f821-4a8c-889c-098417d7d2a1/animations/25ca7161-8e0b-4b96-8518-3f7dd5a06611/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/spaniel/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. The accepted source turns the seated/front-facing Spaniel base into a side-view game-sprite stance with readable floppy-ear idle and walk loops.

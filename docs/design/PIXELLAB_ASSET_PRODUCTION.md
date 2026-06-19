@@ -272,7 +272,7 @@ The Bully compact-body PixelLab emote still pack is live:
 - `assets/avatar/templates/bully/emotes/home-alone.png` from PixelLab object `15420aec-4dd6-447e-bee7-b4754b159f47`.
 - `assets/avatar/templates/bully/emotes/not-feeling-well.png` from PixelLab object `171074b3-552c-4b35-8fad-7b454b59349a`.
 
-These are transparent 170x170 PixelLab Bully states for the Avatar Studio Mood set. The Bully template now recommends `bully-starter`; `/portrait` resolves the compact-body pack through the same selected-template routing used by Phoenix, Retriever, and Husky. Latest local PixelLab asset verification checks 91 assets with 0 missing and 0 invalid.
+These are transparent 170x170 PixelLab Bully states for the Avatar Studio Mood set. The Bully template now recommends `bully-starter`; `/portrait` resolves the compact-body pack through the same selected-template routing used by Phoenix, Retriever, and Husky. Latest local PixelLab asset verification checks 125 assets with 0 missing and 0 invalid after the Spaniel live sprite pack pass.
 
 ### Phase 4D - Avatar Accessory Inventory Pack
 
