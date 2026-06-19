@@ -1076,6 +1076,24 @@ Owner: Codex.
 
 Revisit trigger: The full structured edit sheet, photo proof, voice/talk-to-log, or cloud role permissions introduce a stronger event contract that still preserves this doctrine.
 
+### 2026-06-19: Alone Time Is A Start/Return Lifecycle, Not A Static Duration Log
+
+Decision: Alone Time in WoofWatcher is modeled as an open household status session. Leaving Home starts an active `home-alone` log. I'm Home closes that same log with duration, return outcome, recovery/note details, returned-by metadata, and an audit trail.
+
+Reason: Apollo's vision depends on WoofWatcher answering "Where is Phoenix and is she alone?" in seconds. A static duration log cannot support live presence, household trust, care-twin home-alone behavior, sitter handoffs, or anxiety pattern review. The app needs a real open loop.
+
+Consequences:
+
+- `aloneTimeSession.ts` owns the start/find/return lifecycle contract.
+- Log's Alone Time quick action starts the active session when none exists and shows a return check-in when one is open.
+- Home reads the same open session and displays Phoenix as home alone instead of assuming a caregiver is present.
+- Completed sessions continue to feed the existing Alone Time analytics in Records and Care Passes.
+- Future Household Pulse and notification work should reuse this lifecycle instead of creating separate presence state.
+
+Owner: Codex.
+
+Revisit trigger: Cloud sync/presence permissions introduce server-backed household presence, but the user-facing session still needs start/return auditability.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

@@ -533,7 +533,22 @@ Locked the mobile logging UX to the product doctrine:
 Remaining UX work:
 
 - Add a richer structured edit sheet for every log type, including exact eaten amount edits, medication proof/photo, potty consistency, and walk session updates.
-- Implement the full Leaving Home / I'm Home alone-time timer flow as a first-class household status action.
+- Continue detail/proof work for medication, potty, walk, photos, confirmation/rejection, and correction history.
+
+## 2026-06-19 Alone Time Lifecycle Pass
+
+Alone Time is now a first-class household status loop:
+
+- Tapping Alone Time when no session is open starts a real `home-alone` session instead of saving a completed duration guess.
+- The active Log card shows Phoenix is home alone, elapsed time, and the approved I'm Home return check-in outcomes: Calm, Excited, Anxious, Barking/whining, Accident, Vomit, Destructive, and Unknown.
+- Return check-in can include recovery minutes and a note about what helped.
+- The same original log is updated on return with duration, outcome, end time, returned-by, household visibility, and audit history.
+- Home now reads the active session and changes the first-screen presence from "with human" to "home-alone" while routing the presence card back to Log.
+
+Remaining UX work:
+
+- Promote this pattern into a dedicated Household Pulse screen when that route becomes first-class.
+- Add notification/reminder support for long active sessions after push notification permissions and settings exist.
 
 ## 2026-06-17 Avatar Studio Lite Pass
 

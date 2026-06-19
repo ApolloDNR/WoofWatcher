@@ -421,6 +421,12 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Mobile TypeScript:
   - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
   - Result: passed.
+- Full local behavior/readiness suite:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 244 tests.
+- Diff hygiene:
+  - Command: `git diff --check`
+  - Result: passed; Git only reported normal Windows line-ending warnings.
 
 ### Remaining Work
 
@@ -519,5 +525,47 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 ### Remaining Work
 
 - Structured edit sheets still need exact field editing for every log type, including photos/proof.
-- Alone Time still needs the full Leaving Home / I'm Home timer flow.
 - Native iOS/Android safe-area, touch, and phone-size QA remains required before launch approval.
+
+## 2026-06-19 Alone Time Lifecycle Pass
+
+### What Changed
+
+- Added a tested `aloneTimeSession.ts` lifecycle helper for starting an active home-alone session, finding the current open session, listing approved return outcomes, and closing the same session with a return patch.
+- Changed the Log Alone Time quick action from a loose duration log into a real Leaving Home flow.
+- Added an active Home Alone card in Log with elapsed time, return check-in outcomes, optional recovery minutes, and optional return note.
+- Closing Alone Time now records duration, outcome, returned-by, outcome time, recovery, household visibility, and audit history on the original log.
+- Home now reads the active session and shows Phoenix as `home-alone` instead of displaying a stale with-human presence.
+- The Home Alone summary card now distinguishes active time from completed alone-time history.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/index.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/log.tsx`
+- `artifacts/woofwatcher-mobile/lib/aloneTimeSession.ts`
+- `artifacts/woofwatcher-mobile/lib/aloneTimeSession.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/DECISION_LOG.md`
+
+### Tests And Checks Run
+
+- Alone Time lifecycle:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/aloneTimeSession.test.ts`
+  - Result: passed, 4 tests.
+- Mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 61 tests.
+- Focused combined mobile behavior/readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/aloneTimeSession.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 65 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+
+### Remaining Work
+
+- Structured edit sheets still need exact field editing for medication proof, potty outcomes/consistency, walk sessions, photos, confirmation/rejection, and correction history UI.
+- Native iOS/Android safe-area, touch, notification, and phone-size QA remains required before launch approval.

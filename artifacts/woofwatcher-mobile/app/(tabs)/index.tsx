@@ -34,6 +34,7 @@ import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import type { CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
+import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 
@@ -188,6 +189,24 @@ export default function HomeScreen() {
   );
   const caregiver = state.caregivers[0]?.name ?? "Emma";
   const timeLabel = useMemo(() => shortTime(new Date(now).toISOString()), [now]);
+  const openAloneSession = useMemo(
+    () => findOpenAloneTimeSession(state.entries),
+    [state.entries],
+  );
+  const openAloneStartedAt = openAloneSession
+    ? String(openAloneSession.details?.aloneStartedAt ?? openAloneSession.occurredAt)
+    : "";
+  const openAloneMinutes = useMemo(() => {
+    if (!openAloneStartedAt) return 0;
+    const startedAt = Date.parse(openAloneStartedAt);
+    if (!Number.isFinite(startedAt)) return 0;
+    return Math.max(0, Math.round((now - startedAt) / 60000));
+  }, [now, openAloneStartedAt]);
+  const presenceState = openAloneSession ? "home-alone" : "with-human";
+  const presenceLabel = openAloneSession ? `${petName} Home alone` : `${petName} with ${caregiver}`;
+  const presenceSub = openAloneSession
+    ? `${formatDuration(openAloneMinutes)} active - tap I\u2019m Home in Log`
+    : `At home - ${timeLabel}`;
 
   const meals = status.counts.meals;
   const fed = meals.target > 0 ? meals.done >= meals.target : true;
@@ -333,9 +352,13 @@ export default function HomeScreen() {
     [state.entries, now],
   );
   const alone = {
-    status: aloneMinutes > 0 ? formatDuration(aloneMinutes) : "0m",
-    sub: aloneMinutes > 0 ? "Time alone today" : "None logged today",
-    color: colors.copper,
+    status: openAloneSession ? "Home alone" : aloneMinutes > 0 ? formatDuration(aloneMinutes) : "0m",
+    sub: openAloneSession
+      ? `${formatDuration(openAloneMinutes)} active`
+      : aloneMinutes > 0
+        ? "Time alone today"
+        : "None logged today",
+    color: openAloneSession ? colors.amber : colors.copper,
   };
 
   const recentActivity = useMemo(
@@ -527,8 +550,8 @@ export default function HomeScreen() {
                 motion={avatarMotion}
                 speech={avatarMotion.speech || SPEECH_BY_MOOD[status.mood]}
                 energy={status.energy}
-                presenceLabel={`${petName} with ${caregiver}`}
-                nextLabel={avatarMotion.label}
+                presenceLabel={presenceLabel}
+                nextLabel={openAloneSession ? "Home alone" : avatarMotion.label}
                 reaction={roomReaction}
                 statusReadouts={roomStats}
                 onPress={tapPhoenixRoom}
@@ -538,21 +561,25 @@ export default function HomeScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${petName} is with ${caregiver}`}
-            onPress={() => router.push("/more")}
+            accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
+            onPress={() => router.push(openAloneSession ? "/log?type=alone" : "/more")}
             style={[s.presencePanel, { backgroundColor: colors.ivory, borderColor: colors.border }]}
           >
-            <View style={[s.presenceAvatar, { backgroundColor: colors.copper }]}>
-              <Text style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}>
-                {caregiver.charAt(0).toUpperCase()}
-              </Text>
+            <View style={[s.presenceAvatar, { backgroundColor: openAloneSession ? colors.amber : colors.copper }]}>
+              {openAloneSession ? (
+                <Ionicons name="home-outline" size={18} color="#FFFFFF" />
+              ) : (
+                <Text style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}>
+                  {caregiver.charAt(0).toUpperCase()}
+                </Text>
+              )}
             </View>
             <View style={s.presenceCopy}>
               <Text style={[s.presenceText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                {petName} is with {caregiver}
+                {openAloneSession ? `${petName} is home alone` : `${petName} is with ${caregiver}`}
               </Text>
               <Text style={[s.presenceSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                At home - {timeLabel}
+                {presenceSub}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={17} color={colors.navy} />

@@ -37,6 +37,13 @@ import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import {
+  buildAloneTimeReturnPatch,
+  buildAloneTimeStartEntry,
+  findOpenAloneTimeSession,
+  getAloneTimeReturnOptions,
+  type AloneTimeReturnOutcome,
+} from "@/lib/aloneTimeSession";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
@@ -347,6 +354,8 @@ const LAUNCHER_ACTIONS: LauncherAction[] = [
   { label: "Grooming", type: "grooming", icon: "happy", tab: "all" },
 ];
 
+const ALONE_RETURN_OPTIONS = getAloneTimeReturnOptions();
+
 const MOOD_LAUNCHER: { key: string; label: string; icon: PixelIconName; mood: string }[] = [
   { key: "great", label: "Great", icon: "mood_great", mood: "happy" },
   { key: "good", label: "Good", icon: "mood_good", mood: "calm" },
@@ -585,6 +594,13 @@ function mealOutcomeNeedsEatenAmount(value: string): boolean {
   return value === "partial";
 }
 
+function formatAloneDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  return remaining ? `${hours}h ${remaining}m` : `${hours}h`;
+}
+
 type DetailMealOutcome = "complete" | "most" | "skipped" | "grazing";
 
 const DETAIL_MEAL_OUTCOMES: { id: DetailMealOutcome; label: string }[] = [
@@ -649,6 +665,8 @@ export default function LogScreen() {
   const [aloneTrigger, setAloneTrigger] = useState("");
   const [calmingSupport, setCalmingSupport] = useState("");
   const [recoveryMinutes, setRecoveryMinutes] = useState("");
+  const [returnRecoveryMinutes, setReturnRecoveryMinutes] = useState("");
+  const [returnNote, setReturnNote] = useState("");
   const [groomingCondition, setGroomingCondition] = useState("");
   const [groomingProducts, setGroomingProducts] = useState("");
   const [groomingNextDue, setGroomingNextDue] = useState("");
@@ -1275,6 +1293,19 @@ export default function LogScreen() {
     },
     [caregiver, updateEntry],
   );
+  const openAloneSession = useMemo(
+    () => findOpenAloneTimeSession(state.entries),
+    [state.entries],
+  );
+  const openAloneStartedAt = openAloneSession
+    ? String(openAloneSession.details?.aloneStartedAt ?? openAloneSession.occurredAt)
+    : "";
+  const openAloneMinutes = useMemo(() => {
+    if (!openAloneStartedAt) return 0;
+    const startedAt = Date.parse(openAloneStartedAt);
+    if (!Number.isFinite(startedAt)) return 0;
+    return Math.max(0, Math.round((now - startedAt) / 60000));
+  }, [now, openAloneStartedAt]);
 
   const shareEntryHandoff = useCallback((e: Entry) => {
     const message = buildEntryHandoffMessage(e);
@@ -1448,7 +1479,50 @@ export default function LogScreen() {
     scrollRef.current?.scrollTo({ y: 620, animated: true });
   };
 
+  const handleLeavingHome = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (openAloneSession) {
+      setSelectedType("alone");
+      setSelectedLauncherKey("alone:Alone Time");
+      scrollRef.current?.scrollTo({ y: 360, animated: true });
+      return;
+    }
+    const entry = buildAloneTimeStartEntry({ caregiver, now });
+    const id = addEntry(entry);
+    setLastQuickLog({ id, title: "Phoenix is home alone" });
+    setSelectedType("alone");
+    setSelectedLauncherKey("alone:Alone Time");
+  }, [addEntry, caregiver, now, openAloneSession]);
+
+  const handleReturnHome = useCallback(
+    (outcome: AloneTimeReturnOutcome) => {
+      if (!openAloneSession?.id) return;
+      const recovery = returnRecoveryMinutes.trim() ? parseNonNegativeNumber(returnRecoveryMinutes) : null;
+      if (returnRecoveryMinutes.trim() && recovery == null) {
+        Alert.alert("Check recovery time", "Enter recovery minutes as a number, or leave it blank.");
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const patch = buildAloneTimeReturnPatch(openAloneSession, {
+        caregiver,
+        outcome,
+        now,
+        ...(recovery != null ? { recoveryMinutes: recovery } : {}),
+        ...(returnNote.trim() ? { note: returnNote.trim() } : {}),
+      });
+      updateEntry(openAloneSession.id, patch);
+      setLastQuickLog({ id: openAloneSession.id, title: patch.title });
+      setReturnRecoveryMinutes("");
+      setReturnNote("");
+    },
+    [caregiver, now, openAloneSession, returnNote, returnRecoveryMinutes, updateEntry],
+  );
+
   const handleQuickLauncherAction = (action: LauncherAction) => {
+    if (action.type === "alone") {
+      handleLeavingHome();
+      return;
+    }
     const policy = getQuickLogPolicy(action.type);
     if (policy.tapBehavior === "detail-required") {
       openDetailedLauncherAction(action);
@@ -1641,6 +1715,68 @@ export default function LogScreen() {
                       Add details
                     </Text>
                   </Pressable>
+                </View>
+              </View>
+            ) : null}
+
+            {openAloneSession ? (
+              <View style={[s.aloneActivePanel, { backgroundColor: colors.brandNavy, borderColor: colors.copper + "66" }]}>
+                <View style={s.aloneActiveTop}>
+                  <View style={[s.aloneActiveIcon, { backgroundColor: colors.copper + "22", borderColor: colors.copper + "66" }]}>
+                    <PixelIcon name="clock" size={34} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[s.aloneActiveKicker, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                      HOME ALONE ACTIVE
+                    </Text>
+                    <Text style={[s.aloneActiveTitle, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
+                      Phoenix is home alone
+                    </Text>
+                    <Text style={[s.aloneActiveMeta, { color: colors.ivory + "B8", fontFamily: "Inter_500Medium" }]}>
+                      Started by {openAloneSession.caregiver || "household"} - {formatAloneDuration(openAloneMinutes)}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[s.returnCheckTitle, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                  Return check-in
+                </Text>
+                <View style={s.returnOutcomeGrid}>
+                  {ALONE_RETURN_OPTIONS.map((option) => (
+                    <Pressable
+                      key={option.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={`I'm Home. Phoenix was ${option.label}`}
+                      onPress={() => handleReturnHome(option.id)}
+                      style={({ pressed }) => [
+                        s.returnOutcomeButton,
+                        {
+                          backgroundColor: pressed ? colors.ivory + "28" : colors.ivory + "12",
+                          borderColor: colors.ivory + "30",
+                        },
+                      ]}
+                    >
+                      <Text style={[s.returnOutcomeText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={s.returnDetailRow}>
+                  <TextInput
+                    value={returnRecoveryMinutes}
+                    onChangeText={setReturnRecoveryMinutes}
+                    placeholder="Recovery min"
+                    placeholderTextColor={colors.ivory + "99"}
+                    keyboardType="number-pad"
+                    style={[s.returnInput, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                  />
+                  <TextInput
+                    value={returnNote}
+                    onChangeText={setReturnNote}
+                    placeholder="What helped?"
+                    placeholderTextColor={colors.ivory + "99"}
+                    style={[s.returnInput, s.returnInputNote, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                  />
                 </View>
               </View>
             ) : null}
@@ -3130,6 +3266,83 @@ const s = StyleSheet.create({
   },
   quickFeedbackButtonText: {
     fontSize: 12.5,
+  },
+  aloneActivePanel: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 13,
+    gap: 11,
+    shadowColor: "#081424",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 3,
+  },
+  aloneActiveTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+  },
+  aloneActiveIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  aloneActiveKicker: {
+    fontSize: 10,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  aloneActiveTitle: {
+    fontSize: 18,
+    lineHeight: 22,
+    marginTop: 1,
+  },
+  aloneActiveMeta: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 3,
+  },
+  returnCheckTitle: {
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.35,
+  },
+  returnOutcomeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+  },
+  returnOutcomeButton: {
+    flexGrow: 1,
+    flexBasis: "31%",
+    minHeight: 38,
+    borderWidth: 1,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  returnOutcomeText: {
+    fontSize: 11.5,
+    textAlign: "center",
+  },
+  returnDetailRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  returnInput: {
+    minHeight: 40,
+    borderWidth: 1,
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    fontSize: 12.5,
+  },
+  returnInputNote: {
+    flex: 1,
   },
   launcherCta: {
     minHeight: 48,

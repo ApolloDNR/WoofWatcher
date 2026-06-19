@@ -1134,6 +1134,23 @@ test("keeps alone-time anxiety tracking visible from Log composer to Records", (
   assert.match(records, /distressedCount/);
 });
 
+test("keeps Alone Time as a start and return lifecycle instead of a loose duration log", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  assert.match(log, /buildAloneTimeStartEntry/);
+  assert.match(log, /buildAloneTimeReturnPatch/);
+  assert.match(log, /findOpenAloneTimeSession/);
+  assert.match(log, /getAloneTimeReturnOptions/);
+  assert.match(log, /handleLeavingHome/);
+  assert.match(log, /handleReturnHome/);
+  assert.match(log, /I\u2019m Home|I'm Home/);
+  assert.match(log, /Return check-in/);
+  assert.match(home, /findOpenAloneTimeSession/);
+  assert.match(home, /home-alone/);
+  assert.match(home, /Home alone/);
+});
+
 test("keeps weight trend shared between Records and Care Pass reports", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
   const carePass = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"), "utf8");
