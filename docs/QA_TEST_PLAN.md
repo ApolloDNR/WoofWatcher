@@ -169,6 +169,11 @@ Current evidence, 2026-06-19: the mobile app now has a development/internal
 `__DEV__`, and `mobileReadiness.test.ts` protects route registration, matrix
 usage, and the native QA prompt surface.
 
+Current evidence, 2026-06-19: `/care-twin-qa` now supports session-level
+Pass/Needs tune review controls, per-scenario device notes, summary counts, and
+a native share action backed by `careTwinQaReport.ts`. The shared report states
+that native screenshot evidence is still required before launch.
+
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.
 

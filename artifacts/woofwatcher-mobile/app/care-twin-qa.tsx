@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { Stack, useRouter } from "expo-router";
-import React, { useMemo } from "react";
-import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
@@ -13,6 +14,13 @@ import {
   listCareTwinRuntimeQaScenarios,
   type CareTwinRuntimeQaResult,
 } from "@/lib/careTwinAssets";
+import {
+  buildCareTwinQaShareText,
+  careTwinQaStatusLabel,
+  summarizeCareTwinQaReviews,
+  type CareTwinQaReview,
+  type CareTwinQaReviewStatus,
+} from "@/lib/careTwinQaReport";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -100,17 +108,61 @@ function QaBadge({ label, tone }: { label: string; tone: string }) {
   );
 }
 
+function statusTone(status: CareTwinQaReviewStatus, colors: ReturnType<typeof useColors>): string {
+  if (status === "pass") return colors.sage;
+  if (status === "needs-review") return colors.amber;
+  return colors.mutedForeground;
+}
+
 export default function CareTwinQaScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [qaStatusById, setQaStatusById] = useState<Record<string, CareTwinQaReviewStatus>>({});
+  const [qaNotes, setQaNotes] = useState<Record<string, string>>({});
   const scenarios = useMemo(
     () => listCareTwinRuntimeQaScenarios().map(evaluateCareTwinRuntimeQaScenario),
     [],
   );
   const readyCount = scenarios.filter((result) => result.readiness.layeredReady).length;
+  const qaReviews = useMemo<CareTwinQaReview[]>(
+    () =>
+      scenarios.map((result) => ({
+        scenarioId: result.scenario.id,
+        status: qaStatusById[result.scenario.id] ?? "unreviewed",
+        note: qaNotes[result.scenario.id]?.trim(),
+      })),
+    [qaNotes, qaStatusById, scenarios],
+  );
+  const qaSummary = useMemo(
+    () => summarizeCareTwinQaReviews(scenarios, qaReviews),
+    [qaReviews, scenarios],
+  );
   const topInset = Platform.OS === "web" ? 24 : insets.top;
   const bottomInset = Platform.OS === "web" ? 32 : insets.bottom + 18;
+
+  const markScenario = (scenarioId: string, status: CareTwinQaReviewStatus) => {
+    if (Platform.OS !== "web") {
+      Haptics.selectionAsync().catch(() => {});
+    }
+    setQaStatusById((current) => ({
+      ...current,
+      [scenarioId]: current[scenarioId] === status ? "unreviewed" : status,
+    }));
+  };
+
+  const shareQaSummary = async () => {
+    const message = buildCareTwinQaShareText(scenarios, qaReviews);
+
+    try {
+      await Share.share({
+        title: "WoofWatcher Care Twin QA",
+        message,
+      });
+    } catch {
+      Alert.alert("Share failed", "Could not open the native share sheet for this QA report.");
+    }
+  };
 
   return (
     <>
@@ -144,9 +196,25 @@ export default function CareTwinQaScreen() {
           </View>
           <View style={s.summaryGrid}>
             <QaBadge label={`${readyCount}/${scenarios.length} layered`} tone={readyCount === scenarios.length ? colors.sage : colors.amber} />
-            <QaBadge label="No fake diagnosis" tone={colors.copper} />
-            <QaBadge label="Phone-size review" tone={colors.primary} />
+            <QaBadge label={`${qaSummary.passed} pass`} tone={colors.sage} />
+            <QaBadge label={`${qaSummary.needsReview} needs tune`} tone={colors.amber} />
+            <QaBadge label={`${qaSummary.unreviewed} unreviewed`} tone={colors.mutedForeground} />
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Share care twin QA summary"
+            onPress={shareQaSummary}
+            style={({ pressed }) => [
+              s.shareButton,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.brandNavy,
+                borderColor: colors.brandNavy,
+              },
+            ]}
+          >
+            <Ionicons name="share-outline" size={18} color="#FFF9EF" />
+            <Text style={[s.shareButtonText, { fontFamily: "Inter_700Bold" }]}>Share QA summary</Text>
+          </Pressable>
         </BoardCard>
 
         <BoardSectionHeader title="Device Review Matrix" action={`${scenarios.length} scenes`} />
@@ -154,6 +222,8 @@ export default function CareTwinQaScreen() {
         {scenarios.map((result, index) => {
           const energy = energyForScenario(result);
           const missing = result.readiness.missing.join(", ");
+          const reviewStatus = qaStatusById[result.scenario.id] ?? "unreviewed";
+          const reviewTone = statusTone(reviewStatus, colors);
 
           return (
             <BoardCard key={result.scenario.id} style={s.scenarioCard}>
@@ -172,8 +242,8 @@ export default function CareTwinQaScreen() {
                   </View>
                 </View>
                 <QaBadge
-                  label={result.readiness.layeredReady ? "Ready" : "Missing"}
-                  tone={result.readiness.layeredReady ? colors.sage : colors.rose}
+                  label={careTwinQaStatusLabel(reviewStatus)}
+                  tone={reviewTone}
                 />
               </View>
 
@@ -205,6 +275,46 @@ export default function CareTwinQaScreen() {
                 </Text>
               </View>
 
+              <View style={s.reviewGrid}>
+                <ReviewButton
+                  active={reviewStatus === "pass"}
+                  icon="checkmark-circle"
+                  label="Pass"
+                  onPress={() => markScenario(result.scenario.id, "pass")}
+                  tone={colors.sage}
+                />
+                <ReviewButton
+                  active={reviewStatus === "needs-review"}
+                  icon="build"
+                  label="Needs tune"
+                  onPress={() => markScenario(result.scenario.id, "needs-review")}
+                  tone={colors.amber}
+                />
+              </View>
+
+              <TextInput
+                accessibilityLabel={`QA notes for ${result.scenario.label}`}
+                multiline
+                onChangeText={(text) =>
+                  setQaNotes((current) => ({
+                    ...current,
+                    [result.scenario.id]: text,
+                  }))
+                }
+                placeholder="Device notes: crop, scale, loop timing, gait, touch response..."
+                placeholderTextColor={colors.mutedForeground}
+                style={[
+                  s.noteInput,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.foreground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+                value={qaNotes[result.scenario.id] ?? ""}
+              />
+
               {missing ? (
                 <Text style={[s.missingText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
                   Missing: {missing}
@@ -219,6 +329,42 @@ export default function CareTwinQaScreen() {
         })}
       </ScrollView>
     </>
+  );
+}
+
+function ReviewButton({
+  active,
+  icon,
+  label,
+  onPress,
+  tone,
+}: {
+  active: boolean;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  onPress: () => void;
+  tone: string;
+}) {
+  const colors = useColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        s.reviewButton,
+        {
+          backgroundColor: active ? `${tone}1F` : colors.background,
+          borderColor: active ? tone : colors.border,
+          opacity: pressed ? 0.72 : 1,
+        },
+      ]}
+    >
+      <Ionicons name={icon} size={17} color={tone} />
+      <Text style={[s.reviewButtonText, { color: active ? tone : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -282,6 +428,19 @@ const s = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
+  },
+  shareButton: {
+    minHeight: 46,
+    borderRadius: 9,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  shareButtonText: {
+    color: "#FFF9EF",
+    fontSize: 13,
   },
   badge: {
     minHeight: 28,
@@ -374,6 +533,33 @@ const s = StyleSheet.create({
   promptText: {
     fontSize: 13,
     lineHeight: 19,
+  },
+  reviewGrid: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  reviewButton: {
+    flex: 1,
+    minHeight: 43,
+    borderRadius: 9,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  reviewButtonText: {
+    fontSize: 12,
+  },
+  noteInput: {
+    minHeight: 74,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlignVertical: "top",
   },
   missingText: {
     fontSize: 12,

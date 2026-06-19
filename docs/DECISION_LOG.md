@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-19: Care Twin QA Captures Evidence But Does Not Certify Release
+
+Decision: The development/internal `/care-twin-qa` route should collect session-level device evidence with Pass/Needs tune controls, per-state notes, summary counts, and a native shareable QA report, but it must not imply that iOS/Android QA is complete without screenshots and human review.
+
+Reason: Apollo wants the living Phoenix room to feel like a polished video-game care twin. Static tests and web export prove the route and assets are wired, but only phone-size review can catch crop, scale, loop timing, touch-response, and gait issues. A shareable report makes the QA pass easier without overstating readiness.
+
+Owner: Codex.
+
+Revisit trigger: Native iOS/Android QA automation, visual regression, or a final game-scene renderer replaces the manual evidence workflow.
+
 ### 2026-06-18: Avatar Studio Uses Live Phoenix Motion Only Where Production Sprite Packs Exist
 
 Decision: Avatar Studio should animate the shepherd/Phoenix template with the real Phoenix sprite rig, while templates that only have base stills remain on explicit still-preview labeling until their own sprite packs are produced.

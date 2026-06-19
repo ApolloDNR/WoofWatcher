@@ -133,6 +133,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 125. NEXT: Execute the native iOS/Android QA matrix, capture phone-size evidence for Home and Avatar Studio, then refine any weak gait, stage crop, or room/sprite proportion before another PixelLab generation spend.
 126. DONE 2026-06-19: Added an in-app Care Twin QA route at `/care-twin-qa` for development/internal builds. The route renders all 12 tested care-twin scenarios through the production `LivingPhoenixRoom`, exposes expected sprite/room/zone/need metadata, shows native QA prompts, and is reachable from More only under `__DEV__` so device testers can review every state without mutating care history.
 127. NEXT: Open `/care-twin-qa` on iOS and Android, capture the required evidence from `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, then tune any stage crop, route frame height, weak loop, or room/sprite scale issue found on real device screens.
+128. DONE 2026-06-19: Upgraded `/care-twin-qa` into a device evidence-capture surface. Each care-twin scenario can now be marked Pass or Needs tune, carries a per-state device note, updates summary counts, and shares a plain-text QA report through the native share sheet while still saying screenshots are required before launch approval.
+129. NEXT: Run the upgraded QA route on iOS and Android, share/export the per-device QA report, attach the required screenshots, then fix the first visually obvious issue in stage crop, sprite scale, loop timing, or gait quality before generating more PixelLab art.
 
 ## Cadence
 

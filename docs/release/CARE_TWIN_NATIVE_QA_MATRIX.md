@@ -19,6 +19,11 @@ The route is linked from More as `Care Twin QA` only in development builds, so
 it is available for Apollo/device testers without becoming normal user-facing
 product clutter.
 
+The route also includes session-level `Pass`, `Needs tune`, note fields, and a
+native share action that produces a plain-text QA summary. Use that summary as
+device-session evidence, then attach the required screenshots before treating a
+state as release-approved.
+
 ## Purpose
 
 The care twin must feel like one living game character layered over dogless room art. Native QA should verify room fit, sprite scale, stage crop, touch response, and state readability on phone-sized screens. Web export and static tests do not replace this pass.
@@ -63,3 +68,6 @@ For every scenario below:
 ## Current Limitation
 
 This Windows worktree can run static tests, TypeScript, PixelLab asset verification, and Expo web export. It now also ships an in-app QA route for device review, but it still cannot produce authoritative native simulator proof without iOS/Android runtime access.
+
+The in-app pass/needs-tune controls are an evidence-capture aid only. They do
+not replace the screenshots and human review listed above.
