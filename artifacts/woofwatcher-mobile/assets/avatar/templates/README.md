@@ -76,3 +76,4 @@ Rules:
 - Full template packs should later add `base.png`, emotes, and sprite strips under the same template folder.
 - `base.png` is the production-scale character still for Avatar Studio preview. It is not a walk/eat/sleep sprite strip.
 - Accessory overlays and emote stills should stay slot-compatible with the registered base pose for that template.
+- Live-pack status and next-pack priority now belong in `artifacts/woofwatcher-mobile/lib/avatarTemplatePackManifest.ts`. Update that manifest before changing Avatar Studio readiness copy or verifier expectations.

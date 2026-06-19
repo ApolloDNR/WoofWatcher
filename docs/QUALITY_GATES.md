@@ -128,6 +128,8 @@ Current evidence, 2026-06-18: Mobile Avatar Studio now separates template thumbn
 
 Current evidence, 2026-06-18: Mobile Avatar Studio now surfaces template pack truth per choice, not only in aggregate. Template cards show pack-stage labels, accessory tiles mark `Live art ready` versus `Art pending`, and mood chips mark `Live mood` versus `Still preview`, so owners can see exactly which breeds have real production art before they save a care twin.
 
+Current evidence, 2026-06-18: Avatar Studio pack truth, next-pack priority, and PixelLab asset verification now derive from one shared template-pack manifest, so Retriever, Husky, and Doodle can move into live art without the UI, readiness logic, and verifier drifting out of sync.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

@@ -7,6 +7,7 @@ import {
   type PetAvatarConfig,
 } from "./avatarStudio.ts";
 import type { CareTwinSpriteAction } from "./avatarLifeEngine.ts";
+import { getAvatarTemplatePack } from "./avatarTemplatePackManifest.ts";
 import { getAvatarTemplateReadiness } from "./avatarTemplateReadiness.ts";
 
 export type AvatarPreviewLayerKind = "bandana" | "collar" | "hat" | "mask" | "vest" | "bed" | "sparkles";
@@ -74,9 +75,10 @@ export function deriveAvatarPreviewMotion(
   templateId: AvatarTemplateId,
   emote: AvatarEmoteState,
 ): AvatarPreviewMotionModel {
+  const pack = getAvatarTemplatePack(templateId);
   const readiness = getAvatarTemplateReadiness(templateId);
 
-  if (!readiness.hasAnimatedPreview) {
+  if (!pack.hasAnimatedPreview) {
     return {
       mode: "still",
       label: readiness.previewLabel,

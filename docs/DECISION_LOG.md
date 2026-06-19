@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-18: Avatar Studio Pack Truth Uses One Manifest
+
+Decision: Avatar Studio's live-art status, next-pack priority, and PixelLab asset verification should all derive from one shared template-pack manifest instead of separate hardcoded lists in the UI, readiness model, and verifier.
+
+Reason: The next production wave targets Retriever, Husky, and Doodle. Keeping pack truth in multiple files makes it too easy for a breed to look "next" in one surface, "queued" in another, or silently skip verification when art lands. One manifest keeps the studio truthful while making future pack registration smaller and safer.
+
+Owner: Codex.
+
+Revisit trigger: A fuller asset-management system replaces the current template-pack registry, or the art pipeline moves to generated metadata from PixelLab/Figma tooling.
+
 ### 2026-06-18: Avatar Studio Must Show Pack Stage On Each Choice
 
 Decision: Avatar Studio should expose production-pack truth at the choice level, not only as a summary. Template cards, accessory slots, and mood chips should label whether a breed pack is base-only, art-partial, or animated, and whether each accessory or mood has live file-backed art today.

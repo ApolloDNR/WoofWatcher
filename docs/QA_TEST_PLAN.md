@@ -15,6 +15,7 @@ Latest local evidence, 2026-06-18:
 - PASS: 230 focused tests with the command above.
 - PASS: PixelLab asset verifier checked 56 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify pack-stage labels plus live-vs-pending accessory and mood states.
+- PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the next Retriever/Husky/Doodle wave, and the PixelLab verifier to one source of truth.
 - LIMIT: mobile TypeScript could not run in this checkout because `node_modules/typescript` is missing (`tsc-missing`).
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` is currently blocked before job start by the account billing/spending-limit issue documented in `docs/BLOCKERS_FOR_APOLLO.md`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 

@@ -171,7 +171,7 @@ Do not register future sprite strips before a matching dogless room exists. The 
 
 - `npm run build:pixellab-sprite-strip` downloads a PixelLab `{i}.png` frame URL template and stitches selected frames into a fixed 256px-slot horizontal strip.
 - `npm run build:pixellab-room-variants` derives first-pass night, bedtime, health-watch, and home-alone room variants from the approved dogless day room.
-- `npm run verify:pixellab-assets` checks sprite strip dimensions and required room files.
+- `npm run verify:pixellab-assets` checks sprite strip dimensions, required room files, and the live template-pack files declared in the shared manifest.
 
 ## Quality Gate
 
@@ -179,7 +179,7 @@ Run the PixelLab asset verifier before registering final assets:
 
 ```text
 cd artifacts/woofwatcher-mobile
-node scripts/verify-pixellab-assets.js
+node --experimental-strip-types scripts/verify-pixellab-assets.ts
 ```
 
 Before approving assets:

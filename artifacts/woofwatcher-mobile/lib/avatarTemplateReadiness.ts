@@ -1,35 +1,5 @@
 import { AVATAR_ACCESSORIES, AVATAR_EMOTE_STATES, type AvatarTemplateId } from "./avatarStudio.ts";
-
-const LIVE_BASE_TEMPLATES: AvatarTemplateId[] = [
-  "shepherd",
-  "retriever",
-  "husky",
-  "bully",
-  "doodle",
-  "terrier",
-  "hound",
-  "dachshund",
-  "spaniel",
-  "toy",
-  "slender",
-  "mixed",
-];
-
-const LIVE_ACCESSORY_IDS: Partial<Record<AvatarTemplateId, string[]>> = {
-  shepherd: [
-    "forest-bandana",
-    "navy-collar",
-    "birthday-hat",
-    "sleepy-mask",
-    "training-vest",
-    "cozy-bed",
-    "heart-sparkles",
-  ],
-};
-
-const LIVE_EMOTE_IDS: Partial<Record<AvatarTemplateId, string[]>> = {
-  shepherd: [...AVATAR_EMOTE_STATES],
-};
+import { getAvatarTemplatePack } from "./avatarTemplatePackManifest.ts";
 
 export type AvatarTemplatePackStage = "base" | "art-partial" | "animated";
 
@@ -49,13 +19,14 @@ export interface AvatarTemplateReadiness {
 }
 
 export function getAvatarTemplateReadiness(templateId: AvatarTemplateId): AvatarTemplateReadiness {
+  const pack = getAvatarTemplatePack(templateId);
   const totalAccessoryCount = AVATAR_ACCESSORIES.length;
-  const liveAccessoryIds = new Set(LIVE_ACCESSORY_IDS[templateId] ?? []);
+  const liveAccessoryIds = new Set(pack.liveAccessoryIds);
   const liveAccessoryCount = AVATAR_ACCESSORIES.filter((accessory) => liveAccessoryIds.has(accessory.id)).length;
   const totalEmoteCount = AVATAR_EMOTE_STATES.length;
-  const liveEmoteIds = new Set(LIVE_EMOTE_IDS[templateId] ?? []);
+  const liveEmoteIds = new Set(pack.liveEmoteIds);
   const liveEmoteCount = AVATAR_EMOTE_STATES.filter((emote) => liveEmoteIds.has(emote)).length;
-  const hasAnimatedPreview = templateId === "shepherd";
+  const hasAnimatedPreview = pack.hasAnimatedPreview;
   const packStage: AvatarTemplatePackStage = hasAnimatedPreview
     ? "animated"
     : liveAccessoryCount > 0 || liveEmoteCount > 0
@@ -64,7 +35,7 @@ export function getAvatarTemplateReadiness(templateId: AvatarTemplateId): Avatar
 
   return {
     packStage,
-    hasBaseArt: LIVE_BASE_TEMPLATES.includes(templateId),
+    hasBaseArt: pack.hasBaseArt,
     liveAccessoryCount,
     totalAccessoryCount,
     liveEmoteCount,
@@ -95,9 +66,9 @@ export function getAvatarTemplateReadiness(templateId: AvatarTemplateId): Avatar
 }
 
 export function isAvatarTemplateAccessoryLive(templateId: AvatarTemplateId, accessoryId: string): boolean {
-  return Boolean(LIVE_ACCESSORY_IDS[templateId]?.includes(accessoryId));
+  return Boolean(getAvatarTemplatePack(templateId).liveAccessoryIds.includes(accessoryId));
 }
 
 export function isAvatarTemplateEmoteLive(templateId: AvatarTemplateId, emote: string): boolean {
-  return Boolean(LIVE_EMOTE_IDS[templateId]?.includes(emote));
+  return Boolean(getAvatarTemplatePack(templateId).liveEmoteIds.includes(emote as (typeof AVATAR_EMOTE_STATES)[number]));
 }

@@ -6,6 +6,7 @@ import {
   isAvatarTemplateAccessoryLive,
   isAvatarTemplateEmoteLive,
 } from "./avatarTemplateReadiness.ts";
+import { getAvatarTemplatePack } from "./avatarTemplatePackManifest.ts";
 
 test("reports the full live shepherd production pack", () => {
   const readiness = getAvatarTemplateReadiness("shepherd");
@@ -26,6 +27,7 @@ test("reports the full live shepherd production pack", () => {
 
 test("keeps unfinished templates explicit about pending production art", () => {
   const readiness = getAvatarTemplateReadiness("retriever");
+  const pack = getAvatarTemplatePack("retriever");
 
   assert.equal(readiness.hasBaseArt, true);
   assert.equal(readiness.packStage, "base");
@@ -39,6 +41,8 @@ test("keeps unfinished templates explicit about pending production art", () => {
   assert.equal(readiness.stageDetail, "Base pose is live; overlays, moods, and sprite strips are still pending.");
   assert.equal(readiness.accessoryStatus, "Production overlays pending");
   assert.equal(readiness.emoteStatus, "Production moods pending");
+  assert.equal(pack.productionFocus, "next");
+  assert.equal(pack.focusLabel, "Next family-dog pack");
 });
 
 test("distinguishes live accessory and emote slots from pending ones", () => {

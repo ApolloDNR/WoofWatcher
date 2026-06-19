@@ -1,14 +1,20 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import {
+  AVATAR_TEMPLATE_PACK_MANIFEST,
+  type AvatarTemplatePackManifestEntry,
+} from "../lib/avatarTemplatePackManifest.ts";
 
 const allowMissing = process.argv.includes("--allow-missing");
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const spriteDir = path.join(root, "assets", "avatar", "phoenix");
 const roomDir = path.join(root, "assets", "avatar", "rooms");
 const templateDir = path.join(root, "assets", "avatar", "templates");
 
-const sprites = [
+const sprites: [string, number, number, number][] = [
   ["idle-breathe-strip.png", 8, 256, 256],
   ["tail-wag-strip.png", 8, 256, 256],
   ["ear-perk-strip.png", 6, 256, 256],
@@ -29,60 +35,17 @@ const rooms = [
   "phoenix-room-home-alone.png",
 ];
 
-const templatePreviews = [
-  "shepherd",
-  "retriever",
-  "husky",
-  "bully",
-  "doodle",
-  "terrier",
-  "hound",
-  "dachshund",
-  "spaniel",
-  "toy",
-  "slender",
-  "mixed",
-];
+const templateEntries = Object.values(AVATAR_TEMPLATE_PACK_MANIFEST);
+const templatePreviews = templateEntries.map((entry) => entry.templateId);
+const templateBases = templateEntries.filter((entry) => entry.hasBaseArt).map((entry) => entry.templateId);
+const templateAccessories = templateEntries.flatMap((entry) =>
+  entry.liveAccessoryIds.map((accessoryId) => [entry.templateId, accessoryId] as const),
+);
+const templateEmotes = templateEntries.flatMap((entry) =>
+  entry.liveEmoteIds.map((emoteId) => [entry.templateId, emoteId] as const),
+);
 
-const templateBases = [
-  "shepherd",
-  "retriever",
-  "husky",
-  "bully",
-  "doodle",
-  "terrier",
-  "hound",
-  "dachshund",
-  "spaniel",
-  "toy",
-  "slender",
-  "mixed",
-];
-
-const templateAccessories = [
-  ["shepherd", "forest-bandana"],
-  ["shepherd", "navy-collar"],
-  ["shepherd", "birthday-hat"],
-  ["shepherd", "sleepy-mask"],
-  ["shepherd", "training-vest"],
-  ["shepherd", "cozy-bed"],
-  ["shepherd", "heart-sparkles"],
-];
-
-const templateEmotes = [
-  ["shepherd", "happy"],
-  ["shepherd", "calm"],
-  ["shepherd", "excited"],
-  ["shepherd", "bored"],
-  ["shepherd", "hungry"],
-  ["shepherd", "anxious"],
-  ["shepherd", "sleepy"],
-  ["shepherd", "proud"],
-  ["shepherd", "home_alone"],
-  ["shepherd", "not_feeling_well"],
-];
-
-function readPngSize(file) {
+function readPngSize(file: string) {
   const buffer = fs.readFileSync(file);
   const signature = buffer.subarray(0, 8).toString("hex");
   if (signature !== "89504e470d0a1a0a") {
@@ -94,7 +57,7 @@ function readPngSize(file) {
   };
 }
 
-function checkSprite([fileName, frames, frameWidth, frameHeight]) {
+function checkSprite([fileName, frames, frameWidth, frameHeight]: [string, number, number, number]) {
   const file = path.join(spriteDir, fileName);
   if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
 
@@ -112,7 +75,7 @@ function checkSprite([fileName, frames, frameWidth, frameHeight]) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
-function checkRoom(fileName) {
+function checkRoom(fileName: string) {
   const file = path.join(roomDir, fileName);
   if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
 
@@ -128,7 +91,7 @@ function checkRoom(fileName) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
-function checkTemplatePreview(templateId) {
+function checkTemplatePreview(templateId: AvatarTemplatePackManifestEntry["templateId"]) {
   const file = path.join(templateDir, templateId, "preview.png");
   if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
 
@@ -144,7 +107,7 @@ function checkTemplatePreview(templateId) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
-function checkTemplateBase(templateId) {
+function checkTemplateBase(templateId: AvatarTemplatePackManifestEntry["templateId"]) {
   const file = path.join(templateDir, templateId, "base.png");
   if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
 
@@ -160,7 +123,7 @@ function checkTemplateBase(templateId) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
-function checkTemplateAccessory([templateId, accessoryId]) {
+function checkTemplateAccessory([templateId, accessoryId]: readonly [string, string]) {
   const file = path.join(templateDir, templateId, "accessories", `${accessoryId}.png`);
   if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
 
@@ -176,7 +139,7 @@ function checkTemplateAccessory([templateId, accessoryId]) {
   return { type: "ok", file: path.relative(root, file), message: `${size.width}x${size.height}` };
 }
 
-function checkTemplateEmote([templateId, emoteId]) {
+function checkTemplateEmote([templateId, emoteId]: readonly [string, string]) {
   const file = path.join(templateDir, templateId, "emotes", `${emoteId}.png`);
   if (!fs.existsSync(file)) return { type: "missing", file: path.relative(root, file) };
 

@@ -219,7 +219,7 @@ Do not register Phoenix sprites before a dogless room layer exists. That rule pr
 Run:
 
 ```text
-node scripts/verify-pixellab-assets.js
+node --experimental-strip-types scripts/verify-pixellab-assets.ts
 ```
 
 from:
@@ -233,7 +233,7 @@ This verifies the registered Phoenix sprite strips, dogless room files, and Avat
 Use:
 
 ```text
-node scripts/verify-pixellab-assets.js --allow-missing
+node --experimental-strip-types scripts/verify-pixellab-assets.ts --allow-missing
 ```
 
 when checking repo readiness before the final assets exist.

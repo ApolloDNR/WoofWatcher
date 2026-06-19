@@ -507,6 +507,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateAssets.ts"),
     "utf8",
   );
+  const avatarTemplatePackManifest = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplatePackManifest.ts"),
+    "utf8",
+  );
   const avatarPreviewModel = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarPreviewModel.ts"),
     "utf8",
@@ -610,10 +614,16 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /Still preview/);
   assert.match(avatarStudio, /getAvatarTemplateAccessorySource\(draft\.templateId, layer\.id\)/);
   assert.match(avatarStudio, /getAvatarTemplateEmoteSource\(draft\.templateId, previewEmote\)/);
+  assert.match(avatarStudio, /getAvatarTemplatePack\(draft\.templateId\)/);
   assert.match(avatarStudio, /templateAccessoryLayer/);
-  assert.match(avatarStudio, /This template saves accessory choices now\. Production overlay art is still pending for its breed pack\./);
+  assert.match(avatarStudio, /templatePack\.focusLabel/);
+  assert.match(avatarStudio, /templatePack\.focusDetail/);
   assert.match(avatarStudio, /This template stays on truthful still previews until its emote pack and animation strips are produced\./);
   assert.match(avatarStudio, /Preview \$\{emoteLabel\(emote\)\} mood/);
+  assert.match(avatarTemplatePackManifest, /retriever[\s\S]*productionFocus: "next"/);
+  assert.match(avatarTemplatePackManifest, /husky[\s\S]*productionFocus: "next"/);
+  assert.match(avatarTemplatePackManifest, /doodle[\s\S]*productionFocus: "next"/);
+  assert.match(avatarTemplatePackManifest, /focusLabel: "Queued after family-dog wave"/);
   for (const templateId of templateIds) {
     assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));
     const size = readPngSize(
@@ -704,7 +714,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
     "utf8",
   );
   const verifier = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "scripts", "verify-pixellab-assets.js"),
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "scripts", "verify-pixellab-assets.ts"),
     "utf8",
   );
   const blockers = readFileSync(
@@ -720,6 +730,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(phaseOne, /transparent background/);
   assert.match(verifier, /PixelLab asset check complete/);
   assert.match(verifier, /readUInt32BE\(16\)/);
+  assert.match(verifier, /AVATAR_TEMPLATE_PACK_MANIFEST/);
   assert.match(verifier, /templateAccessories/);
   assert.match(verifier, /templateEmotes/);
   assert.match(blockers, /PixelLab secret hygiene/);

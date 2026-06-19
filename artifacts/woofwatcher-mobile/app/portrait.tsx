@@ -60,6 +60,7 @@ import {
   isAvatarTemplateAccessoryLive,
   isAvatarTemplateEmoteLive,
 } from "@/lib/avatarTemplateReadiness";
+import { getAvatarTemplatePack } from "@/lib/avatarTemplatePackManifest";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
@@ -265,6 +266,7 @@ export default function PortraitScreen() {
   const selectedTemplateDisplaySource = getAvatarTemplateDisplaySource(draft.templateId);
   const selectedTemplateEmote = getAvatarTemplateEmoteSource(draft.templateId, previewEmote);
   const selectedTemplateCardSource = selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
+  const templatePack = useMemo(() => getAvatarTemplatePack(draft.templateId), [draft.templateId]);
   const templateReadiness = useMemo(() => getAvatarTemplateReadiness(draft.templateId), [draft.templateId]);
   const previewAccessories = useMemo(() => deriveAvatarPreviewAccessories(draft), [draft]);
   const previewAccessoryLayers = useMemo(
@@ -499,8 +501,14 @@ export default function PortraitScreen() {
                     <Text style={[s.templateHeroMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                       {templateReadiness.stageDetail}
                     </Text>
+                    <Text style={[s.templateHeroMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      {templatePack.focusLabel}
+                    </Text>
                     <Text style={[s.templateHeroMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                       {templateReadiness.accessoryStatus} | {templateReadiness.emoteStatus}
+                    </Text>
+                    <Text style={[s.templateHeroMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {templatePack.focusDetail}
                     </Text>
                   </View>
                 </View>
@@ -632,6 +640,7 @@ export default function PortraitScreen() {
               {AVATAR_TEMPLATES.map((template) => {
                 const active = draft.templateId === template.id;
                 const tone = templateColor(template.id);
+                const templatePack = getAvatarTemplatePack(template.id);
                 const templateReadiness = getAvatarTemplateReadiness(template.id);
                 return (
                   <Pressable
@@ -675,8 +684,14 @@ export default function PortraitScreen() {
                     <Text style={[s.templateBadge, { color: tone, fontFamily: "Inter_700Bold" }]}>
                       {templateReadiness.stageLabel}
                     </Text>
+                    <Text style={[s.templatePackFocus, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {templatePack.focusLabel}
+                    </Text>
                     <Text style={[s.templateSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       {template.subtitle}
+                    </Text>
+                    <Text style={[s.templateFocusDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {templatePack.focusDetail}
                     </Text>
                   </Pressable>
                 );
@@ -750,7 +765,7 @@ export default function PortraitScreen() {
               <Text style={[s.sectionHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 {templateReadiness.liveAccessoryCount > 0
                   ? `${templateReadiness.accessoryStatus}. Missing slots stay configurable now and get real art as each breed pack ships.`
-                  : "This template saves accessory choices now. Production overlay art is still pending for its breed pack."}
+                  : `This template saves accessory choices now. ${templatePack.focusDetail}`}
               </Text>
               <View style={s.accessoryGrid}>
                 {AVATAR_ACCESSORIES.map((item) => {
@@ -803,7 +818,7 @@ export default function PortraitScreen() {
             <Text style={[s.sectionHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {templateReadiness.hasAnimatedPreview
                 ? "Shepherd uses the live Phoenix sprite rig where production strips already exist."
-                : "This template stays on truthful still previews until its emote pack and animation strips are produced."}
+                : `${templatePack.focusDetail} This template stays on truthful still previews until its emote pack and animation strips are produced.`}
             </Text>
             <View style={s.moodGrid}>
               {AVATAR_EMOTE_STATES.map((emote) => {
@@ -1185,7 +1200,9 @@ const s = StyleSheet.create({
   },
   templateTitle: { fontSize: 13.5 },
   templateBadge: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  templatePackFocus: { fontSize: 10.5, lineHeight: 13 },
   templateSub: { fontSize: 11.5, lineHeight: 16 },
+  templateFocusDetail: { fontSize: 10.5, lineHeight: 14 },
   swatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   swatch: {
     width: 42,
