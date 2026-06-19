@@ -87,6 +87,14 @@ The room should match the current board style: warm interior, window/patio depth
 
 Create at least a day room and dark/night room so the Home and dark-mode/supporting-page looks can share the same care-twin identity without duplicate dogs.
 
+2026-06-19 room status: day is live, and PixelLab final-candidate night,
+health-watch, and home-alone rooms are now wired as dogless 800x600 runtime
+layers. Bedtime remains the only first-pass derived room variant and needs a
+clean final PixelLab/Figma-quality replacement before store polish. Rejected
+PixelLab attempts included isometric drift, baked-in dogs, visible text, and
+watermark-like marks; do not register future rooms until they pass those visual
+checks.
+
 ### 3. Phoenix Sprite Strips
 
 Put final strips in:
@@ -170,7 +178,7 @@ Do not register future sprite strips before a matching dogless room exists. The 
 ## Local Asset Scripts
 
 - `npm run build:pixellab-sprite-strip` downloads a PixelLab `{i}.png` frame URL template and stitches selected frames into a fixed 256px-slot horizontal strip.
-- `npm run build:pixellab-room-variants` derives first-pass night, bedtime, health-watch, and home-alone room variants from the approved dogless day room.
+- `npm run build:pixellab-room-variants` derives first-pass room variants from the approved dogless day room. Use it only as a fallback; final room art should come from visually accepted PixelLab/Figma-quality sources.
 - `npm run verify:pixellab-assets` checks sprite strip dimensions and required room files.
 
 ## Quality Gate

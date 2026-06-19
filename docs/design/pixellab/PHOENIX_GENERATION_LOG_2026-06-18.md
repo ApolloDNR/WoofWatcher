@@ -752,3 +752,28 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/mixed/sprites/walk-loop-strip.png`
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. This completes live idle/walk sprite coverage for every non-Phoenix launch template.
+
+### Final-Candidate Dogless Room Pass 1
+
+- Date: 2026-06-19
+- Operator: Codex
+- PixelLab tool: `create_map_object`.
+- Accepted map object IDs:
+  - Night: `ee1156d6-0ff6-495d-9e3b-847a86f0cd5b`
+  - Health Watch: `be27ec74-b390-47f2-9c32-9a690a7e3b38`
+  - Home Alone: `762d57a1-ea40-4d92-b7c2-ac8b7d897e73`
+- Local source assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-night-pixellab-source.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-health-watch-pixellab-source.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-home-alone-pixellab-source.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-day-dogless-style-source-192.png`
+- Runtime assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-night.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-health-watch.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-home-alone.png`
+- Rejected attempts:
+  - Bedtime attempts drifted into isometric room perspective or contained dog-like poster marks.
+  - Home-alone attempts with baked-in dogs or watermark-like marks were rejected.
+  - Night attempts with baked-in dogs were rejected.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
+- Status: night, health-watch, and home-alone final candidates are downloaded, visually checked, normalized to 800x600 nearest-neighbor runtime layers, and wired through existing `careTwinAssets.ts` filenames. Bedtime remains the only first-pass derived room variant pending a clean dogless final candidate.
