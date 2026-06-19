@@ -1113,6 +1113,24 @@ Owner: Codex.
 
 Revisit trigger: Server-backed household roles, real photo uploads, medication proof policies, or caregiver Access Pass permissions require stricter role enforcement.
 
+### 2026-06-19: Detailed Logs Share The Same Trust Contract As Quick Logs
+
+Decision: Long-press/detail-sheet logs must use the same trust default engine as quick logs before they enter the timeline. Medication detail logs start pending confirmation with proof-needed metadata, safety-critical health logs start pending review, and kid/helper detail logs stay owner-reviewable even for care types that are normally casual.
+
+Reason: The user can create the same real care event through a quick tap, a long press, Home, or the Log composer. Those paths should not create different levels of household trust, proof expectation, or report evidence just because one path asked for more detail.
+
+Consequences:
+
+- `careLogTrust.ts` owns shared trust defaults and timeline attention chip derivation.
+- The detailed Log composer now adds trust metadata before append/audit work, matching the quick-log doctrine.
+- Medication proof remains a truthful placeholder state until camera/upload storage is implemented.
+- Timeline rows show unresolved care loops before opening the detail sheet: needs review, proof needed, photo requested, outcome pending, rejected, corrected, and estimated.
+- Future visual polish should preserve attention chips as an owner-facing operational surface, not hide them inside metadata.
+
+Owner: Codex.
+
+Revisit trigger: Server-backed roles, real attachments, medication proof policy, or talk-to-log command parsing introduce a stronger event creation pipeline that still preserves consistent trust defaults.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

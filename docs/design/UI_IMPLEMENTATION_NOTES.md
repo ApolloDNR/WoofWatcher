@@ -567,6 +567,23 @@ Design intent:
 - Use board-style panels, small uppercase kickers, status badges, and two-column action buttons so the review flow feels native to the neo-retro care console.
 - Preserve the audit trail below the review panel so every correction stays explainable for owners, sitters, and later Care Pass exports.
 
+## 2026-06-19 Detailed Log Trust Defaults And Timeline Attention Pass
+
+Detailed composer logs now use the same trust contract as quick logs:
+
+- Long-press/detail-sheet saves call the shared trust-default helper before the log is committed.
+- Medication detail logs start with pending confirmation and a proof-needed placeholder state, without claiming a photo was attached.
+- Safety-critical health logs start pending review, and kid/helper detail logs remain owner-reviewable even for casual care types.
+- Timeline rows now show compact attention chips beside sync status so owners can spot unresolved loops before opening a sheet.
+- Attention chips use direct labels: Needs review, Proof needed, Photo requested, Outcome pending, Rejected, Corrected, and Estimated.
+- Raw proof policy metadata stays out of generic detail rows; it belongs in the Trust review panel and timeline attention state.
+
+Design intent:
+
+- Make the timeline feel operational, not just historical.
+- Keep high-trust care moments visible while preserving the fast tap/long-press logging rhythm.
+- Give Fable/Replit a clear chip vocabulary to polish without changing the underlying trust behavior.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

@@ -1232,14 +1232,19 @@ test("keeps care log trust review wired into Log detail flows", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
   assert.match(log, /buildCareLogTrustReviewPatch/);
+  assert.match(log, /buildCareLogTrustDefaults/);
+  assert.match(log, /getCareLogAttentionChips/);
   assert.match(log, /getCareLogTrustReview/);
   assert.match(log, /detailTrustReview/);
+  assert.match(log, /entryAttentionChips/);
   assert.match(log, /handleTrustReview/);
   assert.match(log, /Trust review/);
   assert.match(log, /Confirm/);
   assert.match(log, /Reject/);
   assert.match(log, /Request photo/);
   assert.match(log, /Mark corrected/);
+  assert.match(log, /Proof needed/);
+  assert.match(log, /Needs review/);
 });
 
 test("keeps household sync health visible from More", () => {

@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 
 import {
   buildCareLogTrustReviewPatch,
+  buildCareLogTrustDefaults,
+  getCareLogAttentionChips,
   getCareLogTrustReview,
   type CareLogTrustEntryLike,
 } from "./careLogTrust.ts";
@@ -142,4 +144,80 @@ test("blocks kid, sitter, trainer, and vet viewer roles from reviewing logs", ()
     assert.equal(review.canReview, false, `${role} should not review trust state`);
     assert.equal(patch, null, `${role} should not produce a review patch`);
   }
+});
+
+test("adds safety-critical trust defaults to detailed medication and health logs", () => {
+  assert.deepEqual(
+    buildCareLogTrustDefaults({ type: "medication", caregiverRole: "Adult", interaction: "detail-sheet" }),
+    {
+      logInteraction: "detail-sheet",
+      trustState: "pending-confirmation",
+      confirmationRequired: true,
+      confirmationReason: "safety-critical",
+      photoProofStatus: "not-attached",
+      photoProofPolicy: "medication-proof",
+    },
+  );
+
+  assert.deepEqual(
+    buildCareLogTrustDefaults({ type: "symptom", caregiverRole: "Adult", interaction: "detail-sheet" }),
+    {
+      logInteraction: "detail-sheet",
+      trustState: "pending-confirmation",
+      confirmationRequired: true,
+      confirmationReason: "safety-critical",
+    },
+  );
+});
+
+test("keeps detailed kid and helper logs pending even when the log type is usually casual", () => {
+  assert.deepEqual(
+    buildCareLogTrustDefaults({ type: "walk", caregiverRole: "Kid", interaction: "detail-sheet" }),
+    {
+      logInteraction: "detail-sheet",
+      trustState: "pending-confirmation",
+      confirmationRequired: true,
+      confirmationReason: "kid-log",
+    },
+  );
+
+  assert.equal(
+    buildCareLogTrustDefaults({ type: "training", caregiverRole: "Sitter", interaction: "detail-sheet" }).confirmationReason,
+    "helper-log",
+  );
+});
+
+test("derives timeline attention chips for unresolved trust and proof loops", () => {
+  assert.deepEqual(
+    getCareLogAttentionChips(
+      entry({
+        type: "medication",
+        details: {
+          trustState: "pending-confirmation",
+          confirmationRequired: true,
+          confirmationReason: "safety-critical",
+          photoProofStatus: "not-attached",
+          photoProofPolicy: "medication-proof",
+        },
+      }),
+    ),
+    [
+      { id: "needs-review", label: "Needs review", tone: "amber" },
+      { id: "proof-needed", label: "Proof needed", tone: "copper" },
+    ],
+  );
+
+  assert.deepEqual(
+    getCareLogAttentionChips(
+      entry({
+        details: {
+          trustState: "confirmed",
+          confirmationRequired: false,
+          mealLifecycle: "outcome-pending",
+          mealCompletion: "served",
+        },
+      }),
+    ),
+    [{ id: "outcome-pending", label: "Outcome pending", tone: "sage" }],
+  );
 });

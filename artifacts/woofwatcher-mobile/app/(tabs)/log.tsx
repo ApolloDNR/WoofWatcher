@@ -45,7 +45,9 @@ import {
   type AloneTimeReturnOutcome,
 } from "@/lib/aloneTimeSession";
 import {
+  buildCareLogTrustDefaults,
   buildCareLogTrustReviewPatch,
+  getCareLogAttentionChips,
   getCareLogTrustReview,
   type CareLogReviewAction,
 } from "@/lib/careLogTrust";
@@ -376,6 +378,16 @@ const TRUST_ACTION_LABELS: Record<CareLogReviewAction, string> = {
   "mark-corrected": "Mark corrected",
 };
 
+const ENTRY_ATTENTION_CHIP_COPY: Record<string, string> = {
+  "needs-review": "Needs review",
+  "proof-needed": "Proof needed",
+  "photo-requested": "Photo requested",
+  "outcome-pending": "Outcome pending",
+  rejected: "Rejected",
+  corrected: "Corrected",
+  estimated: "Estimated",
+};
+
 function launcherActionKey(action: Pick<LauncherAction, "label" | "type">): string {
   return `${action.type}:${action.label}`;
 }
@@ -458,6 +470,7 @@ const DETAIL_SKIP_KEYS = new Set([
   "photoProofRequestedBy",
   "photoProofRequestedAt",
   "photoProofNote",
+  "photoProofPolicy",
 ]);
 
 const DETAIL_LABELS: Record<string, string> = {
@@ -1072,8 +1085,16 @@ export default function LogScreen() {
         color: "sun",
       });
     }
-    const title = parts.length ? `${config.baseTitle} - ${parts.join(", ")}` : config.baseTitle;
     const type = normalizeCareEventType(config.type, details);
+    details = {
+      ...details,
+      ...buildCareLogTrustDefaults({
+        type,
+        caregiverRole: currentCaregiverRole,
+        interaction: "detail-sheet",
+      }),
+    };
+    const title = parts.length ? `${config.baseTitle} - ${parts.join(", ")}` : config.baseTitle;
     details = appendCareAuditEvent(details, {
       id: auditId(),
       action: "created",
@@ -1120,6 +1141,7 @@ export default function LogScreen() {
     dietProgress.unit,
     noteText,
     caregiver,
+    currentCaregiverRole,
     state.dietProfile.normalPortion,
     state.profile.weight.unit,
   ]);
@@ -2746,6 +2768,7 @@ export default function LogScreen() {
                           ? "Queued"
                           : statusLabel;
                     const stickyNotes = getStickyNotes(e.details);
+                    const entryAttentionChips = getCareLogAttentionChips(e);
                     return (
                       <Pressable
                         key={e.id}
@@ -2817,6 +2840,23 @@ export default function LogScreen() {
                                 </Text>
                               </View>
                             ) : null}
+                            {entryAttentionChips.map((chip) => {
+                              const chipColor =
+                                chip.tone === "rose"
+                                  ? colors.rose
+                                  : chip.tone === "copper"
+                                    ? colors.copper
+                                    : chip.tone === "sage"
+                                      ? colors.sage
+                                      : colors.amber;
+                              return (
+                                <View key={chip.id} style={[s.entryAttentionChip, { backgroundColor: chipColor + "14" }]}>
+                                  <Text style={[s.entryAttentionText, { color: chipColor, fontFamily: "Inter_700Bold" }]}>
+                                    {ENTRY_ATTENTION_CHIP_COPY[chip.id] ?? chip.label}
+                                  </Text>
+                                </View>
+                              );
+                            })}
                           </View>
                           {e.syncStatus === "failed" && e.syncError ? (
                             <Text style={[s.entrySyncError, { color: colors.rose, fontFamily: "Inter_500Medium" }]}>
@@ -3716,6 +3756,16 @@ const s = StyleSheet.create({
     paddingVertical: 2,
   },
   entryStatusText: {
+    fontSize: 9.5,
+    letterSpacing: 0.2,
+    textTransform: "uppercase",
+  },
+  entryAttentionChip: {
+    borderRadius: 7,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  entryAttentionText: {
     fontSize: 9.5,
     letterSpacing: 0.2,
     textTransform: "uppercase",

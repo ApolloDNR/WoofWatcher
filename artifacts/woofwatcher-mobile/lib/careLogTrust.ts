@@ -1,4 +1,4 @@
-import { appendCareAuditEvent } from "../../../lib/care-domain/src/index.ts";
+import { appendCareAuditEvent, normalizeCareEventType } from "../../../lib/care-domain/src/index.ts";
 
 export type CareLogTrustState =
   | "confirmed"
@@ -8,6 +8,8 @@ export type CareLogTrustState =
   | "rejected";
 
 export type CareLogReviewAction = "confirm" | "reject" | "request-photo" | "mark-corrected";
+export type CareLogInteraction = "quick-tap" | "detail-sheet";
+export type CareLogAttentionTone = "amber" | "copper" | "rose" | "sage";
 
 export interface CareLogTrustEntryLike {
   id?: string;
@@ -48,6 +50,18 @@ export interface CareLogTrustReviewPatch {
   details: Record<string, unknown>;
 }
 
+export interface CareLogTrustDefaultsOptions {
+  type: string | null | undefined;
+  caregiverRole?: string | null;
+  interaction: CareLogInteraction;
+}
+
+export interface CareLogAttentionChip {
+  id: string;
+  label: string;
+  tone: CareLogAttentionTone;
+}
+
 const REVIEW_ACTIONS: CareLogTrustReviewActionOption[] = [
   { id: "confirm", label: "Confirm" },
   { id: "reject", label: "Reject" },
@@ -75,6 +89,21 @@ function normalizeRole(role: string | null | undefined): string {
   return clean(role).toLowerCase();
 }
 
+function roleRequiresConfirmation(role: string | null | undefined): "kid-log" | "helper-log" | null {
+  const normalized = normalizeRole(role);
+  if (normalized === "kid") return "kid-log";
+  if (normalized === "sitter" || normalized === "trainer") return "helper-log";
+  return null;
+}
+
+function safetyCriticalReason(type: string | null | undefined): "safety-critical" | null {
+  const normalized = normalizeCareEventType(type);
+  if (normalized === "medication" || normalized === "vomit" || normalized === "symptom") {
+    return "safety-critical";
+  }
+  return null;
+}
+
 export function canReviewCareLogTrust(role: string | null | undefined): boolean {
   const normalized = normalizeRole(role);
   if (!normalized) return false;
@@ -83,6 +112,25 @@ export function canReviewCareLogTrust(role: string | null | undefined): boolean 
   if (normalized === "adult") return true;
   if (normalized.includes("primary caregiver")) return true;
   return false;
+}
+
+export function buildCareLogTrustDefaults(options: CareLogTrustDefaultsOptions): Record<string, unknown> {
+  const normalizedType = normalizeCareEventType(options.type);
+  const confirmationReason = roleRequiresConfirmation(options.caregiverRole) ?? safetyCriticalReason(normalizedType);
+  const confirmationRequired = Boolean(confirmationReason);
+  const details: Record<string, unknown> = {
+    logInteraction: options.interaction,
+    trustState: confirmationRequired ? "pending-confirmation" : "confirmed",
+    confirmationRequired,
+    ...(confirmationReason ? { confirmationReason } : {}),
+  };
+
+  if (normalizedType === "medication") {
+    details.photoProofStatus = "not-attached";
+    details.photoProofPolicy = "medication-proof";
+  }
+
+  return details;
 }
 
 function trustState(value: unknown, confirmationRequired: boolean): CareLogTrustState {
@@ -97,6 +145,40 @@ function trustState(value: unknown, confirmationRequired: boolean): CareLogTrust
     return cleaned;
   }
   return confirmationRequired ? "pending-confirmation" : "confirmed";
+}
+
+function addChip(chips: CareLogAttentionChip[], chip: CareLogAttentionChip): void {
+  if (!chips.some((item) => item.id === chip.id)) chips.push(chip);
+}
+
+export function getCareLogAttentionChips(entry: CareLogTrustEntryLike): CareLogAttentionChip[] {
+  const details = entryDetails(entry);
+  const confirmationRequired = details.confirmationRequired === true;
+  const state = trustState(details.trustState, confirmationRequired);
+  const proofStatus = clean(details.photoProofStatus).toLowerCase();
+  const proofPolicy = clean(details.photoProofPolicy).toLowerCase();
+  const normalizedType = normalizeCareEventType(entry.type, details);
+  const chips: CareLogAttentionChip[] = [];
+
+  if (state === "rejected") addChip(chips, { id: "rejected", label: "Rejected", tone: "rose" });
+  if (state === "corrected") addChip(chips, { id: "corrected", label: "Corrected", tone: "copper" });
+  if (state === "estimated") addChip(chips, { id: "estimated", label: "Estimated", tone: "amber" });
+  if (state === "pending-confirmation" || confirmationRequired) {
+    addChip(chips, { id: "needs-review", label: "Needs review", tone: "amber" });
+  }
+  if (proofStatus === "requested") {
+    addChip(chips, { id: "photo-requested", label: "Photo requested", tone: "copper" });
+  } else if (proofStatus === "not-attached" && (proofPolicy || normalizedType === "medication")) {
+    addChip(chips, { id: "proof-needed", label: "Proof needed", tone: "copper" });
+  }
+
+  const mealLifecycle = clean(details.mealLifecycle).toLowerCase();
+  const mealCompletion = clean(details.mealCompletion).toLowerCase();
+  if (mealLifecycle === "outcome-pending" || mealCompletion === "served" || mealCompletion === "grazing") {
+    addChip(chips, { id: "outcome-pending", label: "Outcome pending", tone: "sage" });
+  }
+
+  return chips;
 }
 
 function reasonLabel(reason: unknown): string {
