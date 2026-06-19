@@ -643,3 +643,55 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/spaniel/sprites/walk-loop-strip.png`
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. The accepted source turns the seated/front-facing Spaniel base into a side-view game-sprite stance with readable floppy-ear idle and walk loops.
+
+### Toy Breed Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_object_state`, then `animate_object`.
+- Source base object ID: `995d0da0-6469-42ea-9855-7caed01584c2`
+- Accepted side-view live source object ID: `ae5d26e0-3e12-4952-a728-15db8a56f15b`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `971528e9-ea77-422d-8b30-caa33ed431b7`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ae5d26e0-3e12-4952-a728-15db8a56f15b/animations/971528e9-ea77-422d-8b30-caa33ed431b7/unknown/{i}.png`.
+  - Walk loop: animation ID `9c4c79dd-c34e-41ae-a1b0-48c3ba55e954`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ae5d26e0-3e12-4952-a728-15db8a56f15b/animations/9c4c79dd-c34e-41ae-a1b0-48c3ba55e954/unknown/{i}.png`.
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/toy/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. Toy's walk loop has a tiny contact-shadow artifact in some frames that should be reviewed on native phone-size QA before final store polish.
+
+### Slender Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_object_state`, then `animate_object`.
+- Source base object ID: `efa34067-c258-4105-9da4-73d0907f36b5`
+- Accepted side-view live source object ID: `a18794b5-dc3d-49c7-91c2-44d6238b538c`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `2b643c66-fef4-4092-8928-f5cf8d3c0828`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/a18794b5-dc3d-49c7-91c2-44d6238b538c/animations/2b643c66-fef4-4092-8928-f5cf8d3c0828/unknown/{i}.png`.
+  - Walk loop: animation ID `2445a280-335b-4bff-9249-cbc71a22f396`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/a18794b5-dc3d-49c7-91c2-44d6238b538c/animations/2445a280-335b-4bff-9249-cbc71a22f396/unknown/{i}.png`.
+  - Recovered failure: the first idle/tail-wag attempt failed with `[500] Out of CUDA memory (24 GB total capacity)`, then the retry succeeded.
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/slender/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. The long-leg silhouette is strong; native phone-size QA should confirm the gait cadence reads naturally in motion.
+
+### Mixed Breed Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_object_state`, then `animate_object`.
+- Source base object ID: `c63ef688-cc17-4f7f-94d2-8504606213b5`
+- Accepted side-view live source object ID: `8c85ad7b-d623-4995-80e3-d0658250f7bc`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `1ac4546d-1e62-4026-bd8e-11279343320b`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/8c85ad7b-d623-4995-80e3-d0658250f7bc/animations/1ac4546d-1e62-4026-bd8e-11279343320b/unknown/{i}.png`.
+  - Walk loop: animation ID `53e19ee4-952c-4de9-a32d-5262ee6094e1`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/8c85ad7b-d623-4995-80e3-d0658250f7bc/animations/53e19ee4-952c-4de9-a32d-5262ee6094e1/unknown/{i}.png`.
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/mixed/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. This completes live idle/walk sprite coverage for every non-Phoenix launch template.

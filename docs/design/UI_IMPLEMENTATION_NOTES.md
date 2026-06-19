@@ -385,7 +385,7 @@ Tightened the care-twin creator toward the Option B neo-retro digital pet boards
 Remaining visual work:
 
 - Capture native iOS/Android screenshots for final safe-area, animation pacing, and phone-size sprite proportion QA.
-- Continue PixelLab template sprite packs for Toy, Slender, and Mixed Breed.
+- Review all launch-template live sprite packs on native iOS/Android and refine weak gait loops.
 - Add artist-reviewed overlay alignment for accessories so hats/collars/bandanas stay locked to each breed's body anchor.
 
 ## 2026-06-18 Dachshund Live Sprite Pack Pass
@@ -394,12 +394,12 @@ Added the first long-body Avatar Studio live template pack:
 
 - Generated a PixelLab side-view Dachshund live source from the approved base template and accepted it over a prompt-only backup source because the silhouette and palette were stronger.
 - Promoted two transparent 2048x256 sprite strips under `assets/avatar/templates/dachshund/sprites/`: `idle-tail-wag-strip.png` and `walk-loop-strip.png`.
-- Registered the Dachshund pack in `avatarTemplateSpriteAssets.ts`, added it to the live-template preview model, and moved the still-preview regression test to Spaniel.
+- Registered the Dachshund pack in `avatarTemplateSpriteAssets.ts`, added it to the live-template preview model, and kept unfinished templates on honest still previews until their live packs were generated.
 - Extended `verify-pixellab-assets.js` and mobile readiness coverage so Dachshund live strips must remain present at 8-frame, 256px-slot dimensions.
 
 Remaining visual work:
 
-- Generate live sprite packs for Toy Breed, Slender, and Mixed Breed.
+- Run native phone-size QA across every completed template sprite pack and refine any weak gait loops.
 - Add Dachshund emote stills and overlay-aligned accessories after the remaining body-class motion packs are complete.
 - Native phone-size QA should confirm the short-leg walk loop reads clearly in the Avatar Studio room.
 
@@ -409,14 +409,30 @@ Added a long-ear sporting-body Avatar Studio live template pack:
 
 - Generated a PixelLab side-view Spaniel live source from the approved front-facing base template so the walk loop starts from a real game-sprite stance.
 - Promoted two transparent 2048x256 sprite strips under `assets/avatar/templates/spaniel/sprites/`: `idle-tail-wag-strip.png` and `walk-loop-strip.png`.
-- Registered the Spaniel pack in `avatarTemplateSpriteAssets.ts`, added it to the live-template preview model, and moved the still-preview regression test to Toy Breed.
+- Registered the Spaniel pack in `avatarTemplateSpriteAssets.ts`, added it to the live-template preview model, and kept the still-preview regression test on the remaining unfinished launch templates until the final packs were generated.
 - Extended `verify-pixellab-assets.js` and mobile readiness coverage so Spaniel live strips must remain present at 8-frame, 256px-slot dimensions.
 
 Remaining visual work:
 
-- Generate live sprite packs for Toy Breed, Slender, and Mixed Breed.
+- Run native phone-size QA across every completed template sprite pack and refine any weak gait loops.
 - Add Spaniel emote stills and overlay-aligned accessories after the remaining body-class motion packs are complete.
 - Native phone-size QA should confirm the floppy-ear idle and walk rhythm stays readable in the Avatar Studio room.
+
+## 2026-06-18 Toy, Slender, and Mixed Live Sprite Pack Pass
+
+Completed the remaining launch-template live rig coverage:
+
+- Generated PixelLab side-view live sources for Toy Breed, Slender, and Mixed Breed from their approved front-facing base templates.
+- Promoted six transparent 2048x256 sprite strips under `assets/avatar/templates/{toy,slender,mixed}/sprites/`: `idle-tail-wag-strip.png` and `walk-loop-strip.png` for each template.
+- Registered Toy, Slender, and Mixed in `avatarTemplateSpriteAssets.ts` and `avatarPreviewModel.ts`, so every non-Phoenix launch template now routes to a live sprite pack.
+- Replaced the old unfinished-template regression test with a catalog-level test that asserts every non-Phoenix launch template is live.
+- Extended `verify-pixellab-assets.js` and mobile readiness coverage so all launch-template live strips must remain present at 8-frame, 256px-slot dimensions.
+
+Remaining visual work:
+
+- Run native iOS/Android phone-size QA for all template idle/walk loops, especially Toy's small contact-shadow frames and the long-leg Slender gait.
+- Generate remaining template emote still packs or shared body-class emote packs.
+- Add overlay-aligned accessory layers so collars, hats, bandanas, beds, and effects track each body type cleanly during animation.
 
 ## 2026-06-18 Retriever Starter Emote Pack Pass
 

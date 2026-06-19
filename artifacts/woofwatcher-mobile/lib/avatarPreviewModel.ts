@@ -16,9 +16,12 @@ const LIVE_TEMPLATE_PACKS = new Set<AvatarTemplateId>([
   "doodle",
   "hound",
   "husky",
+  "mixed",
   "retriever",
+  "slender",
   "spaniel",
   "terrier",
+  "toy",
 ]);
 
 export interface AvatarPreviewAccessoryLayer {

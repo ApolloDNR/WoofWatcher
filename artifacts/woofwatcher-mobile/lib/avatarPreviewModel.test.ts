@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createDefaultAvatarConfig } from "./avatarStudio.ts";
+import { AVATAR_TEMPLATES, createDefaultAvatarConfig } from "./avatarStudio.ts";
 import {
   deriveAvatarPreviewAccessories,
   deriveAvatarPreviewMood,
@@ -76,10 +76,30 @@ test("uses live template sprite packs for completed launch breed previews", () =
   assert.equal(motion.spriteAction, null);
 });
 
-test("keeps unfinished templates on truthful still previews", () => {
-  const motion = deriveAvatarPreviewMotion("toy", "calm");
+test("uses live template sprite packs for every non-Phoenix launch template", () => {
+  const liveTemplateIds = AVATAR_TEMPLATES.map((template) => template.id).filter(
+    (templateId) => templateId !== "shepherd",
+  );
 
-  assert.equal(motion.mode, "still");
-  assert.equal(motion.label, "Starter still preview");
-  assert.equal(motion.spriteAction, null);
+  assert.deepEqual(liveTemplateIds, [
+    "retriever",
+    "husky",
+    "bully",
+    "doodle",
+    "terrier",
+    "hound",
+    "dachshund",
+    "spaniel",
+    "toy",
+    "slender",
+    "mixed",
+  ]);
+
+  for (const templateId of liveTemplateIds) {
+    const motion = deriveAvatarPreviewMotion(templateId, "calm");
+
+    assert.equal(motion.mode, "sprite");
+    assert.equal(motion.label, "Live template sprite pack");
+    assert.equal(motion.spriteAction, null);
+  }
 });

@@ -256,6 +256,17 @@ Initial Spaniel live sprite strips are now wired as a long-ear sporting-body ani
 
 The Spaniel pack uses a PixelLab side-view standing source created from the approved front-facing base template, matching the preferred production pattern for seated/base catalog art.
 
+Initial Toy Breed, Slender, and Mixed Breed live sprite strips are now wired as the final launch-template animation packs, registered through `avatarTemplateSpriteAssets.ts`, verified by `verify-pixellab-assets.js`, and rendered in `/portrait` when the selected template and mood state map to a live loop:
+
+- `assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png` - live, 2048x256, 8 frames, used for happy/calm/proud preview states.
+- `assets/avatar/templates/toy/sprites/walk-loop-strip.png` - live, 2048x256, 8 frames, used for excited/bored preview states.
+- `assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png` - live, 2048x256, 8 frames, used for happy/calm/proud preview states.
+- `assets/avatar/templates/slender/sprites/walk-loop-strip.png` - live, 2048x256, 8 frames, used for excited/bored preview states.
+- `assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png` - live, 2048x256, 8 frames, used for happy/calm/proud preview states.
+- `assets/avatar/templates/mixed/sprites/walk-loop-strip.png` - live, 2048x256, 8 frames, used for excited/bored preview states.
+
+All non-Phoenix launch templates now have at least two live game-sprite loops. Native phone-size QA should still decide which gaits need refinement before App Store polish.
+
 Initial accessory slots:
 
 - neck: forest bandana, navy collar, copper collar, heart tag, trail bandana. Status: transparent PixelLab 85x85 inventory icons live.
@@ -304,7 +315,7 @@ Next required asset pass:
 - Replace the first-pass derived room variants with final illustrated dark/night, bedtime, health-watch, and home-alone scenes.
 - Inspect and improve any action strip that does not read strongly enough at phone size, especially walk/eat/drink where future prop layers can make the action clearer.
 - Inspect the subscription seed idle/walk strips in native/mobile preview before deciding whether they should replace or supplement the current approved seated sprite family.
-- Derive the dark-mode, badge/logo refinements, running footer sprite, true overlay-aligned accessory layers, remaining unfinished template emote packs, and remaining live template sprite packs from the approved identity system instead of generating unrelated one-off dogs.
+- Derive the dark-mode, badge/logo refinements, running footer sprite, true overlay-aligned accessory layers, remaining unfinished template emote packs, and any refined gait loops from the approved identity system instead of generating unrelated one-off dogs.
 
 ## Production Sprite Manifest Needed Next
 

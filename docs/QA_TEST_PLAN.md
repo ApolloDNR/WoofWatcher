@@ -14,7 +14,7 @@ Latest local evidence, 2026-06-18:
 
 - PASS: 237 focused tests with the command above.
 - PASS: mobile TypeScript check with bundled Node and workspace TypeScript.
-- PASS: PixelLab asset verifier checked 125 Phoenix room/sprite/template/emote/accessory/seed-strip assets with 0 missing and 0 invalid.
+- PASS: PixelLab asset verifier checked 131 Phoenix room/sprite/template/emote/accessory/seed-strip assets with 0 missing and 0 invalid.
 - PASS: Expo web export completed through the package-local Expo CLI and Metro resolver patch.
 - PASS: Headless Chrome visual smoke captured `/portrait` and Home from the exported web build.
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` is currently blocked before job start by the account billing/spending-limit issue documented in `docs/BLOCKERS_FOR_APOLLO.md`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.

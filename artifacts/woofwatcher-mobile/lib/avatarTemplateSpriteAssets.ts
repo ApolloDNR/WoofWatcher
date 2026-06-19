@@ -210,6 +210,42 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       },
     },
   },
+  mixed: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Mixed Breed live idle",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png"),
+      ),
+      track: {
+        key: "mixed:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Mixed Breed idle breathing with friendly ear and tail motion.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Mixed Breed walk loop",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/mixed/sprites/walk-loop-strip.png"),
+      ),
+      track: {
+        key: "mixed:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/mixed/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Mixed Breed balanced side-view walk loop for live Avatar Studio preview.",
+      },
+    },
+  },
   retriever: {
     "idle-tail-wag": {
       action: "idle-tail-wag",
@@ -243,6 +279,42 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         requiredAsset: "assets/avatar/templates/retriever/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
         notes: "Subscription-backed PixelLab Retriever walk loop for live Avatar Studio preview.",
+      },
+    },
+  },
+  slender: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Slender live idle",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png"),
+      ),
+      track: {
+        key: "slender:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Slender idle breathing with elegant long-leg posture motion.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Slender walk loop",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/slender/sprites/walk-loop-strip.png"),
+      ),
+      track: {
+        key: "slender:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/slender/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Slender long-leg side-view trot loop for live Avatar Studio preview.",
       },
     },
   },
@@ -315,6 +387,42 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         requiredAsset: "assets/avatar/templates/terrier/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
         notes: "Subscription-backed PixelLab Terrier standing-source trot loop for live Avatar Studio preview.",
+      },
+    },
+  },
+  toy: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Toy Breed live idle",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png"),
+      ),
+      track: {
+        key: "toy:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Toy Breed idle breathing with tiny-body ear and tail motion.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Toy Breed walk loop",
+      asset: spriteAsset(
+        require("@/assets/avatar/templates/toy/sprites/walk-loop-strip.png"),
+      ),
+      track: {
+        key: "toy:walk-loop",
+        frameCount: 8,
+        fps: 10,
+        loop: true,
+        slotSize: 256,
+        requiredAsset: "assets/avatar/templates/toy/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes: "Subscription-backed PixelLab Toy Breed tiny side-view trot loop for live Avatar Studio preview.",
       },
     },
   },
