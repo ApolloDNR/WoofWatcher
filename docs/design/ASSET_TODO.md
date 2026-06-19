@@ -129,13 +129,21 @@ Initial production-scale base stills are live as a PixelLab-generated 170x170 ba
 - `assets/avatar/templates/shepherd/base.png` - live.
 - `assets/avatar/templates/retriever/base.png` - live.
 - `assets/avatar/templates/husky/base.png` - live.
+- `assets/avatar/templates/bully/base.png` - live.
 - `assets/avatar/templates/doodle/base.png` - live.
+- `assets/avatar/templates/terrier/base.png` - live.
+- `assets/avatar/templates/hound/base.png` - live.
+- `assets/avatar/templates/dachshund/base.png` - live.
+- `assets/avatar/templates/spaniel/base.png` - live.
+- `assets/avatar/templates/toy/base.png` - live.
+- `assets/avatar/templates/slender/base.png` - live.
+- `assets/avatar/templates/mixed/base.png` - live.
 
 Still needed for a full App Store avatar system:
 
-- `base.png` for Bully, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed at production scale.
-- emote stills for each template.
-- template-specific sprite strips for major body classes.
+- final illustrated room variants for night, bedtime, health-watch, and home-alone states.
+- native runtime QA for the generated template strips and room variants.
+- optional artist-provided breed-specific motion refinements beyond the current generated preview-strip contract.
 
 Initial accessory slots:
 

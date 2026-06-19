@@ -68,7 +68,7 @@ test("uses the live Phoenix sprite pack for shepherd mood previews", () => {
   assert.equal(motion.spriteAction, "celebrate-hop");
 });
 
-test("uses the animated family pack for retriever mood previews", () => {
+test("uses the animated launch pack for retriever mood previews", () => {
   const motion = deriveAvatarPreviewMotion("retriever", "calm");
 
   assert.equal(motion.mode, "sprite");

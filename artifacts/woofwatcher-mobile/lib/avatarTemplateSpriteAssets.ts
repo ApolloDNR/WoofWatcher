@@ -173,6 +173,302 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       "health-watch",
     ),
   },
+  bully: {
+    "tail-wag": createTemplateStripAsset(
+      "assets/avatar/templates/bully/sprites/tail-wag-strip.png",
+      () => require("@/assets/avatar/templates/bully/sprites/tail-wag-strip.png"),
+      "tail-wag",
+    ),
+    "ear-perk": createTemplateStripAsset(
+      "assets/avatar/templates/bully/sprites/ear-perk-strip.png",
+      () => require("@/assets/avatar/templates/bully/sprites/ear-perk-strip.png"),
+      "ear-perk",
+    ),
+    "eat-loop": createTemplateStripAsset(
+      "assets/avatar/templates/bully/sprites/eat-loop-strip.png",
+      () => require("@/assets/avatar/templates/bully/sprites/eat-loop-strip.png"),
+      "eat-loop",
+    ),
+    "sleep-loop": createTemplateStripAsset(
+      "assets/avatar/templates/bully/sprites/sleep-loop-strip.png",
+      () => require("@/assets/avatar/templates/bully/sprites/sleep-loop-strip.png"),
+      "sleep-loop",
+    ),
+    "comfort-loop": createTemplateStripAsset(
+      "assets/avatar/templates/bully/sprites/comfort-loop-strip.png",
+      () => require("@/assets/avatar/templates/bully/sprites/comfort-loop-strip.png"),
+      "comfort-loop",
+    ),
+    "celebrate-hop": createTemplateStripAsset(
+      "assets/avatar/templates/bully/sprites/celebrate-hop-strip.png",
+      () => require("@/assets/avatar/templates/bully/sprites/celebrate-hop-strip.png"),
+      "celebrate-hop",
+    ),
+    "health-watch": createTemplateStripAsset(
+      "assets/avatar/templates/bully/sprites/health-watch-strip.png",
+      () => require("@/assets/avatar/templates/bully/sprites/health-watch-strip.png"),
+      "health-watch",
+    ),
+  },
+  terrier: {
+    "tail-wag": createTemplateStripAsset(
+      "assets/avatar/templates/terrier/sprites/tail-wag-strip.png",
+      () => require("@/assets/avatar/templates/terrier/sprites/tail-wag-strip.png"),
+      "tail-wag",
+    ),
+    "ear-perk": createTemplateStripAsset(
+      "assets/avatar/templates/terrier/sprites/ear-perk-strip.png",
+      () => require("@/assets/avatar/templates/terrier/sprites/ear-perk-strip.png"),
+      "ear-perk",
+    ),
+    "eat-loop": createTemplateStripAsset(
+      "assets/avatar/templates/terrier/sprites/eat-loop-strip.png",
+      () => require("@/assets/avatar/templates/terrier/sprites/eat-loop-strip.png"),
+      "eat-loop",
+    ),
+    "sleep-loop": createTemplateStripAsset(
+      "assets/avatar/templates/terrier/sprites/sleep-loop-strip.png",
+      () => require("@/assets/avatar/templates/terrier/sprites/sleep-loop-strip.png"),
+      "sleep-loop",
+    ),
+    "comfort-loop": createTemplateStripAsset(
+      "assets/avatar/templates/terrier/sprites/comfort-loop-strip.png",
+      () => require("@/assets/avatar/templates/terrier/sprites/comfort-loop-strip.png"),
+      "comfort-loop",
+    ),
+    "celebrate-hop": createTemplateStripAsset(
+      "assets/avatar/templates/terrier/sprites/celebrate-hop-strip.png",
+      () => require("@/assets/avatar/templates/terrier/sprites/celebrate-hop-strip.png"),
+      "celebrate-hop",
+    ),
+    "health-watch": createTemplateStripAsset(
+      "assets/avatar/templates/terrier/sprites/health-watch-strip.png",
+      () => require("@/assets/avatar/templates/terrier/sprites/health-watch-strip.png"),
+      "health-watch",
+    ),
+  },
+  hound: {
+    "tail-wag": createTemplateStripAsset(
+      "assets/avatar/templates/hound/sprites/tail-wag-strip.png",
+      () => require("@/assets/avatar/templates/hound/sprites/tail-wag-strip.png"),
+      "tail-wag",
+    ),
+    "ear-perk": createTemplateStripAsset(
+      "assets/avatar/templates/hound/sprites/ear-perk-strip.png",
+      () => require("@/assets/avatar/templates/hound/sprites/ear-perk-strip.png"),
+      "ear-perk",
+    ),
+    "eat-loop": createTemplateStripAsset(
+      "assets/avatar/templates/hound/sprites/eat-loop-strip.png",
+      () => require("@/assets/avatar/templates/hound/sprites/eat-loop-strip.png"),
+      "eat-loop",
+    ),
+    "sleep-loop": createTemplateStripAsset(
+      "assets/avatar/templates/hound/sprites/sleep-loop-strip.png",
+      () => require("@/assets/avatar/templates/hound/sprites/sleep-loop-strip.png"),
+      "sleep-loop",
+    ),
+    "comfort-loop": createTemplateStripAsset(
+      "assets/avatar/templates/hound/sprites/comfort-loop-strip.png",
+      () => require("@/assets/avatar/templates/hound/sprites/comfort-loop-strip.png"),
+      "comfort-loop",
+    ),
+    "celebrate-hop": createTemplateStripAsset(
+      "assets/avatar/templates/hound/sprites/celebrate-hop-strip.png",
+      () => require("@/assets/avatar/templates/hound/sprites/celebrate-hop-strip.png"),
+      "celebrate-hop",
+    ),
+    "health-watch": createTemplateStripAsset(
+      "assets/avatar/templates/hound/sprites/health-watch-strip.png",
+      () => require("@/assets/avatar/templates/hound/sprites/health-watch-strip.png"),
+      "health-watch",
+    ),
+  },
+  dachshund: {
+    "tail-wag": createTemplateStripAsset(
+      "assets/avatar/templates/dachshund/sprites/tail-wag-strip.png",
+      () => require("@/assets/avatar/templates/dachshund/sprites/tail-wag-strip.png"),
+      "tail-wag",
+    ),
+    "ear-perk": createTemplateStripAsset(
+      "assets/avatar/templates/dachshund/sprites/ear-perk-strip.png",
+      () => require("@/assets/avatar/templates/dachshund/sprites/ear-perk-strip.png"),
+      "ear-perk",
+    ),
+    "eat-loop": createTemplateStripAsset(
+      "assets/avatar/templates/dachshund/sprites/eat-loop-strip.png",
+      () => require("@/assets/avatar/templates/dachshund/sprites/eat-loop-strip.png"),
+      "eat-loop",
+    ),
+    "sleep-loop": createTemplateStripAsset(
+      "assets/avatar/templates/dachshund/sprites/sleep-loop-strip.png",
+      () => require("@/assets/avatar/templates/dachshund/sprites/sleep-loop-strip.png"),
+      "sleep-loop",
+    ),
+    "comfort-loop": createTemplateStripAsset(
+      "assets/avatar/templates/dachshund/sprites/comfort-loop-strip.png",
+      () => require("@/assets/avatar/templates/dachshund/sprites/comfort-loop-strip.png"),
+      "comfort-loop",
+    ),
+    "celebrate-hop": createTemplateStripAsset(
+      "assets/avatar/templates/dachshund/sprites/celebrate-hop-strip.png",
+      () => require("@/assets/avatar/templates/dachshund/sprites/celebrate-hop-strip.png"),
+      "celebrate-hop",
+    ),
+    "health-watch": createTemplateStripAsset(
+      "assets/avatar/templates/dachshund/sprites/health-watch-strip.png",
+      () => require("@/assets/avatar/templates/dachshund/sprites/health-watch-strip.png"),
+      "health-watch",
+    ),
+  },
+  spaniel: {
+    "tail-wag": createTemplateStripAsset(
+      "assets/avatar/templates/spaniel/sprites/tail-wag-strip.png",
+      () => require("@/assets/avatar/templates/spaniel/sprites/tail-wag-strip.png"),
+      "tail-wag",
+    ),
+    "ear-perk": createTemplateStripAsset(
+      "assets/avatar/templates/spaniel/sprites/ear-perk-strip.png",
+      () => require("@/assets/avatar/templates/spaniel/sprites/ear-perk-strip.png"),
+      "ear-perk",
+    ),
+    "eat-loop": createTemplateStripAsset(
+      "assets/avatar/templates/spaniel/sprites/eat-loop-strip.png",
+      () => require("@/assets/avatar/templates/spaniel/sprites/eat-loop-strip.png"),
+      "eat-loop",
+    ),
+    "sleep-loop": createTemplateStripAsset(
+      "assets/avatar/templates/spaniel/sprites/sleep-loop-strip.png",
+      () => require("@/assets/avatar/templates/spaniel/sprites/sleep-loop-strip.png"),
+      "sleep-loop",
+    ),
+    "comfort-loop": createTemplateStripAsset(
+      "assets/avatar/templates/spaniel/sprites/comfort-loop-strip.png",
+      () => require("@/assets/avatar/templates/spaniel/sprites/comfort-loop-strip.png"),
+      "comfort-loop",
+    ),
+    "celebrate-hop": createTemplateStripAsset(
+      "assets/avatar/templates/spaniel/sprites/celebrate-hop-strip.png",
+      () => require("@/assets/avatar/templates/spaniel/sprites/celebrate-hop-strip.png"),
+      "celebrate-hop",
+    ),
+    "health-watch": createTemplateStripAsset(
+      "assets/avatar/templates/spaniel/sprites/health-watch-strip.png",
+      () => require("@/assets/avatar/templates/spaniel/sprites/health-watch-strip.png"),
+      "health-watch",
+    ),
+  },
+  toy: {
+    "tail-wag": createTemplateStripAsset(
+      "assets/avatar/templates/toy/sprites/tail-wag-strip.png",
+      () => require("@/assets/avatar/templates/toy/sprites/tail-wag-strip.png"),
+      "tail-wag",
+    ),
+    "ear-perk": createTemplateStripAsset(
+      "assets/avatar/templates/toy/sprites/ear-perk-strip.png",
+      () => require("@/assets/avatar/templates/toy/sprites/ear-perk-strip.png"),
+      "ear-perk",
+    ),
+    "eat-loop": createTemplateStripAsset(
+      "assets/avatar/templates/toy/sprites/eat-loop-strip.png",
+      () => require("@/assets/avatar/templates/toy/sprites/eat-loop-strip.png"),
+      "eat-loop",
+    ),
+    "sleep-loop": createTemplateStripAsset(
+      "assets/avatar/templates/toy/sprites/sleep-loop-strip.png",
+      () => require("@/assets/avatar/templates/toy/sprites/sleep-loop-strip.png"),
+      "sleep-loop",
+    ),
+    "comfort-loop": createTemplateStripAsset(
+      "assets/avatar/templates/toy/sprites/comfort-loop-strip.png",
+      () => require("@/assets/avatar/templates/toy/sprites/comfort-loop-strip.png"),
+      "comfort-loop",
+    ),
+    "celebrate-hop": createTemplateStripAsset(
+      "assets/avatar/templates/toy/sprites/celebrate-hop-strip.png",
+      () => require("@/assets/avatar/templates/toy/sprites/celebrate-hop-strip.png"),
+      "celebrate-hop",
+    ),
+    "health-watch": createTemplateStripAsset(
+      "assets/avatar/templates/toy/sprites/health-watch-strip.png",
+      () => require("@/assets/avatar/templates/toy/sprites/health-watch-strip.png"),
+      "health-watch",
+    ),
+  },
+  slender: {
+    "tail-wag": createTemplateStripAsset(
+      "assets/avatar/templates/slender/sprites/tail-wag-strip.png",
+      () => require("@/assets/avatar/templates/slender/sprites/tail-wag-strip.png"),
+      "tail-wag",
+    ),
+    "ear-perk": createTemplateStripAsset(
+      "assets/avatar/templates/slender/sprites/ear-perk-strip.png",
+      () => require("@/assets/avatar/templates/slender/sprites/ear-perk-strip.png"),
+      "ear-perk",
+    ),
+    "eat-loop": createTemplateStripAsset(
+      "assets/avatar/templates/slender/sprites/eat-loop-strip.png",
+      () => require("@/assets/avatar/templates/slender/sprites/eat-loop-strip.png"),
+      "eat-loop",
+    ),
+    "sleep-loop": createTemplateStripAsset(
+      "assets/avatar/templates/slender/sprites/sleep-loop-strip.png",
+      () => require("@/assets/avatar/templates/slender/sprites/sleep-loop-strip.png"),
+      "sleep-loop",
+    ),
+    "comfort-loop": createTemplateStripAsset(
+      "assets/avatar/templates/slender/sprites/comfort-loop-strip.png",
+      () => require("@/assets/avatar/templates/slender/sprites/comfort-loop-strip.png"),
+      "comfort-loop",
+    ),
+    "celebrate-hop": createTemplateStripAsset(
+      "assets/avatar/templates/slender/sprites/celebrate-hop-strip.png",
+      () => require("@/assets/avatar/templates/slender/sprites/celebrate-hop-strip.png"),
+      "celebrate-hop",
+    ),
+    "health-watch": createTemplateStripAsset(
+      "assets/avatar/templates/slender/sprites/health-watch-strip.png",
+      () => require("@/assets/avatar/templates/slender/sprites/health-watch-strip.png"),
+      "health-watch",
+    ),
+  },
+  mixed: {
+    "tail-wag": createTemplateStripAsset(
+      "assets/avatar/templates/mixed/sprites/tail-wag-strip.png",
+      () => require("@/assets/avatar/templates/mixed/sprites/tail-wag-strip.png"),
+      "tail-wag",
+    ),
+    "ear-perk": createTemplateStripAsset(
+      "assets/avatar/templates/mixed/sprites/ear-perk-strip.png",
+      () => require("@/assets/avatar/templates/mixed/sprites/ear-perk-strip.png"),
+      "ear-perk",
+    ),
+    "eat-loop": createTemplateStripAsset(
+      "assets/avatar/templates/mixed/sprites/eat-loop-strip.png",
+      () => require("@/assets/avatar/templates/mixed/sprites/eat-loop-strip.png"),
+      "eat-loop",
+    ),
+    "sleep-loop": createTemplateStripAsset(
+      "assets/avatar/templates/mixed/sprites/sleep-loop-strip.png",
+      () => require("@/assets/avatar/templates/mixed/sprites/sleep-loop-strip.png"),
+      "sleep-loop",
+    ),
+    "comfort-loop": createTemplateStripAsset(
+      "assets/avatar/templates/mixed/sprites/comfort-loop-strip.png",
+      () => require("@/assets/avatar/templates/mixed/sprites/comfort-loop-strip.png"),
+      "comfort-loop",
+    ),
+    "celebrate-hop": createTemplateStripAsset(
+      "assets/avatar/templates/mixed/sprites/celebrate-hop-strip.png",
+      () => require("@/assets/avatar/templates/mixed/sprites/celebrate-hop-strip.png"),
+      "celebrate-hop",
+    ),
+    "health-watch": createTemplateStripAsset(
+      "assets/avatar/templates/mixed/sprites/health-watch-strip.png",
+      () => require("@/assets/avatar/templates/mixed/sprites/health-watch-strip.png"),
+      "health-watch",
+    ),
+  },
 };
 
 export function getAvatarTemplateSpriteAsset(

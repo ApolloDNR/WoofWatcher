@@ -94,8 +94,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 86. NEXT: Replace first-pass locally derived room variants with final PixelLab/Figma-quality night, bedtime, health-watch, and home-alone illustrations once the core runtime is verified on device.
 87. NEXT: Native iOS/Android runtime QA with real Expo/EAS account access, simulator/device screenshots, safe-area checks, frame-rate review, and App Store/Play Store readiness.
 88. DONE 2026-06-18: Avatar Studio template catalog pass generated, promoted, downloaded, registered, and tested 12 PixelLab preview thumbnails for Shepherd, Retriever, Husky, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed.
-89. IN PROGRESS 2026-06-19: Generate production-scale Avatar Studio template base art, accessory layer PNGs, and template-specific emote/sprite packs, starting with Shepherd/Phoenix and the highest-demand family dog templates. The full 12-template base still pack is live for Shepherd, Retriever, Husky, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed; Shepherd/Phoenix remains the benchmark live pack, and Retriever, Husky, and Doodle now each have full file-backed family packs with 10 accessory overlays, 10 mood stills, and seven registered animated preview strips.
-90. NEXT: Carry the same full overlay/emote/animated-preview contract from Retriever, Husky, and Doodle into the remaining launch templates, then continue native safe-area and device runtime QA.
+89. DONE 2026-06-19: Avatar Studio now applies the full file-backed launch-pack contract across every non-shepherd launch template. Bully, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed now join Retriever, Husky, and Doodle with 10 accessory overlays, 10 mood stills, and seven registered animated preview strips, while Shepherd/Phoenix remains the benchmark live pack.
+90. NEXT: Continue native safe-area and device runtime QA, then replace the first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art.
 
 ## Cadence
 

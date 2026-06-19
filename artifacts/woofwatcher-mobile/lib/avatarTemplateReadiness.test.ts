@@ -25,7 +25,7 @@ test("reports the full live shepherd production pack", () => {
   assert.equal(readiness.emoteStatus, "10/10 live moods");
 });
 
-test("marks retriever as a full animated family pack", () => {
+test("marks retriever as a full animated launch pack", () => {
   const readiness = getAvatarTemplateReadiness("retriever");
   const pack = getAvatarTemplatePack("retriever");
 
@@ -42,11 +42,22 @@ test("marks retriever as a full animated family pack", () => {
   assert.equal(readiness.accessoryStatus, "10/10 live overlays");
   assert.equal(readiness.emoteStatus, "10/10 live moods");
   assert.equal(pack.productionFocus, "live");
-  assert.equal(pack.focusLabel, "Animated family pack live");
+  assert.equal(pack.focusLabel, "Animated launch pack live");
 });
 
-test("applies the same animated family-pack contract to husky and doodle", () => {
-  for (const templateId of ["husky", "doodle"] as const) {
+test("applies the same animated launch-pack contract to every non-shepherd launch template", () => {
+  for (const templateId of [
+    "husky",
+    "bully",
+    "doodle",
+    "terrier",
+    "hound",
+    "dachshund",
+    "spaniel",
+    "toy",
+    "slender",
+    "mixed",
+  ] as const) {
     const readiness = getAvatarTemplateReadiness(templateId);
     const pack = getAvatarTemplatePack(templateId);
 
@@ -55,11 +66,11 @@ test("applies the same animated family-pack contract to husky and doodle", () =>
     assert.equal(readiness.liveEmoteCount, 10);
     assert.equal(readiness.hasAnimatedPreview, true);
     assert.equal(pack.productionFocus, "live");
-    assert.equal(pack.focusLabel, "Animated family pack live");
+    assert.equal(pack.focusLabel, "Animated launch pack live");
   }
 });
 
-test("derives explicit live production lists for the animated family packs", () => {
+test("derives explicit live production lists for the animated launch packs", () => {
   const readiness = getAvatarTemplateReadiness("retriever");
 
   assert.deepEqual(readiness.liveAccessoryIds, [
@@ -97,7 +108,9 @@ test("distinguishes live accessory and emote slots from pending ones", () => {
   assert.equal(isAvatarTemplateAccessoryLive("shepherd", "trail-bandana"), false);
   assert.equal(isAvatarTemplateAccessoryLive("retriever", "forest-bandana"), true);
   assert.equal(isAvatarTemplateAccessoryLive("retriever", "sleepy-mask"), true);
+  assert.equal(isAvatarTemplateAccessoryLive("bully", "trail-bandana"), true);
   assert.equal(isAvatarTemplateEmoteLive("shepherd", "happy"), true);
   assert.equal(isAvatarTemplateEmoteLive("retriever", "happy"), true);
   assert.equal(isAvatarTemplateEmoteLive("retriever", "anxious"), true);
+  assert.equal(isAvatarTemplateEmoteLive("mixed", "home_alone"), true);
 });

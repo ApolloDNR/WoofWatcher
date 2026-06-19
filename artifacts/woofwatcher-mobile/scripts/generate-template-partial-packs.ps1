@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 Add-Type -AssemblyName System.Drawing
 
-$script:TemplateIds = @("retriever", "husky", "doodle")
+$script:TemplateIds = @("retriever", "husky", "bully", "doodle", "terrier", "hound", "dachshund", "spaniel", "toy", "slender", "mixed")
 $script:Root = Split-Path -Parent $PSScriptRoot
 $script:TemplateRoot = Join-Path $script:Root "assets\avatar\templates"
 $script:CanvasSize = 170

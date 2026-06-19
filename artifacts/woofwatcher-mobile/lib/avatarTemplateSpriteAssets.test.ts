@@ -6,8 +6,20 @@ import {
   listAvatarTemplateSpriteSlots,
 } from "./avatarTemplateSpriteAssets.ts";
 
-test("registers animated family-dog strips for retriever, husky, and doodle", () => {
-  for (const templateId of ["retriever", "husky", "doodle"] as const) {
+test("registers animated preview strips for every non-shepherd launch template", () => {
+  for (const templateId of [
+    "retriever",
+    "husky",
+    "bully",
+    "doodle",
+    "terrier",
+    "hound",
+    "dachshund",
+    "spaniel",
+    "toy",
+    "slender",
+    "mixed",
+  ] as const) {
     const slots = listAvatarTemplateSpriteSlots(templateId);
 
     assert.equal(slots.length, 7);

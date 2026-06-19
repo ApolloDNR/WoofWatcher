@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-19: Launch Template Packs Should All Share One Animated Preview Contract
+
+Decision: Bully, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed should now promote from base-only to the same full overlay, mood-still, and generated preview-strip contract already used by Retriever, Husky, and Doodle, instead of leaving most launch breeds in a long-lived still-only state.
+
+Reason: The repo already had a safe local generation seam built around registered `base.png` art, file-backed overlays, mood stills, and seven non-walk preview strips. Finishing the remaining launch breeds with that same contract makes Avatar Studio feel consistently premium, keeps the manifest/verifier/readiness model truthful, and moves the next queue step to native QA plus final room illustration instead of more breed-pack catch-up.
+
+Owner: Codex.
+
+Revisit trigger: Artist-provided breed strip sets replace the current generated preview-strip seam, or WoofWatcher adds template-specific walk cycles beyond the current non-walk preview contract.
+
 ### 2026-06-19: Family-Dog Templates Should Promote Straight From Partial Packs To Full Animated Packs
 
 Decision: Once Retriever, Husky, and Doodle had credible partial overlays and mood stills, WoofWatcher should finish their full family packs in one pass by adding the remaining overlay slots, the remaining mood stills, and generated preview strips together instead of introducing another long-lived half-ready state.

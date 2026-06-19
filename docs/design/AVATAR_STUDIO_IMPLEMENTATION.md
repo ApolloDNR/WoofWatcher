@@ -195,7 +195,7 @@ Room assets should eventually follow:
 ## Current Limitations
 
 - The Studio uses the PixelLab Phoenix v2 approved pack, live layered room preview, PixelLab template preview thumbnails, and four PixelLab template base stills for current previews.
-- First-pass non-Phoenix breed template thumbnails are present, and Shepherd/Retriever/Husky/Doodle base stills are present, but full base/emote/sprite packs are not complete yet.
+- First-pass non-Phoenix breed template thumbnails are present, the full 12-template base still pack is present, and every non-shepherd launch template now has file-backed overlay, mood, and preview-strip assets. Shepherd/Phoenix remains the benchmark live pack.
 - The dogless day room, first-pass dogless variants, and full registered Phoenix sprite manifest are live; final illustrated room variants still need approval/replacement.
 - Live image analysis is not wired yet.
 - True layered room sprite switching is live for registered sprite actions through `careTwinAssets.ts`.
@@ -205,7 +205,7 @@ Room assets should eventually follow:
 Before public launch, Avatar Studio needs:
 
 - final Phoenix seed frame. Status: v2 seed exists.
-- at least one polished full template pack. Status: 12 template preview thumbnails exist; Shepherd/Retriever/Husky/Doodle base stills exist; emote/sprite packs still needed.
+- at least one polished full template pack. Status: the repo now has a full non-shepherd launch-pack set with overlays, moods, and preview strips, plus the benchmark Shepherd/Phoenix live pack; remaining work is native QA and final room illustration.
 - dogless room background. Status: day room and first-pass variants exist; final illustrated variants still needed.
 - transparent sprite/emote assets. Status: Phoenix v2 still states plus full registered sprite manifest exist.
 - no duplicate Phoenix rendering

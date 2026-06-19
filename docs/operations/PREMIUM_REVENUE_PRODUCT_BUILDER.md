@@ -106,6 +106,6 @@ Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA when provider/runtime access is available.
 2. Replace first-pass derived room variants with final illustrated room art.
-3. Continue production-scale Avatar Studio template packs: shepherd sprite strips that match the new still pack, then accessory layers and emote stills for Retriever, Husky, Doodle, and the remaining launch templates.
-4. Continue screen-by-screen polish, accessibility traversal, and visual regression.
+3. Continue native runtime QA, safe-area inspection, and screenshot review for the live mobile app and Avatar Studio.
+4. Replace first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art, then continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.

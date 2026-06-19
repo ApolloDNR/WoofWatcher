@@ -564,7 +564,19 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     "home_alone",
     "not_feeling_well",
   ];
-  const nextWaveTemplateIds = ["retriever", "husky", "doodle"];
+  const nextWaveTemplateIds = [
+    "retriever",
+    "husky",
+    "bully",
+    "doodle",
+    "terrier",
+    "hound",
+    "dachshund",
+    "spaniel",
+    "toy",
+    "slender",
+    "mixed",
+  ];
   const nextWaveAccessoryIds = [
     "forest-bandana",
     "trail-bandana",
@@ -572,6 +584,8 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     "copper-collar",
     "heart-tag",
     "birthday-hat",
+    "sleepy-mask",
+    "training-vest",
     "cozy-bed",
     "heart-sparkles",
   ];
@@ -579,6 +593,9 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     "happy",
     "calm",
     "excited",
+    "bored",
+    "hungry",
+    "anxious",
     "sleepy",
     "proud",
     "home_alone",
@@ -654,9 +671,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /Preview \$\{emoteLabel\(emote\)\} mood/);
   assert.match(avatarTemplatePackManifest, /retriever[\s\S]*productionFocus: "live"/);
   assert.match(avatarTemplatePackManifest, /husky[\s\S]*productionFocus: "live"/);
+  assert.match(avatarTemplatePackManifest, /bully[\s\S]*productionFocus: "live"/);
   assert.match(avatarTemplatePackManifest, /doodle[\s\S]*productionFocus: "live"/);
-  assert.match(avatarTemplatePackManifest, /focusLabel: "Animated family pack live"/);
-  assert.match(avatarTemplatePackManifest, /focusLabel: "Queued for the next wave"/);
+  assert.match(avatarTemplatePackManifest, /mixed[\s\S]*productionFocus: "live"/);
+  assert.match(avatarTemplatePackManifest, /focusLabel: "Animated launch pack live"/);
   for (const templateId of templateIds) {
     assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));
     const size = readPngSize(
@@ -809,7 +827,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(verifier, /templateAccessories/);
   assert.match(verifier, /templateEmotes/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Retriever\/Husky\/Doodle partial overlay and emote still packs now exist locally/);
+  assert.match(blockers, /full non-shepherd animated launch-pack set/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
 

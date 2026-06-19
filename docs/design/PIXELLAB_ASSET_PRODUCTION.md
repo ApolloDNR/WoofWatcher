@@ -199,7 +199,7 @@ Retriever, Husky, and Doodle now also have a truthful partial-pack seam in the r
 - file-backed accessory overlays for `forest-bandana`, `trail-bandana`, `navy-collar`, `copper-collar`, `heart-tag`, `birthday-hat`, `cozy-bed`, and `heart-sparkles`
 - file-backed mood stills for `happy`, `calm`, `excited`, `sleepy`, `proud`, `home_alone`, and `not_feeling_well`
 
-Those first partial packs have now been promoted to full family packs in the repo: Retriever, Husky, and Doodle each have the complete overlay set, the full mood still set, and generated animated preview strips. Use the same contract for the remaining launch breeds rather than reopening a partial-only state for these three.
+Those first partial packs have now been promoted into the full non-shepherd launch-pack set in the repo: Retriever, Husky, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed each have the complete overlay set, the full mood still set, and generated animated preview strips. The next asset work should move to final room illustration and native runtime QA rather than reopening a partial-pack state.
 
 ### Phase 5 - Dogless Rooms
 
@@ -239,7 +239,7 @@ artifacts/woofwatcher-mobile
 
 This verifies the registered Phoenix sprite strips, dogless room files, and Avatar Studio template previews.
 
-Local refresh path for the current partial Retriever/Husky/Doodle packs:
+Local refresh path for the current non-shepherd launch packs:
 
 ```text
 powershell -ExecutionPolicy Bypass -File scripts/generate-template-partial-packs.ps1
