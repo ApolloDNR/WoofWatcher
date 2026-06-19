@@ -142,11 +142,11 @@ const FOCUS_SPOTS: Record<AvatarRoomZone, { left: PercentString; top: PercentStr
 };
 
 const SPRITE_STAGE_ZONES: Record<AvatarRoomZone, { left: PercentString; top: PercentString; width: number; height: number }> = {
-  rug: { left: "29%", top: "36%", width: 164, height: 164 },
-  door: { left: "18%", top: "34%", width: 164, height: 164 },
-  bowl: { left: "49%", top: "48%", width: 148, height: 148 },
-  bed: { left: "57%", top: "41%", width: 154, height: 154 },
-  window: { left: "35%", top: "25%", width: 154, height: 154 },
+  rug: { left: "27%", top: "34%", width: 188, height: 188 },
+  door: { left: "14%", top: "33%", width: 186, height: 186 },
+  bowl: { left: "46%", top: "45%", width: 170, height: 170 },
+  bed: { left: "8%", top: "35%", width: 154, height: 154 },
+  window: { left: "32%", top: "24%", width: 176, height: 176 },
 };
 
 const HUD_TONE_COLOR: Record<CareTwinHudTone, string> = {
@@ -165,6 +165,8 @@ const PIXEL_SPARKS: { left: PercentString; top: PercentString; size: number }[] 
   { left: "84%", top: "55%", size: 4 },
   { left: "58%", top: "75%", size: 3 },
 ];
+
+const PIXEL_SCANLINES = Array.from({ length: 8 }).map((_, index) => `${10 + index * 11}%` as PercentString);
 
 function energyBlocks(value: number): boolean[] {
   const filled = Math.max(1, Math.min(8, Math.round((Math.max(0, Math.min(100, value)) / 100) * 8)));
@@ -244,13 +246,12 @@ export function LivingPhoenixRoom({
     [energy, hudAccent, mood, plan.moodLabel, plan.recommendedActionLabel, plan.scenePhase, statusReadouts, theme.accent, theme.status, zone.icon],
   );
   const [activeReaction, setActiveReaction] = useState<PhoenixRoomReaction | null>(reaction ?? null);
+  const [ambientSpriteAction, setAmbientSpriteAction] = useState<CareTwinSpriteAction | null>(null);
   const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const activeSpriteTrack = activeReaction?.spriteAction
-    ? CARE_TWIN_SPRITE_MANIFEST[activeReaction.spriteAction] ?? plan.spriteTrack
-    : plan.spriteTrack;
-  const activeSpriteAsset = activeReaction?.spriteAction
-    ? getCareTwinSpriteAsset(activeReaction.spriteAction) ?? spriteAsset
-    : spriteAsset;
+  const ambientTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeSpriteAction = activeReaction?.spriteAction ?? ambientSpriteAction ?? plan.spriteAction;
+  const activeSpriteTrack = CARE_TWIN_SPRITE_MANIFEST[activeSpriteAction] ?? plan.spriteTrack;
+  const activeSpriteAsset = getCareTwinSpriteAsset(activeSpriteAction) ?? spriteAsset;
 
   const breath = useSharedValue(0);
   const walkCycle = useSharedValue(0);
@@ -294,6 +295,8 @@ export function LivingPhoenixRoom({
   useEffect(() => {
     if (!reaction) return;
     if (reactionTimer.current) clearTimeout(reactionTimer.current);
+    if (ambientTimer.current) clearTimeout(ambientTimer.current);
+    setAmbientSpriteAction(null);
     setActiveReaction(reaction);
     reactionProgress.value = 0;
     reactionProgress.value = withSequence(
@@ -305,6 +308,29 @@ export function LivingPhoenixRoom({
       if (reactionTimer.current) clearTimeout(reactionTimer.current);
     };
   }, [reaction, reactionProgress]);
+
+  useEffect(() => {
+    if (ambientTimer.current) clearTimeout(ambientTimer.current);
+    setAmbientSpriteAction(null);
+    if (!plan.idleBehaviors.length || plan.scenePhase === "rest") return;
+
+    const shortestCadence = Math.min(...plan.idleBehaviors.map((behavior) => behavior.everyMs));
+    const id = setInterval(() => {
+      if (activeReaction) return;
+      const available = plan.idleBehaviors.filter((behavior) => Math.random() <= behavior.chance);
+      const next = available[Math.floor(Math.random() * available.length)];
+      if (!next || next.action === plan.spriteAction) return;
+
+      setAmbientSpriteAction(next.action);
+      if (ambientTimer.current) clearTimeout(ambientTimer.current);
+      ambientTimer.current = setTimeout(() => setAmbientSpriteAction(null), Math.min(1700, Math.max(900, next.everyMs * 0.28)));
+    }, Math.max(1800, shortestCadence));
+
+    return () => {
+      clearInterval(id);
+      if (ambientTimer.current) clearTimeout(ambientTimer.current);
+    };
+  }, [activeReaction, plan.idleBehaviors, plan.scenePhase, plan.spriteAction]);
 
   const isWalking = plan.animation === "walk";
   const isEating = plan.animation === "eat" || plan.animation === "drink";
@@ -396,11 +422,20 @@ export function LivingPhoenixRoom({
       onPress={handlePress}
       style={styles.root}
     >
+      <View pointerEvents="none" style={styles.pixelFrame}>
+        <View style={[styles.frameCorner, styles.frameCornerTopLeft]} />
+        <View style={[styles.frameCorner, styles.frameCornerTopRight]} />
+        <View style={[styles.frameCorner, styles.frameCornerBottomLeft]} />
+        <View style={[styles.frameCorner, styles.frameCornerBottomRight]} />
+      </View>
       <Animated.Image
         source={stageSource}
         resizeMode="cover"
         style={[styles.scene, pixelImageStyle, animateBakedScene ? sceneMotionStyle : null]}
       />
+      {PIXEL_SCANLINES.map((top) => (
+        <View key={top} pointerEvents="none" style={[styles.scanline, { top }]} />
+      ))}
       <LinearGradient
         colors={[theme.wash, "rgba(255,249,239,0)", "rgba(8,20,36,0.28)"]}
         locations={[0, 0.58, 1]}
@@ -490,7 +525,7 @@ export function LivingPhoenixRoom({
       <View style={styles.topHud} pointerEvents="none">
         <View style={[styles.liveChip, { backgroundColor: "rgba(8, 26, 42, 0.88)", borderColor: "rgba(255,249,239,0.22)" }]}>
           <Animated.View style={[styles.liveDot, { backgroundColor: hudAccent }, activeZoneStyle]} />
-          <Text style={styles.liveText}>LIVE</Text>
+          <Text style={styles.liveText}>PHOENIX ROOM</Text>
         </View>
         {!isStudio ? (
           <Animated.View
@@ -510,7 +545,11 @@ export function LivingPhoenixRoom({
         <View style={[styles.roomStatsPanel, { backgroundColor: "rgba(255,249,239,0.93)", borderColor: "rgba(8,26,42,0.18)" }]}>
           <View style={styles.roomStatsHeader}>
             <Text style={[styles.roomStatsTitle, { color: colors.navy }]}>STATUS</Text>
-            <View style={[styles.roomStatsSignal, { backgroundColor: hudAccent }]} />
+            <View style={styles.roomStatsSignalWrap}>
+              <View style={[styles.roomStatsSignal, { backgroundColor: hudAccent }]} />
+              <View style={[styles.roomStatsSignal, { backgroundColor: hudAccent, opacity: 0.58 }]} />
+              <View style={[styles.roomStatsSignal, { backgroundColor: hudAccent, opacity: 0.28 }]} />
+            </View>
           </View>
           {roomStats.map((stat) => (
             <View key={stat.label} style={styles.roomStatRow}>
@@ -659,12 +698,37 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#081A2A",
   },
+  pixelFrame: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 9,
+    borderWidth: 2,
+    borderColor: "rgba(8,26,42,0.72)",
+  },
+  frameCorner: {
+    position: "absolute",
+    width: 18,
+    height: 18,
+    borderColor: "#FFF9EF",
+    opacity: 0.82,
+  },
+  frameCornerTopLeft: { left: 8, top: 8, borderLeftWidth: 2, borderTopWidth: 2 },
+  frameCornerTopRight: { right: 8, top: 8, borderRightWidth: 2, borderTopWidth: 2 },
+  frameCornerBottomLeft: { left: 8, bottom: 8, borderLeftWidth: 2, borderBottomWidth: 2 },
+  frameCornerBottomRight: { right: 8, bottom: 8, borderRightWidth: 2, borderBottomWidth: 2 },
   scene: {
     position: "absolute",
     left: "-2%",
     top: "-2%",
     width: "104%",
     height: "104%",
+  },
+  scanline: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: "rgba(8,26,42,0.08)",
+    zIndex: 3,
   },
   dogFocus: {
     position: "absolute",
@@ -731,7 +795,7 @@ const styles = StyleSheet.create({
     color: "#FFF9EF",
     fontFamily: "Fredoka_700Bold",
     fontSize: 10,
-    letterSpacing: 0.7,
+    letterSpacing: 0.6,
   },
   zoneChip: {
     minHeight: 29,
@@ -815,11 +879,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   roomStatsSignal: {
-    width: 20,
+    width: 8,
     height: 7,
     borderRadius: 2,
     borderWidth: 1,
     borderColor: "rgba(8,26,42,0.2)",
+  },
+  roomStatsSignalWrap: {
+    flexDirection: "row",
+    gap: 2,
   },
   roomStatRow: {
     flexDirection: "row",

@@ -1,6 +1,8 @@
 import React from "react";
 import { Image, type ImageStyle, type StyleProp } from "react-native";
 
+import { pixelImageStyle } from "@/lib/pixelRendering";
+
 // Pixel-art icons cropped from the WoofWatcher design board.
 const SOURCES = {
   meal: require("@/assets/board/icons/meal.png"),
@@ -45,7 +47,7 @@ export function PixelIcon({
   return (
     <Image
       source={SOURCES[name]}
-      style={[{ width: size, height: size }, style]}
+      style={[{ width: size, height: size }, pixelImageStyle, style]}
       resizeMode="contain"
       fadeDuration={0}
     />

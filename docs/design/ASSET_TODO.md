@@ -316,6 +316,8 @@ Next required asset pass:
 - Improve or upscale the v2 seated Phoenix main avatar if Apollo wants an even closer board-05/06 match.
 - Run native phone-size QA on the wired Option B Phoenix family and decide which loops need refinement before final approved-path promotion.
 - Run native phone-size QA on the full dogless room set. The 2026-06-19 PixelLab room pass accepted and wired final-candidate dogless night, bedtime, health-watch, and home-alone scenes.
+- Review the archived 2026-06-19 PixelLab candidate `6ad8a54d-3b19-41d8-9525-4eeca0d76529` only as a still-art reference. Do not promote it until matching transparent animation strips exist and it beats the current hard-pixel Option B runtime family in native phone-size QA.
+- Do not promote rejected 2026-06-19 candidates `96200e12-1297-4970-9342-beee2f18c5a9` or `93160aef-fe35-46bf-8b40-859687053072`; the first had duplicate/cropped body artifacts and the second lost Phoenix's locked warm black/tan identity.
 - Inspect and improve any action strip that does not read strongly enough at phone size, especially walk/eat/drink where future prop layers can make the action clearer.
 - Inspect the subscription seed idle/walk strips in native/mobile preview before deciding whether they should replace or supplement the current approved seated sprite family.
 - Derive the dark-mode, badge/logo refinements, running footer sprite, true overlay-aligned accessory layers, remaining unfinished template emote packs, and any refined gait loops from the approved identity system instead of generating unrelated one-off dogs.
@@ -351,6 +353,8 @@ The current Home runtime now supports true layered sprite animation. It uses a d
 Register future assets in `artifacts/woofwatcher-mobile/lib/careTwinAssets.ts` only after both a dogless room layer and matching sprite strips are ready.
 
 Use `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` to check file presence and PNG dimensions before registration.
+
+2026-06-19 renderer polish added ambient micro-behaviors, tap/quick-log sprite reactions, crisp PixelIcon web rendering, a tighter Phoenix Room frame/HUD, and an Avatar Studio overlay guard so live sprite previews are not covered by oversized still/accessory layers. The next asset work should improve production art quality without reintroducing a second dog or fake live animation.
 
 ## Source Control Rule
 

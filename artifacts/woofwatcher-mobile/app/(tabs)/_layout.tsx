@@ -5,6 +5,7 @@ import React from "react";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { PixelIcon } from "@/components/PixelIcon";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -49,7 +50,7 @@ function CenterPaw() {
           },
         ]}
       >
-        <Ionicons name="paw" size={30} color={colors.foreground} />
+        <PixelIcon name="walk" size={34} />
       </Pressable>
     </View>
   );

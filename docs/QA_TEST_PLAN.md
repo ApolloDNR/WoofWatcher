@@ -153,3 +153,23 @@ Latest local evidence, 2026-06-19:
 - Document upload/security tests.
 - Self-serve provider-backed account deletion tests.
 - Payment/paywall tests when monetization is enabled.
+
+## Care Twin Native QA Matrix
+
+Current evidence, 2026-06-19: `careTwinAssets.ts` now exports
+`CARE_TWIN_RUNTIME_QA_SCENARIOS` plus `evaluateCareTwinRuntimeQaScenario`,
+and `careTwinAssets.test.ts` verifies all 12 avatar motion states against the
+expected sprite action, dogless room variant, zone, scene phase, priority need,
+and layered readiness. The human device checklist lives in
+`docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`.
+
+Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
+cropping, touch response, and loop readability.
+
+Latest local evidence, 2026-06-19:
+
+- Mobile TypeScript compile passed for the WoofWatcher Expo app.
+- Focused Node tests passed for care-twin assets, avatar motion, avatar preview, and avatar template readiness.
+- PixelLab asset verification passed with 148 registered assets, 0 missing, and 0 invalid.
+- Expo web export passed from the package-local CLI.
+- Chrome web visual smoke caught and then verified the Avatar Studio live-sprite overlay fix; Home rest-state behavior was then guarded in code so ambient awake loops do not override sleep/rest scenes.

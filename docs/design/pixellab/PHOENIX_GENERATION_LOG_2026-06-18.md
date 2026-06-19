@@ -780,3 +780,16 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - Night attempts with baked-in dogs were rejected.
 - Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
 - Status: night, bedtime, health-watch, and home-alone final candidates are downloaded, visually checked, normalized to 800x600 nearest-neighbor runtime layers, and wired through existing `careTwinAssets.ts` filenames. This completes replacement of the first-pass derived state room variants; native phone-size QA still needs to approve room/sprite proportions and stage cropping.
+
+### Option B Redesign Candidate Review
+
+- Date: 2026-06-19
+- Operator: Codex
+- PixelLab subscription status: active during this pass.
+- Current balance after review: 330 generations remaining from the active subscription allowance, no dollar credits remaining.
+- Candidate `6ad8a54d-3b19-41d8-9525-4eeca0d76529`: "WoofWatcher Phoenix Option B Single Sprite Candidate". Status: archived as a clean single side-sitting candidate, but not promoted because it has no matching animation pack and does not surpass the current registered Option B runtime family.
+- Candidate `96200e12-1297-4970-9342-beee2f18c5a9`: "WoofWatcher Phoenix Option B Final Candidate". Status: rejected because preview review showed duplicate/cropped body artifacts.
+- Candidate `93160aef-fe35-46bf-8b40-859687053072`: "WoofWatcher Phoenix Option B Pro Game Sprite". Status: rejected because the output drifted gray and lost the warm black/tan Phoenix identity from the locked boards.
+- Runtime decision: keep the current registered hard-pixel Option B Phoenix strips as the live app source, then improve the in-app renderer, room staging, quick-log reactions, and Avatar Studio presentation around those assets.
+- Product decision: do not spend more generations on Phoenix main-character replacement until the prompt/reference-image workflow is tighter or Apollo explicitly requests another production run.
+- Verification: local TypeScript, focused care-twin/avatar tests, PixelLab asset verification, Expo web export, and Chrome web screenshot checks were used for this redesign pass. Native iOS/Android QA remains required before final store confidence.

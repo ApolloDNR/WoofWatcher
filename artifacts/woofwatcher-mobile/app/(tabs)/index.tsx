@@ -33,6 +33,7 @@ import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
+import type { CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 
 const HERO_RATIO = 1.05;
@@ -46,16 +47,17 @@ interface QuickItem {
   mood?: string;
   severity?: string;
   route?: "/log";
+  spriteAction?: CareTwinSpriteAction;
 }
 
 const HOME_QUICK_LOG: QuickItem[] = [
-  { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
-  { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
-  { key: "pee", icon: "pee", label: "Pee", type: "potty", title: "Potty - Pee" },
-  { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water" },
-  { key: "training", icon: "training", label: "Training", type: "training", title: "Training win" },
-  { key: "treat", icon: "treat", label: "Treat", type: "treat", title: "Treat" },
-  { key: "play", icon: "play", label: "Play", type: "play", title: "Play session" },
+  { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal", spriteAction: "eat-loop" },
+  { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk", spriteAction: "walk-loop" },
+  { key: "pee", icon: "pee", label: "Pee", type: "potty", title: "Potty - Pee", spriteAction: "ear-perk" },
+  { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water", spriteAction: "drink-loop" },
+  { key: "training", icon: "training", label: "Training", type: "training", title: "Training win", spriteAction: "celebrate-hop" },
+  { key: "treat", icon: "treat", label: "Treat", type: "treat", title: "Treat", spriteAction: "celebrate-hop" },
+  { key: "play", icon: "play", label: "Play", type: "play", title: "Play session", spriteAction: "tail-wag" },
   { key: "more", icon: "note", label: "More", type: "note", title: "Open quick log", route: "/log" },
 ];
 
@@ -408,6 +410,7 @@ export default function HomeScreen() {
       label: `${item.label} logged`,
       detail: avatarMotion.cue === "health-watch" ? "Health context updated." : "Phoenix reacts in the room.",
       tone: item.type === "vomit" || item.severity === "alert" ? colors.rose : colors.brandNavy,
+      spriteAction: item.spriteAction,
     });
     showToast(`${item.title} logged`);
   };

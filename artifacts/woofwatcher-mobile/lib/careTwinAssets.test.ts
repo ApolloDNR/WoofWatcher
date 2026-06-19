@@ -6,9 +6,12 @@ import {
   CARE_TWIN_DOGLESS_ROOM_ASSETS,
   CARE_TWIN_ROOM_VARIANT_ASSETS,
   CARE_TWIN_SPRITE_ASSETS,
+  evaluateCareTwinRuntimeQaScenario,
   getCareTwinLayerReadiness,
   getCareTwinRoomLayer,
+  getCareTwinRoomVariantKey,
   getCareTwinSpriteAsset,
+  listCareTwinRuntimeQaScenarios,
   listCareTwinSpriteSlots,
 } from "./careTwinAssets.ts";
 
@@ -82,6 +85,11 @@ test("uses the hard-pixel Option B Phoenix family for live runtime actions", () 
 });
 
 test("routes care twin sprite states to the right dogless room mood variant", () => {
+  assert.equal(getCareTwinRoomVariantKey("calm", "sleep-loop"), "bedtime");
+  assert.equal(getCareTwinRoomVariantKey("happy", "comfort-loop"), "homeAlone");
+  assert.equal(getCareTwinRoomVariantKey("happy", "health-watch"), "healthWatch");
+  assert.equal(getCareTwinRoomVariantKey("anxious", "ear-perk"), "night");
+  assert.equal(getCareTwinRoomVariantKey("happy", "tail-wag"), "day");
   assert.equal(getCareTwinRoomLayer("calm", "sleep-loop"), CARE_TWIN_ROOM_VARIANT_ASSETS.bedtime);
   assert.equal(getCareTwinRoomLayer("happy", "comfort-loop"), CARE_TWIN_ROOM_VARIANT_ASSETS.homeAlone);
   assert.equal(getCareTwinRoomLayer("happy", "health-watch"), CARE_TWIN_ROOM_VARIANT_ASSETS.healthWatch);
@@ -120,5 +128,45 @@ test("mirrors the sprite manifest into asset slots for Fable and artist handoff"
     assert.equal(slot.anchor, "bottom-center");
     assert.equal(slot.slotSize, 256);
     assert.equal(slot.assetReady, Boolean(CARE_TWIN_SPRITE_ASSETS[slot.action]));
+  }
+});
+
+test("defines a native QA matrix for every care twin state and room variant", () => {
+  const scenarios = listCareTwinRuntimeQaScenarios();
+  const scenarioStates = new Set(scenarios.map((scenario) => scenario.motion.state));
+  const roomVariants = new Set(scenarios.map((scenario) => scenario.expectedRoomVariant));
+
+  assert.equal(scenarios.length, 12);
+  assert.deepEqual(
+    [...scenarioStates].sort(),
+    [
+      "annoyed",
+      "bored",
+      "drinking",
+      "eating",
+      "excited",
+      "happy",
+      "sad",
+      "sick",
+      "sleeping",
+      "tired",
+      "treat",
+      "walking",
+    ],
+  );
+  assert.deepEqual([...roomVariants].sort(), ["bedtime", "day", "healthWatch", "homeAlone", "night"]);
+
+  for (const scenario of scenarios) {
+    const result = evaluateCareTwinRuntimeQaScenario(scenario);
+
+    assert.equal(result.actualAction, scenario.expectedAction, scenario.id);
+    assert.equal(result.actualRoomVariant, scenario.expectedRoomVariant, scenario.id);
+    assert.equal(result.actualZone, scenario.expectedZone, scenario.id);
+    assert.equal(result.actualScenePhase, scenario.expectedScenePhase, scenario.id);
+    assert.equal(result.actualNeed, scenario.expectedNeed, scenario.id);
+    assert.equal(result.readiness.layeredReady, true, scenario.id);
+    assert.deepEqual(result.readiness.missing, [], scenario.id);
+    assert.ok(scenario.nativeQaPrompt.length > 50, scenario.id);
+    assert.doesNotMatch(scenario.nativeQaPrompt, /emergency|certainty|cure|treatment claim/i, scenario.id);
   }
 });

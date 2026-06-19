@@ -79,7 +79,7 @@ const SCAN_LINES = [
   "Preparing owner review...",
 ];
 
-const HERO_TEMPLATE_SPRITE_SIZE = 236;
+const HERO_TEMPLATE_SPRITE_SIZE = 286;
 
 const COAT_SWATCHES = [
   "#1B1714",
@@ -441,8 +441,16 @@ export default function PortraitScreen() {
               {selectedTemplateBase ? (
                 <View style={s.templatePreviewStage}>
                   <Image source={PIXEL_ROOM_SOURCE} style={[StyleSheet.absoluteFill, pixelImageStyle]} contentFit="cover" transition={220} />
+                  <View style={[s.templateConsoleBar, { backgroundColor: "rgba(255,249,239,0.92)", borderColor: colors.navy }]}>
+                    <Text style={[s.templateConsoleTitle, { color: colors.navy, fontFamily: DISPLAY }]}>CARE TWIN STUDIO</Text>
+                    <View style={s.templateConsoleMeters}>
+                      <View style={[s.templateConsoleMeter, { backgroundColor: previewIsSprite ? colors.sage : colors.amber }]} />
+                      <View style={[s.templateConsoleMeter, { backgroundColor: colors.stone }]} />
+                      <View style={[s.templateConsoleMeter, { backgroundColor: colors.stone }]} />
+                    </View>
+                  </View>
                   <View style={[s.templateMoodAura, { backgroundColor: previewMood.auraColor }]} pointerEvents="none" />
-                  {previewAccessoryLayers.some((layer) => layer.kind === "bed" && layer.source) ? (
+                  {!previewIsSprite && previewAccessoryLayers.some((layer) => layer.kind === "bed" && layer.source) ? (
                     previewAccessoryLayers
                       .filter((layer) => layer.kind === "bed" && layer.source)
                       .map((layer) => (
@@ -455,7 +463,7 @@ export default function PortraitScreen() {
                           pointerEvents="none"
                         />
                       ))
-                  ) : previewAccessories.some((layer) => layer.kind === "bed") ? (
+                  ) : !previewIsSprite && previewAccessories.some((layer) => layer.kind === "bed") ? (
                     <View
                       style={[
                         s.templateAccessoryBed,
@@ -495,7 +503,7 @@ export default function PortraitScreen() {
                         testID="avatar-studio-live-sprite-preview"
                       />
                     ) : null}
-                    {previewAccessoryLayers.map((layer) => {
+                    {!previewIsSprite ? previewAccessoryLayers.map((layer) => {
                       if (layer.kind !== "bed" && layer.source) {
                         return (
                           <Image
@@ -534,7 +542,7 @@ export default function PortraitScreen() {
                         default:
                           return null;
                       }
-                    })}
+                    }) : null}
                   </Animated.View>
                   <View style={[s.templateSpeech, { backgroundColor: colors.ivory, borderColor: colors.navy }]}>
                     <Text style={[s.templateSpeechText, { color: colors.navy, fontFamily: DISPLAY }]}>
@@ -544,7 +552,7 @@ export default function PortraitScreen() {
                   <View style={[s.templateLiveChip, { backgroundColor: colors.navy, borderColor: colors.copper }]}>
                     <View style={[s.templateLiveDot, { backgroundColor: previewIsSprite ? colors.sage : colors.amber }]} />
                     <Text style={[s.templateLiveChipText, { fontFamily: "Inter_700Bold" }]}>
-                      {previewIsSprite ? "LIVE" : "NEXT"}
+                      {previewIsSprite ? "LIVE PIXEL PET" : "STILL PREVIEW"}
                     </Text>
                   </View>
                   <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
@@ -554,7 +562,7 @@ export default function PortraitScreen() {
                     <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
                     <Text style={[s.templateHeroMood, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       {emoteLabel(previewEmote)}
-                      {previewAccessories.length ? ` | ${previewAccessories.length} live layer${previewAccessories.length === 1 ? "" : "s"}` : ""}
+                      {previewAccessories.length ? ` | ${previewAccessories.length} chosen style${previewAccessories.length === 1 ? "" : "s"}` : ""}
                     </Text>
                   </View>
                 </View>
@@ -597,7 +605,10 @@ export default function PortraitScreen() {
                 active
               />
               <Text style={[s.savedName, { fontFamily: DISPLAY }]}>{petName}'s Pixel Twin</Text>
-              <Text style={[s.savedSub, { fontFamily: "Inter_600SemiBold" }]}>{avatarSummary}</Text>
+              <Text style={[s.savedSub, { fontFamily: "Inter_600SemiBold" }]}>
+                {previewIsSprite ? `${previewMotionLabel}. ` : "Still preview until a live animation pack exists. "}
+                {avatarSummary}
+              </Text>
             </View>
           </BoardCard>
         )}
@@ -1051,7 +1062,7 @@ const s = StyleSheet.create({
   workingHint: { fontSize: 13, lineHeight: 18 },
   heroPreview: {
     overflow: "hidden",
-    aspectRatio: 0.96,
+    aspectRatio: 0.88,
     marginBottom: 12,
     backgroundColor: "#081424",
     position: "relative",
@@ -1064,6 +1075,35 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
     backgroundColor: "#EDE7DC",
+  },
+  templateConsoleBar: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    top: 12,
+    minHeight: 34,
+    borderRadius: 3,
+    borderWidth: 2,
+    paddingHorizontal: 11,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    zIndex: 5,
+  },
+  templateConsoleTitle: {
+    fontSize: 11,
+    letterSpacing: 1,
+  },
+  templateConsoleMeters: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  templateConsoleMeter: {
+    width: 19,
+    height: 8,
+    borderRadius: 1,
+    borderWidth: 1,
+    borderColor: "rgba(8,20,36,0.24)",
   },
   templatePixelFloor: {
     position: "absolute",
@@ -1086,10 +1126,10 @@ const s = StyleSheet.create({
   },
   templateHeroDogWrap: {
     position: "absolute",
-    left: 18,
-    right: 18,
+    left: 0,
+    right: 0,
     bottom: 58,
-    height: "70%",
+    height: "76%",
     alignItems: "center",
     justifyContent: "flex-end",
   },
@@ -1202,7 +1242,7 @@ const s = StyleSheet.create({
   templateSpeech: {
     position: "absolute",
     left: 24,
-    top: 52,
+    top: 60,
     maxWidth: "62%",
     borderRadius: 6,
     borderWidth: 2,
@@ -1213,7 +1253,7 @@ const s = StyleSheet.create({
   templateLiveChip: {
     position: "absolute",
     left: 16,
-    bottom: 78,
+    bottom: 82,
     minHeight: 28,
     borderRadius: 4,
     borderWidth: 2,
@@ -1235,7 +1275,7 @@ const s = StyleSheet.create({
   templateHeroHud: {
     position: "absolute",
     right: 16,
-    bottom: 76,
+    bottom: 80,
     minWidth: 104,
     borderRadius: 6,
     borderWidth: 1,
