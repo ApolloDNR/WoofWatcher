@@ -25,30 +25,46 @@ test("reports the full live shepherd production pack", () => {
   assert.equal(readiness.emoteStatus, "10/10 live moods");
 });
 
-test("keeps unfinished templates explicit about pending production art", () => {
+test("marks the next family-dog wave as partial packs before animation", () => {
   const readiness = getAvatarTemplateReadiness("retriever");
   const pack = getAvatarTemplatePack("retriever");
 
   assert.equal(readiness.hasBaseArt, true);
-  assert.equal(readiness.packStage, "base");
-  assert.equal(readiness.liveAccessoryCount, 0);
+  assert.equal(readiness.packStage, "art-partial");
+  assert.equal(readiness.liveAccessoryCount, 8);
   assert.equal(readiness.totalAccessoryCount, 10);
-  assert.equal(readiness.liveEmoteCount, 0);
+  assert.equal(readiness.liveEmoteCount, 7);
   assert.equal(readiness.totalEmoteCount, 10);
   assert.equal(readiness.hasAnimatedPreview, false);
   assert.equal(readiness.previewLabel, "Starter still preview");
-  assert.equal(readiness.stageLabel, "Base art live");
-  assert.equal(readiness.stageDetail, "Base pose is live; overlays, moods, and sprite strips are still pending.");
-  assert.equal(readiness.accessoryStatus, "Production overlays pending");
-  assert.equal(readiness.emoteStatus, "Production moods pending");
+  assert.equal(readiness.stageLabel, "Art pack in progress");
+  assert.equal(readiness.stageDetail, "Some overlays or moods are live; sprite strips are still finishing.");
+  assert.equal(readiness.accessoryStatus, "8/10 live overlays");
+  assert.equal(readiness.emoteStatus, "7/10 live moods");
   assert.equal(pack.productionFocus, "next");
-  assert.equal(pack.focusLabel, "Next family-dog pack");
+  assert.equal(pack.focusLabel, "Partial pack live");
+});
+
+test("applies the same partial-pack contract to husky and doodle", () => {
+  for (const templateId of ["husky", "doodle"] as const) {
+    const readiness = getAvatarTemplateReadiness(templateId);
+    const pack = getAvatarTemplatePack(templateId);
+
+    assert.equal(readiness.packStage, "art-partial");
+    assert.equal(readiness.liveAccessoryCount, 8);
+    assert.equal(readiness.liveEmoteCount, 7);
+    assert.equal(readiness.hasAnimatedPreview, false);
+    assert.equal(pack.productionFocus, "next");
+    assert.equal(pack.focusLabel, "Partial pack live");
+  }
 });
 
 test("distinguishes live accessory and emote slots from pending ones", () => {
   assert.equal(isAvatarTemplateAccessoryLive("shepherd", "forest-bandana"), true);
   assert.equal(isAvatarTemplateAccessoryLive("shepherd", "trail-bandana"), false);
-  assert.equal(isAvatarTemplateAccessoryLive("retriever", "forest-bandana"), false);
+  assert.equal(isAvatarTemplateAccessoryLive("retriever", "forest-bandana"), true);
+  assert.equal(isAvatarTemplateAccessoryLive("retriever", "sleepy-mask"), false);
   assert.equal(isAvatarTemplateEmoteLive("shepherd", "happy"), true);
-  assert.equal(isAvatarTemplateEmoteLive("retriever", "happy"), false);
+  assert.equal(isAvatarTemplateEmoteLive("retriever", "happy"), true);
+  assert.equal(isAvatarTemplateEmoteLive("retriever", "anxious"), false);
 });

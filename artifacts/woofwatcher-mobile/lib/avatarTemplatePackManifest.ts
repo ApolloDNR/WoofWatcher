@@ -36,6 +36,27 @@ const SHEPHERD_EMOTE_IDS = [
   "not_feeling_well",
 ] as const satisfies readonly AvatarEmoteState[];
 
+const NEXT_WAVE_ACCESSORY_IDS = [
+  "forest-bandana",
+  "trail-bandana",
+  "navy-collar",
+  "copper-collar",
+  "heart-tag",
+  "birthday-hat",
+  "cozy-bed",
+  "heart-sparkles",
+] as const;
+
+const NEXT_WAVE_EMOTE_IDS = [
+  "happy",
+  "calm",
+  "excited",
+  "sleepy",
+  "proud",
+  "home_alone",
+  "not_feeling_well",
+] as const satisfies readonly AvatarEmoteState[];
+
 export const AVATAR_TEMPLATE_PACK_MANIFEST = {
   shepherd: {
     templateId: "shepherd",
@@ -50,22 +71,22 @@ export const AVATAR_TEMPLATE_PACK_MANIFEST = {
   retriever: {
     templateId: "retriever",
     hasBaseArt: true,
-    liveAccessoryIds: [],
-    liveEmoteIds: [],
+    liveAccessoryIds: [...NEXT_WAVE_ACCESSORY_IDS],
+    liveEmoteIds: [...NEXT_WAVE_EMOTE_IDS],
     hasAnimatedPreview: false,
     productionFocus: "next",
-    focusLabel: "Next family-dog pack",
-    focusDetail: "Retriever is first in the next production wave for overlays, moods, and sprite strips.",
+    focusLabel: "Partial pack live",
+    focusDetail: "Retriever now has file-backed overlays and mood stills; animated sprite strips are the next promotion step.",
   },
   husky: {
     templateId: "husky",
     hasBaseArt: true,
-    liveAccessoryIds: [],
-    liveEmoteIds: [],
+    liveAccessoryIds: [...NEXT_WAVE_ACCESSORY_IDS],
+    liveEmoteIds: [...NEXT_WAVE_EMOTE_IDS],
     hasAnimatedPreview: false,
     productionFocus: "next",
-    focusLabel: "Next family-dog pack",
-    focusDetail: "Husky is queued with Retriever in the next live art wave, with coat and tail clearance still to finish.",
+    focusLabel: "Partial pack live",
+    focusDetail: "Husky now has file-backed overlays and mood stills; tail and full animated strip clearance still need the next pass.",
   },
   bully: {
     templateId: "bully",
@@ -80,12 +101,12 @@ export const AVATAR_TEMPLATE_PACK_MANIFEST = {
   doodle: {
     templateId: "doodle",
     hasBaseArt: true,
-    liveAccessoryIds: [],
-    liveEmoteIds: [],
+    liveAccessoryIds: [...NEXT_WAVE_ACCESSORY_IDS],
+    liveEmoteIds: [...NEXT_WAVE_EMOTE_IDS],
     hasAnimatedPreview: false,
     productionFocus: "next",
-    focusLabel: "Next family-dog pack",
-    focusDetail: "Doodle rounds out the next live art wave once Retriever and Husky overlays are registered.",
+    focusLabel: "Partial pack live",
+    focusDetail: "Doodle now has file-backed overlays and mood stills; animated curls and motion strips are still the next pack step.",
   },
   terrier: {
     templateId: "terrier",

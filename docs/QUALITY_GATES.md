@@ -130,6 +130,8 @@ Current evidence, 2026-06-18: Mobile Avatar Studio now surfaces template pack tr
 
 Current evidence, 2026-06-18: Avatar Studio pack truth, next-pack priority, and PixelLab asset verification now derive from one shared template-pack manifest, so Retriever, Husky, and Doodle can move into live art without the UI, readiness logic, and verifier drifting out of sync.
 
+Current evidence, 2026-06-18: Retriever, Husky, and Doodle now each have a truthful partial pack with file-backed accessory overlays and mood stills. Avatar Studio marks those breeds as `Art pack in progress` while leaving sprite animation explicitly pending, which keeps the family-dog wave usable without overstating animated readiness.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

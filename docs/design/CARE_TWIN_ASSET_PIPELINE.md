@@ -27,6 +27,7 @@ PixelLab balance is no longer blocked:
 - PixelLab reported 1,856 generations remaining after the v2 seed, state pack, idle animation, tail-wag animation, sleep-loop animation, and first dogless room layer. Additional action strips were generated later in the same 2026-06-18 production pass.
 - Approved v2 seed object: `4f318d58-7166-4b0a-b202-2896eed1e0dc`.
 - Current next blocker: final visual approval and native runtime QA, not credits, MCP access, room file presence, or sprite file presence.
+- Avatar Studio's next family-dog wave now has repo-native partial packs too: Retriever, Husky, and Doodle each have file-backed accessory overlays plus mood stills, while sprite-strip promotion still remains the next asset step for those breeds.
 
 ## Goal
 
@@ -172,6 +173,7 @@ Do not register future sprite strips before a matching dogless room exists. The 
 - `npm run build:pixellab-sprite-strip` downloads a PixelLab `{i}.png` frame URL template and stitches selected frames into a fixed 256px-slot horizontal strip.
 - `npm run build:pixellab-room-variants` derives first-pass night, bedtime, health-watch, and home-alone room variants from the approved dogless day room.
 - `npm run verify:pixellab-assets` checks sprite strip dimensions, required room files, and the live template-pack files declared in the shared manifest.
+- `powershell -ExecutionPolicy Bypass -File scripts/generate-template-partial-packs.ps1` refreshes the current Retriever/Husky/Doodle partial overlay and mood-still packs from their registered base art.
 
 ## Quality Gate
 

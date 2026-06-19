@@ -560,6 +560,26 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     "home_alone",
     "not_feeling_well",
   ];
+  const nextWaveTemplateIds = ["retriever", "husky", "doodle"];
+  const nextWaveAccessoryIds = [
+    "forest-bandana",
+    "trail-bandana",
+    "navy-collar",
+    "copper-collar",
+    "heart-tag",
+    "birthday-hat",
+    "cozy-bed",
+    "heart-sparkles",
+  ];
+  const nextWaveEmoteIds = [
+    "happy",
+    "calm",
+    "excited",
+    "sleepy",
+    "proud",
+    "home_alone",
+    "not_feeling_well",
+  ];
 
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{\[s\.canvasCard/);
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{s\.heroPreview\}/);
@@ -603,6 +623,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarTemplateReadiness, /Animated Phoenix pack/);
   assert.match(avatarTemplateReadiness, /Starter still preview/);
   assert.match(avatarTemplateReadiness, /Animated pack ready/);
+  assert.match(avatarTemplateReadiness, /Art pack in progress/);
   assert.match(avatarTemplateReadiness, /Base art live/);
   assert.match(avatarTemplateReadiness, /Production overlays pending/);
   assert.match(avatarTemplateReadiness, /Production moods pending/);
@@ -623,6 +644,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarTemplatePackManifest, /retriever[\s\S]*productionFocus: "next"/);
   assert.match(avatarTemplatePackManifest, /husky[\s\S]*productionFocus: "next"/);
   assert.match(avatarTemplatePackManifest, /doodle[\s\S]*productionFocus: "next"/);
+  assert.match(avatarTemplatePackManifest, /focusLabel: "Partial pack live"/);
   assert.match(avatarTemplatePackManifest, /focusLabel: "Queued after family-dog wave"/);
   for (const templateId of templateIds) {
     assert.match(avatarTemplateAssets, new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/preview\\.png`));
@@ -677,6 +699,48 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
       ),
     );
     assert.deepEqual(size, { width: 170, height: 170 }, `${emoteId} emote should be a 170x170 transparent PNG`);
+  }
+  for (const templateId of nextWaveTemplateIds) {
+    for (const accessoryId of nextWaveAccessoryIds) {
+      assert.match(
+        avatarTemplateAssets,
+        new RegExp(`"${accessoryId}":[\\s\\S]*assets/avatar/templates/${templateId}/accessories/${accessoryId}\\.png`),
+      );
+      const size = readPngSize(
+        join(
+          process.cwd(),
+          "artifacts",
+          "woofwatcher-mobile",
+          "assets",
+          "avatar",
+          "templates",
+          templateId,
+          "accessories",
+          `${accessoryId}.png`,
+        ),
+      );
+      assert.deepEqual(size, { width: 170, height: 170 }, `${templateId} ${accessoryId} overlay should be 170x170`);
+    }
+    for (const emoteId of nextWaveEmoteIds) {
+      assert.match(
+        avatarTemplateAssets,
+        new RegExp(`${emoteId}:[\\s\\S]*assets/avatar/templates/${templateId}/emotes/${emoteId}\\.png`),
+      );
+      const size = readPngSize(
+        join(
+          process.cwd(),
+          "artifacts",
+          "woofwatcher-mobile",
+          "assets",
+          "avatar",
+          "templates",
+          templateId,
+          "emotes",
+          `${emoteId}.png`,
+        ),
+      );
+      assert.deepEqual(size, { width: 170, height: 170 }, `${templateId} ${emoteId} emote should be 170x170`);
+    }
   }
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);
@@ -734,7 +798,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(verifier, /templateAccessories/);
   assert.match(verifier, /templateEmotes/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, 12 Avatar Studio template preview thumbnails, the full 12-template base still pack, the first shepherd accessory overlay PNG pack, and the first shepherd 10-state emote still pack now exist locally/);
+  assert.match(blockers, /Retriever\/Husky\/Doodle partial overlay and emote still packs now exist locally/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
 

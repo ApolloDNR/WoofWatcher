@@ -184,13 +184,22 @@ The first production-scale template base pack is live:
 - `assets/avatar/templates/husky/base.png` from PixelLab object `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
 - `assets/avatar/templates/doodle/base.png` from PixelLab object `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
 
-These are transparent 170x170 PixelLab character stills for the Avatar Studio preview stage. The app registers them through `avatarTemplateAssets.ts` and falls back to preview thumbnails for templates that do not have `base.png` yet.
+These are transparent 170x170 PixelLab character stills for the Avatar Studio preview stage. The app registers them through `avatarTemplateAssets.ts` and now uses them across the full 12-template launch base pack, even though only the first four objects above are called out individually here.
 
 Full template packs still need:
 
 - `emotes/{state}.png` for each template.
 - `sprites/{action}-strip.png` for each template or body-class family.
 - accessory overlays that align to the same bottom-center avatar anchor.
+
+### Phase 4C - Partial Family-Dog Packs
+
+Retriever, Husky, and Doodle now also have a truthful partial-pack seam in the repo:
+
+- file-backed accessory overlays for `forest-bandana`, `trail-bandana`, `navy-collar`, `copper-collar`, `heart-tag`, `birthday-hat`, `cozy-bed`, and `heart-sparkles`
+- file-backed mood stills for `happy`, `calm`, `excited`, `sleepy`, `proud`, `home_alone`, and `not_feeling_well`
+
+These partial packs are intentionally not animated. Avatar Studio labels them `Art pack in progress` until sprite strips exist.
 
 ### Phase 5 - Dogless Rooms
 
@@ -229,6 +238,12 @@ artifacts/woofwatcher-mobile
 ```
 
 This verifies the registered Phoenix sprite strips, dogless room files, and Avatar Studio template previews.
+
+Local refresh path for the current partial Retriever/Husky/Doodle packs:
+
+```text
+powershell -ExecutionPolicy Bypass -File scripts/generate-template-partial-packs.ps1
+```
 
 Use:
 

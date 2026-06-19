@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-18: Family-Dog Templates Can Ship Truthful Partial Packs Before Animation
+
+Decision: Retriever, Husky, and Doodle may ship file-backed accessory overlays and mood stills before their animated sprite strips are ready, as long as Avatar Studio labels them `Art pack in progress` and keeps animated preview explicitly false.
+
+Reason: The family-dog wave was blocked in the uncomfortable middle state between base-only truth and full animation. Adding real overlay and mood files gives owners richer breed-specific review choices now, while the manifest/readiness contract still prevents those breeds from looking fully animated before their strip work is finished.
+
+Owner: Codex.
+
+Revisit trigger: Retriever, Husky, and Doodle receive live sprite strips, or a stronger artist-provided partial-pack contract replaces the current generated overlay/still seam.
+
 ### 2026-06-18: Avatar Studio Pack Truth Uses One Manifest
 
 Decision: Avatar Studio's live-art status, next-pack priority, and PixelLab asset verification should all derive from one shared template-pack manifest instead of separate hardcoded lists in the UI, readiness model, and verifier.
