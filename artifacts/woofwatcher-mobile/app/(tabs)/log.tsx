@@ -44,6 +44,11 @@ import {
   getAloneTimeReturnOptions,
   type AloneTimeReturnOutcome,
 } from "@/lib/aloneTimeSession";
+import {
+  buildCareLogTrustReviewPatch,
+  getCareLogTrustReview,
+  type CareLogReviewAction,
+} from "@/lib/careLogTrust";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
@@ -364,6 +369,13 @@ const MOOD_LAUNCHER: { key: string; label: string; icon: PixelIconName; mood: st
   { key: "rough", label: "Rough", icon: "mood_rough", mood: "unwell" },
 ];
 
+const TRUST_ACTION_LABELS: Record<CareLogReviewAction, string> = {
+  confirm: "Confirm",
+  reject: "Reject",
+  "request-photo": "Request photo",
+  "mark-corrected": "Mark corrected",
+};
+
 function launcherActionKey(action: Pick<LauncherAction, "label" | "type">): string {
   return `${action.type}:${action.label}`;
 }
@@ -429,6 +441,23 @@ const DETAIL_SKIP_KEYS = new Set([
   "householdVisible",
   "routineId",
   "routineTime",
+  "logInteraction",
+  "trustState",
+  "confirmationRequired",
+  "confirmationReason",
+  "confirmedBy",
+  "confirmedAt",
+  "confirmationNote",
+  "rejectedBy",
+  "rejectedAt",
+  "rejectionNote",
+  "correctedBy",
+  "correctedAt",
+  "correctionNote",
+  "photoProofStatus",
+  "photoProofRequestedBy",
+  "photoProofRequestedAt",
+  "photoProofNote",
 ]);
 
 const DETAIL_LABELS: Record<string, string> = {
@@ -648,6 +677,10 @@ export default function LogScreen() {
 
   const caregiver =
     me.data?.user?.displayName?.trim() || state.caregivers[0]?.name || "You";
+  const currentCaregiverRole = useMemo(
+    () => state.caregivers.find((person) => person.name === caregiver)?.role ?? state.caregivers[0]?.role ?? null,
+    [caregiver, state.caregivers],
+  );
 
   const [selectedType, setSelectedType] = useState<string>(() => routeSelectedType ?? "meal");
   const [choices, setChoices] = useState<Record<string, string>>({});
@@ -807,6 +840,10 @@ export default function LogScreen() {
   const detailAuditTrail = useMemo(
     () => (detailEntry ? getCareAuditTrail(detailEntry.details) : []),
     [detailEntry],
+  );
+  const detailTrustReview = useMemo(
+    () => (detailEntry ? getCareLogTrustReview(detailEntry, currentCaregiverRole) : null),
+    [detailEntry, currentCaregiverRole],
   );
   const detailType = detailEntry ? normalizeCareEventType(detailEntry.type, detailEntry.details) : null;
   const detailIcon = detailType ? TYPE_ICON[detailType] ?? "paw" : "paw";
@@ -1314,6 +1351,27 @@ export default function LogScreen() {
       Alert.alert("Entry handoff", message),
     );
   }, []);
+
+  const handleTrustReview = useCallback(
+    (action: CareLogReviewAction) => {
+      if (!detailEntry) return;
+      const patch = buildCareLogTrustReviewPatch(detailEntry, {
+        action,
+        reviewer: caregiver,
+        reviewerRole: currentCaregiverRole,
+        now,
+      });
+
+      if (!patch) {
+        Alert.alert("Adult review needed", "Only an adult owner or primary caregiver can review this log.");
+        return;
+      }
+
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      updateEntry(detailEntry.id, patch);
+    },
+    [caregiver, currentCaregiverRole, detailEntry, now, updateEntry],
+  );
 
   const logSearch = useMemo(
     () => deriveCareLogSearch({ entries: state.entries, query: searchText, type: filter }),
@@ -2836,6 +2894,100 @@ export default function LogScreen() {
                   </View>
                 ) : null}
 
+                {detailTrustReview?.visible ? (
+                  <View
+                    style={[
+                      s.trustReviewPanel,
+                      {
+                        backgroundColor:
+                          detailTrustReview.state === "rejected"
+                            ? colors.rose + "10"
+                            : detailTrustReview.state === "corrected"
+                              ? colors.copper + "10"
+                              : colors.sage + "10",
+                        borderColor:
+                          detailTrustReview.state === "rejected"
+                            ? colors.rose + "40"
+                            : detailTrustReview.state === "corrected"
+                              ? colors.copper + "40"
+                              : colors.sage + "40",
+                      },
+                    ]}
+                  >
+                    <View style={s.trustReviewHeader}>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[s.detailSectionLabel, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                          Trust review
+                        </Text>
+                        <Text style={[s.trustReviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                          {detailTrustReview.statusLabel}
+                        </Text>
+                      </View>
+                      <View style={[s.trustBadge, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <Text style={[s.trustBadgeText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          {detailTrustReview.reasonLabel}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[s.trustReviewHelp, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {detailTrustReview.helperText}
+                    </Text>
+                    {detailTrustReview.proofStatus ? (
+                      <View style={[s.trustProofRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <Ionicons name="camera-outline" size={15} color={colors.copper} />
+                        <Text style={[s.trustProofText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          Proof status: {humanizeKey(detailTrustReview.proofStatus)}
+                        </Text>
+                      </View>
+                    ) : null}
+                    {detailTrustReview.canReview ? (
+                      <View style={s.trustActionGrid}>
+                        {detailTrustReview.actions.map((action) => {
+                          const actionLabel = TRUST_ACTION_LABELS[action.id];
+                          const isDanger = action.id === "reject";
+                          const isPrimary = action.id === "confirm";
+                          const actionColor = isDanger ? colors.rose : isPrimary ? colors.sage : colors.primary;
+                          const iconName =
+                            action.id === "confirm"
+                              ? "checkmark-circle-outline"
+                              : action.id === "reject"
+                                ? "close-circle-outline"
+                                : action.id === "request-photo"
+                                  ? "camera-outline"
+                                  : "create-outline";
+                          return (
+                            <Pressable
+                              key={action.id}
+                              accessibilityRole="button"
+                              accessibilityLabel={`${actionLabel} care log`}
+                              onPress={() => handleTrustReview(action.id)}
+                              style={({ pressed }) => [
+                                s.trustActionButton,
+                                {
+                                  backgroundColor: pressed ? actionColor + "1F" : colors.background,
+                                  borderColor: actionColor + "44",
+                                },
+                              ]}
+                            >
+                              <Ionicons name={iconName} size={15} color={actionColor} />
+                              <Text style={[s.trustActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                                {actionLabel}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    ) : (
+                      <View style={[s.trustLockedRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <Ionicons name="lock-closed-outline" size={15} color={colors.mutedForeground} />
+                        <Text style={[s.trustLockedText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Adult owner review required.
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ) : null}
+
                 {isPendingMealEntry(detailEntry) ? (
                   <View style={[s.mealOutcomePanel, { backgroundColor: colors.sage + "10", borderColor: colors.sage + "3D" }]}>
                     <View style={s.mealOutcomeHeader}>
@@ -3594,6 +3746,81 @@ const s = StyleSheet.create({
   detailMeta: { fontSize: 12.5, marginTop: 3 },
   detailNotice: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 15, padding: 11, marginBottom: 12 },
   detailNoticeText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
+  trustReviewPanel: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+  },
+  trustReviewHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  trustReviewTitle: {
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  trustBadge: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    maxWidth: 136,
+  },
+  trustBadgeText: {
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.45,
+    textAlign: "center",
+  },
+  trustReviewHelp: {
+    fontSize: 12.5,
+    lineHeight: 17,
+    marginTop: 8,
+  },
+  trustProofRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  trustProofText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
+  trustActionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 11,
+  },
+  trustActionButton: {
+    flexGrow: 1,
+    flexBasis: "47%",
+    minHeight: 40,
+    borderWidth: 1,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+  },
+  trustActionText: { fontSize: 12.5, textAlign: "center" },
+  trustLockedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    marginTop: 10,
+  },
+  trustLockedText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
   mealOutcomePanel: {
     borderWidth: 1,
     borderRadius: 15,

@@ -1094,6 +1094,25 @@ Owner: Codex.
 
 Revisit trigger: Cloud sync/presence permissions introduce server-backed household presence, but the user-facing session still needs start/return auditability.
 
+### 2026-06-19: Care Log Trust Review Is Owner-Confirmed, Not Hidden Mutation
+
+Decision: Care log trust state must be reviewed through explicit owner-facing actions: Confirm, Reject, Request photo, and Mark corrected. These actions update the existing log with trust/proof metadata and append audit history instead of deleting, overwriting, or silently hiding the original record.
+
+Reason: Apollo wants logging to stay effortless, but household members still need to trust medication, kid, sitter, trainer, health, and report-driving records. A serious care app needs visible confirmation and correction loops without turning every quick log into paperwork.
+
+Consequences:
+
+- `careLogTrust.ts` owns the tested role-aware trust review contract.
+- Adult Admin, Adult, Owner, and Primary caregiver roles can review care-log trust state.
+- Kid, Sitter, Trainer, and Vet Viewer roles can create or view allowed care logs but cannot confirm/reject/correct trust state in this slice.
+- Request photo records a proof-request status only; it does not claim that camera/upload proof exists yet.
+- Rejected logs stay in history with watch severity so later reports can explain the correction instead of losing context.
+- The Log detail sheet presents trust state as a panel and omits raw trust/proof fields from generic detail rows.
+
+Owner: Codex.
+
+Revisit trigger: Server-backed household roles, real photo uploads, medication proof policies, or caregiver Access Pass permissions require stricter role enforcement.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

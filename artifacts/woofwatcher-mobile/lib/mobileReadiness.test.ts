@@ -1228,6 +1228,20 @@ test("keeps care log audit trails wired into Log edit, sticky note, delete, and 
   assert.match(log, /Delete failed/);
 });
 
+test("keeps care log trust review wired into Log detail flows", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(log, /buildCareLogTrustReviewPatch/);
+  assert.match(log, /getCareLogTrustReview/);
+  assert.match(log, /detailTrustReview/);
+  assert.match(log, /handleTrustReview/);
+  assert.match(log, /Trust review/);
+  assert.match(log, /Confirm/);
+  assert.match(log, /Reject/);
+  assert.match(log, /Request photo/);
+  assert.match(log, /Mark corrected/);
+});
+
 test("keeps household sync health visible from More", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

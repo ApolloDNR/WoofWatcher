@@ -1,0 +1,237 @@
+import { appendCareAuditEvent } from "../../../lib/care-domain/src/index.ts";
+
+export type CareLogTrustState =
+  | "confirmed"
+  | "pending-confirmation"
+  | "estimated"
+  | "corrected"
+  | "rejected";
+
+export type CareLogReviewAction = "confirm" | "reject" | "request-photo" | "mark-corrected";
+
+export interface CareLogTrustEntryLike {
+  id?: string;
+  type: string;
+  title?: string | null;
+  caregiver?: string | null;
+  occurredAt: string;
+  severity?: string | null;
+  details?: Record<string, unknown>;
+}
+
+export interface CareLogTrustReviewActionOption {
+  id: CareLogReviewAction;
+  label: string;
+}
+
+export interface CareLogTrustReview {
+  visible: boolean;
+  canReview: boolean;
+  state: CareLogTrustState;
+  statusLabel: string;
+  reasonLabel: string;
+  helperText: string;
+  proofStatus: string | null;
+  actions: CareLogTrustReviewActionOption[];
+}
+
+export interface CareLogTrustReviewOptions {
+  action: CareLogReviewAction;
+  reviewer: string;
+  reviewerRole?: string | null;
+  now?: number;
+  note?: string;
+}
+
+export interface CareLogTrustReviewPatch {
+  severity?: string;
+  details: Record<string, unknown>;
+}
+
+const REVIEW_ACTIONS: CareLogTrustReviewActionOption[] = [
+  { id: "confirm", label: "Confirm" },
+  { id: "reject", label: "Reject" },
+  { id: "request-photo", label: "Request photo" },
+  { id: "mark-corrected", label: "Mark corrected" },
+];
+
+function clean(value: unknown): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === "object" && !Array.isArray(value);
+}
+
+function entryDetails(entry: CareLogTrustEntryLike): Record<string, unknown> {
+  return isRecord(entry.details) ? entry.details : {};
+}
+
+function iso(now: number | undefined): string {
+  return new Date(now ?? Date.now()).toISOString();
+}
+
+function normalizeRole(role: string | null | undefined): string {
+  return clean(role).toLowerCase();
+}
+
+export function canReviewCareLogTrust(role: string | null | undefined): boolean {
+  const normalized = normalizeRole(role);
+  if (!normalized) return false;
+  if (normalized.includes("admin")) return true;
+  if (normalized.includes("owner")) return true;
+  if (normalized === "adult") return true;
+  if (normalized.includes("primary caregiver")) return true;
+  return false;
+}
+
+function trustState(value: unknown, confirmationRequired: boolean): CareLogTrustState {
+  const cleaned = clean(value) as CareLogTrustState;
+  if (
+    cleaned === "confirmed" ||
+    cleaned === "pending-confirmation" ||
+    cleaned === "estimated" ||
+    cleaned === "corrected" ||
+    cleaned === "rejected"
+  ) {
+    return cleaned;
+  }
+  return confirmationRequired ? "pending-confirmation" : "confirmed";
+}
+
+function reasonLabel(reason: unknown): string {
+  const cleaned = clean(reason).toLowerCase();
+  if (cleaned === "kid-log") return "Kid log";
+  if (cleaned === "helper-log") return "Helper log";
+  if (cleaned === "safety-critical") return "Safety-critical log";
+  if (cleaned === "owner-reviewed") return "Owner reviewed";
+  return cleaned ? cleaned.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "Shared household log";
+}
+
+function statusLabel(state: CareLogTrustState, confirmationRequired: boolean, proofStatus: string): string {
+  if (state === "rejected") return "Rejected";
+  if (state === "corrected") return "Corrected";
+  if (proofStatus === "requested") return "Photo requested";
+  if (state === "estimated") return "Estimated";
+  if (confirmationRequired || state === "pending-confirmation") return "Needs adult confirmation";
+  return "Confirmed";
+}
+
+function helperText(state: CareLogTrustState, confirmationRequired: boolean, canReview: boolean, proofStatus: string): string {
+  if (!canReview && (confirmationRequired || state === "pending-confirmation")) {
+    return "An adult owner can confirm, correct, or request proof for this log.";
+  }
+  if (state === "rejected") return "This log stays in history, but the household should not treat it as confirmed care.";
+  if (state === "corrected") return "This log was corrected so the care record keeps the original trail.";
+  if (proofStatus === "requested") return "Photo proof has been requested before this log is confirmed.";
+  if (confirmationRequired || state === "pending-confirmation") {
+    return "Review this log before it drives household handoff, medication, or report decisions.";
+  }
+  return "This log is confirmed and available for household summaries.";
+}
+
+export function getCareLogTrustReview(
+  entry: CareLogTrustEntryLike,
+  reviewerRole?: string | null,
+): CareLogTrustReview {
+  const details = entryDetails(entry);
+  const confirmationRequired = details.confirmationRequired === true;
+  const proofStatus = clean(details.photoProofStatus).toLowerCase();
+  const state = trustState(details.trustState, confirmationRequired);
+  const visible = state !== "confirmed" || confirmationRequired || Boolean(proofStatus);
+  const canReview = visible && canReviewCareLogTrust(reviewerRole);
+
+  return {
+    visible,
+    canReview,
+    state,
+    statusLabel: statusLabel(state, confirmationRequired, proofStatus),
+    reasonLabel: reasonLabel(details.confirmationReason),
+    helperText: helperText(state, confirmationRequired, canReview, proofStatus),
+    proofStatus: proofStatus || null,
+    actions: visible ? REVIEW_ACTIONS.map((action) => ({ ...action })) : [],
+  };
+}
+
+function auditId(action: CareLogReviewAction, occurredAt: string): string {
+  return `trust_${action}_${occurredAt.replace(/[^0-9a-z]/gi, "")}`;
+}
+
+function summaryFor(action: CareLogReviewAction, reviewer: string, title: string): string {
+  if (action === "confirm") return `${reviewer} confirmed "${title}" for the shared care record.`;
+  if (action === "reject") return `${reviewer} rejected "${title}" until the household corrects it.`;
+  if (action === "request-photo") return `${reviewer} requested photo proof for "${title}".`;
+  return `${reviewer} marked "${title}" corrected in the shared care record.`;
+}
+
+export function buildCareLogTrustReviewPatch(
+  entry: CareLogTrustEntryLike,
+  options: CareLogTrustReviewOptions,
+): CareLogTrustReviewPatch | null {
+  if (!canReviewCareLogTrust(options.reviewerRole)) return null;
+
+  const reviewer = clean(options.reviewer) || "Care team";
+  const title = clean(entry.title) || "Care log";
+  const occurredAt = iso(options.now);
+  const note = clean(options.note);
+  const existing = entryDetails(entry);
+  let severity: string | undefined;
+  let nextDetails: Record<string, unknown> = { ...existing };
+  let changes: string[] = ["trustState"];
+
+  if (options.action === "confirm") {
+    nextDetails = {
+      ...nextDetails,
+      trustState: "confirmed",
+      confirmationRequired: false,
+      confirmedBy: reviewer,
+      confirmedAt: occurredAt,
+      ...(note ? { confirmationNote: note } : {}),
+    };
+    changes = ["trustState", "confirmationRequired", "confirmedAt"];
+  } else if (options.action === "reject") {
+    nextDetails = {
+      ...nextDetails,
+      trustState: "rejected",
+      confirmationRequired: false,
+      rejectedBy: reviewer,
+      rejectedAt: occurredAt,
+      ...(note ? { rejectionNote: note } : {}),
+    };
+    severity = "watch";
+    changes = ["trustState", "confirmationRequired", "rejectedAt"];
+  } else if (options.action === "request-photo") {
+    nextDetails = {
+      ...nextDetails,
+      trustState: trustState(nextDetails.trustState, true) === "confirmed" ? "pending-confirmation" : trustState(nextDetails.trustState, true),
+      confirmationRequired: true,
+      photoProofStatus: "requested",
+      photoProofRequestedBy: reviewer,
+      photoProofRequestedAt: occurredAt,
+      ...(note ? { photoProofNote: note } : {}),
+    };
+    changes = ["photoProofStatus", "confirmationRequired", "photoProofRequestedAt"];
+  } else {
+    nextDetails = {
+      ...nextDetails,
+      trustState: "corrected",
+      confirmationRequired: false,
+      correctedBy: reviewer,
+      correctedAt: occurredAt,
+      ...(note ? { correctionNote: note } : {}),
+    };
+    changes = ["trustState", "confirmationRequired", "correctedAt"];
+  }
+
+  return {
+    ...(severity ? { severity } : {}),
+    details: appendCareAuditEvent(nextDetails, {
+      id: auditId(options.action, occurredAt),
+      action: "updated",
+      caregiver: reviewer,
+      occurredAt,
+      summary: summaryFor(options.action, reviewer, title),
+      changes,
+    }),
+  };
+}

@@ -550,6 +550,23 @@ Remaining UX work:
 - Promote this pattern into a dedicated Household Pulse screen when that route becomes first-class.
 - Add notification/reminder support for long active sessions after push notification permissions and settings exist.
 
+## 2026-06-19 Care Log Trust Review Pass
+
+The Log detail sheet now treats care-log trust as a real workflow instead of raw metadata:
+
+- Pending, confirmation-required, proof-requested, rejected, corrected, and estimated logs show a compact `Trust review` panel near the top of the sheet.
+- Adult owner and primary caregiver roles get four explicit actions: Confirm, Reject, Request photo, and Mark corrected.
+- Kid, sitter, trainer, and vet-viewer roles see a locked review state and cannot mutate trust state from the UI.
+- Request photo is intentionally a truthful proof-request status, not a fake upload claim; actual attachment capture/upload remains a later slice.
+- Rejected logs stay in history with watch severity instead of being deleted, so reports and household review can see that a correction happened.
+- Generic detail rows skip raw fields such as `trustState`, `confirmationRequired`, `confirmationReason`, and proof timestamps because those now belong to the review panel.
+
+Design intent:
+
+- Keep serious household trust visible without making everyday logging feel punitive.
+- Use board-style panels, small uppercase kickers, status badges, and two-column action buttons so the review flow feels native to the neo-retro care console.
+- Preserve the audit trail below the review panel so every correction stays explainable for owners, sitters, and later Care Pass exports.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:
