@@ -24,4 +24,5 @@ test("keeps tabbed routes clear of the floating shell on flat native devices and
 test("keeps standalone routes clear of the home indicator", () => {
   assert.equal(getStandaloneRouteBottomPadding(0), 88);
   assert.equal(getStandaloneRouteBottomPadding(34), 88);
+  assert.equal(getStandaloneRouteBottomPadding(40), 94);
 });

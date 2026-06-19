@@ -410,6 +410,13 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const records = readAppFile(join("(tabs)", "records.tsx"));
   const avatarStudio = readAppFile("portrait.tsx");
+  const premium = readAppFile("premium.tsx");
+  const privacy = readAppFile("privacy.tsx");
+  const setup = readAppFile("setup.tsx");
+  const authUi = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "auth-ui.tsx"),
+    "utf8",
+  );
   const mobileLayout = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "mobileLayout.ts"),
     "utf8",
@@ -428,6 +435,16 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.match(avatarStudio, /getStandaloneRouteBottomPadding/);
   assert.match(avatarStudio, /paddingBottom: bottomScrollPadding/);
   assert.doesNotMatch(avatarStudio, /paddingBottom: 72/);
+
+  for (const source of [premium, privacy, setup, authUi]) {
+    assert.match(source, /getStandaloneRouteBottomPadding/);
+    assert.match(source, /paddingBottom: bottomScrollPadding/);
+  }
+
+  assert.doesNotMatch(premium, /paddingBottom: insets\.bottom \+ 40/);
+  assert.doesNotMatch(privacy, /paddingBottom: insets\.bottom \+ 44/);
+  assert.doesNotMatch(setup, /paddingBottom: insets\.bottom \+ 32/);
+  assert.doesNotMatch(authUi, /paddingBottom: insets\.bottom \+ 32/);
 });
 
 test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {

@@ -26,6 +26,7 @@ import {
   type AccountSafetySection,
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
+import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -80,6 +81,7 @@ export default function PrivacyScreen() {
     plan.payments,
   ];
   const topInset = Platform.OS === "web" ? 18 : insets.top;
+  const bottomScrollPadding = getStandaloneRouteBottomPadding(insets.bottom);
 
   const shareExport = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -104,7 +106,7 @@ export default function PrivacyScreen() {
       <Stack.Screen options={{ title: "Privacy & Safety" }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: topInset + 12, paddingHorizontal: 20, paddingBottom: insets.bottom + 44 }}
+        contentContainerStyle={{ paddingTop: topInset + 12, paddingHorizontal: 20, paddingBottom: bottomScrollPadding }}
       >
         <LinearGradient
           colors={[colors.midnight, colors.primary]}

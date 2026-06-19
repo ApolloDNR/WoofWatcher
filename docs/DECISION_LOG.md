@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-19: Standalone Mobile Routes Should Share The Same Bottom Clearance Contract
+
+Decision: Setup, Premium, Privacy, and the shared auth shell should use `getStandaloneRouteBottomPadding` instead of per-screen `insets.bottom + 32/40/44` padding.
+
+Reason: The tabbed safe-area helper fixed the primary shell, but the detached secondary routes still had route-specific bottom spacing that could leave primary form or CTA content too close to the home indicator on native devices. Moving every standalone scroll surface onto one helper gives the upcoming simulator/device QA pass a single clearance contract to validate.
+
+Owner: Codex.
+
+Revisit trigger: Device QA shows a specific standalone route needs stronger per-screen spacing, or the final native design system introduces a different standalone route footer pattern.
+
 ### 2026-06-19: Safe-Area Clearance Should Come From One Mobile Layout Contract
 
 Decision: The floating bottom-tab shell, the main tabbed routes, and Avatar Studio should all derive bottom clearance from shared mobile layout helpers instead of route-by-route magic numbers such as `128`, `130`, `142`, or `72`.

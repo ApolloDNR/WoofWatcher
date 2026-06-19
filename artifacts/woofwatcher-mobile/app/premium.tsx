@@ -24,6 +24,7 @@ import {
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -89,13 +90,14 @@ export default function PremiumScreen() {
   };
 
   const topInset = Platform.OS === "web" ? 18 : insets.top;
+  const bottomScrollPadding = getStandaloneRouteBottomPadding(insets.bottom);
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ title: "WoofWatcher Plus" }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: topInset + 12, paddingHorizontal: 20, paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingTop: topInset + 12, paddingHorizontal: 20, paddingBottom: bottomScrollPadding }}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <LinearGradient

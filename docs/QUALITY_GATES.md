@@ -132,7 +132,7 @@ Current evidence, 2026-06-18: Avatar Studio pack truth, next-pack priority, and 
 
 Current evidence, 2026-06-19: Every non-shepherd launch template now has a full animated launch pack with file-backed overlays, the full mood still set, and seven registered preview strips. Avatar Studio promotes Retriever, Husky, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed to `Animated pack ready`, while Shepherd/Phoenix remains the benchmark live pack.
 
-Current evidence, 2026-06-19: Native safe-area QA now has a shared code baseline before device screenshots exist. The floating tab shell plus Home, Log, Plans, Health, More, Records, and Avatar Studio derive bottom clearance from one helper with focused tests, reducing the risk that the floating nav or home indicator clips core actions on runtime devices.
+Current evidence, 2026-06-19: Native safe-area QA now has a shared code baseline before device screenshots exist. The floating tab shell plus Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell derive bottom clearance from one helper with focused tests, reducing the risk that the floating nav or home indicator clips core actions on runtime devices.
 
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 

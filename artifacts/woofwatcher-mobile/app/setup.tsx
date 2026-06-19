@@ -17,6 +17,7 @@ import { deriveOnboardingStatus } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import {
   applySetupWizardDraft,
   createSetupWizardDraft,
@@ -79,6 +80,7 @@ export default function SetupScreen() {
   };
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
+  const bottomScrollPadding = getStandaloneRouteBottomPadding(insets.bottom);
 
   return (
     <>
@@ -91,7 +93,7 @@ export default function SetupScreen() {
           style={s.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingTop: topInset + 14, paddingBottom: insets.bottom + 32, paddingHorizontal: 20 }}
+          contentContainerStyle={{ paddingTop: topInset + 14, paddingBottom: bottomScrollPadding, paddingHorizontal: 20 }}
         >
           <BoardRouteHeader
             kicker="Care foundation"
