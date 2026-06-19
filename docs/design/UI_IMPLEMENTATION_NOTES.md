@@ -601,6 +601,22 @@ Design intent:
 - Keep the next visual pass focused on the Trust review panel, timeline chips, and attachment action as one coherent medication workflow.
 - Preserve the future upload seam for Supabase/storage or another approved provider.
 
+## 2026-06-19 Potty Detail Correction Pass
+
+The Log detail sheet now supports a parent-potty clarification flow:
+
+- Quick tap can still create a fast Potty attempt log.
+- Opening that log later shows Clarify potty log with outcome, location, pee detail, stool consistency, stool color, and context.
+- Saving details uses a tested helper that rewrites stale pee/stool fields when the outcome changes, so a corrected "Tried, nothing" log does not keep old diarrhea/dark-pee metadata.
+- Accident, urgent, straining, and stool-watch details set watch/alert severity when warranted, but the copy stays observational and non-diagnostic.
+- The update appends audit history and preserves routine/household visibility context.
+
+Design intent:
+
+- Keep the fast log action under five seconds.
+- Let the household clarify real-life ambiguity later.
+- Make the panel feel compact and operational, not like a medical form.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

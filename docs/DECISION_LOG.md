@@ -1149,6 +1149,24 @@ Owner: Codex.
 
 Revisit trigger: Provider-backed file storage, medication proof policy, Access Pass permissions, or Care Pass report attachments become production scope.
 
+### 2026-06-19: Potty Quick Logs Stay Fast, Detail Corrections Stay Traceable
+
+Decision: Potty remains a parent event. A quick tap can log a fast potty attempt, and the Log detail sheet can later clarify outcome, location, pee detail, stool consistency/color, and context. Corrections must rewrite stale pee/stool fields and append audit history instead of layering conflicting metadata onto the same log.
+
+Reason: Real care is messy. Someone may only know that Phoenix went outside now, then later clarify pee, poop, both, an accident, or tried-nothing. The app should support that reality without forcing a full form every time or polluting Records with stale stool/pee detail.
+
+Consequences:
+
+- `pottyLogDetail.ts` owns the tested parent-outcome correction helper and option vocabulary.
+- The mobile Log detail sheet has a Clarify potty log panel for outcome/location/pee/stool/context updates.
+- Records Potty Health can trust updated fields because stale pee/stool metadata is removed when the outcome changes.
+- Audit history explains who corrected the potty detail and when.
+- The copy remains observational and non-diagnostic.
+
+Owner: Codex.
+
+Revisit trigger: Walk-session editing, voice-to-log parsing, or provider-backed audit/sync rules introduce a more general structured log detail engine.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

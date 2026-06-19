@@ -66,6 +66,8 @@ Current evidence, 2026-06-11: Potty Health ignores private potty logs and shows 
 
 Current evidence, 2026-06-11: Records Potty Health now shows stool colors and context labels from visible logs, making accident, urgency, and straining details visible to the household without requiring timeline search.
 
+Current evidence, 2026-06-19: Potty detail correction now has a tested Log detail sheet flow for outcome, location, pee detail, stool consistency/color, and context. Updating a parent potty attempt rewrites stale pee/stool fields, preserves routine/household context, records audit history, and feeds Records Potty Health without turning quick tap logs into fake precision.
+
 Current evidence, 2026-06-11: Durable sync outbox derives local, pending, and failed care entries into visible retryable create/update counts, exposes that state through CareContext, and shows a Log screen Offline Outbox banner with a Retry sync action so owners can recover care changes instead of trusting hidden sync internals.
 
 Current evidence, 2026-06-11: Household Sync Health derives loading, syncing, attention, and healthy dashboard states from the durable outbox, household member count, and care history, then shows More screen status, metrics, and retry/refresh guidance so owners can understand household sync health without opening the Log.

@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-19:
 
-- PASS: 257 focused tests with the command above.
+- PASS: 261 focused tests with the command above.
 - PASS: mobile TypeScript check with bundled Node and workspace TypeScript.
 - PASS: PixelLab asset verifier checked 148 Phoenix room/sprite/template/emote/accessory/seed-strip/Option B runtime assets with 0 missing and 0 invalid.
 - PASS: Expo web export completed through the package-local Expo CLI and Metro resolver patch.
@@ -40,7 +40,7 @@ Latest local evidence, 2026-06-19:
 - Weight Trend derivation from household-visible weigh-ins, including goal parsing, profile fallback, private-log exclusion, current/previous change, Records chart wiring, and Care Pass report language.
 - Grooming Care derivation from household-visible grooming logs, including duration, type, coat/skin notes, products/groomer context, next due date, private-log exclusion, Records mobile wiring, Log composer fields, and Care Pass report language.
 - Potty quick-log defaults for household-visible potty evidence.
-- Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
+- Potty composer, detail-sheet correction, and Potty Health derivation for visible potty logs, pee/poop counts, outcome/location/pee-detail/stool-detail edits, stale-detail clearing when outcomes change, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, audit history, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
 - Household Responsibility derivation for care-team routine ownership, open/overdue/unassigned routines, visible today log counts, next household action copy, and Calendar/More mobile wiring.
 - Household Access derivation for synced members, local-only caregivers, routine-only owners, invite readiness, permission labels, next-step copy, and More mobile wiring.
@@ -102,7 +102,7 @@ Latest local evidence, 2026-06-19:
 28. Confirm Records Training Progress updates sessions, minutes, wins, skills, latest session, and next-practice guidance while ignoring private training logs.
 29. Preview a trainer Care Pass and confirm Training Progress includes session count, skills, latest outcome, trigger/context when present, and next-practice notes.
 30. Use Home Quick Log for Potty and confirm it records household-visible potty routine evidence.
-31. Add a potty log with pee/poop kind, soft/off condition, stool color, accident/urgent/straining context, and a sticky note; confirm Records Potty Health updates pee, poop, review count, color/context detail, latest detail, and stool detail next-step copy.
+31. Add a potty log with pee/poop kind, soft/off condition, stool color, accident/urgent/straining context, and a sticky note; then open the log detail sheet, use Clarify potty log to correct outcome/location/pee/stool detail, and confirm Records Potty Health updates pee, poop, review count, color/context detail, latest detail, audit history, and stool detail next-step copy without carrying stale fields.
 32. Preview a vet or sitter Care Pass and confirm Potty Health summarizes stool color and potty context without making medical claims.
 33. Add sticky note to a log.
 34. Add vaccine, insurance, microchip, vet, receipt, and document records.

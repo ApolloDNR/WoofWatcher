@@ -53,6 +53,19 @@ import {
   getCareLogTrustReview,
   type CareLogReviewAction,
 } from "@/lib/careLogTrust";
+import {
+  buildPottyLogDetailPatch,
+  POTTY_CONTEXT_OPTIONS,
+  POTTY_DETAIL_OUTCOMES,
+  POTTY_LOCATION_OPTIONS,
+  POTTY_PEE_DETAIL_OPTIONS,
+  POTTY_STOOL_CONDITION_OPTIONS,
+  type PottyContext,
+  type PottyDetailOutcome,
+  type PottyLocation,
+  type PottyPeeDetail,
+  type PottyStoolCondition,
+} from "@/lib/pottyLogDetail";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
@@ -491,6 +504,9 @@ const DETAIL_LABELS: Record<string, string> = {
   portion: "Portion",
   severity: "Severity",
   serving: "Serving",
+  pottyOutcome: "Outcome",
+  pottyWhere: "Where",
+  peeDetail: "Pee detail",
   stoolColor: "Stool color",
   pottyContext: "Context",
   trainingOutcome: "Training outcome",
@@ -662,6 +678,56 @@ const DETAIL_MEAL_OUTCOMES: { id: DetailMealOutcome; label: string }[] = [
   { id: "skipped", label: "Refused" },
   { id: "grazing", label: "Still grazing" },
 ];
+
+type PottyDraftContext = PottyContext | "none";
+
+interface PottyDetailDraft {
+  outcome: PottyDetailOutcome;
+  location: PottyLocation;
+  peeDetail: PottyPeeDetail;
+  stoolCondition: PottyStoolCondition;
+  stoolColor: string;
+  context: PottyDraftContext;
+}
+
+const POTTY_STOOL_COLOR_OPTIONS = [
+  { id: "not-logged", label: "Not logged" },
+  { id: "brown", label: "Brown" },
+  { id: "yellow", label: "Yellow" },
+  { id: "red-black", label: "Red/black" },
+  { id: "green", label: "Green" },
+  { id: "gray", label: "Gray" },
+];
+
+const POTTY_CONTEXT_DRAFT_OPTIONS: { id: PottyDraftContext; label: string }[] = [
+  { id: "none", label: "No extra context" },
+  ...POTTY_CONTEXT_OPTIONS,
+];
+
+function optionId<T extends string>(value: unknown, options: { id: T }[], fallback: T): T {
+  const cleaned = typeof value === "string" ? value.trim() : "";
+  return options.some((option) => option.id === cleaned) ? (cleaned as T) : fallback;
+}
+
+function pottyOutcomeHasPee(outcome: PottyDetailOutcome): boolean {
+  return outcome === "pee" || outcome === "both";
+}
+
+function pottyOutcomeHasStool(outcome: PottyDetailOutcome): boolean {
+  return outcome === "poop" || outcome === "both";
+}
+
+function pottyDraftFromEntry(entry: Entry | null): PottyDetailDraft {
+  const details = entry && isDetailRecord(entry.details) ? entry.details : {};
+  return {
+    outcome: optionId(details.pottyOutcome, POTTY_DETAIL_OUTCOMES, "tried-nothing"),
+    location: optionId(details.pottyWhere, POTTY_LOCATION_OPTIONS, "outside"),
+    peeDetail: optionId(details.peeDetail, POTTY_PEE_DETAIL_OPTIONS, "normal"),
+    stoolCondition: optionId(details.condition, POTTY_STOOL_CONDITION_OPTIONS, "normal"),
+    stoolColor: optionId(details.stoolColor, POTTY_STOOL_COLOR_OPTIONS, "not-logged"),
+    context: optionId(details.pottyContext, POTTY_CONTEXT_DRAFT_OPTIONS, "none"),
+  };
+}
 
 function detailNumber(details: Record<string, unknown>, key: string): number | null {
   const value = details[key];
@@ -872,6 +938,12 @@ export default function LogScreen() {
   const detailType = detailEntry ? normalizeCareEventType(detailEntry.type, detailEntry.details) : null;
   const detailIcon = detailType ? TYPE_ICON[detailType] ?? "paw" : "paw";
   const detailTypeText = detailType ? entryTypeLabel(detailType) : "";
+  const [pottyDetailDraft, setPottyDetailDraft] = useState<PottyDetailDraft>(() => pottyDraftFromEntry(null));
+
+  useEffect(() => {
+    if (detailType !== "potty") return;
+    setPottyDetailDraft(pottyDraftFromEntry(detailEntry));
+  }, [detailEntry, detailType]);
 
   // Mount animation
   const fade = useRef(new Animated.Value(0)).current;
@@ -1362,6 +1434,28 @@ export default function LogScreen() {
       });
     },
     [caregiver, updateEntry],
+  );
+
+  const updatePottyDetailFromDetail = useCallback(
+    (entry: Entry) => {
+      const nowIso = new Date().toISOString();
+      const includesPee = pottyOutcomeHasPee(pottyDetailDraft.outcome);
+      const includesStool = pottyOutcomeHasStool(pottyDetailDraft.outcome);
+      const patch = buildPottyLogDetailPatch(entry, {
+        caregiver,
+        now: nowIso,
+        outcome: pottyDetailDraft.outcome,
+        location: pottyDetailDraft.location,
+        peeDetail: includesPee ? pottyDetailDraft.peeDetail : undefined,
+        stoolCondition: includesStool ? pottyDetailDraft.stoolCondition : undefined,
+        stoolColor: includesStool && pottyDetailDraft.stoolColor !== "not-logged" ? pottyDetailDraft.stoolColor : undefined,
+        context: pottyDetailDraft.context === "none" ? undefined : pottyDetailDraft.context,
+      });
+
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      updateEntry(entry.id, patch);
+    },
+    [caregiver, pottyDetailDraft, updateEntry],
   );
   const openAloneSession = useMemo(
     () => findOpenAloneTimeSession(state.entries),
@@ -3141,6 +3235,242 @@ export default function LogScreen() {
                   </View>
                 ) : null}
 
+                {detailType === "potty" ? (
+                  <View style={[s.pottyDetailPanel, { backgroundColor: colors.secondary + "14", borderColor: colors.secondary + "55" }]}>
+                    <View style={s.mealOutcomeHeader}>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[s.detailSectionLabel, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                          Clarify potty log
+                        </Text>
+                        <Text style={[s.mealOutcomeHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          Keep the quick tap fast, then clarify pee, stool, accident, or attempt details here.
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={s.pottyDetailGroup}>
+                      <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Outcome</Text>
+                      <View style={s.pottyOptionGrid}>
+                        {POTTY_DETAIL_OUTCOMES.map((option) => {
+                          const active = pottyDetailDraft.outcome === option.id;
+                          return (
+                            <Pressable
+                              key={option.id}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Set potty outcome: ${option.label}`}
+                              onPress={() => setPottyDetailDraft((draft) => ({ ...draft, outcome: option.id }))}
+                              style={({ pressed }) => [
+                                s.pottyOptionButton,
+                                {
+                                  backgroundColor: active ? colors.primary : pressed ? colors.primary + "18" : colors.background,
+                                  borderColor: active ? colors.primary : colors.border,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  s.pottyOptionText,
+                                  { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                ]}
+                              >
+                                {option.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+
+                    <View style={s.pottyDetailGroup}>
+                      <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Where</Text>
+                      <View style={s.pottyOptionGrid}>
+                        {POTTY_LOCATION_OPTIONS.map((option) => {
+                          const active = pottyDetailDraft.location === option.id;
+                          return (
+                            <Pressable
+                              key={option.id}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Set potty location: ${option.label}`}
+                              onPress={() => setPottyDetailDraft((draft) => ({ ...draft, location: option.id }))}
+                              style={({ pressed }) => [
+                                s.pottyOptionButton,
+                                {
+                                  backgroundColor: active ? colors.sage : pressed ? colors.sage + "18" : colors.background,
+                                  borderColor: active ? colors.sage : colors.border,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  s.pottyOptionText,
+                                  { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                ]}
+                              >
+                                {option.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+
+                    {pottyOutcomeHasPee(pottyDetailDraft.outcome) ? (
+                      <View style={s.pottyDetailGroup}>
+                        <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Pee detail</Text>
+                        <View style={s.pottyOptionGrid}>
+                          {POTTY_PEE_DETAIL_OPTIONS.map((option) => {
+                            const active = pottyDetailDraft.peeDetail === option.id;
+                            return (
+                              <Pressable
+                                key={option.id}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Set pee detail: ${option.label}`}
+                                onPress={() => setPottyDetailDraft((draft) => ({ ...draft, peeDetail: option.id }))}
+                                style={({ pressed }) => [
+                                  s.pottyOptionButton,
+                                  {
+                                    backgroundColor: active ? colors.copper : pressed ? colors.copper + "18" : colors.background,
+                                    borderColor: active ? colors.copper : colors.border,
+                                  },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    s.pottyOptionText,
+                                    { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                  ]}
+                                >
+                                  {option.label}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    ) : null}
+
+                    {pottyOutcomeHasStool(pottyDetailDraft.outcome) ? (
+                      <>
+                        <View style={s.pottyDetailGroup}>
+                          <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                            Stool consistency
+                          </Text>
+                          <View style={s.pottyOptionGrid}>
+                            {POTTY_STOOL_CONDITION_OPTIONS.map((option) => {
+                              const active = pottyDetailDraft.stoolCondition === option.id;
+                              return (
+                                <Pressable
+                                  key={option.id}
+                                  accessibilityRole="button"
+                                  accessibilityLabel={`Set stool consistency: ${option.label}`}
+                                  onPress={() => setPottyDetailDraft((draft) => ({ ...draft, stoolCondition: option.id }))}
+                                  style={({ pressed }) => [
+                                    s.pottyOptionButton,
+                                    {
+                                      backgroundColor: active ? colors.copper : pressed ? colors.copper + "18" : colors.background,
+                                      borderColor: active ? colors.copper : colors.border,
+                                    },
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      s.pottyOptionText,
+                                      { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                    ]}
+                                  >
+                                    {option.label}
+                                  </Text>
+                                </Pressable>
+                              );
+                            })}
+                          </View>
+                        </View>
+                        <View style={s.pottyDetailGroup}>
+                          <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Stool color</Text>
+                          <View style={s.pottyOptionGrid}>
+                            {POTTY_STOOL_COLOR_OPTIONS.map((option) => {
+                              const active = pottyDetailDraft.stoolColor === option.id;
+                              return (
+                                <Pressable
+                                  key={option.id}
+                                  accessibilityRole="button"
+                                  accessibilityLabel={`Set stool color: ${option.label}`}
+                                  onPress={() => setPottyDetailDraft((draft) => ({ ...draft, stoolColor: option.id }))}
+                                  style={({ pressed }) => [
+                                    s.pottyOptionButton,
+                                    {
+                                      backgroundColor: active ? colors.copper : pressed ? colors.copper + "18" : colors.background,
+                                      borderColor: active ? colors.copper : colors.border,
+                                    },
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      s.pottyOptionText,
+                                      { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                    ]}
+                                  >
+                                    {option.label}
+                                  </Text>
+                                </Pressable>
+                              );
+                            })}
+                          </View>
+                        </View>
+                      </>
+                    ) : null}
+
+                    <View style={s.pottyDetailGroup}>
+                      <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Context</Text>
+                      <View style={s.pottyOptionGrid}>
+                        {POTTY_CONTEXT_DRAFT_OPTIONS.map((option) => {
+                          const active = pottyDetailDraft.context === option.id;
+                          return (
+                            <Pressable
+                              key={option.id}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Set potty context: ${option.label}`}
+                              onPress={() => setPottyDetailDraft((draft) => ({ ...draft, context: option.id }))}
+                              style={({ pressed }) => [
+                                s.pottyOptionButton,
+                                {
+                                  backgroundColor: active ? colors.sage : pressed ? colors.sage + "18" : colors.background,
+                                  borderColor: active ? colors.sage : colors.border,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  s.pottyOptionText,
+                                  { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                ]}
+                              >
+                                {option.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Save potty details"
+                      onPress={() => updatePottyDetailFromDetail(detailEntry)}
+                      style={({ pressed }) => [
+                        s.pottySaveButton,
+                        {
+                          backgroundColor: pressed ? colors.primary + "DD" : colors.primary,
+                          borderColor: colors.primary,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.pottySaveText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>Save potty details</Text>
+                      <Ionicons name="checkmark-circle-outline" size={18} color={colors.ivory} />
+                    </Pressable>
+                  </View>
+                ) : null}
+
                 <View style={s.detailGrid}>
                   {detailRows.length > 0 ? (
                     detailRows.map((row) => (
@@ -3996,6 +4326,55 @@ const s = StyleSheet.create({
   },
   mealOutcomeButtonText: {
     fontSize: 12.5,
+    textAlign: "center",
+  },
+  pottyDetailPanel: {
+    borderWidth: 1,
+    borderRadius: 15,
+    padding: 12,
+    marginBottom: 12,
+    gap: 12,
+  },
+  pottyDetailGroup: {
+    gap: 7,
+  },
+  pottyDetailLabel: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  pottyOptionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+  },
+  pottyOptionButton: {
+    flexGrow: 1,
+    flexBasis: "30%",
+    minHeight: 36,
+    borderWidth: 1,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  pottyOptionText: {
+    fontSize: 12,
+    textAlign: "center",
+  },
+  pottySaveButton: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+  },
+  pottySaveText: {
+    fontSize: 13.5,
     textAlign: "center",
   },
   detailGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 4 },

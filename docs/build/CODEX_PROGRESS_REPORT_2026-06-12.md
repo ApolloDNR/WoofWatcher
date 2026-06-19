@@ -703,3 +703,47 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Add richer structured edit sheets for potty pee/stool detail and walk session start/finish updates.
 - Expand correction history UI beyond the compact trust panel and audit trail.
 - Native iOS/Android safe-area, touch, notification, and phone-size QA remains required before launch approval.
+
+## 2026-06-19 Potty Detail Correction Pass
+
+### What Changed
+
+- Added a tested `pottyLogDetail.ts` helper for clarifying parent potty attempt logs after the quick tap.
+- Added option sets for potty outcome, location, pee detail, stool consistency, and context.
+- Saving a correction now rewrites stale pee/stool fields when an outcome changes, preserves household/routine context, sets watch/alert severity only when warranted, and appends audit history.
+- Added a Clarify potty log panel to the mobile Log detail sheet so owners can update outcome/location/pee/stool detail without opening a separate full page.
+- Extended mobile readiness checks so the UI wiring cannot silently drift out of the detail sheet.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/pottyLogDetail.ts`
+- `artifacts/woofwatcher-mobile/lib/pottyLogDetail.test.ts`
+- `artifacts/woofwatcher-mobile/app/(tabs)/log.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/DECISION_LOG.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
+
+### Tests And Checks Run
+
+- Potty detail behavior:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/pottyLogDetail.test.ts`
+  - Result: passed, 4 tests.
+- Mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 62 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+- Full local behavior/readiness suite:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 261 tests.
+
+### Remaining Work
+
+- Walk session start/finish editing is still the next structured log lifecycle gap.
+- Correction-history UI can still become richer than the current audit trail.
+- Provider-backed photo/document storage remains gated by Apollo's storage decision.
