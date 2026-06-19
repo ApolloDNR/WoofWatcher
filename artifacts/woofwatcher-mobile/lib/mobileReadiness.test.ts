@@ -410,6 +410,7 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const records = readAppFile(join("(tabs)", "records.tsx"));
   const avatarStudio = readAppFile("portrait.tsx");
+  const woofGuide = readAppFile("woofguide.tsx");
   const premium = readAppFile("premium.tsx");
   const privacy = readAppFile("privacy.tsx");
   const setup = readAppFile("setup.tsx");
@@ -425,6 +426,7 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.match(mobileLayout, /export function getFloatingTabChromeMetrics/);
   assert.match(mobileLayout, /export function getTabbedRouteBottomPadding/);
   assert.match(mobileLayout, /export function getStandaloneRouteBottomPadding/);
+  assert.match(mobileLayout, /export function getStandaloneComposerBottomPadding/);
   assert.match(tabLayout, /getFloatingTabChromeMetrics/);
 
   for (const source of [home, calendar, health, log, more, records]) {
@@ -435,6 +437,10 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.match(avatarStudio, /getStandaloneRouteBottomPadding/);
   assert.match(avatarStudio, /paddingBottom: bottomScrollPadding/);
   assert.doesNotMatch(avatarStudio, /paddingBottom: 72/);
+
+  assert.match(woofGuide, /getStandaloneComposerBottomPadding/);
+  assert.match(woofGuide, /paddingBottom: composerBottomPadding/);
+  assert.doesNotMatch(woofGuide, /paddingBottom: bottomInset \+ 12/);
 
   for (const source of [premium, privacy, setup, authUi]) {
     assert.match(source, /getStandaloneRouteBottomPadding/);

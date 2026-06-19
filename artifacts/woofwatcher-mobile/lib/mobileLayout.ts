@@ -14,6 +14,9 @@ const WEB_TAB_BAR_HEIGHT = 78;
 const WEB_FAB_BOTTOM_OFFSET = 26;
 const WEB_ROUTE_CLEARANCE = 130;
 const STANDALONE_ROUTE_CLEARANCE = 88;
+const STANDALONE_COMPOSER_CLEARANCE = 24;
+const STANDALONE_COMPOSER_INSET_OFFSET = 12;
+const WEB_COMPOSER_BOTTOM_INSET = 34;
 
 export function getFloatingTabChromeMetrics(bottomInset: number, isWeb: boolean): FloatingTabChromeMetrics {
   if (isWeb) {
@@ -39,4 +42,9 @@ export function getTabbedRouteBottomPadding(bottomInset: number, isWeb: boolean)
 
 export function getStandaloneRouteBottomPadding(bottomInset: number): number {
   return Math.max(STANDALONE_ROUTE_CLEARANCE, bottomInset + 54);
+}
+
+export function getStandaloneComposerBottomPadding(bottomInset: number, isWeb: boolean): number {
+  const effectiveInset = isWeb ? WEB_COMPOSER_BOTTOM_INSET : bottomInset;
+  return Math.max(STANDALONE_COMPOSER_CLEARANCE, effectiveInset + STANDALONE_COMPOSER_INSET_OFFSET);
 }

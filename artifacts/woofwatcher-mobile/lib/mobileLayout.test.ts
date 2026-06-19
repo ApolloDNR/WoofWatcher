@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   getFloatingTabChromeMetrics,
+  getStandaloneComposerBottomPadding,
   getStandaloneRouteBottomPadding,
   getTabbedRouteBottomPadding,
 } from "./mobileLayout.ts";
@@ -25,4 +26,10 @@ test("keeps standalone routes clear of the home indicator", () => {
   assert.equal(getStandaloneRouteBottomPadding(0), 88);
   assert.equal(getStandaloneRouteBottomPadding(34), 88);
   assert.equal(getStandaloneRouteBottomPadding(40), 94);
+});
+
+test("keeps standalone composer controls clear on flat and notched devices", () => {
+  assert.equal(getStandaloneComposerBottomPadding(0, false), 24);
+  assert.equal(getStandaloneComposerBottomPadding(34, false), 46);
+  assert.equal(getStandaloneComposerBottomPadding(0, true), 46);
 });

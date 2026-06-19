@@ -148,6 +148,7 @@ Current gaps:
 - Need mobile runtime smoke.
 - Critical mobile action accessibility labels are covered by focused static smoke.
 - Home avatar motion state and wiring are covered by focused tests.
+- Shared mobile layout tests cover WoofGuide composer bottom clearance on flat native, notched native, and web surfaces before native screenshot QA is available.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
 - Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.
 - Walk quick-log visibility, full Log walk route fields, Walk Activity summary logic, Saved Routes derivation, Care Pass walk activity/Saved Routes language, and Records walk activity wiring are covered by focused tests.

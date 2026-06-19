@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-19: WoofGuide Composer Clearance Belongs In Shared Mobile Layout
+
+Decision: WoofGuide's bottom composer should use `getStandaloneComposerBottomPadding` from the shared mobile layout helper instead of route-local `bottomInset + 12` math.
+
+Reason: WoofGuide is a standalone owner-reviewed assistant surface with a persistent input control. The broader safe-area baseline already covered tabbed scroll routes and standalone scroll content, but the assistant composer still had its own inset calculation that could leave flat native devices with too little clearance. A named helper gives native runtime QA one contract to inspect for standalone composer controls without claiming simulator screenshots have run.
+
+Owner: Codex.
+
+Revisit trigger: Native device QA shows the WoofGuide composer needs a different clearance than the shared standalone composer contract, or another standalone composer surface is added and needs a richer helper.
+
 ### 2026-06-19: Standalone Mobile Routes Should Share The Same Bottom Clearance Contract
 
 Decision: Setup, Premium, Privacy, and the shared auth shell should use `getStandaloneRouteBottomPadding` instead of per-screen `insets.bottom + 32/40/44` padding.

@@ -32,6 +32,7 @@ import {
   type WoofGuideActionCard,
   type WoofGuideActionIcon,
 } from "@/lib/woofGuideActions";
+import { getStandaloneComposerBottomPadding } from "@/lib/mobileLayout";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -148,7 +149,7 @@ export default function WoofGuideScreen() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [reviewAction, setReviewAction] = useState<WoofGuideActionCard | null>(null);
-  const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
+  const composerBottomPadding = getStandaloneComposerBottomPadding(insets.bottom, Platform.OS === "web");
   const name = state.profile.name || "your dog";
 
   const quickQuestions = useMemo(() => [
@@ -371,7 +372,7 @@ export default function WoofGuideScreen() {
           )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         />
-        <View style={[s.inputArea, { borderTopColor: colors.border, paddingBottom: bottomInset + 12, backgroundColor: colors.background }]}>
+        <View style={[s.inputArea, { borderTopColor: colors.border, paddingBottom: composerBottomPadding, backgroundColor: colors.background }]}>
           <TextInput
             value={input}
             onChangeText={setInput}
