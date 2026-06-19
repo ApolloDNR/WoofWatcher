@@ -11,7 +11,7 @@
 
 ## Accounts And Secrets
 
-- GitHub Actions billing/spending limit: the 2026-06-18/2026-06-19 `WoofWatcher Verify` push runs `27755647013` for commit `56096bf`, `27765664335` for commit `c6d4f45`, `27776366919` for commit `a43be6e`, `27801226615` for commit `08b5a61`, `27806984393` for commit `c1c3a54`, and `27831252823` for commit `c2682d7` all failed before job start because GitHub reported recent account payments failed or the spending limit needs to be increased. The newest run surfaced the annotation `The job was not started because recent account payments have failed or your spending limit needs to be increased.` Local focused tests and PixelLab asset verification passed for these slices, but CI cannot provide authoritative remote verification until GitHub billing is fixed.
+- GitHub Actions billing/spending limit: the 2026-06-18/2026-06-19 `WoofWatcher Verify` push runs `27755647013` for commit `56096bf`, `27765664335` for commit `c6d4f45`, `27776366919` for commit `a43be6e`, `27801226615` for commit `08b5a61`, `27806984393` for commit `c1c3a54`, `27831252823` for commit `c2682d7`, and `27839235544` for commit `dd3b24e` all failed before job start because GitHub reported recent account payments failed or the spending limit needs to be increased. The newest run surfaced the annotation `The job was not started because recent account payments have failed or your spending limit needs to be increased.` Local focused tests and PixelLab asset verification passed for these slices, but CI cannot provide authoritative remote verification until GitHub billing is fixed.
 - Clerk production configuration.
 - Database/Supabase production configuration.
 - Storage provider for records and generated reports.
