@@ -65,7 +65,7 @@ import { pixelImageStyle } from "@/lib/pixelRendering";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
 const DISPLAY = "Fredoka_700Bold";
-const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day.png");
+const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
 const PIXEL_HEAD_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main-head-v2-crisp.png");
 
 type Phase = "idle" | "working" | "result";

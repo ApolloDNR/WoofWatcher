@@ -58,6 +58,7 @@ test("registers finished PixelLab sprite strips and a dogless room layer", () =>
   assert.equal(getCareTwinSpriteAsset("walk-loop")?.columns, 8);
   assert.equal(getCareTwinSpriteAsset("ear-perk")?.columns, 6);
   assert.equal(getCareTwinSpriteAsset("bark-loop")?.columns, 6);
+  assert.match(CARE_TWIN_ROOM_VARIANT_ASSETS.day.description, /Option B Dogless/);
   assert.equal(getCareTwinRoomLayer("happy")?.description.includes("Dogless"), true);
 });
 

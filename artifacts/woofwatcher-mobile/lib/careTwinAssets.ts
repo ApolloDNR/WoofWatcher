@@ -174,10 +174,10 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
 
 export const CARE_TWIN_ROOM_VARIANT_ASSETS = {
   day: {
-    source: bundledAsset("assets/avatar/rooms/phoenix-room-day.png", () =>
-      require("@/assets/avatar/rooms/phoenix-room-day.png"),
+    source: bundledAsset("assets/avatar/rooms/phoenix-room-day-option-b.png", () =>
+      require("@/assets/avatar/rooms/phoenix-room-day-option-b.png"),
     ),
-    description: "Dogless neo-retro Phoenix day room with empty rug for layered sprite animation.",
+    description: "Option B Dogless neo-retro Phoenix day room with empty rug for layered sprite animation.",
   },
   night: {
     source: bundledAsset("assets/avatar/rooms/phoenix-room-night.png", () =>

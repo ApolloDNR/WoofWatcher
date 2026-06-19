@@ -27,6 +27,7 @@ const sprites = [
 
 const rooms = [
   "phoenix-room-day.png",
+  "phoenix-room-day-option-b.png",
   "phoenix-room-night.png",
   "phoenix-room-bedtime.png",
   "phoenix-room-health-watch.png",

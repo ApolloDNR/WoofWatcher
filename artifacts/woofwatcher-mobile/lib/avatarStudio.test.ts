@@ -107,3 +107,17 @@ test("documents the first emote state set for the living care twin", () => {
   assert.match(describeAvatarConfig(createDefaultAvatarConfig("Phoenix")), /Shepherd/);
   assert.match(describeAvatarConfig(createDefaultAvatarConfig("Phoenix")), /template-built/);
 });
+
+test("keeps Phoenix's shepherd template live in Avatar Studio", () => {
+  const spriteAssets = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateSpriteAssets.ts"),
+    "utf8",
+  );
+
+  assert.match(spriteAssets, /shepherd: \{/);
+  assert.match(spriteAssets, /key: "shepherd:option-b-idle-tail-wag"/);
+  assert.match(spriteAssets, /key: "shepherd:option-b-walk-loop"/);
+  assert.match(spriteAssets, /assets\/avatar\/phoenix\/candidates\/option-b-idle-tail-wag-strip\.png/);
+  assert.match(spriteAssets, /assets\/avatar\/phoenix\/candidates\/option-b-walk-loop-strip\.png/);
+  assert.match(spriteAssets, /Approved Option B Phoenix/);
+});

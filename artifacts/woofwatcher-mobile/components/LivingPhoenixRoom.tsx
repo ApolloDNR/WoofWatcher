@@ -31,6 +31,7 @@ import {
   getCareTwinRoomLayer,
   getCareTwinSpriteAsset,
 } from "@/lib/careTwinAssets";
+import { zoneForSpriteAction } from "@/lib/careTwinStage";
 import {
   CARE_TWIN_SPRITE_MANIFEST,
   deriveCareTwinScene,
@@ -142,11 +143,11 @@ const FOCUS_SPOTS: Record<AvatarRoomZone, { left: PercentString; top: PercentStr
 };
 
 const SPRITE_STAGE_ZONES: Record<AvatarRoomZone, { left: PercentString; top: PercentString; width: number; height: number }> = {
-  rug: { left: "27%", top: "34%", width: 188, height: 188 },
-  door: { left: "14%", top: "33%", width: 186, height: 186 },
-  bowl: { left: "46%", top: "45%", width: 170, height: 170 },
-  bed: { left: "8%", top: "35%", width: 154, height: 154 },
-  window: { left: "32%", top: "24%", width: 176, height: 176 },
+  rug: { left: "17%", top: "23%", width: 248, height: 248 },
+  door: { left: "7%", top: "23%", width: 246, height: 246 },
+  bowl: { left: "34%", top: "32%", width: 224, height: 224 },
+  bed: { left: "7%", top: "31%", width: 224, height: 224 },
+  window: { left: "21%", top: "24%", width: 238, height: 238 },
 };
 
 const HUD_TONE_COLOR: Record<CareTwinHudTone, string> = {
@@ -203,21 +204,27 @@ export function LivingPhoenixRoom({
   const theme = MOOD_THEME[mood];
   const plan = useMemo(() => deriveCareTwinScene(motion), [motion]);
   const isStudio = presentation === "studio";
-  const zone = ROOM_ZONES[plan.zone];
-  const focusSpot = FOCUS_SPOTS[plan.zone];
-  const spriteZone = SPRITE_STAGE_ZONES[plan.zone];
   const sceneSource = STATE_SCENES[mood];
-  const spriteAsset = useMemo(() => getCareTwinSpriteAsset(plan.spriteAction), [plan.spriteAction]);
-  const roomLayer = useMemo(() => getCareTwinRoomLayer(mood, plan.spriteAction), [mood, plan.spriteAction]);
-  const layerReadiness = useMemo(() => getCareTwinLayerReadiness(plan.spriteAction, mood), [mood, plan.spriteAction]);
+  const fallbackAvatarSource = PHOENIX_FALLBACK_AVATARS[mood];
+  const lines = useMemo(() => speechLines(speech), [speech]);
+  const hudAccent = HUD_TONE_COLOR[plan.hudTone] ?? theme.accent;
+  const [activeReaction, setActiveReaction] = useState<PhoenixRoomReaction | null>(reaction ?? null);
+  const [ambientSpriteAction, setAmbientSpriteAction] = useState<CareTwinSpriteAction | null>(null);
+  const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ambientTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeSpriteAction = activeReaction?.spriteAction ?? ambientSpriteAction ?? plan.spriteAction;
+  const activeZoneKey = zoneForSpriteAction(activeSpriteAction, plan.zone);
+  const zone = ROOM_ZONES[activeZoneKey];
+  const focusSpot = FOCUS_SPOTS[activeZoneKey];
+  const spriteZone = SPRITE_STAGE_ZONES[activeZoneKey];
+  const spriteAsset = useMemo(() => getCareTwinSpriteAsset(activeSpriteAction), [activeSpriteAction]);
+  const roomLayer = useMemo(() => getCareTwinRoomLayer(mood, activeSpriteAction), [activeSpriteAction, mood]);
+  const layerReadiness = useMemo(() => getCareTwinLayerReadiness(activeSpriteAction, mood), [activeSpriteAction, mood]);
   const layeredStageReady = layerReadiness.layeredReady && Boolean(spriteAsset && roomLayer);
   const roomStageReady = Boolean(roomLayer);
   const stageSource = roomLayer?.source ?? sceneSource;
-  const fallbackAvatarSource = PHOENIX_FALLBACK_AVATARS[mood];
   const useFallbackAvatarLayer = roomStageReady && !layeredStageReady;
   const animateBakedScene = !roomStageReady && !layeredStageReady;
-  const lines = useMemo(() => speechLines(speech), [speech]);
-  const hudAccent = HUD_TONE_COLOR[plan.hudTone] ?? theme.accent;
   const roomStats = useMemo<PhoenixRoomStat[]>(
     () =>
       statusReadouts?.slice(0, 4) ?? [
@@ -245,11 +252,6 @@ export function LivingPhoenixRoom({
       ],
     [energy, hudAccent, mood, plan.moodLabel, plan.recommendedActionLabel, plan.scenePhase, statusReadouts, theme.accent, theme.status, zone.icon],
   );
-  const [activeReaction, setActiveReaction] = useState<PhoenixRoomReaction | null>(reaction ?? null);
-  const [ambientSpriteAction, setAmbientSpriteAction] = useState<CareTwinSpriteAction | null>(null);
-  const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const ambientTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const activeSpriteAction = activeReaction?.spriteAction ?? ambientSpriteAction ?? plan.spriteAction;
   const activeSpriteTrack = CARE_TWIN_SPRITE_MANIFEST[activeSpriteAction] ?? plan.spriteTrack;
   const activeSpriteAsset = getCareTwinSpriteAsset(activeSpriteAction) ?? spriteAsset;
 

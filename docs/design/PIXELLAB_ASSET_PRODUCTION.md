@@ -354,10 +354,24 @@ The live Phoenix runtime and sprite manifest now point at the Option B family fo
 Create Phoenix-free backgrounds:
 
 - `assets/avatar/rooms/phoenix-room-day.png`
+- `assets/avatar/rooms/phoenix-room-day-option-b.png`
 - `assets/avatar/rooms/phoenix-room-night.png`
 - `assets/avatar/rooms/phoenix-room-bedtime.png`
 - `assets/avatar/rooms/phoenix-room-health-watch.png`
 - `assets/avatar/rooms/phoenix-room-home-alone.png`
+
+2026-06-19 subscription-backed day-room pass:
+
+- PixelLab map object `0f8ea307-488f-4097-80dd-fcde1a5b1595` produced a clean dogless Option B-style day room.
+- Local raw source: `assets/avatar/rooms/pixellab-option-b-room-raw-0f8ea307.png`.
+- Local runtime room: `assets/avatar/rooms/phoenix-room-day-option-b.png`, nearest-neighbor upscaled to `1200x1200`.
+- Runtime registration: `careTwinAssets.ts` now uses this file for the active `day` room variant; `portrait.tsx` uses the same source for Avatar Studio.
+- Quality boundary: this room is accepted as a clean layered stage, not final Figma/illustration-grade art. Replace it later only with a dogless room that improves visual richness without reintroducing a baked dog.
+
+2026-06-19 Phoenix pro-generation status:
+
+- Standard quadruped character `66f30a00-6b98-48d2-aad8-114d04f8c18e` completed but was not promoted because the preview was too front-facing and weaker than the current Option B runtime family.
+- Pro quadruped character `be24cc90-7a69-4859-b9b2-42e73a2124cd` was queued for review. Do not wire it until visual QA confirms it beats the current hard-pixel Option B Phoenix strips and has matching transparent animation strips.
 
 Phoenix must remain a transparent separate sprite layer.
 
@@ -385,9 +399,9 @@ from:
 artifacts/woofwatcher-mobile
 ```
 
-This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Retriever emote stills, Husky emote stills, Bully emote stills, Avatar Studio accessory inventory icons, the two subscription seed strips, the crisp display upscales, and the full current Option B redesign candidate pack including the dedicated bark/tap reaction.
+This verifies the registered Phoenix sprite strips, dogless room files, the Option B day-room runtime layer, Avatar Studio template previews, template base stills, Phoenix emote stills, Retriever emote stills, Husky emote stills, Bully emote stills, Avatar Studio accessory inventory icons, the two subscription seed strips, the crisp display upscales, and the full current Option B redesign candidate pack including the dedicated bark/tap reaction.
 
-Latest local evidence, 2026-06-19: `node scripts/verify-pixellab-assets.js` checked 148 assets with 0 missing and 0 invalid. Run it from `artifacts/woofwatcher-mobile` after every asset import and expect no missing or invalid files.
+Latest local evidence, 2026-06-19: `node scripts/verify-pixellab-assets.js` checked 149 assets with 0 missing and 0 invalid. Run it from `artifacts/woofwatcher-mobile` after every asset import and expect no missing or invalid files.
 
 Use:
 

@@ -315,8 +315,9 @@ Next required asset pass:
 
 - Improve or upscale the v2 seated Phoenix main avatar if Apollo wants an even closer board-05/06 match.
 - Run native phone-size QA on the wired Option B Phoenix family and decide which loops need refinement before final approved-path promotion.
-- Run native phone-size QA on the full dogless room set. The 2026-06-19 PixelLab room pass accepted and wired final-candidate dogless night, bedtime, health-watch, and home-alone scenes.
+- Run native phone-size QA on the full dogless room set. The 2026-06-19 PixelLab room pass accepted and wired final-candidate dogless night, bedtime, health-watch, and home-alone scenes, plus a clean dogless Option B day-room runtime layer at `assets/avatar/rooms/phoenix-room-day-option-b.png`.
 - Review the archived 2026-06-19 PixelLab candidate `6ad8a54d-3b19-41d8-9525-4eeca0d76529` only as a still-art reference. Do not promote it until matching transparent animation strips exist and it beats the current hard-pixel Option B runtime family in native phone-size QA.
+- Review the pro PixelLab quadruped character `be24cc90-7a69-4859-b9b2-42e73a2124cd` when it completes. Do not promote it unless it beats the current hard-pixel Option B Phoenix family and can produce matching transparent idle/walk/care-action strips.
 - Do not promote rejected 2026-06-19 candidates `96200e12-1297-4970-9342-beee2f18c5a9` or `93160aef-fe35-46bf-8b40-859687053072`; the first had duplicate/cropped body artifacts and the second lost Phoenix's locked warm black/tan identity.
 - Inspect and improve any action strip that does not read strongly enough at phone size, especially walk/eat/drink where future prop layers can make the action clearer.
 - Inspect the subscription seed idle/walk strips in native/mobile preview before deciding whether they should replace or supplement the current approved seated sprite family.
@@ -355,6 +356,8 @@ Register future assets in `artifacts/woofwatcher-mobile/lib/careTwinAssets.ts` o
 Use `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` to check file presence and PNG dimensions before registration.
 
 2026-06-19 renderer polish added ambient micro-behaviors, tap/quick-log sprite reactions, crisp PixelIcon web rendering, a tighter Phoenix Room frame/HUD, and an Avatar Studio overlay guard so live sprite previews are not covered by oversized still/accessory layers. The next asset work should improve production art quality without reintroducing a second dog or fake live animation.
+
+2026-06-19 Option B redesign pass registered `phoenix-room-day-option-b.png` as the active day/studio room, kept `pixellab-option-b-room-raw-0f8ea307.png` as the source download, made the shepherd/Phoenix Avatar Studio template use the approved Option B idle and walk strips as a live sprite pack, and added `careTwinStage.ts` so sprite actions route to bowl, door, bed, and window zones through tested logic instead of ad hoc component code.
 
 ## Source Control Rule
 

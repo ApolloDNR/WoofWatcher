@@ -616,7 +616,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /getAvatarTemplateDisplaySource\(template\.id\)/);
   assert.match(avatarStudio, /templateHeroDogWrap/);
   assert.match(avatarStudio, /s\.templateArtWrap/);
-  assert.match(avatarStudio, /phoenix-room-day\.png/);
+  assert.match(avatarStudio, /phoenix-room-day-option-b\.png/);
   assert.match(avatarStudio, /phoenix-main-head-v2-crisp\.png/);
   assert.match(avatarStudio, /selectedTemplateStillSource/);
   assert.match(avatarStudio, /PHOTO REFERENCE/);
@@ -901,7 +901,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(verifier, /templateAccessories/);
   assert.match(verifier, /templateEmotes/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, PixelLab final-candidate night\/bedtime\/health-watch\/home-alone rooms, the full current Option B hard-pixel Phoenix runtime candidate family/);
+  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, active Option B dogless day room, PixelLab final-candidate night\/bedtime\/health-watch\/home-alone rooms, the full current Option B hard-pixel Phoenix runtime candidate family/);
   assert.match(blockers, /12 Avatar Studio template preview thumbnails, the full 12-template base still pack, the first shepherd accessory overlay PNG pack, the first shepherd 10-state emote still pack, and the Retriever, Husky\/Spitz, and Bully 10-state template emote packs now exist locally/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
