@@ -223,7 +223,40 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
 - Local proof strips:
   - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png`
   - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png`
-- Status: selected, downloaded, normalized into 8-frame 256px-slot proof strips, and wired into the common happy/tail-wag and walk runtime assets. The remaining v2 action family stays live until matching Option B sleep, comfort, health-watch, eat, drink, ear-perk, and celebration strips exist.
+- Status: selected, downloaded, normalized into 8-frame 256px-slot proof strips, and wired into the common happy/tail-wag and walk runtime assets. The 2026-06-19 expansion replaced the remaining live Phoenix action fallbacks with matching Option B candidate strips.
+
+### Option B Hard-Pixel Runtime Pack Expansion
+
+- Date: 2026-06-19
+- Phase: Option B action-state expansion
+- Operator: Codex
+- PixelLab tools: `animate_object`, `create_object_state`, then local `build-pixellab-sprite-strip.js`
+- Source seated object ID: `83b452c4-4321-4a86-830f-8ef337798cee`
+- Source standing object ID: `4646c92b-753f-4fe7-8837-c7e9d1b82eef`
+- Corrected sleep source object ID: `2b46f263-6e10-435d-9bc7-536d21827314`
+- Generated animation IDs:
+  - `ear-perk`: `3614a73d-35fc-4974-bb0c-c7b6ea343a55`
+  - `eat-loop`: `45048471-f588-4592-a89f-ed8bb994b141`
+  - `drink-loop`: `8975e020-3e25-4b00-bee9-26e6fdc8c31b`
+  - first sleep attempt, rejected for runtime loop use: `11b5e9be-14e0-44b3-b788-b5695e2dd2dd`
+  - corrected curled `sleep-loop`: `bbd8a406-09b4-459c-8fdf-c833d6f31a5f`
+  - `comfort-loop`: `bd8469a7-8048-4922-9f11-8d621151d0d5`
+  - `health-watch`: `7a21cc5c-7428-4a9f-b714-e78fe64666d9`
+  - `celebrate-hop`: `cb56007a-2027-4a4c-8394-7509e07f4c7e`
+  - `bark-reaction`: `4a5d9b0b-a94e-43bb-ba65-3adf4fcc00eb`
+- Local source:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-sleep-source.png`
+- Local strips:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-ear-perk-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-eat-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-drink-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-sleep-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-comfort-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-health-watch-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-celebrate-hop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-bark-reaction-strip.png`
+- Visual review notes: `ear-perk` is subtle but acceptable; `eat` and `drink` keep the same hard-pixel dog and add tiny prop pixels; the first sleep attempt was a sit-to-lie transition and was replaced by a curled sleep source plus subtle breathing loop; `comfort` and `health-watch` are calmer/subtler than final store-polish needs but preserve the Option B identity; `celebrate-hop` reads as a usable one-shot reward.
+- Runtime status: `careTwinAssets.ts` and `CARE_TWIN_SPRITE_MANIFEST` now point live Phoenix actions at the Option B candidate family, including a dedicated `option-b-bark-reaction-strip.png` for tap/bark moments instead of the older south-facing bark sprite.
 
 ### V2 State Assets
 

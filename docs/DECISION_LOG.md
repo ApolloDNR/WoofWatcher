@@ -1016,6 +1016,23 @@ Owner: Codex.
 
 Revisit trigger: Doodle and the remaining template packs ship matching overlay/emote assets or move to full sprite-driven previews.
 
+### 2026-06-19: Option B Is The Active Phoenix Runtime Family
+
+Decision: Phoenix Home and the care-twin runtime should prefer the hard-pixel Option B candidate family for live motion states: idle/tail-wag, walk, ear-perk, eat, drink, corrected curled sleep, comfort/home-alone, health-watch, celebrate, and bark/tap reaction.
+
+Reason: Apollo repeatedly rejected softer/non-pixel avatar reads and selected the Neo Retro Digital Pet Option B boards as the target. A single coherent hard-pixel family makes the app feel more like a video-game care twin and prevents the main dog from slipping between unrelated art directions.
+
+Consequences:
+
+- `careTwinAssets.ts` and `CARE_TWIN_SPRITE_MANIFEST` register Option B candidate strips for all current Phoenix live actions.
+- The older v2 Phoenix still pack remains useful for profile/still surfaces and fallback/reference, but it is not the preferred live Home motion direction.
+- The older south-facing subscription bark strip is archived as a fallback, while `option-b-bark-reaction-strip.png` is the active tap reaction.
+- Native iOS/Android phone-size QA must review the full Option B family before promotion from `candidates/` to final approved production paths.
+
+Owner: Codex.
+
+Revisit trigger: Apollo rejects an Option B loop in phone-size QA, or a stronger artist/Figma/PixelLab production pack replaces the candidate family.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

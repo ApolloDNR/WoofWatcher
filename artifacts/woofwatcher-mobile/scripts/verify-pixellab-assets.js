@@ -83,8 +83,17 @@ const crispAssets = [
   ["assets/avatar/templates/shepherd/preview-crisp.png", 340, 340],
   ["assets/avatar/phoenix/candidates/option-b-seated.png", 170, 170],
   ["assets/avatar/phoenix/candidates/option-b-standing.png", 170, 170],
+  ["assets/avatar/phoenix/candidates/option-b-sleep-source.png", 170, 170],
   ["assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png", 2048, 256],
+  ["assets/avatar/phoenix/candidates/option-b-ear-perk-strip.png", 1536, 256],
+  ["assets/avatar/phoenix/candidates/option-b-bark-reaction-strip.png", 1536, 256],
   ["assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png", 2048, 256],
+  ["assets/avatar/phoenix/candidates/option-b-eat-loop-strip.png", 2048, 256],
+  ["assets/avatar/phoenix/candidates/option-b-drink-loop-strip.png", 2048, 256],
+  ["assets/avatar/phoenix/candidates/option-b-sleep-loop-strip.png", 2048, 256],
+  ["assets/avatar/phoenix/candidates/option-b-comfort-loop-strip.png", 2048, 256],
+  ["assets/avatar/phoenix/candidates/option-b-health-watch-strip.png", 2048, 256],
+  ["assets/avatar/phoenix/candidates/option-b-celebrate-hop-strip.png", 2048, 256],
 ];
 
 const templateEmotes = {

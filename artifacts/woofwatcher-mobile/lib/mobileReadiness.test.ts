@@ -283,6 +283,14 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(careTwinAssets, /listCareTwinSpriteSlots/);
   assert.match(careTwinAssets, /option-b-idle-tail-wag-strip\.png/);
   assert.match(careTwinAssets, /option-b-walk-loop-strip\.png/);
+  assert.match(careTwinAssets, /option-b-ear-perk-strip\.png/);
+  assert.match(careTwinAssets, /option-b-bark-reaction-strip\.png/);
+  assert.match(careTwinAssets, /option-b-eat-loop-strip\.png/);
+  assert.match(careTwinAssets, /option-b-drink-loop-strip\.png/);
+  assert.match(careTwinAssets, /option-b-sleep-loop-strip\.png/);
+  assert.match(careTwinAssets, /option-b-comfort-loop-strip\.png/);
+  assert.match(careTwinAssets, /option-b-health-watch-strip\.png/);
+  assert.match(careTwinAssets, /option-b-celebrate-hop-strip\.png/);
   assert.doesNotMatch(room, /PhoenixSpriteRig/);
   assert.doesNotMatch(room, /SPRITE LOOP/);
   assert.doesNotMatch(room, /deriveAvatarSpritePlan/);
@@ -699,6 +707,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   for (const [fileName, expected] of [
     ["option-b-seated.png", { width: 170, height: 170 }],
     ["option-b-standing.png", { width: 170, height: 170 }],
+    ["option-b-sleep-source.png", { width: 170, height: 170 }],
   ] as const) {
     const size = readPngSize(
       join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "phoenix", "candidates", fileName),
@@ -707,7 +716,15 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   }
   for (const [fileName, expected] of [
     ["option-b-idle-tail-wag-strip.png", { width: 2048, height: 256 }],
+    ["option-b-ear-perk-strip.png", { width: 1536, height: 256 }],
+    ["option-b-bark-reaction-strip.png", { width: 1536, height: 256 }],
     ["option-b-walk-loop-strip.png", { width: 2048, height: 256 }],
+    ["option-b-eat-loop-strip.png", { width: 2048, height: 256 }],
+    ["option-b-drink-loop-strip.png", { width: 2048, height: 256 }],
+    ["option-b-sleep-loop-strip.png", { width: 2048, height: 256 }],
+    ["option-b-comfort-loop-strip.png", { width: 2048, height: 256 }],
+    ["option-b-health-watch-strip.png", { width: 2048, height: 256 }],
+    ["option-b-celebrate-hop-strip.png", { width: 2048, height: 256 }],
   ] as const) {
     const size = readPngSize(
       join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "phoenix", "candidates", fileName),
@@ -862,7 +879,7 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(verifier, /templateAccessories/);
   assert.match(verifier, /templateEmotes/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, Option B hard-pixel source frames plus common happy\/walk proof strips/);
+  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, day dogless room, first-pass dogless room variants, the full current Option B hard-pixel Phoenix runtime candidate family/);
   assert.match(blockers, /12 Avatar Studio template preview thumbnails, the full 12-template base still pack, the first shepherd accessory overlay PNG pack, the first shepherd 10-state emote still pack, and the Retriever, Husky\/Spitz, and Bully 10-state template emote packs now exist locally/);
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });

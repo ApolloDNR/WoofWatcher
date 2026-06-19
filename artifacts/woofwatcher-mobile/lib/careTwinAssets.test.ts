@@ -50,10 +50,35 @@ test("registers finished PixelLab sprite strips and a dogless room layer", () =>
     "night",
   ]);
   assert.equal(getCareTwinSpriteAsset("tail-wag")?.frameWidth, 256);
+  assert.equal(getCareTwinSpriteAsset("idle-breathe")?.columns, 8);
   assert.equal(getCareTwinSpriteAsset("tail-wag")?.columns, 8);
   assert.equal(getCareTwinSpriteAsset("walk-loop")?.columns, 8);
   assert.equal(getCareTwinSpriteAsset("ear-perk")?.columns, 6);
+  assert.equal(getCareTwinSpriteAsset("bark-loop")?.columns, 6);
   assert.equal(getCareTwinRoomLayer("happy")?.description.includes("Dogless"), true);
+});
+
+test("uses the hard-pixel Option B Phoenix family for live runtime actions", () => {
+  const optionBActions: CareTwinSpriteAction[] = [
+    "idle-breathe",
+    "tail-wag",
+    "ear-perk",
+    "walk-loop",
+    "eat-loop",
+    "drink-loop",
+    "sleep-loop",
+    "comfort-loop",
+    "celebrate-hop",
+    "health-watch",
+    "bark-loop",
+  ];
+
+  for (const action of optionBActions) {
+    assert.match(CARE_TWIN_SPRITE_MANIFEST[action].requiredAsset, /assets\/avatar\/phoenix\/candidates\/option-b-/);
+  }
+  assert.equal(CARE_TWIN_SPRITE_MANIFEST["walk-loop"].frameCount, 8);
+  assert.match(CARE_TWIN_SPRITE_MANIFEST["bark-loop"].requiredAsset, /option-b-bark-reaction-strip\.png/);
+  assert.notEqual(CARE_TWIN_SPRITE_MANIFEST["bark-loop"].requiredAsset, CARE_TWIN_SPRITE_MANIFEST["ear-perk"].requiredAsset);
 });
 
 test("routes care twin sprite states to the right dogless room mood variant", () => {

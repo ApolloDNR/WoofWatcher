@@ -325,7 +325,29 @@ The selected PixelLab review objects are now archived locally as the next produc
 - Local idle proof strip: `assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png`
 - Local walk proof strip: `assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png`
 
-The common happy and walk runtime states now use the Option B proof strips so the main Home experience trends toward Apollo's hard-pixel mockup. The remaining Phoenix actions still need matching Option B strips before the v2 family can be fully retired: sleep, comfort/home-alone, health-watch, eat, drink, ear-perk, and celebration.
+The Option B runtime pack is now expanded beyond proof-of-life:
+
+- Sleep source object: `2b46f263-6e10-435d-9bc7-536d21827314`
+- Local sleep source: `assets/avatar/phoenix/candidates/option-b-sleep-source.png`
+- Ear-perk animation: `3614a73d-35fc-4974-bb0c-c7b6ea343a55`
+- Eat animation: `45048471-f588-4592-a89f-ed8bb994b141`
+- Drink animation: `8975e020-3e25-4b00-bee9-26e6fdc8c31b`
+- Corrected curled sleep animation: `bbd8a406-09b4-459c-8fdf-c833d6f31a5f`
+- Comfort/home-alone animation: `bd8469a7-8048-4922-9f11-8d621151d0d5`
+- Health-watch animation: `7a21cc5c-7428-4a9f-b714-e78fe64666d9`
+- Celebrate-hop animation: `cb56007a-2027-4a4c-8394-7509e07f4c7e`
+- Bark/tap reaction animation: `4a5d9b0b-a94e-43bb-ba65-3adf4fcc00eb`
+- Local action strips:
+  - `assets/avatar/phoenix/candidates/option-b-ear-perk-strip.png`
+  - `assets/avatar/phoenix/candidates/option-b-bark-reaction-strip.png`
+  - `assets/avatar/phoenix/candidates/option-b-eat-loop-strip.png`
+  - `assets/avatar/phoenix/candidates/option-b-drink-loop-strip.png`
+  - `assets/avatar/phoenix/candidates/option-b-sleep-loop-strip.png`
+  - `assets/avatar/phoenix/candidates/option-b-comfort-loop-strip.png`
+  - `assets/avatar/phoenix/candidates/option-b-health-watch-strip.png`
+  - `assets/avatar/phoenix/candidates/option-b-celebrate-hop-strip.png`
+
+The live Phoenix runtime and sprite manifest now point at the Option B family for idle/tail-wag, walk, ear-perk, eat, drink, sleep, comfort/home-alone, health-watch, celebrate, and the dedicated bark/tap reaction. Native phone-size QA is still required before promoting the pack from candidate paths into final approved production paths.
 
 ### Phase 5 - Dogless Rooms
 
@@ -363,9 +385,9 @@ from:
 artifacts/woofwatcher-mobile
 ```
 
-This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Retriever emote stills, Husky emote stills, Bully emote stills, Avatar Studio accessory inventory icons, the two subscription seed strips, the crisp display upscales, and the Option B redesign source candidates.
+This verifies the registered Phoenix sprite strips, dogless room files, Avatar Studio template previews, template base stills, Phoenix emote stills, Retriever emote stills, Husky emote stills, Bully emote stills, Avatar Studio accessory inventory icons, the two subscription seed strips, the crisp display upscales, and the full current Option B redesign candidate pack including the dedicated bark/tap reaction.
 
-Latest local evidence, 2026-06-18: run `node scripts/verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` after every asset import and expect no missing or invalid files.
+Latest local evidence, 2026-06-19: `node scripts/verify-pixellab-assets.js` checked 148 assets with 0 missing and 0 invalid. Run it from `artifacts/woofwatcher-mobile` after every asset import and expect no missing or invalid files.
 
 Use:
 

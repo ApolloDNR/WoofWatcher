@@ -45,7 +45,7 @@ The config is saved locally through `AvatarContext` under `woofwatcher.petAvatar
 
 Existing custom mood image sets remain supported under `woofwatcher.avatarSet.v1`.
 
-Default preview assets now use the PixelLab Phoenix v2 approved pack in `assets/avatar/phoenix/approved/`, nearest-neighbor crisp display upscales, the live layered room renderer, the first Avatar Studio template preview pack, the full first-pass production-scale template base pack in `assets/avatar/templates/`, the Phoenix/Shepherd emote still pack in `assets/avatar/phoenix/approved/emotes/`, the Retriever emote still pack in `assets/avatar/templates/retriever/emotes/`, and the Husky/Spitz emote still pack in `assets/avatar/templates/husky/emotes/`. The main Avatar Studio hero now uses the selected template art or a live sprite over the Phoenix room and never treats an uploaded dog photo as the avatar. Uploads are reference proof only while the app suggests a pixel twin. Template base stills and emotes support the ID card, template picker, mood grid, and future sprite-family previews. The older pixel-derived Phoenix pack in `assets/avatar/pixel/` remains fallback/reference only. The PixelLab Candidate D rotations are archived as directional movement exploration only.
+Default preview assets now use the PixelLab Phoenix v2 approved pack in `assets/avatar/phoenix/approved/` for still/card surfaces and the Option B hard-pixel Phoenix candidate family in `assets/avatar/phoenix/candidates/` for live care-twin runtime motion. The app also uses nearest-neighbor crisp display upscales, the live layered room renderer, the first Avatar Studio template preview pack, the full first-pass production-scale template base pack in `assets/avatar/templates/`, the Phoenix/Shepherd emote still pack in `assets/avatar/phoenix/approved/emotes/`, the Retriever emote still pack in `assets/avatar/templates/retriever/emotes/`, and the Husky/Spitz emote still pack in `assets/avatar/templates/husky/emotes/`. The main Avatar Studio hero now uses the selected template art or a live sprite over the Phoenix room and never treats an uploaded dog photo as the avatar. Uploads are reference proof only while the app suggests a pixel twin. Template base stills and emotes support the ID card, template picker, mood grid, and future sprite-family previews. The older pixel-derived Phoenix pack in `assets/avatar/pixel/` remains fallback/reference only. The PixelLab Candidate D rotations are archived as directional movement exploration only.
 
 ## Template Library
 
@@ -297,7 +297,7 @@ The first production avatar family should match the locked boards:
 - `docs/design/reference/woofwatcher-pixel-reference-board-05-neo-retro-digital-pet.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-06-ecosystem-supporting-pages.png`
 
-The v2 family now includes the seated main avatar, sleep/rest avatar, anxious/home-alone avatar, proud/happy avatar, WoofGuide side avatar, badge/logo head crop, full registered Phoenix sprite manifest, first-pass dogless room variants, the 12-template preview thumbnail pack, the full 12-template production base still pack, a 10-state Phoenix/Shepherd emote still pack, a 10-state Retriever starter emote pack, a 10-state Husky/Spitz starter emote pack, and live sprite strip packs for every non-Phoenix launch template: Retriever, Husky/Spitz, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy Breed, Slender, and Mixed Breed. Final illustrated room variants, accessory layers, remaining template/body-class emotes, and phone-size gait refinements are still needed before the scan/customization story will feel App Store ready.
+The current avatar system now includes the v2 seated still family for still/profile surfaces; the Option B hard-pixel Phoenix runtime pack for idle/tail-wag, walk, ear-perk, eat, drink, corrected curled sleep, comfort/home-alone, health-watch, celebrate, and dedicated bark/tap-reaction coverage; the full registered Phoenix sprite manifest; first-pass dogless room variants; the 12-template preview thumbnail pack; the full 12-template production base still pack; a 10-state Phoenix/Shepherd emote still pack; a 10-state Retriever starter emote pack; a 10-state Husky/Spitz starter emote pack; and live sprite strip packs for every non-Phoenix launch template: Retriever, Husky/Spitz, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy Breed, Slender, and Mixed Breed. Final illustrated room variants, accessory layers, remaining template/body-class emotes, native phone-size QA, and gait refinements are still needed before the scan/customization story will feel App Store ready.
 
 The v2 accessory inventory now includes the first 10 transparent PixelLab accessory icons. True overlay-aligned costume/accessory layers are still needed before accessories can sit perfectly on every avatar body type during live animation.
 
@@ -328,16 +328,25 @@ The 2026-06-18 subscription seed pass also produced two additional PixelLab anim
 - `assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png`
 - `assets/avatar/templates/mixed/sprites/walk-loop-strip.png`
 
-These are verified production seed strips. The Phoenix subscription strips are not promoted above the current approved seated Phoenix Home sprite family until Apollo approves their phone-size proportions and anchor. Every non-Phoenix launch template now has live idle/tail-wag and walk-loop coverage in Avatar Studio. The standing-source state pattern is the preferred production pattern for future gait refinements when the base still is seated or front-facing.
+These are verified production seed strips. The Phoenix subscription strips are archived as movement-review assets and should not outrank the active Option B hard-pixel runtime family unless Apollo approves their phone-size proportions and anchor. Every non-Phoenix launch template now has live idle/tail-wag and walk-loop coverage in Avatar Studio. The standing-source state pattern is the preferred production pattern for future gait refinements when the base still is seated or front-facing.
 
-The 2026-06-18 Option B redesign source pass produced a sharper board-matched Phoenix reference pair:
+The 2026-06-18/19 Option B redesign source pass produced a sharper board-matched Phoenix live runtime family:
 
 - `assets/avatar/phoenix/candidates/option-b-seated.png` from PixelLab object `83b452c4-4321-4a86-830f-8ef337798cee`.
 - `assets/avatar/phoenix/candidates/option-b-standing.png` from PixelLab object `4646c92b-753f-4fe7-8837-c7e9d1b82eef`.
+- `assets/avatar/phoenix/candidates/option-b-sleep-source.png` from PixelLab object `2b46f263-6e10-435d-9bc7-536d21827314`.
 - `assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png` from animation `e8ee095e-7cff-45b6-85c8-0b68d07b339e`.
 - `assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png` from animation `957f02db-170c-458e-ad3e-85101c7b93cd`.
+- `assets/avatar/phoenix/candidates/option-b-ear-perk-strip.png` from animation `3614a73d-35fc-4974-bb0c-c7b6ea343a55`.
+- `assets/avatar/phoenix/candidates/option-b-eat-loop-strip.png` from animation `45048471-f588-4592-a89f-ed8bb994b141`.
+- `assets/avatar/phoenix/candidates/option-b-drink-loop-strip.png` from animation `8975e020-3e25-4b00-bee9-26e6fdc8c31b`.
+- `assets/avatar/phoenix/candidates/option-b-sleep-loop-strip.png` from animation `bbd8a406-09b4-459c-8fdf-c833d6f31a5f`.
+- `assets/avatar/phoenix/candidates/option-b-comfort-loop-strip.png` from animation `bd8469a7-8048-4922-9f11-8d621151d0d5`.
+- `assets/avatar/phoenix/candidates/option-b-health-watch-strip.png` from animation `7a21cc5c-7428-4a9f-b714-e78fe64666d9`.
+- `assets/avatar/phoenix/candidates/option-b-celebrate-hop-strip.png` from animation `cb56007a-2027-4a4c-8394-7509e07f4c7e`.
+- `assets/avatar/phoenix/candidates/option-b-bark-reaction-strip.png` from animation `4a5d9b0b-a94e-43bb-ba65-3adf4fcc00eb`.
 
-These are the preferred next Phoenix identity sources because they match Apollo's desired hard-pixel, neo-retro digital pet direction better than the softer v2 still. The common happy/tail-wag and walk states now use the Option B proof strips in the live room. The remaining action states still use the v2 family until matching Option B strips are generated, normalized, visually reviewed, and registered.
+These are the preferred Phoenix runtime sources because they match Apollo's desired hard-pixel, neo-retro digital pet direction better than the softer v2 stills. The live Home room now uses Option B candidate strips for the main common actions instead of mixing in the older v2 action art or the older south-facing bark fallback.
 
 When `getAvatarTemplateSpritePreview` returns a live sprite, the Avatar Studio hero suppresses the still-template ghost layer so the preview reads as one living care twin instead of a still dog plus a moving dog.
 
@@ -361,7 +370,7 @@ Room assets should eventually follow:
 
 ## Current Limitations
 
-- The Studio uses the PixelLab Phoenix v2 approved pack, Option B common-state proof strips, crisp display upscales, a cleaned live layered room preview, PixelLab template preview thumbnails, all 12 PixelLab template base stills, the Phoenix/Shepherd emote pack, the Retriever starter emote pack, live sprite preview packs for every non-Phoenix launch template, the Husky/Spitz starter emote pack, live/still readiness badges in the template picker, and crisp web pixel rendering for current previews.
+- The Studio uses the PixelLab Phoenix v2 approved pack for still/profile surfaces, the Option B hard-pixel Phoenix runtime family for the live care-twin actions, crisp display upscales, a cleaned live layered room preview, PixelLab template preview thumbnails, all 12 PixelLab template base stills, the Phoenix/Shepherd emote pack, the Retriever starter emote pack, live sprite preview packs for every non-Phoenix launch template, the Husky/Spitz starter emote pack, live/still readiness badges in the template picker, and crisp web pixel rendering for current previews.
 - Uploaded dog photos are reference proof only during scan assist. The app no longer displays the uploaded photo as the avatar hero, which avoids the soft non-pixel look Apollo rejected.
 - The Customize tab uses the 10-item PixelLab accessory inventory icon pack.
 - First-pass non-Phoenix breed template thumbnails, all 12 template base stills, the Retriever starter emote pack, every non-Phoenix launch-template idle/walk sprite pack, and the Husky/Spitz starter emote pack are present, but the remaining template/body-class emote packs and overlay layers are not complete yet.
@@ -375,10 +384,10 @@ Room assets should eventually follow:
 
 Before public launch, Avatar Studio needs:
 
-- final Phoenix seed frame. Status: v2 seed exists, with Option B hard-pixel seated/standing candidates archived for the next upgrade path.
+- final Phoenix seed frame. Status: v2 still seed exists for fallback/profile surfaces, and the Option B hard-pixel seated, standing, rest, and live action candidate family is the current runtime upgrade path.
 - at least one polished full template pack. Status: Phoenix/Shepherd now has base/emote stills, registered sprite actions, and accessory inventory icons; Retriever now has base/emote stills plus two live sprite strips; Husky now has base/emote stills; every non-Phoenix launch template has live idle/walk strips; true overlay layers, phone-size gait refinements, and remaining template/body-class emote packs are still needed.
 - dogless room background. Status: day room and first-pass variants exist; final illustrated variants still needed.
-- transparent sprite/emote assets. Status: Phoenix v2 still states, 10 Phoenix Avatar Studio emotes, 10 Retriever Avatar Studio emotes, Retriever idle/walk sprite strips, 10 Husky Avatar Studio emotes, and the full registered Phoenix sprite manifest exist.
+- transparent sprite/emote assets. Status: Phoenix v2 still states, 10 Phoenix Avatar Studio emotes, 10 Retriever Avatar Studio emotes, Retriever idle/walk sprite strips, 10 Husky Avatar Studio emotes, the full registered Phoenix sprite manifest, and the Option B live action candidate strips exist.
 - no duplicate Phoenix rendering
 - mobile safe-area QA
 - real screenshots from the preview or device

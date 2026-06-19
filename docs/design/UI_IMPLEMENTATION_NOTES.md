@@ -384,12 +384,30 @@ Recentered the Phoenix identity around Apollo's hard-pixel Option B board:
 - Wired the common happy/tail-wag and walk room states to those Option B strips so the first-screen dog reads closer to the mockups.
 - Added those source candidates and proof strips to asset verification and mobile readiness checks.
 - Updated Avatar Studio so uploaded photos remain reference proof during scan assist instead of becoming the soft hero image.
-- Kept the remaining v2 action states in place until Option B has a coherent full normalized animation pack.
+- Follow-up completed 2026-06-19: expanded Option B into the live Home runtime family so common action states no longer fall back to the older v2 motion art.
 
 Remaining visual work:
 
-- Review the Option B happy/tail-wag and walk motion at phone size.
-- Generate matching Option B sleep, comfort/home-alone, health-watch, eat, drink, ear-perk, and celebration strips before replacing the full live Phoenix family.
+- Review the full Option B action family at native phone size.
+- Review the dedicated Option B bark/tap reaction at phone size with the rest of the action family.
+- Promote approved Option B paths out of `candidates/` after Apollo signs off on the full set.
+
+## 2026-06-19 Option B Phoenix Runtime Pack Expansion
+
+Expanded the selected Option B proof into a practical live runtime family:
+
+- Added a corrected curled rest source at `assets/avatar/phoenix/candidates/option-b-sleep-source.png`.
+- Generated and normalized Option B `ear-perk`, `bark-reaction`, `eat-loop`, `drink-loop`, `sleep-loop`, `comfort-loop`, `health-watch`, and `celebrate-hop` strips.
+- Rewired `careTwinAssets.ts` and `avatarLifeEngine.ts` so common Home states use Option B strips instead of older v2 action art.
+- Replaced the temporary bark fallback with the dedicated Option B bark/tap reaction strip.
+- Added readiness coverage for the Option B filenames, frame counts, and PNG dimensions.
+
+Remaining visual work:
+
+- Review all Option B loops on native iOS/Android or simulator-sized previews.
+- Review the dedicated Option B bark/tap reaction at native phone size alongside the other loops.
+- Promote approved Option B paths out of `candidates/` after phone-size approval.
+- Replace first-pass room variants with final illustrated rooms that match the reference boards.
 
 ## 2026-06-18 Avatar Studio Live Template Routing Pass
 
