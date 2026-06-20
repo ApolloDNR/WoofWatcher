@@ -59,7 +59,7 @@ import {
 } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { getModalSheetBottomPadding, getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getKeyboardAvoidingVerticalOffset, getModalSheetBottomPadding, getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -163,6 +163,7 @@ export default function RecordsScreen() {
   const { state, updateCareDoc } = useCare();
   const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
   const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
+  const keyboardVerticalOffset = getKeyboardAvoidingVerticalOffset(insets.top, "tabbed", Platform.OS === "web");
   const { width } = useWindowDimensions();
 
   const topScrollPadding = getRouteTopPadding(insets.top, "tabbed", Platform.OS === "web");
@@ -1933,7 +1934,7 @@ export default function RecordsScreen() {
 
       <Modal visible={carePassPreview !== null} transparent animationType="slide" onRequestClose={() => setCarePassPreview(null)}>
         <Pressable style={s.modalBackdrop} onPress={() => setCarePassPreview(null)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={s.modalDock}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardVerticalOffset} style={s.modalDock}>
             <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
               <View style={s.sheetHandle} />
               {carePassPreview ? (
@@ -1981,7 +1982,7 @@ export default function RecordsScreen() {
 
       <Modal visible={recordOpen} transparent animationType="slide" onRequestClose={() => setRecordOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setRecordOpen(false)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={s.modalDock}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardVerticalOffset} style={s.modalDock}>
             <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={() => {}}>
               <View style={s.sheetHandle} />
               <View style={s.sheetHeader}>

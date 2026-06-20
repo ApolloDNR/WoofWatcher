@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-20: Keyboard Avoidance Uses The Shared Safe-Area Contract
+
+Decision: Setup, WoofGuide, the Log sticky-note prompt, and Records Care Pass/record sheets should use `getKeyboardAvoidingVerticalOffset` from the shared mobile layout helper instead of relying on React Native's default zero keyboard offset.
+
+Reason: Native runtime QA is still waiting on simulator/device screenshots, and these surfaces are the remaining high-risk keyboard flows where text inputs can appear under route chrome, notches, or docked controls. A named helper keeps keyboard movement aligned with the same tabbed, setup, and standalone top-safe-area contracts already used by the route headers.
+
+Owner: Codex.
+
+Revisit trigger: Native device QA shows a screen needs a different keyboard offset, the app shell changes its header/chrome model, or a final native form/sheet component replaces the current route-local `KeyboardAvoidingView` usage.
+
 ### 2026-06-20: WoofGuide Owner Review Uses The Shared Modal Safe-Area Contract
 
 Decision: WoofGuide's owner-reviewed draft sheet should use `getModalSheetBottomPadding` from the shared mobile layout helper instead of fixed-only sheet padding.

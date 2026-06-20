@@ -37,7 +37,7 @@ import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { getCenteredModalBackdropPadding, getModalSheetBottomPadding, getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getCenteredModalBackdropPadding, getKeyboardAvoidingVerticalOffset, getModalSheetBottomPadding, getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -593,6 +593,7 @@ export default function LogScreen() {
   const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
   const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
   const centeredModalBackdropPadding = getCenteredModalBackdropPadding(insets.top, insets.bottom);
+  const keyboardVerticalOffset = getKeyboardAvoidingVerticalOffset(insets.top, "tabbed", Platform.OS === "web");
   const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
   const me = useGetMe();
   const routeParams = useLocalSearchParams<{ type?: string | string[] }>();
@@ -2699,6 +2700,7 @@ export default function LogScreen() {
         <Pressable style={s.modalBackdrop} onPress={saveQuickNote}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={keyboardVerticalOffset}
             style={[s.modalCenter, centeredModalBackdropPadding]}
           >
             <Pressable style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>

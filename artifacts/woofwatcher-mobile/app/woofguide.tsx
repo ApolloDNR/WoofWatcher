@@ -32,7 +32,7 @@ import {
   type WoofGuideActionCard,
   type WoofGuideActionIcon,
 } from "@/lib/woofGuideActions";
-import { getModalSheetBottomPadding, getStandaloneComposerBottomPadding } from "@/lib/mobileLayout";
+import { getKeyboardAvoidingVerticalOffset, getModalSheetBottomPadding, getStandaloneComposerBottomPadding } from "@/lib/mobileLayout";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -151,6 +151,7 @@ export default function WoofGuideScreen() {
   const [reviewAction, setReviewAction] = useState<WoofGuideActionCard | null>(null);
   const composerBottomPadding = getStandaloneComposerBottomPadding(insets.bottom, Platform.OS === "web");
   const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
+  const keyboardVerticalOffset = getKeyboardAvoidingVerticalOffset(insets.top, "standalone", Platform.OS === "web");
   const name = state.profile.name || "your dog";
 
   const quickQuestions = useMemo(() => [
@@ -267,6 +268,7 @@ export default function WoofGuideScreen() {
       <KeyboardAvoidingView
         style={[s.container, { backgroundColor: colors.background }]}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
         <FlatList
           data={messages}

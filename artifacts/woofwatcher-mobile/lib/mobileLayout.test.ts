@@ -6,6 +6,7 @@ import {
   getFloatingFeedbackBottomOffset,
   getCenteredModalBackdropPadding,
   getFloatingDebugButtonTopOffset,
+  getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getStandaloneComposerBottomPadding,
@@ -83,4 +84,12 @@ test("keeps floating debug controls below notches and web preview chrome", () =>
   assert.equal(getFloatingDebugButtonTopOffset(0, false), 16);
   assert.equal(getFloatingDebugButtonTopOffset(44, false), 60);
   assert.equal(getFloatingDebugButtonTopOffset(0, true), 40);
+});
+
+test("keeps keyboard avoidance aligned with route safe-area chrome", () => {
+  assert.equal(getKeyboardAvoidingVerticalOffset(0, "tabbed", false), 8);
+  assert.equal(getKeyboardAvoidingVerticalOffset(44, "tabbed", false), 52);
+  assert.equal(getKeyboardAvoidingVerticalOffset(44, "standalone", false), 56);
+  assert.equal(getKeyboardAvoidingVerticalOffset(44, "setup", false), 58);
+  assert.equal(getKeyboardAvoidingVerticalOffset(44, "standalone", true), 0);
 });

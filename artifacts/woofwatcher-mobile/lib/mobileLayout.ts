@@ -114,3 +114,15 @@ export function getFloatingDebugButtonTopOffset(topInset: number, isWeb: boolean
   const effectiveInset = isWeb ? WEB_FLOATING_DEBUG_TOP_INSET : topInset;
   return effectiveInset + FLOATING_DEBUG_TOP_OFFSET;
 }
+
+export function getKeyboardAvoidingVerticalOffset(
+  topInset: number,
+  surface: Exclude<RouteTopPaddingSurface, "auth">,
+  isWeb: boolean,
+): number {
+  if (isWeb) {
+    return 0;
+  }
+
+  return getRouteTopPadding(topInset, surface, false);
+}

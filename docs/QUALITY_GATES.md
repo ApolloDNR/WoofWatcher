@@ -146,6 +146,8 @@ Current evidence, 2026-06-20: Route header top clearance now derives from `getRo
 
 Current evidence, 2026-06-20: WoofGuide owner-review draft sheets now derive docked bottom clearance from `getModalSheetBottomPadding` instead of fixed-only sheet padding. Static mobile readiness protects the assistant review surface alongside the composer before native screenshot QA is available.
 
+Current evidence, 2026-06-20: Keyboard-heavy Setup, WoofGuide, Log sticky-note prompt, and Records Care Pass/record sheets now derive keyboard avoidance from `getKeyboardAvoidingVerticalOffset` instead of the React Native default zero offset. Focused tests cover tabbed, setup, standalone, notched-device, and web behavior while native screenshot QA remains blocked.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

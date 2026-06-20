@@ -436,6 +436,7 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.match(mobileLayout, /export function getFloatingFeedbackBottomOffset/);
   assert.match(mobileLayout, /export function getFloatingDebugButtonTopOffset/);
   assert.match(mobileLayout, /export function getRouteTopPadding/);
+  assert.match(mobileLayout, /export function getKeyboardAvoidingVerticalOffset/);
   assert.match(tabLayout, /getFloatingTabChromeMetrics/);
 
   for (const source of [home, calendar, health, log, more, records]) {
@@ -498,6 +499,11 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   }
   assert.doesNotMatch(log, /modalCenter: \{ flex: 1, justifyContent: "center", paddingHorizontal: 28 \}/);
   assert.doesNotMatch(more, /modalBackdrop: \{ flex: 1, backgroundColor: "rgba\(15,31,36,0\.45\)", justifyContent: "center", paddingHorizontal: 28 \}/);
+
+  for (const source of [setup, woofGuide, log, records]) {
+    assert.match(source, /getKeyboardAvoidingVerticalOffset/);
+    assert.match(source, /keyboardVerticalOffset=\{keyboardVerticalOffset\}/);
+  }
 });
 
 test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {

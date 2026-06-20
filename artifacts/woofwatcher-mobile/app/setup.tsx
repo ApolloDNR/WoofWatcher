@@ -17,7 +17,7 @@ import { deriveOnboardingStatus } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getKeyboardAvoidingVerticalOffset, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import {
   applySetupWizardDraft,
   createSetupWizardDraft,
@@ -81,6 +81,7 @@ export default function SetupScreen() {
 
   const topScrollPadding = getRouteTopPadding(insets.top, "setup", Platform.OS === "web");
   const bottomScrollPadding = getStandaloneRouteBottomPadding(insets.bottom);
+  const keyboardVerticalOffset = getKeyboardAvoidingVerticalOffset(insets.top, "setup", Platform.OS === "web");
 
   return (
     <>
@@ -88,6 +89,7 @@ export default function SetupScreen() {
       <KeyboardAvoidingView
         style={[s.root, { backgroundColor: colors.background }]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
         <ScrollView
           style={s.scroll}
