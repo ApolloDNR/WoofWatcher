@@ -1,6 +1,6 @@
 # WoofWatcher UI Direction Lock
 
-Date: 2026-06-14
+Date: 2026-06-20
 
 ## Locked Style
 
@@ -10,12 +10,14 @@ The product should feel like real software from a strong product team, with a pl
 
 The current visual source of truth is now the reference-board set mirrored in `docs/design/reference/`, with implementation guidance in `docs/superpowers/specs/2026-06-14-woofwatcher-pixel-ui-lock-design.md`.
 
-Primary reference:
+Primary references:
 
-- `docs/design/reference/woofwatcher-pixel-reference-board-04.png`
+- `docs/design/reference/woofwatcher-premium-light-design-system.png`
+- `docs/design/reference/woofwatcher-care-adventure-rpg-dark-board.png`
 
 Supporting references:
 
+- `docs/design/reference/woofwatcher-pixel-reference-board-04.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-01.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-02.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-03.png`
@@ -73,4 +75,4 @@ Phoenix Home must answer in five seconds:
 
 ## Reference Match Rule
 
-When visual implementation choices conflict, prefer the reference boards over earlier loose descriptions. Board 04 is the main layout target. Boards 02 and 03 define the component vocabulary. Board 01 supplies supporting palette, icon, and mobile route details.
+When visual implementation choices conflict, prefer the current primary reference boards over earlier loose descriptions. `woofwatcher-premium-light-design-system.png` locks the App Store-quality brand system, crest, desktop shell, mobile utility screens, and component language. `woofwatcher-care-adventure-rpg-dark-board.png` locks the long-range care-adventure RPG direction: Home, My Care Today, Adventure Map, Adventure Log, Household Pulse, Pet Profile, Access Pass, Care Pass, levels, badges, memories, and marketplace readiness. Board 04 remains the closest supporting implementation target for compact neo-retro daily-care layouts.
