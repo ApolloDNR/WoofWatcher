@@ -418,6 +418,10 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "auth-ui.tsx"),
     "utf8",
   );
+  const errorFallback = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "ErrorFallback.tsx"),
+    "utf8",
+  );
   const mobileLayout = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "mobileLayout.ts"),
     "utf8",
@@ -427,6 +431,7 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.match(mobileLayout, /export function getTabbedRouteBottomPadding/);
   assert.match(mobileLayout, /export function getStandaloneRouteBottomPadding/);
   assert.match(mobileLayout, /export function getStandaloneComposerBottomPadding/);
+  assert.match(mobileLayout, /export function getModalSheetBottomPadding/);
   assert.match(tabLayout, /getFloatingTabChromeMetrics/);
 
   for (const source of [home, calendar, health, log, more, records]) {
@@ -451,6 +456,12 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.doesNotMatch(privacy, /paddingBottom: insets\.bottom \+ 44/);
   assert.doesNotMatch(setup, /paddingBottom: insets\.bottom \+ 32/);
   assert.doesNotMatch(authUi, /paddingBottom: insets\.bottom \+ 32/);
+
+  for (const source of [calendar, log, more, records, errorFallback]) {
+    assert.match(source, /getModalSheetBottomPadding/);
+    assert.match(source, /paddingBottom: modalSheetBottomPadding/);
+    assert.doesNotMatch(source, /paddingBottom: insets\.bottom \+ (16|18|20)/);
+  }
 });
 
 test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {

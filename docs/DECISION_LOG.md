@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-19: Docked Mobile Sheets Use The Shared Safe-Area Contract
+
+Decision: Plans routine/event sheets, Log detail/edit sheets, Records Care Pass/record sheets, More diet/profile sheets, and the app error recovery sheet should use `getModalSheetBottomPadding` from the shared mobile layout helper instead of local `insets.bottom + 16/18/20` padding.
+
+Reason: The broader native runtime-QA baseline already covered the floating tab shell, tabbed scroll routes, standalone routes, and WoofGuide composer, but docked sheets still had route-local bottom-clearance math. Centralizing sheet padding gives the simulator/device screenshot pass one modal contract to inspect and reduces the risk that critical edit, report, profile, or recovery controls sit too close to the home indicator.
+
+Owner: Codex.
+
+Revisit trigger: Native device QA shows docked sheets need a different clearance value, the modal presentation pattern changes, or a final native design system introduces a richer sheet component.
+
 ### 2026-06-19: WoofGuide Composer Clearance Belongs In Shared Mobile Layout
 
 Decision: WoofGuide's bottom composer should use `getStandaloneComposerBottomPadding` from the shared mobile layout helper instead of route-local `bottomInset + 12` math.

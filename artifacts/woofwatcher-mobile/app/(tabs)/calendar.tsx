@@ -28,7 +28,7 @@ import {
 } from "@workspace/care-domain";
 import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getModalSheetBottomPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { parseLocalDate } from "@/lib/time";
@@ -150,6 +150,7 @@ export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
+  const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
   const { state, updateCareDoc, addEntry } = useCare();
 
   const { getToken } = useWoofAuth();
@@ -981,7 +982,7 @@ export default function CalendarScreen() {
       {/* Routine editor modal */}
       <Modal visible={routineOpen} transparent animationType="slide" onRequestClose={() => setRoutineOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
-          <Pressable style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.modalHandle} />
             <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
               {routineEditId ? "Edit Routine" : "New Routine"}
@@ -1080,7 +1081,7 @@ export default function CalendarScreen() {
       {/* Add-event modal */}
       <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setAddOpen(false)}>
-          <Pressable style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.modalHandle} />
             <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>New Event</Text>
 

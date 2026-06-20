@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   getFloatingTabChromeMetrics,
+  getModalSheetBottomPadding,
   getStandaloneComposerBottomPadding,
   getStandaloneRouteBottomPadding,
   getTabbedRouteBottomPadding,
@@ -32,4 +33,10 @@ test("keeps standalone composer controls clear on flat and notched devices", () 
   assert.equal(getStandaloneComposerBottomPadding(0, false), 24);
   assert.equal(getStandaloneComposerBottomPadding(34, false), 46);
   assert.equal(getStandaloneComposerBottomPadding(0, true), 46);
+});
+
+test("keeps docked modal sheets clear of flat and notched home indicators", () => {
+  assert.equal(getModalSheetBottomPadding(0), 32);
+  assert.equal(getModalSheetBottomPadding(18), 38);
+  assert.equal(getModalSheetBottomPadding(34), 54);
 });

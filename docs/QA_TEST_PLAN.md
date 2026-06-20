@@ -18,6 +18,7 @@ Latest local evidence, 2026-06-19:
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
 - PASS: shared mobile safe-area layout helpers now protect the floating tab shell, Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell from drifting back to hardcoded bottom-clearance padding before native screenshot QA happens.
 - PASS: WoofGuide composer safe-area hardening now uses the shared mobile layout contract, with focused coverage for flat native devices, notched native devices, and web fallback composer clearance.
+- PASS: docked mobile sheets now use the shared modal-sheet safe-area contract, with focused flat/notched-device coverage and static readiness checks for Plans, Log, More, Records, and the error recovery sheet.
 - LIMIT: mobile TypeScript could not run in this checkout because `node_modules/typescript` is missing (`tsc-missing`).
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` is currently blocked before job start by the account billing/spending-limit issue documented in `docs/BLOCKERS_FOR_APOLLO.md`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 

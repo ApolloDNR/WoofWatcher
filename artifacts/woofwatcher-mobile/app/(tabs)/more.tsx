@@ -39,7 +39,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
-import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getModalSheetBottomPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -51,6 +51,7 @@ export default function MoreScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
+  const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
   const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
   const { dietProfile, profile, entries, routines, caregivers } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
@@ -1223,7 +1224,7 @@ export default function MoreScreen() {
           <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: insets.bottom + 20, paddingHorizontal: 22 }}
+              contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
             >
               <View style={s.modalHandle} />
@@ -1323,7 +1324,7 @@ export default function MoreScreen() {
           >
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: insets.bottom + 20, paddingHorizontal: 22 }}
+              contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
             >
             <View style={s.modalHandle} />

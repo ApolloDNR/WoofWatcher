@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { getModalSheetBottomPadding } from "@/lib/mobileLayout";
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -22,6 +23,7 @@ export type ErrorFallbackProps = {
 export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -139,7 +141,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                 style={styles.modalScrollView}
                 contentContainerStyle={[
                   styles.modalScrollContent,
-                  { paddingBottom: insets.bottom + 16 },
+                  { paddingBottom: modalSheetBottomPadding },
                 ]}
                 showsVerticalScrollIndicator
               >
