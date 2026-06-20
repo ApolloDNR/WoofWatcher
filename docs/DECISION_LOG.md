@@ -1276,6 +1276,7 @@ Consequences:
 
 - `mobileReleaseQa.ts` owns the tested launch workflow checklist and share-report contract.
 - `/care-twin-qa` combines the Mobile Release QA checklist with the existing care-twin state matrix.
+- `mobileQaSession.ts` may persist the internal QA session locally so testers can leave the route, inspect target screens, return, and keep Pass/Needs tune status plus notes without claiming provider-backed QA storage.
 - The next native QA pass should complete both sections, attach screenshots, and fix the first visible issue before claiming release confidence.
 - Future release docs must distinguish local/static verification from simulator/device evidence.
 

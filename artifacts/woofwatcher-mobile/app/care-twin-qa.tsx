@@ -1,7 +1,8 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Stack, useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -30,6 +31,11 @@ import {
   type MobileReleaseQaReviewStatus,
   type MobileReleaseQaSurface,
 } from "@/lib/mobileReleaseQa";
+import {
+  buildMobileQaSessionSnapshot,
+  MOBILE_QA_SESSION_STORAGE_KEY,
+  parseMobileQaSessionSnapshot,
+} from "@/lib/mobileQaSession";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -77,6 +83,18 @@ function iconForNeed(need: CareTwinRuntimeQaResult["actualNeed"]): PixelIconName
     default:
       return "bond";
   }
+}
+
+function formatSavedAt(value?: string): string {
+  if (!value) return "Not saved yet";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Saved locally";
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function readoutsFor(result: CareTwinRuntimeQaResult): PhoenixRoomStat[] {
@@ -134,6 +152,8 @@ export default function CareTwinQaScreen() {
   const [qaNotes, setQaNotes] = useState<Record<string, string>>({});
   const [surfaceStatusById, setSurfaceStatusById] = useState<Record<string, MobileReleaseQaReviewStatus>>({});
   const [surfaceNotes, setSurfaceNotes] = useState<Record<string, string>>({});
+  const [qaSessionLoaded, setQaSessionLoaded] = useState(false);
+  const [qaSessionSavedAt, setQaSessionSavedAt] = useState<string | undefined>();
   const scenarios = useMemo(
     () => listCareTwinRuntimeQaScenarios().map(evaluateCareTwinRuntimeQaScenario),
     [],
@@ -168,6 +188,47 @@ export default function CareTwinQaScreen() {
   );
   const topInset = Platform.OS === "web" ? 24 : insets.top;
   const bottomInset = Platform.OS === "web" ? 32 : insets.bottom + 18;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSavedSession = async () => {
+      try {
+        const raw = await AsyncStorage.getItem(MOBILE_QA_SESSION_STORAGE_KEY);
+        const savedSession = parseMobileQaSessionSnapshot(raw);
+        if (!cancelled && savedSession) {
+          setQaStatusById(savedSession.careTwinStatusById);
+          setQaNotes(savedSession.careTwinNotes);
+          setSurfaceStatusById(savedSession.surfaceStatusById);
+          setSurfaceNotes(savedSession.surfaceNotes);
+          setQaSessionSavedAt(savedSession.savedAtIso);
+        }
+      } catch {
+        // QA session recovery should never block the internal route.
+      } finally {
+        if (!cancelled) setQaSessionLoaded(true);
+      }
+    };
+
+    loadSavedSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!qaSessionLoaded) return;
+
+    const snapshot = buildMobileQaSessionSnapshot({
+      careTwinStatusById: qaStatusById,
+      careTwinNotes: qaNotes,
+      surfaceStatusById,
+      surfaceNotes,
+    });
+    setQaSessionSavedAt(snapshot.savedAtIso);
+    AsyncStorage.setItem(MOBILE_QA_SESSION_STORAGE_KEY, JSON.stringify(snapshot)).catch(() => {});
+  }, [qaNotes, qaSessionLoaded, qaStatusById, surfaceNotes, surfaceStatusById]);
 
   const markScenario = (scenarioId: string, status: CareTwinQaReviewStatus) => {
     if (Platform.OS !== "web") {
@@ -249,7 +310,11 @@ export default function CareTwinQaScreen() {
             <QaBadge label={`${qaSummary.passed} pass`} tone={colors.sage} />
             <QaBadge label={`${qaSummary.needsReview} needs tune`} tone={colors.amber} />
             <QaBadge label={`${qaSummary.unreviewed} unreviewed`} tone={colors.mutedForeground} />
+            <QaBadge label={qaSessionLoaded ? "Saved locally" : "Loading saved QA"} tone={qaSessionLoaded ? colors.sage : colors.amber} />
           </View>
+          <Text style={[s.savedSessionText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+            Local QA session: {formatSavedAt(qaSessionSavedAt)}
+          </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Share care twin QA summary"
@@ -591,6 +656,10 @@ const s = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
+  },
+  savedSessionText: {
+    fontSize: 12,
+    lineHeight: 17,
   },
   shareButton: {
     minHeight: 46,

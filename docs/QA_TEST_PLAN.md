@@ -202,6 +202,13 @@ and Trainer Care Pass as Pass or Needs tune, add per-surface notes, open the
 target route, and share a combined release QA report. The report keeps attached
 iOS/Android screenshots and human review as required before launch approval.
 
+Current evidence, 2026-06-20: the Mobile Release QA cockpit autosaves and
+restores the QA session locally through `mobileQaSession.ts` and AsyncStorage.
+Release-surface status, care-twin state status, and device notes survive route
+hops so testers can open Home, Log, Records, Care Pass, and Avatar Studio while
+building one report. This is local device evidence only, not provider-backed QA
+storage.
+
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.
 

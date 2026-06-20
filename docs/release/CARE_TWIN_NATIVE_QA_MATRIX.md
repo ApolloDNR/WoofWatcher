@@ -40,6 +40,12 @@ required screenshot/evidence prompts, and a device note field. The combined
 share report includes both this workflow checklist and the 12-state care-twin
 matrix.
 
+The route autosaves the internal QA session locally on the device. This lets a
+tester open a target surface, return to `/care-twin-qa`, and keep the same
+Pass/Needs tune status plus notes. The saved session is a local QA convenience
+only; it is not provider-backed storage and does not replace attached
+screenshots.
+
 ## Purpose
 
 The care twin must feel like one living game character layered over dogless room art. Native QA should verify room fit, sprite scale, stage crop, touch response, and state readability on phone-sized screens. Web export and static tests do not replace this pass.
