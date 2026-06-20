@@ -980,3 +980,32 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 
 - Provider-backed Adventure photo storage, map/location retention, share links, and community discovery require Apollo-approved providers, privacy policy, and safety rules.
 - Native iOS/Android QA still needs device evidence for the Adventure route, Save Memory flow, share sheet, and mobile spacing.
+
+## 2026-06-19 Home Adventure Entry Pass
+
+### What Changed
+
+- Wired Phoenix Home to the shared Adventure Mode model.
+- Added a compact Adventure Mode strip inside the existing Care Quest card with next quest, level, today's XP, memory count, and direct `/adventure` navigation.
+- Extended mobile readiness coverage so Home, More, the root stack, the Adventure route, and CareContext stay connected.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/index.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+
+### Tests And Checks Run
+
+- Mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 65 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+
+### Remaining Work
+
+- The Home Adventure strip still needs phone-size visual QA and final polish after native iOS/Android review.

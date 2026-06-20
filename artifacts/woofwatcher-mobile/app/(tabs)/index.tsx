@@ -12,7 +12,13 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { deriveCareIntelligence, normalizeCareEventType, type CareEventDetails, type CareEventType } from "@workspace/care-domain";
+import {
+  deriveAdventureMode,
+  deriveCareIntelligence,
+  normalizeCareEventType,
+  type CareEventDetails,
+  type CareEventType,
+} from "@workspace/care-domain";
 
 import {
   BoardCard,
@@ -141,6 +147,13 @@ function isPendingMealLog(entry: { type: string; details?: unknown }): boolean {
   const completion = String(detailValue(entry.details, "mealCompletion") ?? "");
   const lifecycle = String(detailValue(entry.details, "mealLifecycle") ?? "");
   return lifecycle === "outcome-pending" || completion === "served" || completion === "grazing";
+}
+
+function adventureQuestIcon(id: string): PixelIconName {
+  if (id.includes("walk")) return "walk";
+  if (id.includes("training")) return "training";
+  if (id.includes("play")) return "play";
+  return "heart";
 }
 
 export default function HomeScreen() {
@@ -406,6 +419,17 @@ export default function HomeScreen() {
 
   const careProgress = careIntelligence.score;
   const questLine = careIntelligence.title;
+  const adventureMode = useMemo(
+    () =>
+      deriveAdventureMode({
+        petName,
+        entries: state.entries,
+        memories: state.adventureMemories,
+        now,
+      }),
+    [petName, state.entries, state.adventureMemories, now],
+  );
+  const adventureQuest = adventureMode.quests[0];
 
   const statusTiles = [
     { label: "Happiness", value: status.meta.label, icon: moodIcon, tone: colors.amber },
@@ -826,6 +850,31 @@ export default function HomeScreen() {
                 {careIntelligence.confidenceScore}% log confidence
               </Text>
             </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Open Adventure Mode. ${adventureQuest.title}. ${adventureMode.summary}`}
+              onPress={() => router.push("/adventure" as never)}
+              style={({ pressed }) => [
+                s.adventureInline,
+                { borderColor: "rgba(255,249,239,0.28)", opacity: pressed ? 0.78 : 1 },
+              ]}
+            >
+              <View style={s.adventureIcon}>
+                <PixelIcon name={adventureQuestIcon(adventureQuest.id)} size={25} />
+              </View>
+              <View style={s.adventureCopy}>
+                <Text style={[s.adventureKicker, { fontFamily: "Inter_700Bold" }]}>
+                  Adventure Mode
+                </Text>
+                <Text numberOfLines={1} style={[s.adventureTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                  {adventureQuest.title}
+                </Text>
+                <Text numberOfLines={2} style={[s.adventureSub, { fontFamily: "Inter_600SemiBold" }]}>
+                  Level {adventureMode.level} - {adventureMode.todayXp} XP today - {adventureMode.memoriesCount} memories
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#FFF9EF" />
+            </Pressable>
           </BoardCard>
 
           <BoardCard style={s.statusCard}>
@@ -1160,6 +1209,43 @@ const s = StyleSheet.create({
   questMeta: {
     color: "rgba(255,249,239,0.82)",
     fontSize: 11.5,
+  },
+  adventureInline: {
+    marginTop: 13,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "rgba(255,249,239,0.09)",
+  },
+  adventureIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,249,239,0.16)",
+  },
+  adventureCopy: { flex: 1, minWidth: 0 },
+  adventureKicker: {
+    color: "rgba(255,249,239,0.68)",
+    fontSize: 9,
+    textTransform: "uppercase",
+  },
+  adventureTitle: {
+    color: "#FFF9EF",
+    fontSize: 14,
+    lineHeight: 17,
+    marginTop: 1,
+  },
+  adventureSub: {
+    color: "rgba(255,249,239,0.74)",
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 2,
   },
   statusCard: { marginBottom: 10 },
   meterStack: { gap: 8 },

@@ -696,6 +696,21 @@ Design intent:
 - Keep the "wow" layer tied to actions the household actually performed.
 - Leave room for future map/photo/community polish without implying those providers are already live.
 
+## 2026-06-19 Home Adventure Entry Pass
+
+Phoenix Home now exposes Adventure Mode inside the existing Care Quest board:
+
+- Home derives `deriveAdventureMode` from the same care document as the dedicated Adventure route.
+- The Care Quest board shows the next adventure quest, level, today's XP, and memory count.
+- The strip routes directly to `/adventure`.
+- The entry stays secondary to Phoenix Room, presence, Next Up, and Quick Log so Home remains navigable instead of becoming a marketing page.
+
+Design intent:
+
+- Make the real-care RPG loop visible in the first five seconds.
+- Avoid burying Adventure Mode in More while still preserving the launch nav structure.
+- Give the next design pass a focused strip to polish rather than an unbounded new section.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

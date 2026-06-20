@@ -1371,11 +1371,16 @@ test("keeps Access Pass and My Care Today operations visible from More", () => {
 test("keeps Adventure Mode routed to private real-care quests and memories", () => {
   const rootLayout = readAppFile("_layout.tsx");
   const adventure = readAppFile("adventure.tsx");
+  const home = readAppFile(join("(tabs)", "index.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
 
   assert.match(rootLayout, /name="adventure"/);
   assert.match(careContext, /adventureMemories: AdventureMemory\[\]/);
+  assert.match(home, /deriveAdventureMode/);
+  assert.match(home, /adventureMode/);
+  assert.match(home, /Adventure Mode/);
+  assert.match(home, /router\.push\("\/adventure" as never\)/);
   assert.match(adventure, /deriveAdventureMode/);
   assert.match(adventure, /buildAdventureMemoryDraft/);
   assert.match(adventure, /Private RPG/);

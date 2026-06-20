@@ -153,6 +153,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 145. NEXT: Build provider-backed Access Pass enforcement after account/storage rules are approved, including real invite approval, role-specific API authorization, pass revocation, helper audit trails, and notification delivery.
 146. DONE 2026-06-19: Added the local Adventure Mode and memory foundation. `adventure.ts` derives private real-care quests, daily XP, levels, completed proof, next-step guidance, and local memory drafts from household-visible walks, training, play, and alone-time evidence. Mobile now has `/adventure`, More links to it, CareContext persists `adventureMemories`, and Privacy export/deletion scope includes Adventure memories without claiming cloud media, maps, or public sharing.
 147. NEXT: Build provider-backed Adventure media and location features only after Apollo approves storage, maps/location retention, sharing permissions, and community safety rules. Until then Adventure stays local, private, and owner-controlled.
+148. DONE 2026-06-19: Surfaced Adventure Mode on Phoenix Home inside the existing Care Quest card. Home now derives the same Adventure Mode model, shows the next quest plus level/XP/memory count, and routes directly to `/adventure` so the real-care RPG loop is visible from the first screen without adding a dead decorative section.
+149. NEXT: Polish Adventure Mode visually after native phone QA, then decide whether Adventure deserves a primary tab once Home, Log, Plans, Health, and More launch navigation is stable.
 
 ## Cadence
 

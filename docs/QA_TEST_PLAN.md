@@ -156,6 +156,7 @@ Latest local evidence, 2026-06-19:
 80. Open More, tap Adventure Mode, and confirm the route presents a private RPG care quest board without claiming live maps, public sharing, or cloud photo storage.
 81. With household-visible walk, training, play, or alone-time logs present, confirm Adventure Mode derives level/XP, completed proof, the next available quest, and a Save Memory action from real care evidence.
 82. Save an Adventure memory draft, confirm it appears in the Memory shelf as local/private, then open Privacy & Safety export and confirm Adventure memories are included without auth/session tokens.
+83. Open Phoenix Home and confirm the Care Quest board includes Adventure Mode with next quest, level, XP, memory count, and a direct route to the Adventure screen without pushing Quick Log or Next Up below usability.
 
 ## Missing QA
 
