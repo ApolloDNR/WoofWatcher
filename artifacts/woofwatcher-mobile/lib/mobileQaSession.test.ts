@@ -24,6 +24,7 @@ test("builds a compact local mobile QA snapshot", () => {
             uri: "file:///qa/ios-happy-idle.png",
             fileName: "ios-happy-idle.png",
             source: "library",
+            targetPlatform: "ios",
             capturedAtIso: "2026-06-20T13:00:05.000Z",
           },
         ],
@@ -40,6 +41,7 @@ test("builds a compact local mobile QA snapshot", () => {
             uri: "file:///qa/ios-home.png",
             fileName: "ios-home.png",
             source: "library",
+            targetPlatform: "ios",
             capturedAtIso: "2026-06-20T13:00:10.000Z",
           },
         ],
@@ -61,6 +63,7 @@ test("builds a compact local mobile QA snapshot", () => {
           uri: "file:///qa/ios-happy-idle.png",
           fileName: "ios-happy-idle.png",
           source: "library",
+          targetPlatform: "ios",
           capturedAtIso: "2026-06-20T13:00:05.000Z",
         },
       ],
@@ -77,6 +80,7 @@ test("builds a compact local mobile QA snapshot", () => {
           uri: "file:///qa/ios-home.png",
           fileName: "ios-home.png",
           source: "library",
+          targetPlatform: "ios",
           capturedAtIso: "2026-06-20T13:00:10.000Z",
         },
       ],
@@ -100,6 +104,7 @@ test("parses a saved mobile QA snapshot into screen state maps", () => {
             uri: "file:///qa/ios-happy-idle.png",
             fileName: "ios-happy-idle.png",
             source: "library",
+            targetPlatform: "ios",
             capturedAtIso: "2026-06-20T13:05:05.000Z",
           },
         ],
@@ -112,6 +117,7 @@ test("parses a saved mobile QA snapshot into screen state maps", () => {
             uri: "file:///qa/android-avatar-studio.png",
             fileName: "android-avatar-studio.png",
             source: "library",
+            targetPlatform: "android",
             capturedAtIso: "2026-06-20T13:05:10.000Z",
           },
         ],
@@ -125,9 +131,11 @@ test("parses a saved mobile QA snapshot into screen state maps", () => {
   assert.deepEqual(parsed?.careTwinStatusById, { happy: "pass" });
   assert.deepEqual(parsed?.careTwinNotes, { happy: "Looks good on iPhone." });
   assert.equal(parsed?.careTwinEvidenceById.happy?.[0]?.fileName, "ios-happy-idle.png");
+  assert.equal(parsed?.careTwinEvidenceById.happy?.[0]?.targetPlatform, "ios");
   assert.deepEqual(parsed?.surfaceStatusById, { "avatar-studio": "needs-review" });
   assert.deepEqual(parsed?.surfaceNotes, { "avatar-studio": "Bully walk loop feels stiff." });
   assert.equal(parsed?.surfaceEvidenceById["avatar-studio"]?.[0]?.fileName, "android-avatar-studio.png");
+  assert.equal(parsed?.surfaceEvidenceById["avatar-studio"]?.[0]?.targetPlatform, "android");
   assert.equal(parsed?.savedAtIso, "2026-06-20T13:05:00.000Z");
 });
 
@@ -146,7 +154,7 @@ test("ignores corrupt and invalid mobile QA session data", () => {
           note: "  Crop low. ",
           screenshotEvidence: [
             { uri: "", fileName: "bad.png", source: "library", capturedAtIso: "2026-06-20T13:10:10.000Z" },
-            { uri: "file:///qa/health.png", fileName: "  health.png  ", source: "camera", capturedAtIso: "bad-date" },
+            { uri: "file:///qa/health.png", fileName: "  health.png  ", source: "camera", targetPlatform: "sideways", capturedAtIso: "bad-date" },
           ],
         },
       ],
@@ -161,6 +169,7 @@ test("ignores corrupt and invalid mobile QA session data", () => {
   assert.deepEqual(parsed?.careTwinNotes, { health: "Crop low." });
   assert.equal(parsed?.careTwinEvidenceById.health?.length, 1);
   assert.equal(parsed?.careTwinEvidenceById.health?.[0]?.fileName, "health.png");
+  assert.equal(parsed?.careTwinEvidenceById.health?.[0]?.targetPlatform, "unknown");
   assert.deepEqual(parsed?.surfaceStatusById, { "phoenix-home": "pass" });
   assert.deepEqual(parsed?.surfaceNotes, {});
 });

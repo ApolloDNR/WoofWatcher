@@ -18,6 +18,9 @@ export interface CareTwinQaSummary {
   unreviewed: number;
   readyLayered: number;
   attachedScreenshots: number;
+  attachedIosScreenshots: number;
+  attachedAndroidScreenshots: number;
+  attachedUnknownScreenshots: number;
 }
 
 function reviewFor(
@@ -36,6 +39,9 @@ export function summarizeCareTwinQaReviews(
 ): CareTwinQaSummary {
   const passed = reviews.filter((review) => review.status === "pass").length;
   const needsReview = reviews.filter((review) => review.status === "needs-review").length;
+  const screenshotEvidence = results.flatMap(
+    (result) => reviewFor(reviews, result.scenario.id).screenshotEvidence ?? [],
+  );
 
   return {
     total: results.length,
@@ -43,10 +49,12 @@ export function summarizeCareTwinQaReviews(
     needsReview,
     unreviewed: Math.max(0, results.length - passed - needsReview),
     readyLayered: results.filter((result) => result.readiness.layeredReady).length,
-    attachedScreenshots: results.reduce(
-      (total, result) => total + (reviewFor(reviews, result.scenario.id).screenshotEvidence?.length ?? 0),
-      0,
-    ),
+    attachedScreenshots: screenshotEvidence.length,
+    attachedIosScreenshots: screenshotEvidence.filter((item) => item.targetPlatform === "ios").length,
+    attachedAndroidScreenshots: screenshotEvidence.filter((item) => item.targetPlatform === "android").length,
+    attachedUnknownScreenshots: screenshotEvidence.filter(
+      (item) => item.targetPlatform !== "ios" && item.targetPlatform !== "android",
+    ).length,
   };
 }
 
@@ -72,7 +80,7 @@ export function buildCareTwinQaShareText(
     `Reviewed: ${reviewedAtIso}`,
     `Summary: ${summary.passed}/${summary.total} passed, ${summary.needsReview} needs tune, ${summary.unreviewed} unreviewed.`,
     `Layered assets ready: ${summary.readyLayered}/${summary.total}.`,
-    `Attached screenshots: ${summary.attachedScreenshots}.`,
+    `Attached screenshots: ${summary.attachedScreenshots} (iOS ${summary.attachedIosScreenshots}, Android ${summary.attachedAndroidScreenshots}, other ${summary.attachedUnknownScreenshots}).`,
     "",
     "Device notes:",
   ];

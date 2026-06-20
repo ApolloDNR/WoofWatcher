@@ -38,7 +38,7 @@ import {
   parseMobileQaSessionSnapshot,
 } from "@/lib/mobileQaSession";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
-import { buildQaScreenshotEvidence, type QaScreenshotEvidence } from "@/lib/qaScreenshotEvidence";
+import { buildQaScreenshotEvidence, type QaScreenshotEvidence, type QaScreenshotEvidencePlatform } from "@/lib/qaScreenshotEvidence";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -145,6 +145,11 @@ function statusTone(
   if (status === "pass") return colors.sage;
   if (status === "needs-review") return colors.amber;
   return colors.mutedForeground;
+}
+
+function qaScreenshotPlatformForRuntime(): QaScreenshotEvidencePlatform {
+  if (Platform.OS === "ios" || Platform.OS === "android" || Platform.OS === "web") return Platform.OS;
+  return "unknown";
 }
 
 export default function CareTwinQaScreen() {
@@ -287,6 +292,7 @@ export default function CareTwinQaScreen() {
         uri: asset.uri,
         fileName,
         source: "library",
+        targetPlatform: qaScreenshotPlatformForRuntime(),
         capturedAtIso: new Date().toISOString(),
       }, fallbackFileName);
     } catch {
@@ -367,6 +373,8 @@ export default function CareTwinQaScreen() {
             <QaBadge label={`${qaSummary.needsReview} needs tune`} tone={colors.amber} />
             <QaBadge label={`${qaSummary.unreviewed} unreviewed`} tone={colors.mutedForeground} />
             <QaBadge label={`${releaseSummary.attachedScreenshots + qaSummary.attachedScreenshots} screenshots`} tone={releaseSummary.missingScreenshots === 0 ? colors.sage : colors.amber} />
+            <QaBadge label={`iOS ${releaseSummary.attachedIosScreenshots}/${releaseSummary.requiredIosScreenshots}`} tone={releaseSummary.missingIosScreenshots === 0 ? colors.sage : colors.amber} />
+            <QaBadge label={`Android ${releaseSummary.attachedAndroidScreenshots}/${releaseSummary.requiredAndroidScreenshots}`} tone={releaseSummary.missingAndroidScreenshots === 0 ? colors.sage : colors.amber} />
             <QaBadge label={qaSessionLoaded ? "Saved locally" : "Loading saved QA"} tone={qaSessionLoaded ? colors.sage : colors.amber} />
           </View>
           <Text style={[s.savedSessionText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>

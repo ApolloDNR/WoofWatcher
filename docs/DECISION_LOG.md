@@ -1321,6 +1321,24 @@ Owner: Codex.
 
 Revisit trigger: Apollo approves provider-backed media/document storage for QA evidence, or the project gains reliable automated native screenshot capture.
 
+### 2026-06-20: Native QA Evidence Must Distinguish iOS From Android
+
+Decision: local QA screenshot evidence must track the runtime platform. iOS screenshots can satisfy iOS evidence slots, Android screenshots can satisfy Android evidence slots, and web/unknown screenshots can remain visible without satisfying native release proof.
+
+Reason: A mobile-first app can pass on one platform and still have safe-area, keyboard, crop, or animation issues on the other. Counting generic screenshots would let one-platform evidence create false release confidence.
+
+Consequences:
+
+- `qaScreenshotEvidence.ts` stores `targetPlatform` and labels screenshot file names with iOS, Android, Web, or Unknown platform.
+- `mobileReleaseQa.ts` tracks required and attached iOS, Android, and general screenshot slots separately.
+- `/care-twin-qa` tags new attachments from the current runtime platform and shows iOS/Android evidence counts in the cockpit header.
+- Share reports list platform labels beside screenshot filenames.
+- Native release confidence still requires both iOS and Android evidence plus human review.
+
+Owner: Codex.
+
+Revisit trigger: automated native screenshot capture or provider-backed QA evidence storage introduces a stronger platform/source-of-truth model.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

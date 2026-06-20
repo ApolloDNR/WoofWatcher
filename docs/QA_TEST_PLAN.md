@@ -227,6 +227,13 @@ summary counts, share-report filenames, and route wiring. This is local QA
 evidence only; provider-backed screenshot storage and release approval still
 require Apollo-approved storage/provider rules and human review.
 
+Current evidence, 2026-06-20: screenshot evidence is now platform-aware. Native
+captures attached from iOS count toward iOS screenshot slots, Android captures
+count toward Android slots, and web/unknown attachments stay visible without
+falsely satisfying native proof. The Mobile Release QA cockpit header and share
+report show iOS and Android coverage separately, and the care-twin matrix report
+lists attached screenshot platforms beside file names.
+
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.
 

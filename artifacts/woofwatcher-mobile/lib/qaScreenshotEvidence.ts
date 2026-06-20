@@ -1,9 +1,11 @@
 export type QaScreenshotEvidenceSource = "library" | "camera";
+export type QaScreenshotEvidencePlatform = "ios" | "android" | "web" | "unknown";
 
 export interface QaScreenshotEvidence {
   uri: string;
   fileName: string;
   source: QaScreenshotEvidenceSource;
+  targetPlatform: QaScreenshotEvidencePlatform;
   capturedAtIso: string;
 }
 
@@ -11,11 +13,29 @@ export interface QaScreenshotEvidenceInput {
   uri: string;
   fileName?: string | null;
   source?: QaScreenshotEvidenceSource | null;
+  targetPlatform?: QaScreenshotEvidencePlatform | null;
   capturedAtIso?: string | null;
 }
 
 function isSource(value: unknown): value is QaScreenshotEvidenceSource {
   return value === "library" || value === "camera";
+}
+
+function isPlatform(value: unknown): value is QaScreenshotEvidencePlatform {
+  return value === "ios" || value === "android" || value === "web" || value === "unknown";
+}
+
+export function qaScreenshotEvidencePlatformLabel(platform: QaScreenshotEvidencePlatform): string {
+  switch (platform) {
+    case "ios":
+      return "iOS";
+    case "android":
+      return "Android";
+    case "web":
+      return "Web";
+    default:
+      return "Unknown platform";
+  }
 }
 
 function cleanFileName(value: unknown, fallback: string): string {
@@ -42,6 +62,7 @@ export function buildQaScreenshotEvidence(
     uri,
     fileName: cleanFileName(input.fileName, fallbackFileName),
     source: isSource(input.source) ? input.source : "library",
+    targetPlatform: isPlatform(input.targetPlatform) ? input.targetPlatform : "unknown",
     capturedAtIso: cleanIso(input.capturedAtIso) ?? new Date().toISOString(),
   };
 }
@@ -61,6 +82,7 @@ export function cleanQaScreenshotEvidence(
           uri: typeof candidate.uri === "string" ? candidate.uri : "",
           fileName: candidate.fileName,
           source: candidate.source,
+          targetPlatform: candidate.targetPlatform,
           capturedAtIso: candidate.capturedAtIso,
         },
         fallbackFileName,
@@ -70,5 +92,7 @@ export function cleanQaScreenshotEvidence(
 }
 
 export function qaScreenshotEvidenceNames(evidence: readonly QaScreenshotEvidence[]): string {
-  return evidence.map((item) => item.fileName).join(", ");
+  return evidence
+    .map((item) => `${item.fileName} (${qaScreenshotEvidencePlatformLabel(item.targetPlatform)})`)
+    .join(", ");
 }

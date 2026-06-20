@@ -27,8 +27,17 @@ export interface MobileReleaseQaSummary {
   needsReview: number;
   unreviewed: number;
   requiredScreenshots: number;
+  requiredIosScreenshots: number;
+  requiredAndroidScreenshots: number;
+  requiredAnyScreenshots: number;
   attachedScreenshots: number;
+  attachedIosScreenshots: number;
+  attachedAndroidScreenshots: number;
+  attachedOtherScreenshots: number;
   missingScreenshots: number;
+  missingIosScreenshots: number;
+  missingAndroidScreenshots: number;
+  missingAnyScreenshots: number;
 }
 
 export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
@@ -140,6 +149,14 @@ function reviewFor(
   };
 }
 
+function screenshotRequirementPlatform(value: string): "ios" | "android" | "any" | null {
+  const normalized = value.toLowerCase();
+  if (!normalized.includes("screenshot")) return null;
+  if (normalized.includes("ios screenshot")) return "ios";
+  if (normalized.includes("android screenshot")) return "android";
+  return "any";
+}
+
 export function listMobileReleaseQaSurfaces(): readonly MobileReleaseQaSurface[] {
   return MOBILE_RELEASE_QA_SURFACES;
 }
@@ -162,18 +179,29 @@ export function summarizeMobileReleaseQaReviews(
   const statuses = surfaces.map((surface) => reviewFor(reviews, surface.id).status);
   const passed = statuses.filter((status) => status === "pass").length;
   const needsReview = statuses.filter((status) => status === "needs-review").length;
-  const requiredScreenshots = surfaces.reduce(
-    (total, surface) =>
-      total +
-      surface.requiredEvidence.filter((evidence) =>
-        evidence.toLowerCase().includes("screenshot"),
-      ).length,
-    0,
+  const requiredScreenshotPlatforms = surfaces.flatMap((surface) =>
+    surface.requiredEvidence
+      .map(screenshotRequirementPlatform)
+      .filter((platform): platform is "ios" | "android" | "any" => !!platform),
   );
-  const attachedScreenshots = surfaces.reduce(
-    (total, surface) => total + (reviewFor(reviews, surface.id).screenshotEvidence?.length ?? 0),
-    0,
-  );
+  const requiredScreenshots = requiredScreenshotPlatforms.length;
+  const requiredIosScreenshots = requiredScreenshotPlatforms.filter((platform) => platform === "ios").length;
+  const requiredAndroidScreenshots = requiredScreenshotPlatforms.filter((platform) => platform === "android").length;
+  const requiredAnyScreenshots = requiredScreenshotPlatforms.filter((platform) => platform === "any").length;
+  const screenshotEvidence = surfaces.flatMap((surface) => reviewFor(reviews, surface.id).screenshotEvidence ?? []);
+  const attachedScreenshots = screenshotEvidence.length;
+  const attachedIosScreenshots = screenshotEvidence.filter((item) => item.targetPlatform === "ios").length;
+  const attachedAndroidScreenshots = screenshotEvidence.filter((item) => item.targetPlatform === "android").length;
+  const attachedOtherScreenshots = screenshotEvidence.filter(
+    (item) => item.targetPlatform !== "ios" && item.targetPlatform !== "android",
+  ).length;
+  const missingIosScreenshots = Math.max(0, requiredIosScreenshots - attachedIosScreenshots);
+  const missingAndroidScreenshots = Math.max(0, requiredAndroidScreenshots - attachedAndroidScreenshots);
+  const platformSurplusScreenshots =
+    Math.max(0, attachedIosScreenshots - requiredIosScreenshots) +
+    Math.max(0, attachedAndroidScreenshots - requiredAndroidScreenshots) +
+    attachedOtherScreenshots;
+  const missingAnyScreenshots = Math.max(0, requiredAnyScreenshots - platformSurplusScreenshots);
 
   return {
     total: surfaces.length,
@@ -181,8 +209,17 @@ export function summarizeMobileReleaseQaReviews(
     needsReview,
     unreviewed: Math.max(0, surfaces.length - passed - needsReview),
     requiredScreenshots,
+    requiredIosScreenshots,
+    requiredAndroidScreenshots,
+    requiredAnyScreenshots,
     attachedScreenshots,
-    missingScreenshots: Math.max(0, requiredScreenshots - attachedScreenshots),
+    attachedIosScreenshots,
+    attachedAndroidScreenshots,
+    attachedOtherScreenshots,
+    missingScreenshots: missingIosScreenshots + missingAndroidScreenshots + missingAnyScreenshots,
+    missingIosScreenshots,
+    missingAndroidScreenshots,
+    missingAnyScreenshots,
   };
 }
 
@@ -198,6 +235,7 @@ export function buildMobileReleaseQaShareText(
     `Summary: ${summary.passed}/${summary.total} passed, ${summary.needsReview} needs tune, ${summary.unreviewed} unreviewed.`,
     `Required screenshot slots: ${summary.requiredScreenshots}.`,
     `Screenshot evidence: ${summary.attachedScreenshots} attached, ${summary.missingScreenshots} still missing.`,
+    `Platform evidence: iOS ${summary.attachedIosScreenshots}/${summary.requiredIosScreenshots}, Android ${summary.attachedAndroidScreenshots}/${summary.requiredAndroidScreenshots}, general ${Math.max(0, summary.attachedOtherScreenshots)}/${summary.requiredAnyScreenshots}.`,
     "",
     "Workflow notes:",
   ];

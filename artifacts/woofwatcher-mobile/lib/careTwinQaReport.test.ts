@@ -65,6 +65,7 @@ test("summarizes care twin QA review status for device evidence", () => {
           uri: "file:///qa/ios-happy-idle.png",
           fileName: "ios-happy-idle.png",
           source: "library",
+          targetPlatform: "ios",
           capturedAtIso: "2026-06-20T12:02:00.000Z",
         },
       ],
@@ -79,6 +80,9 @@ test("summarizes care twin QA review status for device evidence", () => {
     unreviewed: 1,
     readyLayered: 2,
     attachedScreenshots: 1,
+    attachedIosScreenshots: 1,
+    attachedAndroidScreenshots: 0,
+    attachedUnknownScreenshots: 0,
   });
 });
 
@@ -96,6 +100,7 @@ test("builds a shareable care twin QA report without claiming native QA is compl
           uri: "file:///qa/ios-happy-idle.png",
           fileName: "ios-happy-idle.png",
           source: "library",
+          targetPlatform: "ios",
           capturedAtIso: "2026-06-20T12:02:00.000Z",
         },
       ],
@@ -110,8 +115,8 @@ test("builds a shareable care twin QA report without claiming native QA is compl
   assert.match(text, /Steady happy idle: Pass/);
   assert.match(text, /Health Watch signal: Needs tune/);
   assert.match(text, /Health room crop needs 8px more bottom padding/);
-  assert.match(text, /Attached screenshots: 1/);
-  assert.match(text, /Screenshots: ios-happy-idle\.png/);
+  assert.match(text, /Attached screenshots: 1 \(iOS 1, Android 0/);
+  assert.match(text, /Screenshots: ios-happy-idle\.png \(iOS\)/);
   assert.match(text, /Native screenshot evidence still required before launch/);
 });
 

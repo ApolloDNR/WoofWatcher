@@ -33,7 +33,15 @@ test("summarizes mobile release QA review status and screenshot evidence", () =>
           uri: "file:///qa/ios-home.png",
           fileName: "ios-home.png",
           source: "library",
+          targetPlatform: "ios",
           capturedAtIso: "2026-06-20T12:01:00.000Z",
+        },
+        {
+          uri: "file:///qa/ios-home-2.png",
+          fileName: "ios-home-2.png",
+          source: "library",
+          targetPlatform: "ios",
+          capturedAtIso: "2026-06-20T12:02:00.000Z",
         },
       ],
     },
@@ -49,8 +57,14 @@ test("summarizes mobile release QA review status and screenshot evidence", () =>
   assert.equal(summary.needsReview, 1);
   assert.equal(summary.unreviewed, surfaces.length - 2);
   assert.ok(summary.requiredScreenshots >= surfaces.length);
-  assert.equal(summary.attachedScreenshots, 1);
-  assert.equal(summary.missingScreenshots, summary.requiredScreenshots - 1);
+  assert.equal(summary.attachedScreenshots, 2);
+  assert.ok(summary.requiredIosScreenshots > 0);
+  assert.ok(summary.requiredAndroidScreenshots > 0);
+  assert.equal(summary.attachedIosScreenshots, 2);
+  assert.equal(summary.attachedAndroidScreenshots, 0);
+  assert.equal(summary.missingIosScreenshots, Math.max(0, summary.requiredIosScreenshots - 2));
+  assert.equal(summary.missingAndroidScreenshots, summary.requiredAndroidScreenshots);
+  assert.ok(summary.missingScreenshots > 0);
 });
 
 test("builds a release QA share report with the screenshot boundary intact", () => {
@@ -64,6 +78,7 @@ test("builds a release QA share report with the screenshot boundary intact", () 
           uri: "file:///qa/ios-home.png",
           fileName: "ios-home.png",
           source: "library",
+          targetPlatform: "ios",
           capturedAtIso: "2026-06-20T12:01:00.000Z",
         },
       ],
@@ -79,7 +94,8 @@ test("builds a release QA share report with the screenshot boundary intact", () 
   assert.match(text, /Follow-up row needs larger touch target/);
   assert.match(text, /Required screenshot slots:/);
   assert.match(text, /Screenshot evidence: 1 attached/);
-  assert.match(text, /Screenshots: ios-home\.png/);
+  assert.match(text, /Platform evidence: iOS 1\/\d+, Android 0\/\d+/);
+  assert.match(text, /Screenshots: ios-home\.png \(iOS\)/);
   assert.match(text, /does not replace attached iOS\/Android screenshots/);
 });
 

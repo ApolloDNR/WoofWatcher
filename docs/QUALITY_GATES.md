@@ -333,6 +333,13 @@ names. This improves the handoff packet for native QA, but final launch
 confidence still requires real iOS/Android screenshot review and human visual
 approval.
 
+Current evidence, 2026-06-20: QA screenshot evidence is now platform-aware.
+The cockpit automatically tags local attachments with the runtime platform, the
+release summary tracks required iOS, Android, and general screenshot slots
+separately, and share reports list file names with platform labels. This prevents
+iOS-only or Android-only screenshots from falsely satisfying the full native QA
+gate.
+
 Current evidence, 2026-06-19: The Option B living-room polish pass keeps Phoenix as one layered main sprite instead of a second-avatar illusion. Home quick-log actions now request action-specific sprite reactions, the room renderer adds ambient micro-behaviors and rest-state safeguards, Avatar Studio suppresses oversized still/accessory overlays when a live sprite pack is active, and PixelIcon paths use crisp pixel rendering on web.
 
 Current evidence, 2026-06-19: PixelLab subscription review did not promote weaker replacement candidates. The clean single still candidate is archived for reference, while the duplicate/cropped and gray identity-drift candidates are explicitly rejected in the PixelLab generation log. The current hard-pixel Option B runtime family remains the approved live source until native QA or a stronger reference-guided generation beats it.

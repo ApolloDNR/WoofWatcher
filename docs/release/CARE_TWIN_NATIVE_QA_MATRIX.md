@@ -55,6 +55,12 @@ counts, and includes attached screenshot file names in the combined share report
 This makes the evidence packet easier to hand off, but it is still local-only QA
 evidence until provider-backed storage rules are approved.
 
+Screenshot attachments are platform-aware. Screenshots attached while running on
+iOS count toward iOS evidence slots; screenshots attached while running on
+Android count toward Android slots. Web/unknown attachments remain visible in
+the report but must not be used as native release proof. Do not mark the device
+pass complete until both the iOS and Android counts satisfy the required slots.
+
 Each state card also shows a Motion recipe generated from the same choreography
 model Home uses. Reviewers should confirm the primary loop, ambient micro-loops,
 and tap reaction match the state: happy states may bark/playfully react, rest

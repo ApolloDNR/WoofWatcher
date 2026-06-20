@@ -144,4 +144,5 @@ Before relying on the web surface:
 - No live push notifications yet.
 - No provider-backed WoofGuide generation yet.
 - No native simulator/device screenshots from Codex in this environment.
+- The internal `/care-twin-qa` route can now collect local screenshot evidence from the device photo library and tags it by platform. A release QA packet is not complete until the iOS and Android evidence counts are both satisfied in the cockpit/share report.
 - App Store or Play Store submission requires Apollo approval.
