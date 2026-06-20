@@ -19,6 +19,9 @@ const STANDALONE_COMPOSER_INSET_OFFSET = 12;
 const WEB_COMPOSER_BOTTOM_INSET = 34;
 const MODAL_SHEET_CLEARANCE = 32;
 const MODAL_SHEET_INSET_OFFSET = 20;
+const CENTERED_MODAL_HORIZONTAL_PADDING = 28;
+const CENTERED_MODAL_EDGE_CLEARANCE = 24;
+const CENTERED_MODAL_INSET_OFFSET = 16;
 const TABBED_FEEDBACK_OFFSET = 96;
 const STANDALONE_FEEDBACK_OFFSET = 22;
 
@@ -55,6 +58,14 @@ export function getStandaloneComposerBottomPadding(bottomInset: number, isWeb: b
 
 export function getModalSheetBottomPadding(bottomInset: number): number {
   return Math.max(MODAL_SHEET_CLEARANCE, bottomInset + MODAL_SHEET_INSET_OFFSET);
+}
+
+export function getCenteredModalBackdropPadding(topInset: number, bottomInset: number) {
+  return {
+    paddingHorizontal: CENTERED_MODAL_HORIZONTAL_PADDING,
+    paddingTop: Math.max(CENTERED_MODAL_EDGE_CLEARANCE, topInset + CENTERED_MODAL_INSET_OFFSET),
+    paddingBottom: Math.max(CENTERED_MODAL_EDGE_CLEARANCE, bottomInset + CENTERED_MODAL_INSET_OFFSET),
+  };
 }
 
 export function getFloatingFeedbackBottomOffset(

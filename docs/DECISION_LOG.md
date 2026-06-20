@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-20: Centered Text Modals Use The Shared Safe-Area Contract
+
+Decision: The Log post-care sticky-note prompt and More household/name prompt modals should use `getCenteredModalBackdropPadding` from the shared mobile layout helper instead of fixed horizontal-only centered modal padding.
+
+Reason: Native runtime QA is still waiting on simulator/device access, but centered keyboard modals can appear on small or notched devices before a real screenshot pass is available. A named helper gives these prompts top, bottom, and horizontal clearance from one contract without changing their care workflow behavior.
+
+Owner: Codex.
+
+Revisit trigger: Native device QA shows centered text prompts need different edge clearance, the prompt pattern moves to docked sheets, or a final design-system modal replaces these route-local prompt components.
+
 ### 2026-06-20: Floating Feedback Uses The Shared Safe-Area Contract
 
 Decision: Home quick-log feedback and Avatar Studio save feedback should use `getFloatingFeedbackBottomOffset` from the shared mobile layout helper instead of route-local `insets.bottom + 96/22` toast positioning.

@@ -10,18 +10,19 @@ Run focused behavior tests:
 
 CI must pass `WoofWatcher Verify` on `main`.
 
-Latest local evidence, 2026-06-19:
+Latest local evidence, 2026-06-20:
 
-- PASS: 238 focused tests with the command above.
-- PASS: PixelLab asset verifier now checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
+- PASS: 242 focused tests with the command above.
+- PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
 - PASS: shared mobile safe-area layout helpers now protect the floating tab shell, Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell from drifting back to hardcoded bottom-clearance padding before native screenshot QA happens.
 - PASS: WoofGuide composer safe-area hardening now uses the shared mobile layout contract, with focused coverage for flat native devices, notched native devices, and web fallback composer clearance.
 - PASS: docked mobile sheets now use the shared modal-sheet safe-area contract, with focused flat/notched-device coverage and static readiness checks for Plans, Log, More, Records, and the error recovery sheet.
 - PASS: floating feedback toasts now use the shared mobile layout contract, with focused flat/notched/web coverage and static readiness checks for Home quick-log feedback and Avatar Studio save feedback.
+- PASS: centered text-entry modals now use the shared mobile layout contract, with focused flat/notched-device coverage and static readiness checks for the Log sticky-note prompt and More household/name prompt modals.
 - LIMIT: mobile TypeScript could not run in this checkout because `node_modules/typescript` is missing (`tsc-missing`).
-- REMOTE CI: GitHub Actions `WoofWatcher Verify` run `27861207712` for commit `197acce` failed before job start with GitHub's account billing/spending-limit annotation. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
+- REMOTE CI: GitHub Actions `WoofWatcher Verify` runs continue to fail before job start with GitHub's account billing/spending-limit annotation; checked examples include `27865345974` for commit `5159a3b` and `27865371635` for commit `24d8575`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 
 ## Required Automated Coverage
 

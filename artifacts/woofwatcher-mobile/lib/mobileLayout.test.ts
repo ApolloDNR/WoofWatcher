@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   getFloatingTabChromeMetrics,
   getFloatingFeedbackBottomOffset,
+  getCenteredModalBackdropPadding,
   getModalSheetBottomPadding,
   getStandaloneComposerBottomPadding,
   getStandaloneRouteBottomPadding,
@@ -40,6 +41,19 @@ test("keeps docked modal sheets clear of flat and notched home indicators", () =
   assert.equal(getModalSheetBottomPadding(0), 32);
   assert.equal(getModalSheetBottomPadding(18), 38);
   assert.equal(getModalSheetBottomPadding(34), 54);
+});
+
+test("keeps centered text modals away from notches and home indicators", () => {
+  assert.deepEqual(getCenteredModalBackdropPadding(0, 0), {
+    paddingHorizontal: 28,
+    paddingTop: 24,
+    paddingBottom: 24,
+  });
+  assert.deepEqual(getCenteredModalBackdropPadding(44, 34), {
+    paddingHorizontal: 28,
+    paddingTop: 60,
+    paddingBottom: 50,
+  });
 });
 
 test("keeps floating feedback above tab chrome and home indicators", () => {

@@ -432,6 +432,7 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.match(mobileLayout, /export function getStandaloneRouteBottomPadding/);
   assert.match(mobileLayout, /export function getStandaloneComposerBottomPadding/);
   assert.match(mobileLayout, /export function getModalSheetBottomPadding/);
+  assert.match(mobileLayout, /export function getCenteredModalBackdropPadding/);
   assert.match(mobileLayout, /export function getFloatingFeedbackBottomOffset/);
   assert.match(tabLayout, /getFloatingTabChromeMetrics/);
 
@@ -470,6 +471,13 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
     assert.match(source, /paddingBottom: modalSheetBottomPadding/);
     assert.doesNotMatch(source, /paddingBottom: insets\.bottom \+ (16|18|20)/);
   }
+
+  for (const source of [log, more]) {
+    assert.match(source, /getCenteredModalBackdropPadding/);
+    assert.match(source, /centeredModalBackdropPadding/);
+  }
+  assert.doesNotMatch(log, /modalCenter: \{ flex: 1, justifyContent: "center", paddingHorizontal: 28 \}/);
+  assert.doesNotMatch(more, /modalBackdrop: \{ flex: 1, backgroundColor: "rgba\(15,31,36,0\.45\)", justifyContent: "center", paddingHorizontal: 28 \}/);
 });
 
 test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {

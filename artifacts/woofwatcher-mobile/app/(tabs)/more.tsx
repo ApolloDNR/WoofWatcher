@@ -39,7 +39,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
-import { getModalSheetBottomPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getCenteredModalBackdropPadding, getModalSheetBottomPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -52,6 +52,7 @@ export default function MoreScreen() {
   const router = useRouter();
   const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
   const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
+  const centeredModalBackdropPadding = getCenteredModalBackdropPadding(insets.top, insets.bottom);
   const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
   const { dietProfile, profile, entries, routines, caregivers } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
@@ -1279,6 +1280,7 @@ export default function MoreScreen() {
         autoCapitalize="characters"
         confirmLabel="Join"
         loading={joinHousehold.isPending}
+        centeredModalBackdropPadding={centeredModalBackdropPadding}
         onCancel={() => setJoinOpen(false)}
         onConfirm={submitJoin}
       />
@@ -1295,6 +1297,7 @@ export default function MoreScreen() {
         onChangeText={setRenameValue}
         confirmLabel="Save"
         loading={updateHousehold.isPending}
+        centeredModalBackdropPadding={centeredModalBackdropPadding}
         onCancel={() => setRenameOpen(false)}
         onConfirm={submitRename}
       />
@@ -1311,6 +1314,7 @@ export default function MoreScreen() {
         onChangeText={setNameValue}
         confirmLabel="Save"
         loading={updateMe.isPending}
+        centeredModalBackdropPadding={centeredModalBackdropPadding}
         onCancel={() => setNameOpen(false)}
         onConfirm={submitName}
       />
@@ -1464,6 +1468,7 @@ function PromptModal({
   onChangeText,
   confirmLabel,
   loading,
+  centeredModalBackdropPadding,
   autoCapitalize = "sentences",
   onCancel,
   onConfirm,
@@ -1478,13 +1483,14 @@ function PromptModal({
   onChangeText: (t: string) => void;
   confirmLabel: string;
   loading?: boolean;
+  centeredModalBackdropPadding: ReturnType<typeof getCenteredModalBackdropPadding>;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   onCancel: () => void;
   onConfirm: () => void;
 }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={s.modalBackdrop} onPress={onCancel}>
+      <Pressable style={[s.modalBackdrop, centeredModalBackdropPadding]} onPress={onCancel}>
         <Pressable style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
           <View style={[s.modalIcon, { backgroundColor: colors.primary + "1A" }]}>
             <Ionicons name={icon} size={22} color={colors.primary} />
@@ -1707,7 +1713,7 @@ const s = StyleSheet.create({
   },
   signOutText: { fontSize: 15 },
 
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(15,31,36,0.45)", justifyContent: "center", paddingHorizontal: 28 },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(15,31,36,0.45)", justifyContent: "center" },
   modalCard: {
     borderRadius: 26,
     padding: 24,

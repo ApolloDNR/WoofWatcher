@@ -37,7 +37,7 @@ import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { getModalSheetBottomPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getCenteredModalBackdropPadding, getModalSheetBottomPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -592,6 +592,7 @@ export default function LogScreen() {
   const router = useRouter();
   const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
   const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
+  const centeredModalBackdropPadding = getCenteredModalBackdropPadding(insets.top, insets.bottom);
   const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
   const me = useGetMe();
   const routeParams = useLocalSearchParams<{ type?: string | string[] }>();
@@ -2696,7 +2697,10 @@ export default function LogScreen() {
       {/* Post-log quick-note prompt */}
       <Modal visible={promptId !== null} transparent animationType="fade" onRequestClose={() => setPromptId(null)}>
         <Pressable style={s.modalBackdrop} onPress={saveQuickNote}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={s.modalCenter}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={[s.modalCenter, centeredModalBackdropPadding]}
+          >
             <Pressable style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
               <View style={[s.modalIcon, { backgroundColor: colors.sage + "1A" }]}>
                 <Ionicons name="checkmark" size={22} color={colors.sage} />
@@ -3193,7 +3197,7 @@ const s = StyleSheet.create({
   emptyText: { fontSize: 15 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(15,31,36,0.45)" },
-  modalCenter: { flex: 1, justifyContent: "center", paddingHorizontal: 28 },
+  modalCenter: { flex: 1, justifyContent: "center" },
   modalCard: {
     borderRadius: 26,
     padding: 24,
