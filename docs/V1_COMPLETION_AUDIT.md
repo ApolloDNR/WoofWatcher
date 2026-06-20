@@ -18,7 +18,7 @@ WoofWatcher v1.5 is a premium, highly navigable, neo-retro pixel dog-care app wi
 - Mobile is the canonical care surface in `artifacts/woofwatcher-mobile`.
 - Shared care rules exist in `lib/care-domain`.
 - Routines define expected care; logs record actual care; matching household-visible logs can satisfy routines.
-- Meal logging, partial/skipped completion, diet progress, Health Watch, Bile Watch, Records, Care Pass, sticky notes, audit trail, hydration, walks, potty health, training progress, alone time, weight trend, grooming, medication history, and household sync logic exist.
+- Meal logging, partial/skipped completion, diet progress, Health Watch, Bile Watch, Records, Care Pass, sticky notes, audit trail, hydration, walks, potty health, training progress, alone time, weight trend, grooming, Incident Watch, medication history, and household sync logic exist.
 - PWA in `artifacts/woofwatcher` preserves localStorage, import/export backup, reports, Health Watch/Bile Watch, records, assistant routing, and Phoenix-specific local state.
 - CI verifies focused tests, typecheck, API build, PWA build, mockup build, and Expo web export.
 

@@ -99,6 +99,7 @@ const FIELD_GROUPS: Record<CareEventType, readonly (readonly string[])[]> = {
   weight: [["weight", "value", "amount", "$amount"], ["unit"], ["bodyCondition"]],
   vomit: [["what", "kind", "color"], ["severity", "$severity"], ["timeSinceFood", "foodGap"], ["appetiteAfter"], ["energyAfter"]],
   symptom: [["what", "kind"], ["severity", "$severity"], ["duration", "$duration"], ["notes"]],
+  incident: [["incidentType", "kind"], ["incidentTrigger", "trigger", "context"], ["incidentExposure", "exposure", "involved"], ["incidentInjury", "injury"], ["incidentFollowUp", "followUp"]],
   grooming: [["groomingCondition", "condition"], ["groomingProducts", "products"], ["groomingNextDue", "nextDue"], ["coatNotes"]],
   alone: [["aloneOutcome", "returnState", "outcome"], ["aloneTrigger", "trigger"], ["calmingSupport", "support"], ["recoveryMinutes", "$duration"]],
   note: [["note", "$note"], ["stickyNotes"], ["tag"]],

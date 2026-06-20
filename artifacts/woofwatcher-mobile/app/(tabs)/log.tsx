@@ -317,6 +317,45 @@ const LOG_TYPES: LogType[] = [
     ],
   },
   {
+    type: "incident",
+    label: "Incident",
+    icon: "sad",
+    baseTitle: "Incident",
+    groups: [
+      {
+        key: "incidentType",
+        label: "What happened?",
+        options: [
+          { id: "rough-greeting", label: "Rough greeting", suffix: "rough greeting", severity: "watch" },
+          { id: "dog-conflict", label: "Dog conflict", suffix: "dog conflict", severity: "watch" },
+          { id: "snap-or-bite", label: "Snap/bite", suffix: "snap or bite", severity: "alert" },
+          { id: "escape", label: "Escape", suffix: "escape", severity: "alert" },
+          { id: "injury", label: "Injury", suffix: "injury", severity: "alert" },
+          { id: "other", label: "Other", suffix: "incident", severity: "watch" },
+        ],
+      },
+      {
+        key: "incidentSeverity",
+        label: "Care level",
+        options: [
+          { id: "watch", label: "Watch", severity: "watch" },
+          { id: "review", label: "Review", severity: "alert" },
+          { id: "urgent", label: "Urgent", severity: "alert" },
+        ],
+      },
+      {
+        key: "incidentOutcome",
+        label: "Outcome",
+        options: [
+          { id: "recovered", label: "Recovered", suffix: "recovered" },
+          { id: "separated", label: "Separated", suffix: "separated", severity: "watch" },
+          { id: "follow-up-needed", label: "Follow-up", suffix: "follow-up needed", severity: "alert" },
+        ],
+      },
+    ],
+    noteField: { placeholder: "Sticky note: factual timeline, body language, handler response, injury check, or what helped..." },
+  },
+  {
     type: "grooming",
     label: "Grooming",
     icon: "star",
@@ -369,6 +408,7 @@ const LAUNCHER_ACTIONS: LauncherAction[] = [
   { label: "Play", type: "play", icon: "play", tab: "favorites" },
   { label: "Water", type: "water", icon: "bile", tab: "favorites" },
   { label: "Vomit", type: "symptom", icon: "vomit", tab: "health", preset: { what: "vomit", severity: "watch" } },
+  { label: "Incident", type: "incident", icon: "anxious", tab: "health", preset: { incidentSeverity: "watch" } },
   { label: "Medication", type: "medication", icon: "medication", tab: "health" },
   { label: "Alone Time", type: "alone", icon: "clock", tab: "household" },
   { label: "Anxious", type: "mood", icon: "anxious", tab: "health", preset: { mood: "anxious" } },
@@ -437,6 +477,7 @@ const LOG_GUIDANCE: Record<string, string> = {
   medication: "Medication logs are household-visible by default and audit-friendly.",
   weight: "Weight logs update Phoenix's living profile.",
   symptom: "Health notes stay non-diagnostic and easy to share with your vet.",
+  incident: "Log factual behavior or safety incidents with trigger, exposure, injury check, and follow-up.",
   grooming: "Grooming logs remember coat, paws, ears, products, and next due.",
   note: "Sticky notes keep tiny care details from disappearing.",
 };
@@ -531,6 +572,14 @@ const DETAIL_LABELS: Record<string, string> = {
   groomingNextDue: "Next due",
   routineLabel: "Routine",
   what: "Symptom",
+  incidentType: "Incident type",
+  incidentSeverity: "Care level",
+  incidentOutcome: "Outcome",
+  incidentTrigger: "Trigger",
+  incidentExposure: "Exposure",
+  incidentInjury: "Injury check",
+  incidentAction: "Action taken",
+  incidentFollowUp: "Follow-up",
 };
 
 function isDetailRecord(value: unknown): value is Record<string, unknown> {
@@ -808,6 +857,11 @@ export default function LogScreen() {
   const [groomingCondition, setGroomingCondition] = useState("");
   const [groomingProducts, setGroomingProducts] = useState("");
   const [groomingNextDue, setGroomingNextDue] = useState("");
+  const [incidentTrigger, setIncidentTrigger] = useState("");
+  const [incidentExposure, setIncidentExposure] = useState("");
+  const [incidentInjury, setIncidentInjury] = useState("");
+  const [incidentAction, setIncidentAction] = useState("");
+  const [incidentFollowUp, setIncidentFollowUp] = useState("");
   const [householdVisible, setHouseholdVisible] = useState(true);
   const [noteText, setNoteText] = useState("");
   const [searchText, setSearchText] = useState("");
@@ -866,6 +920,11 @@ export default function LogScreen() {
     setGroomingCondition("");
     setGroomingProducts("");
     setGroomingNextDue("");
+    setIncidentTrigger("");
+    setIncidentExposure("");
+    setIncidentInjury("");
+    setIncidentAction("");
+    setIncidentFollowUp("");
     setHouseholdVisible(true);
     setNoteText("");
   }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1185,6 +1244,26 @@ export default function LogScreen() {
       }
     }
 
+    if (config.type === "incident") {
+      const trigger = incidentTrigger.trim();
+      const exposure = incidentExposure.trim();
+      const injury = incidentInjury.trim();
+      const action = incidentAction.trim();
+      const followUp = incidentFollowUp.trim();
+      const incidentSeverity = String(choices.incidentSeverity ?? "watch").toLowerCase();
+
+      details.householdVisible = householdVisible;
+      if (trigger) details.incidentTrigger = trigger;
+      if (exposure) details.incidentExposure = exposure;
+      if (injury) details.incidentInjury = injury;
+      if (action) details.incidentAction = action;
+      if (followUp) details.incidentFollowUp = followUp;
+      if (incidentSeverity === "urgent" || incidentSeverity === "review") severity = "alert";
+      if (/(bite|bit|blood|bleed|puncture|injur|wound|limp|vet|emergency|escaped|missing)/i.test(`${injury} ${followUp} ${noteText}`)) {
+        severity = "alert";
+      }
+    }
+
     if (config.type === "potty") {
       details.householdVisible = householdVisible;
     }
@@ -1252,6 +1331,11 @@ export default function LogScreen() {
     groomingCondition,
     groomingProducts,
     groomingNextDue,
+    incidentTrigger,
+    incidentExposure,
+    incidentInjury,
+    incidentAction,
+    incidentFollowUp,
     householdVisible,
     dietProgress.unit,
     noteText,
@@ -1288,6 +1372,14 @@ export default function LogScreen() {
       setAloneTrigger("");
       setCalmingSupport("");
       setRecoveryMinutes("");
+      setHouseholdVisible(true);
+    }
+    if (entry.type === "incident") {
+      setIncidentTrigger("");
+      setIncidentExposure("");
+      setIncidentInjury("");
+      setIncidentAction("");
+      setIncidentFollowUp("");
       setHouseholdVisible(true);
     }
     setNoteText("");
@@ -1689,6 +1781,8 @@ export default function LogScreen() {
           : "Diet progress ready"
         : selectedType === "alone"
           ? "Alone Time Watch"
+          : selectedType === "incident"
+            ? "Owner review"
           : "Household record";
   const composerTrustItems = [
     {
@@ -2728,6 +2822,87 @@ export default function LogScreen() {
                     </Text>
                     <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                       {householdVisible ? "Shared alone logs update Alone Time patterns and handoffs." : "Private alone logs stay out of shared anxiety patterns."}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            )}
+
+            {selectedType === "incident" && (
+              <View style={s.mealFields}>
+                <View>
+                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Trigger or context</Text>
+                  <TextInput
+                    placeholder="Dog at gate, crowded sidewalk, toy guarding, unknown..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={incidentTrigger}
+                    onChangeText={setIncidentTrigger}
+                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                  />
+                </View>
+                <View>
+                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Who or what was involved?</Text>
+                  <TextInput
+                    placeholder="Off-leash dog, stranger, puppy, family dog, no exposure..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={incidentExposure}
+                    onChangeText={setIncidentExposure}
+                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                  />
+                </View>
+                <View style={s.mealFieldRow}>
+                  <View style={s.mealField}>
+                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Injury check</Text>
+                    <TextInput
+                      placeholder="None, scratch, limp..."
+                      placeholderTextColor={colors.mutedForeground}
+                      value={incidentInjury}
+                      onChangeText={setIncidentInjury}
+                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    />
+                  </View>
+                  <View style={s.mealField}>
+                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Action taken</Text>
+                    <TextInput
+                      placeholder="Separated, left park..."
+                      placeholderTextColor={colors.mutedForeground}
+                      value={incidentAction}
+                      onChangeText={setIncidentAction}
+                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    />
+                  </View>
+                </View>
+                <View>
+                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Follow-up</Text>
+                  <TextInput
+                    placeholder="Watch tonight, trainer note, vet call, avoid gate route..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={incidentFollowUp}
+                    onChangeText={setIncidentFollowUp}
+                    multiline
+                    style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
+                  />
+                </View>
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setHouseholdVisible((prev) => !prev);
+                  }}
+                  style={[
+                    s.visibilityToggle,
+                    {
+                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
+                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {householdVisible ? "Visible to household" : "Private log"}
+                    </Text>
+                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {householdVisible ? "Shared incident logs update Incident Watch, Care Pass, and trainer handoffs." : "Private incidents stay out of shared incident reports."}
                     </Text>
                   </View>
                 </Pressable>

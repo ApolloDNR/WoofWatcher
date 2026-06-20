@@ -36,6 +36,7 @@ import {
   deriveCareTrends,
   deriveGroomingCare,
   deriveHealthWatch,
+  deriveIncidentWatch,
   deriveMedicationAdherence,
   deriveMedicationFollowUps,
   deriveMedicationHistory,
@@ -70,6 +71,7 @@ type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 const HEALTH_ICON: Record<string, PulseIconName> = {
   vomit: "vomit",
   symptom: "vomit",
+  incident: "sad",
   health: "heart",
   vet: "heart",
   mood: "sad",
@@ -188,6 +190,10 @@ export default function RecordsScreen() {
     () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
     [state.entries, state.routines, now],
   );
+  const incidentWatch = useMemo(
+    () => deriveIncidentWatch({ entries: state.entries, now, lookbackDays: 90 }),
+    [state.entries, now],
+  );
   const careTrends = useMemo(
     () => deriveCareTrends({ entries: state.entries, now, windowDays: 7 }),
     [state.entries, now],
@@ -290,18 +296,17 @@ export default function RecordsScreen() {
   // ---- Incident lookback ----
   const incidents = useMemo(
     () =>
-      state.entries
-        .filter((e) => entryType(e) === "vomit" || entryType(e) === "symptom")
+      incidentWatch.items
         .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()),
-    [state.entries],
+    [incidentWatch.items],
   );
   const incident7 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 7).length;
   const incident30 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 30).length;
   const incident90 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 90).length;
-  const healthTone =
-    healthWatch.status === "alert"
+  const incidentTone =
+    incidentWatch.status === "review"
       ? colors.rose
-      : healthWatch.status === "watch"
+      : incidentWatch.status === "watch"
         ? colors.amber
         : colors.sage;
 
@@ -325,7 +330,7 @@ export default function RecordsScreen() {
       play: count(["play", "training"]),
       potty: count(["potty"]),
       treats: count(["treat"]),
-      incidents: count(["vomit", "symptom"]),
+      incidents: count(["incident"]),
       topCaregiver: topCaregiver ? { name: topCaregiver[0], count: topCaregiver[1] } : null,
     };
   }, [state.entries, period, now]);
@@ -1310,54 +1315,51 @@ export default function RecordsScreen() {
 
           {/* Incident lookback */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Incident Lookback" />
+            <BoardSectionHeader title="Incident Watch" />
             <View style={s.watchSummary}>
-              <View style={[s.watchSummaryIcon, { backgroundColor: healthTone + "18" }]}>
+              <View style={[s.watchSummaryIcon, { backgroundColor: incidentTone + "18" }]}>
                 <Ionicons
-                  name={healthWatch.status === "good" ? "heart" : "alert-circle"}
+                  name={incidentWatch.status === "clear" ? "shield-checkmark" : "alert-circle"}
                   size={18}
-                  color={healthTone}
+                  color={incidentTone}
                 />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {healthWatch.status === "good"
-                    ? "Health steady"
-                    : healthWatch.status === "alert"
-                      ? "Health alert"
-                      : "Health watch"}
+                  {incidentWatch.status === "clear"
+                    ? "No incidents logged"
+                    : incidentWatch.status === "review"
+                      ? "Review incident"
+                      : "Watch incident pattern"}
                 </Text>
                 <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {healthWatch.summary}
+                  {incidentWatch.summary}
                 </Text>
               </View>
             </View>
-            {healthWatch.patterns.slice(0, 3).map((pattern) => {
-              const tone = pattern.status === "alert" ? colors.rose : pattern.status === "watch" ? colors.amber : colors.sage;
-              return (
-                <View key={pattern.kind} style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
-                  <View style={[s.watchSignalDot, { backgroundColor: tone }]} />
-                  <View style={{ flex: 1 }}>
-                    <View style={s.watchPatternTop}>
-                      <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {pattern.label}
-                      </Text>
-                      <Text style={[s.watchPatternWindow, { color: tone, fontFamily: "Inter_700Bold" }]}>
-                        {pattern.window}
-                      </Text>
-                    </View>
-                    <Text style={[s.watchPatternEvidence, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                      {pattern.evidence}
+            {incidentWatch.triggers.length || incidentWatch.exposures.length ? (
+              <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
+                <View style={[s.watchSignalDot, { backgroundColor: incidentTone }]} />
+                <View style={{ flex: 1 }}>
+                  <View style={s.watchPatternTop}>
+                    <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      Incident context
                     </Text>
-                    <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {pattern.nextStep}
+                    <Text style={[s.watchPatternWindow, { color: incidentTone, fontFamily: "Inter_700Bold" }]}>
+                      90 days
                     </Text>
                   </View>
+                  <Text style={[s.watchPatternEvidence, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                    {[incidentWatch.triggers.length ? `Triggers: ${incidentWatch.triggers.slice(0, 3).join(", ")}` : "", incidentWatch.exposures.length ? `Exposure: ${incidentWatch.exposures.slice(0, 3).join(", ")}` : ""].filter(Boolean).join(" - ")}
+                  </Text>
+                  <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {incidentWatch.nextStep}
+                  </Text>
                 </View>
-              );
-            })}
+              </View>
+            ) : null}
             <Text style={[s.watchBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              {healthWatch.vetBoundary}
+              Incident Watch keeps factual household context for trainer, sitter, and veterinarian review; it does not diagnose behavior or medical issues.
             </Text>
             <View style={s.incidentRow}>
               {[
@@ -1376,16 +1378,16 @@ export default function RecordsScreen() {
             </View>
             {incidents.slice(0, 4).map((e, i) => (
               <View key={e.id} style={[s.row, { borderTopWidth: 1, borderTopColor: colors.border }]}>
-                <View style={[s.rowIconWrap, { backgroundColor: PULSE_COLORS[HEALTH_ICON[entryType(e)] ?? "vomit"] + "16" }]}>
-                  <PulseIcon name={HEALTH_ICON[entryType(e)] ?? "vomit"} size={18} />
+                <View style={[s.rowIconWrap, { backgroundColor: PULSE_COLORS.sad + "16" }]}>
+                  <PulseIcon name="sad" size={18} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text numberOfLines={1} style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{e.title}</Text>
+                  <Text numberOfLines={1} style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{e.label}</Text>
                   <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {e.caregiver} - {relativeDay(e.occurredAt, now)}
+                    {[e.caregiver, e.trigger || e.exposure || e.kind, relativeDay(e.occurredAt, now)].filter(Boolean).join(" - ")}
                   </Text>
                 </View>
-                {e.severity && e.severity !== "normal" && (
+                {e.severity && (
                   <View style={[s.sevBadge, { backgroundColor: (e.severity === "alert" ? colors.rose : colors.amber) + "1A" }]}>
                     <Text style={[s.sevText, { color: e.severity === "alert" ? colors.rose : colors.amber, fontFamily: "Inter_700Bold" }]}>{e.severity}</Text>
                   </View>
@@ -1394,7 +1396,7 @@ export default function RecordsScreen() {
             ))}
             {incidents.length === 0 && (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                No incidents logged. Tail wags all around.
+                No incidents logged. If something happens, record the trigger, exposure, injury check, and follow-up here.
               </Text>
             )}
           </BoardCard>

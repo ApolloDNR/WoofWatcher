@@ -149,10 +149,10 @@ Finished the remaining Records screen board-unification work:
 
 - Converted Care Trends into a `BoardCard` section while preserving weekly signals, meal completion, walk minutes, and next-step copy.
 - Moved the Dog ID heading and Share/Print actions onto the shared `BoardSectionHeader` pattern while preserving the navy credential card.
-- Converted Alone Time, Grooming Care, Incident Lookback, and Medication Plan into shared `BoardCard` sections.
+- Converted Alone Time, Grooming Care, Incident Watch, and Medication Plan into shared `BoardCard` sections.
 - Preserved medication routine navigation, adherence stats, next-dose state, follow-ups, medication history search, outcome filters, and all medication accessibility labels.
 - Removed the now-unused Records-only `padCard`, `sectionHeader`, and `sectionTitle` styles so the screen no longer carries a parallel card vocabulary.
-- Added mobile readiness tests for Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Lookback, and Medication Plan board anatomy.
+- Added mobile readiness tests for Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Watch, and Medication Plan board anatomy.
 
 ## 2026-06-14 More Board Anatomy Pass
 
@@ -710,6 +710,22 @@ Design intent:
 - Make the real-care RPG loop visible in the first five seconds.
 - Avoid burying Adventure Mode in More while still preserving the launch nav structure.
 - Give the next design pass a focused strip to polish rather than an unbounded new section.
+
+## 2026-06-20 Incident Watch Pass
+
+Incident Watch is now a real behavior-safety workflow instead of a health-only proxy:
+
+- Log includes Incident as a detail-first action for rough greetings, dog conflict, snap/bite, escape, injury, and other behavior-safety events.
+- The Incident composer captures trigger/context, exposure, injury check, action taken, follow-up, sticky notes, and household visibility.
+- Serious incident language routes through the same owner-review/trust model used for other safety-critical logs.
+- Records now uses the shared Incident Watch model for status, 7/30/90-day counts, triggers/exposures, factual rows, and boundary copy.
+- Care Pass reports include Incident Watch context for sitter, trainer, vet, and caregiver handoff.
+
+Design intent:
+
+- Keep incident logging factual, calm, and easy to review.
+- Avoid blame, diagnosis, or alarmist behavior language.
+- Make the flow useful for real households, trainers, sitters, and vets without making the app feel scary.
 
 ## 2026-06-17 Avatar Studio Lite Pass
 

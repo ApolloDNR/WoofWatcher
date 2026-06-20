@@ -122,7 +122,7 @@ Current evidence, 2026-06-14: Records Weight Trend, Mood Trend, and Hydration no
 
 Current evidence, 2026-06-14: Records Walk Activity, Training Progress, and Potty Health now use shared board sections while preserving saved routes, training focus/latest practice context, stool color/context, and care-safe next steps.
 
-Current evidence, 2026-06-14: Records has been cleared of the older one-off `padCard` and local section-header pattern. Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Lookback, and Medication Plan now use shared board primitives while preserving share/print actions, medication routine routing, follow-ups, search/filter history, and non-diagnostic care copy.
+Current evidence, 2026-06-14: Records has been cleared of the older one-off `padCard` and local section-header pattern. Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Watch, and Medication Plan now use shared board primitives while preserving share/print actions, medication routine routing, follow-ups, search/filter history, and non-diagnostic care copy.
 
 Current evidence, 2026-06-14: Mobile More now uses shared board sections for Care Team, Household Access, Responsibility Center, Sync Health, Tools & Sharing, and Diet Profile while preserving invite sharing, household rename, routine-board routing, sync refresh, tool links, and diet edit/detail actions.
 

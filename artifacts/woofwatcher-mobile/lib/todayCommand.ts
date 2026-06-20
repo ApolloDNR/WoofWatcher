@@ -127,6 +127,7 @@ const TYPE_ICON: Record<CareEventType, TodayCommandIcon> = {
   weight: "scale",
   vomit: "vomit",
   symptom: "vomit",
+  incident: "sad",
   grooming: "star",
   alone: "house",
   note: "star",

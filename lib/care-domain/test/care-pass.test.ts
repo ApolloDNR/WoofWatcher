@@ -460,6 +460,42 @@ test("care pass includes grooming care context for sitter and groomer handoff", 
   assert.match(pass.message, /owner-reported coat and grooming context/i);
 });
 
+test("care pass includes Incident Watch context for trainer and sitter handoff", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "trainer",
+    now: new Date("2026-06-20T12:00:00-07:00").getTime(),
+    entries: [
+      ...baseInput().entries,
+      {
+        id: "incident-dog-gate",
+        type: "incident",
+        title: "Incident - dog conflict",
+        caregiver: "Emma",
+        occurredAt: "2026-06-20T08:30:00-07:00",
+        details: {
+          incidentType: "dog-conflict",
+          incidentTrigger: "Fast dog at gate",
+          incidentExposure: "Leashed dog by fence",
+          incidentInjury: "None",
+          incidentAction: "Moved across street",
+          incidentFollowUp: "Practice calm passes",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  const section = pass.sections.find((item) => item.title === "Incident Watch");
+  assert.ok(section);
+  assert.match(pass.message, /1 incident in the last 90 days/);
+  assert.match(pass.message, /Triggers: Fast dog at gate/);
+  assert.match(pass.message, /Exposure\/context: Leashed dog by fence/);
+  assert.match(pass.message, /Action taken: Moved across street/);
+  assert.match(pass.message, /Follow-up: Practice calm passes/);
+  assert.match(pass.message, /does not diagnose behavior or medical issues/i);
+});
+
 test("creates a stable report artifact snapshot from a care pass", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
   const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");

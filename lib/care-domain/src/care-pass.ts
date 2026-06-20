@@ -3,6 +3,7 @@ import { deriveAloneTime, type AloneTimeItem } from "./alone-time.ts";
 import { deriveCareTrends, type CareTrendSignal } from "./care-trends.ts";
 import { deriveCareHandoff, type CareHandoffCaregiver, type CareHandoffRoutine } from "./handoff.ts";
 import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
+import { deriveIncidentWatch, type IncidentWatchItem } from "./incident-watch.ts";
 import { deriveGroomingCare, type GroomingCareItem } from "./grooming-care.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
 import { derivePottyHealth } from "./potty-health.ts";
@@ -222,6 +223,17 @@ function weightLatestLine(item: WeightTrendItem | null): string {
 function groomingLatestLine(item: GroomingCareItem | null): string {
   if (!item) return "";
   return `Latest: ${item.label} - ${item.kindLabel} with ${item.caregiver}`;
+}
+
+function incidentLatestLine(item: IncidentWatchItem | null): string {
+  if (!item) return "";
+  const parts = [
+    item.kind,
+    item.trigger ? `trigger: ${item.trigger}` : "",
+    item.exposure ? `exposure: ${item.exposure}` : "",
+    item.injuryLevel ? `injury: ${item.injuryLevel}` : "",
+  ].filter(Boolean);
+  return `Latest: ${item.label} - ${parts.join(", ")} with ${item.caregiver}`;
 }
 
 function audienceChecklist(audience: CarePassAudience, name: string): string[] {
@@ -549,6 +561,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const aloneTime = deriveAloneTime({ entries, now, lookbackDays: 30 });
   const weightTrend = deriveWeightTrend({ entries, profile, goals: input.goals ?? [], now, lookbackDays: 90 });
   const groomingCare = deriveGroomingCare({ entries, now, lookbackDays: 45 });
+  const incidentWatch = deriveIncidentWatch({ entries, now, lookbackDays: 90 });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -658,6 +671,20 @@ export function buildCarePass(input: CarePassInput): CarePass {
       groomingCare.nextDue ? `Next due: ${groomingCare.nextDue}` : "",
       groomingCare.nextStep,
       "Grooming is owner-reported coat and grooming context for handoff and veterinarian review, not a diagnosis.",
+    ]),
+    section("Incident Watch", [
+      incidentWatch.summary,
+      incidentWatch.totalIncidents
+        ? `Outcomes: ${incidentWatch.watchCount} watch, ${incidentWatch.alertCount} review alerts, ${incidentWatch.followUpCount} follow-ups`
+        : "",
+      incidentWatch.triggers.length ? `Triggers: ${incidentWatch.triggers.slice(0, 5).join(", ")}` : "",
+      incidentWatch.exposures.length ? `Exposure/context: ${incidentWatch.exposures.slice(0, 5).join(", ")}` : "",
+      incidentWatch.injuryCount ? `Injury checks: ${incidentWatch.injuryCount} noted` : "",
+      incidentLatestLine(incidentWatch.latest),
+      incidentWatch.latest?.actionTaken ? `Action taken: ${incidentWatch.latest.actionTaken}` : "",
+      incidentWatch.latest?.followUp ? `Follow-up: ${incidentWatch.latest.followUp}` : "",
+      incidentWatch.nextStep,
+      "Incident Watch is factual owner-reported context for household, trainer, sitter, or veterinarian review; it does not diagnose behavior or medical issues.",
     ]),
     section("Potty Health", [
       pottyHealth.summary,

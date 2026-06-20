@@ -264,5 +264,8 @@ test("quick log policy keeps safety-critical logs in the detail sheet", () => {
   assert.equal(getQuickLogPolicy("meal").longPressBehavior, "detail-sheet");
   assert.equal(getQuickLogPolicy("medication").tapBehavior, "detail-required");
   assert.equal(getQuickLogPolicy("vomit").tapBehavior, "detail-required");
+  assert.equal(getQuickLogPolicy("incident").tapBehavior, "detail-required");
+  assert.equal(getQuickLogPolicy("altercation").type, "incident");
+  assert.equal(getQuickLogPolicy("incident").quickLabel, "incident detail");
   assert.equal(getQuickLogPolicy("potty").detailContract, "parent-outcome");
 });

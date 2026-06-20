@@ -31,7 +31,7 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Converted mobile Records Record Vault, Diet on File, and Records Cabinet into shared board-card sections while preserving add/edit/delete controls, attachment indicators, due labels, and diet context.
 - Converted mobile Records Weight Trend, Mood Trend, and Hydration into shared board-card sections while preserving the chart, mood bars, hydration meter, latest-log context, and report-safe copy.
 - Converted mobile Records Walk Activity, Training Progress, and Potty Health into shared board-card sections while preserving saved routes, training focus/latest context, stool color/context, and care-safe next steps.
-- Completed the remaining mobile Records board unification: Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Lookback, and Medication Plan now use shared board primitives while preserving share/print actions, medication routine navigation, follow-ups, search/filter history, and non-diagnostic care copy.
+- Completed the remaining mobile Records board unification: Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Watch, and Medication Plan now use shared board primitives while preserving share/print actions, medication routine navigation, follow-ups, search/filter history, and non-diagnostic care copy.
 - Converted the mobile More tab's primary household/system surfaces to shared board anatomy: Care Team, Household Access, Responsibility Center, Sync Health, Tools & Sharing, and Diet Profile now use `BoardCard`/`BoardSectionHeader` while preserving their real actions.
 - Converted the mobile Plans tab's Reminder Center and Daily Routine surfaces to shared board anatomy while preserving reminder routing, routine editor actions, routine completion, owner load chips, household responsibility metrics, and empty routine setup.
 - Converted the mobile Quick Log tab's Today at a Glance, Find Care Logs, empty timeline state, and grouped timeline day sections to shared board anatomy while preserving search, filters, sticky notes, edit/detail/delete actions, and sync status copy.
@@ -77,7 +77,7 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Focused zero-dependency suite passed locally after the Records trend board anatomy slice: 203 passing tests.
 - Records Walk Activity, Training Progress, and Potty Health board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Focused zero-dependency suite passed locally after the Records activity board anatomy slice: 204 passing tests.
-- Records Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Lookback, and Medication Plan board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Records Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Watch, and Medication Plan board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Focused mobile readiness suite passed locally after the Records completion board anatomy slice: 46 passing tests.
 - More tab household, tools, and diet board anatomy is covered by `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
 - Focused mobile readiness suite passed locally after the More board anatomy slice: 47 passing tests.

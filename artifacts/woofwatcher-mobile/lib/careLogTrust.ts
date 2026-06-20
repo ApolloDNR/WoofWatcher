@@ -110,7 +110,7 @@ function roleRequiresConfirmation(role: string | null | undefined): "kid-log" | 
 
 function safetyCriticalReason(type: string | null | undefined): "safety-critical" | null {
   const normalized = normalizeCareEventType(type);
-  if (normalized === "medication" || normalized === "vomit" || normalized === "symptom") {
+  if (normalized === "medication" || normalized === "vomit" || normalized === "symptom" || normalized === "incident") {
     return "safety-critical";
   }
   return null;

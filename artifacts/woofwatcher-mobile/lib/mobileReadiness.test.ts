@@ -1006,7 +1006,7 @@ test("keeps Records watch, grooming, and medication sections on shared board car
 
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Alone Time"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Grooming Care"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Incident Lookback"/);
+  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Incident Watch"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Medication Plan"/);
 });
 
@@ -1188,6 +1188,28 @@ test("keeps grooming care visible from Log composer to Records and Care Pass rep
   assert.match(records, /groomingCare\.products/);
   assert.match(carePass, /deriveGroomingCare/);
   assert.match(carePass, /Grooming Care/);
+});
+
+test("keeps Incident Watch visible from Log composer to Records and Care Pass reports", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const carePass = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"), "utf8");
+
+  assert.match(log, /type: "incident"/);
+  assert.match(log, /incidentType/);
+  assert.match(log, /incidentTrigger/);
+  assert.match(log, /incidentExposure/);
+  assert.match(log, /incidentInjury/);
+  assert.match(log, /incidentAction/);
+  assert.match(log, /incidentFollowUp/);
+  assert.match(log, /Shared incident logs update Incident Watch, Care Pass, and trainer handoffs/);
+  assert.match(records, /deriveIncidentWatch/);
+  assert.match(records, /incidentWatch/);
+  assert.match(records, /Incident Watch/);
+  assert.match(records, /Incident Watch keeps factual household context/);
+  assert.match(carePass, /deriveIncidentWatch/);
+  assert.match(carePass, /Incident Watch/);
+  assert.match(carePass, /does not diagnose behavior or medical issues/);
 });
 
 test("keeps potty health visible from Log composer to Records", () => {

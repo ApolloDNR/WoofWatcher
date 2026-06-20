@@ -195,13 +195,13 @@ export function getQuickLogPolicy(type: string | null | undefined): QuickLogPoli
       requiresConfirmation: true,
     };
   }
-  if (normalizedType === "vomit" || normalizedType === "symptom") {
+  if (normalizedType === "vomit" || normalizedType === "symptom" || normalizedType === "incident") {
     return {
       type: normalizedType,
       tapBehavior: "detail-required",
       longPressBehavior: "detail-sheet",
       detailContract: "health-context",
-      quickLabel: "health detail",
+      quickLabel: normalizedType === "incident" ? "incident detail" : "health detail",
       requiresConfirmation: true,
     };
   }

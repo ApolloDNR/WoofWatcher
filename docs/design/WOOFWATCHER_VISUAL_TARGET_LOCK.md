@@ -1,0 +1,51 @@
+# WoofWatcher Visual Target Lock
+
+Last updated: 2026-06-20
+
+## Locked Reference Images
+
+These images are the current target for WoofWatcher's visual quality, layout density, and brand system:
+
+- `docs/design/reference/woofwatcher-premium-light-design-system.png`
+- `docs/design/reference/woofwatcher-care-adventure-rpg-dark-board.png`
+
+Older references in the same folder remain useful, but these two are the strongest current north-star boards.
+
+## Direction
+
+WoofWatcher should look like a premium App Store product with a neo-retro pixel heart. The target is not a generic tracker and not a messy game skin. It should feel like a real household dog-care operating system wrapped in a polished pixel care RPG.
+
+The design should preserve:
+
+- Pixel crest/logo system with German Shepherd shield, heart mark, and compact app icon.
+- Cream, ivory, navy, copper, sage, amber, sky, and stone palette.
+- Serif display branding similar to the latest logo board, paired with readable Inter-style UI text.
+- Mobile-first care screens with clear bottom navigation, large touch targets, and simple daily actions.
+- Desktop shell with intentional left sidebar, premium cards, quick care, status, Care Pass, WoofGuide, and Records surfaces.
+- Care plus gameplay framing: care, adventure, memories, family/household, growth, levels, badges, and story.
+- Animated pixel dog states as production assets become available through PixelLab or another sprite pipeline.
+
+## Product Feel
+
+The app should communicate:
+
+- Real care, not fake chores.
+- Pixel heart, not childish clutter.
+- Household coordination, not solo note-taking.
+- Care adventure, not medical diagnosis.
+- Premium polish, not prototype roughness.
+
+## Implementation Standard
+
+Every UI pass should compare against these boards for:
+
+- Brand accuracy.
+- Visual hierarchy.
+- Card spacing and alignment.
+- Mobile nav clarity.
+- Pixel icon consistency.
+- Cream/navy/copper balance.
+- App Store-level polish.
+- No dead buttons or fake features.
+
+When the code cannot yet match the artwork exactly because production assets are missing, the UI must say so truthfully and keep the layout ready for the real asset pipeline.
