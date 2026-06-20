@@ -296,13 +296,15 @@ export default function RecordsScreen() {
   // ---- Incident lookback ----
   const incidents = useMemo(
     () =>
-      incidentWatch.items
+      [...incidentWatch.items]
         .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()),
     [incidentWatch.items],
   );
-  const incident7 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 7).length;
-  const incident30 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 30).length;
-  const incident90 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 90).length;
+  const incidentWindow = (days: number) => incidentWatch.trend.windows.find((item) => item.days === days)?.count ?? 0;
+  const incident7 = incidentWindow(7);
+  const incident30 = incidentWindow(30);
+  const incidentLookbackWindow = incidentWatch.trend.windows[incidentWatch.trend.windows.length - 1];
+  const incident90 = incidentLookbackWindow?.count ?? incidentWindow(90);
   const incidentTone =
     incidentWatch.status === "review"
       ? colors.rose
@@ -488,6 +490,15 @@ export default function RecordsScreen() {
   const openCarePassPreview = (audience: CarePassAudience) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCarePassPreview(buildCarePassFor(audience));
+  };
+
+  const openIncidentFollowUp = (route: "log-incident" | "review-latest" | "trainer-care-pass") => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (route === "trainer-care-pass") {
+      setCarePassPreview(buildCarePassFor("trainer"));
+      return;
+    }
+    router.push({ pathname: "/log", params: { type: "incident" } });
   };
 
   const reportArtifacts = useMemo(
@@ -1337,6 +1348,25 @@ export default function RecordsScreen() {
                 </Text>
               </View>
             </View>
+            <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
+              <View style={[s.watchSignalDot, { backgroundColor: incidentTone }]} />
+              <View style={{ flex: 1 }}>
+                <View style={s.watchPatternTop}>
+                  <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Trend signal
+                  </Text>
+                  <Text style={[s.watchPatternWindow, { color: incidentTone, fontFamily: "Inter_700Bold" }]}>
+                    {incidentWatch.trend.label}
+                  </Text>
+                </View>
+                <Text style={[s.watchPatternEvidence, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {incidentWatch.trend.windows.map((item) => `${item.label}: ${item.count}`).join(" - ")}
+                </Text>
+                <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {incidentWatch.trend.detail}
+                </Text>
+              </View>
+            </View>
             {incidentWatch.triggers.length || incidentWatch.exposures.length ? (
               <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
                 <View style={[s.watchSignalDot, { backgroundColor: incidentTone }]} />
@@ -1346,7 +1376,7 @@ export default function RecordsScreen() {
                       Incident context
                     </Text>
                     <Text style={[s.watchPatternWindow, { color: incidentTone, fontFamily: "Inter_700Bold" }]}>
-                      90 days
+                      {incidentLookbackWindow?.label ?? "Lookback"}
                     </Text>
                   </View>
                   <Text style={[s.watchPatternEvidence, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
@@ -1358,20 +1388,73 @@ export default function RecordsScreen() {
                 </View>
               </View>
             ) : null}
+            {incidentWatch.followUpTasks.length > 0 && (
+              <View style={[s.incidentActionList, { borderTopColor: colors.border }]}>
+                <View style={s.incidentActionHeader}>
+                  <Text style={[s.incidentActionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    Follow-up plan
+                  </Text>
+                  <Text style={[s.incidentActionCount, { color: incidentTone, fontFamily: "Inter_700Bold" }]}>
+                    {incidentWatch.followUpTasks.length} action{incidentWatch.followUpTasks.length === 1 ? "" : "s"}
+                  </Text>
+                </View>
+                {incidentWatch.followUpTasks.map((task) => {
+                  const taskTone = task.tone === "review" ? colors.rose : task.tone === "watch" ? colors.amber : colors.sage;
+                  return (
+                    <Pressable
+                      key={task.id}
+                      onPress={() => openIncidentFollowUp(task.route)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open Incident Watch follow-up: ${task.label}`}
+                      style={[s.incidentActionRow, { borderColor: colors.border, backgroundColor: taskTone + "0F" }]}
+                    >
+                      <View style={[s.incidentActionIcon, { backgroundColor: taskTone + "1F" }]}>
+                        <Ionicons name={task.route === "trainer-care-pass" ? "document-text-outline" : "clipboard-outline"} size={15} color={taskTone} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.incidentActionLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{task.label}</Text>
+                        <Text style={[s.incidentActionDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{task.detail}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+            {incidentWatch.trainerGoals.length > 0 && (
+              <View style={[s.incidentGoalList, { borderTopColor: colors.border }]}>
+                <View style={s.incidentActionHeader}>
+                  <Text style={[s.incidentActionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    Trainer goals
+                  </Text>
+                  <Text style={[s.incidentActionCount, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    Review
+                  </Text>
+                </View>
+                {incidentWatch.trainerGoals.map((goal) => (
+                  <View key={goal.id} style={[s.incidentGoalRow, { borderColor: colors.border }]}>
+                    <View style={[s.incidentActionIcon, { backgroundColor: colors.sage + "1A" }]}>
+                      <Ionicons name={goal.status === "review" ? "shield-outline" : "flag-outline"} size={15} color={colors.sage} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.incidentActionLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{goal.label}</Text>
+                      <Text style={[s.incidentActionDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{goal.detail}</Text>
+                      <Text style={[s.incidentGoalEvidence, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{goal.evidence}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
             <Text style={[s.watchBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               Incident Watch keeps factual household context for trainer, sitter, and veterinarian review; it does not diagnose behavior or medical issues.
             </Text>
             <View style={s.incidentRow}>
-              {[
-                { label: "7 days", value: incident7 },
-                { label: "30 days", value: incident30 },
-                { label: "90 days", value: incident90 },
-              ].map((b, i) => (
+              {incidentWatch.trend.windows.map((b, i) => (
                 <View key={b.label} style={[s.incidentCol, i < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
-                  <Text style={[s.incidentValue, { color: b.value > 0 ? colors.rose : colors.sage, fontFamily: DISPLAY }]}>{b.value}</Text>
+                  <Text style={[s.incidentValue, { color: b.count > 0 ? colors.rose : colors.sage, fontFamily: DISPLAY }]}>{b.count}</Text>
                   <Text style={[s.incidentLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{b.label}</Text>
                   <View style={[s.incidentBarTrack, { backgroundColor: colors.background }]}>
-                    <View style={[s.incidentBarFill, { backgroundColor: b.value > 0 ? colors.rose : colors.sage, width: `${(b.value / incidentMax) * 100}%` }]} />
+                    <View style={[s.incidentBarFill, { backgroundColor: b.count > 0 ? colors.rose : colors.sage, width: `${(b.count / incidentMax) * 100}%` }]} />
                   </View>
                 </View>
               ))}
@@ -2186,6 +2269,17 @@ const s = StyleSheet.create({
   watchPatternEvidence: { fontSize: 12.5, lineHeight: 18, marginTop: 3 },
   watchPatternNext: { fontSize: 12, lineHeight: 17, marginTop: 4 },
   watchBoundary: { fontSize: 11.5, lineHeight: 16, marginTop: 12, marginBottom: 10 },
+  incidentActionList: { borderTopWidth: 1, marginTop: 12, paddingTop: 12, gap: 9 },
+  incidentGoalList: { borderTopWidth: 1, marginTop: 12, paddingTop: 12, gap: 9 },
+  incidentActionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  incidentActionTitle: { fontSize: 15 },
+  incidentActionCount: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  incidentActionRow: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 10 },
+  incidentGoalRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 10 },
+  incidentActionIcon: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  incidentActionLabel: { fontSize: 12.8 },
+  incidentActionDetail: { fontSize: 12, lineHeight: 16, marginTop: 2 },
+  incidentGoalEvidence: { fontSize: 11.2, lineHeight: 15, marginTop: 5 },
   incidentCol: { flex: 1, alignItems: "center", paddingHorizontal: 10, paddingBottom: 14 },
   incidentValue: { fontSize: 26, letterSpacing: -0.4 },
   incidentLabel: { fontSize: 12, marginTop: 1 },

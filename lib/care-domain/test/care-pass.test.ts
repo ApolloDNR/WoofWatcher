@@ -493,6 +493,9 @@ test("care pass includes Incident Watch context for trainer and sitter handoff",
   assert.match(pass.message, /Exposure\/context: Leashed dog by fence/);
   assert.match(pass.message, /Action taken: Moved across street/);
   assert.match(pass.message, /Follow-up: Practice calm passes/);
+  assert.match(pass.message, /Trend: Rising pattern/);
+  assert.match(pass.message, /Owner follow-ups: Close open follow-up/);
+  assert.match(pass.message, /Trainer goal ideas: Calm dog passes/);
   assert.match(pass.message, /does not diagnose behavior or medical issues/i);
 });
 

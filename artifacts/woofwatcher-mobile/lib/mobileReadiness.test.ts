@@ -1206,9 +1206,16 @@ test("keeps Incident Watch visible from Log composer to Records and Care Pass re
   assert.match(records, /deriveIncidentWatch/);
   assert.match(records, /incidentWatch/);
   assert.match(records, /Incident Watch/);
+  assert.match(records, /Trend signal/);
+  assert.match(records, /Follow-up plan/);
+  assert.match(records, /Trainer goals/);
+  assert.match(records, /Open Incident Watch follow-up/);
+  assert.match(records, /params: \{ type: "incident" \}/);
   assert.match(records, /Incident Watch keeps factual household context/);
   assert.match(carePass, /deriveIncidentWatch/);
   assert.match(carePass, /Incident Watch/);
+  assert.match(carePass, /Owner follow-ups/);
+  assert.match(carePass, /Trainer goal ideas/);
   assert.match(carePass, /does not diagnose behavior or medical issues/);
 });
 

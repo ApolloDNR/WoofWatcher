@@ -721,6 +721,13 @@ Incident Watch is now a real behavior-safety workflow instead of a health-only p
 - Records now uses the shared Incident Watch model for status, 7/30/90-day counts, triggers/exposures, factual rows, and boundary copy.
 - Care Pass reports include Incident Watch context for sitter, trainer, vet, and caregiver handoff.
 
+Follow-up polish added 2026-06-20:
+
+- The shared Incident Watch model now derives trend direction, follow-up tasks, and trainer goal suggestions.
+- Records shows Trend signal, Follow-up plan, and Trainer goals inside the Incident Watch board.
+- Follow-up rows route to the Incident composer or trainer Care Pass preview, keeping the screen actionable.
+- Care Pass reports include trend, owner follow-up, and trainer goal lines for handoff context.
+
 Design intent:
 
 - Keep incident logging factual, calm, and easy to review.

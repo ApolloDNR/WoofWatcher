@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-20: Incident Watch Follow-Ups Are Owner-Reviewed Guidance
+
+Decision: Incident Watch may derive trend signals, owner follow-up tasks, and trainer goal suggestions from household-visible incident logs, but those outputs must route humans into review workflows instead of automatically creating behavior plans, medical claims, or trainer instructions.
+
+Reason: Apollo wants WoofWatcher to feel sophisticated and operational, but incident/altercation context is sensitive. The app should help households organize facts, prepare trainer or vet handoffs, and keep follow-up visible without diagnosing behavior or pretending provider-backed trainer plans exist.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed trainer plans, role-aware behavior goals, professional review, or legal/safety policy introduces a stronger behavior workflow.
+
 ### 2026-06-19: Care Twin QA Captures Evidence But Does Not Certify Release
 
 Decision: The development/internal `/care-twin-qa` route should collect session-level device evidence with Pass/Needs tune controls, per-state notes, summary counts, and a native shareable QA report, but it must not imply that iOS/Android QA is complete without screenshots and human review.

@@ -92,6 +92,8 @@ Current evidence, 2026-06-11: Care Log Audit Trail now records create, edit, sti
 
 Current evidence, 2026-06-19: Log details now show a Correction history card above the raw Audit trail. It summarizes the latest update, correction count, and changed-field chips so owners can understand corrections before reading the full audit rows.
 
+Current evidence, 2026-06-20: Incident Watch now derives owner follow-up tasks and trainer goal suggestions from household-visible incident evidence. Records routes those follow-up rows to the Incident composer or trainer Care Pass preview, so incident review becomes a connected household workflow rather than a static warning card.
+
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
 Current evidence, 2026-06-11: Reminder Center now combines routine-board status, medication follow-ups, record reminders, and grooming due dates into one Calendar action list with urgent/watch/total counts, private-log exclusion through the underlying domain helpers, and explicit notification-readiness copy before real push delivery exists.
@@ -207,6 +209,8 @@ Current evidence, 2026-06-14: Mobile Records now keeps credential vault sections
 Current evidence, 2026-06-14: Mobile Records trend sections now present weight, mood, and hydration evidence inside the same board system as printable handoffs, strengthening report scanability without changing the non-diagnostic owner-reported boundaries.
 
 Current evidence, 2026-06-14: Mobile Records activity and potty sections now present walk, training, and bathroom evidence inside the same board system as Care Pass report content, improving scanability for sitters, trainers, and vets.
+
+Current evidence, 2026-06-20: Incident Watch reports now include trend label/detail, owner follow-up task labels, and trainer goal ideas in Care Pass output while preserving factual owner-reported and non-diagnostic boundary language.
 
 ## Gate 7: Revenue Readiness
 

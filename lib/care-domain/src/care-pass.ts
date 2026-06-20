@@ -677,12 +677,19 @@ export function buildCarePass(input: CarePassInput): CarePass {
       incidentWatch.totalIncidents
         ? `Outcomes: ${incidentWatch.watchCount} watch, ${incidentWatch.alertCount} review alerts, ${incidentWatch.followUpCount} follow-ups`
         : "",
+      `Trend: ${incidentWatch.trend.label} - ${incidentWatch.trend.detail}`,
       incidentWatch.triggers.length ? `Triggers: ${incidentWatch.triggers.slice(0, 5).join(", ")}` : "",
       incidentWatch.exposures.length ? `Exposure/context: ${incidentWatch.exposures.slice(0, 5).join(", ")}` : "",
       incidentWatch.injuryCount ? `Injury checks: ${incidentWatch.injuryCount} noted` : "",
       incidentLatestLine(incidentWatch.latest),
       incidentWatch.latest?.actionTaken ? `Action taken: ${incidentWatch.latest.actionTaken}` : "",
       incidentWatch.latest?.followUp ? `Follow-up: ${incidentWatch.latest.followUp}` : "",
+      incidentWatch.followUpTasks.length
+        ? `Owner follow-ups: ${incidentWatch.followUpTasks.map((task) => task.label).join("; ")}`
+        : "",
+      incidentWatch.trainerGoals.length
+        ? `Trainer goal ideas: ${incidentWatch.trainerGoals.map((goal) => `${goal.label} (${goal.evidence})`).join("; ")}`
+        : "",
       incidentWatch.nextStep,
       "Incident Watch is factual owner-reported context for household, trainer, sitter, or veterinarian review; it does not diagnose behavior or medical issues.",
     ]),

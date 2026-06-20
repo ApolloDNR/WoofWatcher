@@ -41,6 +41,7 @@ Latest local evidence, 2026-06-19:
 - Weight Trend derivation from household-visible weigh-ins, including goal parsing, profile fallback, private-log exclusion, current/previous change, Records chart wiring, and Care Pass report language.
 - Grooming Care derivation from household-visible grooming logs, including duration, type, coat/skin notes, products/groomer context, next due date, private-log exclusion, Records mobile wiring, Log composer fields, and Care Pass report language.
 - Potty quick-log defaults for household-visible potty evidence.
+- Incident Watch derivation from household-visible incident logs, including alias normalization, private-log exclusion, alert/follow-up counts, injury checks, trigger/exposure extraction, 7/30/lookback trend windows, rising/improving/steady/clear trend labels, owner follow-up tasks, trainer goal suggestions, Records mobile routing, and Care Pass report language.
 - Potty composer, detail-sheet correction, and Potty Health derivation for visible potty logs, pee/poop counts, outcome/location/pee-detail/stool-detail edits, stale-detail clearing when outcomes change, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, audit history, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
 - Household Responsibility derivation for care-team routine ownership, open/overdue/unassigned routines, visible today log counts, next household action copy, and Calendar/More mobile wiring.
@@ -157,6 +158,10 @@ Latest local evidence, 2026-06-19:
 81. With household-visible walk, training, play, or alone-time logs present, confirm Adventure Mode derives level/XP, completed proof, the next available quest, and a Save Memory action from real care evidence.
 82. Save an Adventure memory draft, confirm it appears in the Memory shelf as local/private, then open Privacy & Safety export and confirm Adventure memories are included without auth/session tokens.
 83. Open Phoenix Home and confirm the Care Quest board includes Adventure Mode with next quest, level, XP, memory count, and a direct route to the Adventure screen without pushing Quick Log or Next Up below usability.
+84. Add an Incident log with trigger, exposure, injury check, action taken, follow-up, sticky note, and household visibility.
+85. Open Records Incident Watch and confirm the trend signal, 7/30/lookback counts, follow-up plan, trainer goals, and non-diagnostic boundary are visible.
+86. Tap an Incident Watch follow-up row and confirm it routes to the Incident composer or trainer Care Pass preview instead of becoming a dead recommendation.
+87. Preview a trainer Care Pass and confirm Incident Watch includes trend, owner follow-ups, trainer goal ideas, and factual non-diagnostic language.
 
 ## Missing QA
 

@@ -1,6 +1,8 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
 
 export type IncidentWatchStatus = "clear" | "watch" | "review";
+export type IncidentWatchTrendDirection = "clear" | "improving" | "steady" | "rising";
+export type IncidentFollowUpTone = "steady" | "watch" | "review";
 
 export interface IncidentWatchEntry {
   id?: string;
@@ -36,6 +38,38 @@ export interface IncidentWatchItem {
   needsFollowUp: boolean;
 }
 
+export interface IncidentTrendWindow {
+  label: string;
+  days: number;
+  count: number;
+  alertCount: number;
+  followUpCount: number;
+}
+
+export interface IncidentWatchTrend {
+  direction: IncidentWatchTrendDirection;
+  label: string;
+  detail: string;
+  windows: IncidentTrendWindow[];
+}
+
+export interface IncidentFollowUpTask {
+  id: string;
+  label: string;
+  detail: string;
+  tone: IncidentFollowUpTone;
+  priority: number;
+  route: "log-incident" | "review-latest" | "trainer-care-pass";
+}
+
+export interface IncidentTrainerGoal {
+  id: string;
+  label: string;
+  detail: string;
+  evidence: string;
+  status: "suggested" | "review";
+}
+
 export interface IncidentWatch {
   items: IncidentWatchItem[];
   totalIncidents: number;
@@ -50,6 +84,9 @@ export interface IncidentWatch {
   summary: string;
   nextStep: string;
   latest: IncidentWatchItem | null;
+  trend: IncidentWatchTrend;
+  followUpTasks: IncidentFollowUpTask[];
+  trainerGoals: IncidentTrainerGoal[];
 }
 
 function clean(value: unknown): string {
@@ -83,6 +120,23 @@ function unique(values: string[]): string[] {
 
 function countLabel(value: number, noun: string): string {
   return `${value} ${noun}${value === 1 ? "" : "s"}`;
+}
+
+function daysAgo(iso: string, now: number): number {
+  const time = new Date(iso).getTime();
+  if (!Number.isFinite(time)) return Number.POSITIVE_INFINITY;
+  return (now - time) / 86400000;
+}
+
+function itemsInWindow(items: readonly IncidentWatchItem[], now: number, days: number): IncidentWatchItem[] {
+  return items.filter((item) => daysAgo(item.occurredAt, now) <= days);
+}
+
+function itemsBetween(items: readonly IncidentWatchItem[], now: number, minDays: number, maxDays: number): IncidentWatchItem[] {
+  return items.filter((item) => {
+    const age = daysAgo(item.occurredAt, now);
+    return age > minDays && age <= maxDays;
+  });
 }
 
 function itemKind(entry: IncidentWatchEntry): string {
@@ -144,6 +198,205 @@ function nextStepFor(status: IncidentWatchStatus): string {
   return "Watch for repeated triggers, keep notes factual, and use future walks or training sessions to capture what helps Phoenix recover calmly.";
 }
 
+function trendWindow(label: string, days: number, items: readonly IncidentWatchItem[], now: number): IncidentTrendWindow {
+  const windowItems = itemsInWindow(items, now, days);
+  return {
+    label,
+    days,
+    count: windowItems.length,
+    alertCount: windowItems.filter((item) => item.severity === "alert").length,
+    followUpCount: windowItems.filter((item) => item.needsFollowUp).length,
+  };
+}
+
+function deriveTrend(items: readonly IncidentWatchItem[], now: number, lookbackDays: number): IncidentWatchTrend {
+  const current7 = itemsInWindow(items, now, 7).length;
+  const previous7 = itemsBetween(items, now, 7, 14).length;
+  const current30 = itemsInWindow(items, now, 30).length;
+  const previous30 = itemsBetween(items, now, 30, 60).length;
+
+  let direction: IncidentWatchTrendDirection = "steady";
+  let label = "Steady watch";
+  let detail = "Recent incident volume is not clearly rising. Keep logging factual context so the household can spot changes.";
+
+  if (items.length === 0) {
+    direction = "clear";
+    label = "Clear";
+    detail = "No household-visible incidents are logged in this window.";
+  } else if ((current7 > previous7 && current7 > 0) || (current30 >= previous30 + 2 && current30 >= 2)) {
+    direction = "rising";
+    label = "Rising pattern";
+    detail = "More incidents are appearing in the recent window. Review triggers and consider a trainer handoff if the pattern repeats.";
+  } else if ((current7 === 0 && previous7 > 0) || (current30 < previous30 && previous30 > 0)) {
+    direction = "improving";
+    label = "Improving";
+    detail = "Recent incident volume is lower than the prior window. Keep noting what helped Phoenix recover calmly.";
+  }
+
+  return {
+    direction,
+    label,
+    detail,
+    windows: [
+      trendWindow("7 days", 7, items, now),
+      trendWindow("30 days", 30, items, now),
+      trendWindow(`${lookbackDays} days`, lookbackDays, items, now),
+    ],
+  };
+}
+
+function latestMissingDetails(latest: IncidentWatchItem | null): string[] {
+  if (!latest) return [];
+  return [
+    latest.trigger ? "" : "trigger",
+    latest.exposure ? "" : "exposure",
+    latest.injuryLevel ? "" : "injury check",
+    latest.actionTaken ? "" : "action taken",
+    latest.followUp ? "" : "follow-up",
+  ].filter(Boolean);
+}
+
+function deriveFollowUpTasks(input: {
+  status: IncidentWatchStatus;
+  latest: IncidentWatchItem | null;
+  alertCount: number;
+  followUpCount: number;
+  dogExposureCount: number;
+  injuryCount: number;
+  triggers: readonly string[];
+  trend: IncidentWatchTrend;
+}): IncidentFollowUpTask[] {
+  const tasks: IncidentFollowUpTask[] = [];
+  const missing = latestMissingDetails(input.latest);
+
+  if (missing.length > 0) {
+    tasks.push({
+      id: "complete-latest-incident",
+      label: "Complete latest details",
+      detail: `Add ${missing.slice(0, 3).join(", ")} so the household record is useful later.`,
+      tone: "watch",
+      priority: 1,
+      route: "review-latest",
+    });
+  }
+
+  if (input.alertCount > 0 || input.injuryCount > 0) {
+    tasks.push({
+      id: "household-safety-review",
+      label: "Household safety review",
+      detail: "Review what happened, check injury notes, and decide whether to share the pattern with a trainer or vet.",
+      tone: "review",
+      priority: 2,
+      route: "trainer-care-pass",
+    });
+  }
+
+  if (input.followUpCount > 0) {
+    tasks.push({
+      id: "close-open-follow-up",
+      label: "Close open follow-up",
+      detail: input.latest?.followUp
+        ? `Latest follow-up: ${input.latest.followUp}`
+        : "Assign the next calm practice or recovery note to a household member.",
+      tone: input.status === "review" ? "review" : "watch",
+      priority: 3,
+      route: "log-incident",
+    });
+  }
+
+  if (input.dogExposureCount >= 2 || input.trend.direction === "rising") {
+    tasks.push({
+      id: "trainer-pattern-handoff",
+      label: "Prep trainer handoff",
+      detail: "Use the trigger and exposure notes to ask a trainer for owner-reviewed practice steps.",
+      tone: "watch",
+      priority: 4,
+      route: "trainer-care-pass",
+    });
+  }
+
+  if (tasks.length === 0) {
+    tasks.push({
+      id: "keep-context-ready",
+      label: "Keep context ready",
+      detail: "If another reaction happens, log trigger, distance, body language, injury check, and recovery while it is fresh.",
+      tone: "steady",
+      priority: 5,
+      route: "log-incident",
+    });
+  }
+
+  return tasks.sort((a, b) => a.priority - b.priority).slice(0, 4);
+}
+
+function includesAny(values: readonly string[], terms: readonly string[]): boolean {
+  const text = values.join(" ").toLowerCase();
+  return terms.some((term) => text.includes(term));
+}
+
+function deriveTrainerGoals(input: {
+  items: readonly IncidentWatchItem[];
+  triggers: readonly string[];
+  exposures: readonly string[];
+  dogExposureCount: number;
+  injuryCount: number;
+}): IncidentTrainerGoal[] {
+  const goals: IncidentTrainerGoal[] = [];
+  const evidenceBase = `${countLabel(input.items.length, "incident")} in the review window`;
+
+  if (input.dogExposureCount > 0 || includesAny(input.exposures, ["dog", "puppy", "leash", "park"])) {
+    goals.push({
+      id: "calm-dog-passes",
+      label: "Calm dog passes",
+      detail: "Practice distance, loose-leash disengage, and recovery notes with trainer review.",
+      evidence: `${input.dogExposureCount || 1} dog-exposure context${input.dogExposureCount === 1 ? "" : "s"} logged.`,
+      status: "suggested",
+    });
+  }
+
+  if (includesAny(input.triggers, ["gate", "fence", "door", "threshold", "window"])) {
+    goals.push({
+      id: "threshold-calm",
+      label: "Gate and threshold calm",
+      detail: "Track arrivals, exits, and fence-line moments so the household knows what setup helps.",
+      evidence: `Trigger notes include ${input.triggers.slice(0, 3).join(", ")}.`,
+      status: "suggested",
+    });
+  }
+
+  if (includesAny([...input.triggers, ...input.exposures], ["toy", "food", "bowl", "guard", "resource"])) {
+    goals.push({
+      id: "resource-space",
+      label: "Trade and space practice",
+      detail: "Record guarding context factually and ask a trainer to review safe household setup.",
+      evidence: "Resource or object context appears in incident notes.",
+      status: "review",
+    });
+  }
+
+  if (input.injuryCount > 0) {
+    goals.push({
+      id: "injury-safety-review",
+      label: "Safety management review",
+      detail: "Keep injury checks and separation steps visible before planning future exposure practice.",
+      evidence: `${countLabel(input.injuryCount, "injury check")} noted.`,
+      status: "review",
+    });
+  }
+
+  if (goals.length === 0 && input.items.length > 0) {
+    goals.push({
+      id: "recovery-baseline",
+      label: "Recovery baseline",
+      detail: "Track what helped Phoenix settle after each reaction so the care team can repeat what works.",
+      evidence: evidenceBase,
+      status: "suggested",
+    });
+  }
+
+  return goals.slice(0, 4);
+}
+
 export function deriveIncidentWatch(input: IncidentWatchInput): IncidentWatch {
   const now = input.now ?? Date.now();
   const lookbackDays = input.lookbackDays ?? 90;
@@ -182,6 +435,10 @@ export function deriveIncidentWatch(input: IncidentWatchInput): IncidentWatch {
   const dogExposureCount = allItems.filter((item) => /dog|puppy|leash|park|gate/i.test(item.exposure)).length;
   const injuryCount = allItems.filter((item) => hasInjury(item.injuryLevel, item.note)).length;
   const status = statusFor(totalIncidents, alertCount, followUpCount);
+  const triggers = unique(allItems.map((item) => item.trigger));
+  const exposures = unique(allItems.map((item) => item.exposure));
+  const trend = deriveTrend(allItems, now, lookbackDays);
+  const latest = allItems[0] ?? null;
 
   return {
     items: allItems.slice(0, Math.max(0, limit)),
@@ -191,14 +448,17 @@ export function deriveIncidentWatch(input: IncidentWatchInput): IncidentWatch {
     followUpCount,
     dogExposureCount,
     injuryCount,
-    triggers: unique(allItems.map((item) => item.trigger)),
-    exposures: unique(allItems.map((item) => item.exposure)),
+    triggers,
+    exposures,
     status,
     summary:
       totalIncidents === 0
         ? `No household-visible incidents logged in the last ${lookbackDays} days.`
         : `${countLabel(totalIncidents, "incident")} in the last ${lookbackDays} days - ${countLabel(alertCount, "review alert")}, ${countLabel(followUpCount, "follow-up")}.`,
     nextStep: nextStepFor(status),
-    latest: allItems[0] ?? null,
+    latest,
+    trend,
+    followUpTasks: deriveFollowUpTasks({ status, latest, alertCount, followUpCount, dogExposureCount, injuryCount, triggers, trend }),
+    trainerGoals: deriveTrainerGoals({ items: allItems, triggers, exposures, dogExposureCount, injuryCount }),
   };
 }
