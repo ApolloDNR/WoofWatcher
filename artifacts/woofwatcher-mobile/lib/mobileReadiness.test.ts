@@ -401,6 +401,29 @@ test("extends the mobile pixel board system across core v1.5 routes", () => {
   }
 });
 
+test("keeps shared board controls at mobile-safe touch target sizes", () => {
+  const primitives = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "board",
+      "BoardPrimitives.tsx",
+    ),
+    "utf8",
+  );
+
+  assert.match(primitives, /MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(primitives, /routeIconButton: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(primitives, /routeIconButton: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(primitives, /pill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(primitives, /careRow: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.doesNotMatch(primitives, /routeIconButton: \{[\s\S]*width: 42/);
+  assert.doesNotMatch(primitives, /routeIconButtonPlain: \{[\s\S]*width: 40/);
+  assert.doesNotMatch(primitives, /pill: \{[\s\S]*paddingVertical: 5/);
+});
+
 test("keeps floating tab safe-area spacing on shared mobile layout helpers", () => {
   const tabLayout = readAppFile(join("(tabs)", "_layout.tsx"));
   const home = readAppFile(join("(tabs)", "index.tsx"));

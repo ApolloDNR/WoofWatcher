@@ -104,6 +104,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 96. DONE 2026-06-20: Error recovery debug controls now share the native runtime-QA top safe-area contract. The app error fallback's development-only error-details button uses `getFloatingDebugButtonTopOffset` instead of route-local `insets.top + 16` math, with focused flat/notched/web coverage and static readiness checks before simulator/device screenshots are available.
 97. DONE 2026-06-20: WoofGuide owner-review sheets now share the docked modal safe-area contract. The owner-reviewed draft sheet uses `getModalSheetBottomPadding` instead of fixed-only sheet padding, and mobile readiness protects the assistant review surface alongside the composer before native screenshot QA is available.
 98. DONE 2026-06-20: Keyboard-heavy mobile surfaces now share the native runtime-QA keyboard avoidance contract. Setup, WoofGuide, the Log sticky-note prompt, and Records Care Pass/record sheets use `getKeyboardAvoidingVerticalOffset` with focused flat/notched/web coverage and static readiness checks before simulator/device screenshots are available.
+99. DONE 2026-06-20: Shared board controls now have a mobile touch-target contract before native accessibility QA. `MIN_MOBILE_TOUCH_TARGET` is exported from the mobile layout contract and shared board route icon buttons, compact pills, and care rows use the 48px target, with focused layout/readiness coverage protecting the board primitives from drifting back below release-safe tap sizes.
 
 ## Cadence
 

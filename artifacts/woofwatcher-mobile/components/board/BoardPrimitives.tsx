@@ -12,6 +12,7 @@ import {
 
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
+import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -426,16 +427,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   routeIconButton: {
-    width: 42,
-    height: 42,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
   routeIconButtonPlain: {
-    width: 40,
-    height: 40,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
   },
   routeHeaderText: {
@@ -469,8 +470,9 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     borderWidth: 1,
     borderRadius: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
@@ -614,6 +616,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     paddingVertical: 9,
   },
   rowText: {

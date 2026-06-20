@@ -12,6 +12,7 @@ import {
   getStandaloneComposerBottomPadding,
   getStandaloneRouteBottomPadding,
   getTabbedRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
 } from "./mobileLayout.ts";
 
 test("keeps floating tab chrome safe on native devices with home indicators", () => {
@@ -92,4 +93,8 @@ test("keeps keyboard avoidance aligned with route safe-area chrome", () => {
   assert.equal(getKeyboardAvoidingVerticalOffset(44, "standalone", false), 56);
   assert.equal(getKeyboardAvoidingVerticalOffset(44, "setup", false), 58);
   assert.equal(getKeyboardAvoidingVerticalOffset(44, "standalone", true), 0);
+});
+
+test("keeps the shared mobile touch target at release-safe size", () => {
+  assert.equal(MIN_MOBILE_TOUCH_TARGET, 48);
 });

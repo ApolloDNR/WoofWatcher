@@ -1163,6 +1163,22 @@ Owner: Codex.
 
 Revisit trigger: Retriever, Husky, Doodle, and the remaining template packs ship matching overlay/emote assets or move to full sprite-driven previews.
 
+### 2026-06-20: Shared Board Controls Use A 48px Mobile Touch Target
+
+Decision: Shared mobile board controls should use the exported `MIN_MOBILE_TOUCH_TARGET` contract from `mobileLayout.ts`, starting with board route icon buttons, compact pills, and care rows.
+
+Reason: Native accessibility QA is still pending, so the in-code board system should not depend on route-local visual tweaks for tap safety. A shared 48px target keeps premium board controls usable on mobile while preserving the compact neo-retro pixel style.
+
+Consequences:
+
+- `BoardPrimitives.tsx` imports the shared touch target instead of using smaller local 40px/42px controls.
+- Mobile layout tests lock the touch target value.
+- Mobile readiness tests protect shared board controls from drifting below release-safe tap sizes before simulator/device accessibility traversal is available.
+
+Owner: Codex.
+
+Revisit trigger: Native accessibility QA, final Figma components, or platform-specific design guidance requires a different minimum target.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

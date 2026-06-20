@@ -7,6 +7,8 @@ export type FloatingTabChromeMetrics = {
 
 export type RouteTopPaddingSurface = "tabbed" | "standalone" | "setup" | "auth";
 
+export const MIN_MOBILE_TOUCH_TARGET = 48;
+
 const NATIVE_TAB_BAR_BOTTOM = 8;
 const NATIVE_TAB_BAR_HEIGHT = 72;
 const NATIVE_FAB_BOTTOM_OFFSET = 26;
