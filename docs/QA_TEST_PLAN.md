@@ -20,7 +20,7 @@ Latest local evidence, 2026-06-19:
 - PASS: WoofGuide composer safe-area hardening now uses the shared mobile layout contract, with focused coverage for flat native devices, notched native devices, and web fallback composer clearance.
 - PASS: docked mobile sheets now use the shared modal-sheet safe-area contract, with focused flat/notched-device coverage and static readiness checks for Plans, Log, More, Records, and the error recovery sheet.
 - LIMIT: mobile TypeScript could not run in this checkout because `node_modules/typescript` is missing (`tsc-missing`).
-- REMOTE CI: GitHub Actions `WoofWatcher Verify` is currently blocked before job start by the account billing/spending-limit issue documented in `docs/BLOCKERS_FOR_APOLLO.md`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
+- REMOTE CI: GitHub Actions `WoofWatcher Verify` run `27857157145` for commit `8014837` failed before job start with GitHub's account billing/spending-limit annotation. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 
 ## Required Automated Coverage
 
