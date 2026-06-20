@@ -46,6 +46,11 @@ Pass/Needs tune status plus notes. The saved session is a local QA convenience
 only; it is not provider-backed storage and does not replace attached
 screenshots.
 
+Each state card also shows a Motion recipe generated from the same choreography
+model Home uses. Reviewers should confirm the primary loop, ambient micro-loops,
+and tap reaction match the state: happy states may bark/playfully react, rest
+states should use a soft check-in, and Health Watch should stay calm.
+
 ## Purpose
 
 The care twin must feel like one living game character layered over dogless room art. Native QA should verify room fit, sprite scale, stage crop, touch response, and state readability on phone-sized screens. Web export and static tests do not replace this pass.

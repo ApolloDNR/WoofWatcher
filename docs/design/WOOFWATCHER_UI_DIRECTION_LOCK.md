@@ -15,6 +15,8 @@ Primary references:
 - `docs/design/reference/woofwatcher-premium-light-design-system.png`
 - `docs/design/reference/woofwatcher-care-adventure-rpg-dark-board.png`
 
+Apollo re-confirmed these two boards on 2026-06-20 as the accuracy target for the app: premium App Store-ready care software, crest-led WoofWatcher branding, living pixel Phoenix, mobile-first iOS/Android polish, and a long-range care-adventure RPG system.
+
 Supporting references:
 
 - `docs/design/reference/woofwatcher-pixel-reference-board-04.png`

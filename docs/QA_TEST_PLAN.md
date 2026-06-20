@@ -209,6 +209,13 @@ hops so testers can open Home, Log, Records, Care Pass, and Avatar Studio while
 building one report. This is local device evidence only, not provider-backed QA
 storage.
 
+Current evidence, 2026-06-20: `careTwinChoreography.test.ts` covers the motion
+recipe that makes Phoenix feel like one stateful game character instead of a
+generic tapped button. The app now derives primary loop, ambient loops,
+state-aware tap response, reaction duration, and QA copy from the same care-twin
+plan used by `LivingPhoenixRoom`. Device reviewers should use the new Motion
+recipe box in `/care-twin-qa` while judging loop timing and touch response.
+
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.
 

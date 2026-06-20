@@ -316,6 +316,14 @@ return, and keep the same Pass/Needs tune state and notes before sharing the
 combined report. The persistence is local-only QA convenience, not provider
 storage or launch approval.
 
+Current evidence, 2026-06-20: The care-twin room now has a tested choreography
+model for game-like behavior. `careTwinChoreography.ts` derives the primary
+sprite loop, ambient micro-loops, state-aware tap reaction, reaction duration,
+and QA summary from the `AvatarLifePlan`; Home room taps use that model instead
+of forcing every state into `bark-loop`, so rest and Health Watch states stay
+calm while happy states can still bark. `/care-twin-qa` exposes the motion
+recipe for device review.
+
 Current evidence, 2026-06-19: The Option B living-room polish pass keeps Phoenix as one layered main sprite instead of a second-avatar illusion. Home quick-log actions now request action-specific sprite reactions, the room renderer adds ambient micro-behaviors and rest-state safeguards, Avatar Studio suppresses oversized still/accessory overlays when a live sprite pack is active, and PixelIcon paths use crisp pixel rendering on web.
 
 Current evidence, 2026-06-19: PixelLab subscription review did not promote weaker replacement candidates. The clean single still candidate is archived for reference, while the duplicate/cropped and gray identity-drift candidates are explicitly rejected in the PixelLab generation log. The current hard-pixel Option B runtime family remains the approved live source until native QA or a stronger reference-guided generation beats it.

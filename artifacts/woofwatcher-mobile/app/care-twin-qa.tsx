@@ -36,6 +36,7 @@ import {
   MOBILE_QA_SESSION_STORAGE_KEY,
   parseMobileQaSessionSnapshot,
 } from "@/lib/mobileQaSession";
+import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -452,6 +453,7 @@ export default function CareTwinQaScreen() {
           const missing = result.readiness.missing.join(", ");
           const reviewStatus = qaStatusById[result.scenario.id] ?? "unreviewed";
           const reviewTone = statusTone(reviewStatus, colors);
+          const choreography = deriveCareTwinChoreography(result.plan);
 
           return (
             <BoardCard key={result.scenario.id} style={s.scenarioCard}>
@@ -492,6 +494,16 @@ export default function CareTwinQaScreen() {
                 <MetaItem icon="home-outline" label="Room" value={formatSlug(result.actualRoomVariant)} />
                 <MetaItem icon="locate-outline" label="Zone" value={formatSlug(result.actualZone)} />
                 <MetaItem icon="pulse-outline" label="Need" value={formatSlug(result.actualNeed)} />
+                <MetaItem icon="hand-left-outline" label="Tap" value={formatSlug(choreography.tapReaction.action)} />
+              </View>
+
+              <View style={[s.promptBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Text style={[s.promptLabel, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>
+                  Motion recipe
+                </Text>
+                <Text style={[s.promptText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {choreography.qaSummary}
+                </Text>
               </View>
 
               <View style={[s.promptBox, { backgroundColor: colors.accent, borderColor: colors.border }]}>

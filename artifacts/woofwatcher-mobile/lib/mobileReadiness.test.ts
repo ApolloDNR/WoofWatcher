@@ -154,6 +154,7 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(more, /__DEV__/);
   assert.match(qaRoute, /listCareTwinRuntimeQaScenarios/);
   assert.match(qaRoute, /evaluateCareTwinRuntimeQaScenario/);
+  assert.match(qaRoute, /deriveCareTwinChoreography/);
   assert.match(qaRoute, /LivingPhoenixRoom/);
   assert.match(qaRoute, /nativeQaPrompt/);
   assert.match(qaRoute, /testID=\{`care-twin-qa-stage-\$\{result\.scenario\.id\}`\}/);
@@ -169,6 +170,9 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /parseMobileQaSessionSnapshot/);
   assert.match(qaRoute, /buildMobileQaSessionSnapshot/);
   assert.match(qaRoute, /Saved locally/);
+  assert.match(qaRoute, /Motion recipe/);
+  assert.match(qaRoute, /choreography\.qaSummary/);
+  assert.match(qaRoute, /choreography\.tapReaction\.action/);
   assert.match(qaRoute, /Launch Workflow QA/);
   assert.match(qaRoute, /Open QA surface/);
   assert.match(qaRoute, /surfaceStatusById/);
@@ -255,6 +259,10 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "SpriteSheetPlayer.tsx"),
     "utf8",
   );
+  const choreography = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "careTwinChoreography.ts"),
+    "utf8",
+  );
   const careTwinAssets = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "careTwinAssets.ts"),
     "utf8",
@@ -264,6 +272,9 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(home, /deriveAvatarMotion/);
   assert.match(home, /avatarMotion\.speech/);
   assert.match(home, /setRoomReaction/);
+  assert.match(home, /roomTapChoreography/);
+  assert.match(home, /tapReaction\.action/);
+  assert.match(home, /deriveCareTwinChoreography\(deriveCareTwinScene\(avatarMotion\)\)/);
   assert.match(home, /avatarMotion\.line/);
   assert.match(home, /Phoenix Room/);
   assert.match(home, /heroStudioButton/);
@@ -278,6 +289,9 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(room, /plan\.recommendedActionLabel/);
   assert.match(room, /plan\.scenePhase/);
   assert.match(room, /SpriteSheetPlayer/);
+  assert.match(room, /deriveCareTwinChoreography/);
+  assert.match(room, /choreography\.ambient/);
+  assert.match(room, /choreography\.reactionDurationMs/);
   assert.match(room, /getCareTwinLayerReadiness/);
   assert.match(room, /layeredStageReady/);
   assert.match(room, /care-twin-layered-sprite-rig/);
@@ -309,6 +323,11 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(spritePlayer, /frameProgress/);
   assert.match(spritePlayer, /withRepeat/);
   assert.match(spritePlayer, /overflow: "hidden"/);
+  assert.match(choreography, /deriveCareTwinChoreography/);
+  assert.match(choreography, /scenePhase === "rest"/);
+  assert.match(choreography, /return "ear-perk"/);
+  assert.match(choreography, /return "comfort-loop"/);
+  assert.match(choreography, /return "bark-loop"/);
   assert.match(careTwinAssets, /CARE_TWIN_SPRITE_ASSETS/);
   assert.match(careTwinAssets, /CARE_TWIN_DOGLESS_ROOM_ASSETS/);
   assert.match(careTwinAssets, /dogless-room-layer/);

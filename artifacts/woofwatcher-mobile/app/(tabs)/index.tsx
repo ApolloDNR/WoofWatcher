@@ -39,7 +39,8 @@ import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
-import type { CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
+import { deriveCareTwinScene, type CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
+import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
@@ -440,6 +441,10 @@ export default function HomeScreen() {
 
   const [toast, setToast] = useState<string | null>(null);
   const [roomReaction, setRoomReaction] = useState<PhoenixRoomReaction | null>(null);
+  const roomTapChoreography = useMemo(
+    () => deriveCareTwinChoreography(deriveCareTwinScene(avatarMotion)),
+    [avatarMotion],
+  );
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = (msg: string) => {
@@ -521,13 +526,14 @@ export default function HomeScreen() {
   };
 
   const tapPhoenixRoom = () => {
+    const tapReaction = roomTapChoreography.tapReaction;
     setRoomReaction({
       id: Date.now(),
-      icon: "heart",
-      label: "Phoenix barked",
-      detail: "She heard you.",
+      icon: tapReaction.action === "comfort-loop" ? "health" : tapReaction.action === "ear-perk" ? "clock" : "heart",
+      label: tapReaction.label,
+      detail: tapReaction.qaHint,
       tone: colors.brandNavy,
-      spriteAction: "bark-loop",
+      spriteAction: tapReaction.action,
     });
     showToast(avatarMotion.line);
   };

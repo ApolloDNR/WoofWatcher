@@ -32,6 +32,7 @@ import {
   getCareTwinSpriteAsset,
 } from "@/lib/careTwinAssets";
 import { zoneForSpriteAction } from "@/lib/careTwinStage";
+import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
 import {
   CARE_TWIN_SPRITE_MANIFEST,
   deriveCareTwinScene,
@@ -203,6 +204,7 @@ export function LivingPhoenixRoom({
   const colors = useColors();
   const theme = MOOD_THEME[mood];
   const plan = useMemo(() => deriveCareTwinScene(motion), [motion]);
+  const choreography = useMemo(() => deriveCareTwinChoreography(plan), [plan]);
   const isStudio = presentation === "studio";
   const sceneSource = STATE_SCENES[mood];
   const fallbackAvatarSource = PHOENIX_FALLBACK_AVATARS[mood];
@@ -305,34 +307,37 @@ export function LivingPhoenixRoom({
       withSpring(1, { damping: 9, stiffness: 120 }),
       withDelay(1250, withTiming(0, { duration: 260 })),
     );
-    reactionTimer.current = setTimeout(() => setActiveReaction(null), 1680);
+    reactionTimer.current = setTimeout(() => setActiveReaction(null), choreography.reactionDurationMs);
     return () => {
       if (reactionTimer.current) clearTimeout(reactionTimer.current);
     };
-  }, [reaction, reactionProgress]);
+  }, [choreography.reactionDurationMs, reaction, reactionProgress]);
 
   useEffect(() => {
     if (ambientTimer.current) clearTimeout(ambientTimer.current);
     setAmbientSpriteAction(null);
-    if (!plan.idleBehaviors.length || plan.scenePhase === "rest") return;
+    if (!choreography.ambient.length || plan.scenePhase === "rest") return;
 
-    const shortestCadence = Math.min(...plan.idleBehaviors.map((behavior) => behavior.everyMs));
+    const shortestCadence = choreography.ambientCadenceMs ?? 2600;
     const id = setInterval(() => {
       if (activeReaction) return;
-      const available = plan.idleBehaviors.filter((behavior) => Math.random() <= behavior.chance);
+      const available = choreography.ambient.filter((behavior) => Math.random() <= (behavior.chance ?? 1));
       const next = available[Math.floor(Math.random() * available.length)];
       if (!next || next.action === plan.spriteAction) return;
 
       setAmbientSpriteAction(next.action);
       if (ambientTimer.current) clearTimeout(ambientTimer.current);
-      ambientTimer.current = setTimeout(() => setAmbientSpriteAction(null), Math.min(1700, Math.max(900, next.everyMs * 0.28)));
+      ambientTimer.current = setTimeout(
+        () => setAmbientSpriteAction(null),
+        Math.min(1700, Math.max(900, next.durationMs)),
+      );
     }, Math.max(1800, shortestCadence));
 
     return () => {
       clearInterval(id);
       if (ambientTimer.current) clearTimeout(ambientTimer.current);
     };
-  }, [activeReaction, plan.idleBehaviors, plan.scenePhase, plan.spriteAction]);
+  }, [activeReaction, choreography.ambient, choreography.ambientCadenceMs, plan.scenePhase, plan.spriteAction]);
 
   const isWalking = plan.animation === "walk";
   const isEating = plan.animation === "eat" || plan.animation === "drink";

@@ -1284,6 +1284,24 @@ Owner: Codex.
 
 Revisit trigger: The project gains reliable automated native screenshot capture, simulator access, or App Store/Play release automation that can produce equivalent visual proof.
 
+### 2026-06-20: Care Twin Taps Must Be State-Aware
+
+Decision: Phoenix room taps should use a choreography model derived from the current care-twin state instead of always triggering a bark. Happy/steady states can use the playful bark reaction, rest states should use a soft check-in, and Health Watch should use a calm comfort response.
+
+Reason: The care twin needs to feel like a living game character, not a generic button. A dog that is sleeping, low-energy, or on Health Watch should not be forced into the same high-energy tap reaction as a happy idle state.
+
+Consequences:
+
+- `careTwinChoreography.ts` owns the tested primary loop, ambient micro-loop, tap reaction, reaction timing, and QA summary model.
+- Home derives room tap reactions from the choreography model.
+- `LivingPhoenixRoom` uses the same choreography model for ambient and reaction timing.
+- `/care-twin-qa` exposes a Motion recipe for each state so native reviewers can judge the intended behavior alongside crop, scale, and loop quality.
+- Native iOS/Android QA remains required before claiming the animation taste is launch-approved.
+
+Owner: Codex.
+
+Revisit trigger: Rive, Lottie, Reanimated, or a future game-runtime layer replaces sprite-strip playback with a richer animation graph.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
