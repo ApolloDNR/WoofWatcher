@@ -946,6 +946,23 @@ export default function LogScreen() {
     () => (detailEntry ? getCareAuditTrail(detailEntry.details) : []),
     [detailEntry],
   );
+  const detailAuditSummary = useMemo(() => {
+    if (!detailAuditTrail.length) return null;
+    const latest = detailAuditTrail[detailAuditTrail.length - 1]!;
+    const correctionCount = detailAuditTrail.filter((event) => event.action === "updated").length;
+    const changeLabels = Array.from(
+      new Set(detailAuditTrail.flatMap((event) => event.changes ?? [])),
+    )
+      .map(humanizeKey)
+      .slice(0, 6);
+
+    return {
+      latest,
+      changeLabels,
+      title: correctionCount ? `${correctionCount} ${correctionCount === 1 ? "correction" : "corrections"}` : "Original history",
+      meta: auditMeta(latest),
+    };
+  }, [detailAuditTrail]);
   const detailTrustReview = useMemo(
     () => (detailEntry ? getCareLogTrustReview(detailEntry, currentCaregiverRole) : null),
     [detailEntry, currentCaregiverRole],
@@ -3692,6 +3709,50 @@ export default function LogScreen() {
                 )}
 
                 <View style={s.detailSectionHeader}>
+                  <Text style={[s.detailSectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Correction history</Text>
+                  <Text style={[s.detailSectionCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {detailAuditSummary ? "Traceable" : "Original"}
+                  </Text>
+                </View>
+                {detailAuditSummary ? (
+                  <View style={[s.correctionCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.correctionCardTop}>
+                      <View style={[s.correctionIcon, { backgroundColor: colors.copper + "16", borderColor: colors.copper + "44" }]}>
+                        <Ionicons name="git-commit-outline" size={17} color={colors.copper} />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[s.correctionTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {detailAuditSummary.title}
+                        </Text>
+                        <Text style={[s.correctionMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          Latest update: {detailAuditSummary.meta}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[s.correctionBody, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                      {detailAuditSummary.latest.summary}
+                    </Text>
+                    {detailAuditSummary.changeLabels.length ? (
+                      <View style={s.correctionChipRow}>
+                        {detailAuditSummary.changeLabels.map((label) => (
+                          <View key={label} style={[s.correctionChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                            <Text style={[s.correctionChipText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                              {label}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                  </View>
+                ) : (
+                  <View style={[s.detailFieldWide, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      No corrections yet. New edits, proof, and outcome updates will appear here.
+                    </Text>
+                  </View>
+                )}
+
+                <View style={s.detailSectionHeader}>
                   <Text style={[s.detailSectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Audit trail</Text>
                   <Text style={[s.detailSectionCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{detailAuditTrail.length}</Text>
                 </View>
@@ -4575,6 +4636,15 @@ const s = StyleSheet.create({
   detailSectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 8 },
   detailSectionTitle: { fontSize: 16 },
   detailSectionCount: { fontSize: 12 },
+  correctionCard: { borderWidth: 1, borderRadius: 16, padding: 13, gap: 10 },
+  correctionCardTop: { flexDirection: "row", alignItems: "center", gap: 10 },
+  correctionIcon: { width: 34, height: 34, borderRadius: 11, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  correctionTitle: { fontSize: 13.5 },
+  correctionMeta: { fontSize: 11.5, marginTop: 2 },
+  correctionBody: { fontSize: 13, lineHeight: 18 },
+  correctionChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  correctionChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
+  correctionChipText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.35 },
   auditStack: { gap: 8 },
   auditRow: { flexDirection: "row", gap: 10, borderWidth: 1, borderRadius: 15, padding: 12 },
   auditDot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },

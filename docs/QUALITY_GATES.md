@@ -88,6 +88,8 @@ Current evidence, 2026-06-11: Household Access now derives synced account member
 
 Current evidence, 2026-06-11: Care Log Audit Trail now records create, edit, sticky-note, and delete evidence with shared care-domain sanitization. Log details show audit history, handoff text includes audit summaries, and successful deletes create a separate non-health audit note instead of silently disappearing.
 
+Current evidence, 2026-06-19: Log details now show a Correction history card above the raw Audit trail. It summarizes the latest update, correction count, and changed-field chips so owners can understand corrections before reading the full audit rows.
+
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
 Current evidence, 2026-06-11: Reminder Center now combines routine-board status, medication follow-ups, record reminders, and grooming due dates into one Calendar action list with urgent/watch/total counts, private-log exclusion through the underlying domain helpers, and explicit notification-readiness copy before real push delivery exists.

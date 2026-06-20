@@ -1232,6 +1232,10 @@ test("keeps care log audit trails wired into Log edit, sticky note, delete, and 
   assert.match(log, /buildCareLogDeletionAuditEntry/);
   assert.match(log, /getCareAuditTrail/);
   assert.match(log, /detailAuditTrail/);
+  assert.match(log, /detailAuditSummary/);
+  assert.match(log, /Correction history/);
+  assert.match(log, /Latest update/);
+  assert.match(log, /correctionChip/);
   assert.match(log, /Audit trail/);
   assert.match(log, /updateMealOutcomeFromDetail/);
   assert.match(log, /Ate all/);

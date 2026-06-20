@@ -47,7 +47,7 @@ Latest local evidence, 2026-06-19:
 - Household Access derivation for synced members, local-only caregivers, routine-only owners, invite readiness, permission labels, next-step copy, and More mobile wiring.
 - Reminder Center derivation for routine reminders, missed/due medication follow-ups, expiring/missing records, grooming due dates, private-log exclusion, urgency sorting, display limits, notification-readiness copy, and Calendar mobile wiring.
 - Reminder Center action routing for routine edit, Records review, Medication log preselection, Grooming log preselection, and accessible row labels.
-- Care log audit trail creation, sanitization, sticky-note/edit/delete audit events, non-health deletion audit notes, and mobile Log detail wiring.
+- Care log audit trail creation, sanitization, sticky-note/edit/delete audit events, correction-history summary cards, changed-field chips, non-health deletion audit notes, and mobile Log detail wiring.
 - Care log search across title, note, caregiver, nested details, sticky notes, normalized type aliases, type filters, newest-first sorting, active-filter summary copy, and Log mobile wiring.
 - Today Command priority selection, routine-board alignment, and overdue assigned routine routing.
 - Home Quick Log routine matching and meal detail enrichment.
@@ -123,7 +123,7 @@ Latest local evidence, 2026-06-19:
 48. Edit profile, routine, record, or report state offline or during a stale refresh; confirm the newer local care document is kept and pushed back instead of overwritten by older server data.
 49. Open Calendar and confirm Household Responsibility shows handled/open/overdue/unassigned routine counts plus the next household step.
 50. Open More and confirm Responsibility Center shows the same household next step, member routine loads, visible log counts, and routes to Calendar.
-51. Create a log, add a sticky note, edit its title or note, open details, and confirm Audit trail shows create, sticky-note, and edit evidence.
+51. Create a log, add a sticky note, edit its title or note, open details, and confirm Correction history summarizes the latest update/changed fields while Audit trail still shows create, sticky-note, and edit evidence.
 52. Delete a log and confirm a separate deleted-log audit note appears without counting as a health or routine-completion event.
 53. Add an Alone Time log with duration, return state, trigger/context, calming support, recovery minutes, sticky note, and household visibility.
 54. Confirm Records Alone Time updates status, minutes, anxious/distress counts, triggers, supports, latest context, and next-step copy while private alone logs stay out.

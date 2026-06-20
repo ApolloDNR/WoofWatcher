@@ -633,6 +633,20 @@ Design intent:
 - Preserve the fast tap behavior while keeping detail capture available at the meaningful finish moment.
 - Give the next visual polish pass a clear active-state surface to animate around.
 
+## 2026-06-19 Correction History Detail Pass
+
+Log details now show a correction-first audit summary:
+
+- Correction history appears above the raw Audit trail.
+- The card summarizes whether the log is original or traceable, the latest update, the correction count, and changed-field chips.
+- The full Audit trail still remains below for exact create/edit/sticky-note/delete/proof history.
+
+Design intent:
+
+- Make trust and corrections readable for normal household users.
+- Keep the actual audit evidence intact for sitter, trainer, vet, and owner handoff contexts.
+- Avoid turning every edit into a scary warning; corrections are framed as traceability.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

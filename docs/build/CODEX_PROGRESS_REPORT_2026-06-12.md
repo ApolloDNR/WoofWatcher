@@ -793,3 +793,39 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Correction-history UI can still become richer than the current audit trail.
 - Provider-backed photo/document storage remains gated by Apollo's storage decision.
 - Native iOS/Android QA still needs device evidence for Home active-walk state, Log finish panel touch ergonomics, and avatar-room motion.
+
+## 2026-06-19 Correction History Detail Pass
+
+### What Changed
+
+- Added a Correction history card to the mobile Log detail sheet above the raw Audit trail.
+- The card summarizes whether the log is original or traceable, the latest update, correction count, and changed-field chips.
+- Preserved the full Audit trail below the summary for exact create/edit/sticky-note/delete/proof history.
+- Extended the mobile readiness guard so future UI polish keeps the summary card, latest-update copy, and changed-field chips.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/log.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
+
+### Tests And Checks Run
+
+- Mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 62 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+- Full local behavior/readiness suite:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts`
+  - Result: passed, 280 tests.
+
+### Remaining Work
+
+- Provider-backed photo/document storage remains gated by Apollo's storage decision.
+- Native iOS/Android QA still needs device evidence for the detail sheet correction card, Home active-walk state, Log finish panel touch ergonomics, and avatar-room motion.

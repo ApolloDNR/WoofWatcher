@@ -1185,6 +1185,23 @@ Owner: Codex.
 
 Revisit trigger: GPS session tracking, background timers, Apple/Google Health integrations, or walker/sitter proof policies become production scope.
 
+### 2026-06-19: Correction History Is Traceability, Not Blame
+
+Decision: Log details should show a Correction history summary before the raw Audit trail. The summary should surface latest update, correction count, and changed-field chips while keeping the complete audit rows available below.
+
+Reason: Household care logs are edited because real care is messy, not because someone did something wrong. Owners need enough trust to understand what changed without making normal corrections feel punitive.
+
+Consequences:
+
+- Log details show a Correction history card when audit events exist.
+- Logs with no later audit events say they are original instead of implying missing data.
+- The full audit trail remains available for handoffs, sitter/trainer review, and safety-critical logs.
+- Future design polish should keep correction language calm and operational.
+
+Owner: Codex.
+
+Revisit trigger: Server-backed audit policies, Access Pass review, legal export requirements, or provider-backed attachment history require a stricter audit presentation.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
