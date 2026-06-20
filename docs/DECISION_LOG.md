@@ -1167,6 +1167,24 @@ Owner: Codex.
 
 Revisit trigger: Walk-session editing, voice-to-log parsing, or provider-backed audit/sync rules introduce a more general structured log detail engine.
 
+### 2026-06-19: Walks Can Be Live Sessions, Not Only Past Logs
+
+Decision: Walk quick actions can start an active household-visible walk session. Home and Log should show that open session until a caregiver finishes it, and finishing should update the same log with duration, route/place, distance, dog interactions, social outcome, note, and audit history.
+
+Reason: Real walks are often started before the household knows duration, distance, route, or dog exposure. Treating every tap as a completed past event makes the care record feel fake and makes later Records/Care Pass outputs less trustworthy.
+
+Consequences:
+
+- `walkSession.ts` owns the tested start/find/finish lifecycle helper.
+- Home uses the helper for the Walk quick action and shows Walk active in the room, presence strip, and Next Up.
+- Log renders a WALK ACTIVE finish panel with validated distance/dog-interaction fields.
+- Completing the walk records one shared source event for Walk Activity, Saved Routes, Care Passes, and audit history.
+- GPS/location tracking remains out of scope for this version; route/place is owner-entered.
+
+Owner: Codex.
+
+Revisit trigger: GPS session tracking, background timers, Apple/Google Health integrations, or walker/sitter proof policies become production scope.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

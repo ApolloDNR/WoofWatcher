@@ -67,6 +67,7 @@ import {
   type PottyStoolCondition,
 } from "@/lib/pottyLogDetail";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
+import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -509,6 +510,15 @@ const DETAIL_LABELS: Record<string, string> = {
   peeDetail: "Pee detail",
   stoolColor: "Stool color",
   pottyContext: "Context",
+  walkLifecycle: "Walk status",
+  walkStartedAt: "Started",
+  walkEndedAt: "Finished",
+  startedBy: "Started by",
+  endedBy: "Finished by",
+  routeName: "Route",
+  distanceMiles: "Distance",
+  dogInteractions: "Dog interactions",
+  socialOutcome: "Social notes",
   trainingOutcome: "Training outcome",
   trainingSkill: "Skill",
   nextPractice: "Next practice",
@@ -783,6 +793,11 @@ export default function LogScreen() {
   const [walkDistanceMiles, setWalkDistanceMiles] = useState("");
   const [walkDogInteractions, setWalkDogInteractions] = useState("");
   const [walkSocialOutcome, setWalkSocialOutcome] = useState("");
+  const [walkFinishRouteName, setWalkFinishRouteName] = useState("");
+  const [walkFinishDistanceMiles, setWalkFinishDistanceMiles] = useState("");
+  const [walkFinishDogInteractions, setWalkFinishDogInteractions] = useState("");
+  const [walkFinishSocialOutcome, setWalkFinishSocialOutcome] = useState("");
+  const [walkFinishNote, setWalkFinishNote] = useState("");
   const [trainingSkill, setTrainingSkill] = useState("");
   const [trainingNextPractice, setTrainingNextPractice] = useState("");
   const [aloneTrigger, setAloneTrigger] = useState("");
@@ -1470,6 +1485,19 @@ export default function LogScreen() {
     if (!Number.isFinite(startedAt)) return 0;
     return Math.max(0, Math.round((now - startedAt) / 60000));
   }, [now, openAloneStartedAt]);
+  const openWalkSession = useMemo(
+    () => findOpenWalkSession(state.entries),
+    [state.entries],
+  );
+  const openWalkStartedAt = openWalkSession
+    ? String(openWalkSession.details?.walkStartedAt ?? openWalkSession.occurredAt)
+    : "";
+  const openWalkMinutes = useMemo(() => {
+    if (!openWalkStartedAt) return 0;
+    const startedAt = Date.parse(openWalkStartedAt);
+    if (!Number.isFinite(startedAt)) return 0;
+    return Math.max(0, Math.round((now - startedAt) / 60000));
+  }, [now, openWalkStartedAt]);
 
   const shareEntryHandoff = useCallback((e: Entry) => {
     const message = buildEntryHandoffMessage(e);
@@ -1738,9 +1766,73 @@ export default function LogScreen() {
     [caregiver, now, openAloneSession, returnNote, returnRecoveryMinutes, updateEntry],
   );
 
+  const handleStartWalk = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (openWalkSession) {
+      setSelectedType("walk");
+      setSelectedLauncherKey("walk:Walk");
+      scrollRef.current?.scrollTo({ y: 360, animated: true });
+      return;
+    }
+    const entry = buildWalkSessionStartEntry({ caregiver, now });
+    const id = addEntry(entry as Omit<Entry, "id">);
+    setLastQuickLog({ id, title: "Walk started" });
+    setSelectedType("walk");
+    setSelectedLauncherKey("walk:Walk");
+  }, [addEntry, caregiver, now, openWalkSession]);
+
+  const handleFinishWalk = useCallback(() => {
+    if (!openWalkSession?.id) return;
+    const distance = walkFinishDistanceMiles.trim() ? parseNonNegativeNumber(walkFinishDistanceMiles) : null;
+    const dogCount = walkFinishDogInteractions.trim() ? parseNonNegativeNumber(walkFinishDogInteractions) : null;
+
+    if (walkFinishDistanceMiles.trim() && distance == null) {
+      Alert.alert("Check distance", "Enter a valid distance, or leave it blank.");
+      return;
+    }
+
+    if (walkFinishDogInteractions.trim() && dogCount == null) {
+      Alert.alert("Check dog interactions", "Enter a valid dog interaction count, or leave it blank.");
+      return;
+    }
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const patch = buildWalkSessionFinishPatch(openWalkSession, {
+      caregiver,
+      now,
+      ...(walkFinishRouteName.trim() ? { routeName: walkFinishRouteName.trim() } : {}),
+      ...(distance != null ? { distanceMiles: distance } : {}),
+      ...(dogCount != null ? { dogInteractions: Math.round(dogCount) } : {}),
+      ...(walkFinishSocialOutcome.trim() ? { socialOutcome: walkFinishSocialOutcome.trim() } : {}),
+      ...(walkFinishNote.trim() ? { note: walkFinishNote.trim() } : {}),
+    });
+
+    updateEntry(openWalkSession.id, patch as Partial<Omit<Entry, "id">>);
+    setLastQuickLog({ id: openWalkSession.id, title: patch.title ?? "Walk completed" });
+    setWalkFinishRouteName("");
+    setWalkFinishDistanceMiles("");
+    setWalkFinishDogInteractions("");
+    setWalkFinishSocialOutcome("");
+    setWalkFinishNote("");
+  }, [
+    caregiver,
+    now,
+    openWalkSession,
+    updateEntry,
+    walkFinishDistanceMiles,
+    walkFinishDogInteractions,
+    walkFinishNote,
+    walkFinishRouteName,
+    walkFinishSocialOutcome,
+  ]);
+
   const handleQuickLauncherAction = (action: LauncherAction) => {
     if (action.type === "alone") {
       handleLeavingHome();
+      return;
+    }
+    if (action.type === "walk") {
+      handleStartWalk();
       return;
     }
     const policy = getQuickLogPolicy(action.type);
@@ -1936,6 +2028,88 @@ export default function LogScreen() {
                     </Text>
                   </Pressable>
                 </View>
+              </View>
+            ) : null}
+
+            {openWalkSession ? (
+              <View style={[s.aloneActivePanel, { backgroundColor: colors.brandNavy, borderColor: colors.sage + "66" }]}>
+                <View style={s.aloneActiveTop}>
+                  <View style={[s.aloneActiveIcon, { backgroundColor: colors.sage + "22", borderColor: colors.sage + "77" }]}>
+                    <PixelIcon name="walk" size={34} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[s.aloneActiveKicker, { color: colors.sageSoft, fontFamily: "Inter_700Bold" }]}>
+                      WALK ACTIVE
+                    </Text>
+                    <Text style={[s.aloneActiveTitle, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
+                      Phoenix is on a walk
+                    </Text>
+                    <Text style={[s.aloneActiveMeta, { color: colors.ivory + "B8", fontFamily: "Inter_500Medium" }]}>
+                      Started by {openWalkSession.caregiver || "household"} - {formatAloneDuration(openWalkMinutes)}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[s.returnCheckTitle, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                  Finish details
+                </Text>
+                <View style={s.returnDetailRow}>
+                  <TextInput
+                    value={walkFinishRouteName}
+                    onChangeText={setWalkFinishRouteName}
+                    placeholder="Route or place"
+                    placeholderTextColor={colors.ivory + "99"}
+                    style={[s.returnInput, s.returnInputNote, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                  />
+                  <TextInput
+                    value={walkFinishDistanceMiles}
+                    onChangeText={setWalkFinishDistanceMiles}
+                    placeholder="Miles"
+                    placeholderTextColor={colors.ivory + "99"}
+                    keyboardType="decimal-pad"
+                    style={[s.returnInput, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                  />
+                </View>
+                <View style={s.returnDetailRow}>
+                  <TextInput
+                    value={walkFinishDogInteractions}
+                    onChangeText={setWalkFinishDogInteractions}
+                    placeholder="Dogs met"
+                    placeholderTextColor={colors.ivory + "99"}
+                    keyboardType="number-pad"
+                    style={[s.returnInput, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                  />
+                  <TextInput
+                    value={walkFinishSocialOutcome}
+                    onChangeText={setWalkFinishSocialOutcome}
+                    placeholder="Social outcome"
+                    placeholderTextColor={colors.ivory + "99"}
+                    style={[s.returnInput, s.returnInputNote, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                  />
+                </View>
+                <TextInput
+                  value={walkFinishNote}
+                  onChangeText={setWalkFinishNote}
+                  placeholder="Anything notable?"
+                  placeholderTextColor={colors.ivory + "99"}
+                  style={[s.returnInput, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Finish walk session"
+                  onPress={handleFinishWalk}
+                  style={({ pressed }) => [
+                    s.walkFinishButton,
+                    {
+                      backgroundColor: pressed ? colors.sageSoft : colors.sage,
+                      borderColor: colors.sageSoft,
+                    },
+                  ]}
+                >
+                  <Text style={[s.walkFinishText, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                    Finish walk
+                  </Text>
+                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.brandNavy} />
+                </Pressable>
               </View>
             ) : null}
 
@@ -3942,6 +4116,19 @@ const s = StyleSheet.create({
   },
   returnInputNote: {
     flex: 1,
+  },
+  walkFinishButton: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+  },
+  walkFinishText: {
+    fontSize: 13,
   },
   launcherCta: {
     minHeight: 48,

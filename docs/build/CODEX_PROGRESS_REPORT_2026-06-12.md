@@ -651,8 +651,8 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 
 ### Remaining Work
 
-- Add real photo attachment/upload seams and medication proof detail fields.
-- Add richer structured edit sheets for potty pee/stool detail and walk session start/finish updates.
+- Add provider-backed photo/document upload storage so local proof survives across devices and reports.
+- Potty pee/stool detail and walk start/finish sessions were completed in the later 2026-06-19 passes below.
 - Expand correction history UI beyond the compact trust panel and audit trail.
 - Native iOS/Android safe-area, touch, notification, and phone-size QA remains required before launch approval.
 
@@ -700,7 +700,7 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 ### Remaining Work
 
 - Add provider-backed file upload/storage so proof survives across devices and reports.
-- Add richer structured edit sheets for potty pee/stool detail and walk session start/finish updates.
+- Potty pee/stool detail and walk start/finish sessions were completed in the later 2026-06-19 passes below.
 - Expand correction history UI beyond the compact trust panel and audit trail.
 - Native iOS/Android safe-area, touch, notification, and phone-size QA remains required before launch approval.
 
@@ -744,6 +744,52 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 
 ### Remaining Work
 
-- Walk session start/finish editing is still the next structured log lifecycle gap.
+- Walk session start/finish editing was completed in the following 2026-06-19 Walk Session Lifecycle Pass.
 - Correction-history UI can still become richer than the current audit trail.
 - Provider-backed photo/document storage remains gated by Apollo's storage decision.
+
+## 2026-06-19 Walk Session Lifecycle Pass
+
+### What Changed
+
+- Added a tested `walkSession.ts` helper for active household-visible walk sessions.
+- Home Walk quick action now starts an in-progress walk session instead of silently creating a completed/past log.
+- Home shows active walks in Phoenix's room label, presence panel, and Next Up.
+- Log now detects the newest active walk and shows a WALK ACTIVE finish panel with timer, route/place, distance, dog interactions, social outcome, and note fields.
+- Finishing a walk updates the same log with completed lifecycle, duration, finish metadata, note, and audit history.
+- Extended mobile readiness checks so Home and Log cannot drift away from the session contract.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/walkSession.ts`
+- `artifacts/woofwatcher-mobile/lib/walkSession.test.ts`
+- `artifacts/woofwatcher-mobile/app/(tabs)/index.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/log.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/DECISION_LOG.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
+
+### Tests And Checks Run
+
+- Walk session behavior:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/walkSession.test.ts`
+  - Result: passed, 4 tests.
+- Mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 62 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+- Full local behavior/readiness suite:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts`
+  - Result: passed, 280 tests.
+
+### Remaining Work
+
+- Correction-history UI can still become richer than the current audit trail.
+- Provider-backed photo/document storage remains gated by Apollo's storage decision.
+- Native iOS/Android QA still needs device evidence for Home active-walk state, Log finish panel touch ergonomics, and avatar-room motion.

@@ -1077,6 +1077,7 @@ test("keeps hydration visible from Home quick log to Records", () => {
 test("keeps walk activity insights visible in Records", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));
+  const home = readAppFile(join("(tabs)", "index.tsx"));
 
   assert.match(records, /deriveWalkActivity/);
   assert.match(records, /deriveWalkRouteTemplates/);
@@ -1090,6 +1091,15 @@ test("keeps walk activity insights visible in Records", () => {
   assert.match(log, /walkSocialOutcome/);
   assert.match(log, /routeName/);
   assert.match(log, /dogInteractions/);
+  assert.match(log, /buildWalkSessionStartEntry/);
+  assert.match(log, /buildWalkSessionFinishPatch/);
+  assert.match(log, /findOpenWalkSession/);
+  assert.match(log, /WALK ACTIVE/);
+  assert.match(log, /Finish walk/);
+  assert.match(home, /buildWalkSessionStartEntry/);
+  assert.match(home, /findOpenWalkSession/);
+  assert.match(home, /Walk active/);
+  assert.match(home, /Walk started/);
 });
 
 test("keeps weekly care trends visible in Records", () => {

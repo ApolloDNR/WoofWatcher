@@ -29,13 +29,14 @@ import {
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import { useAvatar } from "@/context/AvatarContext";
-import { useCare } from "@/context/CareContext";
+import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import type { CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
+import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 
 const HERO_RATIO = 1.05;
@@ -202,11 +203,30 @@ export default function HomeScreen() {
     if (!Number.isFinite(startedAt)) return 0;
     return Math.max(0, Math.round((now - startedAt) / 60000));
   }, [now, openAloneStartedAt]);
-  const presenceState = openAloneSession ? "home-alone" : "with-human";
-  const presenceLabel = openAloneSession ? `${petName} Home alone` : `${petName} with ${caregiver}`;
+  const openWalkSession = useMemo(
+    () => findOpenWalkSession(state.entries),
+    [state.entries],
+  );
+  const openWalkStartedAt = openWalkSession
+    ? String(openWalkSession.details?.walkStartedAt ?? openWalkSession.occurredAt)
+    : "";
+  const openWalkMinutes = useMemo(() => {
+    if (!openWalkStartedAt) return 0;
+    const startedAt = Date.parse(openWalkStartedAt);
+    if (!Number.isFinite(startedAt)) return 0;
+    return Math.max(0, Math.round((now - startedAt) / 60000));
+  }, [now, openWalkStartedAt]);
+  const presenceState = openAloneSession ? "home-alone" : openWalkSession ? "on-walk" : "with-human";
+  const presenceLabel = openAloneSession
+    ? `${petName} Home alone`
+    : openWalkSession
+      ? `${petName} on a walk`
+      : `${petName} with ${caregiver}`;
   const presenceSub = openAloneSession
     ? `${formatDuration(openAloneMinutes)} active - tap I\u2019m Home in Log`
-    : `At home - ${timeLabel}`;
+    : openWalkSession
+      ? `${formatDuration(openWalkMinutes)} active - finish in Log`
+      : `At home - ${timeLabel}`;
 
   const meals = status.counts.meals;
   const fed = meals.target > 0 ? meals.done >= meals.target : true;
@@ -226,6 +246,15 @@ export default function HomeScreen() {
   );
 
   const nextUp = useMemo(() => {
+    if (openWalkSession) {
+      return [
+        {
+          label: "Walk active",
+          time: `${formatDuration(openWalkMinutes)} - finish in Log`,
+          icon: "walk" as PixelIconName,
+        },
+      ];
+    }
     if (pendingMeal) {
       const label = pendingMeal.title.split(" - ")[0] || "Meal";
       return [
@@ -248,7 +277,7 @@ export default function HomeScreen() {
       { label: "Dinner", time: "7:00 PM", icon: "meal" as PixelIconName },
       { label: "Training", time: "6:30 PM", icon: "training" as PixelIconName },
     ];
-  }, [pendingMeal, state.routines, caregiver]);
+  }, [openWalkMinutes, openWalkSession, pendingMeal, state.routines, caregiver]);
 
   const nextPrimary = nextUp[0];
   const nextCount = Math.max(nextUp.length, 1);
@@ -425,6 +454,25 @@ export default function HomeScreen() {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
+    if (item.type === "walk") {
+      if (openWalkSession) {
+        showToast("Walk already active");
+        router.push("/log?type=walk" as never);
+        return;
+      }
+      const entry = buildWalkSessionStartEntry({ caregiver, now });
+      addEntry(entry as Omit<Entry, "id">);
+      setRoomReaction({
+        id: Date.now(),
+        icon: item.icon,
+        label: "Walk started",
+        detail: "Finish in Log with route, distance, and social notes.",
+        tone: colors.brandNavy,
+        spriteAction: "walk-loop",
+      });
+      showToast("Walk started");
+      return;
+    }
     const role = state.caregivers.find((person) => person.name === caregiver)?.role;
     const entry = buildQuickLogEntry(
       {
@@ -551,7 +599,7 @@ export default function HomeScreen() {
                 speech={avatarMotion.speech || SPEECH_BY_MOOD[status.mood]}
                 energy={status.energy}
                 presenceLabel={presenceLabel}
-                nextLabel={openAloneSession ? "Home alone" : avatarMotion.label}
+                nextLabel={openWalkSession ? "Walk active" : openAloneSession ? "Home alone" : avatarMotion.label}
                 reaction={roomReaction}
                 statusReadouts={roomStats}
                 onPress={tapPhoenixRoom}
@@ -562,12 +610,14 @@ export default function HomeScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
-            onPress={() => router.push(openAloneSession ? "/log?type=alone" : "/more")}
+            onPress={() => router.push(openAloneSession ? "/log?type=alone" : openWalkSession ? "/log?type=walk" : "/more")}
             style={[s.presencePanel, { backgroundColor: colors.ivory, borderColor: colors.border }]}
           >
-            <View style={[s.presenceAvatar, { backgroundColor: openAloneSession ? colors.amber : colors.copper }]}>
+            <View style={[s.presenceAvatar, { backgroundColor: openAloneSession ? colors.amber : openWalkSession ? colors.sage : colors.copper }]}>
               {openAloneSession ? (
                 <Ionicons name="home-outline" size={18} color="#FFFFFF" />
+              ) : openWalkSession ? (
+                <PixelIcon name="walk" size={21} />
               ) : (
                 <Text style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}>
                   {caregiver.charAt(0).toUpperCase()}
@@ -576,7 +626,11 @@ export default function HomeScreen() {
             </View>
             <View style={s.presenceCopy}>
               <Text style={[s.presenceText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                {openAloneSession ? `${petName} is home alone` : `${petName} is with ${caregiver}`}
+                {openAloneSession
+                  ? `${petName} is home alone`
+                  : openWalkSession
+                    ? `${petName} is on a walk`
+                    : `${petName} is with ${caregiver}`}
               </Text>
               <Text style={[s.presenceSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 {presenceSub}

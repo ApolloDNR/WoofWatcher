@@ -617,6 +617,22 @@ Design intent:
 - Let the household clarify real-life ambiguity later.
 - Make the panel feel compact and operational, not like a medical form.
 
+## 2026-06-19 Walk Session Lifecycle Pass
+
+Walk now behaves like a live care session when started from Home or Log:
+
+- Tapping Walk starts one household-visible in-progress walk log.
+- Home shows Walk active in Phoenix's room, the presence strip, and Next Up instead of pretending the walk is already complete.
+- Re-tapping Walk while a session is active routes toward the Log finish flow.
+- Log shows a compact WALK ACTIVE panel with timer, route/place, distance, dog-interaction count, social outcome, and notes.
+- Finishing the walk updates the same log with duration and audit history, so Records Walk Activity and Saved Routes get one coherent source event.
+
+Design intent:
+
+- Make the walk flow feel like a tiny real-world game session without adding GPS complexity yet.
+- Preserve the fast tap behavior while keeping detail capture available at the meaningful finish moment.
+- Give the next visual polish pass a clear active-state surface to animate around.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

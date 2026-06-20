@@ -5,14 +5,14 @@
 Run focused behavior tests:
 
 ```powershell
-& "C:\Users\Apoll\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\*.test.ts lib\care-domain\test\*.test.ts
+& "C:\Users\Apoll\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts
 ```
 
 CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-19:
 
-- PASS: 261 focused tests with the command above.
+- PASS: 280 focused behavior/readiness tests with the command above.
 - PASS: mobile TypeScript check with bundled Node and workspace TypeScript.
 - PASS: PixelLab asset verifier checked 148 Phoenix room/sprite/template/emote/accessory/seed-strip/Option B runtime assets with 0 missing and 0 invalid.
 - PASS: Expo web export completed through the package-local Expo CLI and Metro resolver patch.
@@ -31,7 +31,8 @@ Latest local evidence, 2026-06-19:
 - Medication history for recent household-visible medication logs, including dose, outcome, caregiver, routine id, note, private-log exclusion, medicine/dose/caregiver/note search, taken/skipped/missed/needs-review outcome filters, filtered summary copy, empty-state copy, and Records mobile wiring.
 - Water quick-log defaults for household-visible fresh-water refills.
 - Hydration summary derivation for visible water logs, refill equivalents, daily goal percentage, caregiver participation, Records mobile wiring, and Care Pass report language.
-- Walk quick-log defaults for household-visible activity evidence.
+- Walk quick-log defaults for household-visible activity evidence, including Home/Log active-session start behavior.
+- Walk session lifecycle for active in-progress walks, newest-open-session detection, timer-backed finish, route/place, distance, dog interactions, social outcome, notes, audit history, and mobile Home/Log wiring.
 - Walk Activity derivation for visible walk logs, duration, distance when logged, dog interactions, social outcomes, places/routes, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Saved walk route templates derived from household-visible route/place logs, including private-log exclusion, stale-log exclusion, repeat-route grouping, visits, average duration, distance, dog interactions, caregiver list, social outcome snippets, Records mobile wiring, walk composer fields, and Care Pass report language.
 - Weekly Care Trends derived from household-visible logs, including current-versus-previous 7-day windows, meal completion, walk minutes, water refills, potty/medication/health watch signals, caregiver participation, Records mobile wiring, and Care Pass report language.
@@ -91,8 +92,8 @@ Latest local evidence, 2026-06-19:
 17. Use Home Quick Log for Water and confirm it records a household-visible fresh-water refill.
 18. Confirm Records Hydration updates refill-equivalent progress, caregivers, latest water log, and next-step copy after water logs.
 19. Preview a Care Pass and confirm the Hydration section summarizes today without making medical claims.
-20. Use Home Quick Log for Walk and confirm it records a household-visible walk routine log.
-21. Add a walk with duration, place/route, distance, dog interactions, social outcome notes, and household visibility; confirm Records Walk Activity updates minutes, places, latest walk, and next-step copy.
+20. Use Home Quick Log for Walk and confirm it starts a household-visible active walk session, changes Home to Walk active, and routes an already-active walk to the Log finish flow.
+21. Finish the active walk from Log with route/place, distance, dog interactions, social outcome notes, and optional note; confirm the same log records duration/audit history and Records Walk Activity updates minutes, places, latest walk, and next-step copy.
 22. Log the same route more than once and confirm Records Saved Routes groups the route, shows visits, average duration, dog interactions, suggested use, and the latest social note.
 23. Mark a walk private and confirm it stays out of shared Walk Activity, Saved Routes, routine status, and Care Pass route context.
 24. Preview a trainer or sitter Care Pass and confirm Walk Activity includes route/place, dog interaction context, and Saved Routes.

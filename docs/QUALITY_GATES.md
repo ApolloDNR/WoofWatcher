@@ -26,6 +26,8 @@ Current evidence, 2026-06-11: Water quick logs now record household-visible fres
 
 Current evidence, 2026-06-11: Walk quick logs now explicitly record household-visible activity evidence, and shared Walk Activity logic derives duration, places/routes, dog interactions, social outcomes, last log, caregiver participation, and next-step copy from visible walk logs.
 
+Current evidence, 2026-06-19: Walk quick logs can now become active sessions instead of only past logs. Home and Log start the same household-visible walk session, Home shows Walk active in the room/presence/Next Up surfaces, and the Log finish panel records route/place, distance, dog interactions, social outcome, note, duration, and audit history before feeding Walk Activity and Saved Routes.
+
 Current evidence, 2026-06-11: The full Log composer now captures walk route/place, distance, dog interactions, social outcome notes, and household visibility. Shared Saved Routes logic derives repeat route templates from visible route logs, while private walks stay out of shared route status.
 
 Current evidence, 2026-06-11: Potty quick logs now record household-visible potty evidence, the Log composer captures pee/poop kind and condition with sticky notes, and shared Potty Health logic derives pee/poop counts, stool review signals, conditions, last log, caregiver participation, and next-step copy from visible potty logs.
@@ -59,6 +61,8 @@ Current evidence, 2026-06-19: Medication proof attachment now records local phot
 Current evidence, 2026-06-11: Hydration status ignores private water logs and shows caregiver participation in Records, keeping daily water care visible as household evidence.
 
 Current evidence, 2026-06-11: Walk Activity ignores private walk logs and shows caregiver participation, places, and social outcome notes in Records, keeping dog park and walker context visible to the household.
+
+Current evidence, 2026-06-19: Active walk sessions preserve one shared log from start to finish. Re-tapping Walk while a session is open routes to the Log finish flow, and completing the session appends a finish audit event instead of creating a disconnected duplicate.
 
 Current evidence, 2026-06-11: Saved Routes ignores private walk logs and stale route evidence, grouping only visible route/place logs into shared route templates for household and report context.
 
