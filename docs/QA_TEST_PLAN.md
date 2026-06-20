@@ -266,3 +266,13 @@ Latest local evidence, 2026-06-20:
 - Expo web export passed to `tmp/woofwatcher-standalone-layout-export`.
 - `git diff --check` passed with only expected Windows line-ending warnings.
 - Standalone routes and auth/setup surfaces now use shared `getStandaloneRouteBottomPadding`, and WoofGuide uses shared `getDockedComposerBottomPadding`; static readiness tests reject the old route-local constants. Native iOS/Android visual QA still needs real device or simulator screenshots for final safe-area, keyboard/composer fit, crop, touch, and animation approval.
+
+Latest local evidence, 2026-06-20:
+
+- Full local behavior/readiness suite passed at 302 tests across `artifacts/woofwatcher-mobile/lib/*.test.ts` and `lib/care-domain/test/*.test.ts`.
+- Focused setup/privacy/readiness tests passed at 76 tests.
+- Mobile TypeScript compile passed for the WoofWatcher Expo app.
+- PixelLab asset verification passed with 149 registered assets, 0 missing, and 0 invalid.
+- Expo web export passed to `tmp/woofwatcher-household-setup-export`.
+- `git diff --check` passed with only expected Windows line-ending warnings.
+- First-run setup now captures household create, join-by-invite, or local-preview intent; persists the household setup plan; exports it in owner data; and shows truthful account/provider confirmation copy. Native iOS/Android visual QA still needs real device or simulator screenshots for setup flow fit, safe areas, keyboard/composer behavior, stage crop, touch, and animation approval.

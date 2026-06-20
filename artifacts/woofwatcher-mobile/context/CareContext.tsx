@@ -74,6 +74,14 @@ export interface Caregiver {
   role: string;
 }
 
+export interface HouseholdSetup {
+  mode: "create" | "join" | "local";
+  householdName: string;
+  inviteCode?: string;
+  providerStatus: "local-only" | "pending-provider";
+  updatedAt?: string;
+}
+
 export interface Routine {
   id: string;
   label: string;
@@ -160,6 +168,7 @@ export interface CareDoc {
   profile: Profile;
   pets: PetProfile[];
   caregivers: Caregiver[];
+  householdSetup: HouseholdSetup;
   dietProfile: DietProfile;
   routines: Routine[];
   goals: Goal[];
@@ -202,6 +211,12 @@ function getDefaultDoc(): CareDoc {
     },
     pets: [],
     caregivers: [],
+    householdSetup: {
+      mode: "create",
+      householdName: "",
+      inviteCode: "",
+      providerStatus: "local-only",
+    },
     dietProfile: {
       primaryFood: "",
       normalPortion: "",
@@ -234,6 +249,17 @@ function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
     accessPasses: Array.isArray(merged.accessPasses) ? merged.accessPasses : [],
     adventureMemories: Array.isArray(merged.adventureMemories) ? merged.adventureMemories : [],
     reportArtifacts: Array.isArray(merged.reportArtifacts) ? merged.reportArtifacts : [],
+    householdSetup: {
+      mode:
+        merged.householdSetup?.mode === "join" || merged.householdSetup?.mode === "local"
+          ? merged.householdSetup.mode
+          : "create",
+      householdName: typeof merged.householdSetup?.householdName === "string" ? merged.householdSetup.householdName : "",
+      inviteCode: typeof merged.householdSetup?.inviteCode === "string" ? merged.householdSetup.inviteCode : "",
+      providerStatus:
+        merged.householdSetup?.providerStatus === "pending-provider" ? "pending-provider" : "local-only",
+      updatedAt: typeof merged.householdSetup?.updatedAt === "string" ? merged.householdSetup.updatedAt : undefined,
+    },
   };
 }
 
@@ -678,6 +704,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       profile: doc.profile,
       pets: doc.pets,
       caregivers: doc.caregivers,
+      householdSetup: doc.householdSetup,
       dietProfile: doc.dietProfile,
       routines: doc.routines,
       goals: doc.goals,

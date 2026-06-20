@@ -58,7 +58,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 ## Missing Features
 
-1. Auth-connected first-run onboarding for account provisioning, household invite/join flow, and post-setup confirmation.
+1. Provider-backed account provisioning and real household invite acceptance. First-run setup now captures and confirms create, join-by-invite, or local-preview household intent locally, but it does not send, accept, or enforce remote invites yet.
 2. Provider-backed multi-dog care documents and dog switcher. Local CareTwin roster staging exists, but separate per-dog logs/routines/records/reports are still gated.
 3. Provider-backed household invite approval, Access Pass enforcement/revocation, caregiver editing, and role-specific permission enforcement.
 4. Deeper multi-device conflict handling, server-backed delete retention policy, and native recovery QA for care state edits.
@@ -133,7 +133,7 @@ No payment implementation should start until product scope, privacy terms, suppo
 ## Autonomous Next-Task Queue
 
 1. Add release-control docs and keep them current.
-2. Extend setup into auth-connected household onboarding, invite/join decisions, and post-setup confirmation.
+2. Connect the local household setup intent to real provider-backed household creation, invite acceptance, membership sync, and role enforcement.
 3. Add records document storage, richer receipt capture, server reminders for expiring records, and credential export.
 4. Add binary PDF artifacts, native export/download, and server-backed report storage.
 5. Add deeper multi-device conflict policy, server-backed delete retention, and native offline recovery QA.
@@ -186,6 +186,7 @@ No payment implementation should start until product scope, privacy terms, suppo
 - Access Pass may stage local permission drafts for helpers, but remote access, revocation, and role enforcement remain provider-gated until account/API authorization rules are approved.
 - Adventure Mode may turn household-visible walks, training, play, and alone-time care into private quests, XP, and local memory drafts. Cloud media storage, map/location data, public sharing, and community adventures remain provider-gated until storage, maps, privacy, and safety rules are approved.
 - Expo/EAS is the mobile release path for v1. iOS and Android profiles live in `artifacts/woofwatcher-mobile/eas.json`; store submission remains blocked until Apollo provides Expo, Apple Developer, Google Play, privacy/legal, and launch approval.
+- First-run setup may stage household create, join-by-invite, or local-preview intent and show truthful post-save confirmation copy before provider-backed household creation or invite acceptance is live. Join intent is local-draft only until account/provider rules are approved.
 
 ## Blockers Requiring Apollo
 

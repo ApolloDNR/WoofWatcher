@@ -10,13 +10,15 @@ These images are the current target for WoofWatcher's visual quality, layout den
 - `docs/design/reference/woofwatcher-final-care-rpg-dark-board.png`
 - `docs/design/reference/woofwatcher-premium-light-design-system.png`
 - `docs/design/reference/woofwatcher-care-adventure-rpg-dark-board.png`
+- `docs/design/reference/woofwatcher-premium-product-board-light.png`
+- `docs/design/reference/woofwatcher-care-rpg-north-star.png`
 
 Apollo re-confirmed the first two final boards on 2026-06-20 as the canonical visual target. Treat them as the highest-priority references for accuracy and excellence:
 
 - Light App Store design board: SHA256 `7E3817D7750A7E20A83CE5650071C6C0B97DB34B3AE036BE138FB99DB028C54E`.
 - Dark care-adventure RPG board: SHA256 `24BBA8C76D34BD95252FC98B14A32C28204A6F6E48887EDFDD95F6FBEEF97910`.
 
-Apollo re-attached the same two boards on 2026-06-20 and explicitly asked Codex to preserve them as the accuracy/excellence target for future UI work; the attached files matched the hashes above exactly.
+Apollo re-attached the same two boards on 2026-06-20 and explicitly asked Codex to preserve them as the accuracy/excellence target for future UI work; the attached files matched the hashes above exactly. The re-attached copies are also stored as `woofwatcher-premium-product-board-light.png` and `woofwatcher-care-rpg-north-star.png` so future builders can connect the latest chat references to the locked repo assets without guessing.
 
 Older references in the same folder remain useful, but the `woofwatcher-final-*` boards are the strongest current north-star references. They lock the desired App Store polish, the crest/logo system, the light production app shell, and the darker care-adventure RPG expansion direction.
 

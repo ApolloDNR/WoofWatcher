@@ -18,6 +18,12 @@ const state = {
     vetBoundary: "WoofWatcher is not a veterinary diagnosis.",
   },
   pets: [{ id: "pet_london", name: "London", breed: "Golden Retriever", status: "provider-gated" }],
+  householdSetup: {
+    mode: "join",
+    householdName: "Phoenix House",
+    inviteCode: "WW-42",
+    providerStatus: "pending-provider",
+  },
   accessPasses: [{ id: "access_maya", holderName: "Maya", role: "Sitter", status: "draft" }],
   adventureMemories: [{ id: "memory_1", title: "Wildflower Loop", petName: "Phoenix", storageStatus: "local-draft" }],
   caregivers: [{ name: "Apollo", role: "Owner" }],
@@ -77,6 +83,7 @@ test("builds an owner export bundle with counts and care data", () => {
   assert.equal(bundle.care.profile?.name, "Phoenix");
   assert.equal(bundle.care.activePetId, "primary");
   assert.equal(bundle.care.pets[0]?.name, "London");
+  assert.deepEqual(bundle.care.householdSetup, state.householdSetup);
   assert.equal((bundle.care.accessPasses[0] as { holderName?: string })?.holderName, "Maya");
   assert.equal((bundle.care.adventureMemories[0] as { title?: string })?.title, "Wildflower Loop");
   assert.equal(bundle.care.entries[0]?.id, "meal_1");

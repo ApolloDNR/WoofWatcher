@@ -14,8 +14,12 @@ Primary references:
 
 - `docs/design/reference/woofwatcher-premium-light-design-system.png`
 - `docs/design/reference/woofwatcher-care-adventure-rpg-dark-board.png`
+- `docs/design/reference/woofwatcher-premium-product-board-light.png`
+- `docs/design/reference/woofwatcher-care-rpg-north-star.png`
 
 Apollo re-confirmed these two boards on 2026-06-20 as the accuracy target for the app: premium App Store-ready care software, crest-led WoofWatcher branding, living pixel Phoenix, mobile-first iOS/Android polish, and a long-range care-adventure RPG system.
+
+Apollo re-attached the same light and dark north-star boards on 2026-06-20 and asked Codex to always remember them. Future UI work should compare implementation against these boards before claiming polish: if the result drifts into generic tracker UI, soft prototype cards, non-pixel avatars, or weak mobile hierarchy, it is not aligned.
 
 Supporting references:
 

@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,11 +18,14 @@ import { deriveOnboardingStatus } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
 import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import {
   applySetupWizardDraft,
+  buildSetupWizardConfirmation,
   createSetupWizardDraft,
   type SetupWizardDraft,
+  type SetupWizardHouseholdMode,
 } from "@/lib/setupWizard";
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -35,11 +39,38 @@ const ROUTINE_TYPES: { label: string; value: string; icon: IoniconName }[] = [
   { label: "Care", value: "care", icon: "heart-outline" },
 ];
 
+const HOUSEHOLD_MODES: {
+  label: string;
+  value: SetupWizardHouseholdMode;
+  icon: IoniconName;
+  detail: string;
+}[] = [
+  {
+    label: "Create household",
+    value: "create",
+    icon: "home-outline",
+    detail: "Start this dog's shared home base for routines, logs, reports, and invites later.",
+  },
+  {
+    label: "Join by invite",
+    value: "join",
+    icon: "mail-open-outline",
+    detail: "Stage an invite code locally until provider-backed invite acceptance is enabled.",
+  },
+  {
+    label: "Local preview",
+    value: "local",
+    icon: "phone-portrait-outline",
+    detail: "Keep setup on this device while accounts and household sync are being configured.",
+  },
+];
+
 export default function SetupScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, updateCareDoc, isLoaded } = useCare();
+  const { isSignedIn } = useWoofAuth();
   const [draft, setDraft] = useState<SetupWizardDraft>(() => createSetupWizardDraft(state));
   const [dirty, setDirty] = useState(false);
 
@@ -59,19 +90,26 @@ export default function SetupScreen() {
       }),
     [preview],
   );
+  const confirmation = useMemo(
+    () => buildSetupWizardConfirmation(preview, { isSignedIn: Boolean(isSignedIn), isClerkConfigured }),
+    [isSignedIn, preview],
+  );
 
   const setField = (key: keyof SetupWizardDraft, value: string) => {
     setDirty(true);
     setDraft((prev) => ({ ...prev, [key]: value }));
   };
 
-  const canSave = onboarding.isComplete;
+  const householdReady = draft.householdMode !== "join" || draft.inviteCode.trim().length >= 3;
+  const canSave = onboarding.isComplete && householdReady;
 
   const saveSetup = () => {
     if (!canSave) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
-    router.replace("/(tabs)");
+    Alert.alert("Care foundation saved", `${confirmation.detail}\n\n${confirmation.providerBoundary}`, [
+      { text: "Open Today", onPress: () => router.replace("/(tabs)") },
+    ]);
   };
 
   const finishLater = () => {
@@ -192,10 +230,88 @@ export default function SetupScreen() {
             <Field label="Time" value={draft.routineTime} placeholder="7:30 AM" onChangeText={(value) => setField("routineTime", value)} />
           </Section>
 
+          <Section title="Household path" icon="home-outline">
+            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>HOW SHOULD THIS CARE HOME START?</Text>
+            <View style={s.modeStack}>
+              {HOUSEHOLD_MODES.map((item) => {
+                const selected = draft.householdMode === item.value;
+                return (
+                  <Pressable
+                    key={item.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={`${item.label}. ${item.detail}`}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setField("householdMode", item.value);
+                    }}
+                    style={({ pressed }) => [
+                      s.modeCard,
+                      {
+                        backgroundColor: selected ? colors.primary + "14" : colors.background,
+                        borderColor: selected ? colors.primary : colors.border,
+                        opacity: pressed ? 0.76 : 1,
+                      },
+                    ]}
+                  >
+                    <View style={[s.modeIcon, { backgroundColor: selected ? colors.primary : colors.primary + "16" }]}>
+                      <Ionicons name={item.icon} size={16} color={selected ? "#fff" : colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.modeTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
+                      <Text style={[s.modeDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
+                    </View>
+                    <Ionicons
+                      name={selected ? "checkmark-circle" : "ellipse-outline"}
+                      size={18}
+                      color={selected ? colors.primary : colors.mutedForeground}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Field
+              label="Household name"
+              value={draft.householdName}
+              placeholder="Phoenix House"
+              onChangeText={(value) => setField("householdName", value)}
+            />
+            {draft.householdMode === "join" && (
+              <Field
+                label="Invite code"
+                value={draft.inviteCode}
+                placeholder="WW-42"
+                autoCapitalize="characters"
+                onChangeText={(value) => setField("inviteCode", value)}
+              />
+            )}
+          </Section>
+
           <Section title="Household caregiver" icon="people-outline">
             <Field label="Name" value={draft.caregiverName} placeholder="Apollo" onChangeText={(value) => setField("caregiverName", value)} />
             <Field label="Role" value={draft.caregiverRole} placeholder="Primary caregiver" onChangeText={(value) => setField("caregiverRole", value)} />
           </Section>
+
+          <BoardCard style={s.confirmationCard}>
+            <BoardSectionHeader title="After save" action="Review" />
+            <Text style={[s.confirmationTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{confirmation.title}</Text>
+            <Text style={[s.householdLabel, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>{confirmation.householdLabel}</Text>
+            <Text style={[s.confirmationDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{confirmation.detail}</Text>
+            <View style={s.confirmationRows}>
+              {confirmation.nextActions.map((item) => (
+                <View key={item} style={s.confirmationRow}>
+                  <Ionicons name="checkmark-circle" size={15} color={colors.sage} />
+                  <Text style={[s.confirmationItem, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{item}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={[s.boundaryBox, { backgroundColor: colors.amber + "18", borderColor: colors.amber + "55" }]}>
+              <Ionicons name="lock-closed-outline" size={15} color={colors.copper} />
+              <Text style={[s.boundaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {confirmation.syncLabel} {confirmation.providerBoundary}
+              </Text>
+            </View>
+          </BoardCard>
 
           <View style={s.actions}>
             <Pressable
@@ -207,7 +323,9 @@ export default function SetupScreen() {
               ]}
             >
               <Ionicons name="checkmark-circle" size={18} color="#fff" />
-              <Text style={[s.saveText, { fontFamily: "Inter_700Bold" }]}>Save foundation</Text>
+              <Text style={[s.saveText, { fontFamily: "Inter_700Bold" }]}>
+                {householdReady ? "Save foundation" : "Add invite code"}
+              </Text>
             </Pressable>
             <Pressable onPress={finishLater} style={({ pressed }) => [s.laterBtn, { opacity: pressed ? 0.65 : 1 }]}>
               <Text style={[s.laterText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Finish later</Text>
@@ -249,6 +367,7 @@ function Field({
   onChangeText,
   multiline = false,
   keyboardType = "default",
+  autoCapitalize = "sentences",
 }: {
   label: string;
   value: string;
@@ -256,6 +375,7 @@ function Field({
   onChangeText: (value: string) => void;
   multiline?: boolean;
   keyboardType?: "default" | "decimal-pad";
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
 }) {
   const colors = useColors();
   return (
@@ -267,6 +387,7 @@ function Field({
         placeholder={placeholder}
         placeholderTextColor={colors.mutedForeground}
         keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
         multiline={multiline}
         style={[
           s.field,
@@ -309,6 +430,20 @@ const s = StyleSheet.create({
   typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 2 },
   typePill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, borderWidth: 1 },
   typeText: { fontSize: 12.5 },
+  modeStack: { gap: 9, marginBottom: 2 },
+  modeCard: { borderWidth: 1, borderRadius: 16, padding: 12, flexDirection: "row", alignItems: "center", gap: 10 },
+  modeIcon: { width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  modeTitle: { fontSize: 13.5 },
+  modeDetail: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
+  confirmationCard: { marginBottom: 14 },
+  confirmationTitle: { fontSize: 19, marginTop: 10 },
+  householdLabel: { fontSize: 12, marginTop: 2 },
+  confirmationDetail: { fontSize: 13, lineHeight: 19, marginTop: 5 },
+  confirmationRows: { gap: 8, marginTop: 12 },
+  confirmationRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  confirmationItem: { flex: 1, fontSize: 12.5, lineHeight: 18 },
+  boundaryBox: { borderWidth: 1, borderRadius: 15, padding: 11, flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 13 },
+  boundaryText: { flex: 1, fontSize: 11.5, lineHeight: 17 },
   actions: { gap: 12, marginTop: 8 },
   saveBtn: { height: 54, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   saveText: { color: "#fff", fontSize: 15.5 },

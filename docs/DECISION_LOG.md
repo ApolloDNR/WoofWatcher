@@ -1392,6 +1392,25 @@ Owner: Codex.
 
 Revisit trigger: a native keyboard avoidance layer, new modal sheet system, or app-shell redesign changes how standalone routes and bottom composers reserve safe-area space.
 
+### 2026-06-20: First-Run Household Setup Can Stage Intent Before Provider Invites
+
+Decision: the setup wizard may capture and persist Create household, Join by invite, or Local preview intent before provider-backed household creation and invite acceptance are live, as long as the UI truthfully labels the state and blocks incomplete join drafts.
+
+Reason: WoofWatcher's launch flow needs a real household decision early, but fake cloud invites would damage trust. A local household setup object lets the app collect the right owner intent, include it in privacy export, and guide the next account step without claiming remote sync or membership enforcement.
+
+Consequences:
+
+- `setupWizard.ts` persists `householdSetup` with mode, household name, optional invite code, provider status, and update time.
+- Setup UI shows Create household, Join by invite, and Local preview options.
+- Join-by-invite setup requires an invite code before save.
+- Confirmation copy distinguishes local-only, account-needed, and provider-ready states.
+- Privacy export includes household setup metadata.
+- Provider-backed household creation, invite acceptance, role enforcement, and revocation remain separate production work.
+
+Owner: Codex.
+
+Revisit trigger: Clerk/Supabase household provisioning and invite acceptance become live, or Apollo changes the launch account model.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

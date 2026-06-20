@@ -1050,7 +1050,14 @@ test("keeps Setup onboarding on shared board anatomy", () => {
   assert.match(setup, /Dog profile/);
   assert.match(setup, /Diet baseline/);
   assert.match(setup, /Starter routine/);
+  assert.match(setup, /Household path/);
   assert.match(setup, /Household caregiver/);
+  assert.match(setup, /Create household/);
+  assert.match(setup, /Join by invite/);
+  assert.match(setup, /Local preview/);
+  assert.match(setup, /buildSetupWizardConfirmation/);
+  assert.match(setup, /Care foundation saved/);
+  assert.match(setup, /Add invite code/);
   assert.doesNotMatch(setup, /header:/);
   assert.doesNotMatch(setup, /progressCard: \{[^\n]*(borderRadius|borderWidth|padding)/);
   assert.doesNotMatch(setup, /backgroundColor: colors\.card/);
