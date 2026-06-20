@@ -434,14 +434,21 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.match(mobileLayout, /export function getModalSheetBottomPadding/);
   assert.match(mobileLayout, /export function getCenteredModalBackdropPadding/);
   assert.match(mobileLayout, /export function getFloatingFeedbackBottomOffset/);
+  assert.match(mobileLayout, /export function getRouteTopPadding/);
   assert.match(tabLayout, /getFloatingTabChromeMetrics/);
 
   for (const source of [home, calendar, health, log, more, records]) {
+    assert.match(source, /getRouteTopPadding/);
+    assert.match(source, /paddingTop: topScrollPadding/);
     assert.match(source, /getTabbedRouteBottomPadding/);
     assert.match(source, /paddingBottom: bottomScrollPadding/);
+    assert.doesNotMatch(source, /paddingTop: topInset \+ 8/);
   }
 
   assert.match(avatarStudio, /getStandaloneRouteBottomPadding/);
+  assert.match(avatarStudio, /getRouteTopPadding/);
+  assert.match(avatarStudio, /paddingTop: topScrollPadding/);
+  assert.doesNotMatch(avatarStudio, /paddingTop: topInset \+ 8/);
   assert.match(avatarStudio, /paddingBottom: bottomScrollPadding/);
   assert.doesNotMatch(avatarStudio, /paddingBottom: 72/);
   assert.match(avatarStudio, /getFloatingFeedbackBottomOffset/);
@@ -458,6 +465,8 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
 
   for (const source of [premium, privacy, setup, authUi]) {
     assert.match(source, /getStandaloneRouteBottomPadding/);
+    assert.match(source, /getRouteTopPadding/);
+    assert.match(source, /paddingTop: topScrollPadding/);
     assert.match(source, /paddingBottom: bottomScrollPadding/);
   }
 
@@ -465,6 +474,10 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.doesNotMatch(privacy, /paddingBottom: insets\.bottom \+ 44/);
   assert.doesNotMatch(setup, /paddingBottom: insets\.bottom \+ 32/);
   assert.doesNotMatch(authUi, /paddingBottom: insets\.bottom \+ 32/);
+  assert.doesNotMatch(premium, /paddingTop: topInset \+ 12/);
+  assert.doesNotMatch(privacy, /paddingTop: topInset \+ 12/);
+  assert.doesNotMatch(setup, /paddingTop: topInset \+ 14/);
+  assert.doesNotMatch(authUi, /paddingTop: insets\.top \+ 48/);
 
   for (const source of [calendar, log, more, records, errorFallback]) {
     assert.match(source, /getModalSheetBottomPadding/);

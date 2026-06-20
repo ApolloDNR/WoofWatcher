@@ -29,7 +29,7 @@ import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
-import { getFloatingFeedbackBottomOffset, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getFloatingFeedbackBottomOffset, getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 
 const HERO_RATIO = 1.05;
@@ -144,7 +144,7 @@ export default function HomeScreen() {
   const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
   const toastBottomOffset = getFloatingFeedbackBottomOffset(insets.bottom, "tabbed", Platform.OS === "web");
 
-  const topInset = Platform.OS === "web" ? 18 : insets.top;
+  const topScrollPadding = getRouteTopPadding(insets.top, "tabbed", Platform.OS === "web");
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30000);
@@ -368,7 +368,7 @@ export default function HomeScreen() {
       <ScrollView
         style={s.container}
         contentContainerStyle={{
-          paddingTop: topInset + 8,
+          paddingTop: topScrollPadding,
           paddingBottom: bottomScrollPadding,
           paddingHorizontal: 16,
         }}

@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-20: Route Headers Use The Shared Safe-Area Top Contract
+
+Decision: Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell should use `getRouteTopPadding` from the shared mobile layout helper instead of route-local `topInset + 8/12/14/48` formulas.
+
+Reason: The native runtime-QA baseline already covered bottom scroll clearance, composers, sheets, toasts, and centered modals, but route headers still owned their own top safe-area offsets. A named top-padding helper gives simulator/device QA one contract to inspect for notches, web preview chrome, and auth/onboarding spacing without changing the care workflows.
+
+Owner: Codex.
+
+Revisit trigger: Native device QA shows route headers need different per-surface top clearance, the app shell changes, or a final design-system route container replaces the current screen-level scroll containers.
+
 ### 2026-06-20: Centered Text Modals Use The Shared Safe-Area Contract
 
 Decision: The Log post-care sticky-note prompt and More household/name prompt modals should use `getCenteredModalBackdropPadding` from the shared mobile layout helper instead of fixed horizontal-only centered modal padding.

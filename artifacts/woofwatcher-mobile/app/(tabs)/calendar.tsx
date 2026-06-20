@@ -28,7 +28,7 @@ import {
 } from "@workspace/care-domain";
 import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { getModalSheetBottomPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getModalSheetBottomPadding, getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { parseLocalDate } from "@/lib/time";
@@ -156,7 +156,7 @@ export default function CalendarScreen() {
   const { getToken } = useWoofAuth();
   const { routines, calendarEvents, profile, entries, caregivers, records } = state;
 
-  const topInset = Platform.OS === "web" ? 24 : insets.top;
+  const topScrollPadding = getRouteTopPadding(insets.top, "tabbed", Platform.OS === "web");
   const now = Date.now();
   const today = todayISO();
   const [scheduleTab, setScheduleTab] = useState<"today" | "tomorrow" | "week">("today");
@@ -483,7 +483,7 @@ export default function CalendarScreen() {
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
         style={s.container}
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: bottomScrollPadding, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{ paddingTop: topScrollPadding, paddingBottom: bottomScrollPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>

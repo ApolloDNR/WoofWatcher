@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
-import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 
 export function AuthShell({
   title,
@@ -27,6 +27,7 @@ export function AuthShell({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const topScrollPadding = getRouteTopPadding(insets.top, "auth", false);
   const bottomScrollPadding = getStandaloneRouteBottomPadding(insets.bottom);
 
   return (
@@ -34,7 +35,7 @@ export function AuthShell({
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[
         styles.scroll,
-        { paddingTop: insets.top + 48, paddingBottom: bottomScrollPadding },
+        { paddingTop: topScrollPadding, paddingBottom: bottomScrollPadding },
       ]}
       keyboardShouldPersistTaps="handled"
     >

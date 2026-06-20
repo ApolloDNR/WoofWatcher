@@ -142,6 +142,8 @@ Current evidence, 2026-06-20: Floating feedback toasts now derive bottom positio
 
 Current evidence, 2026-06-20: Centered text-entry modals now derive backdrop top, bottom, and horizontal clearance from `getCenteredModalBackdropPadding` instead of fixed horizontal-only modal padding. Focused tests cover flat and notched devices, and static readiness protects the Log sticky-note prompt plus More household/name prompt modals before native screenshot QA is available.
 
+Current evidence, 2026-06-20: Route header top clearance now derives from `getRouteTopPadding` instead of per-screen `topInset + 8/12/14/48` formulas. Focused tests cover flat native, notched native, and web chrome clearance, and static readiness protects Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell before native screenshot QA is available.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

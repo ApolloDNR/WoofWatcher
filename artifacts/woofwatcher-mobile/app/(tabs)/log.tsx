@@ -37,7 +37,7 @@ import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { getCenteredModalBackdropPadding, getModalSheetBottomPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getCenteredModalBackdropPadding, getModalSheetBottomPadding, getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -603,7 +603,7 @@ export default function LogScreen() {
   }, [routeParams.type]);
   const lastRouteSelectedType = useRef<string | null>(null);
 
-  const topInset = Platform.OS === "web" ? 24 : insets.top;
+  const topScrollPadding = getRouteTopPadding(insets.top, "tabbed", Platform.OS === "web");
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30000);
@@ -1381,7 +1381,7 @@ export default function LogScreen() {
       <ScrollView
         ref={scrollRef}
         style={s.container}
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: bottomScrollPadding, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{ paddingTop: topScrollPadding, paddingBottom: bottomScrollPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

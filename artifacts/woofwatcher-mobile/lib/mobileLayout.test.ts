@@ -6,6 +6,7 @@ import {
   getFloatingFeedbackBottomOffset,
   getCenteredModalBackdropPadding,
   getModalSheetBottomPadding,
+  getRouteTopPadding,
   getStandaloneComposerBottomPadding,
   getStandaloneRouteBottomPadding,
   getTabbedRouteBottomPadding,
@@ -23,6 +24,19 @@ test("keeps floating tab chrome safe on native devices with home indicators", ()
 test("keeps tabbed routes clear of the floating shell on flat native devices and web", () => {
   assert.equal(getTabbedRouteBottomPadding(0, false), 130);
   assert.equal(getTabbedRouteBottomPadding(0, true), 130);
+});
+
+test("keeps route headers clear of native notches and web chrome", () => {
+  assert.equal(getRouteTopPadding(0, "tabbed", false), 8);
+  assert.equal(getRouteTopPadding(44, "tabbed", false), 52);
+  assert.equal(getRouteTopPadding(0, "tabbed", true), 32);
+  assert.equal(getRouteTopPadding(0, "standalone", false), 12);
+  assert.equal(getRouteTopPadding(44, "standalone", false), 56);
+  assert.equal(getRouteTopPadding(0, "standalone", true), 30);
+  assert.equal(getRouteTopPadding(0, "setup", false), 14);
+  assert.equal(getRouteTopPadding(0, "setup", true), 38);
+  assert.equal(getRouteTopPadding(44, "auth", false), 92);
+  assert.equal(getRouteTopPadding(0, "auth", true), 72);
 });
 
 test("keeps standalone routes clear of the home indicator", () => {

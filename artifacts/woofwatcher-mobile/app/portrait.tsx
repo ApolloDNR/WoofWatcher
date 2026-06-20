@@ -30,7 +30,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
-import { getFloatingFeedbackBottomOffset, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getFloatingFeedbackBottomOffset, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import {
   deriveAvatarPreviewAccessories,
   deriveAvatarPreviewMood,
@@ -170,7 +170,7 @@ export default function PortraitScreen() {
   } = useAvatar();
 
   const petName = state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
-  const topInset = Platform.OS === "web" ? 20 : insets.top;
+  const topScrollPadding = getRouteTopPadding(insets.top, "tabbed", Platform.OS === "web");
   const bottomScrollPadding = getStandaloneRouteBottomPadding(insets.bottom);
   const toastBottomOffset = getFloatingFeedbackBottomOffset(insets.bottom, "standalone", Platform.OS === "web");
 
@@ -397,7 +397,7 @@ export default function PortraitScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: bottomScrollPadding, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingTop: topScrollPadding, paddingBottom: bottomScrollPadding, paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >

@@ -5,14 +5,24 @@ export type FloatingTabChromeMetrics = {
   routeBottomPadding: number;
 };
 
+export type RouteTopPaddingSurface = "tabbed" | "standalone" | "setup" | "auth";
+
 const NATIVE_TAB_BAR_BOTTOM = 8;
 const NATIVE_TAB_BAR_HEIGHT = 72;
 const NATIVE_FAB_BOTTOM_OFFSET = 26;
 const NATIVE_ROUTE_CLEARANCE = 130;
+const NATIVE_TABBED_TOP_OFFSET = 8;
+const NATIVE_STANDALONE_TOP_OFFSET = 12;
+const NATIVE_SETUP_TOP_OFFSET = 14;
+const NATIVE_AUTH_TOP_OFFSET = 48;
 const WEB_TAB_BAR_BOTTOM = 12;
 const WEB_TAB_BAR_HEIGHT = 78;
 const WEB_FAB_BOTTOM_OFFSET = 26;
 const WEB_ROUTE_CLEARANCE = 130;
+const WEB_TABBED_TOP_INSET = 24;
+const WEB_STANDALONE_TOP_INSET = 18;
+const WEB_SETUP_TOP_INSET = 24;
+const WEB_AUTH_TOP_INSET = 24;
 const STANDALONE_ROUTE_CLEARANCE = 88;
 const STANDALONE_COMPOSER_CLEARANCE = 24;
 const STANDALONE_COMPOSER_INSET_OFFSET = 12;
@@ -45,6 +55,26 @@ export function getFloatingTabChromeMetrics(bottomInset: number, isWeb: boolean)
 
 export function getTabbedRouteBottomPadding(bottomInset: number, isWeb: boolean): number {
   return getFloatingTabChromeMetrics(bottomInset, isWeb).routeBottomPadding;
+}
+
+export function getRouteTopPadding(
+  topInset: number,
+  surface: RouteTopPaddingSurface,
+  isWeb: boolean,
+): number {
+  if (surface === "auth") {
+    return (isWeb ? WEB_AUTH_TOP_INSET : topInset) + NATIVE_AUTH_TOP_OFFSET;
+  }
+
+  if (surface === "setup") {
+    return (isWeb ? WEB_SETUP_TOP_INSET : topInset) + NATIVE_SETUP_TOP_OFFSET;
+  }
+
+  if (surface === "standalone") {
+    return (isWeb ? WEB_STANDALONE_TOP_INSET : topInset) + NATIVE_STANDALONE_TOP_OFFSET;
+  }
+
+  return (isWeb ? WEB_TABBED_TOP_INSET : topInset) + NATIVE_TABBED_TOP_OFFSET;
 }
 
 export function getStandaloneRouteBottomPadding(bottomInset: number): number {

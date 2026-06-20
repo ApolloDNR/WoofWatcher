@@ -26,7 +26,7 @@ import {
   type AccountSafetySection,
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
-import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -80,7 +80,7 @@ export default function PrivacyScreen() {
     plan.documentStorage,
     plan.payments,
   ];
-  const topInset = Platform.OS === "web" ? 18 : insets.top;
+  const topScrollPadding = getRouteTopPadding(insets.top, "standalone", Platform.OS === "web");
   const bottomScrollPadding = getStandaloneRouteBottomPadding(insets.bottom);
 
   const shareExport = () => {
@@ -106,7 +106,7 @@ export default function PrivacyScreen() {
       <Stack.Screen options={{ title: "Privacy & Safety" }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: topInset + 12, paddingHorizontal: 20, paddingBottom: bottomScrollPadding }}
+        contentContainerStyle={{ paddingTop: topScrollPadding, paddingHorizontal: 20, paddingBottom: bottomScrollPadding }}
       >
         <LinearGradient
           colors={[colors.midnight, colors.primary]}
