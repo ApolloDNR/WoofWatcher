@@ -1,3 +1,6 @@
+import type { QaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
+import { qaScreenshotEvidenceNames } from "./qaScreenshotEvidence.ts";
+
 export type MobileReleaseQaReviewStatus = "unreviewed" | "pass" | "needs-review";
 
 export interface MobileReleaseQaSurface {
@@ -15,6 +18,7 @@ export interface MobileReleaseQaReview {
   surfaceId: string;
   status: MobileReleaseQaReviewStatus;
   note?: string;
+  screenshotEvidence?: readonly QaScreenshotEvidence[];
 }
 
 export interface MobileReleaseQaSummary {
@@ -23,6 +27,8 @@ export interface MobileReleaseQaSummary {
   needsReview: number;
   unreviewed: number;
   requiredScreenshots: number;
+  attachedScreenshots: number;
+  missingScreenshots: number;
 }
 
 export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
@@ -156,20 +162,27 @@ export function summarizeMobileReleaseQaReviews(
   const statuses = surfaces.map((surface) => reviewFor(reviews, surface.id).status);
   const passed = statuses.filter((status) => status === "pass").length;
   const needsReview = statuses.filter((status) => status === "needs-review").length;
+  const requiredScreenshots = surfaces.reduce(
+    (total, surface) =>
+      total +
+      surface.requiredEvidence.filter((evidence) =>
+        evidence.toLowerCase().includes("screenshot"),
+      ).length,
+    0,
+  );
+  const attachedScreenshots = surfaces.reduce(
+    (total, surface) => total + (reviewFor(reviews, surface.id).screenshotEvidence?.length ?? 0),
+    0,
+  );
 
   return {
     total: surfaces.length,
     passed,
     needsReview,
     unreviewed: Math.max(0, surfaces.length - passed - needsReview),
-    requiredScreenshots: surfaces.reduce(
-      (total, surface) =>
-        total +
-        surface.requiredEvidence.filter((evidence) =>
-          evidence.toLowerCase().includes("screenshot"),
-        ).length,
-      0,
-    ),
+    requiredScreenshots,
+    attachedScreenshots,
+    missingScreenshots: Math.max(0, requiredScreenshots - attachedScreenshots),
   };
 }
 
@@ -184,6 +197,7 @@ export function buildMobileReleaseQaShareText(
     `Reviewed: ${reviewedAtIso}`,
     `Summary: ${summary.passed}/${summary.total} passed, ${summary.needsReview} needs tune, ${summary.unreviewed} unreviewed.`,
     `Required screenshot slots: ${summary.requiredScreenshots}.`,
+    `Screenshot evidence: ${summary.attachedScreenshots} attached, ${summary.missingScreenshots} still missing.`,
     "",
     "Workflow notes:",
   ];
@@ -199,6 +213,10 @@ export function buildMobileReleaseQaShareText(
 
     if (note) {
       lines.push(`  Note: ${note}`);
+    }
+
+    if (review.screenshotEvidence?.length) {
+      lines.push(`  Screenshots: ${qaScreenshotEvidenceNames(review.screenshotEvidence)}`);
     }
   }
 

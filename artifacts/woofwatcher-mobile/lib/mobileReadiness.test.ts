@@ -4,9 +4,14 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const APP_DIR = join(process.cwd(), "artifacts", "woofwatcher-mobile", "app");
+const MOBILE_LIB_DIR = join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib");
 
 function readAppFile(path: string): string {
   return readFileSync(join(APP_DIR, path), "utf8");
+}
+
+function readMobileLibFile(path: string): string {
+  return readFileSync(join(MOBILE_LIB_DIR, path), "utf8");
 }
 
 function listAppFiles(dir = APP_DIR): string[] {
@@ -148,6 +153,9 @@ test("registers the care twin native QA route for device review", () => {
   const rootLayout = readAppFile("_layout.tsx");
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const qaRoute = readAppFile("care-twin-qa.tsx");
+  const qaSession = readMobileLibFile("mobileQaSession.ts");
+  const releaseQa = readMobileLibFile("mobileReleaseQa.ts");
+  const careTwinReport = readMobileLibFile("careTwinQaReport.ts");
 
   assert.match(rootLayout, /name="care-twin-qa"/);
   assert.match(more, /router\.push\("\/care-twin-qa" as never\)/);
@@ -173,6 +181,19 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Motion recipe/);
   assert.match(qaRoute, /choreography\.qaSummary/);
   assert.match(qaRoute, /choreography\.tapReaction\.action/);
+  assert.match(qaRoute, /ImagePicker\.launchImageLibraryAsync/);
+  assert.match(qaRoute, /buildQaScreenshotEvidence/);
+  assert.match(qaRoute, /qaEvidenceById/);
+  assert.match(qaRoute, /surfaceEvidenceById/);
+  assert.match(qaRoute, /Attach screenshot/);
+  assert.match(qaRoute, /Screenshot evidence/);
+  assert.match(qaRoute, /Clear attached QA screenshots/);
+  assert.match(qaSession, /careTwinEvidenceById/);
+  assert.match(qaSession, /surfaceEvidenceById/);
+  assert.match(qaSession, /cleanQaScreenshotEvidence/);
+  assert.match(releaseQa, /attachedScreenshots/);
+  assert.match(releaseQa, /missingScreenshots/);
+  assert.match(careTwinReport, /Attached screenshots/);
   assert.match(qaRoute, /Launch Workflow QA/);
   assert.match(qaRoute, /Open QA surface/);
   assert.match(qaRoute, /surfaceStatusById/);

@@ -324,6 +324,15 @@ of forcing every state into `bark-loop`, so rest and Health Watch states stay
 calm while happy states can still bark. `/care-twin-qa` exposes the motion
 recipe for device review.
 
+Current evidence, 2026-06-20: The internal Mobile Release QA cockpit now accepts
+local screenshot evidence from the device photo library for each release surface
+and each care-twin state. Tested helpers sanitize attachment metadata, local QA
+session persistence restores attached evidence, summary models count attached
+and missing screenshots, and the native share reports include attached file
+names. This improves the handoff packet for native QA, but final launch
+confidence still requires real iOS/Android screenshot review and human visual
+approval.
+
 Current evidence, 2026-06-19: The Option B living-room polish pass keeps Phoenix as one layered main sprite instead of a second-avatar illusion. Home quick-log actions now request action-specific sprite reactions, the room renderer adds ambient micro-behaviors and rest-state safeguards, Avatar Studio suppresses oversized still/accessory overlays when a live sprite pack is active, and PixelIcon paths use crisp pixel rendering on web.
 
 Current evidence, 2026-06-19: PixelLab subscription review did not promote weaker replacement candidates. The clean single still candidate is archived for reference, while the duplicate/cropped and gray identity-drift candidates are explicitly rejected in the PixelLab generation log. The current hard-pixel Option B runtime family remains the approved live source until native QA or a stronger reference-guided generation beats it.

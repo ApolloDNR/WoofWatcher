@@ -1,4 +1,6 @@
 import type { CareTwinRuntimeQaResult } from "./careTwinAssets.ts";
+import type { QaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
+import { qaScreenshotEvidenceNames } from "./qaScreenshotEvidence.ts";
 
 export type CareTwinQaReviewStatus = "unreviewed" | "pass" | "needs-review";
 
@@ -6,6 +8,7 @@ export interface CareTwinQaReview {
   scenarioId: string;
   status: CareTwinQaReviewStatus;
   note?: string;
+  screenshotEvidence?: readonly QaScreenshotEvidence[];
 }
 
 export interface CareTwinQaSummary {
@@ -14,6 +17,7 @@ export interface CareTwinQaSummary {
   needsReview: number;
   unreviewed: number;
   readyLayered: number;
+  attachedScreenshots: number;
 }
 
 function reviewFor(
@@ -39,6 +43,10 @@ export function summarizeCareTwinQaReviews(
     needsReview,
     unreviewed: Math.max(0, results.length - passed - needsReview),
     readyLayered: results.filter((result) => result.readiness.layeredReady).length,
+    attachedScreenshots: results.reduce(
+      (total, result) => total + (reviewFor(reviews, result.scenario.id).screenshotEvidence?.length ?? 0),
+      0,
+    ),
   };
 }
 
@@ -64,6 +72,7 @@ export function buildCareTwinQaShareText(
     `Reviewed: ${reviewedAtIso}`,
     `Summary: ${summary.passed}/${summary.total} passed, ${summary.needsReview} needs tune, ${summary.unreviewed} unreviewed.`,
     `Layered assets ready: ${summary.readyLayered}/${summary.total}.`,
+    `Attached screenshots: ${summary.attachedScreenshots}.`,
     "",
     "Device notes:",
   ];
@@ -78,6 +87,10 @@ export function buildCareTwinQaShareText(
 
     if (note) {
       lines.push(`  Note: ${note}`);
+    }
+
+    if (review.screenshotEvidence?.length) {
+      lines.push(`  Screenshots: ${qaScreenshotEvidenceNames(review.screenshotEvidence)}`);
     }
   }
 

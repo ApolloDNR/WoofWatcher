@@ -46,6 +46,15 @@ Pass/Needs tune status plus notes. The saved session is a local QA convenience
 only; it is not provider-backed storage and does not replace attached
 screenshots.
 
+As of 2026-06-20, testers can attach local screenshot evidence directly inside
+the QA route. Capture the native iOS/Android screen first, return to
+`/care-twin-qa`, tap `Attach screenshot` on the matching release surface or
+care-twin state, and select the screenshot from Photos. The route persists the
+attachment locally, shows the file name, updates attached/missing screenshot
+counts, and includes attached screenshot file names in the combined share report.
+This makes the evidence packet easier to hand off, but it is still local-only QA
+evidence until provider-backed storage rules are approved.
+
 Each state card also shows a Motion recipe generated from the same choreography
 model Home uses. Reviewers should confirm the primary loop, ambient micro-loops,
 and tap reaction match the state: happy states may bark/playfully react, rest
@@ -94,11 +103,14 @@ For every scenario below:
 - Records Incident Watch screenshot showing trend signal, follow-up tasks, trainer goals, and non-diagnostic boundary language.
 - Trainer Care Pass screenshot or shared text snippet showing Incident Watch trend/follow-up/goal lines.
 - Combined Mobile Release QA share report from `/care-twin-qa`.
+- Attached screenshot evidence names visible in the shared QA report for each reviewed surface/state.
 - Notes for any clipped sprite, weak gait, unreadable action, duplicate dog, or room/sprite scale mismatch.
 
 ## Current Limitation
 
-This Windows worktree can run static tests, TypeScript, PixelLab asset verification, and Expo web export. It now also ships an in-app QA route for device review, but it still cannot produce authoritative native simulator proof without iOS/Android runtime access.
+This Windows worktree can run static tests, TypeScript, PixelLab asset verification, and Expo web export. It now also ships an in-app QA route for device review and local screenshot attachment, but it still cannot produce authoritative native simulator proof without iOS/Android runtime access.
 
 The in-app pass/needs-tune controls are an evidence-capture aid only. They do
-not replace the screenshots and human review listed above.
+not replace the screenshots and human review listed above, and local screenshot
+attachments do not replace provider-backed QA storage when that becomes a
+production requirement.

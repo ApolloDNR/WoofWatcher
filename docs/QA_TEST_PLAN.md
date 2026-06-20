@@ -216,6 +216,17 @@ state-aware tap response, reaction duration, and QA copy from the same care-twin
 plan used by `LivingPhoenixRoom`. Device reviewers should use the new Motion
 recipe box in `/care-twin-qa` while judging loop timing and touch response.
 
+Current evidence, 2026-06-20: `/care-twin-qa` now captures local screenshot
+evidence for the Mobile Release QA cockpit and the 12-state care-twin matrix.
+Device testers can capture a native screenshot, attach it from Photos to the
+matching release surface or care-twin state, leave the route, return, and keep
+the attachment in the local QA session. `mobileQaSession.test.ts`,
+`mobileReleaseQa.test.ts`, `careTwinQaReport.test.ts`, and
+`mobileReadiness.test.ts` cover screenshot evidence sanitization, persistence,
+summary counts, share-report filenames, and route wiring. This is local QA
+evidence only; provider-backed screenshot storage and release approval still
+require Apollo-approved storage/provider rules and human review.
+
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.
 

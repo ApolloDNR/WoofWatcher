@@ -1302,6 +1302,25 @@ Owner: Codex.
 
 Revisit trigger: Rive, Lottie, Reanimated, or a future game-runtime layer replaces sprite-strip playback with a richer animation graph.
 
+### 2026-06-20: Native QA Screenshots Stay Local Until Provider Storage Is Approved
+
+Decision: `/care-twin-qa` may attach local screenshot evidence from the device photo library to release surfaces and care-twin states, persist that evidence in the local QA session, and include screenshot file names in the share report. It must not imply provider-backed screenshot storage, remote QA review, or launch approval.
+
+Reason: Native screenshots are necessary for judging App Store-quality crop, safe areas, touch response, keyboard fit, and animation taste. Local evidence capture makes device review more organized, but storing screenshots as production QA records requires approved storage/provider rules and privacy handling.
+
+Consequences:
+
+- `qaScreenshotEvidence.ts` owns sanitized local screenshot metadata.
+- `mobileQaSession.ts` persists release-surface and care-twin state evidence locally with the rest of the QA session.
+- `mobileReleaseQa.ts` and `careTwinQaReport.ts` count attached screenshots and list file names in share text.
+- `/care-twin-qa` exposes Attach screenshot and Clear controls for each release surface and each care-twin scenario.
+- Real iOS/Android human screenshot review remains required before release confidence.
+- Provider-backed QA media storage remains blocked until Apollo approves storage rules.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves provider-backed media/document storage for QA evidence, or the project gains reliable automated native screenshot capture.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

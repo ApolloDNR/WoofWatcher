@@ -3,14 +3,18 @@ import type {
   MobileReleaseQaReview,
   MobileReleaseQaReviewStatus,
 } from "./mobileReleaseQa.ts";
+import type { QaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
+import { cleanQaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
 
 export const MOBILE_QA_SESSION_STORAGE_KEY = "woofwatcher.mobileReleaseQaSession.v1";
 
 export interface MobileQaSessionInput {
   careTwinStatusById: Record<string, CareTwinQaReviewStatus>;
   careTwinNotes: Record<string, string>;
+  careTwinEvidenceById: Record<string, QaScreenshotEvidence[]>;
   surfaceStatusById: Record<string, MobileReleaseQaReviewStatus>;
   surfaceNotes: Record<string, string>;
+  surfaceEvidenceById: Record<string, QaScreenshotEvidence[]>;
 }
 
 export interface MobileQaSessionSnapshot {
@@ -48,20 +52,44 @@ export function buildMobileQaSessionSnapshot(
   savedAtIso = new Date().toISOString(),
 ): MobileQaSessionSnapshot {
   const careTwinReviews = uniqueKeys(input.careTwinStatusById, input.careTwinNotes)
+    .concat(Object.keys(input.careTwinEvidenceById))
+    .filter((key, index, keys) => keys.indexOf(key) === index)
+    .sort()
     .map<CareTwinQaReview | null>((scenarioId) => {
       const status = input.careTwinStatusById[scenarioId] ?? "unreviewed";
       const note = cleanNote(input.careTwinNotes[scenarioId]);
-      if (status === "unreviewed" && !note) return null;
-      return { scenarioId, status, note };
+      const screenshotEvidence = cleanQaScreenshotEvidence(
+        input.careTwinEvidenceById[scenarioId],
+        `${scenarioId}-qa-screenshot.png`,
+      );
+      if (status === "unreviewed" && !note && screenshotEvidence.length === 0) return null;
+      return {
+        scenarioId,
+        status,
+        note,
+        ...(screenshotEvidence.length ? { screenshotEvidence } : {}),
+      };
     })
     .filter((review): review is CareTwinQaReview => !!review);
 
   const releaseReviews = uniqueKeys(input.surfaceStatusById, input.surfaceNotes)
+    .concat(Object.keys(input.surfaceEvidenceById))
+    .filter((key, index, keys) => keys.indexOf(key) === index)
+    .sort()
     .map<MobileReleaseQaReview | null>((surfaceId) => {
       const status = input.surfaceStatusById[surfaceId] ?? "unreviewed";
       const note = cleanNote(input.surfaceNotes[surfaceId]);
-      if (status === "unreviewed" && !note) return null;
-      return { surfaceId, status, note };
+      const screenshotEvidence = cleanQaScreenshotEvidence(
+        input.surfaceEvidenceById[surfaceId],
+        `${surfaceId}-qa-screenshot.png`,
+      );
+      if (status === "unreviewed" && !note && screenshotEvidence.length === 0) return null;
+      return {
+        surfaceId,
+        status,
+        note,
+        ...(screenshotEvidence.length ? { screenshotEvidence } : {}),
+      };
     })
     .filter((review): review is MobileReleaseQaReview => !!review);
 
@@ -87,8 +115,10 @@ export function parseMobileQaSessionSnapshot(raw: string | null): MobileQaSessio
   const data = parsed as Partial<MobileQaSessionSnapshot>;
   const careTwinStatusById: Record<string, CareTwinQaReviewStatus> = {};
   const careTwinNotes: Record<string, string> = {};
+  const careTwinEvidenceById: Record<string, QaScreenshotEvidence[]> = {};
   const surfaceStatusById: Record<string, MobileReleaseQaReviewStatus> = {};
   const surfaceNotes: Record<string, string> = {};
+  const surfaceEvidenceById: Record<string, QaScreenshotEvidence[]> = {};
 
   if (Array.isArray(data.careTwinReviews)) {
     for (const review of data.careTwinReviews) {
@@ -100,6 +130,11 @@ export function parseMobileQaSessionSnapshot(raw: string | null): MobileQaSessio
       careTwinStatusById[scenarioId] = candidate.status;
       const note = cleanNote(candidate.note);
       if (note) careTwinNotes[scenarioId] = note;
+      const screenshotEvidence = cleanQaScreenshotEvidence(
+        candidate.screenshotEvidence,
+        `${scenarioId}-qa-screenshot.png`,
+      );
+      if (screenshotEvidence.length) careTwinEvidenceById[scenarioId] = screenshotEvidence;
     }
   }
 
@@ -113,14 +148,21 @@ export function parseMobileQaSessionSnapshot(raw: string | null): MobileQaSessio
       surfaceStatusById[surfaceId] = candidate.status;
       const note = cleanNote(candidate.note);
       if (note) surfaceNotes[surfaceId] = note;
+      const screenshotEvidence = cleanQaScreenshotEvidence(
+        candidate.screenshotEvidence,
+        `${surfaceId}-qa-screenshot.png`,
+      );
+      if (screenshotEvidence.length) surfaceEvidenceById[surfaceId] = screenshotEvidence;
     }
   }
 
   return {
     careTwinStatusById,
     careTwinNotes,
+    careTwinEvidenceById,
     surfaceStatusById,
     surfaceNotes,
+    surfaceEvidenceById,
     savedAtIso: typeof data.savedAtIso === "string" ? data.savedAtIso : undefined,
   };
 }

@@ -57,7 +57,18 @@ test("summarizes care twin QA review status for device evidence", () => {
     qaResult("sleep", "Quiet-hours sleep", false),
   ];
   const reviews: CareTwinQaReview[] = [
-    { scenarioId: "happy", status: "pass" },
+    {
+      scenarioId: "happy",
+      status: "pass",
+      screenshotEvidence: [
+        {
+          uri: "file:///qa/ios-happy-idle.png",
+          fileName: "ios-happy-idle.png",
+          source: "library",
+          capturedAtIso: "2026-06-20T12:02:00.000Z",
+        },
+      ],
+    },
     { scenarioId: "health", status: "needs-review", note: "Sprite sits too low on iPhone SE." },
   ];
 
@@ -67,6 +78,7 @@ test("summarizes care twin QA review status for device evidence", () => {
     needsReview: 1,
     unreviewed: 1,
     readyLayered: 2,
+    attachedScreenshots: 1,
   });
 });
 
@@ -76,7 +88,18 @@ test("builds a shareable care twin QA report without claiming native QA is compl
     qaResult("health", "Health Watch signal", true),
   ];
   const reviews: CareTwinQaReview[] = [
-    { scenarioId: "happy", status: "pass" },
+    {
+      scenarioId: "happy",
+      status: "pass",
+      screenshotEvidence: [
+        {
+          uri: "file:///qa/ios-happy-idle.png",
+          fileName: "ios-happy-idle.png",
+          source: "library",
+          capturedAtIso: "2026-06-20T12:02:00.000Z",
+        },
+      ],
+    },
     { scenarioId: "health", status: "needs-review", note: "Health room crop needs 8px more bottom padding." },
   ];
 
@@ -87,6 +110,8 @@ test("builds a shareable care twin QA report without claiming native QA is compl
   assert.match(text, /Steady happy idle: Pass/);
   assert.match(text, /Health Watch signal: Needs tune/);
   assert.match(text, /Health room crop needs 8px more bottom padding/);
+  assert.match(text, /Attached screenshots: 1/);
+  assert.match(text, /Screenshots: ios-happy-idle\.png/);
   assert.match(text, /Native screenshot evidence still required before launch/);
 });
 

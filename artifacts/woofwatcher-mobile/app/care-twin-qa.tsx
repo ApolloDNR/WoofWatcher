@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
@@ -37,6 +38,7 @@ import {
   parseMobileQaSessionSnapshot,
 } from "@/lib/mobileQaSession";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
+import { buildQaScreenshotEvidence, type QaScreenshotEvidence } from "@/lib/qaScreenshotEvidence";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -151,8 +153,10 @@ export default function CareTwinQaScreen() {
   const insets = useSafeAreaInsets();
   const [qaStatusById, setQaStatusById] = useState<Record<string, CareTwinQaReviewStatus>>({});
   const [qaNotes, setQaNotes] = useState<Record<string, string>>({});
+  const [qaEvidenceById, setQaEvidenceById] = useState<Record<string, QaScreenshotEvidence[]>>({});
   const [surfaceStatusById, setSurfaceStatusById] = useState<Record<string, MobileReleaseQaReviewStatus>>({});
   const [surfaceNotes, setSurfaceNotes] = useState<Record<string, string>>({});
+  const [surfaceEvidenceById, setSurfaceEvidenceById] = useState<Record<string, QaScreenshotEvidence[]>>({});
   const [qaSessionLoaded, setQaSessionLoaded] = useState(false);
   const [qaSessionSavedAt, setQaSessionSavedAt] = useState<string | undefined>();
   const scenarios = useMemo(
@@ -167,8 +171,9 @@ export default function CareTwinQaScreen() {
         scenarioId: result.scenario.id,
         status: qaStatusById[result.scenario.id] ?? "unreviewed",
         note: qaNotes[result.scenario.id]?.trim(),
+        screenshotEvidence: qaEvidenceById[result.scenario.id],
       })),
-    [qaNotes, qaStatusById, scenarios],
+    [qaEvidenceById, qaNotes, qaStatusById, scenarios],
   );
   const qaSummary = useMemo(
     () => summarizeCareTwinQaReviews(scenarios, qaReviews),
@@ -180,8 +185,9 @@ export default function CareTwinQaScreen() {
         surfaceId: surface.id,
         status: surfaceStatusById[surface.id] ?? "unreviewed",
         note: surfaceNotes[surface.id]?.trim(),
+        screenshotEvidence: surfaceEvidenceById[surface.id],
       })),
-    [releaseSurfaces, surfaceNotes, surfaceStatusById],
+    [releaseSurfaces, surfaceEvidenceById, surfaceNotes, surfaceStatusById],
   );
   const releaseSummary = useMemo(
     () => summarizeMobileReleaseQaReviews(releaseSurfaces, releaseReviews),
@@ -200,8 +206,10 @@ export default function CareTwinQaScreen() {
         if (!cancelled && savedSession) {
           setQaStatusById(savedSession.careTwinStatusById);
           setQaNotes(savedSession.careTwinNotes);
+          setQaEvidenceById(savedSession.careTwinEvidenceById);
           setSurfaceStatusById(savedSession.surfaceStatusById);
           setSurfaceNotes(savedSession.surfaceNotes);
+          setSurfaceEvidenceById(savedSession.surfaceEvidenceById);
           setQaSessionSavedAt(savedSession.savedAtIso);
         }
       } catch {
@@ -224,12 +232,14 @@ export default function CareTwinQaScreen() {
     const snapshot = buildMobileQaSessionSnapshot({
       careTwinStatusById: qaStatusById,
       careTwinNotes: qaNotes,
+      careTwinEvidenceById: qaEvidenceById,
       surfaceStatusById,
       surfaceNotes,
+      surfaceEvidenceById,
     });
     setQaSessionSavedAt(snapshot.savedAtIso);
     AsyncStorage.setItem(MOBILE_QA_SESSION_STORAGE_KEY, JSON.stringify(snapshot)).catch(() => {});
-  }, [qaNotes, qaSessionLoaded, qaStatusById, surfaceNotes, surfaceStatusById]);
+  }, [qaEvidenceById, qaNotes, qaSessionLoaded, qaStatusById, surfaceEvidenceById, surfaceNotes, surfaceStatusById]);
 
   const markScenario = (scenarioId: string, status: CareTwinQaReviewStatus) => {
     if (Platform.OS !== "web") {
@@ -256,6 +266,51 @@ export default function CareTwinQaScreen() {
       Haptics.selectionAsync().catch(() => {});
     }
     router.push(surface.route as never);
+  };
+
+  const pickScreenshotEvidence = async (fallbackFileName: string): Promise<QaScreenshotEvidence | null> => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.9,
+      });
+      if (result.canceled || !result.assets[0]?.uri) return null;
+
+      const asset = result.assets[0];
+      const fileName =
+        typeof (asset as { fileName?: unknown }).fileName === "string"
+          ? (asset as { fileName: string }).fileName
+          : fallbackFileName;
+
+      return buildQaScreenshotEvidence({
+        uri: asset.uri,
+        fileName,
+        source: "library",
+        capturedAtIso: new Date().toISOString(),
+      }, fallbackFileName);
+    } catch {
+      Alert.alert("Screenshot unavailable", "Choose the screenshot from Photos after capturing it on iOS or Android.");
+      return null;
+    }
+  };
+
+  const attachSurfaceScreenshot = async (surface: MobileReleaseQaSurface) => {
+    const evidence = await pickScreenshotEvidence(`${surface.id}-qa-screenshot.png`);
+    if (!evidence) return;
+    setSurfaceEvidenceById((current) => ({
+      ...current,
+      [surface.id]: [...(current[surface.id] ?? []), evidence],
+    }));
+  };
+
+  const attachScenarioScreenshot = async (scenarioId: string) => {
+    const evidence = await pickScreenshotEvidence(`${scenarioId}-qa-screenshot.png`);
+    if (!evidence) return;
+    setQaEvidenceById((current) => ({
+      ...current,
+      [scenarioId]: [...(current[scenarioId] ?? []), evidence],
+    }));
   };
 
   const shareQaSummary = async () => {
@@ -311,6 +366,7 @@ export default function CareTwinQaScreen() {
             <QaBadge label={`${qaSummary.passed} pass`} tone={colors.sage} />
             <QaBadge label={`${qaSummary.needsReview} needs tune`} tone={colors.amber} />
             <QaBadge label={`${qaSummary.unreviewed} unreviewed`} tone={colors.mutedForeground} />
+            <QaBadge label={`${releaseSummary.attachedScreenshots + qaSummary.attachedScreenshots} screenshots`} tone={releaseSummary.missingScreenshots === 0 ? colors.sage : colors.amber} />
             <QaBadge label={qaSessionLoaded ? "Saved locally" : "Loading saved QA"} tone={qaSessionLoaded ? colors.sage : colors.amber} />
           </View>
           <Text style={[s.savedSessionText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
@@ -338,6 +394,7 @@ export default function CareTwinQaScreen() {
         {releaseSurfaces.map((surface) => {
           const reviewStatus = surfaceStatusById[surface.id] ?? "unreviewed";
           const reviewTone = statusTone(reviewStatus, colors);
+          const attachedScreenshots = surfaceEvidenceById[surface.id] ?? [];
 
           return (
             <BoardCard key={surface.id} style={s.surfaceCard}>
@@ -380,6 +437,18 @@ export default function CareTwinQaScreen() {
                   </View>
                 ))}
               </View>
+
+              <EvidenceCapture
+                label={`${attachedScreenshots.length} attached`}
+                evidence={attachedScreenshots}
+                onAttach={() => attachSurfaceScreenshot(surface)}
+                onClear={() =>
+                  setSurfaceEvidenceById((current) => ({
+                    ...current,
+                    [surface.id]: [],
+                  }))
+                }
+              />
 
               <Text style={[s.launchRisk, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
                 Release risk: {surface.launchRisk}
@@ -454,6 +523,7 @@ export default function CareTwinQaScreen() {
           const reviewStatus = qaStatusById[result.scenario.id] ?? "unreviewed";
           const reviewTone = statusTone(reviewStatus, colors);
           const choreography = deriveCareTwinChoreography(result.plan);
+          const attachedScreenshots = qaEvidenceById[result.scenario.id] ?? [];
 
           return (
             <BoardCard key={result.scenario.id} style={s.scenarioCard}>
@@ -514,6 +584,18 @@ export default function CareTwinQaScreen() {
                   {result.scenario.nativeQaPrompt}
                 </Text>
               </View>
+
+              <EvidenceCapture
+                label={`${attachedScreenshots.length} attached`}
+                evidence={attachedScreenshots}
+                onAttach={() => attachScenarioScreenshot(result.scenario.id)}
+                onClear={() =>
+                  setQaEvidenceById((current) => ({
+                    ...current,
+                    [result.scenario.id]: [],
+                  }))
+                }
+              />
 
               <View style={s.reviewGrid}>
                 <ReviewButton
@@ -605,6 +687,81 @@ function ReviewButton({
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+function EvidenceCapture({
+  evidence,
+  label,
+  onAttach,
+  onClear,
+}: {
+  evidence: readonly QaScreenshotEvidence[];
+  label: string;
+  onAttach: () => void;
+  onClear: () => void;
+}) {
+  const colors = useColors();
+  return (
+    <View style={[s.evidenceCapture, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      <View style={s.evidenceCaptureHeader}>
+        <View style={s.evidenceCaptureTitleRow}>
+          <Ionicons name="images-outline" size={16} color={colors.copper} />
+          <Text style={[s.evidenceCaptureTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+            Screenshot evidence
+          </Text>
+        </View>
+        <QaBadge label={label} tone={evidence.length ? colors.sage : colors.amber} />
+      </View>
+      <Text style={[s.evidenceCaptureHelp, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+        Capture the screen on iOS or Android, then attach it here from Photos so the QA report keeps local proof with the route notes.
+      </Text>
+      {evidence.length ? (
+        <View style={s.attachedList}>
+          {evidence.map((item) => (
+            <View key={`${item.uri}-${item.capturedAtIso}`} style={[s.attachedItem, { borderColor: colors.border }]}>
+              <Ionicons name="image-outline" size={14} color={colors.sage} />
+              <Text style={[s.attachedName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]} numberOfLines={1}>
+                {item.fileName}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+      <View style={s.evidenceActions}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Attach QA screenshot from Photos"
+          onPress={onAttach}
+          style={({ pressed }) => [
+            s.attachButton,
+            {
+              backgroundColor: pressed ? `${colors.copper}22` : `${colors.copper}12`,
+              borderColor: `${colors.copper}55`,
+            },
+          ]}
+        >
+          <Ionicons name="camera-outline" size={16} color={colors.copper} />
+          <Text style={[s.attachButtonText, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>Attach screenshot</Text>
+        </Pressable>
+        {evidence.length ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Clear attached QA screenshots"
+            onPress={onClear}
+            style={({ pressed }) => [
+              s.clearEvidenceButton,
+              {
+                backgroundColor: pressed ? `${colors.rose}18` : colors.background,
+                borderColor: `${colors.rose}55`,
+              },
+            ]}
+          >
+            <Text style={[s.clearEvidenceText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Clear</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
@@ -736,6 +893,74 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     lineHeight: 17,
+  },
+  evidenceCapture: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
+  evidenceCaptureHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  evidenceCaptureTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  evidenceCaptureTitle: {
+    fontSize: 13,
+  },
+  evidenceCaptureHelp: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  attachedList: {
+    gap: 6,
+  },
+  attachedItem: {
+    minHeight: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  attachedName: {
+    flex: 1,
+    fontSize: 12,
+  },
+  evidenceActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  attachButton: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 9,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  attachButtonText: {
+    fontSize: 12,
+  },
+  clearEvidenceButton: {
+    minHeight: 40,
+    borderRadius: 9,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clearEvidenceText: {
+    fontSize: 12,
   },
   launchRisk: {
     fontSize: 12,

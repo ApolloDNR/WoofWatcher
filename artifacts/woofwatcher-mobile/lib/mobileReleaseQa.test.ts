@@ -25,7 +25,18 @@ test("lists the launch-critical mobile QA surfaces for the next native pass", ()
 test("summarizes mobile release QA review status and screenshot evidence", () => {
   const surfaces = listMobileReleaseQaSurfaces();
   const reviews: MobileReleaseQaReview[] = [
-    { surfaceId: "phoenix-home", status: "pass" },
+    {
+      surfaceId: "phoenix-home",
+      status: "pass",
+      screenshotEvidence: [
+        {
+          uri: "file:///qa/ios-home.png",
+          fileName: "ios-home.png",
+          source: "library",
+          capturedAtIso: "2026-06-20T12:01:00.000Z",
+        },
+      ],
+    },
     { surfaceId: "phoenix-home", status: "needs-review", note: "Duplicate stale review should not double count." },
     { surfaceId: "avatar-studio", status: "needs-review", note: "Mixed Breed sprite clips at the bottom." },
     { surfaceId: "unknown-surface", status: "pass" },
@@ -38,12 +49,25 @@ test("summarizes mobile release QA review status and screenshot evidence", () =>
   assert.equal(summary.needsReview, 1);
   assert.equal(summary.unreviewed, surfaces.length - 2);
   assert.ok(summary.requiredScreenshots >= surfaces.length);
+  assert.equal(summary.attachedScreenshots, 1);
+  assert.equal(summary.missingScreenshots, summary.requiredScreenshots - 1);
 });
 
 test("builds a release QA share report with the screenshot boundary intact", () => {
   const surfaces = listMobileReleaseQaSurfaces();
   const reviews: MobileReleaseQaReview[] = [
-    { surfaceId: "phoenix-home", status: "pass" },
+    {
+      surfaceId: "phoenix-home",
+      status: "pass",
+      screenshotEvidence: [
+        {
+          uri: "file:///qa/ios-home.png",
+          fileName: "ios-home.png",
+          source: "library",
+          capturedAtIso: "2026-06-20T12:01:00.000Z",
+        },
+      ],
+    },
     { surfaceId: "records-incident-watch", status: "needs-review", note: "Follow-up row needs larger touch target." },
   ];
 
@@ -54,6 +78,8 @@ test("builds a release QA share report with the screenshot boundary intact", () 
   assert.match(text, /Records Incident Watch: Needs tune/);
   assert.match(text, /Follow-up row needs larger touch target/);
   assert.match(text, /Required screenshot slots:/);
+  assert.match(text, /Screenshot evidence: 1 attached/);
+  assert.match(text, /Screenshots: ios-home\.png/);
   assert.match(text, /does not replace attached iOS\/Android screenshots/);
 });
 

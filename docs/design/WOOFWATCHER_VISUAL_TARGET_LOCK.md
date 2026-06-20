@@ -6,10 +6,12 @@ Last updated: 2026-06-20
 
 These images are the current target for WoofWatcher's visual quality, layout density, and brand system:
 
+- `docs/design/reference/woofwatcher-final-app-store-light-board.png`
+- `docs/design/reference/woofwatcher-final-care-rpg-dark-board.png`
 - `docs/design/reference/woofwatcher-premium-light-design-system.png`
 - `docs/design/reference/woofwatcher-care-adventure-rpg-dark-board.png`
 
-Older references in the same folder remain useful, but these two are the strongest current north-star boards.
+Older references in the same folder remain useful, but the `woofwatcher-final-*` boards are the strongest current north-star references. They lock the desired App Store polish, the crest/logo system, the light production app shell, and the darker care-adventure RPG expansion direction.
 
 ## Direction
 
@@ -23,6 +25,8 @@ The design should preserve:
 - Mobile-first care screens with clear bottom navigation, large touch targets, and simple daily actions.
 - Desktop shell with intentional left sidebar, premium cards, quick care, status, Care Pass, WoofGuide, and Records surfaces.
 - Care plus gameplay framing: care, adventure, memories, family/household, growth, levels, badges, and story.
+- A living pixel Phoenix/care twin as the emotional center of the first screen, not a secondary decorative avatar.
+- Adventure, My Care Today, Access Pass, Household Pulse, Pet Profile, Care Pass, and marketplace-ready surfaces as part of one coherent product ecosystem.
 - Animated pixel dog states as production assets become available through PixelLab or another sprite pipeline.
 
 ## Product Feel
