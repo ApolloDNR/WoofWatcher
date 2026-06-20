@@ -4,7 +4,7 @@
 
 - Confirm launch target: Expo preview, TestFlight, App Store, web dashboard, or staged launch.
 - Confirm subscription packaging and exact paid tiers.
-- Confirm whether WoofWatcher should support multiple dogs before paid launch.
+- Confirm whether WoofWatcher should support provider-backed multi-dog switching before paid launch. Local CareTwin roster staging exists now, but scoped per-dog care documents still need provider/database approval.
 - Confirm whether Figma is the canonical visual design source.
 - Confirm final high-end animation asset pipeline: code-only Reanimated first, Rive/Lottie assets, Figma-to-code design source, or hired illustrator/motion designer support.
 - Confirm if/when saved walk routes should move from owner-entered route/place templates to GPS route recording, map previews, and location retention policy.
@@ -15,6 +15,7 @@
 - Local Expo web export in the premium revenue builder worktree is no longer blocked. The package-local Expo CLI plus Metro resolver patch exported the app successfully on 2026-06-18. A tested care-twin native QA matrix now exists in `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, and the app exposes it through `/care-twin-qa` in development/internal builds with Pass/Needs tune notes plus a native shareable QA report, but real iOS/Android simulator or device screenshots are still required before release confidence.
 - Clerk production configuration.
 - Database/Supabase production configuration.
+- Provider/database rules for multi-dog care document scoping, including per-dog logs, routines, records, reports, avatars, privacy export, and household permissions.
 - Storage provider for records and generated reports.
 - Document upload/storage rules for real record files; local metadata, reminders, visible storage gates, and local-only medication proof attachment now exist, but durable cross-device production file storage is not approved/configured.
 - AI provider key and model policy.

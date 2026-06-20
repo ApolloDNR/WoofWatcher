@@ -1202,6 +1202,24 @@ Owner: Codex.
 
 Revisit trigger: Server-backed audit policies, Access Pass review, legal export requirements, or provider-backed attachment history require a stricter audit presentation.
 
+### 2026-06-19: CareTwin Roster Can Stage Future Dogs, But Switching Is Provider-Gated
+
+Decision: The mobile app may persist planned future dogs in a local CareTwin roster, but only the primary dog is treated as the live care twin until provider-backed multi-dog care documents exist. Future dogs must be shown as provider-gated planned slots, not as selectable pets with shared Phoenix logs.
+
+Reason: WoofWatcher's long-term platform needs multiple dogs, but pretending to switch pets without separate logs, routines, records, reports, avatar state, permissions, and privacy export would corrupt trust. Staging the roster is useful; fake switching is not.
+
+Consequences:
+
+- `CareContext` now carries `activePetId` and `pets`.
+- `careTwinRoster.ts` owns the tested live-versus-provider-gated roster model.
+- More shows CareTwin Roster with Add future dog and locked planned slots.
+- Owner data export and deletion request scope include staged pet roster data.
+- True switching remains blocked until provider-backed multi-dog care document scoping is approved and implemented.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves production account/storage/database rules for multi-dog care documents, or the API schema grows first-class per-dog scoping.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

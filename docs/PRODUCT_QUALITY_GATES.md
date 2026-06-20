@@ -55,12 +55,13 @@ Passing evidence:
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
 - Records show expired, due-soon, current, and reference status for saved record rows.
 - WoofGuide shows deterministic suggested actions tied to health watch, record attention, diet setup, routines, meal logging, and Care Pass preview.
+- More exposes a local CareTwin Roster with the active live dog, provider-gated future pet slots, Add future dog flow, and no fake switching before scoped multi-dog care documents exist.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
 Current gaps:
 
 - Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning, invite approval, and post-setup confirmation remain incomplete.
-- Multiple dogs, provider-backed role enforcement, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
+- Provider-backed multi-dog care documents/switching, provider-backed role enforcement, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
 - Runtime smoke has not been added.
 
 ## Gate 3: Care Domain Correctness
@@ -69,7 +70,7 @@ Status: Partially passing.
 
 Passing evidence:
 
-- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, medication quick-log defaults, medication composer wiring, medication adherence, medication follow-ups, medication history search/outcome filters, water quick-log defaults, hydration summaries, hydration Care Pass language, mobile Records hydration wiring, walk quick-log visibility, walk activity summaries, saved walk route templates, walk activity and Saved Routes Care Pass language, mobile Records walk activity wiring, full Log walk route fields, Full Log search derivation and mobile wiring, potty quick-log visibility, potty composer detail fields, Potty Health summaries, Potty Health color/context review evidence, Potty Health Care Pass language, mobile Records Potty Health wiring, Weekly Care Trends derivation, Care Pass trend language, mobile Records trend wiring, Training Progress derivation, Log composer training fields, trainer Care Pass training language, mobile Records training wiring, Alone Time derivation, Log composer Alone Time fields, Care Pass Alone Time language, mobile Records Alone Time wiring, Weight Trend derivation, Care Pass Weight Trend language, mobile Records Weight Trend wiring, Grooming Care derivation, Log composer grooming fields, Care Pass Grooming Care language, mobile Records Grooming Care wiring, Reminder Center derivation, Calendar wiring, and action routing, Household Responsibility derivation, Calendar/More responsibility wiring, Household Access derivation and More wiring, Care Log Audit Trail derivation and mobile Log wiring, Care Pass medication language, mobile Records medication wiring, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
+- Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, medication quick-log defaults, medication composer wiring, medication adherence, medication follow-ups, medication history search/outcome filters, water quick-log defaults, hydration summaries, hydration Care Pass language, mobile Records hydration wiring, walk quick-log visibility, walk activity summaries, saved walk route templates, walk activity and Saved Routes Care Pass language, mobile Records walk activity wiring, full Log walk route fields, Full Log search derivation and mobile wiring, potty quick-log visibility, potty composer detail fields, Potty Health summaries, Potty Health color/context review evidence, Potty Health Care Pass language, mobile Records Potty Health wiring, Weekly Care Trends derivation, Care Pass trend language, mobile Records trend wiring, Training Progress derivation, Log composer training fields, trainer Care Pass training language, mobile Records training wiring, Alone Time derivation, Log composer Alone Time fields, Care Pass Alone Time language, mobile Records Alone Time wiring, Weight Trend derivation, Care Pass Weight Trend language, mobile Records Weight Trend wiring, Grooming Care derivation, Log composer grooming fields, Care Pass Grooming Care language, mobile Records Grooming Care wiring, Reminder Center derivation, Calendar wiring, and action routing, Household Responsibility derivation, Calendar/More responsibility wiring, Household Access derivation and More wiring, local CareTwin roster readiness, Care Log Audit Trail derivation and mobile Log wiring, Care Pass medication language, mobile Records medication wiring, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:
@@ -163,7 +164,7 @@ Current gaps:
 - Care Log Audit Trail derivation and Log edit/sticky/delete/detail wiring are covered by focused tests.
 - Full Log search derivation, normalized type filters, sticky-note/detail search, and mobile Log wiring are covered by focused tests.
 - Durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, and mobile Log/More/CareContext wiring are covered by focused tests.
-- Need report/export tests.
+- Need broader report/export tests. Owner privacy export now includes staged pet roster data.
 - Need release smoke checklist.
 
 ## Gate 8: Security, Privacy, And Compliance
@@ -182,7 +183,7 @@ Current gaps:
 - Need role-based access control.
 - Care-log edit/delete audit trail exists in mobile/domain; broader role, record, household, and account audit policy remains open.
 - Need document storage access rules.
-- AI usage disclosure, owner care-data export, and non-destructive deletion request preparation exist in mobile; provider-backed policy and destructive deletion still need approval.
+- AI usage disclosure, owner care-data export, staged pet roster export, and non-destructive deletion request preparation exist in mobile; provider-backed policy and destructive deletion still need approval.
 
 ## Gate 9: Deployment And Operations
 

@@ -1353,9 +1353,24 @@ test("keeps household access readiness visible from More", () => {
   assert.match(more, /accessibilityLabel="Share household invite"/);
 });
 
+test("keeps CareTwin roster readiness visible without fake multi-dog switching", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
+
+  assert.match(careContext, /activePetId/);
+  assert.match(careContext, /pets: PetProfile\[\]/);
+  assert.match(more, /deriveCareTwinRoster/);
+  assert.match(more, /buildCareTwinRosterDraft/);
+  assert.match(more, /CareTwin Roster/);
+  assert.match(more, /Add future dog/);
+  assert.match(more, /provider-backed multi-dog care documents/);
+  assert.match(more, /Multi-dog switching is staged/);
+});
+
 test("keeps More household, tools, and diet sections on shared board card anatomy", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 
+  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="CareTwin Roster"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Team"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Household Access"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Responsibility Center"/);

@@ -246,6 +246,8 @@ Current evidence, 2026-06-11: Full Log search strengthens the paid history/trust
 
 Current evidence, 2026-06-11: Medication History search/filter strengthens the paid health-history wedge by making dose and adherence evidence findable inside Records before provider-backed medication reports or server search exist.
 
+Current evidence, 2026-06-19: CareTwin Roster readiness gives WoofWatcher a local multi-dog platform seam without fake switching. The care document persists `activePetId` and planned `pets`, More exposes a provider-gated roster card and Add future dog sheet, focused tests protect the roster model and mobile wiring, and owner export/deletion scope includes staged pet roster data.
+
 ## Gate 8: Production Safety
 
 Passing means CI is green, API auth is household-scoped, secrets are absent, privacy/export/delete are planned, sync failures are visible, and release docs are accurate.

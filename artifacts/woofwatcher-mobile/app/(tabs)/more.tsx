@@ -39,6 +39,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
+import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -86,6 +87,10 @@ export default function MoreScreen() {
     profile.name && profile.name !== "My Dog"
       ? profile.name
       : "Phoenix";
+  const careTwinRoster = useMemo(
+    () => deriveCareTwinRoster(state),
+    [state.activePetId, state.profile, state.pets],
+  );
   const avatarTemplate = useMemo(
     () => getAvatarTemplate(avatarConfig.templateId),
     [avatarConfig.templateId],
@@ -220,6 +225,9 @@ export default function MoreScreen() {
   const [nameOpen, setNameOpen] = useState(false);
   const [nameValue, setNameValue] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [petRosterOpen, setPetRosterOpen] = useState(false);
+  const [petRosterName, setPetRosterName] = useState("");
+  const [petRosterBreed, setPetRosterBreed] = useState("");
   const [pName, setPName] = useState("");
   const [pBreed, setPBreed] = useState("");
   const [pWeight, setPWeight] = useState("");
@@ -258,6 +266,29 @@ export default function MoreScreen() {
       message: `Join our ${household.name} on WoofWatcher to help care for ${petName}. Invite code: ${household.inviteCode}`,
       title: "WoofWatcher invite",
     }).catch(() => Alert.alert("Invite code", household.inviteCode));
+  };
+
+  const openFuturePetSheet = () => {
+    setPetRosterName("");
+    setPetRosterBreed("");
+    setPetRosterOpen(true);
+  };
+
+  const saveFuturePet = () => {
+    const draft = buildCareTwinRosterDraft({
+      name: petRosterName,
+      breed: petRosterBreed,
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateCareDoc((doc) => ({
+      ...doc,
+      activePetId: "primary",
+      pets: [
+        ...(doc.pets ?? []),
+        draft,
+      ],
+    }));
+    setPetRosterOpen(false);
   };
 
   const submitJoin = () => {
@@ -583,7 +614,7 @@ export default function MoreScreen() {
           <BoardRouteHeader
             kicker="WOOFWATCHER"
             title="More"
-            subtitle={`Profile, household, launch gates, and every care tool for ${petName}`}
+            subtitle={`Profile, household, roster, launch gates, and every care tool for ${petName}`}
             centered
             plain
           />
@@ -667,6 +698,96 @@ export default function MoreScreen() {
               <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Logs today</Text>
             </View>
           </View>
+
+          <BoardCard style={s.moreBoardCard}>
+            <BoardSectionHeader
+              title="CareTwin Roster"
+              accessory={
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    openFuturePetSheet();
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add future dog to CareTwin roster"
+                  hitSlop={8}
+                >
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Add future dog</Text>
+                </Pressable>
+              }
+            />
+            <View style={[s.rosterSummary, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={[s.rosterSummaryIcon, { backgroundColor: colors.primary + "16" }]}>
+                <Ionicons name="paw-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.rosterSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {careTwinRoster.summary}
+                </Text>
+                <Text style={[s.rosterSummaryText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {careTwinRoster.nextStep}
+                </Text>
+              </View>
+            </View>
+            <View style={s.rosterMetrics}>
+              {[
+                { label: "Live", value: careTwinRoster.liveCount, tone: colors.sage },
+                { label: "Future", value: careTwinRoster.futureCount, tone: colors.copper },
+                { label: "Gated", value: careTwinRoster.providerGatedCount, tone: colors.amber },
+              ].map((metric) => (
+                <View key={metric.label} style={[s.rosterMetric, { backgroundColor: metric.tone + "12", borderColor: metric.tone + "26" }]}>
+                  <Text style={[s.rosterMetricValue, { color: metric.tone, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
+                  <Text style={[s.rosterMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{metric.label}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={[s.rosterList, { borderTopColor: colors.border }]}>
+              {careTwinRoster.pets.map((pet, index) => (
+                <Pressable
+                  key={pet.id}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    if (!pet.canSwitch) {
+                      Alert.alert(
+                        "Multi-dog switching is staged",
+                        "This dog is saved as a planned CareTwin slot. Separate logs, routines, records, and reports need provider-backed multi-dog care documents before switching is enabled.",
+                      );
+                    }
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
+                  style={({ pressed }) => [
+                    s.rosterRow,
+                    index < careTwinRoster.pets.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                    { opacity: pressed ? 0.72 : 1 },
+                  ]}
+                >
+                  <View style={[s.rosterAvatar, { backgroundColor: pet.isActive ? colors.primary + "18" : colors.background, borderColor: pet.isActive ? colors.primary + "33" : colors.border }]}>
+                    <Text style={[s.rosterAvatarText, { color: pet.isActive ? colors.primary : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      {pet.name.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={s.rosterNameLine}>
+                      <Text style={[s.rosterName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{pet.name}</Text>
+                      <View style={[s.rosterBadge, { backgroundColor: pet.isActive ? colors.sage + "18" : colors.amber + "18" }]}>
+                        <Text style={[s.rosterBadgeText, { color: pet.isActive ? colors.sage : colors.amber, fontFamily: "Inter_700Bold" }]}>
+                          {pet.statusLabel}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[s.rosterMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {pet.breed} - {pet.weightLabel}
+                    </Text>
+                    <Text style={[s.rosterDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {pet.detail}
+                    </Text>
+                  </View>
+                  <Ionicons name={pet.canSwitch ? "checkmark-circle-outline" : "lock-closed-outline"} size={19} color={pet.canSwitch ? colors.sage : colors.amber} />
+                </Pressable>
+              ))}
+            </View>
+          </BoardCard>
 
           <BoardCard style={[s.moreBoardCard, { borderColor: intelligenceTone + "44" }]}>
             <BoardSectionHeader
@@ -1332,6 +1453,47 @@ export default function MoreScreen() {
         onConfirm={submitName}
       />
 
+      <Modal visible={petRosterOpen} transparent animationType="slide" onRequestClose={() => setPetRosterOpen(false)}>
+        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setPetRosterOpen(false)}>
+          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+            <View style={{ paddingBottom: insets.bottom + 20, paddingHorizontal: 22 }}>
+              <View style={s.modalHandle} />
+              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Add future dog</Text>
+              <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                This stages a CareTwin slot only. Separate logs, routines, and records stay locked until multi-dog storage is approved.
+              </Text>
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
+              <TextInput
+                value={petRosterName}
+                onChangeText={setPetRosterName}
+                placeholder="e.g. London"
+                placeholderTextColor={colors.mutedForeground}
+                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+              />
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>BREED</Text>
+              <TextInput
+                value={petRosterBreed}
+                onChangeText={setPetRosterBreed}
+                placeholder="e.g. Golden Retriever"
+                placeholderTextColor={colors.mutedForeground}
+                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+              />
+
+              <Pressable
+                onPress={saveFuturePet}
+                accessibilityRole="button"
+                accessibilityLabel="Save future dog to CareTwin roster"
+                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+              >
+                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save planned slot</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* Dog profile edit modal */}
       <Modal visible={profileOpen} transparent animationType="slide" onRequestClose={() => setProfileOpen(false)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProfileOpen(false)}>
@@ -1594,6 +1756,41 @@ const s = StyleSheet.create({
   moreBoardCard: { marginTop: 14 },
   boardDivider: { borderTopWidth: 1, marginTop: 14 },
 
+  rosterSummary: {
+    minHeight: 78,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+  },
+  rosterSummaryIcon: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  rosterSummaryTitle: { fontSize: 15.5, lineHeight: 20 },
+  rosterSummaryText: { fontSize: 12.2, lineHeight: 17, marginTop: 3 },
+  rosterMetrics: { flexDirection: "row", gap: 8, marginTop: 12 },
+  rosterMetric: {
+    flex: 1,
+    minHeight: 58,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  rosterMetricValue: { fontSize: 18, lineHeight: 21 },
+  rosterMetricLabel: { fontSize: 10.5, marginTop: 2, textTransform: "uppercase" },
+  rosterList: { borderTopWidth: 1, marginTop: 12 },
+  rosterRow: { flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 13 },
+  rosterAvatar: { width: 42, height: 42, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  rosterAvatarText: { fontSize: 17 },
+  rosterNameLine: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap" },
+  rosterName: { fontSize: 14.5, flexShrink: 1 },
+  rosterBadge: { minHeight: 22, borderRadius: 7, paddingHorizontal: 7, alignItems: "center", justifyContent: "center" },
+  rosterBadgeText: { fontSize: 9.5, textTransform: "uppercase" },
+  rosterMeta: { fontSize: 11.8, lineHeight: 16, marginTop: 3 },
+  rosterDetail: { fontSize: 11.4, lineHeight: 16, marginTop: 3 },
+
   launchBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
   launchBadgeText: { fontSize: 9.5, letterSpacing: 0.5 },
   intelligenceBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
@@ -1802,6 +1999,7 @@ const s = StyleSheet.create({
   profileModal: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", paddingTop: 14 },
   modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   sheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
+  sheetSubtitle: { fontSize: 12.5, lineHeight: 18, marginBottom: 2 },
   profFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 16 },
   profField: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   profWeightRow: { flexDirection: "row", alignItems: "flex-end", gap: 12 },

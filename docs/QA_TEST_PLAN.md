@@ -145,6 +145,10 @@ Latest local evidence, 2026-06-19:
 70. Switch Avatar Studio to the Retriever template, open Emotes, and confirm all 10 moods use the Retriever starter pack instead of Phoenix art. Switch to an unfinished template and confirm it falls back to that template's own base still rather than the wrong dog.
 71. Switch Avatar Studio to the Husky / Spitz template, open Emotes, and confirm all 10 moods use the Husky starter pack, including Home Alone and Not Feeling Well, with no Retriever or Phoenix fallback art.
 72. Switch Avatar Studio to the Bully template, open Emotes, and confirm all 10 moods use the Bully starter pack, including Home Alone and Not Feeling Well, with no Husky, Retriever, or Phoenix fallback art.
+73. Open More and confirm CareTwin Roster shows Phoenix/the primary dog as the live care twin with Live, Future, and Gated metrics.
+74. Tap Add future dog, save a planned dog such as London, and confirm it appears as Provider-gated without changing Phoenix's active logs or profile.
+75. Tap the provider-gated future dog and confirm the app explains that multi-dog switching requires provider-backed multi-dog care documents before logs, routines, records, and reports can be separated.
+76. Open Privacy & Safety export after adding a future dog and confirm staged pet roster data is included without auth/session tokens.
 
 ## Missing QA
 

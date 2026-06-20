@@ -257,6 +257,12 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Mobile TypeScript:
   - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
   - Result: passed.
+- Full local release suite:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts`
+  - Result: passed, 284 tests.
+- Whitespace/safety check:
+  - Command: `git diff --check`
+  - Result: passed.
 - Expo web export:
   - Command attempted through the local Expo CLI.
   - Result at the time: blocked by local dependency junction/tooling. This was superseded by the 2026-06-18 Pixel Rendering And Studio Presentation Pass below, which fixed the premium revenue builder worktree's Expo export path.
@@ -829,3 +835,47 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 
 - Provider-backed photo/document storage remains gated by Apollo's storage decision.
 - Native iOS/Android QA still needs device evidence for the detail sheet correction card, Home active-walk state, Log finish panel touch ergonomics, and avatar-room motion.
+
+## 2026-06-19 CareTwin Roster Readiness Pass
+
+### What Changed
+
+- Added a tested `careTwinRoster.ts` helper that derives the primary live care twin, future pet slots, provider-gated counts, summary copy, and safe next-step guidance.
+- Extended the mobile care document with `activePetId` and `pets` so staged future dogs persist locally/shared without changing Phoenix's current logs.
+- Added a More-screen CareTwin Roster card with live/future/gated metrics, a polished active/future pet list, and an Add future dog bottom sheet.
+- Future pets are explicitly locked as planned slots; tapping them explains that provider-backed multi-dog care documents are required before switching or separating logs, routines, records, and reports.
+- Owner privacy export and deletion-request scope now include staged pet roster data.
+- Extended mobile readiness checks so the roster UI, care document fields, provider-gated copy, and privacy export coverage cannot be removed accidentally.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/careTwinRoster.ts`
+- `artifacts/woofwatcher-mobile/lib/careTwinRoster.test.ts`
+- `artifacts/woofwatcher-mobile/context/CareContext.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.ts`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/DECISION_LOG.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
+- `docs/PRODUCT_QUALITY_GATES.md`
+- `docs/ULTIMATE_RELEASE_PLAN.md`
+
+### Tests And Checks Run
+
+- CareTwin roster, privacy export, and mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/careTwinRoster.test.ts artifacts/woofwatcher-mobile/lib/privacySafety.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 70 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+
+### Remaining Work
+
+- True dog switching still needs provider-backed multi-dog care documents so logs, routines, records, reports, avatar state, privacy export, and household permissions are scoped per dog.
+- Provider-backed photo/document storage remains gated by Apollo's storage decision.
+- Native iOS/Android QA still needs device evidence for the More roster card, modal ergonomics, and existing avatar-room motion.

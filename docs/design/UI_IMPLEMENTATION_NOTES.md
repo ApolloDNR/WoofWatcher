@@ -647,6 +647,22 @@ Design intent:
 - Keep the actual audit evidence intact for sitter, trainer, vet, and owner handoff contexts.
 - Avoid turning every edit into a scary warning; corrections are framed as traceability.
 
+## 2026-06-19 CareTwin Roster Readiness Pass
+
+More now has a CareTwin Roster board card:
+
+- The primary dog is the only live care twin.
+- Future dogs can be staged through Add future dog.
+- Future dogs render as provider-gated planned slots with a lock icon and explanatory tap behavior.
+- The card shows Live, Future, and Gated counts so the state is understandable at a glance.
+- The bottom sheet copy clearly says separate logs, routines, and records stay locked until multi-dog storage is approved.
+
+Design intent:
+
+- Make the long-term CareTwin platform visible without lying about current backend capability.
+- Keep the roster compact and operational, like a professional household setting rather than a marketing teaser.
+- Avoid a dead-end feeling by giving the user a useful action now: stage a future pet and understand what is required for true switching.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

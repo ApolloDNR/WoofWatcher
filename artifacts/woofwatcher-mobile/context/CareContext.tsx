@@ -57,6 +57,18 @@ export interface Profile {
   vetBoundary: string;
 }
 
+export interface PetProfile {
+  id: string;
+  name: string;
+  publicLabel?: string;
+  breed: string;
+  careFocus?: string;
+  avatarTemplateId?: string;
+  status?: "live" | "setup-needed" | "provider-gated";
+  createdAt?: string;
+  weight?: Partial<WeightInfo>;
+}
+
 export interface Caregiver {
   name: string;
   role: string;
@@ -144,7 +156,9 @@ export interface DietProfile {
 export interface CareDoc {
   createdAt: string;
   updatedAt: string;
+  activePetId: string;
   profile: Profile;
+  pets: PetProfile[];
   caregivers: Caregiver[];
   dietProfile: DietProfile;
   routines: Routine[];
@@ -164,6 +178,7 @@ function getDefaultDoc(): CareDoc {
   return {
     createdAt: now,
     updatedAt: now,
+    activePetId: "primary",
     profile: {
       name: "My Dog",
       publicLabel: "My Dog",
@@ -183,6 +198,7 @@ function getDefaultDoc(): CareDoc {
       vetBoundary:
         "WoofWatcher tracks patterns for caregiver and veterinarian review. It is not a veterinary diagnosis.",
     },
+    pets: [],
     caregivers: [],
     dietProfile: {
       primaryFood: "",
@@ -209,6 +225,8 @@ function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
   const merged = { ...getDefaultDoc(), ...(partial ?? {}) };
   return {
     ...merged,
+    activePetId: typeof merged.activePetId === "string" && merged.activePetId.trim() ? merged.activePetId : "primary",
+    pets: Array.isArray(merged.pets) ? merged.pets : [],
     reportArtifacts: Array.isArray(merged.reportArtifacts) ? merged.reportArtifacts : [],
   };
 }
@@ -650,7 +668,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       version: serverVersion,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
+      activePetId: doc.activePetId,
       profile: doc.profile,
+      pets: doc.pets,
       caregivers: doc.caregivers,
       dietProfile: doc.dietProfile,
       routines: doc.routines,
