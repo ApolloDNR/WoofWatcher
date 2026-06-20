@@ -10,13 +10,15 @@ Run focused behavior tests:
 
 CI must pass `WoofWatcher Verify` on `main`.
 
-Latest local evidence, 2026-06-19:
+Latest local evidence, 2026-06-20:
 
-- PASS: 280 focused behavior/readiness tests with the command above.
+- PASS: 294 behavior/readiness tests with bundled Node across `artifacts\woofwatcher-mobile\lib\*.test.ts` and `lib\care-domain\test\*.test.ts`.
+- PASS: 74 focused mobile QA/care-twin readiness tests covering platform-aware Mobile Release QA evidence, Care Twin QA reporting, and static mobile readiness.
 - PASS: mobile TypeScript check with bundled Node and workspace TypeScript.
-- PASS: PixelLab asset verifier checked 148 Phoenix room/sprite/template/emote/accessory/seed-strip/Option B runtime assets with 0 missing and 0 invalid.
+- PASS: PixelLab asset verifier checked 149 Phoenix room/sprite/template/emote/accessory/seed-strip/Option B runtime assets with 0 missing and 0 invalid.
 - PASS: Expo web export completed through the package-local Expo CLI and Metro resolver patch.
-- PASS: Headless Chrome visual smoke captured `/portrait` and Home from the exported web build.
+- PASS: `/care-twin-qa` Mobile Release QA now uses helper-driven platform evidence completeness, flexible screenshot-slot math, visible Native proof open/ready copy, and evidence-gap copy.
+- PREVIOUS 2026-06-19: Headless Chrome visual smoke captured `/portrait` and Home from the exported web build; this was not rerun in the 2026-06-20 platform-evidence slice.
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` is currently blocked before job start by the account billing/spending-limit issue documented in `docs/BLOCKERS_FOR_APOLLO.md`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 
 ## Required Automated Coverage

@@ -1339,6 +1339,23 @@ Owner: Codex.
 
 Revisit trigger: automated native screenshot capture or provider-backed QA evidence storage introduces a stronger platform/source-of-truth model.
 
+### 2026-06-20: Native QA Proof Requires All Evidence Classes
+
+Decision: Mobile Release QA proof is complete only when required iOS slots, required Android slots, and flexible/general screenshot slots are all satisfied. The cockpit may display total attached files, but completion color/copy must come from the tested platform-proof helper instead of a generic screenshot count.
+
+Reason: Some launch evidence is platform-specific and some is flexible, such as a shared report screenshot. A total file count can look impressive while still missing every Android capture, so the app must show the exact gap before release review.
+
+Consequences:
+
+- `mobileReleaseQa.ts` owns helper functions for complete platform proof, flexible slot satisfaction, platform evidence labels, and missing evidence copy.
+- `/care-twin-qa` shows Native proof open/ready plus exact iOS/Android/flexible evidence status.
+- Static readiness tests reject the older aggregate screenshot-badge completion pattern.
+- Real native QA still requires device/simulator screenshots and human visual review.
+
+Owner: Codex.
+
+Revisit trigger: release QA moves to an external provider-backed evidence system or automated native screenshot capture creates a stronger per-platform proof source.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

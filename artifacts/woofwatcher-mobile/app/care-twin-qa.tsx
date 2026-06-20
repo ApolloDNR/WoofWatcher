@@ -25,7 +25,10 @@ import {
 } from "@/lib/careTwinQaReport";
 import {
   buildMobileReleaseQaShareText,
+  formatMobileReleaseQaMissingEvidence,
+  formatMobileReleaseQaPlatformEvidence,
   listMobileReleaseQaSurfaces,
+  mobileReleaseQaScreenshotEvidenceComplete,
   mobileReleaseQaStatusLabel,
   summarizeMobileReleaseQaReviews,
   type MobileReleaseQaReview,
@@ -198,6 +201,10 @@ export default function CareTwinQaScreen() {
     () => summarizeMobileReleaseQaReviews(releaseSurfaces, releaseReviews),
     [releaseReviews, releaseSurfaces],
   );
+  const releaseScreenshotEvidenceComplete = mobileReleaseQaScreenshotEvidenceComplete(releaseSummary);
+  const releasePlatformEvidenceLabel = formatMobileReleaseQaPlatformEvidence(releaseSummary);
+  const releaseMissingEvidenceLabel = formatMobileReleaseQaMissingEvidence(releaseSummary);
+  const attachedEvidenceFiles = releaseSummary.attachedScreenshots + qaSummary.attachedScreenshots;
   const topInset = Platform.OS === "web" ? 24 : insets.top;
   const bottomInset = Platform.OS === "web" ? 32 : insets.bottom + 18;
 
@@ -372,11 +379,15 @@ export default function CareTwinQaScreen() {
             <QaBadge label={`${qaSummary.passed} pass`} tone={colors.sage} />
             <QaBadge label={`${qaSummary.needsReview} needs tune`} tone={colors.amber} />
             <QaBadge label={`${qaSummary.unreviewed} unreviewed`} tone={colors.mutedForeground} />
-            <QaBadge label={`${releaseSummary.attachedScreenshots + qaSummary.attachedScreenshots} screenshots`} tone={releaseSummary.missingScreenshots === 0 ? colors.sage : colors.amber} />
+            <QaBadge label={`${attachedEvidenceFiles} evidence files`} tone={releaseScreenshotEvidenceComplete ? colors.sage : colors.amber} />
+            <QaBadge label={releaseScreenshotEvidenceComplete ? "Native proof ready" : "Native proof open"} tone={releaseScreenshotEvidenceComplete ? colors.sage : colors.amber} />
             <QaBadge label={`iOS ${releaseSummary.attachedIosScreenshots}/${releaseSummary.requiredIosScreenshots}`} tone={releaseSummary.missingIosScreenshots === 0 ? colors.sage : colors.amber} />
             <QaBadge label={`Android ${releaseSummary.attachedAndroidScreenshots}/${releaseSummary.requiredAndroidScreenshots}`} tone={releaseSummary.missingAndroidScreenshots === 0 ? colors.sage : colors.amber} />
             <QaBadge label={qaSessionLoaded ? "Saved locally" : "Loading saved QA"} tone={qaSessionLoaded ? colors.sage : colors.amber} />
           </View>
+          <Text style={[s.platformEvidenceText, { color: releaseScreenshotEvidenceComplete ? colors.sage : colors.amber, fontFamily: "Inter_700Bold" }]}>
+            Platform proof: {releasePlatformEvidenceLabel}. {releaseMissingEvidenceLabel}.
+          </Text>
           <Text style={[s.savedSessionText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
             Local QA session: {formatSavedAt(qaSessionSavedAt)}
           </Text>
@@ -397,7 +408,7 @@ export default function CareTwinQaScreen() {
           </Pressable>
         </BoardCard>
 
-        <BoardSectionHeader title="Launch Workflow QA" action={`${releaseSummary.requiredScreenshots} screenshots`} />
+        <BoardSectionHeader title="Launch Workflow QA" action={releaseScreenshotEvidenceComplete ? "platform proof complete" : releaseMissingEvidenceLabel} />
 
         {releaseSurfaces.map((surface) => {
           const reviewStatus = surfaceStatusById[surface.id] ?? "unreviewed";
@@ -833,6 +844,10 @@ const s = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
+  },
+  platformEvidenceText: {
+    fontSize: 12,
+    lineHeight: 17,
   },
   savedSessionText: {
     fontSize: 12,

@@ -223,6 +223,32 @@ export function summarizeMobileReleaseQaReviews(
   };
 }
 
+export function mobileReleaseQaScreenshotEvidenceComplete(summary: MobileReleaseQaSummary): boolean {
+  return (
+    summary.missingIosScreenshots === 0 &&
+    summary.missingAndroidScreenshots === 0 &&
+    summary.missingAnyScreenshots === 0
+  );
+}
+
+export function mobileReleaseQaFlexibleScreenshotSlotsSatisfied(summary: MobileReleaseQaSummary): number {
+  return Math.min(summary.requiredAnyScreenshots, Math.max(0, summary.requiredAnyScreenshots - summary.missingAnyScreenshots));
+}
+
+export function formatMobileReleaseQaPlatformEvidence(summary: MobileReleaseQaSummary): string {
+  return `iOS ${summary.attachedIosScreenshots}/${summary.requiredIosScreenshots}, Android ${summary.attachedAndroidScreenshots}/${summary.requiredAndroidScreenshots}, flexible ${mobileReleaseQaFlexibleScreenshotSlotsSatisfied(summary)}/${summary.requiredAnyScreenshots}`;
+}
+
+export function formatMobileReleaseQaMissingEvidence(summary: MobileReleaseQaSummary): string {
+  const missing = [
+    summary.missingIosScreenshots > 0 ? `${summary.missingIosScreenshots} iOS` : "",
+    summary.missingAndroidScreenshots > 0 ? `${summary.missingAndroidScreenshots} Android` : "",
+    summary.missingAnyScreenshots > 0 ? `${summary.missingAnyScreenshots} flexible` : "",
+  ].filter(Boolean);
+
+  return missing.length ? `Missing ${missing.join(", ")}` : "All required platform evidence attached";
+}
+
 export function buildMobileReleaseQaShareText(
   surfaces: readonly MobileReleaseQaSurface[],
   reviews: readonly MobileReleaseQaReview[],
@@ -235,7 +261,8 @@ export function buildMobileReleaseQaShareText(
     `Summary: ${summary.passed}/${summary.total} passed, ${summary.needsReview} needs tune, ${summary.unreviewed} unreviewed.`,
     `Required screenshot slots: ${summary.requiredScreenshots}.`,
     `Screenshot evidence: ${summary.attachedScreenshots} attached, ${summary.missingScreenshots} still missing.`,
-    `Platform evidence: iOS ${summary.attachedIosScreenshots}/${summary.requiredIosScreenshots}, Android ${summary.attachedAndroidScreenshots}/${summary.requiredAndroidScreenshots}, general ${Math.max(0, summary.attachedOtherScreenshots)}/${summary.requiredAnyScreenshots}.`,
+    `Platform evidence: ${formatMobileReleaseQaPlatformEvidence(summary)}.`,
+    `Evidence gap: ${formatMobileReleaseQaMissingEvidence(summary)}.`,
     "",
     "Workflow notes:",
   ];

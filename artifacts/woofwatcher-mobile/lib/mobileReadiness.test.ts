@@ -192,6 +192,12 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Clear attached QA screenshots/);
   assert.match(qaRoute, /releaseSummary\.attachedIosScreenshots/);
   assert.match(qaRoute, /releaseSummary\.attachedAndroidScreenshots/);
+  assert.match(qaRoute, /formatMobileReleaseQaPlatformEvidence/);
+  assert.match(qaRoute, /formatMobileReleaseQaMissingEvidence/);
+  assert.match(qaRoute, /mobileReleaseQaScreenshotEvidenceComplete/);
+  assert.match(qaRoute, /Native proof open/);
+  assert.match(qaRoute, /Platform proof:/);
+  assert.doesNotMatch(qaRoute, /releaseSummary\.missingScreenshots === 0 \? colors\.sage : colors\.amber/);
   assert.match(qaSession, /careTwinEvidenceById/);
   assert.match(qaSession, /surfaceEvidenceById/);
   assert.match(qaSession, /cleanQaScreenshotEvidence/);
@@ -200,7 +206,11 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(releaseQa, /requiredIosScreenshots/);
   assert.match(releaseQa, /attachedIosScreenshots/);
   assert.match(releaseQa, /missingAndroidScreenshots/);
-  assert.match(releaseQa, /Platform evidence: iOS/);
+  assert.match(releaseQa, /mobileReleaseQaScreenshotEvidenceComplete/);
+  assert.match(releaseQa, /formatMobileReleaseQaPlatformEvidence/);
+  assert.match(releaseQa, /formatMobileReleaseQaMissingEvidence/);
+  assert.match(releaseQa, /Platform evidence: \$\{formatMobileReleaseQaPlatformEvidence\(summary\)\}/);
+  assert.match(releaseQa, /Evidence gap:/);
   assert.match(releaseQa, /missingScreenshots/);
   assert.match(careTwinReport, /Attached screenshots/);
   assert.match(careTwinReport, /attachedIosScreenshots/);

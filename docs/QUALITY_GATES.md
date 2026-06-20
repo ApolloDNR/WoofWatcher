@@ -340,6 +340,13 @@ separately, and share reports list file names with platform labels. This prevent
 iOS-only or Android-only screenshots from falsely satisfying the full native QA
 gate.
 
+Current evidence, 2026-06-20: Mobile Release QA platform proof now uses tested
+helper functions for complete evidence, flexible screenshot-slot satisfaction,
+platform evidence labels, and missing-evidence copy. `/care-twin-qa` shows Native
+proof open/ready, iOS/Android/flexible counts, and the exact evidence gap in the
+summary and Launch Workflow header instead of relying on one aggregate screenshot
+badge.
+
 Current evidence, 2026-06-19: The Option B living-room polish pass keeps Phoenix as one layered main sprite instead of a second-avatar illusion. Home quick-log actions now request action-specific sprite reactions, the room renderer adds ambient micro-behaviors and rest-state safeguards, Avatar Studio suppresses oversized still/accessory overlays when a live sprite pack is active, and PixelIcon paths use crisp pixel rendering on web.
 
 Current evidence, 2026-06-19: PixelLab subscription review did not promote weaker replacement candidates. The clean single still candidate is archived for reference, while the duplicate/cropped and gray identity-drift candidates are explicitly rejected in the PixelLab generation log. The current hard-pixel Option B runtime family remains the approved live source until native QA or a stronger reference-guided generation beats it.
@@ -348,4 +355,4 @@ Current evidence, 2026-06-13: Focused tests now cover durable sync outbox deriva
 
 Current evidence, 2026-06-14: `WoofWatcher Verify` uses Node 24-compatible action majors for checkout, setup-node, and pnpm setup, and keeps the project test/build runtime pinned to Node 24.
 
-Current evidence, 2026-06-19: The local behavior/readiness suite passes at 292 tests after the Adventure Mode foundation, covering mobile readiness, privacy export, PWA contracts, and shared care-domain behavior. Care-domain declarations, mobile TypeScript, and `git diff --check` also pass locally.
+Current evidence, 2026-06-20: The local behavior/readiness suite passes at 294 tests after the Mobile Release QA platform-proof refinement, covering mobile readiness, QA reporting, platform-aware screenshot evidence, privacy export, PWA contracts, and shared care-domain behavior. Mobile TypeScript, PixelLab asset verification at 149 files, Expo web export, and `git diff --check` also pass locally.
