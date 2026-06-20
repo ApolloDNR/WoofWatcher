@@ -21,6 +21,15 @@ import {
   type CareTwinQaReview,
   type CareTwinQaReviewStatus,
 } from "@/lib/careTwinQaReport";
+import {
+  buildMobileReleaseQaShareText,
+  listMobileReleaseQaSurfaces,
+  mobileReleaseQaStatusLabel,
+  summarizeMobileReleaseQaReviews,
+  type MobileReleaseQaReview,
+  type MobileReleaseQaReviewStatus,
+  type MobileReleaseQaSurface,
+} from "@/lib/mobileReleaseQa";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -108,7 +117,10 @@ function QaBadge({ label, tone }: { label: string; tone: string }) {
   );
 }
 
-function statusTone(status: CareTwinQaReviewStatus, colors: ReturnType<typeof useColors>): string {
+function statusTone(
+  status: CareTwinQaReviewStatus | MobileReleaseQaReviewStatus,
+  colors: ReturnType<typeof useColors>,
+): string {
   if (status === "pass") return colors.sage;
   if (status === "needs-review") return colors.amber;
   return colors.mutedForeground;
@@ -120,10 +132,13 @@ export default function CareTwinQaScreen() {
   const insets = useSafeAreaInsets();
   const [qaStatusById, setQaStatusById] = useState<Record<string, CareTwinQaReviewStatus>>({});
   const [qaNotes, setQaNotes] = useState<Record<string, string>>({});
+  const [surfaceStatusById, setSurfaceStatusById] = useState<Record<string, MobileReleaseQaReviewStatus>>({});
+  const [surfaceNotes, setSurfaceNotes] = useState<Record<string, string>>({});
   const scenarios = useMemo(
     () => listCareTwinRuntimeQaScenarios().map(evaluateCareTwinRuntimeQaScenario),
     [],
   );
+  const releaseSurfaces = useMemo(() => listMobileReleaseQaSurfaces(), []);
   const readyCount = scenarios.filter((result) => result.readiness.layeredReady).length;
   const qaReviews = useMemo<CareTwinQaReview[]>(
     () =>
@@ -138,6 +153,19 @@ export default function CareTwinQaScreen() {
     () => summarizeCareTwinQaReviews(scenarios, qaReviews),
     [qaReviews, scenarios],
   );
+  const releaseReviews = useMemo<MobileReleaseQaReview[]>(
+    () =>
+      releaseSurfaces.map((surface) => ({
+        surfaceId: surface.id,
+        status: surfaceStatusById[surface.id] ?? "unreviewed",
+        note: surfaceNotes[surface.id]?.trim(),
+      })),
+    [releaseSurfaces, surfaceNotes, surfaceStatusById],
+  );
+  const releaseSummary = useMemo(
+    () => summarizeMobileReleaseQaReviews(releaseSurfaces, releaseReviews),
+    [releaseReviews, releaseSurfaces],
+  );
   const topInset = Platform.OS === "web" ? 24 : insets.top;
   const bottomInset = Platform.OS === "web" ? 32 : insets.bottom + 18;
 
@@ -151,12 +179,33 @@ export default function CareTwinQaScreen() {
     }));
   };
 
+  const markSurface = (surfaceId: string, status: MobileReleaseQaReviewStatus) => {
+    if (Platform.OS !== "web") {
+      Haptics.selectionAsync().catch(() => {});
+    }
+    setSurfaceStatusById((current) => ({
+      ...current,
+      [surfaceId]: current[surfaceId] === status ? "unreviewed" : status,
+    }));
+  };
+
+  const openSurface = (surface: MobileReleaseQaSurface) => {
+    if (Platform.OS !== "web") {
+      Haptics.selectionAsync().catch(() => {});
+    }
+    router.push(surface.route as never);
+  };
+
   const shareQaSummary = async () => {
-    const message = buildCareTwinQaShareText(scenarios, qaReviews);
+    const reviewedAtIso = new Date().toISOString();
+    const message = [
+      buildMobileReleaseQaShareText(releaseSurfaces, releaseReviews, reviewedAtIso),
+      buildCareTwinQaShareText(scenarios, qaReviews, reviewedAtIso),
+    ].join("\n\n");
 
     try {
       await Share.share({
-        title: "WoofWatcher Care Twin QA",
+        title: "WoofWatcher Mobile Release QA",
         message,
       });
     } catch {
@@ -187,14 +236,15 @@ export default function CareTwinQaScreen() {
             </View>
             <View style={s.summaryCopy}>
               <Text style={[s.summaryTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
-                One care twin. Twelve states.
+                Mobile release cockpit.
               </Text>
               <Text style={[s.summaryText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Verify sprite action, dogless room, stage crop, phone-size readability, and non-diagnostic tone.
+                Check launch workflows, screenshot evidence, sprite states, phone-size readability, and non-diagnostic tone.
               </Text>
             </View>
           </View>
           <View style={s.summaryGrid}>
+            <QaBadge label={`${releaseSummary.passed}/${releaseSummary.total} release`} tone={releaseSummary.passed === releaseSummary.total ? colors.sage : colors.amber} />
             <QaBadge label={`${readyCount}/${scenarios.length} layered`} tone={readyCount === scenarios.length ? colors.sage : colors.amber} />
             <QaBadge label={`${qaSummary.passed} pass`} tone={colors.sage} />
             <QaBadge label={`${qaSummary.needsReview} needs tune`} tone={colors.amber} />
@@ -216,6 +266,119 @@ export default function CareTwinQaScreen() {
             <Text style={[s.shareButtonText, { fontFamily: "Inter_700Bold" }]}>Share QA summary</Text>
           </Pressable>
         </BoardCard>
+
+        <BoardSectionHeader title="Launch Workflow QA" action={`${releaseSummary.requiredScreenshots} screenshots`} />
+
+        {releaseSurfaces.map((surface) => {
+          const reviewStatus = surfaceStatusById[surface.id] ?? "unreviewed";
+          const reviewTone = statusTone(reviewStatus, colors);
+
+          return (
+            <BoardCard key={surface.id} style={s.surfaceCard}>
+              <View style={s.surfaceHeader}>
+                <View style={s.surfaceTitleWrap}>
+                  <View style={[s.surfaceIcon, { backgroundColor: `${colors.brandNavy}12` }]}>
+                    <Ionicons name="phone-portrait-outline" size={18} color={colors.brandNavy} />
+                  </View>
+                  <View style={s.surfaceTitleCopy}>
+                    <Text style={[s.surfaceTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                      {surface.title}
+                    </Text>
+                    <Text style={[s.surfaceRoute, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      {surface.route} · {surface.priority === "launch-critical" ? "Launch critical" : "Release polish"}
+                    </Text>
+                  </View>
+                </View>
+                <QaBadge label={mobileReleaseQaStatusLabel(reviewStatus)} tone={reviewTone} />
+              </View>
+
+              <Text style={[s.surfaceGoal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {surface.goal}
+              </Text>
+              <View style={[s.promptBox, { backgroundColor: colors.accent, borderColor: colors.border }]}>
+                <Text style={[s.promptLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                  Device prompt
+                </Text>
+                <Text style={[s.promptText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {surface.devicePrompt}
+                </Text>
+              </View>
+
+              <View style={s.evidenceList}>
+                {surface.requiredEvidence.map((evidence) => (
+                  <View key={evidence} style={s.evidenceRow}>
+                    <Ionicons name="camera-outline" size={14} color={colors.copper} />
+                    <Text style={[s.evidenceText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      {evidence}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              <Text style={[s.launchRisk, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
+                Release risk: {surface.launchRisk}
+              </Text>
+
+              <View style={s.reviewGrid}>
+                <ReviewButton
+                  active={reviewStatus === "pass"}
+                  icon="checkmark-circle"
+                  label="Pass"
+                  onPress={() => markSurface(surface.id, "pass")}
+                  tone={colors.sage}
+                />
+                <ReviewButton
+                  active={reviewStatus === "needs-review"}
+                  icon="build"
+                  label="Needs tune"
+                  onPress={() => markSurface(surface.id, "needs-review")}
+                  tone={colors.amber}
+                />
+              </View>
+
+              <TextInput
+                accessibilityLabel={`Release QA notes for ${surface.title}`}
+                multiline
+                onChangeText={(text) =>
+                  setSurfaceNotes((current) => ({
+                    ...current,
+                    [surface.id]: text,
+                  }))
+                }
+                placeholder="Release notes: safe area, touch target, route, copy, screenshot file..."
+                placeholderTextColor={colors.mutedForeground}
+                style={[
+                  s.noteInput,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.foreground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+                value={surfaceNotes[surface.id] ?? ""}
+              />
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Open QA surface: ${surface.title}`}
+                onPress={() => openSurface(surface)}
+                style={({ pressed }) => [
+                  s.openSurfaceButton,
+                  {
+                    backgroundColor: pressed ? `${colors.sage}1A` : colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text style={[s.openSurfaceText, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>
+                  Open surface
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.brandNavy} />
+              </Pressable>
+            </BoardCard>
+          );
+        })}
 
         <BoardSectionHeader title="Device Review Matrix" action={`${scenarios.length} scenes`} />
 
@@ -441,6 +604,73 @@ const s = StyleSheet.create({
   shareButtonText: {
     color: "#FFF9EF",
     fontSize: 13,
+  },
+  surfaceCard: {
+    gap: 12,
+  },
+  surfaceHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  surfaceTitleWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  surfaceIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  surfaceTitleCopy: {
+    flex: 1,
+  },
+  surfaceTitle: {
+    fontSize: 17,
+    letterSpacing: 0,
+  },
+  surfaceRoute: {
+    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  surfaceGoal: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  evidenceList: {
+    gap: 7,
+  },
+  evidenceRow: {
+    flexDirection: "row",
+    gap: 7,
+    alignItems: "flex-start",
+  },
+  evidenceText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  launchRisk: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  openSurfaceButton: {
+    minHeight: 42,
+    borderRadius: 9,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  openSurfaceText: {
+    fontSize: 12,
   },
   badge: {
     minHeight: 28,

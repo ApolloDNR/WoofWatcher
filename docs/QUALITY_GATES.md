@@ -301,6 +301,14 @@ session-level device review evidence with Pass/Needs tune controls, per-state
 notes, summary counts, and a native shareable QA report. The report explicitly
 keeps iOS/Android screenshot evidence as still required before launch approval.
 
+Current evidence, 2026-06-20: The same internal QA route now captures broader
+mobile release workflow evidence for Phoenix Home, Care Twin State Lab, Avatar
+Studio, Incident Composer, Records Incident Watch, and Trainer Care Pass. The
+tested `mobileReleaseQa.ts` model tracks required screenshot slots, Pass/Needs
+tune status, per-surface notes, launch risks, route targets, and a combined
+share report while preserving the boundary that real iOS/Android screenshots
+are still required before launch approval.
+
 Current evidence, 2026-06-19: The Option B living-room polish pass keeps Phoenix as one layered main sprite instead of a second-avatar illusion. Home quick-log actions now request action-specific sprite reactions, the room renderer adds ambient micro-behaviors and rest-state safeguards, Avatar Studio suppresses oversized still/accessory overlays when a live sprite pack is active, and PixelIcon paths use crisp pixel rendering on web.
 
 Current evidence, 2026-06-19: PixelLab subscription review did not promote weaker replacement candidates. The clean single still candidate is archived for reference, while the duplicate/cropped and gray identity-drift candidates are explicitly rejected in the PixelLab generation log. The current hard-pixel Option B runtime family remains the approved live source until native QA or a stronger reference-guided generation beats it.

@@ -195,6 +195,13 @@ Pass/Needs tune review controls, per-scenario device notes, summary counts, and
 a native share action backed by `careTwinQaReport.ts`. The shared report states
 that native screenshot evidence is still required before launch.
 
+Current evidence, 2026-06-20: `/care-twin-qa` now also includes a Mobile Release
+QA cockpit backed by `mobileReleaseQa.ts`. Device testers can mark Phoenix Home,
+Care Twin State Lab, Avatar Studio, Incident Composer, Records Incident Watch,
+and Trainer Care Pass as Pass or Needs tune, add per-surface notes, open the
+target route, and share a combined release QA report. The report keeps attached
+iOS/Android screenshots and human review as required before launch approval.
+
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.
 

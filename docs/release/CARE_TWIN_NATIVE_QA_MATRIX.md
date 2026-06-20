@@ -7,6 +7,7 @@ Source of truth in code:
 - `artifacts/woofwatcher-mobile/lib/careTwinAssets.ts`
 - `CARE_TWIN_RUNTIME_QA_SCENARIOS`
 - `evaluateCareTwinRuntimeQaScenario`
+- `artifacts/woofwatcher-mobile/lib/mobileReleaseQa.ts`
 - `artifacts/woofwatcher-mobile/app/care-twin-qa.tsx`
 
 ## In-App QA Route
@@ -23,6 +24,21 @@ The route also includes session-level `Pass`, `Needs tune`, note fields, and a
 native share action that produces a plain-text QA summary. Use that summary as
 device-session evidence, then attach the required screenshots before treating a
 state as release-approved.
+
+As of 2026-06-20, the same route also includes a Mobile Release QA cockpit for
+the broader launch-critical workflows that need phone-size review:
+
+- Phoenix Home.
+- Care Twin State Lab.
+- Avatar Studio.
+- Incident Composer.
+- Records Incident Watch.
+- Trainer Care Pass.
+
+Each surface has Pass/Needs tune controls, route-open action, launch-risk copy,
+required screenshot/evidence prompts, and a device note field. The combined
+share report includes both this workflow checklist and the 12-state care-twin
+matrix.
 
 ## Purpose
 
@@ -63,6 +79,10 @@ For every scenario below:
 - iPhone small viewport screenshot of `/care-twin-qa` Health Watch state.
 - Android small viewport screenshot of `/care-twin-qa` bedtime/sleep state.
 - Avatar Studio screenshot with one live template selected.
+- Incident Composer screenshot showing trigger, exposure, injury/action, follow-up, notes, and household visibility fields fitting without keyboard overlap.
+- Records Incident Watch screenshot showing trend signal, follow-up tasks, trainer goals, and non-diagnostic boundary language.
+- Trainer Care Pass screenshot or shared text snippet showing Incident Watch trend/follow-up/goal lines.
+- Combined Mobile Release QA share report from `/care-twin-qa`.
 - Notes for any clipped sprite, weak gait, unreadable action, duplicate dog, or room/sprite scale mismatch.
 
 ## Current Limitation

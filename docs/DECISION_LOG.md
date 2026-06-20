@@ -1266,6 +1266,23 @@ Owner: Codex.
 
 Revisit trigger: Apollo approves provider-backed media storage, location/map retention policy, share-link permissions, or a moderated community-adventure product.
 
+### 2026-06-20: In-App Mobile QA Evidence Does Not Equal Launch Approval
+
+Decision: WoofWatcher may use the internal `/care-twin-qa` route as a Mobile Release QA cockpit for Phoenix Home, Care Twin State Lab, Avatar Studio, Incident Composer, Records Incident Watch, Trainer Care Pass, and the 12-state care-twin animation matrix. The route can collect Pass/Needs tune status, device notes, and a native share report, but it must keep attached iOS/Android screenshots and human review as required before release approval.
+
+Reason: The Windows automation worktree can prove wiring, tests, static route coverage, and share-report contracts, but it cannot prove native phone-size crop, safe areas, touch response, keyboard overlap, animation taste, or App Store-quality visual polish. Treating in-app checkboxes as launch proof would create false confidence.
+
+Consequences:
+
+- `mobileReleaseQa.ts` owns the tested launch workflow checklist and share-report contract.
+- `/care-twin-qa` combines the Mobile Release QA checklist with the existing care-twin state matrix.
+- The next native QA pass should complete both sections, attach screenshots, and fix the first visible issue before claiming release confidence.
+- Future release docs must distinguish local/static verification from simulator/device evidence.
+
+Owner: Codex.
+
+Revisit trigger: The project gains reliable automated native screenshot capture, simulator access, or App Store/Play release automation that can produce equivalent visual proof.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

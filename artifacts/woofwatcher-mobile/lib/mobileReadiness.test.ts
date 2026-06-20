@@ -157,11 +157,16 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /LivingPhoenixRoom/);
   assert.match(qaRoute, /nativeQaPrompt/);
   assert.match(qaRoute, /testID=\{`care-twin-qa-stage-\$\{result\.scenario\.id\}`\}/);
-  assert.match(qaRoute, /One care twin\. Twelve states\./);
+  assert.match(qaRoute, /Mobile release cockpit\./);
   assert.match(qaRoute, /qaStatusById/);
   assert.match(qaRoute, /qaNotes/);
   assert.match(qaRoute, /Share\.share/);
   assert.match(qaRoute, /buildCareTwinQaShareText/);
+  assert.match(qaRoute, /listMobileReleaseQaSurfaces/);
+  assert.match(qaRoute, /buildMobileReleaseQaShareText/);
+  assert.match(qaRoute, /Launch Workflow QA/);
+  assert.match(qaRoute, /Open QA surface/);
+  assert.match(qaRoute, /surfaceStatusById/);
   assert.match(qaRoute, /Pass/);
   assert.match(qaRoute, /Needs tune/);
 });
