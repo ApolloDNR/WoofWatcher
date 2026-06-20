@@ -41,6 +41,7 @@ import {
   parseMobileQaSessionSnapshot,
 } from "@/lib/mobileQaSession";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
+import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { buildQaScreenshotEvidence, type QaScreenshotEvidence, type QaScreenshotEvidencePlatform } from "@/lib/qaScreenshotEvidence";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -206,7 +207,10 @@ export default function CareTwinQaScreen() {
   const releaseMissingEvidenceLabel = formatMobileReleaseQaMissingEvidence(releaseSummary);
   const attachedEvidenceFiles = releaseSummary.attachedScreenshots + qaSummary.attachedScreenshots;
   const topInset = Platform.OS === "web" ? 24 : insets.top;
-  const bottomInset = Platform.OS === "web" ? 32 : insets.bottom + 18;
+  const bottomPadding = getStandaloneRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -348,7 +352,7 @@ export default function CareTwinQaScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         style={[s.screen, { backgroundColor: colors.background }]}
-        contentContainerStyle={[s.content, { paddingTop: topInset + 14, paddingBottom: bottomInset }]}
+        contentContainerStyle={[s.content, { paddingTop: topInset + 14, paddingBottom: bottomPadding }]}
         showsVerticalScrollIndicator={false}
       >
         <BoardRouteHeader

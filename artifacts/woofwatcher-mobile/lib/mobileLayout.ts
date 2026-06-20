@@ -28,6 +28,9 @@ const TABBED_ROUTE_MIN_BOTTOM_PADDING = 130;
 const TABBED_ROUTE_BOTTOM_GUTTER = 18;
 const STANDALONE_ROUTE_MIN_BOTTOM_PADDING = 72;
 const STANDALONE_ROUTE_BOTTOM_GUTTER = 40;
+const DOCKED_COMPOSER_MIN_BOTTOM_PADDING = 12;
+const DOCKED_COMPOSER_WEB_BOTTOM_PADDING = 46;
+const DOCKED_COMPOSER_BOTTOM_GUTTER = 12;
 
 function isWebPlatform(platform: MobileRuntimePlatform): boolean {
   return platform === "web";
@@ -71,4 +74,11 @@ export function getTabbedRouteBottomPadding(input: MobileLayoutInput): number {
 export function getStandaloneRouteBottomPadding(input: MobileLayoutInput): number {
   const bottomInset = normalizeBottomInset(input.platform, input.bottomInset);
   return Math.max(STANDALONE_ROUTE_MIN_BOTTOM_PADDING, bottomInset + STANDALONE_ROUTE_BOTTOM_GUTTER);
+}
+
+export function getDockedComposerBottomPadding(input: MobileLayoutInput): number {
+  if (isWebPlatform(input.platform)) return DOCKED_COMPOSER_WEB_BOTTOM_PADDING;
+
+  const bottomInset = normalizeBottomInset(input.platform, input.bottomInset);
+  return Math.max(DOCKED_COMPOSER_MIN_BOTTOM_PADDING, bottomInset + DOCKED_COMPOSER_BOTTOM_GUTTER);
 }

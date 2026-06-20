@@ -18,6 +18,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import {
   buildAccountDeletionRequest,
   buildPrivacyExportBundle,
@@ -80,6 +81,10 @@ export default function PrivacyScreen() {
     plan.payments,
   ];
   const topInset = Platform.OS === "web" ? 18 : insets.top;
+  const bottomPadding = getStandaloneRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
 
   const shareExport = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -104,7 +109,7 @@ export default function PrivacyScreen() {
       <Stack.Screen options={{ title: "Privacy & Safety" }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: topInset + 12, paddingHorizontal: 20, paddingBottom: insets.bottom + 44 }}
+        contentContainerStyle={{ paddingTop: topInset + 12, paddingHorizontal: 20, paddingBottom: bottomPadding }}
       >
         <LinearGradient
           colors={[colors.midnight, colors.primary]}

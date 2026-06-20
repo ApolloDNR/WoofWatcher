@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  getDockedComposerBottomPadding,
   getFloatingTabChromeMetrics,
   getStandaloneRouteBottomPadding,
   getTabbedRouteBottomPadding,
@@ -32,4 +33,10 @@ test("keeps standalone routes independent from the bottom tab chrome", () => {
   assert.equal(getStandaloneRouteBottomPadding({ platform: "ios", bottomInset: 34 }), 74);
   assert.equal(getStandaloneRouteBottomPadding({ platform: "android", bottomInset: 0 }), 72);
   assert.equal(getStandaloneRouteBottomPadding({ platform: "web", bottomInset: 34 }), 72);
+});
+
+test("keeps docked composer controls close enough to the thumb zone", () => {
+  assert.equal(getDockedComposerBottomPadding({ platform: "ios", bottomInset: 34 }), 46);
+  assert.equal(getDockedComposerBottomPadding({ platform: "android", bottomInset: 0 }), 12);
+  assert.equal(getDockedComposerBottomPadding({ platform: "web", bottomInset: 99 }), 46);
 });

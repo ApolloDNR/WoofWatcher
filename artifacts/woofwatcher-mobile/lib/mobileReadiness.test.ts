@@ -157,6 +157,7 @@ test("keeps tabbed mobile routes clear of the floating paw nav", () => {
   assert.match(mobileLayout, /getFloatingTabChromeMetrics/);
   assert.match(mobileLayout, /getTabbedRouteBottomPadding/);
   assert.match(mobileLayout, /getStandaloneRouteBottomPadding/);
+  assert.match(mobileLayout, /getDockedComposerBottomPadding/);
   assert.match(tabs, /getFloatingTabChromeMetrics/);
   assert.match(tabs, /centerFabBottom/);
   assert.match(tabs, /tabBarHeight/);
@@ -170,6 +171,35 @@ test("keeps tabbed mobile routes clear of the floating paw nav", () => {
       `${route} should not hard-code floating tab clearance`,
     );
   }
+});
+
+test("keeps standalone mobile routes on shared safe-area helpers", () => {
+  const standaloneRoutes = ["adventure", "portrait", "care-twin-qa", "premium", "privacy", "setup"];
+  const authUi = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "auth-ui.tsx"),
+    "utf8",
+  );
+  const woofGuide = readAppFile("woofguide.tsx");
+
+  for (const route of standaloneRoutes) {
+    const source = readAppFile(`${route}.tsx`);
+    assert.match(
+      source,
+      /getStandaloneRouteBottomPadding/,
+      `${route} should use shared standalone route bottom padding`,
+    );
+    assert.doesNotMatch(
+      source,
+      /paddingBottom:\s*(?:72|insets\.bottom\s*\+\s*(?:18|32|38|40|44))\b/,
+      `${route} should not hard-code standalone bottom clearance`,
+    );
+  }
+
+  assert.match(authUi, /getStandaloneRouteBottomPadding/);
+  assert.doesNotMatch(authUi, /paddingBottom:\s*insets\.bottom\s*\+\s*32/);
+  assert.match(woofGuide, /getDockedComposerBottomPadding/);
+  assert.doesNotMatch(woofGuide, /bottomInset\s*=\s*Platform\.OS/);
+  assert.doesNotMatch(woofGuide, /paddingBottom:\s*bottomInset\s*\+\s*12/);
 });
 
 test("registers the care twin native QA route for device review", () => {

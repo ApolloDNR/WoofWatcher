@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
+import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 
 export function AuthShell({
   title,
@@ -26,13 +28,17 @@ export function AuthShell({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const bottomPadding = getStandaloneRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
 
   return (
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[
         styles.scroll,
-        { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 32 },
+        { paddingTop: insets.top + 48, paddingBottom: bottomPadding },
       ]}
       keyboardShouldPersistTaps="handled"
     >

@@ -257,3 +257,12 @@ Latest local evidence, 2026-06-20:
 - Expo web export passed to `tmp/woofwatcher-mobile-layout-export`.
 - `git diff --check` passed with only expected Windows line-ending warnings.
 - The floating-paw tab shell and Home, Log, Plans, Health, More, and Records route bottom spacing are now guarded by shared `mobileLayout.ts` helpers. Native iOS/Android visual QA still needs real device or simulator screenshots for final safe-area, crop, touch, and animation approval.
+
+Latest local evidence, 2026-06-20:
+
+- Full local behavior/readiness suite passed at 300 tests across `artifacts/woofwatcher-mobile/lib/*.test.ts` and `lib/care-domain/test/*.test.ts`.
+- Mobile TypeScript compile passed for the WoofWatcher Expo app.
+- PixelLab asset verification passed with 149 registered assets, 0 missing, and 0 invalid.
+- Expo web export passed to `tmp/woofwatcher-standalone-layout-export`.
+- `git diff --check` passed with only expected Windows line-ending warnings.
+- Standalone routes and auth/setup surfaces now use shared `getStandaloneRouteBottomPadding`, and WoofGuide uses shared `getDockedComposerBottomPadding`; static readiness tests reject the old route-local constants. Native iOS/Android visual QA still needs real device or simulator screenshots for final safe-area, keyboard/composer fit, crop, touch, and animation approval.

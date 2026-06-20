@@ -1374,6 +1374,24 @@ Owner: Codex.
 
 Revisit trigger: the mobile navigation design changes, the center paw is removed, or Expo/native safe-area handling changes enough to require new tab geometry.
 
+### 2026-06-20: Standalone Mobile Screens Share The Same Safe-Area Contract
+
+Decision: standalone routes, auth/setup screens, and docked bottom composers should use `mobileLayout.ts` helpers instead of route-local bottom-padding constants.
+
+Reason: WoofWatcher is primarily an iOS/Android app, and the non-tab screens are part of the launch-critical path: Avatar Studio, Adventure, Care Twin QA, Premium, Privacy, Setup, auth, and WoofGuide. If those screens hand-roll bottom insets, the app can look polished on Home while still clipping buttons, input bars, or proof controls elsewhere.
+
+Consequences:
+
+- `mobileLayout.ts` now exports `getDockedComposerBottomPadding` alongside the existing tabbed and standalone helpers.
+- Adventure, Avatar Studio, Care Twin QA, Premium, Privacy, Setup, and `AuthShell` use `getStandaloneRouteBottomPadding`.
+- WoofGuide uses `getDockedComposerBottomPadding` for the bottom input composer.
+- Mobile readiness tests reject the older standalone magic numbers and local composer inset.
+- Real iOS/Android QA still has to judge keyboard behavior, bottom reach, scroll length, and visual fit.
+
+Owner: Codex.
+
+Revisit trigger: a native keyboard avoidance layer, new modal sheet system, or app-shell redesign changes how standalone routes and bottom composers reserve safe-area space.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

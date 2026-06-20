@@ -27,6 +27,7 @@ import {
 import { useColors } from "@/hooks/useColors";
 import { useCare, CareState } from "@/context/CareContext";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { getDockedComposerBottomPadding } from "@/lib/mobileLayout";
 import {
   deriveWoofGuideActions,
   type WoofGuideActionCard,
@@ -148,7 +149,10 @@ export default function WoofGuideScreen() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [reviewAction, setReviewAction] = useState<WoofGuideActionCard | null>(null);
-  const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
+  const composerBottomPadding = getDockedComposerBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
   const name = state.profile.name || "your dog";
 
   const quickQuestions = useMemo(() => [
@@ -371,7 +375,7 @@ export default function WoofGuideScreen() {
           )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         />
-        <View style={[s.inputArea, { borderTopColor: colors.border, paddingBottom: bottomInset + 12, backgroundColor: colors.background }]}>
+        <View style={[s.inputArea, { borderTopColor: colors.border, paddingBottom: composerBottomPadding, backgroundColor: colors.background }]}>
           <TextInput
             value={input}
             onChangeText={setInput}

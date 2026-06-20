@@ -6,6 +6,7 @@ import React, { useMemo } from "react";
 import {
   Alert,
   Pressable,
+  Platform,
   ScrollView,
   Share,
   StyleSheet,
@@ -21,6 +22,7 @@ import {
 import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -37,6 +39,10 @@ export default function AdventureScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, updateCareDoc } = useCare();
+  const bottomPadding = getStandaloneRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
   const petName = state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
   const now = Date.now();
   const adventure = useMemo(
@@ -95,7 +101,7 @@ export default function AdventureScreen() {
       <Stack.Screen options={{ title: "Adventure Mode" }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: insets.top + 14, paddingHorizontal: 20, paddingBottom: insets.bottom + 38 }}
+        contentContainerStyle={{ paddingTop: insets.top + 14, paddingHorizontal: 20, paddingBottom: bottomPadding }}
       >
         <LinearGradient
           colors={[colors.midnight, colors.primary, colors.sage]}
