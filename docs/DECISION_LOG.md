@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-20: WoofGuide Owner Review Uses The Shared Modal Safe-Area Contract
+
+Decision: WoofGuide's owner-reviewed draft sheet should use `getModalSheetBottomPadding` from the shared mobile layout helper instead of fixed-only sheet padding.
+
+Reason: WoofGuide draft review is an AI safety boundary where owners approve meal logs, reminders, vet-note drafts, and Care Pass actions before anything changes. Keeping that docked sheet on the same modal clearance contract as Plans, Log, Records, More, and error recovery reduces native home-indicator clipping risk before simulator/device screenshots are available.
+
+Owner: Codex.
+
+Revisit trigger: Native device QA shows WoofGuide review sheets need different clearance, a shared design-system sheet component replaces route-local sheets, or WoofGuide review moves to a full-screen workflow.
+
 ### 2026-06-20: Error Recovery Debug Controls Use The Shared Safe-Area Top Contract
 
 Decision: The app error fallback's development-only error-details button should use `getFloatingDebugButtonTopOffset` from the shared mobile layout helper instead of route-local `insets.top + 16` positioning.

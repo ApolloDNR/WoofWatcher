@@ -144,6 +144,8 @@ Current evidence, 2026-06-20: Centered text-entry modals now derive backdrop top
 
 Current evidence, 2026-06-20: Route header top clearance now derives from `getRouteTopPadding` instead of per-screen `topInset + 8/12/14/48` formulas. Focused tests cover flat native, notched native, and web chrome clearance, and static readiness protects Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell before native screenshot QA is available.
 
+Current evidence, 2026-06-20: WoofGuide owner-review draft sheets now derive docked bottom clearance from `getModalSheetBottomPadding` instead of fixed-only sheet padding. Static mobile readiness protects the assistant review surface alongside the composer before native screenshot QA is available.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

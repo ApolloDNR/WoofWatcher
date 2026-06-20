@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-20:
 
-- PASS: 243 focused tests with the command above.
+- PASS: 244 focused tests with the command above.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -23,6 +23,7 @@ Latest local evidence, 2026-06-20:
 - PASS: centered text-entry modals now use the shared mobile layout contract, with focused flat/notched-device coverage and static readiness checks for the Log sticky-note prompt and More household/name prompt modals.
 - PASS: route top safe-area clearance now uses the shared mobile layout contract, with focused native/web notch coverage and static readiness checks for Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell.
 - PASS: error recovery debug controls now use the shared mobile layout contract, with focused flat/notched/web top-offset coverage and a static readiness check for the app error fallback before native screenshot QA is available.
+- PASS: WoofGuide owner-review draft sheets now use the shared modal-sheet safe-area contract, and mobile readiness protects the assistant review surface from reverting to fixed-only sheet padding before native screenshot QA is available.
 - LIMIT: mobile TypeScript could not run in this checkout because `node_modules/typescript` is missing (`tsc-missing`).
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` runs continue to fail before job start or without executing workflow steps with GitHub's account billing/spending-limit blocker; checked examples include `27865345974` for commit `5159a3b`, `27865371635` for commit `24d8575`, `27869581404` for commit `8d08825`, and `27873733286` for commit `f542db3`. Run `27873733286` completed in 4 seconds with zero job steps and no failed-job log. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 

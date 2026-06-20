@@ -32,7 +32,7 @@ import {
   type WoofGuideActionCard,
   type WoofGuideActionIcon,
 } from "@/lib/woofGuideActions";
-import { getStandaloneComposerBottomPadding } from "@/lib/mobileLayout";
+import { getModalSheetBottomPadding, getStandaloneComposerBottomPadding } from "@/lib/mobileLayout";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -150,6 +150,7 @@ export default function WoofGuideScreen() {
   const [loading, setLoading] = useState(false);
   const [reviewAction, setReviewAction] = useState<WoofGuideActionCard | null>(null);
   const composerBottomPadding = getStandaloneComposerBottomPadding(insets.bottom, Platform.OS === "web");
+  const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
   const name = state.profile.name || "your dog";
 
   const quickQuestions = useMemo(() => [
@@ -406,7 +407,14 @@ export default function WoofGuideScreen() {
           accessibilityLabel="Close owner review"
         >
           <Pressable
-            style={[s.reviewSheet, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[
+              s.reviewSheet,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                paddingBottom: modalSheetBottomPadding,
+              },
+            ]}
             onPress={(event) => event.stopPropagation()}
           >
             {reviewAction?.draft ? (
@@ -495,7 +503,7 @@ const s = StyleSheet.create({
   input: { flex: 1, borderRadius: 20, borderWidth: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, fontSize: 15, maxHeight: 120, minHeight: 48 },
   sendBtn: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   reviewBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(10, 16, 24, 0.42)" },
-  reviewSheet: { borderTopLeftRadius: 26, borderTopRightRadius: 26, borderWidth: 1, padding: 18, maxHeight: "78%" },
+  reviewSheet: { borderTopLeftRadius: 26, borderTopRightRadius: 26, borderWidth: 1, paddingHorizontal: 18, paddingTop: 18, maxHeight: "78%" },
   reviewHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   reviewIcon: { width: 38, height: 38, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   reviewEyebrow: { fontSize: 10.5, letterSpacing: 0.7 },

@@ -463,6 +463,9 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.match(woofGuide, /getStandaloneComposerBottomPadding/);
   assert.match(woofGuide, /paddingBottom: composerBottomPadding/);
   assert.doesNotMatch(woofGuide, /paddingBottom: bottomInset \+ 12/);
+  assert.match(woofGuide, /getModalSheetBottomPadding/);
+  assert.match(woofGuide, /paddingBottom: modalSheetBottomPadding/);
+  assert.doesNotMatch(woofGuide, /reviewSheet: \{[^}]*padding: 18/);
 
   for (const source of [premium, privacy, setup, authUi]) {
     assert.match(source, /getStandaloneRouteBottomPadding/);

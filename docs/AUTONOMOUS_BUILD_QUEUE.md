@@ -102,6 +102,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 94. DONE 2026-06-20: Centered text-entry modals now share the native runtime-QA safe-area contract. The Log post-care sticky-note prompt and More household/name prompt modals use `getCenteredModalBackdropPadding` for top, bottom, and horizontal clearance, with focused flat/notched-device coverage and static readiness checks before simulator/device screenshots are available.
 95. DONE 2026-06-20: Route top safe-area clearance now shares the native runtime-QA layout contract. Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell use `getRouteTopPadding` instead of route-local `topInset + 8/12/14/48` math, with focused native/web notch coverage and static readiness checks before simulator/device screenshots are available.
 96. DONE 2026-06-20: Error recovery debug controls now share the native runtime-QA top safe-area contract. The app error fallback's development-only error-details button uses `getFloatingDebugButtonTopOffset` instead of route-local `insets.top + 16` math, with focused flat/notched/web coverage and static readiness checks before simulator/device screenshots are available.
+97. DONE 2026-06-20: WoofGuide owner-review sheets now share the docked modal safe-area contract. The owner-reviewed draft sheet uses `getModalSheetBottomPadding` instead of fixed-only sheet padding, and mobile readiness protects the assistant review surface alongside the composer before native screenshot QA is available.
 
 ## Cadence
 
