@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-20: Error Recovery Debug Controls Use The Shared Safe-Area Top Contract
+
+Decision: The app error fallback's development-only error-details button should use `getFloatingDebugButtonTopOffset` from the shared mobile layout helper instead of route-local `insets.top + 16` positioning.
+
+Reason: Native runtime QA is still blocked on simulator/device access, and the error recovery surface is one of the last app-wide overlays with direct notch math. A named helper keeps recovery controls below notches and web preview chrome without changing the recovery workflow or the already-shared error-details sheet bottom padding.
+
+Owner: Codex.
+
+Revisit trigger: Native device QA shows floating recovery/debug controls need different clearance, the app shell gains a global overlay container, or the final design system replaces the current error fallback.
+
 ### 2026-06-20: Route Headers Use The Shared Safe-Area Top Contract
 
 Decision: Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell should use `getRouteTopPadding` from the shared mobile layout helper instead of route-local `topInset + 8/12/14/48` formulas.

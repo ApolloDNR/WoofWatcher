@@ -434,6 +434,7 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.match(mobileLayout, /export function getModalSheetBottomPadding/);
   assert.match(mobileLayout, /export function getCenteredModalBackdropPadding/);
   assert.match(mobileLayout, /export function getFloatingFeedbackBottomOffset/);
+  assert.match(mobileLayout, /export function getFloatingDebugButtonTopOffset/);
   assert.match(mobileLayout, /export function getRouteTopPadding/);
   assert.match(tabLayout, /getFloatingTabChromeMetrics/);
 
@@ -484,6 +485,9 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
     assert.match(source, /paddingBottom: modalSheetBottomPadding/);
     assert.doesNotMatch(source, /paddingBottom: insets\.bottom \+ (16|18|20)/);
   }
+  assert.match(errorFallback, /getFloatingDebugButtonTopOffset/);
+  assert.match(errorFallback, /top: debugButtonTopOffset/);
+  assert.doesNotMatch(errorFallback, /top: insets\.top \+ 16/);
 
   for (const source of [log, more]) {
     assert.match(source, /getCenteredModalBackdropPadding/);

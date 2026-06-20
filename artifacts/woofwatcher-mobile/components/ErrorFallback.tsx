@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
-import { getModalSheetBottomPadding } from "@/lib/mobileLayout";
+import { getFloatingDebugButtonTopOffset, getModalSheetBottomPadding } from "@/lib/mobileLayout";
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -24,6 +24,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
+  const debugButtonTopOffset = getFloatingDebugButtonTopOffset(insets.top, Platform.OS === "web");
 
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -60,7 +61,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           style={({ pressed }) => [
             styles.topButton,
             {
-              top: insets.top + 16,
+              top: debugButtonTopOffset,
               backgroundColor: colors.card,
               opacity: pressed ? 0.8 : 1,
             },

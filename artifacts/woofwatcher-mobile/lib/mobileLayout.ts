@@ -34,6 +34,8 @@ const CENTERED_MODAL_EDGE_CLEARANCE = 24;
 const CENTERED_MODAL_INSET_OFFSET = 16;
 const TABBED_FEEDBACK_OFFSET = 96;
 const STANDALONE_FEEDBACK_OFFSET = 22;
+const FLOATING_DEBUG_TOP_OFFSET = 16;
+const WEB_FLOATING_DEBUG_TOP_INSET = 24;
 
 export function getFloatingTabChromeMetrics(bottomInset: number, isWeb: boolean): FloatingTabChromeMetrics {
   if (isWeb) {
@@ -106,4 +108,9 @@ export function getFloatingFeedbackBottomOffset(
   const effectiveInset = isWeb && surface === "standalone" ? WEB_COMPOSER_BOTTOM_INSET : bottomInset;
   const offset = surface === "tabbed" ? TABBED_FEEDBACK_OFFSET : STANDALONE_FEEDBACK_OFFSET;
   return effectiveInset + offset;
+}
+
+export function getFloatingDebugButtonTopOffset(topInset: number, isWeb: boolean): number {
+  const effectiveInset = isWeb ? WEB_FLOATING_DEBUG_TOP_INSET : topInset;
+  return effectiveInset + FLOATING_DEBUG_TOP_OFFSET;
 }

@@ -5,6 +5,7 @@ import {
   getFloatingTabChromeMetrics,
   getFloatingFeedbackBottomOffset,
   getCenteredModalBackdropPadding,
+  getFloatingDebugButtonTopOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getStandaloneComposerBottomPadding,
@@ -76,4 +77,10 @@ test("keeps floating feedback above tab chrome and home indicators", () => {
   assert.equal(getFloatingFeedbackBottomOffset(0, "standalone", false), 22);
   assert.equal(getFloatingFeedbackBottomOffset(34, "standalone", false), 56);
   assert.equal(getFloatingFeedbackBottomOffset(0, "standalone", true), 56);
+});
+
+test("keeps floating debug controls below notches and web preview chrome", () => {
+  assert.equal(getFloatingDebugButtonTopOffset(0, false), 16);
+  assert.equal(getFloatingDebugButtonTopOffset(44, false), 60);
+  assert.equal(getFloatingDebugButtonTopOffset(0, true), 40);
 });
