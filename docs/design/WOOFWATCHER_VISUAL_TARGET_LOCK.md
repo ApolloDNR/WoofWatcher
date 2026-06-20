@@ -16,6 +16,8 @@ Apollo re-confirmed the first two final boards on 2026-06-20 as the canonical vi
 - Light App Store design board: SHA256 `7E3817D7750A7E20A83CE5650071C6C0B97DB34B3AE036BE138FB99DB028C54E`.
 - Dark care-adventure RPG board: SHA256 `24BBA8C76D34BD95252FC98B14A32C28204A6F6E48887EDFDD95F6FBEEF97910`.
 
+Apollo re-attached the same two boards on 2026-06-20 and explicitly asked Codex to preserve them as the accuracy/excellence target for future UI work; the attached files matched the hashes above exactly.
+
 Older references in the same folder remain useful, but the `woofwatcher-final-*` boards are the strongest current north-star references. They lock the desired App Store polish, the crest/logo system, the light production app shell, and the darker care-adventure RPG expansion direction.
 
 ## Direction

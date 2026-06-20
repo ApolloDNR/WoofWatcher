@@ -38,6 +38,7 @@ import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import {
   buildAloneTimeReturnPatch,
   buildAloneTimeStartEntry,
@@ -818,6 +819,10 @@ export default function LogScreen() {
   const lastRouteSelectedType = useRef<string | null>(null);
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
+  const bottomPadding = getTabbedRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30000);
@@ -1994,7 +1999,7 @@ export default function LogScreen() {
       <ScrollView
         ref={scrollRef}
         style={s.container}
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: 130, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

@@ -6,6 +6,7 @@ import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { PixelIcon } from "@/components/PixelIcon";
+import { getFloatingTabChromeMetrics } from "@/lib/mobileLayout";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -29,8 +30,12 @@ function CenterPaw() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const chrome = getFloatingTabChromeMetrics({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
   return (
-    <View pointerEvents="box-none" style={[s.fabWrap, { bottom: (insets.bottom || 10) + 26 }]}>
+    <View pointerEvents="box-none" style={[s.fabWrap, { bottom: chrome.centerFabBottom }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Quick log"
@@ -58,7 +63,11 @@ function CenterPaw() {
 
 export default function TabLayout() {
   const colors = useColors();
-  const isWeb = Platform.OS === "web";
+  const insets = useSafeAreaInsets();
+  const chrome = getFloatingTabChromeMetrics({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
 
   return (
     <View style={{ flex: 1 }}>
@@ -77,13 +86,13 @@ export default function TabLayout() {
           },
           tabBarStyle: {
             position: "absolute",
-            left: 12,
-            right: 12,
-            bottom: isWeb ? 12 : 8,
-            height: isWeb ? 78 : 72,
+            left: chrome.tabBarHorizontalInset,
+            right: chrome.tabBarHorizontalInset,
+            bottom: chrome.tabBarBottom,
+            height: chrome.tabBarHeight,
             backgroundColor: colors.card,
             borderTopWidth: 0,
-            borderRadius: 28,
+            borderRadius: chrome.tabBarRadius,
             elevation: 12,
             paddingTop: 5,
             paddingHorizontal: 8,
@@ -100,7 +109,7 @@ export default function TabLayout() {
                 StyleSheet.absoluteFill,
                 {
                   backgroundColor: colors.card,
-                  borderRadius: 28,
+                  borderRadius: chrome.tabBarRadius,
                   opacity: 0.96,
                 },
               ]}

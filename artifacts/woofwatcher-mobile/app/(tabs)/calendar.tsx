@@ -31,6 +31,7 @@ import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { parseLocalDate } from "@/lib/time";
+import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -154,6 +155,10 @@ export default function CalendarScreen() {
   const { routines, calendarEvents, profile, entries, caregivers, records } = state;
 
   const topInset = Platform.OS === "web" ? 24 : insets.top;
+  const bottomPadding = getTabbedRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
   const now = Date.now();
   const today = todayISO();
   const [scheduleTab, setScheduleTab] = useState<"today" | "tomorrow" | "week">("today");
@@ -480,7 +485,7 @@ export default function CalendarScreen() {
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
         style={s.container}
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: 130, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>

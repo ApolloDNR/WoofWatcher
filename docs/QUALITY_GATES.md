@@ -355,4 +355,6 @@ Current evidence, 2026-06-13: Focused tests now cover durable sync outbox deriva
 
 Current evidence, 2026-06-14: `WoofWatcher Verify` uses Node 24-compatible action majors for checkout, setup-node, and pnpm setup, and keeps the project test/build runtime pinned to Node 24.
 
-Current evidence, 2026-06-20: The local behavior/readiness suite passes at 294 tests after the Mobile Release QA platform-proof refinement, covering mobile readiness, QA reporting, platform-aware screenshot evidence, privacy export, PWA contracts, and shared care-domain behavior. Mobile TypeScript, PixelLab asset verification at 149 files, Expo web export, and `git diff --check` also pass locally.
+Current evidence, 2026-06-20: The local behavior/readiness suite passes at 298 tests after the Mobile Release QA platform-proof refinement and floating-paw safe-area pass, covering mobile readiness, QA reporting, platform-aware screenshot evidence, privacy export, PWA contracts, shared care-domain behavior, and tabbed-route bottom clearance. Mobile TypeScript, PixelLab asset verification at 149 files, Expo web export, and `git diff --check` also pass locally.
+
+Current evidence, 2026-06-20: Mobile tab clearance is now centralized in `mobileLayout.ts`. The tab shell derives tab bar and center-paw metrics from one helper, and Home, Log, Plans, Health, More, and Records all call `getTabbedRouteBottomPadding` so iOS, Android, and web route content stays clear of the floating paw navigation without route-local magic numbers.

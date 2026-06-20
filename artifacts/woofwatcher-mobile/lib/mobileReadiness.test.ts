@@ -149,6 +149,29 @@ test("keeps critical mobile actions accessible to screen readers", () => {
   assert.match(more, /accessibilityLabel="Sign out of WoofWatcher"/);
 });
 
+test("keeps tabbed mobile routes clear of the floating paw nav", () => {
+  const mobileLayout = readMobileLibFile("mobileLayout.ts");
+  const tabs = readAppFile(join("(tabs)", "_layout.tsx"));
+  const tabbedRoutes = ["index", "log", "calendar", "health", "more", "records"];
+
+  assert.match(mobileLayout, /getFloatingTabChromeMetrics/);
+  assert.match(mobileLayout, /getTabbedRouteBottomPadding/);
+  assert.match(mobileLayout, /getStandaloneRouteBottomPadding/);
+  assert.match(tabs, /getFloatingTabChromeMetrics/);
+  assert.match(tabs, /centerFabBottom/);
+  assert.match(tabs, /tabBarHeight/);
+
+  for (const route of tabbedRoutes) {
+    const source = readAppFile(join("(tabs)", `${route}.tsx`));
+    assert.match(source, /getTabbedRouteBottomPadding/, `${route} should use shared tab bottom padding`);
+    assert.doesNotMatch(
+      source,
+      /paddingBottom:\s*(?:128|130|142)\b/,
+      `${route} should not hard-code floating tab clearance`,
+    );
+  }
+});
+
 test("registers the care twin native QA route for device review", () => {
   const rootLayout = readAppFile("_layout.tsx");
   const more = readAppFile(join("(tabs)", "more.tsx"));

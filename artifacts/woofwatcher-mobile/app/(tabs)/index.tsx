@@ -38,6 +38,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
+import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import { deriveCareTwinScene, type CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
@@ -165,6 +166,10 @@ export default function HomeScreen() {
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
 
   const topInset = Platform.OS === "web" ? 18 : insets.top;
+  const bottomPadding = getTabbedRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30000);
@@ -553,7 +558,7 @@ export default function HomeScreen() {
         style={s.container}
         contentContainerStyle={{
           paddingTop: topInset + 8,
-          paddingBottom: 142,
+          paddingBottom: bottomPadding,
           paddingHorizontal: 16,
         }}
         showsVerticalScrollIndicator={false}

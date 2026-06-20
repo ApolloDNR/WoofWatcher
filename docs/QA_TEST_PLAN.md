@@ -247,3 +247,13 @@ Latest local evidence, 2026-06-19:
 - Expo web export passed from the package-local CLI.
 - Chrome web visual smoke caught and then verified the Avatar Studio live-sprite overlay fix; Home rest-state behavior was then guarded in code so ambient awake loops do not override sleep/rest scenes.
 - The latest Option B day-room pass still needs real iOS/Android screenshots for visual approval; local checks prove wiring and asset dimensions, not final phone-size taste.
+
+Latest local evidence, 2026-06-20:
+
+- Focused mobile layout/readiness tests passed at 70 tests.
+- Full local behavior/readiness suite passed at 298 tests across `artifacts/woofwatcher-mobile/lib/*.test.ts` and `lib/care-domain/test/*.test.ts`.
+- Mobile TypeScript compile passed for the WoofWatcher Expo app.
+- PixelLab asset verification passed with 149 registered assets, 0 missing, and 0 invalid.
+- Expo web export passed to `tmp/woofwatcher-mobile-layout-export`.
+- `git diff --check` passed with only expected Windows line-ending warnings.
+- The floating-paw tab shell and Home, Log, Plans, Health, More, and Records route bottom spacing are now guarded by shared `mobileLayout.ts` helpers. Native iOS/Android visual QA still needs real device or simulator screenshots for final safe-area, crop, touch, and animation approval.

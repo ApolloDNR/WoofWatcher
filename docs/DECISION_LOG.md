@@ -1356,6 +1356,24 @@ Owner: Codex.
 
 Revisit trigger: release QA moves to an external provider-backed evidence system or automated native screenshot capture creates a stronger per-platform proof source.
 
+### 2026-06-20: Floating Paw Tab Clearance Is A Shared Layout Contract
+
+Decision: mobile tab bar geometry, center paw positioning, and tabbed route bottom padding should be derived from a shared layout helper instead of hard-coded separately in each route.
+
+Reason: WoofWatcher is mobile-first, and fixed per-screen bottom padding can quietly drift as the floating paw navigation, safe-area insets, or web/native tab sizes change. A shared helper makes iOS, Android, and web clearance predictable before native QA.
+
+Consequences:
+
+- `mobileLayout.ts` owns floating tab chrome metrics plus tabbed and standalone bottom-padding helpers.
+- The tab shell uses shared metrics for tab bar height/bottom/radius/insets and center paw bottom position.
+- Home, Log, Plans, Health, More, and Records use `getTabbedRouteBottomPadding`.
+- Mobile readiness tests reject fixed `128`, `130`, or `142` tab clearance values on tabbed routes.
+- Native iOS/Android QA still has to judge real visual fit, but the route-level spacing contract is now test-protected.
+
+Owner: Codex.
+
+Revisit trigger: the mobile navigation design changes, the center paw is removed, or Expo/native safe-area handling changes enough to require new tab geometry.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
