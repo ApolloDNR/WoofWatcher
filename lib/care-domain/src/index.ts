@@ -22,6 +22,7 @@ export * from "./care-log-search.ts";
 export * from "./household-access.ts";
 export * from "./household-responsibility.ts";
 export * from "./access-pass.ts";
+export * from "./adventure.ts";
 export * from "./onboarding.ts";
 export * from "./premium.ts";
 export * from "./care-intelligence.ts";

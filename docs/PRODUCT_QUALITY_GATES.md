@@ -163,6 +163,7 @@ Current gaps:
 - Household Responsibility derivation and Calendar/More responsibility wiring are covered by focused tests.
 - Household Access derivation and More wiring are covered by focused tests.
 - Access Pass derivation, local draft creation, My Care Today derivation, More wiring, and privacy export/deletion inclusion are covered by focused tests.
+- Adventure Mode derivation, private quest ordering, local memory drafts, More route wiring, and privacy export/deletion inclusion are covered by focused tests.
 - Care Log Audit Trail derivation and Log edit/sticky/delete/detail wiring are covered by focused tests.
 - Full Log search derivation, normalized type filters, sticky-note/detail search, and mobile Log wiring are covered by focused tests.
 - Durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, and mobile Log/More/CareContext wiring are covered by focused tests.
@@ -185,7 +186,7 @@ Current gaps:
 - Need role-based access control.
 - Care-log edit/delete audit trail exists in mobile/domain; broader role, record, household, and account audit policy remains open.
 - Need document storage access rules.
-- AI usage disclosure, owner care-data export, staged pet roster export, and non-destructive deletion request preparation exist in mobile; provider-backed policy and destructive deletion still need approval.
+- AI usage disclosure, owner care-data export, staged pet roster export, Access Pass draft export, Adventure memory export, and non-destructive deletion request preparation exist in mobile; provider-backed policy, cloud media storage, and destructive deletion still need approval.
 
 ## Gate 9: Deployment And Operations
 

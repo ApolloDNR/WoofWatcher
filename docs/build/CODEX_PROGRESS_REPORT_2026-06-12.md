@@ -527,6 +527,12 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Mobile TypeScript:
   - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
   - Result: passed.
+- Full local behavior/readiness suite:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts`
+  - Result: passed, 292 tests.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with Windows line-ending warnings only.
 
 ### Remaining Work
 
@@ -924,3 +930,53 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 
 - Provider-backed Access Pass enforcement still needs real invite approval, API authorization, revocation, helper audit trails, notification delivery, and legal/privacy review.
 - Native iOS/Android QA still needs device evidence for the Access Pass sheet, Share Draft Summary action, and My Care Today readability.
+
+## 2026-06-19 Adventure Mode And Memory Foundation Pass
+
+### What Changed
+
+- Added shared `adventure.ts` care-domain logic for deriving private care quests, daily XP, level, completed proof, next-step guidance, and local memory drafts from household-visible real-care logs.
+- Added the mobile `/adventure` route as a private RPG-style quest board with level/XP summary, next quest, proof, Save Memory, Share, quest board, and Memory shelf sections.
+- Extended the mobile care document with `adventureMemories` so local memory drafts persist with the care plan.
+- Added Adventure Mode to More and the root stack so users can navigate to it from the mobile app.
+- Privacy export and deletion-request scope now include Adventure memories.
+- Updated release docs, quality gates, QA steps, UI notes, decision log, and Apollo blockers so media/maps/community features stay provider-gated.
+
+### Files Changed In This Slice
+
+- `lib/care-domain/src/adventure.ts`
+- `lib/care-domain/src/index.ts`
+- `lib/care-domain/test/adventure.test.ts`
+- `artifacts/woofwatcher-mobile/app/adventure.tsx`
+- `artifacts/woofwatcher-mobile/app/_layout.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/context/CareContext.tsx`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.ts`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/DECISION_LOG.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
+- `docs/PRODUCT_QUALITY_GATES.md`
+- `docs/ULTIMATE_RELEASE_PLAN.md`
+- `docs/BLOCKERS_FOR_APOLLO.md`
+
+### Tests And Checks Run
+
+- Adventure domain, privacy export, and mobile readiness:
+  - Command: `node --experimental-strip-types --test lib/care-domain/test/adventure.test.ts artifacts/woofwatcher-mobile/lib/privacySafety.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 72 tests.
+- Care-domain declarations:
+  - Command: `node node_modules/typescript/bin/tsc -p lib/care-domain/tsconfig.json`
+  - Result: passed.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+
+### Remaining Work
+
+- Provider-backed Adventure photo storage, map/location retention, share links, and community discovery require Apollo-approved providers, privacy policy, and safety rules.
+- Native iOS/Android QA still needs device evidence for the Adventure route, Save Memory flow, share sheet, and mobile spacing.

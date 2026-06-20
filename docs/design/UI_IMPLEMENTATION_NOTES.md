@@ -678,6 +678,24 @@ Design notes:
 - My Care Today uses routine-board truth to show assigned, open, overdue, and next assigned care without adding a new navigation dead end.
 - The UI explicitly says provider-backed sharing is not live, so the app does not imply remote permissions before authorization rules exist.
 
+## 2026-06-19 Adventure Mode Foundation Pass
+
+Adventure Mode now exists as a real mobile route rather than a future idea:
+
+- More links to Adventure Mode as a private care quest surface.
+- The route frames Adventure as `Private RPG`, not public maps or AR.
+- The hero shows Phoenix's current level, today's XP, memory count, and the next available quest.
+- Quest cards show available, complete, and locked states from real household-visible care evidence.
+- The proof section shows which care logs powered the current adventure state.
+- Save Memory creates a local/private memory draft and adds it to the Memory shelf.
+- Share copy is text-only and includes the private household boundary.
+
+Design intent:
+
+- Make the app feel more alive and game-like while staying grounded in real care.
+- Keep the "wow" layer tied to actions the household actually performed.
+- Leave room for future map/photo/community polish without implying those providers are already live.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

@@ -1238,6 +1238,24 @@ Owner: Codex.
 
 Revisit trigger: Apollo approves provider-backed household roles, helper invites, storage rules, or role-specific API authorization.
 
+### 2026-06-19: Adventure Mode Is Private Real-Care Memory, Not Public AR
+
+Decision: Adventure Mode can derive private quests, XP, levels, proof, and local memory drafts from household-visible care logs, but it must not claim public AR, GPS tracking, map storage, cloud photo storage, community discovery, or live sharing until those provider and safety rules exist.
+
+Reason: The product vision needs the dog-care RPG magic, but the real pet comes first. A private care-memory loop is useful now; pretending to have location safety, cloud media, public sharing, or community moderation would create privacy and trust risk.
+
+Consequences:
+
+- `adventure.ts` owns the tested local quest, XP, proof, and memory-draft derivation model.
+- Mobile More links to `/adventure` as a real screen, not a placeholder.
+- `CareContext` persists `adventureMemories` as local/private care evidence.
+- Owner export and deletion-request scope include Adventure memories.
+- Provider-backed media, maps/location retention, share links, and community discovery remain blocked until Apollo approves storage, privacy, and safety scope.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves provider-backed media storage, location/map retention policy, share-link permissions, or a moderated community-adventure product.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

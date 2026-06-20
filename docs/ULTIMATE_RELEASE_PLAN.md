@@ -141,7 +141,8 @@ No payment implementation should start until product scope, privacy terms, suppo
 8. Add provider-backed self-serve account deletion, document storage rules, and retention/audit policy after Apollo approves providers/legal scope.
 9. Add provider-backed notification delivery, reminder preferences, and runtime permission handling for existing Reminder Center candidates.
 10. Add provider-backed WoofGuide source citations, permission-aware writes, and persisted report drafts.
-11. Build visual system pass in Figma or code, then implement screen-by-screen.
+11. Add provider-backed Adventure media, maps/location retention, sharing controls, and community safety rules after Apollo approves providers and privacy scope.
+12. Build visual system pass in Figma or code, then implement screen-by-screen.
 
 ## Decisions Made Without Apollo
 
@@ -182,6 +183,7 @@ No payment implementation should start until product scope, privacy terms, suppo
 - Household Responsibility derives from routine-board truth before richer role permissions, so Calendar and More show one shared view of owner loads, overdue work, unassigned routines, visible log activity, and the next household action.
 - Household Access derives synced members, local-only caregivers, routine-only owners, and practical permission labels before provider-backed role enforcement, so More can show who can actually sync care versus who still needs an invite.
 - Access Pass may stage local permission drafts for helpers, but remote access, revocation, and role enforcement remain provider-gated until account/API authorization rules are approved.
+- Adventure Mode may turn household-visible walks, training, play, and alone-time care into private quests, XP, and local memory drafts. Cloud media storage, map/location data, public sharing, and community adventures remain provider-gated until storage, maps, privacy, and safety rules are approved.
 - Expo/EAS is the mobile release path for v1. iOS and Android profiles live in `artifacts/woofwatcher-mobile/eas.json`; store submission remains blocked until Apollo provides Expo, Apple Developer, Google Play, privacy/legal, and launch approval.
 
 ## Blockers Requiring Apollo
@@ -191,3 +193,4 @@ No payment implementation should start until product scope, privacy terms, suppo
 - Provide or confirm production accounts for Clerk, database, storage, AI provider, deployment, and mobile release tooling.
 - Confirm privacy/legal requirements for storing dog medical records, vet notes, receipts, and AI-assisted health summaries.
 - Confirm monetization model before payment or subscription work.
+- Confirm whether Adventure Mode should use provider-backed photo storage, map/location services, share links, or community discovery before paid launch.

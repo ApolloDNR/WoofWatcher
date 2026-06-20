@@ -43,7 +43,7 @@ test("registers the critical mobile routes and tabs", () => {
   const rootLayout = readAppFile("_layout.tsx");
   const tabLayout = readAppFile(join("(tabs)", "_layout.tsx"));
 
-  for (const route of ["portrait", "setup", "woofguide", "premium", "privacy", "care-twin-qa"]) {
+  for (const route of ["portrait", "setup", "woofguide", "premium", "privacy", "adventure", "care-twin-qa"]) {
     assert.match(rootLayout, new RegExp(`name="${route}"`), `${route} stack screen should be registered`);
     assert.ok(existsSync(join(APP_DIR, `${route}.tsx`)), `${route} route file should exist`);
   }
@@ -1366,6 +1366,23 @@ test("keeps Access Pass and My Care Today operations visible from More", () => {
   assert.match(more, /Share Draft Summary/);
   assert.match(more, /Provider-backed sharing is not live yet/);
   assert.match(more, /My Care Today/);
+});
+
+test("keeps Adventure Mode routed to private real-care quests and memories", () => {
+  const rootLayout = readAppFile("_layout.tsx");
+  const adventure = readAppFile("adventure.tsx");
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
+
+  assert.match(rootLayout, /name="adventure"/);
+  assert.match(careContext, /adventureMemories: AdventureMemory\[\]/);
+  assert.match(adventure, /deriveAdventureMode/);
+  assert.match(adventure, /buildAdventureMemoryDraft/);
+  assert.match(adventure, /Private RPG/);
+  assert.match(adventure, /Save Memory/);
+  assert.match(adventure, /provider-gated/);
+  assert.match(more, /Adventure Mode/);
+  assert.match(more, /router\.push\("\/adventure"( as never)?\)/);
 });
 
 test("keeps CareTwin roster readiness visible without fake multi-dog switching", () => {

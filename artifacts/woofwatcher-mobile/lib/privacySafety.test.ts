@@ -19,6 +19,7 @@ const state = {
   },
   pets: [{ id: "pet_london", name: "London", breed: "Golden Retriever", status: "provider-gated" }],
   accessPasses: [{ id: "access_maya", holderName: "Maya", role: "Sitter", status: "draft" }],
+  adventureMemories: [{ id: "memory_1", title: "Wildflower Loop", petName: "Phoenix", storageStatus: "local-draft" }],
   caregivers: [{ name: "Apollo", role: "Owner" }],
   dietProfile: { primaryFood: "Sensitive kibble", normalPortion: "1 cup" },
   routines: [{ id: "breakfast", label: "Breakfast", type: "meal", time: "7:30 AM", owner: "Apollo" }],
@@ -65,6 +66,7 @@ test("builds an owner export bundle with counts and care data", () => {
     caregivers: 1,
     pets: 1,
     accessPasses: 1,
+    adventureMemories: 1,
     routines: 1,
     entries: 1,
     records: 2,
@@ -76,6 +78,7 @@ test("builds an owner export bundle with counts and care data", () => {
   assert.equal(bundle.care.activePetId, "primary");
   assert.equal(bundle.care.pets[0]?.name, "London");
   assert.equal((bundle.care.accessPasses[0] as { holderName?: string })?.holderName, "Maya");
+  assert.equal((bundle.care.adventureMemories[0] as { title?: string })?.title, "Wildflower Loop");
   assert.equal(bundle.care.entries[0]?.id, "meal_1");
   assert.deepEqual(bundle.care.reportArtifacts[0], state.reportArtifacts[0]);
   assert.match(bundle.disclosures.ai, /not a veterinary diagnosis/i);
@@ -130,4 +133,5 @@ test("builds a non-destructive account deletion request", () => {
   assert.match(request.body, /Export data before deletion/i);
   assert.match(request.body, /pet roster slots/i);
   assert.match(request.body, /Access Pass drafts/i);
+  assert.match(request.body, /Adventure memories/i);
 });

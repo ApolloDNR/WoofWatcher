@@ -119,6 +119,14 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen
+        name="adventure"
+        options={{
+          title: "Adventure Mode",
+          presentation: "card",
+          headerStyle: { backgroundColor: "#F7F5F1" },
+        }}
+      />
+      <Stack.Screen
         name="care-twin-qa"
         options={{
           title: "Care Twin QA",

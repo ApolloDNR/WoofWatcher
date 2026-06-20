@@ -6,6 +6,7 @@
 - Confirm subscription packaging and exact paid tiers.
 - Confirm whether WoofWatcher should support provider-backed multi-dog switching before paid launch. Local CareTwin roster staging exists now, but scoped per-dog care documents still need provider/database approval.
 - Confirm whether Access Pass should become a launch feature or post-launch feature. Local Access Pass drafts exist now, but real helper access requires provider-backed invites, revocation, role enforcement, helper audit trails, and legal/privacy approval.
+- Confirm whether Adventure Mode should remain a private local memory feature for launch or include provider-backed photo storage, map/location retention, share links, or community discovery. The local quest/memory foundation exists now; cloud media, maps, public sharing, and community safety are not approved or live.
 - Confirm whether Figma is the canonical visual design source.
 - Confirm final high-end animation asset pipeline: code-only Reanimated first, Rive/Lottie assets, Figma-to-code design source, or hired illustrator/motion designer support.
 - Confirm if/when saved walk routes should move from owner-entered route/place templates to GPS route recording, map previews, and location retention policy.
@@ -22,6 +23,7 @@
 - AI provider key and model policy.
 - PixelLab secret hygiene. A PixelLab bearer token was visible in a screenshot on 2026-06-17, so it should stay revoked/regenerated and never be committed. PixelLab MCP is now callable in Codex, Apollo has an active subscription, and the Phoenix v2 seed/state pack, full registered sprite manifest, active Option B dogless day room, PixelLab final-candidate night/bedtime/health-watch/home-alone rooms, the full current Option B hard-pixel Phoenix runtime candidate family including a dedicated bark/tap reaction, 12 Avatar Studio template preview thumbnails, the full 12-template base still pack, the first shepherd accessory overlay PNG pack, the first shepherd 10-state emote still pack, and the Retriever, Husky/Spitz, and Bully 10-state template emote packs now exist locally, plus the 10-item inventory accessory pack, two subscription seed animation strips, live idle/walk sprite packs for every non-Phoenix launch template, and a live Shepherd/Phoenix Avatar Studio sprite registration backed by the approved Option B strips. The 2026-06-19 subscription-backed Phoenix replacement review archived one clean still reference but rejected the duplicate/cropped and identity-drift candidates, and a pro quadruped job `be24cc90-7a69-4859-b9b2-42e73a2124cd` is queued for later review only, so remaining asset blockers are final visual approval, native phone-size QA, remaining template accessory/emote packs, true overlay alignment, body-class refinements, stronger reference-guided generation prompts, and gait QA, not MCP access or credits.
 - Provider-backed WoofGuide generation, source citations, and permission-aware assistant writes require the AI provider key/model policy plus privacy/account safety rules. Current WoofGuide actions are deterministic owner-reviewed drafts only.
+- Provider-backed Adventure media, map/location services, share links, and community discovery require storage/provider selection, retention rules, household sharing permissions, moderation/safety policy, and App Store/Play privacy disclosure before launch.
 - Expo/EAS, Apple Developer, and Google Play Console accounts. The repo now has EAS build/submit profiles and a mobile release runbook, but no provider account credentials or store submission approval are available to Codex.
 - Vercel/API deployment target if applicable.
 
@@ -33,6 +35,7 @@
 ## Legal, Privacy, And Safety
 
 - Privacy policy for pet health notes, documents, AI usage, household sharing, and temporary helper Access Passes.
+- Privacy policy for Adventure photos, memory captions, location/map data, sharing, and any community discovery if Adventure grows beyond local private drafts.
 - Terms and support scope before subscriptions.
 - Provider-backed account deletion policy; mobile can export owner care data and prepare a non-destructive deletion request, but self-serve destructive deletion is not enabled.
 - Veterinary disclaimer language.

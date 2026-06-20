@@ -244,6 +244,8 @@ Current evidence, 2026-06-11: Household Access strengthens the Family-tier wedge
 
 Current evidence, 2026-06-19: Access Pass strengthens the Family/helper revenue wedge by showing temporary permission drafts and personal care ownership while truthfully keeping remote enforcement provider-gated.
 
+Current evidence, 2026-06-19: Adventure Mode strengthens the emotional retention and Family memory wedge by deriving private real-care quests, XP, levels, completed proof, and local memory drafts from household-visible walks, training, play, and alone-time evidence while keeping media, maps, public sharing, and community discovery provider-gated.
+
 Current evidence, 2026-06-11: Reminder Center strengthens the Plus/Family reminders wedge by making existing routine, medication, record, and grooming follow-up candidates visible in Calendar without enabling checkout, push notifications, or automatic care writes.
 
 Current evidence, 2026-06-11: Full Log search strengthens the paid history/trust wedge by making rich care evidence findable across notes, caregivers, routes, medication details, and sticky notes before server search indexes or long-history retention policy exist.
@@ -261,6 +263,8 @@ Current evidence, 2026-06-08: The owner-reviewed WoofGuide action model is cover
 Current evidence, 2026-06-08: Mobile now has a Privacy & Safety surface for owner care-data export, non-destructive account deletion request preparation, WoofGuide AI disclosure, document storage gates, and payment launch blockers. The model is covered by focused tests and keeps live deletion/storage disabled until provider rules are approved.
 
 Current evidence, 2026-06-14: Mobile Privacy & Safety now uses shared board anatomy for Export Summary, Launch Safety Gates, and Before Public Launch blockers while preserving owner data export, deletion-request sharing, AI/document/payment gating, and provider-backed truth boundaries.
+
+Current evidence, 2026-06-19: Owner export and deletion scope now include local Adventure memories. The Adventure route labels memories as private household care evidence and creates `local-draft` memory records without claiming provider-backed photo storage, map data, or public sharing.
 
 Current evidence, 2026-06-08: Focused tests now include static mobile readiness smoke for critical route registration, tab coverage, string router links, and safety copy on premium/privacy/WoofGuide surfaces. Expo runtime, visual, and accessibility QA remain open.
 
@@ -300,3 +304,5 @@ Current evidence, 2026-06-19: PixelLab subscription review did not promote weake
 Current evidence, 2026-06-13: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, Household Responsibility derivation/mobile wiring, Household Access derivation/mobile wiring, Care Log Audit Trail derivation/mobile wiring, Full Log search derivation/mobile wiring, Medication History search/filter derivation/mobile wiring, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, Alone Time derivation/report/mobile wiring, Weight Trend derivation/report/mobile wiring, Grooming Care derivation/mobile wiring, Reminder Center derivation/mobile wiring/action routing, static mobile wiring, EAS profile readiness, and mobile release runbook coverage. Local focused tests pass at 195 tests. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.
 
 Current evidence, 2026-06-14: `WoofWatcher Verify` uses Node 24-compatible action majors for checkout, setup-node, and pnpm setup, and keeps the project test/build runtime pinned to Node 24.
+
+Current evidence, 2026-06-19: The local behavior/readiness suite passes at 292 tests after the Adventure Mode foundation, covering mobile readiness, privacy export, PWA contracts, and shared care-domain behavior. Care-domain declarations, mobile TypeScript, and `git diff --check` also pass locally.

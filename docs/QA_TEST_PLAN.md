@@ -153,6 +153,9 @@ Latest local evidence, 2026-06-19:
 77. Open More, create an Access Pass draft for a sitter, and confirm the card shows Drafts, permission boundary copy, and a Share Draft Summary action without claiming remote access is live.
 78. Open More with routines assigned to the current user and confirm My Care Today shows assigned, open, overdue counts plus the next assigned routine.
 79. Open Privacy & Safety export after creating an Access Pass draft and confirm Access Pass data is included without auth/session tokens.
+80. Open More, tap Adventure Mode, and confirm the route presents a private RPG care quest board without claiming live maps, public sharing, or cloud photo storage.
+81. With household-visible walk, training, play, or alone-time logs present, confirm Adventure Mode derives level/XP, completed proof, the next available quest, and a Save Memory action from real care evidence.
+82. Save an Adventure memory draft, confirm it appears in the Memory shelf as local/private, then open Privacy & Safety export and confirm Adventure memories are included without auth/session tokens.
 
 ## Missing QA
 

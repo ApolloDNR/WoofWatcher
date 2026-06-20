@@ -31,7 +31,7 @@ import {
   type CareSyncOutbox,
   type EntrySyncStatus,
 } from "@/lib/careSync";
-import type { AccessPass, CarePassArtifact } from "@workspace/care-domain";
+import type { AccessPass, AdventureMemory, CarePassArtifact } from "@workspace/care-domain";
 import { useWoofAuth } from "@/lib/auth";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
@@ -165,6 +165,7 @@ export interface CareDoc {
   goals: Goal[];
   records: Record[];
   accessPasses: AccessPass[];
+  adventureMemories: AdventureMemory[];
   reportArtifacts: ReportArtifact[];
   calendarEvents: CalendarEvent[];
 }
@@ -218,6 +219,7 @@ function getDefaultDoc(): CareDoc {
     goals: [],
     records: [],
     accessPasses: [],
+    adventureMemories: [],
     reportArtifacts: [],
     calendarEvents: [],
   };
@@ -230,6 +232,7 @@ function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
     activePetId: typeof merged.activePetId === "string" && merged.activePetId.trim() ? merged.activePetId : "primary",
     pets: Array.isArray(merged.pets) ? merged.pets : [],
     accessPasses: Array.isArray(merged.accessPasses) ? merged.accessPasses : [],
+    adventureMemories: Array.isArray(merged.adventureMemories) ? merged.adventureMemories : [],
     reportArtifacts: Array.isArray(merged.reportArtifacts) ? merged.reportArtifacts : [],
   };
 }
@@ -680,6 +683,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       goals: doc.goals,
       records: doc.records,
       accessPasses: doc.accessPasses,
+      adventureMemories: doc.adventureMemories,
       reportArtifacts: doc.reportArtifacts,
       calendarEvents: doc.calendarEvents,
       entries,
