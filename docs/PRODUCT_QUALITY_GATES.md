@@ -150,6 +150,7 @@ Current gaps:
 - Home avatar motion state and wiring are covered by focused tests.
 - Shared mobile layout tests cover WoofGuide composer bottom clearance on flat native, notched native, and web surfaces before native screenshot QA is available.
 - Shared mobile layout tests cover docked modal-sheet bottom clearance on flat and notched native devices, and static readiness protects Plans, Log, More, Records, and error recovery sheets from route-local inset math before native screenshot QA is available.
+- Shared mobile layout tests cover floating feedback bottom offsets on tabbed, standalone, notched, and web surfaces, and static readiness protects Home and Avatar Studio toasts from route-local inset math before native screenshot QA is available.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
 - Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.
 - Walk quick-log visibility, full Log walk route fields, Walk Activity summary logic, Saved Routes derivation, Care Pass walk activity/Saved Routes language, and Records walk activity wiring are covered by focused tests.

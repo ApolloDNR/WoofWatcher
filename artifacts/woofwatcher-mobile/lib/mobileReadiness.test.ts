@@ -432,6 +432,7 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.match(mobileLayout, /export function getStandaloneRouteBottomPadding/);
   assert.match(mobileLayout, /export function getStandaloneComposerBottomPadding/);
   assert.match(mobileLayout, /export function getModalSheetBottomPadding/);
+  assert.match(mobileLayout, /export function getFloatingFeedbackBottomOffset/);
   assert.match(tabLayout, /getFloatingTabChromeMetrics/);
 
   for (const source of [home, calendar, health, log, more, records]) {
@@ -442,6 +443,13 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   assert.match(avatarStudio, /getStandaloneRouteBottomPadding/);
   assert.match(avatarStudio, /paddingBottom: bottomScrollPadding/);
   assert.doesNotMatch(avatarStudio, /paddingBottom: 72/);
+  assert.match(avatarStudio, /getFloatingFeedbackBottomOffset/);
+  assert.match(avatarStudio, /bottom: toastBottomOffset/);
+  assert.doesNotMatch(avatarStudio, /bottom: insets\.bottom \+ 22/);
+
+  assert.match(home, /getFloatingFeedbackBottomOffset/);
+  assert.match(home, /bottom: toastBottomOffset/);
+  assert.doesNotMatch(home, /bottom: insets\.bottom \+ 96/);
 
   assert.match(woofGuide, /getStandaloneComposerBottomPadding/);
   assert.match(woofGuide, /paddingBottom: composerBottomPadding/);

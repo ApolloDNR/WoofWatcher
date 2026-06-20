@@ -30,7 +30,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
-import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getFloatingFeedbackBottomOffset, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import {
   deriveAvatarPreviewAccessories,
   deriveAvatarPreviewMood,
@@ -172,6 +172,7 @@ export default function PortraitScreen() {
   const petName = state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
   const topInset = Platform.OS === "web" ? 20 : insets.top;
   const bottomScrollPadding = getStandaloneRouteBottomPadding(insets.bottom);
+  const toastBottomOffset = getFloatingFeedbackBottomOffset(insets.bottom, "standalone", Platform.OS === "web");
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [activeTab, setActiveTab] = useState<StudioTab>("scan");
@@ -1057,7 +1058,7 @@ export default function PortraitScreen() {
       </ScrollView>
 
       {savedToast ? (
-        <View style={[s.toast, { backgroundColor: colors.brandNavy, bottom: insets.bottom + 22 }]}>
+        <View style={[s.toast, { backgroundColor: colors.brandNavy, bottom: toastBottomOffset }]}>
           <Text style={[s.toastText, { fontFamily: "Inter_700Bold" }]}>{savedToast}</Text>
         </View>
       ) : null}

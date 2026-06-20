@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   getFloatingTabChromeMetrics,
+  getFloatingFeedbackBottomOffset,
   getModalSheetBottomPadding,
   getStandaloneComposerBottomPadding,
   getStandaloneRouteBottomPadding,
@@ -39,4 +40,12 @@ test("keeps docked modal sheets clear of flat and notched home indicators", () =
   assert.equal(getModalSheetBottomPadding(0), 32);
   assert.equal(getModalSheetBottomPadding(18), 38);
   assert.equal(getModalSheetBottomPadding(34), 54);
+});
+
+test("keeps floating feedback above tab chrome and home indicators", () => {
+  assert.equal(getFloatingFeedbackBottomOffset(0, "tabbed", false), 96);
+  assert.equal(getFloatingFeedbackBottomOffset(34, "tabbed", false), 130);
+  assert.equal(getFloatingFeedbackBottomOffset(0, "standalone", false), 22);
+  assert.equal(getFloatingFeedbackBottomOffset(34, "standalone", false), 56);
+  assert.equal(getFloatingFeedbackBottomOffset(0, "standalone", true), 56);
 });

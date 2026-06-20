@@ -19,6 +19,8 @@ const STANDALONE_COMPOSER_INSET_OFFSET = 12;
 const WEB_COMPOSER_BOTTOM_INSET = 34;
 const MODAL_SHEET_CLEARANCE = 32;
 const MODAL_SHEET_INSET_OFFSET = 20;
+const TABBED_FEEDBACK_OFFSET = 96;
+const STANDALONE_FEEDBACK_OFFSET = 22;
 
 export function getFloatingTabChromeMetrics(bottomInset: number, isWeb: boolean): FloatingTabChromeMetrics {
   if (isWeb) {
@@ -53,4 +55,14 @@ export function getStandaloneComposerBottomPadding(bottomInset: number, isWeb: b
 
 export function getModalSheetBottomPadding(bottomInset: number): number {
   return Math.max(MODAL_SHEET_CLEARANCE, bottomInset + MODAL_SHEET_INSET_OFFSET);
+}
+
+export function getFloatingFeedbackBottomOffset(
+  bottomInset: number,
+  surface: "tabbed" | "standalone",
+  isWeb: boolean,
+): number {
+  const effectiveInset = isWeb && surface === "standalone" ? WEB_COMPOSER_BOTTOM_INSET : bottomInset;
+  const offset = surface === "tabbed" ? TABBED_FEEDBACK_OFFSET : STANDALONE_FEEDBACK_OFFSET;
+  return effectiveInset + offset;
 }

@@ -138,6 +138,8 @@ Current evidence, 2026-06-19: WoofGuide's owner-reviewed assistant composer now 
 
 Current evidence, 2026-06-19: Docked care workflow sheets now derive bottom clearance from `getModalSheetBottomPadding` instead of local `insets.bottom + 16/18/20` formulas. Focused tests cover flat and notched native modal clearance, and static readiness protects Plans routine/event sheets, Log detail/edit sheets, Records Care Pass/record sheets, More diet/profile sheets, and the app error recovery sheet before native screenshot QA is available.
 
+Current evidence, 2026-06-20: Floating feedback toasts now derive bottom position from `getFloatingFeedbackBottomOffset` instead of local `insets.bottom + 96/22` formulas. Focused tests cover tabbed Home feedback, standalone Avatar Studio feedback, notched devices, and web fallback before native screenshot QA is available.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

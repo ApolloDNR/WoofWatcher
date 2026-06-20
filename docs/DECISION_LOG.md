@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-20: Floating Feedback Uses The Shared Safe-Area Contract
+
+Decision: Home quick-log feedback and Avatar Studio save feedback should use `getFloatingFeedbackBottomOffset` from the shared mobile layout helper instead of route-local `insets.bottom + 96/22` toast positioning.
+
+Reason: The native runtime-QA baseline already covered scroll clearance, standalone composers, and docked sheets, but transient feedback could still sit too close to the floating tab shell or home indicator. A named helper gives the simulator/device screenshot pass one feedback-position contract to inspect without claiming device QA has run.
+
+Owner: Codex.
+
+Revisit trigger: Native device QA shows feedback needs a different clearance value, the floating tab shell changes, or a final toast/snackbar component replaces the current route-local feedback views.
+
 ### 2026-06-19: Docked Mobile Sheets Use The Shared Safe-Area Contract
 
 Decision: Plans routine/event sheets, Log detail/edit sheets, Records Care Pass/record sheets, More diet/profile sheets, and the app error recovery sheet should use `getModalSheetBottomPadding` from the shared mobile layout helper instead of local `insets.bottom + 16/18/20` padding.

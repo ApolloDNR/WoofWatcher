@@ -19,6 +19,7 @@ Latest local evidence, 2026-06-19:
 - PASS: shared mobile safe-area layout helpers now protect the floating tab shell, Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell from drifting back to hardcoded bottom-clearance padding before native screenshot QA happens.
 - PASS: WoofGuide composer safe-area hardening now uses the shared mobile layout contract, with focused coverage for flat native devices, notched native devices, and web fallback composer clearance.
 - PASS: docked mobile sheets now use the shared modal-sheet safe-area contract, with focused flat/notched-device coverage and static readiness checks for Plans, Log, More, Records, and the error recovery sheet.
+- PASS: floating feedback toasts now use the shared mobile layout contract, with focused flat/notched/web coverage and static readiness checks for Home quick-log feedback and Avatar Studio save feedback.
 - LIMIT: mobile TypeScript could not run in this checkout because `node_modules/typescript` is missing (`tsc-missing`).
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` run `27857157145` for commit `8014837` failed before job start with GitHub's account billing/spending-limit annotation. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 

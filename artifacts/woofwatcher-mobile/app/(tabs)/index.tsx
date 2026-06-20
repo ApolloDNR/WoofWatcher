@@ -29,7 +29,7 @@ import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
-import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getFloatingFeedbackBottomOffset, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 
 const HERO_RATIO = 1.05;
@@ -142,6 +142,7 @@ export default function HomeScreen() {
   const { state, addEntry } = useCare();
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
   const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
+  const toastBottomOffset = getFloatingFeedbackBottomOffset(insets.bottom, "tabbed", Platform.OS === "web");
 
   const topInset = Platform.OS === "web" ? 18 : insets.top;
   const [now, setNow] = useState(() => Date.now());
@@ -701,7 +702,7 @@ export default function HomeScreen() {
             {
               backgroundColor: colors.brandNavy,
               opacity: toastOpacity,
-              bottom: insets.bottom + 96,
+              bottom: toastBottomOffset,
             },
           ]}
         >
