@@ -149,6 +149,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 141. NEXT: Continue the structured edit/detail sheet stack with provider-backed photo/document upload storage once Apollo approves storage rules.
 142. DONE 2026-06-19: Added the first local CareTwin roster readiness slice. `CareContext` now persists `activePetId` and planned `pets`, `careTwinRoster.ts` derives the active live care twin versus provider-gated future pet slots, More exposes a polished CareTwin Roster card plus Add future dog sheet, and Privacy export/deletion scope includes staged pet roster data. The UI explicitly blocks fake switching until provider-backed multi-dog care documents can separate logs, routines, records, reports, and sync.
 143. NEXT: Build provider-backed multi-dog care documents and scoped dog switching after the storage/database/account rules are approved, including per-dog logs, routines, records, reports, avatars, privacy export, and household permissions.
+144. DONE 2026-06-19: Added the local Access Pass and My Care Today operations slice. `access-pass.ts` now derives temporary sitter/trainer/vet/emergency helper permissions, blocked actions, active/upcoming/draft status, local-draft provider boundaries, and owner-specific assigned care for today. Mobile More stores `accessPasses`, shows Access Passes and My Care Today cards, creates local Access Pass drafts, shares a truthful draft summary, and privacy export/deletion scope includes Access Pass drafts.
+145. NEXT: Build provider-backed Access Pass enforcement after account/storage rules are approved, including real invite approval, role-specific API authorization, pass revocation, helper audit trails, and notification delivery.
 
 ## Cadence
 

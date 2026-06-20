@@ -1220,6 +1220,24 @@ Owner: Codex.
 
 Revisit trigger: Apollo approves production account/storage/database rules for multi-dog care documents, or the API schema grows first-class per-dog scoping.
 
+### 2026-06-19: Access Pass Drafts Are Local Until Provider Enforcement Exists
+
+Decision: WoofWatcher can stage Access Pass drafts for sitters, trainers, vet viewers, emergency helpers, and temporary helpers, but remote access, revocation, and role enforcement remain provider-gated.
+
+Reason: Access Pass is permission to help, while Care Pass is a shareable report. Treating a local draft as real remote authorization would create a privacy and safety risk for household records, medication logs, and dog health data.
+
+Consequences:
+
+- `access-pass.ts` owns tested Access Pass permission defaults, blocked actions, active/upcoming/draft status, and My Care Today assigned-care derivation.
+- Mobile More can create and share a local Access Pass draft summary while explicitly saying provider-backed sharing is not live.
+- `CareContext` persists `accessPasses` locally/shared in the care document for future provider enforcement.
+- Privacy export and deletion request scope include Access Pass drafts.
+- Provider-backed Access Pass enforcement still requires account roles, API authorization, revocation, helper audit trails, and storage/provider rules.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves provider-backed household roles, helper invites, storage rules, or role-specific API authorization.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

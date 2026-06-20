@@ -5,6 +5,7 @@
 - Confirm launch target: Expo preview, TestFlight, App Store, web dashboard, or staged launch.
 - Confirm subscription packaging and exact paid tiers.
 - Confirm whether WoofWatcher should support provider-backed multi-dog switching before paid launch. Local CareTwin roster staging exists now, but scoped per-dog care documents still need provider/database approval.
+- Confirm whether Access Pass should become a launch feature or post-launch feature. Local Access Pass drafts exist now, but real helper access requires provider-backed invites, revocation, role enforcement, helper audit trails, and legal/privacy approval.
 - Confirm whether Figma is the canonical visual design source.
 - Confirm final high-end animation asset pipeline: code-only Reanimated first, Rive/Lottie assets, Figma-to-code design source, or hired illustrator/motion designer support.
 - Confirm if/when saved walk routes should move from owner-entered route/place templates to GPS route recording, map previews, and location retention policy.
@@ -31,7 +32,7 @@
 
 ## Legal, Privacy, And Safety
 
-- Privacy policy for pet health notes, documents, AI usage, and household sharing.
+- Privacy policy for pet health notes, documents, AI usage, household sharing, and temporary helper Access Passes.
 - Terms and support scope before subscriptions.
 - Provider-backed account deletion policy; mobile can export owner care data and prepare a non-destructive deletion request, but self-serve destructive deletion is not enabled.
 - Veterinary disclaimer language.

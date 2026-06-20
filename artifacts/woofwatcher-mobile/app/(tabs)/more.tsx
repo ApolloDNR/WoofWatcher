@@ -28,10 +28,14 @@ import {
   getGetMeQueryKey,
 } from "@workspace/api-client-react";
 import {
+  buildAccessPassDraft,
   deriveCareIntelligence,
+  deriveAccessPassPlan,
   deriveHouseholdAccessPlan,
   deriveHouseholdResponsibility,
+  deriveMyCareToday,
   getCareEventDefinition,
+  type AccessPassKind,
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
@@ -57,7 +61,7 @@ export default function MoreScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
-  const { dietProfile, profile, entries, routines, caregivers } = state;
+  const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
 
   const { signOut } = useWoofAuth();
@@ -70,6 +74,7 @@ export default function MoreScreen() {
   const household = me.data?.household;
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
   const myName = me.data?.user?.displayName?.trim() || "";
+  const currentHuman = myName || caregivers[0]?.name || "Apollo";
 
   const now = Date.now();
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
@@ -192,6 +197,26 @@ export default function MoreScreen() {
       }),
     [household, members, caregivers, routines],
   );
+  const accessPassPlan = useMemo(
+    () =>
+      deriveAccessPassPlan({
+        passes: accessPasses,
+        petName,
+        now,
+      }),
+    [accessPasses, petName, now],
+  );
+  const myCareToday = useMemo(
+    () =>
+      deriveMyCareToday({
+        personName: currentHuman,
+        petName,
+        routines,
+        entries,
+        now,
+      }),
+    [currentHuman, petName, routines, entries, now],
+  );
   const responsibilityTone =
     householdResponsibility.status === "needs-care"
       ? colors.rose
@@ -228,6 +253,9 @@ export default function MoreScreen() {
   const [petRosterOpen, setPetRosterOpen] = useState(false);
   const [petRosterName, setPetRosterName] = useState("");
   const [petRosterBreed, setPetRosterBreed] = useState("");
+  const [accessPassOpen, setAccessPassOpen] = useState(false);
+  const [accessPassName, setAccessPassName] = useState("");
+  const [accessPassKind, setAccessPassKind] = useState<AccessPassKind>("sitter");
   const [pName, setPName] = useState("");
   const [pBreed, setPBreed] = useState("");
   const [pWeight, setPWeight] = useState("");
@@ -289,6 +317,58 @@ export default function MoreScreen() {
       ],
     }));
     setPetRosterOpen(false);
+  };
+
+  const openAccessPassSheet = () => {
+    setAccessPassName("");
+    setAccessPassKind("sitter");
+    setAccessPassOpen(true);
+  };
+
+  const saveAccessPassDraft = () => {
+    const draft = buildAccessPassDraft({
+      holderName: accessPassName,
+      kind: accessPassKind,
+      petName,
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateCareDoc((doc) => ({
+      ...doc,
+      accessPasses: [
+        ...(doc.accessPasses ?? []),
+        draft,
+      ],
+    }));
+    setAccessPassOpen(false);
+  };
+
+  const shareAccessPassSummary = () => {
+    const pass = accessPassPlan.passes[0];
+    if (!pass) {
+      Alert.alert("Access Pass", "Create a local Access Pass draft before sharing helper instructions.");
+      return;
+    }
+    const message = [
+      `WoofWatcher Access Pass draft for ${pass.petName}`,
+      "",
+      `Helper: ${pass.holderName}`,
+      `Role: ${pass.role}`,
+      `Status: ${pass.status}`,
+      `Time: ${pass.timeLabel}`,
+      "",
+      "Allowed:",
+      ...pass.permissions.map((permission) => `- ${permission}`),
+      "",
+      "Not allowed:",
+      ...pass.blockedPermissions.map((permission) => `- ${permission}`),
+      "",
+      accessPassPlan.permissionBoundary,
+      "Provider-backed sharing is not live yet; review this before granting real access.",
+    ].join("\n");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Share.share({ message, title: `WoofWatcher Access Pass - ${pass.holderName}` }).catch(() =>
+      Alert.alert("Access Pass", message),
+    );
   };
 
   const submitJoin = () => {
@@ -1101,6 +1181,158 @@ export default function MoreScreen() {
             )}
           </BoardCard>
 
+          <BoardCard style={[s.moreBoardCard, { borderColor: colors.primary + "44" }]}>
+            <BoardSectionHeader
+              title="Access Passes"
+              accessory={
+                <Pressable
+                  onPress={openAccessPassSheet}
+                  accessibilityRole="button"
+                  accessibilityLabel="Create Access Pass draft"
+                  hitSlop={8}
+                >
+                  <Text style={[s.sectionLink, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>New pass</Text>
+                </Pressable>
+              }
+            />
+            <View style={s.responsibilityTop}>
+              <View style={[s.responsibilityIcon, { backgroundColor: colors.primary + "18" }]}>
+                <Ionicons name="ticket-outline" size={21} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {accessPassPlan.title}
+                </Text>
+                <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {accessPassPlan.summary}
+                </Text>
+              </View>
+            </View>
+            <View style={s.responsibilityMetrics}>
+              {[
+                { label: "Active", value: accessPassPlan.activeCount },
+                { label: "Upcoming", value: accessPassPlan.upcomingCount },
+                { label: "Drafts", value: accessPassPlan.draftCount },
+              ].map((metric) => (
+                <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
+                  <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
+                  <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              {accessPassPlan.nextStep}
+            </Text>
+            <View style={[s.passBoundary, { borderColor: colors.border, backgroundColor: colors.background }]}>
+              <Ionicons name="shield-checkmark-outline" size={16} color={colors.sage} />
+              <Text style={[s.passBoundaryText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                {accessPassPlan.permissionBoundary}
+              </Text>
+            </View>
+            {accessPassPlan.passes.length > 0 && (
+              <View style={[s.passList, { borderTopColor: colors.border }]}>
+                {accessPassPlan.passes.slice(0, 3).map((pass) => (
+                  <View key={pass.id} style={s.passRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.passName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{pass.holderName}</Text>
+                      <Text style={[s.passMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {pass.role} - {pass.timeLabel}
+                      </Text>
+                    </View>
+                    <View style={[s.passStatus, { backgroundColor: pass.status === "active" ? colors.sage + "1F" : colors.background }]}>
+                      <Text style={[s.passStatusText, { color: pass.status === "active" ? colors.sage : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        {pass.status}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+            <Pressable
+              onPress={shareAccessPassSummary}
+              accessibilityRole="button"
+              accessibilityLabel="Share Access Pass draft summary"
+              style={({ pressed }) => [
+                s.passAction,
+                { backgroundColor: colors.primary, opacity: pressed ? 0.78 : 1 },
+              ]}
+            >
+              <Ionicons name="share-outline" size={16} color="#FFFFFF" />
+              <Text style={[s.passActionText, { fontFamily: "Inter_700Bold" }]}>Share Draft Summary</Text>
+            </Pressable>
+          </BoardCard>
+
+          <BoardCard style={[s.moreBoardCard, { borderColor: responsibilityTone + "44" }]}>
+            <BoardSectionHeader
+              title="My Care Today"
+              accessory={
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push("/calendar");
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open assigned care"
+                  hitSlop={8}
+                >
+                  <Text style={[s.sectionLink, { color: responsibilityTone, fontFamily: "Inter_600SemiBold" }]}>Open</Text>
+                </Pressable>
+              }
+            />
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push("/calendar");
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Open My Care Today in Plans"
+              style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}
+            >
+              <View style={s.responsibilityTop}>
+                <View style={[s.responsibilityIcon, { backgroundColor: responsibilityTone + "18" }]}>
+                  <Ionicons name="person-circle-outline" size={22} color={responsibilityTone} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {myCareToday.title}
+                  </Text>
+                  <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {myCareToday.summary}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+              </View>
+              <View style={s.responsibilityMetrics}>
+                {[
+                  { label: "Assigned", value: myCareToday.assignedCount },
+                  { label: "Open", value: myCareToday.openCount },
+                  { label: "Overdue", value: myCareToday.overdueCount },
+                ].map((metric) => (
+                  <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
+                    <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
+                    <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {myCareToday.nextStep}
+              </Text>
+              {myCareToday.items.length > 0 && (
+                <View style={[s.careTodayList, { borderTopColor: colors.border }]}>
+                  {myCareToday.items.slice(0, 3).map((item) => (
+                    <View key={item.id} style={s.careTodayRow}>
+                      <Text style={[s.careTodayTime, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{item.time}</Text>
+                      <Text style={[s.careTodayLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
+                      <Text style={[s.careTodayStatus, { color: item.status === "done" ? colors.sage : item.status === "overdue" ? colors.rose : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        {item.status}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </Pressable>
+          </BoardCard>
+
           {/* Household responsibility */}
           <BoardCard style={[s.moreBoardCard, { borderColor: responsibilityTone + "44" }]}>
             <BoardSectionHeader
@@ -1494,6 +1726,69 @@ export default function MoreScreen() {
         </Pressable>
       </Modal>
 
+      <Modal visible={accessPassOpen} transparent animationType="slide" onRequestClose={() => setAccessPassOpen(false)}>
+        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setAccessPassOpen(false)}>
+          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+            <View style={{ paddingBottom: insets.bottom + 20, paddingHorizontal: 22 }}>
+              <View style={s.modalHandle} />
+              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Create Access Pass</Text>
+              <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Stage temporary helper permissions locally. Remote access stays locked until provider-backed sharing is approved.
+              </Text>
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>HELPER NAME</Text>
+              <TextInput
+                value={accessPassName}
+                onChangeText={setAccessPassName}
+                placeholder="e.g. Maya"
+                placeholderTextColor={colors.mutedForeground}
+                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+              />
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>ROLE</Text>
+              <View style={s.passKindGrid}>
+                {[
+                  { key: "sitter" as const, label: "Sitter" },
+                  { key: "trainer" as const, label: "Trainer" },
+                  { key: "vet" as const, label: "Vet viewer" },
+                  { key: "emergency" as const, label: "Emergency" },
+                ].map((kind) => {
+                  const selected = accessPassKind === kind.key;
+                  return (
+                    <Pressable
+                      key={kind.key}
+                      onPress={() => setAccessPassKind(kind.key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set Access Pass role to ${kind.label}`}
+                      style={[
+                        s.passKind,
+                        {
+                          borderColor: selected ? colors.primary : colors.border,
+                          backgroundColor: selected ? colors.primary + "18" : colors.background,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.passKindText, { color: selected ? colors.primary : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {kind.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Pressable
+                onPress={saveAccessPassDraft}
+                accessibilityRole="button"
+                accessibilityLabel="Save Access Pass draft"
+                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+              >
+                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save Local Draft</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* Dog profile edit modal */}
       <Modal visible={profileOpen} transparent animationType="slide" onRequestClose={() => setProfileOpen(false)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProfileOpen(false)}>
@@ -1880,6 +2175,25 @@ const s = StyleSheet.create({
   responsibilityMember: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
   responsibilityMemberName: { fontSize: 12.5, flex: 1 },
   responsibilityMemberMeta: { fontSize: 12, textAlign: "right" },
+
+  passBoundary: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderRadius: 12, borderWidth: 1, padding: 11, marginTop: 12 },
+  passBoundaryText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
+  passList: { borderTopWidth: 1, marginTop: 12, paddingTop: 10, gap: 8 },
+  passRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 5 },
+  passName: { fontSize: 13.5 },
+  passMeta: { fontSize: 12, lineHeight: 16, marginTop: 1 },
+  passStatus: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
+  passStatusText: { fontSize: 10.5, textTransform: "capitalize" },
+  passAction: { minHeight: 46, borderRadius: 8, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, marginTop: 13 },
+  passActionText: { color: "#FFFFFF", fontSize: 13.5 },
+  passKindGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8, marginBottom: 4 },
+  passKind: { flexGrow: 1, flexBasis: "47%", minHeight: 44, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
+  passKindText: { fontSize: 12.5 },
+  careTodayList: { borderTopWidth: 1, marginTop: 12, paddingTop: 10, gap: 8 },
+  careTodayRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  careTodayTime: { width: 68, fontSize: 11.5 },
+  careTodayLabel: { flex: 1, fontSize: 12.5 },
+  careTodayStatus: { width: 66, textAlign: "right", fontSize: 11.5, textTransform: "capitalize" },
 
   syncTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   syncIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },

@@ -879,3 +879,48 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - True dog switching still needs provider-backed multi-dog care documents so logs, routines, records, reports, avatar state, privacy export, and household permissions are scoped per dog.
 - Provider-backed photo/document storage remains gated by Apollo's storage decision.
 - Native iOS/Android QA still needs device evidence for the More roster card, modal ergonomics, and existing avatar-room motion.
+
+## 2026-06-19 Access Pass And My Care Today Pass
+
+### What Changed
+
+- Added shared `access-pass.ts` care-domain logic for Access Pass drafts, sitter/trainer/vet/emergency helper permission defaults, blocked actions, active/upcoming/draft status, provider-gated sharing boundaries, and My Care Today assigned-routine summaries.
+- Extended the mobile care document with `accessPasses` so local drafts persist with the care plan.
+- Added More-screen `Access Passes` and `My Care Today` board cards with draft creation, Share Draft Summary, permission-boundary copy, assigned/open/overdue metrics, and next assigned care guidance.
+- Privacy export and deletion-request scope now include Access Pass drafts.
+- Updated release docs, quality gates, QA steps, UI notes, and decision log so this does not get mistaken for live provider-backed authorization.
+
+### Files Changed In This Slice
+
+- `lib/care-domain/src/access-pass.ts`
+- `lib/care-domain/src/index.ts`
+- `lib/care-domain/test/access-pass.test.ts`
+- `artifacts/woofwatcher-mobile/context/CareContext.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.ts`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/DECISION_LOG.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/PRODUCT_QUALITY_GATES.md`
+- `docs/ULTIMATE_RELEASE_PLAN.md`
+
+### Tests And Checks Run
+
+- Access Pass domain, privacy export, and mobile readiness:
+  - Command: `node --experimental-strip-types --test lib/care-domain/test/access-pass.test.ts artifacts/woofwatcher-mobile/lib/privacySafety.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 71 tests.
+- Care-domain declarations:
+  - Command: `node node_modules/typescript/bin/tsc -p lib/care-domain/tsconfig.json`
+  - Result: passed.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+
+### Remaining Work
+
+- Provider-backed Access Pass enforcement still needs real invite approval, API authorization, revocation, helper audit trails, notification delivery, and legal/privacy review.
+- Native iOS/Android QA still needs device evidence for the Access Pass sheet, Share Draft Summary action, and My Care Today readability.

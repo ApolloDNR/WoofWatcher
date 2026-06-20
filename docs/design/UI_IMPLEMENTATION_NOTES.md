@@ -663,6 +663,21 @@ Design intent:
 - Keep the roster compact and operational, like a professional household setting rather than a marketing teaser.
 - Avoid a dead-end feeling by giving the user a useful action now: stage a future pet and understand what is required for true switching.
 
+## 2026-06-19 Access Pass And My Care Today Pass
+
+More now separates three household concepts:
+
+- Household Access is account/team readiness.
+- Access Passes are temporary helper permission drafts.
+- My Care Today is the current human's assigned care workload.
+
+Design notes:
+
+- Access Passes use a compact board-card model with Active, Upcoming, and Draft metrics, permission-boundary copy, local draft rows, and a Share Draft Summary action.
+- The Access Pass bottom sheet follows the existing mobile sheet pattern with helper name plus role chips for sitter, trainer, vet viewer, and emergency helper.
+- My Care Today uses routine-board truth to show assigned, open, overdue, and next assigned care without adding a new navigation dead end.
+- The UI explicitly says provider-backed sharing is not live, so the app does not imply remote permissions before authorization rules exist.
+
 ## 2026-06-17 Avatar Studio Lite Pass
 
 Rebuilt the mobile Avatar Studio route from a one-photo portrait generator into a template-based care-twin creator:

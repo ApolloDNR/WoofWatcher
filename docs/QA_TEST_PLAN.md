@@ -45,6 +45,7 @@ Latest local evidence, 2026-06-19:
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
 - Household Responsibility derivation for care-team routine ownership, open/overdue/unassigned routines, visible today log counts, next household action copy, and Calendar/More mobile wiring.
 - Household Access derivation for synced members, local-only caregivers, routine-only owners, invite readiness, permission labels, next-step copy, and More mobile wiring.
+- Access Pass derivation for local helper permission drafts, sitter/trainer/vet/emergency permission boundaries, blocked actions, provider-gated sharing copy, My Care Today assigned routines, and More mobile wiring.
 - Reminder Center derivation for routine reminders, missed/due medication follow-ups, expiring/missing records, grooming due dates, private-log exclusion, urgency sorting, display limits, notification-readiness copy, and Calendar mobile wiring.
 - Reminder Center action routing for routine edit, Records review, Medication log preselection, Grooming log preselection, and accessible row labels.
 - Care log audit trail creation, sanitization, sticky-note/edit/delete audit events, correction-history summary cards, changed-field chips, non-health deletion audit notes, and mobile Log detail wiring.
@@ -149,6 +150,9 @@ Latest local evidence, 2026-06-19:
 74. Tap Add future dog, save a planned dog such as London, and confirm it appears as Provider-gated without changing Phoenix's active logs or profile.
 75. Tap the provider-gated future dog and confirm the app explains that multi-dog switching requires provider-backed multi-dog care documents before logs, routines, records, and reports can be separated.
 76. Open Privacy & Safety export after adding a future dog and confirm staged pet roster data is included without auth/session tokens.
+77. Open More, create an Access Pass draft for a sitter, and confirm the card shows Drafts, permission boundary copy, and a Share Draft Summary action without claiming remote access is live.
+78. Open More with routines assigned to the current user and confirm My Care Today shows assigned, open, overdue counts plus the next assigned routine.
+79. Open Privacy & Safety export after creating an Access Pass draft and confirm Access Pass data is included without auth/session tokens.
 
 ## Missing QA
 

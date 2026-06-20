@@ -86,6 +86,8 @@ Current evidence, 2026-06-11: Household Responsibility now derives care-team own
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.
 
+Current evidence, 2026-06-19: Access Pass now derives local sitter/trainer/vet/emergency helper drafts, allowed/blocked permissions, active/upcoming/draft status, provider-gated sharing boundaries, and My Care Today assigned-care workload from shared care-domain logic, then shows both surfaces in More.
+
 Current evidence, 2026-06-11: Care Log Audit Trail now records create, edit, sticky-note, and delete evidence with shared care-domain sanitization. Log details show audit history, handoff text includes audit summaries, and successful deletes create a separate non-health audit note instead of silently disappearing.
 
 Current evidence, 2026-06-19: Log details now show a Correction history card above the raw Audit trail. It summarizes the latest update, correction count, and changed-field chips so owners can understand corrections before reading the full audit rows.
@@ -239,6 +241,8 @@ Current evidence, 2026-06-11: Weight Trend strengthens the Health Watch and vet-
 Current evidence, 2026-06-11: Grooming Care strengthens the sitter/vet/report wedge by turning brushing, bathing, nails, teeth, coat notes, product context, and next due dates into shared Records and Care Pass context before groomer contacts or reminders exist.
 
 Current evidence, 2026-06-11: Household Access strengthens the Family-tier wedge by making synced members, pending invites, routine-only owners, and practical permission labels visible before real provider-backed role enforcement is enabled.
+
+Current evidence, 2026-06-19: Access Pass strengthens the Family/helper revenue wedge by showing temporary permission drafts and personal care ownership while truthfully keeping remote enforcement provider-gated.
 
 Current evidence, 2026-06-11: Reminder Center strengthens the Plus/Family reminders wedge by making existing routine, medication, record, and grooming follow-up candidates visible in Calendar without enabling checkout, push notifications, or automatic care writes.
 

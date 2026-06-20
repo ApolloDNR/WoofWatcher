@@ -38,6 +38,7 @@ export interface PrivacyExportState {
   activePetId?: string;
   profile?: PrivacyExportProfile;
   pets?: readonly PrivacyExportPet[];
+  accessPasses?: readonly unknown[];
   caregivers?: readonly unknown[];
   dietProfile?: unknown;
   routines?: readonly unknown[];
@@ -70,6 +71,7 @@ export interface PrivacyExportBundle {
   counts: {
     caregivers: number;
     pets: number;
+    accessPasses: number;
     routines: number;
     entries: number;
     records: number;
@@ -81,6 +83,7 @@ export interface PrivacyExportBundle {
     profile: PrivacyExportProfile | null;
     activePetId: string | null;
     pets: readonly PrivacyExportPet[];
+    accessPasses: readonly unknown[];
     caregivers: readonly unknown[];
     dietProfile: unknown | null;
     routines: readonly unknown[];
@@ -151,6 +154,7 @@ export function buildPrivacyExportBundle(
 ): PrivacyExportBundle {
   const caregivers = safeArray(state.caregivers);
   const pets = safeArray(state.pets);
+  const accessPasses = safeArray(state.accessPasses);
   const routines = safeArray(state.routines);
   const goals = safeArray(state.goals);
   const records = safeArray(state.records);
@@ -174,6 +178,7 @@ export function buildPrivacyExportBundle(
     counts: {
       caregivers: caregivers.length,
       pets: pets.length,
+      accessPasses: accessPasses.length,
       routines: routines.length,
       entries: entries.length,
       records: records.length,
@@ -185,6 +190,7 @@ export function buildPrivacyExportBundle(
       profile: state.profile ?? null,
       activePetId: state.activePetId ?? null,
       pets,
+      accessPasses,
       caregivers,
       dietProfile: state.dietProfile ?? null,
       routines,
@@ -233,7 +239,7 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
     export: {
       status: "ready",
       title: "Care data export",
-      detail: `Ready to export ${entries.length} care logs, ${records.length} records, routines, diet, reports, roster, and household context.`,
+      detail: `Ready to export ${entries.length} care logs, ${records.length} records, routines, diet, reports, roster, access passes, and household context.`,
       action: "Share export",
     },
     accountDeletion: {
@@ -296,7 +302,7 @@ export function buildAccountDeletionRequest(
       "",
       "Requested scope:",
       "- Delete my account profile and household membership.",
-      "- Delete or anonymize care logs, routines, diet profile, pet roster slots, records, report artifacts, and calendar reminders where legally and technically allowed.",
+      "- Delete or anonymize care logs, routines, diet profile, pet roster slots, Access Pass drafts, records, report artifacts, and calendar reminders where legally and technically allowed.",
       "- Delete generated report artifacts and uploaded documents once production storage exists.",
       "",
       "Safety note: manual review is required before destructive deletion.",

@@ -1353,6 +1353,21 @@ test("keeps household access readiness visible from More", () => {
   assert.match(more, /accessibilityLabel="Share household invite"/);
 });
 
+test("keeps Access Pass and My Care Today operations visible from More", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
+
+  assert.match(careContext, /accessPasses: AccessPass\[\]/);
+  assert.match(more, /deriveAccessPassPlan/);
+  assert.match(more, /buildAccessPassDraft/);
+  assert.match(more, /deriveMyCareToday/);
+  assert.match(more, /Access Passes/);
+  assert.match(more, /Create Access Pass/);
+  assert.match(more, /Share Draft Summary/);
+  assert.match(more, /Provider-backed sharing is not live yet/);
+  assert.match(more, /My Care Today/);
+});
+
 test("keeps CareTwin roster readiness visible without fake multi-dog switching", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
@@ -1373,6 +1388,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="CareTwin Roster"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Team"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Household Access"/);
+  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Access Passes"/);
+  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="My Care Today"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Responsibility Center"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Sync Health"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Launch Readiness"/);
