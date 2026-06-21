@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-21: Avatar Studio Compact Controls Use The Shared 48px Touch Target
+
+Decision: Avatar Studio tabs, coat swatches, and face-marking option pills should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 40/42/36px sizing.
+
+Reason: Native accessibility traversal is still waiting on simulator/device access, and Avatar Studio is a high-touch production-art workflow where owners repeatedly select templates, colors, traits, accessories, and moods. Keeping compact owner-input controls on the same 48px contract reduces tap-risk without changing the truthful PixelLab/template readiness model.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows Avatar Studio needs different sizing, a final Figma/native character-creator component replaces the current controls, or platform-specific accessibility guidance requires separate iOS/Android values.
+
 ### 2026-06-21: Route-Local Actions Use The Shared 48px Touch Target
 
 Decision: Plans add/discover controls, Log sync/detail controls, the Premium hero mark, and Setup finish-later action should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of local 40-42px boxes.

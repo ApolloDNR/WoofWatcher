@@ -159,6 +159,7 @@ Current gaps:
 - Shared mobile layout tests now define a 48px `MIN_MOBILE_TOUCH_TARGET`, and static readiness protects shared board route icon buttons, compact pills, and care rows from falling below mobile-safe tap sizes before native accessibility traversal is available.
 - Shared mobile layout tests now define `MOBILE_INLINE_HIT_SLOP`, and static readiness protects Home, Plans, More, Records, Privacy, and WoofGuide inline route actions from reverting to route-local literal hit slop before native accessibility traversal is available.
 - Static mobile readiness now protects route-local Plans, Log, Premium, and Setup action controls from reverting to local 40-42px tap boxes instead of `MIN_MOBILE_TOUCH_TARGET`.
+- Static mobile readiness now protects Avatar Studio tabs, coat swatches, and face-marking option pills from reverting to local 40/42/36px sizing instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
 - Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.
 - Walk quick-log visibility, full Log walk route fields, Walk Activity summary logic, Saved Routes derivation, Care Pass walk activity/Saved Routes language, and Records walk activity wiring are covered by focused tests.

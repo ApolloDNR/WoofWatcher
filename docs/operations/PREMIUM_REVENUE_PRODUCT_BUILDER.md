@@ -100,11 +100,11 @@ Stop only for:
 
 ## Current Next Slice
 
-As of 2026-06-20, the current queue points to native runtime QA and premium polish. The mobile app now has a registered full Phoenix sprite manifest, first-pass dogless room variants, PixelLab frame-to-strip tooling, room-variant tooling, a 12-item Avatar Studio template preview catalog, a full 12-template base still pack, full animated launch template packs, premium board anatomy across the core routes, release-grade Expo identity, EAS profiles, local-first care workflows, report/handoff surfaces, medication/water/walk/potty/training/alone-time/weight/grooming derivations, bounded WoofGuide drafts, and shared safe-area contracts for bottom route clearance, composers, modal sheets, floating feedback, centered prompts, route top clearance, error-recovery debug controls, and keyboard avoidance on input-heavy routes.
+As of 2026-06-21, the current queue points to native runtime QA and premium polish. The mobile app now has a registered full Phoenix sprite manifest, first-pass dogless room variants, PixelLab frame-to-strip tooling, room-variant tooling, a 12-item Avatar Studio template preview catalog, a full 12-template base still pack, full animated launch template packs, premium board anatomy across the core routes, release-grade Expo identity, EAS profiles, local-first care workflows, report/handoff surfaces, medication/water/walk/potty/training/alone-time/weight/grooming derivations, bounded WoofGuide drafts, and shared safe-area/accessibility contracts for bottom route clearance, composers, modal sheets, floating feedback, centered prompts, route top clearance, error-recovery debug controls, keyboard avoidance, inline hit slop, and 48px touch targets.
 
 Latest completed local runtime/accessibility hardening:
 
-- Route-local Plans add/discover controls, Log sync/detail controls, the Premium hero mark, and Setup finish-later action now use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract, with mobile readiness coverage.
+- Avatar Studio tabs, coat swatches, and face-marking option pills now use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract, with mobile readiness coverage.
 
 Next highest-impact work:
 

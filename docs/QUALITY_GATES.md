@@ -152,6 +152,8 @@ Current evidence, 2026-06-21: Inline mobile route actions now derive extra tappa
 
 Current evidence, 2026-06-21: Route-local mobile action controls now derive compact control size from `MIN_MOBILE_TOUCH_TARGET` instead of local 40-42px boxes. Focused readiness protects Plans add/discover controls, Log sync/detail controls, Premium hero mark, and Setup finish-later action before native accessibility traversal is available.
 
+Current evidence, 2026-06-21: Avatar Studio compact owner-input controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of local 40/42/36px sizing. Focused readiness protects Studio tabs, coat swatches, and face-marking option pills before native accessibility traversal is available.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

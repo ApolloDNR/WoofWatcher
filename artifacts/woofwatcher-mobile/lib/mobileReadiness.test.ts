@@ -479,6 +479,19 @@ test("keeps route-local action controls on the shared mobile touch target", () =
   assert.match(setup, /laterBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
 });
 
+test("keeps Avatar Studio compact controls on the shared mobile touch target", () => {
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  assert.match(avatarStudio, /MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(avatarStudio, /tab: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(avatarStudio, /swatch: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(avatarStudio, /swatch: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(avatarStudio, /optionPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.doesNotMatch(avatarStudio, /tab: \{[\s\S]*minHeight: 40/);
+  assert.doesNotMatch(avatarStudio, /swatch: \{[\s\S]*width: 42/);
+  assert.doesNotMatch(avatarStudio, /optionPill: \{[\s\S]*minHeight: 36/);
+});
+
 test("keeps floating tab safe-area spacing on shared mobile layout helpers", () => {
   const tabLayout = readAppFile(join("(tabs)", "_layout.tsx"));
   const home = readAppFile(join("(tabs)", "index.tsx"));

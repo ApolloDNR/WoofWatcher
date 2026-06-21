@@ -10,9 +10,9 @@ Run focused behavior tests:
 
 CI must pass `WoofWatcher Verify` on `main`.
 
-Latest local evidence, 2026-06-20:
+Latest local evidence, 2026-06-21:
 
-- PASS: 244 focused tests with the command above.
+- PASS: 251 focused tests with the command above.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -27,6 +27,7 @@ Latest local evidence, 2026-06-20:
 - PASS: keyboard-heavy Setup, WoofGuide, Log sticky-note prompt, and Records sheet surfaces now use the shared keyboard-avoidance safe-area contract, with focused flat/notched/web coverage and static readiness checks before native screenshot QA is available.
 - PASS: inline route actions now use `MOBILE_INLINE_HIT_SLOP` from the shared mobile layout contract, and static readiness protects Home, Plans, More, Records, Privacy, and WoofGuide from reverting to literal route-local hit slop before native accessibility traversal is available.
 - PASS: route-local action controls now use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout contract, and static readiness protects Plans add/discover controls, Log sync/detail controls, Premium hero mark, and Setup finish-later action from drifting below 48px before native accessibility traversal is available.
+- PASS: Avatar Studio compact owner-input controls now use `MIN_MOBILE_TOUCH_TARGET`, and static readiness protects Studio tabs, coat swatches, and face-marking option pills from reverting to local 40/42/36px sizing before native accessibility traversal is available.
 - LIMIT: mobile TypeScript could not run in this checkout because `node_modules/typescript` is missing (`tsc-missing`).
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` runs continue to fail before job start or without executing workflow steps with GitHub's account billing/spending-limit blocker; checked examples include `27865345974` for commit `5159a3b`, `27865371635` for commit `24d8575`, `27869581404` for commit `8d08825`, `27873733286` for commit `f542db3`, `27878278274` for commit `c915eac`, `27882750930` for commit `de55710`, `27890798715` for commit `0ce53ea`, and `27894565111` for commit `0c6371b`. Run `27894565111` completed in 3 seconds, its `Install, Test, Typecheck, Build` job had `steps: []`, and the failed-job log was absent (`log not found: 82543785134`). Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 
@@ -75,7 +76,7 @@ Latest local evidence, 2026-06-20:
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
 - Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, Records printable report and Dog ID actions, Hydration/Walk/Potty Records wiring, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
-- Route-local mobile action control touch-target readiness for Plans, Log, Premium, and Setup actions.
+- Route-local mobile action control touch-target readiness for Plans, Log, Premium, Setup, and Avatar Studio compact controls.
 - Expo app identity smoke for release-grade slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
 - Expo/EAS release profile smoke for committed iOS/Android development, preview, production, and submit paths.
 - Mobile release runbook smoke for iOS, Android, TestFlight, Google Play, Fable, and web dashboard/PWA handoff coverage.

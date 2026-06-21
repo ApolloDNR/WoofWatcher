@@ -30,7 +30,12 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
-import { getFloatingFeedbackBottomOffset, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getFloatingFeedbackBottomOffset,
+  getRouteTopPadding,
+  getStandaloneRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
+} from "@/lib/mobileLayout";
 import {
   deriveAvatarPreviewAccessories,
   deriveAvatarPreviewMood,
@@ -1245,7 +1250,7 @@ const s = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
@@ -1353,13 +1358,13 @@ const s = StyleSheet.create({
   packChipText: { fontSize: 11.5, lineHeight: 15 },
   swatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   swatch: {
-    width: 42,
-    height: 42,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
   },
   optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   optionPill: {
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 12,
