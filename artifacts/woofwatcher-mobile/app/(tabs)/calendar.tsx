@@ -28,7 +28,12 @@ import {
 } from "@workspace/care-domain";
 import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { getModalSheetBottomPadding, getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getModalSheetBottomPadding,
+  getRouteTopPadding,
+  getTabbedRouteBottomPadding,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { parseLocalDate } from "@/lib/time";
@@ -666,7 +671,7 @@ export default function CalendarScreen() {
                             <Text numberOfLines={2} style={[s.sugNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{sug.note}</Text>
                           ) : null}
                         </View>
-                        <Pressable onPress={() => !added && addSuggestion(sug)} hitSlop={8} style={[s.sugAdd, { backgroundColor: added ? colors.sage + "22" : colors.primary }]}>
+                        <Pressable onPress={() => !added && addSuggestion(sug)} hitSlop={MOBILE_INLINE_HIT_SLOP} style={[s.sugAdd, { backgroundColor: added ? colors.sage + "22" : colors.primary }]}>
                           <Ionicons name={added ? "checkmark" : "add"} size={18} color={added ? colors.sage : "#fff"} />
                         </Pressable>
                       </View>
@@ -722,7 +727,7 @@ export default function CalendarScreen() {
                             <Text numberOfLines={2} style={[s.eventNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{e.note}</Text>
                           ) : null}
                         </View>
-                        <Pressable onPress={() => removeEvent(e.id)} hitSlop={8} style={s.removeBtn}>
+                        <Pressable onPress={() => removeEvent(e.id)} hitSlop={MOBILE_INLINE_HIT_SLOP} style={s.removeBtn}>
                           <Ionicons name="close" size={16} color={colors.mutedForeground} />
                         </Pressable>
                       </View>
@@ -960,7 +965,7 @@ export default function CalendarScreen() {
                               if (!done) logRoutineDone(r);
                             }}
                             disabled={done}
-                            hitSlop={8}
+                            hitSlop={MOBILE_INLINE_HIT_SLOP}
                             accessibilityRole="button"
                             accessibilityLabel={done ? `${r.label} already logged` : `Log ${r.label} as done`}
                             style={[s.routineDoneBtn, { backgroundColor: done ? colors.sage + "18" : colors.primary }]}

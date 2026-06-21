@@ -148,6 +148,8 @@ Current evidence, 2026-06-20: WoofGuide owner-review draft sheets now derive doc
 
 Current evidence, 2026-06-20: Keyboard-heavy Setup, WoofGuide, Log sticky-note prompt, and Records Care Pass/record sheets now derive keyboard avoidance from `getKeyboardAvoidingVerticalOffset` instead of the React Native default zero offset. Focused tests cover tabbed, setup, standalone, notched-device, and web behavior while native screenshot QA remains blocked.
 
+Current evidence, 2026-06-21: Inline mobile route actions now derive extra tappable area from `MOBILE_INLINE_HIT_SLOP` instead of route-local `hitSlop={8}` or `hitSlop={10}` literals. Focused tests cover the shared value and static readiness protects Home, Plans, More, Records, Privacy, and WoofGuide before native accessibility traversal is available.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

@@ -12,6 +12,7 @@ import {
   getStandaloneComposerBottomPadding,
   getStandaloneRouteBottomPadding,
   getTabbedRouteBottomPadding,
+  MOBILE_INLINE_HIT_SLOP,
   MIN_MOBILE_TOUCH_TARGET,
 } from "./mobileLayout.ts";
 
@@ -97,4 +98,8 @@ test("keeps keyboard avoidance aligned with route safe-area chrome", () => {
 
 test("keeps the shared mobile touch target at release-safe size", () => {
   assert.equal(MIN_MOBILE_TOUCH_TARGET, 48);
+});
+
+test("keeps inline route actions on a shared hit slop contract", () => {
+  assert.equal(MOBILE_INLINE_HIT_SLOP, 10);
 });

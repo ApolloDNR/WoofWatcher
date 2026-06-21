@@ -424,6 +424,29 @@ test("keeps shared board controls at mobile-safe touch target sizes", () => {
   assert.doesNotMatch(primitives, /pill: \{[\s\S]*paddingVertical: 5/);
 });
 
+test("keeps route inline action hit slop on the shared mobile contract", () => {
+  const layout = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "mobileLayout.ts"),
+    "utf8",
+  );
+  const routeFiles = [
+    join("(tabs)", "index.tsx"),
+    join("(tabs)", "calendar.tsx"),
+    join("(tabs)", "more.tsx"),
+    join("(tabs)", "records.tsx"),
+    "privacy.tsx",
+    "woofguide.tsx",
+  ];
+
+  assert.match(layout, /export const MOBILE_INLINE_HIT_SLOP = 10/);
+
+  for (const file of routeFiles) {
+    const source = readAppFile(file);
+    assert.match(source, /MOBILE_INLINE_HIT_SLOP/, `${file} should import the shared hit slop`);
+    assert.doesNotMatch(source, /hitSlop=\{(?:8|10)\}/, `${file} should not use literal hit slop`);
+  }
+});
+
 test("keeps floating tab safe-area spacing on shared mobile layout helpers", () => {
   const tabLayout = readAppFile(join("(tabs)", "_layout.tsx"));
   const home = readAppFile(join("(tabs)", "index.tsx"));

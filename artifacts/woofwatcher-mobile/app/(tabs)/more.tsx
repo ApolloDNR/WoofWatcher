@@ -39,7 +39,13 @@ import { useAvatar } from "@/context/AvatarContext";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
-import { getCenteredModalBackdropPadding, getModalSheetBottomPadding, getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getCenteredModalBackdropPadding,
+  getModalSheetBottomPadding,
+  getRouteTopPadding,
+  getTabbedRouteBottomPadding,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -582,7 +588,7 @@ export default function MoreScreen() {
             />
             <Pressable
               onPress={openProfileEdit}
-              hitSlop={8}
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
               accessibilityRole="button"
               accessibilityLabel="Edit dog profile"
               style={[s.profileEditBtn, { backgroundColor: colors.ivory }]}
@@ -823,7 +829,7 @@ export default function MoreScreen() {
                     setRenameValue(household?.name ?? "");
                     setRenameOpen(true);
                   }}
-                  hitSlop={8}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
                   disabled={!household}
                 >
                   <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Rename</Text>
@@ -916,7 +922,7 @@ export default function MoreScreen() {
                   disabled={!householdAccess.canShareInvite}
                   accessibilityRole="button"
                   accessibilityLabel="Share household invite"
-                  hitSlop={8}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
                 >
                   <Text style={[s.sectionLink, { color: accessTone, fontFamily: "Inter_600SemiBold", opacity: householdAccess.canShareInvite ? 1 : 0.55 }]}>Invite</Text>
                 </Pressable>
@@ -976,7 +982,7 @@ export default function MoreScreen() {
                   }}
                   accessibilityRole="button"
                   accessibilityLabel="Open routine board"
-                  hitSlop={8}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
                 >
                   <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Open routine board</Text>
                 </Pressable>
@@ -1048,7 +1054,7 @@ export default function MoreScreen() {
                   disabled={isSyncing}
                   accessibilityRole="button"
                   accessibilityLabel="Refresh household sync"
-                  hitSlop={8}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
                 >
                   <Text style={[s.sectionLink, { color: syncTone, fontFamily: "Inter_600SemiBold", opacity: isSyncing ? 0.65 : 1 }]}>
                     {syncDashboard.actionLabel}
@@ -1157,10 +1163,10 @@ export default function MoreScreen() {
               title="Diet Profile"
               accessory={
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-                  <Pressable onPress={() => { Haptics.selectionAsync(); openDietEdit(); }} hitSlop={8}>
+                  <Pressable onPress={() => { Haptics.selectionAsync(); openDietEdit(); }} hitSlop={MOBILE_INLINE_HIT_SLOP}>
                     <Text style={[s.sectionLink, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>Edit</Text>
                   </Pressable>
-                  <Pressable onPress={() => { Haptics.selectionAsync(); setDietOpen((v) => !v); }} hitSlop={8}>
+                  <Pressable onPress={() => { Haptics.selectionAsync(); setDietOpen((v) => !v); }} hitSlop={MOBILE_INLINE_HIT_SLOP}>
                     <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>{dietOpen ? "Hide" : "Details"}</Text>
                   </Pressable>
                 </View>

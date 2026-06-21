@@ -105,7 +105,7 @@ As of 2026-06-20, the current queue points to native runtime QA and premium poli
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA when provider/runtime access is available.
-2. Replace first-pass derived room variants with final illustrated room art.
-3. Continue native runtime QA, safe-area inspection, and screenshot review for the live mobile app and Avatar Studio.
+2. Continue accessibility traversal and visual runtime inspection for the live mobile app and Avatar Studio once simulator/device access is available.
+3. Replace first-pass derived room variants with final illustrated room art.
 4. Replace first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art, then continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.

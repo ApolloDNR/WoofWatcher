@@ -32,7 +32,12 @@ import {
   type WoofGuideActionCard,
   type WoofGuideActionIcon,
 } from "@/lib/woofGuideActions";
-import { getKeyboardAvoidingVerticalOffset, getModalSheetBottomPadding, getStandaloneComposerBottomPadding } from "@/lib/mobileLayout";
+import {
+  getKeyboardAvoidingVerticalOffset,
+  getModalSheetBottomPadding,
+  getStandaloneComposerBottomPadding,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -431,7 +436,7 @@ export default function WoofGuideScreen() {
                   </View>
                   <Pressable
                     onPress={() => setReviewAction(null)}
-                    hitSlop={10}
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
                     accessibilityRole="button"
                     accessibilityLabel="Close owner review"
                   >

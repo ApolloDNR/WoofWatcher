@@ -26,7 +26,7 @@ import {
   type AccountSafetySection,
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getStandaloneRouteBottomPadding, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -120,7 +120,7 @@ export default function PrivacyScreen() {
             </View>
             <Pressable
               onPress={() => router.back()}
-              hitSlop={10}
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
               accessibilityRole="button"
               accessibilityLabel="Close Privacy and Safety"
             >

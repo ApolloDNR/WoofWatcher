@@ -29,7 +29,12 @@ import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
-import { getFloatingFeedbackBottomOffset, getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getFloatingFeedbackBottomOffset,
+  getRouteTopPadding,
+  getTabbedRouteBottomPadding,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 
 const HERO_RATIO = 1.05;
@@ -380,7 +385,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Open More"
               onPress={() => router.push("/more")}
-              hitSlop={10}
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[s.headerButton, { borderColor: "transparent", backgroundColor: "transparent" }]}
             >
               <Ionicons name="menu" size={27} color={colors.navy} />
@@ -395,7 +400,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Open Health Watch"
               onPress={() => router.push("/health")}
-              hitSlop={10}
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[s.headerButton, { borderColor: "transparent", backgroundColor: "transparent" }]}
             >
               <Ionicons name="notifications-outline" size={23} color={colors.navy} />

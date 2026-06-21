@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-21: Inline Route Actions Use Shared Mobile Hit Slop
+
+Decision: Home, Plans, More, Records, Privacy, and WoofGuide inline icon/text actions should use `MOBILE_INLINE_HIT_SLOP` from the shared mobile layout helper instead of route-local `hitSlop={8}` or `hitSlop={10}` literals.
+
+Reason: Native accessibility traversal is still waiting on simulator/device access, and inline controls are the remaining compact actions around headers, report sharing, record deletion, household/profile actions, and owner-review close controls. A named hit-slop contract keeps those tap targets consistent without changing the visual board layout.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows different hit slop is needed, final Figma/native components replace the inline controls, or platform-specific guidance requires separate iOS/Android values.
+
 ### 2026-06-20: Keyboard Avoidance Uses The Shared Safe-Area Contract
 
 Decision: Setup, WoofGuide, the Log sticky-note prompt, and Records Care Pass/record sheets should use `getKeyboardAvoidingVerticalOffset` from the shared mobile layout helper instead of relying on React Native's default zero keyboard offset.

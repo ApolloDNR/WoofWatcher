@@ -127,7 +127,7 @@ Current gaps:
 - Need design system.
 - Need screen-by-screen polish.
 - Need full motion spec, Rive/Lottie/Reanimated asset pipeline, transition rules, and runtime animation QA.
-- Need full accessibility pass. Critical action screen-reader labels are covered by focused static smoke, but contrast, dynamic type, keyboard flow, touch targets, and native screen-reader traversal still need QA.
+- Need full accessibility pass. Critical action screen-reader labels, shared touch targets, keyboard avoidance, and inline action hit slop are covered by focused static smoke, but contrast, dynamic type, and native screen-reader traversal still need QA.
 - Need visual regression or screenshot review.
 - Need Figma alignment if Figma becomes the canonical design source.
 
@@ -157,6 +157,7 @@ Current gaps:
 - Shared mobile readiness now protects WoofGuide's owner-reviewed draft sheet with the same modal-sheet bottom safe-area contract used by other docked workflow sheets before native screenshot QA is available.
 - Shared mobile layout tests cover keyboard avoidance offsets for tabbed, setup, standalone, notched-device, and web surfaces, and static readiness protects Setup, WoofGuide, Log sticky-note prompt, and Records sheet keyboard flows before native screenshot QA is available.
 - Shared mobile layout tests now define a 48px `MIN_MOBILE_TOUCH_TARGET`, and static readiness protects shared board route icon buttons, compact pills, and care rows from falling below mobile-safe tap sizes before native accessibility traversal is available.
+- Shared mobile layout tests now define `MOBILE_INLINE_HIT_SLOP`, and static readiness protects Home, Plans, More, Records, Privacy, and WoofGuide inline route actions from reverting to route-local literal hit slop before native accessibility traversal is available.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
 - Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.
 - Walk quick-log visibility, full Log walk route fields, Walk Activity summary logic, Saved Routes derivation, Care Pass walk activity/Saved Routes language, and Records walk activity wiring are covered by focused tests.
