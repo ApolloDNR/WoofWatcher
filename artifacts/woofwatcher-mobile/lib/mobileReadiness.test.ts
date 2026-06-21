@@ -1627,6 +1627,7 @@ test("keeps CareTwin roster readiness visible without fake multi-dog switching",
 
 test("keeps More household, tools, and diet sections on shared board card anatomy", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
+  const launchModel = readMobileLibFile("launchReadiness.ts");
 
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="CareTwin Roster"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Team"/);
@@ -1636,8 +1637,13 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Responsibility Center"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Sync Health"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Launch Readiness"/);
-  assert.match(more, /Expo\/EAS profiles ready/);
-  assert.match(more, /Store submission waits on Apple, Google, Expo, privacy\/legal, and Apollo approval/);
+  assert.match(more, /deriveLaunchReadiness/);
+  assert.match(more, /launchReadinessPlan\.badgeLabel/);
+  assert.match(more, /launchReadinessPlan\.summary/);
+  assert.match(launchModel, /Device proof required/);
+  assert.match(launchModel, /Native iOS\/Android QA evidence is not attached/);
+  assert.match(launchModel, /Checkout gated/);
+  assert.doesNotMatch(more, /Expo\/EAS profiles ready/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Tools & Sharing"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Diet Profile"/);
   assert.doesNotMatch(more, /sectionHeader:/);

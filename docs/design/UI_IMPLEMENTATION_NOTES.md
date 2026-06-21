@@ -778,3 +778,27 @@ Design intent:
 - Keep the neo-retro board style while making touch, sheets, and keyboards feel
   App Store-ready.
 - Leave the exact constants adjustable after native iOS/Android screenshot QA.
+
+## 2026-06-21 Launch Readiness Cockpit
+
+More now treats launch readiness as an operational cockpit, not a static badge:
+
+- `launchReadiness.ts` derives the launch status from native evidence, local
+  release foundations, provider configuration, safety/legal gates, payments, AI,
+  storage, push notifications, account deletion, support, and store-account
+  approval.
+- The More screen renders six compact tiles: iOS + Android, Care Sync, Records
+  Storage, WoofGuide, WoofWatcher Plus, and Store Gates.
+- The badge can truthfully say Internal Preview, Native QA Open, Provider Gated,
+  Approval Open, or Store Ready.
+- Store Ready cannot appear until every required local, provider, native, and
+  approval gate is satisfied.
+
+Design intent:
+
+- Give Apollo and future builders one clear place to see why the app is not
+  launch-ready yet.
+- Keep the card compact enough for mobile while still making every blocker
+  actionable.
+- Let the next visual polish pass improve the tile art/animation without
+  weakening the truth model.

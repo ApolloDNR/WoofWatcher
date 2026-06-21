@@ -45,6 +45,12 @@ import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import {
+  deriveLaunchReadiness,
+  type LaunchReadinessOverallStatus,
+  type LaunchReadinessTileKey,
+  type LaunchReadinessTileStatus,
+} from "@/lib/launchReadiness";
+import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -61,6 +67,52 @@ type HouseholdMemberSummary = {
   email?: string | null;
   role?: string | null;
 };
+
+function launchTileIcon(
+  key: LaunchReadinessTileKey,
+  syncIcon: keyof typeof Ionicons.glyphMap,
+): keyof typeof Ionicons.glyphMap {
+  switch (key) {
+    case "native-qa":
+      return "phone-portrait-outline";
+    case "care-sync":
+      return syncIcon;
+    case "storage":
+      return "folder-open-outline";
+    case "woofguide-ai":
+      return "sparkles-outline";
+    case "plus-payments":
+      return "diamond-outline";
+    case "store-approval":
+      return "shield-checkmark-outline";
+  }
+}
+
+function launchStatusTone(
+  status: LaunchReadinessTileStatus,
+  colors: ReturnType<typeof useColors>,
+): string {
+  switch (status) {
+    case "ready":
+      return colors.sage;
+    case "blocked":
+      return colors.rose;
+    case "local":
+      return colors.copper;
+    default:
+      return colors.amber;
+  }
+}
+
+function launchBadgeTone(
+  status: LaunchReadinessOverallStatus,
+  colors: ReturnType<typeof useColors>,
+): string {
+  if (status === "store-ready") return colors.sage;
+  if (status === "approval-required") return colors.copper;
+  if (status === "provider-gated") return colors.rose;
+  return colors.amber;
+}
 
 export default function MoreScreen() {
   const colors = useColors();
@@ -674,40 +726,50 @@ export default function MoreScreen() {
     },
   ];
 
-  const launchReadiness: {
-    iconName: keyof typeof Ionicons.glyphMap;
-    label: string;
-    value: string;
-    tone: string;
-    onPress?: () => void;
-  }[] = [
-    {
-      iconName: "phone-portrait-outline",
-      label: "iOS + Android",
-      value: "Expo/EAS profiles ready",
-      tone: colors.sage,
-    },
-    {
-      iconName: "shield-checkmark-outline",
-      label: "Safety Gates",
-      value: "Privacy review open",
-      tone: colors.amber,
-      onPress: () => router.push("/privacy"),
-    },
-    {
-      iconName: syncIcon,
-      label: "Care Sync",
-      value: syncDashboard.status === "attention" ? "Needs review" : syncDashboard.title,
-      tone: syncTone,
-    },
-    {
-      iconName: "diamond-outline",
-      label: "Plus",
-      value: "Checkout gated",
-      tone: colors.copper,
-      onPress: () => router.push("/premium"),
-    },
-  ];
+  const launchReadinessPlan = useMemo(
+    () =>
+      deriveLaunchReadiness({
+        nativeQa: null,
+        local: {
+          careWorkflowsReady: true,
+          easProfilesReady: true,
+          pixelAssetsReady: true,
+          privacyExportReady: true,
+        },
+        provider: {
+          authConfigured: Boolean(me.data?.user?.id && household),
+          databaseConfigured: Boolean(household && syncDashboard.status !== "attention"),
+          storageProviderConfigured: false,
+          aiProviderConfigured: false,
+          paymentsEnabled: false,
+          accountDeletionEnabled: false,
+          pushNotificationsConfigured: false,
+          appStoreAccountsReady: false,
+          privacyLegalApproved: false,
+          supportRunbookApproved: false,
+        },
+        syncStatus: syncDashboard.status,
+      }),
+    [me.data?.user?.id, household, syncDashboard.status],
+  );
+  const launchReadiness = launchReadinessPlan.tiles.map((tile) => ({
+    ...tile,
+    iconName: launchTileIcon(tile.key, syncIcon),
+    tone: launchStatusTone(tile.status, colors),
+    onPress:
+      tile.key === "native-qa"
+        ? () => router.push("/care-twin-qa" as never)
+        : tile.key === "storage" || tile.key === "store-approval"
+          ? () => router.push("/privacy")
+          : tile.key === "woofguide-ai"
+            ? () => router.push("/woofguide")
+            : tile.key === "plus-payments"
+              ? () => router.push("/premium")
+              : tile.status === "review"
+                ? () => refresh()
+                : undefined,
+  }));
+  const readinessBadgeTone = launchBadgeTone(launchReadinessPlan.status, colors);
 
   const H_PAD = 20;
 
@@ -973,9 +1035,9 @@ export default function MoreScreen() {
             <BoardSectionHeader
               title="Launch Readiness"
               accessory={
-                <View style={[s.launchBadge, { backgroundColor: colors.sage + "18" }]}>
-                  <Text style={[s.launchBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                    INTERNAL PREVIEW
+                <View style={[s.launchBadge, { backgroundColor: readinessBadgeTone + "18" }]}>
+                  <Text style={[s.launchBadgeText, { color: readinessBadgeTone, fontFamily: "Inter_700Bold" }]}>
+                    {launchReadinessPlan.badgeLabel}
                   </Text>
                 </View>
               }
@@ -1004,7 +1066,7 @@ export default function MoreScreen() {
                         item.onPress?.();
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={`${item.label}. ${item.value}`}
+                      accessibilityLabel={`${item.label}. ${item.value}. ${item.detail}`}
                       style={({ pressed }) => [
                         s.launchTile,
                         { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed ? 0.72 : 1 },
@@ -1021,10 +1083,10 @@ export default function MoreScreen() {
                 );
               })}
             </View>
-            <View style={[s.launchNotice, { backgroundColor: colors.amber + "12", borderColor: colors.amber + "33" }]}>
-              <Ionicons name="lock-closed-outline" size={15} color={colors.amber} />
+            <View style={[s.launchNotice, { backgroundColor: readinessBadgeTone + "12", borderColor: readinessBadgeTone + "33" }]}>
+              <Ionicons name="lock-closed-outline" size={15} color={readinessBadgeTone} />
               <Text style={[s.launchNoticeText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                Store submission waits on Apple, Google, Expo, privacy/legal, and Apollo approval. This build is being hardened for internal review first.
+                {launchReadinessPlan.summary} {launchReadinessPlan.nextActions[0] ?? "Prepare the final store packet after Apollo approval."}
               </Text>
             </View>
           </BoardCard>

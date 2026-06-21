@@ -1071,3 +1071,58 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Real iOS/Android simulator or device QA still needs screenshots for notch
   clearance, modal reach, keyboard/composer behavior, touch response, stage crop,
   and animation timing.
+
+## 2026-06-21 Launch Readiness Truth Model
+
+### What Changed
+
+- Added `launchReadiness.ts`, a shared launch-readiness model that derives
+  internal-preview, native-QA-open, provider-gated, approval-open, and
+  store-ready states.
+- The model checks native screenshot evidence, local release foundations, sync
+  health, auth/database, storage, WoofGuide AI, payments, push notifications,
+  account deletion, privacy/legal, support runbook, and app-store account gates.
+- More now renders six actionable launch tiles from the shared model instead of
+  static launch copy, so the app no longer implies Expo/EAS config equals public
+  launch readiness.
+- Added focused tests for the launch model and extended mobile readiness guards
+  so the More screen must stay connected to the shared launch truth model.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/launchReadiness.ts`
+- `artifacts/woofwatcher-mobile/lib/launchReadiness.test.ts`
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/BLOCKERS_FOR_APOLLO.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused launch/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/launchReadiness.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 73 tests.
+- Full behavior/readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 310 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, 149 ok, 0 missing, 0 invalid.
+- Diff hygiene:
+  - Command: `git diff --check`
+  - Result: passed, with Windows line-ending warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-launch-readiness-export --clear`
+  - Result: passed.
+
+### Remaining Work
+
+- Real iOS/Android simulator or device QA still needs platform screenshots and
+  visible review before Store Ready can ever be shown.
+- Production auth/database, storage, AI, payments, push notifications,
+  app-store accounts, privacy/legal, support, and self-serve deletion gates still
+  need Apollo/provider approval.

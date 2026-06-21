@@ -197,6 +197,7 @@ Passing evidence:
 - Environment docs exist.
 - CI exists.
 - Expo app identity uses release-grade WoofWatcher slug/scheme and Pegasus Dreamscapes native package identifiers instead of generated Replit placeholders.
+- Mobile More now uses a tested shared launch-readiness model that prevents Store Ready from appearing until native QA evidence, provider setup, privacy/legal, support, payments, push, deletion, and store-account gates are all satisfied.
 
 Current gaps:
 

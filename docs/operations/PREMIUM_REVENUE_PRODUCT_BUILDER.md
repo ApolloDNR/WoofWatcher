@@ -125,6 +125,14 @@ behavior/readiness suite, mobile TypeScript, PixelLab asset verification at 149
 files, and Expo web export to
 `tmp/woofwatcher-mobile-interaction-contract-export`.
 
+The 2026-06-21 launch-readiness pass made the release cockpit truthful in code.
+`launchReadiness.ts` derives internal-preview, native-QA-open, provider-gated,
+approval-open, and store-ready states from native evidence, local release
+foundations, sync health, storage, AI, payments, push, account deletion, legal,
+support, store-account, and Apollo approval gates. More now uses that model for
+six actionable launch tiles instead of hard-coded optimistic copy, so the app can
+show exactly why it is not store-ready yet.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete both the Mobile Release QA checklist and the 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm iOS and Android counts are both satisfied, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
