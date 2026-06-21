@@ -104,7 +104,8 @@ As of 2026-06-21, the current queue points to native runtime QA and premium poli
 
 Latest completed local runtime/accessibility hardening:
 
-- Calendar event discovery and upcoming-event controls now use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract. The discover icon, suggested-event icon, upcoming-event icon, and remove-event control have mobile readiness coverage before native accessibility traversal is available.
+- Error recovery debug and close controls now use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract. The development error-details button and error-details modal close control have mobile readiness coverage before native accessibility traversal is available.
+- Calendar event discovery and upcoming-event controls use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract. The discover icon, suggested-event icon, upcoming-event icon, and remove-event control have mobile readiness coverage before native accessibility traversal is available.
 
 Next highest-impact work:
 

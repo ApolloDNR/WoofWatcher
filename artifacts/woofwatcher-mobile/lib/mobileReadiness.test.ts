@@ -618,7 +618,14 @@ test("keeps floating tab safe-area spacing on shared mobile layout helpers", () 
   }
   assert.match(errorFallback, /getFloatingDebugButtonTopOffset/);
   assert.match(errorFallback, /top: debugButtonTopOffset/);
+  assert.match(errorFallback, /MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(errorFallback, /topButton: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(errorFallback, /topButton: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(errorFallback, /closeButton: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(errorFallback, /closeButton: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.doesNotMatch(errorFallback, /top: insets\.top \+ 16/);
+  assert.doesNotMatch(errorFallback, /topButton: \{[\s\S]*width: 44/);
+  assert.doesNotMatch(errorFallback, /closeButton: \{[\s\S]*width: 44/);
 
   for (const source of [log, more]) {
     assert.match(source, /getCenteredModalBackdropPadding/);

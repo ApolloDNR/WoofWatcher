@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-21: Error Recovery Controls Use The Shared 48px Touch Target
+
+Decision: The development error-details button and error-details modal close control should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 44px sizing.
+
+Reason: Native accessibility traversal is still waiting on simulator/device access, and the app-wide recovery surface must remain usable when an owner or tester needs to inspect or close error details. Reusing the 48px contract reduces tap-risk without changing the error recovery workflow or claiming native QA has run.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows recovery controls need different sizing, the app gains a global recovery overlay component, or platform-specific accessibility guidance requires separate iOS/Android values.
+
 ### 2026-06-21: Calendar Event Controls Use The Shared 48px Touch Target
 
 Decision: Calendar event discovery and upcoming-event controls should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 28/38/40px sizing.
