@@ -104,7 +104,7 @@ As of 2026-06-21, the current queue points to native runtime QA and premium poli
 
 Latest completed local runtime/accessibility hardening:
 
-- Avatar Studio tabs, coat swatches, and face-marking option pills now use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract, with mobile readiness coverage.
+- Health/Bile Watch segmented tabs plus Log health note and Records hero actions now use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract, with mobile readiness coverage.
 
 Next highest-impact work:
 

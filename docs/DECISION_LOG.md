@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-21: Health/Bile Route Controls Use The Shared 48px Touch Target
+
+Decision: The Health/Bile segmented tabs plus Log health note and Records hero actions should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 36/42px sizing.
+
+Reason: Native accessibility traversal is still waiting on simulator/device access, and Health/Bile Watch is a core non-diagnostic care workflow where owners switch between health context, bile review, logging, and records. Keeping these controls on the same 48px contract reduces tap-risk without changing the medical boundary or claiming native QA has run.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows Health/Bile needs different sizing, a final Figma/native health component replaces the current segmented control and hero actions, or platform-specific accessibility guidance requires separate iOS/Android values.
+
 ### 2026-06-21: Avatar Studio Compact Controls Use The Shared 48px Touch Target
 
 Decision: Avatar Studio tabs, coat swatches, and face-marking option pills should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 40/42/36px sizing.
