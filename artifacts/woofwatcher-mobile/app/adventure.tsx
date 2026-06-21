@@ -22,7 +22,7 @@ import {
 import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getStandaloneRouteBottomPadding, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -42,6 +42,11 @@ export default function AdventureScreen() {
   const bottomPadding = getStandaloneRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+  });
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "standalone",
   });
   const petName = state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
   const now = Date.now();
@@ -101,7 +106,7 @@ export default function AdventureScreen() {
       <Stack.Screen options={{ title: "Adventure Mode" }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: insets.top + 14, paddingHorizontal: 20, paddingBottom: bottomPadding }}
+        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
       >
         <LinearGradient
           colors={[colors.midnight, colors.primary, colors.sage]}
@@ -114,7 +119,7 @@ export default function AdventureScreen() {
               accessibilityRole="button"
               accessibilityLabel="Back to More"
               onPress={() => router.back()}
-              hitSlop={10}
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={s.heroIcon}
             >
               <Ionicons name="chevron-back" size={22} color="#FFFFFF" />

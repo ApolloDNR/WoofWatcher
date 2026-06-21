@@ -753,3 +753,28 @@ Design boundary:
 - The route can say upload photos help suggest a care twin.
 - It cannot claim live AI scan or full custom sprite generation until those provider-backed systems are implemented.
 - Current previews use pixel-derived Phoenix placeholders until final template/sprite assets are produced.
+
+## 2026-06-21 Mobile Interaction Contract Pass
+
+The mobile UI now treats safe areas, keyboard offsets, modal reach, and tap
+targets as part of the design system:
+
+- `mobileLayout.ts` owns top safe-area padding for tabbed, standalone, setup,
+  and auth surfaces.
+- Modal sheets use shared bottom padding so bottom actions clear the home
+  indicator on iOS and Android system navigation.
+- Centered quick-note modals use shared top/bottom backdrop padding.
+- Setup, Records sheets, Log quick-note prompts, and WoofGuide composer/review
+  surfaces use shared keyboard offsets.
+- Board route icon buttons, pills, and care rows now enforce 48px mobile touch
+  targets.
+- Inline action links use a shared hit slop constant instead of route-local
+  `8` or `10` values.
+
+Design intent:
+
+- Make the app feel planned as one native mobile product instead of a collection
+  of individually tuned screens.
+- Keep the neo-retro board style while making touch, sheets, and keyboards feel
+  App Store-ready.
+- Leave the exact constants adjustable after native iOS/Android screenshot QA.

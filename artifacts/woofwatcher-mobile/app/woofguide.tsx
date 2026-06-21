@@ -27,7 +27,12 @@ import {
 import { useColors } from "@/hooks/useColors";
 import { useCare, CareState } from "@/context/CareContext";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
-import { getDockedComposerBottomPadding } from "@/lib/mobileLayout";
+import {
+  getDockedComposerBottomPadding,
+  getKeyboardAvoidingVerticalOffset,
+  getModalSheetBottomPadding,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 import {
   deriveWoofGuideActions,
   type WoofGuideActionCard,
@@ -153,6 +158,15 @@ export default function WoofGuideScreen() {
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
+  const modalSheetBottomPadding = getModalSheetBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
+  const keyboardOffset = getKeyboardAvoidingVerticalOffset({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "standalone",
+  });
   const name = state.profile.name || "your dog";
 
   const quickQuestions = useMemo(() => [
@@ -269,6 +283,7 @@ export default function WoofGuideScreen() {
       <KeyboardAvoidingView
         style={[s.container, { backgroundColor: colors.background }]}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={keyboardOffset}
       >
         <FlatList
           data={messages}
@@ -409,7 +424,7 @@ export default function WoofGuideScreen() {
           accessibilityLabel="Close owner review"
         >
           <Pressable
-            style={[s.reviewSheet, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[s.reviewSheet, { backgroundColor: colors.card, borderColor: colors.border, paddingBottom: modalSheetBottomPadding }]}
             onPress={(event) => event.stopPropagation()}
           >
             {reviewAction?.draft ? (
@@ -424,7 +439,7 @@ export default function WoofGuideScreen() {
                   </View>
                   <Pressable
                     onPress={() => setReviewAction(null)}
-                    hitSlop={10}
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
                     accessibilityRole="button"
                     accessibilityLabel="Close owner review"
                   >

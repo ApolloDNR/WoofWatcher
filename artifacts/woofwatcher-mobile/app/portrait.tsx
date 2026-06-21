@@ -61,7 +61,7 @@ import {
 } from "@/lib/avatarTemplateSpriteAssets";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
-import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
@@ -165,7 +165,11 @@ export default function PortraitScreen() {
   } = useAvatar();
 
   const petName = state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
-  const topInset = Platform.OS === "web" ? 20 : insets.top;
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "standalone",
+  });
   const bottomPadding = getStandaloneRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -386,7 +390,7 @@ export default function PortraitScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: bottomPadding, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >

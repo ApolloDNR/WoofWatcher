@@ -19,7 +19,11 @@ import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
-import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getKeyboardAvoidingVerticalOffset,
+  getRouteTopPadding,
+  getStandaloneRouteBottomPadding,
+} from "@/lib/mobileLayout";
 import {
   applySetupWizardDraft,
   buildSetupWizardConfirmation,
@@ -117,10 +121,19 @@ export default function SetupScreen() {
     router.replace("/(tabs)");
   };
 
-  const topInset = Platform.OS === "web" ? 24 : insets.top;
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "setup",
+  });
   const bottomPadding = getStandaloneRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+  });
+  const keyboardOffset = getKeyboardAvoidingVerticalOffset({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "setup",
   });
 
   return (
@@ -129,12 +142,13 @@ export default function SetupScreen() {
       <KeyboardAvoidingView
         style={[s.root, { backgroundColor: colors.background }]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={keyboardOffset}
       >
         <ScrollView
           style={s.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingTop: topInset + 14, paddingBottom: bottomPadding, paddingHorizontal: 20 }}
+          contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: 20 }}
         >
           <BoardRouteHeader
             kicker="Care foundation"

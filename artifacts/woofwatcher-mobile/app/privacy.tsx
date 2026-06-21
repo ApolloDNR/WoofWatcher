@@ -18,7 +18,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
-import { getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getStandaloneRouteBottomPadding, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 import {
   buildAccountDeletionRequest,
   buildPrivacyExportBundle,
@@ -80,7 +80,11 @@ export default function PrivacyScreen() {
     plan.documentStorage,
     plan.payments,
   ];
-  const topInset = Platform.OS === "web" ? 18 : insets.top;
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "standalone",
+  });
   const bottomPadding = getStandaloneRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -109,7 +113,7 @@ export default function PrivacyScreen() {
       <Stack.Screen options={{ title: "Privacy & Safety" }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: topInset + 12, paddingHorizontal: 20, paddingBottom: bottomPadding }}
+        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
       >
         <LinearGradient
           colors={[colors.midnight, colors.primary]}
@@ -123,7 +127,7 @@ export default function PrivacyScreen() {
             </View>
             <Pressable
               onPress={() => router.back()}
-              hitSlop={10}
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
               accessibilityRole="button"
               accessibilityLabel="Close Privacy and Safety"
             >

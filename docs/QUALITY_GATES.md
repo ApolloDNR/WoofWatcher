@@ -362,3 +362,17 @@ Current evidence, 2026-06-20: Mobile tab clearance is now centralized in `mobile
 Current evidence, 2026-06-20: Standalone route and docked-composer spacing are now centralized in `mobileLayout.ts`. Adventure, Avatar Studio, Care Twin QA, Premium, Privacy, Setup, and the auth shell call `getStandaloneRouteBottomPadding`, while WoofGuide calls `getDockedComposerBottomPadding`, so non-tab screens and bottom input controls share the same iOS/Android/web safe-area contract before real device QA.
 
 Current evidence, 2026-06-20: First-run setup now has an auth-aware household path without fake cloud claims. The setup wizard persists `householdSetup` with create, join-by-invite, or local-preview intent; join codes are normalized and required before saving; confirmation copy distinguishes local-only state from Clerk/account-ready state; Privacy export includes household setup metadata; and static mobile readiness protects the new setup copy. Local verification passed 302 behavior/readiness tests, mobile TypeScript, PixelLab asset verification at 149 files, Expo web export to `tmp/woofwatcher-household-setup-export`, and `git diff --check`.
+
+Current evidence, 2026-06-21: Mobile interaction spacing is now a shared release
+contract, not route-local arithmetic. `mobileLayout.ts` owns top safe-area
+padding for tabbed, standalone, setup, and auth surfaces; modal sheet bottom
+padding; centered modal backdrop padding; keyboard avoiding offsets; feedback
+and debug offsets; minimum 48px touch targets; and shared inline hit slop. Home,
+Log, Plans, Health, More, Records, Adventure, Avatar Studio, Care Twin QA,
+Premium, Privacy, Setup, AuthShell, WoofGuide, ErrorFallback, and board
+primitives call the shared helpers. Static readiness tests reject hard-coded
+top safe-area formulas, unsafe modal bottom padding, and literal 8/10 hit slop.
+Local verification passed 306 behavior/readiness tests, focused mobile
+layout/readiness tests at 76 tests, mobile TypeScript, PixelLab asset
+verification at 149 files, and Expo web export to
+`tmp/woofwatcher-mobile-interaction-contract-export`.

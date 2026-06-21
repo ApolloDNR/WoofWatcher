@@ -60,7 +60,13 @@ import {
 } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getKeyboardAvoidingVerticalOffset,
+  getModalSheetBottomPadding,
+  getRouteTopPadding,
+  getTabbedRouteBottomPadding,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -165,10 +171,23 @@ export default function RecordsScreen() {
   const { state, updateCareDoc } = useCare();
   const { width } = useWindowDimensions();
 
-  const topInset = Platform.OS === "web" ? 24 : insets.top;
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
+  });
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+  });
+  const modalSheetBottomPadding = getModalSheetBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
+  const keyboardOffset = getKeyboardAvoidingVerticalOffset({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
   });
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -617,7 +636,7 @@ export default function RecordsScreen() {
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
         style={s.container}
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
@@ -706,7 +725,7 @@ export default function RecordsScreen() {
                   onPress={shareCredential}
                   accessibilityRole="button"
                   accessibilityLabel="Share dog ID card"
-                  hitSlop={8}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
                   style={s.shareInline}
                 >
                   <Ionicons name="share-outline" size={15} color={colors.copper} />
@@ -716,7 +735,7 @@ export default function RecordsScreen() {
                   onPress={sharePrintableCredential}
                   accessibilityRole="button"
                   accessibilityLabel="Share printable dog ID source"
-                  hitSlop={8}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
                   style={s.shareInline}
                 >
                   <Ionicons name="print-outline" size={15} color={colors.copper} />
@@ -762,7 +781,7 @@ export default function RecordsScreen() {
             <BoardSectionHeader
               title="Record Vault"
               accessory={
-                <Pressable onPress={() => openRecordForm("document")} hitSlop={8} style={s.shareInline}>
+                <Pressable onPress={() => openRecordForm("document")} hitSlop={MOBILE_INLINE_HIT_SLOP} style={s.shareInline}>
                   <Ionicons name="add-circle-outline" size={15} color={colors.copper} />
                   <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Add</Text>
                 </Pressable>
@@ -1498,7 +1517,7 @@ export default function RecordsScreen() {
                   onPress={() => router.push("/calendar")}
                   accessibilityRole="button"
                   accessibilityLabel="Open calendar medication routines"
-                  hitSlop={8}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
                   style={s.shareInline}
                 >
                   <Ionicons name="calendar-outline" size={15} color={colors.copper} />
@@ -1824,7 +1843,7 @@ export default function RecordsScreen() {
                           onPress={() => shareReportArtifact(artifact)}
                           accessibilityRole="button"
                           accessibilityLabel={`Resend ${artifact.title}`}
-                          hitSlop={8}
+                          hitSlop={MOBILE_INLINE_HIT_SLOP}
                           style={({ pressed }) => [
                             s.artifactIconButton,
                             { backgroundColor: colors.primary + "12", opacity: pressed ? 0.75 : 1 },
@@ -1836,7 +1855,7 @@ export default function RecordsScreen() {
                           onPress={() => sharePrintableReportArtifact(artifact)}
                           accessibilityRole="button"
                           accessibilityLabel={`Share printable report source for ${artifact.title}`}
-                          hitSlop={8}
+                          hitSlop={MOBILE_INLINE_HIT_SLOP}
                           style={({ pressed }) => [
                             s.artifactIconButton,
                             { backgroundColor: colors.copper + "14", opacity: pressed ? 0.75 : 1 },
@@ -1857,7 +1876,7 @@ export default function RecordsScreen() {
             <BoardSectionHeader
               title="Progress Report"
               accessory={
-                <Pressable onPress={shareReport} hitSlop={8} style={s.shareInline}>
+                <Pressable onPress={shareReport} hitSlop={MOBILE_INLINE_HIT_SLOP} style={s.shareInline}>
                   <Ionicons name="share-outline" size={15} color={colors.copper} />
                   <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
                 </Pressable>
@@ -1915,7 +1934,7 @@ export default function RecordsScreen() {
             <BoardSectionHeader
               title="Diet on File"
               accessory={
-                <Pressable onPress={() => router.push("/more")} hitSlop={8}>
+                <Pressable onPress={() => router.push("/more")} hitSlop={MOBILE_INLINE_HIT_SLOP}>
                   <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Edit</Text>
                 </Pressable>
               }
@@ -2001,7 +2020,7 @@ export default function RecordsScreen() {
                         </Text>
                       ) : null}
                     </View>
-                    <Pressable onPress={() => deleteRecord(r.id, r.title)} hitSlop={10} style={s.deleteRecordBtn}>
+                    <Pressable onPress={() => deleteRecord(r.id, r.title)} hitSlop={MOBILE_INLINE_HIT_SLOP} style={s.deleteRecordBtn}>
                       <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
                     </Pressable>
                   </View>
@@ -2020,8 +2039,8 @@ export default function RecordsScreen() {
 
       <Modal visible={carePassPreview !== null} transparent animationType="slide" onRequestClose={() => setCarePassPreview(null)}>
         <Pressable style={s.modalBackdrop} onPress={() => setCarePassPreview(null)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={s.modalDock}>
-            <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 18 }]} onPress={(e) => e.stopPropagation()}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
+            <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
               <View style={s.sheetHandle} />
               {carePassPreview ? (
                 <>
@@ -2068,8 +2087,8 @@ export default function RecordsScreen() {
 
       <Modal visible={recordOpen} transparent animationType="slide" onRequestClose={() => setRecordOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setRecordOpen(false)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={s.modalDock}>
-            <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 18 }]} onPress={() => {}}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
+            <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={() => {}}>
               <View style={s.sheetHandle} />
               <View style={s.sheetHeader}>
                 <View style={[s.rowIconWrap, { backgroundColor: colors.primary + "14" }]}>

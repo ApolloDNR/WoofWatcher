@@ -38,7 +38,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
-import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getTabbedRouteBottomPadding, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import { deriveCareTwinScene, type CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
@@ -165,7 +165,11 @@ export default function HomeScreen() {
   const { state, addEntry } = useCare();
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
 
-  const topInset = Platform.OS === "web" ? 18 : insets.top;
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
+  });
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -557,7 +561,7 @@ export default function HomeScreen() {
       <ScrollView
         style={s.container}
         contentContainerStyle={{
-          paddingTop: topInset + 8,
+          paddingTop: topPadding,
           paddingBottom: bottomPadding,
           paddingHorizontal: 16,
         }}
@@ -569,7 +573,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Open More"
               onPress={() => router.push("/more")}
-              hitSlop={10}
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[s.headerButton, { borderColor: "transparent", backgroundColor: "transparent" }]}
             >
               <Ionicons name="menu" size={27} color={colors.navy} />
@@ -584,7 +588,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Open Health Watch"
               onPress={() => router.push("/health")}
-              hitSlop={10}
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[s.headerButton, { borderColor: "transparent", backgroundColor: "transparent" }]}
             >
               <Ionicons name="notifications-outline" size={23} color={colors.navy} />

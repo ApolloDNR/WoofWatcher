@@ -1009,3 +1009,65 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 ### Remaining Work
 
 - The Home Adventure strip still needs phone-size visual QA and final polish after native iOS/Android review.
+
+## 2026-06-21 Mobile Interaction Contract Pass
+
+### What Changed
+
+- Centralized route top spacing, modal sheet bottom spacing, centered modal
+  padding, keyboard avoiding offsets, floating feedback/debug offsets, minimum
+  touch targets, and inline hit slop in `mobileLayout.ts`.
+- Wired the shared contracts through Home, Log, Plans, Health, More, Records,
+  Adventure, Avatar Studio, Care Twin QA, Premium, Privacy, Setup, AuthShell,
+  WoofGuide, ErrorFallback, and the board primitives.
+- Hardened Log quick-note/modal behavior, Records/Care Pass sheets, More bottom
+  sheets, WoofGuide composer/review sheet, setup/auth forms, and all core route
+  top spacing against route-local drift.
+- Added readiness tests that reject hard-coded top safe-area formulas, unsafe
+  modal bottom padding, and literal 8/10 hit slop.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/mobileLayout.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileLayout.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `artifacts/woofwatcher-mobile/components/board/BoardPrimitives.tsx`
+- `artifacts/woofwatcher-mobile/components/ErrorFallback.tsx`
+- `artifacts/woofwatcher-mobile/components/auth-ui.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/index.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/log.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/calendar.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/health.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/records.tsx`
+- `artifacts/woofwatcher-mobile/app/adventure.tsx`
+- `artifacts/woofwatcher-mobile/app/care-twin-qa.tsx`
+- `artifacts/woofwatcher-mobile/app/portrait.tsx`
+- `artifacts/woofwatcher-mobile/app/premium.tsx`
+- `artifacts/woofwatcher-mobile/app/privacy.tsx`
+- `artifacts/woofwatcher-mobile/app/setup.tsx`
+- `artifacts/woofwatcher-mobile/app/woofguide.tsx`
+
+### Tests And Checks Run
+
+- Focused mobile layout/readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileLayout.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 76 tests.
+- Full behavior/readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 306 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, 149 ok, 0 missing, 0 invalid.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-mobile-interaction-contract-export --clear`
+  - Result: passed.
+
+### Remaining Work
+
+- Real iOS/Android simulator or device QA still needs screenshots for notch
+  clearance, modal reach, keyboard/composer behavior, touch response, stage crop,
+  and animation timing.

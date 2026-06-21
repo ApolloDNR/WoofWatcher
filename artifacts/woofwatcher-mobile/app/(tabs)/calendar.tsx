@@ -31,7 +31,12 @@ import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { parseLocalDate } from "@/lib/time";
-import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getModalSheetBottomPadding,
+  getRouteTopPadding,
+  getTabbedRouteBottomPadding,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -154,8 +159,16 @@ export default function CalendarScreen() {
   const { getToken } = useWoofAuth();
   const { routines, calendarEvents, profile, entries, caregivers, records } = state;
 
-  const topInset = Platform.OS === "web" ? 24 : insets.top;
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
+  });
   const bottomPadding = getTabbedRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
+  const modalSheetBottomPadding = getModalSheetBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
@@ -485,7 +498,7 @@ export default function CalendarScreen() {
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
         style={s.container}
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
@@ -668,7 +681,7 @@ export default function CalendarScreen() {
                             <Text numberOfLines={2} style={[s.sugNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{sug.note}</Text>
                           ) : null}
                         </View>
-                        <Pressable onPress={() => !added && addSuggestion(sug)} hitSlop={8} style={[s.sugAdd, { backgroundColor: added ? colors.sage + "22" : colors.primary }]}>
+                        <Pressable onPress={() => !added && addSuggestion(sug)} hitSlop={MOBILE_INLINE_HIT_SLOP} style={[s.sugAdd, { backgroundColor: added ? colors.sage + "22" : colors.primary }]}>
                           <Ionicons name={added ? "checkmark" : "add"} size={18} color={added ? colors.sage : "#fff"} />
                         </Pressable>
                       </View>
@@ -724,7 +737,7 @@ export default function CalendarScreen() {
                             <Text numberOfLines={2} style={[s.eventNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{e.note}</Text>
                           ) : null}
                         </View>
-                        <Pressable onPress={() => removeEvent(e.id)} hitSlop={8} style={s.removeBtn}>
+                        <Pressable onPress={() => removeEvent(e.id)} hitSlop={MOBILE_INLINE_HIT_SLOP} style={s.removeBtn}>
                           <Ionicons name="close" size={16} color={colors.mutedForeground} />
                         </Pressable>
                       </View>
@@ -962,7 +975,7 @@ export default function CalendarScreen() {
                               if (!done) logRoutineDone(r);
                             }}
                             disabled={done}
-                            hitSlop={8}
+                            hitSlop={MOBILE_INLINE_HIT_SLOP}
                             accessibilityRole="button"
                             accessibilityLabel={done ? `${r.label} already logged` : `Log ${r.label} as done`}
                             style={[s.routineDoneBtn, { backgroundColor: done ? colors.sage + "18" : colors.primary }]}
@@ -984,7 +997,7 @@ export default function CalendarScreen() {
       {/* Routine editor modal */}
       <Modal visible={routineOpen} transparent animationType="slide" onRequestClose={() => setRoutineOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
-          <Pressable style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.modalHandle} />
             <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
               {routineEditId ? "Edit Routine" : "New Routine"}
@@ -1083,7 +1096,7 @@ export default function CalendarScreen() {
       {/* Add-event modal */}
       <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setAddOpen(false)}>
-          <Pressable style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.modalHandle} />
             <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>New Event</Text>
 

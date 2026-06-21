@@ -38,7 +38,13 @@ import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getCenteredModalBackdropPadding,
+  getKeyboardAvoidingVerticalOffset,
+  getModalSheetBottomPadding,
+  getRouteTopPadding,
+  getTabbedRouteBottomPadding,
+} from "@/lib/mobileLayout";
 import {
   buildAloneTimeReturnPatch,
   buildAloneTimeStartEntry,
@@ -818,10 +824,28 @@ export default function LogScreen() {
   }, [routeParams.type]);
   const lastRouteSelectedType = useRef<string | null>(null);
 
-  const topInset = Platform.OS === "web" ? 24 : insets.top;
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
+  });
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+  });
+  const modalSheetBottomPadding = getModalSheetBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
+  const centeredModalPadding = getCenteredModalBackdropPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    bottomInset: insets.bottom,
+  });
+  const keyboardOffset = getKeyboardAvoidingVerticalOffset({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
   });
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -1999,7 +2023,7 @@ export default function LogScreen() {
       <ScrollView
         ref={scrollRef}
         style={s.container}
-        contentContainerStyle={{ paddingTop: topInset + 8, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -3421,7 +3445,7 @@ export default function LogScreen() {
       {/* Entry detail modal */}
       <Modal visible={detailEntry !== null} transparent animationType="slide" onRequestClose={() => setDetailEntryId(null)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
-          <Pressable style={[s.detailSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[s.detailSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.editHandle} />
             {detailEntry ? (
               <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
@@ -4005,7 +4029,7 @@ export default function LogScreen() {
       {/* Entry editor modal */}
       <Modal visible={editEntry !== null} transparent animationType="slide" onRequestClose={() => setEditEntry(null)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
-          <Pressable style={[s.editSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[s.editSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.editHandle} />
             <Text style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit Entry</Text>
             <Text style={[s.editFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
@@ -4037,8 +4061,8 @@ export default function LogScreen() {
 
       {/* Post-log quick-note prompt */}
       <Modal visible={promptId !== null} transparent animationType="fade" onRequestClose={() => setPromptId(null)}>
-        <Pressable style={s.modalBackdrop} onPress={saveQuickNote}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={s.modalCenter}>
+        <Pressable style={[s.modalBackdrop, centeredModalPadding]} onPress={saveQuickNote}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalCenter}>
             <Pressable style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
               <View style={[s.modalIcon, { backgroundColor: colors.sage + "1A" }]}>
                 <Ionicons name="checkmark" size={22} color={colors.sage} />

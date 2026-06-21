@@ -1411,6 +1411,39 @@ Owner: Codex.
 
 Revisit trigger: Clerk/Supabase household provisioning and invite acceptance become live, or Apollo changes the launch account model.
 
+### 2026-06-21: Mobile Interaction Geometry Is A Shared Contract
+
+Decision: route top padding, modal sheet bottom padding, centered modal padding,
+keyboard avoiding offsets, and mobile touch target constants belong in
+`mobileLayout.ts`, not in individual route files.
+
+Reason: WoofWatcher is primarily an iOS/Android app. The premium product can
+look good in a browser but still feel unfinished on a phone if each screen
+hand-rolls notch clearance, keyboard offsets, modal reach, and small inline tap
+areas. A shared contract makes Home, Log, Plans, Health, More, Records,
+standalone tools, auth/setup, WoofGuide, and fallback recovery behave like one
+app before native QA.
+
+Consequences:
+
+- `mobileLayout.ts` owns top safe-area padding for tabbed, standalone, setup,
+  and auth surfaces.
+- `mobileLayout.ts` owns modal sheet bottom padding, centered modal backdrop
+  padding, keyboard avoiding offsets, floating feedback/debug offsets, minimum
+  touch target size, and inline hit slop.
+- Launch-critical route files call the shared helpers instead of route-local
+  formulas.
+- Mobile readiness tests reject hard-coded top safe-area formulas, unsafe modal
+  bottom padding, and literal 8/10 hit slop.
+- Real iOS/Android QA still has to judge the visual result on device and feed
+  the next tuning pass.
+
+Owner: Codex.
+
+Revisit trigger: the app adopts a native sheet/navigation library, changes the
+floating paw navigation, or real device QA proves the shared constants need
+surface-specific tuning.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

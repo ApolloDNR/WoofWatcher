@@ -158,6 +158,11 @@ test("keeps tabbed mobile routes clear of the floating paw nav", () => {
   assert.match(mobileLayout, /getTabbedRouteBottomPadding/);
   assert.match(mobileLayout, /getStandaloneRouteBottomPadding/);
   assert.match(mobileLayout, /getDockedComposerBottomPadding/);
+  assert.match(mobileLayout, /getRouteTopPadding/);
+  assert.match(mobileLayout, /getKeyboardAvoidingVerticalOffset/);
+  assert.match(mobileLayout, /getModalSheetBottomPadding/);
+  assert.match(mobileLayout, /MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(mobileLayout, /MOBILE_INLINE_HIT_SLOP/);
   assert.match(tabs, /getFloatingTabChromeMetrics/);
   assert.match(tabs, /centerFabBottom/);
   assert.match(tabs, /tabBarHeight/);
@@ -165,10 +170,16 @@ test("keeps tabbed mobile routes clear of the floating paw nav", () => {
   for (const route of tabbedRoutes) {
     const source = readAppFile(join("(tabs)", `${route}.tsx`));
     assert.match(source, /getTabbedRouteBottomPadding/, `${route} should use shared tab bottom padding`);
+    assert.match(source, /getRouteTopPadding/, `${route} should use shared top safe-area padding`);
     assert.doesNotMatch(
       source,
       /paddingBottom:\s*(?:128|130|142)\b/,
       `${route} should not hard-code floating tab clearance`,
+    );
+    assert.doesNotMatch(
+      source,
+      /paddingTop:\s*(?:topInset\s*\+|\(Platform\.OS === "web"[^,\n]*\+\s*\d+|insets\.top\s*\+\s*\d+)/,
+      `${route} should not hard-code route top safe-area padding`,
     );
   }
 });
@@ -188,18 +199,68 @@ test("keeps standalone mobile routes on shared safe-area helpers", () => {
       /getStandaloneRouteBottomPadding/,
       `${route} should use shared standalone route bottom padding`,
     );
+    assert.match(source, /getRouteTopPadding/, `${route} should use shared top safe-area padding`);
     assert.doesNotMatch(
       source,
       /paddingBottom:\s*(?:72|insets\.bottom\s*\+\s*(?:18|32|38|40|44))\b/,
       `${route} should not hard-code standalone bottom clearance`,
     );
+    assert.doesNotMatch(
+      source,
+      /paddingTop:\s*(?:topInset\s*\+|\(Platform\.OS === "web"[^,\n]*\+\s*\d+|insets\.top\s*\+\s*\d+)/,
+      `${route} should not hard-code route top safe-area padding`,
+    );
   }
 
   assert.match(authUi, /getStandaloneRouteBottomPadding/);
+  assert.match(authUi, /getRouteTopPadding/);
   assert.doesNotMatch(authUi, /paddingBottom:\s*insets\.bottom\s*\+\s*32/);
+  assert.doesNotMatch(authUi, /paddingTop:\s*insets\.top\s*\+\s*48/);
   assert.match(woofGuide, /getDockedComposerBottomPadding/);
+  assert.match(woofGuide, /getKeyboardAvoidingVerticalOffset/);
+  assert.match(woofGuide, /getModalSheetBottomPadding/);
   assert.doesNotMatch(woofGuide, /bottomInset\s*=\s*Platform\.OS/);
   assert.doesNotMatch(woofGuide, /paddingBottom:\s*bottomInset\s*\+\s*12/);
+});
+
+test("keeps mobile interaction contracts centralized for route chrome, modals, and inline controls", () => {
+  const boardPrimitives = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "board", "BoardPrimitives.tsx"),
+    "utf8",
+  );
+  const errorFallback = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "ErrorFallback.tsx"),
+    "utf8",
+  );
+  const routeSources = [
+    ...listAppFiles(),
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "auth-ui.tsx"),
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "ErrorFallback.tsx"),
+  ];
+
+  assert.match(boardPrimitives, /MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(errorFallback, /getModalSheetBottomPadding/);
+
+  for (const file of routeSources) {
+    const source = readFileSync(file, "utf8");
+    const label = relative(process.cwd(), file);
+
+    assert.doesNotMatch(
+      source,
+      /paddingTop:\s*(?:topInset\s*\+|\(Platform\.OS === "web"[^,\n]*\+\s*\d+|insets\.top\s*\+\s*\d+)/,
+      `${label} should use shared top safe-area padding helpers`,
+    );
+    assert.doesNotMatch(
+      source,
+      /paddingBottom:\s*insets\.bottom\s*\+\s*(?:16|18|20|32|38|40|44)/,
+      `${label} should use shared modal/bottom safe-area padding helpers`,
+    );
+    assert.doesNotMatch(
+      source,
+      /hitSlop=\{(?:8|10)\}/,
+      `${label} should use shared inline hit slop constants`,
+    );
+  }
 });
 
 test("registers the care twin native QA route for device review", () => {

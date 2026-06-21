@@ -112,9 +112,22 @@ The 2026-06-20 mobile-layout passes centralized floating-paw tab chrome, tabbed 
 
 The 2026-06-20 household setup pass turned first-run onboarding into a real account-aware decision surface without pretending provider invites are live. Setup now captures Create household, Join by invite, or Local preview intent; persists `householdSetup` in the local care document; exports it in owner privacy data; blocks join saves until an invite code is present; and shows post-save confirmation copy that distinguishes local-only, account-needed, and provider-ready states. The same pass locked Apollo's latest light/dark visual reference boards into `docs/design/reference/` and the design lock docs. Provider-backed household creation, invite acceptance, role enforcement, and multi-device membership sync remain the next account/provider work.
 
+The 2026-06-21 mobile interaction contract pass ported the latest main-line
+safe-area and touch hardening into this richer advanced branch without doing a
+destructive merge. `mobileLayout.ts` now centralizes route top padding, modal
+sheet bottom padding, centered modal padding, keyboard avoiding offsets, floating
+feedback/debug offsets, minimum touch targets, and inline hit slop. Home, Log,
+Plans, Health, More, Records, Adventure, Avatar Studio, Care Twin QA, Premium,
+Privacy, Setup, AuthShell, WoofGuide, ErrorFallback, and board primitives use
+those helpers. Static readiness tests reject the old route-local formulas.
+Local verification passed focused mobile layout/readiness tests, the 306-test
+behavior/readiness suite, mobile TypeScript, PixelLab asset verification at 149
+files, and Expo web export to
+`tmp/woofwatcher-mobile-interaction-contract-export`.
+
 Next highest-impact work:
 
-1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete both the Mobile Release QA checklist and the 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm iOS and Android counts are both satisfied, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup issue.
+1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete both the Mobile Release QA checklist and the 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm iOS and Android counts are both satisfied, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
 2. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 3. Continue screen-by-screen polish, accessibility traversal, and visual regression.
 4. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.
