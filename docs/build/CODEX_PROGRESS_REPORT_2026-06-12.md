@@ -1399,11 +1399,12 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 
 ### Remote Verification
 
-- Pending until this slice is committed and pushed.
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: remote run `27901968840` failed before job execution with job `82563764563`; `gh run view` reported `steps: []`, and `gh run view --log-failed` returned `log not found: 82563764563`.
 
 ### Remaining Work
 
-- Trigger GitHub Actions verify after push and document the result.
 - Continue local launch-hardening while the recurring GitHub Actions
   billing/spending-limit blocker prevents remote CI from executing jobs.
 
