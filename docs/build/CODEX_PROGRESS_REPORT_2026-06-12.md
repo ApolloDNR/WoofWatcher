@@ -1524,8 +1524,19 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 
 ### Remaining Work
 
-- Commit/push, trigger GitHub verify, and record whether the recurring pre-job
-  billing blocker repeats.
+### Remote Verification
+
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: remote run `27906100583` for commit `3544c11` failed before job execution with job `82574915830`; `gh run view` reported `steps: []`, and `gh run view --log-failed` returned `log not found: 82574915830`.
+
+### Remaining Work
+
+- Continue local launch-hardening while the recurring GitHub Actions
+  billing/spending-limit blocker prevents remote CI from executing jobs.
+- Real iOS and Android QA is still required before launch confidence. The app
+  can now share the exact next-capture script, but the screenshots still need to
+  be captured on devices or simulators.
 
 ## 2026-06-21 Store Screenshot QA Cockpit
 
