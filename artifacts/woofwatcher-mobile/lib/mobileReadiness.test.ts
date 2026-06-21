@@ -1643,9 +1643,15 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Launch Readiness"/);
   assert.match(more, /deriveAttachmentManifest/);
   assert.match(more, /deriveLaunchReadiness/);
+  assert.match(more, /buildReleasePacket/);
+  assert.match(more, /buildReleasePacketShareText/);
   assert.match(more, /storageQueue: attachmentManifest\.launchQueue/);
   assert.match(more, /launchReadinessPlan\.badgeLabel/);
   assert.match(more, /launchReadinessPlan\.summary/);
+  assert.match(more, /launchReleasePacket\.readinessScore/);
+  assert.match(more, /Share Launch Packet/);
+  assert.match(more, /accessibilityLabel="Share WoofWatcher release packet"/);
+  assert.match(more, /Share\.share\(\{ message: buildReleasePacketShareText\(launchReleasePacket\)/);
   assert.match(launchModel, /storageQueue/);
   assert.match(launchModel, /local file/);
   assert.match(launchModel, /Device proof required/);

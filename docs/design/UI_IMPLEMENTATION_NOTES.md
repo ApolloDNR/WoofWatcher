@@ -857,3 +857,23 @@ Design intent:
 - Keep local-first storage limits visible without turning the screen into a
   technical admin console.
 - Prepare the surface for provider object ids and signed downloads later.
+
+## 2026-06-21 Release Packet Surface
+
+More's Launch Readiness area now has an owner/operator handoff layer:
+
+- A shared `releasePacket.ts` model converts launch readiness into a release
+  score, verdict, gate rows, owner approvals, blockers, next actions, and
+  handoff notes.
+- The mobile More screen shows the score and verdict under the launch gates so
+  the owner can tell the difference between internal-preview confidence and
+  public-launch readiness.
+- The Share Launch Packet action uses native sharing with safe text for Apollo,
+  testers, future builders, or a store-prep collaborator.
+
+Design intent:
+
+- Make launch state feel like a professional release cockpit, not a vague card.
+- Give Apollo a clean handoff artifact while keeping all provider/native/store
+  blockers explicit.
+- Avoid fake App Store, Play Store, payment, AI, storage, or deletion claims.

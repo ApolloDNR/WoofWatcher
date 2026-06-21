@@ -51,6 +51,7 @@ import {
   type LaunchReadinessTileKey,
   type LaunchReadinessTileStatus,
 } from "@/lib/launchReadiness";
+import { buildReleasePacket, buildReleasePacketShareText } from "@/lib/releasePacket";
 import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -785,6 +786,22 @@ export default function MoreScreen() {
                 : undefined,
   }));
   const readinessBadgeTone = launchBadgeTone(launchReadinessPlan.status, colors);
+  const launchReleasePacket = useMemo(
+    () =>
+      buildReleasePacket(launchReadinessPlan, {
+        appName: "WoofWatcher",
+        buildName: "premium mobile candidate",
+        generatedAtIso: new Date(now).toISOString(),
+      }),
+    [launchReadinessPlan, now],
+  );
+
+  const shareLaunchPacket = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Share.share({ message: buildReleasePacketShareText(launchReleasePacket), title: launchReleasePacket.title }).catch(() =>
+      Alert.alert("Launch Packet", buildReleasePacketShareText(launchReleasePacket)),
+    );
+  };
 
   const H_PAD = 20;
 
@@ -1104,6 +1121,36 @@ export default function MoreScreen() {
                 {launchReadinessPlan.summary} {launchReadinessPlan.nextActions[0] ?? "Prepare the final store packet after Apollo approval."}
               </Text>
             </View>
+            <View style={[s.launchPacket, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={[s.launchScore, { backgroundColor: readinessBadgeTone + "16" }]}>
+                <Text style={[s.launchScoreValue, { color: readinessBadgeTone, fontFamily: DISPLAY_SEMI }]}>
+                  {launchReleasePacket.readinessScore}%
+                </Text>
+                <Text style={[s.launchScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  release score
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.launchPacketTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                  {launchReleasePacket.verdictLabel}
+                </Text>
+                <Text style={[s.launchPacketCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {launchReleasePacket.ownerSummary}
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Share WoofWatcher release packet"
+              onPress={shareLaunchPacket}
+              style={({ pressed }) => [
+                s.launchShare,
+                { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+              ]}
+            >
+              <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
+              <Text style={[s.launchShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share Launch Packet</Text>
+            </Pressable>
           </BoardCard>
 
           <Pressable
@@ -2247,6 +2294,36 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   launchNoticeText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  launchPacket: {
+    marginTop: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  launchScore: {
+    width: 78,
+    borderRadius: 8,
+    paddingVertical: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launchScoreValue: { fontSize: 22, lineHeight: 26 },
+  launchScoreLabel: { fontSize: 9, lineHeight: 12, textTransform: "uppercase", marginTop: 2 },
+  launchPacketTitle: { fontSize: 13.5, lineHeight: 18 },
+  launchPacketCopy: { fontSize: 11.5, lineHeight: 16, marginTop: 3 },
+  launchShare: {
+    marginTop: 12,
+    minHeight: 44,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  launchShareText: { color: "#FFFFFF", fontSize: 13 },
 
   listCard: {
     borderRadius: 22,
