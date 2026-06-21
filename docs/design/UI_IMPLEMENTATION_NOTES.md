@@ -917,3 +917,26 @@ Design intent:
 - Keep the Support runbook card actionable and honest: the app can stage the
   packet locally, but public launch remains blocked until real approvals exist.
 - Preserve mobile reachability by using the shared modal bottom-padding helper.
+
+## 2026-06-21 Owner-Staged Launch Cockpit
+
+More's Launch Readiness cockpit now understands staged owner review without
+turning it into final launch approval:
+
+- More derives the Support runbook from `state.launchSupportProfile`, then
+  passes owner-reviewed privacy/legal and support-runbook flags into the shared
+  launch-readiness model.
+- The Store Gates tile can show `Owner packet staged` when Apollo has locally
+  reviewed the support/privacy packet, while still keeping account deletion,
+  push notifications, app-store setup, final legal/provider approval, and
+  support approval open.
+- Blocker copy now names staged packets separately from untouched approval
+  gaps, which makes the release cockpit feel more professional and less vague.
+
+Design intent:
+
+- Reward real owner progress without fake App Store, Play Store, legal, support,
+  notification, deletion, or provider readiness claims.
+- Keep Apollo's next action clear: owner packet staged locally, final approvals
+  still required before public launch.
+- Preserve the app's launch-truth doctrine in both the UI and shared model.

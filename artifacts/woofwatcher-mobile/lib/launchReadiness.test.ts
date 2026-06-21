@@ -141,6 +141,32 @@ test("surfaces sync and local foundation gaps before provider approval", () => {
   assert.equal(syncTile?.value, "Needs review");
 });
 
+test("distinguishes owner-staged support packets from final legal and store approval", () => {
+  const plan = deriveLaunchReadiness({
+    ...fullyApprovedInput,
+    provider: {
+      ...fullyApprovedInput.provider,
+      accountDeletionEnabled: false,
+      appStoreAccountsReady: false,
+      privacyLegalApproved: false,
+      privacyLegalOwnerReviewed: true,
+      pushNotificationsConfigured: false,
+      supportRunbookApproved: false,
+      supportRunbookOwnerReviewed: true,
+    },
+  });
+
+  assert.equal(plan.status, "approval-required");
+  assert.equal(plan.storeLaunchReady, false);
+
+  const approvalTile = plan.tiles.find((tile) => tile.key === "store-approval");
+  assert.equal(approvalTile?.status, "review");
+  assert.equal(approvalTile?.value, "Owner packet staged");
+  assert.match(approvalTile?.detail ?? "", /final legal/i);
+  assert.ok(plan.blockers.some((blocker) => /Privacy\/legal owner packet/i.test(blocker)));
+  assert.ok(plan.blockers.some((blocker) => /Support runbook owner packet/i.test(blocker)));
+});
+
 test("provides owner-readable badge labels for launch status", () => {
   assert.equal(launchReadinessBadgeLabel("internal-preview"), "INTERNAL PREVIEW");
   assert.equal(launchReadinessBadgeLabel("native-qa-required"), "NATIVE QA OPEN");

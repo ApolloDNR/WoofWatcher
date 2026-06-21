@@ -179,11 +179,18 @@ escalation, and incident response in a bottom-sheet editor, then save as a
 draft or owner-reviewed packet. This is still local owner review only, not a
 claim of legal, store, provider, or payment approval.
 
+The owner-staged launch cockpit pass connected that persisted owner review back
+into More's Launch Readiness surface. `launchReadiness.ts` can now distinguish a
+fully approved Store Gates state from a locally staged owner packet. More derives
+privacy/legal and support-runbook owner-review flags from `state.launchSupportProfile`
+and `supportRunbook.ts`, so the launch cockpit can say "Owner packet staged"
+while still naming the remaining final legal/provider, support/provider,
+app-store account, notification, and account-deletion approvals.
+
 Next highest-impact work:
 
-1. Finish full local verification for the launch support profile slice,
-   commit/push it, trigger GitHub verify, and document the remote CI blocker if
-   it repeats.
+1. Commit/push the owner-staged launch cockpit slice, trigger GitHub verify, and
+   document the remote CI blocker if it repeats.
 2. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete both the Mobile Release QA checklist and the 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm iOS and Android counts are both satisfied, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
 3. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 4. Continue screen-by-screen polish, accessibility traversal, and visual regression.

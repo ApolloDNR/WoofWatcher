@@ -51,10 +51,12 @@ export interface LaunchReadinessProviderInput {
   databaseConfigured?: boolean;
   paymentsEnabled?: boolean;
   privacyLegalApproved?: boolean;
+  privacyLegalOwnerReviewed?: boolean;
   pushNotificationsConfigured?: boolean;
   storageProviderConfigured?: boolean;
   storageQueue?: LaunchReadinessStorageQueueInput;
   supportRunbookApproved?: boolean;
+  supportRunbookOwnerReviewed?: boolean;
 }
 
 export interface LaunchReadinessInput {
@@ -282,22 +284,35 @@ function approvalTile(provider: LaunchReadinessProviderInput): LaunchReadinessTi
     provider.privacyLegalApproved &&
     provider.pushNotificationsConfigured &&
     provider.supportRunbookApproved;
+  const ownerPacketStaged = Boolean(provider.privacyLegalOwnerReviewed || provider.supportRunbookOwnerReviewed);
 
-  return ready
-    ? {
-        key: "store-approval",
-        label: "Store Gates",
-        value: "Approval ready",
-        detail: "App-store accounts, privacy/legal, support, deletion, and notification obligations are closed.",
-        status: "ready",
-      }
-    : {
-        key: "store-approval",
-        label: "Store Gates",
-        value: "Approval open",
-        detail: "Apple, Google, privacy/legal, support, push notification, and account deletion gates need owner approval.",
-        status: "review",
-      };
+  if (ready) {
+    return {
+      key: "store-approval",
+      label: "Store Gates",
+      value: "Approval ready",
+      detail: "App-store accounts, privacy/legal, support, deletion, and notification obligations are closed.",
+      status: "ready",
+    };
+  }
+
+  if (ownerPacketStaged) {
+    return {
+      key: "store-approval",
+      label: "Store Gates",
+      value: "Owner packet staged",
+      detail: "Support and privacy packet details are staged locally, but final legal, store, deletion, and notification approvals remain open.",
+      status: "review",
+    };
+  }
+
+  return {
+    key: "store-approval",
+    label: "Store Gates",
+    value: "Approval open",
+    detail: "Apple, Google, privacy/legal, support, push notification, and account deletion gates need owner approval.",
+    status: "review",
+  };
 }
 
 function localBlockers(local: LaunchReadinessLocalInput): string[] {
@@ -327,8 +342,20 @@ function approvalBlockers(provider: LaunchReadinessProviderInput): string[] {
   if (!provider.accountDeletionEnabled) blockers.push("Self-serve account deletion is not enabled.");
   if (!provider.pushNotificationsConfigured) blockers.push("Push notifications are not configured.");
   if (!provider.appStoreAccountsReady) blockers.push("Apple and Google store accounts/submission setup are not confirmed.");
-  if (!provider.privacyLegalApproved) blockers.push("Privacy/legal approval is still open.");
-  if (!provider.supportRunbookApproved) blockers.push("Support and incident-response runbook approval is still open.");
+  if (!provider.privacyLegalApproved) {
+    blockers.push(
+      provider.privacyLegalOwnerReviewed
+        ? "Privacy/legal owner packet still needs final legal/provider approval."
+        : "Privacy/legal approval is still open.",
+    );
+  }
+  if (!provider.supportRunbookApproved) {
+    blockers.push(
+      provider.supportRunbookOwnerReviewed
+        ? "Support runbook owner packet still needs final support/provider approval."
+        : "Support and incident-response runbook approval is still open.",
+    );
+  }
   return blockers;
 }
 

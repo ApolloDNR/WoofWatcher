@@ -1350,6 +1350,63 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Continue local launch-hardening while the recurring GitHub Actions
   billing/spending-limit blocker prevents remote CI from executing jobs.
 
+## 2026-06-21 Owner-Staged Launch Cockpit
+
+### What Changed
+
+- More now derives the launch support runbook from
+  `state.launchSupportProfile` before building the Launch Readiness plan.
+- Added owner-reviewed support and privacy/legal packet flags to the shared
+  `launchReadiness.ts` provider input.
+- The Store Gates tile can now show `Owner packet staged` when Apollo has
+  locally reviewed the support/privacy packet, while still blocking public
+  launch on final legal/provider, support/provider, account deletion,
+  notification, and app-store approval.
+- Launch-readiness blockers now distinguish staged owner packets from untouched
+  approval gaps.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/lib/launchReadiness.ts`
+- `artifacts/woofwatcher-mobile/lib/launchReadiness.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused launch/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/launchReadiness.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 74 tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 322 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with Windows CRLF warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-owner-staged-launch-export --clear`
+  - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-owner-staged-launch-export`.
+
+### Remote Verification
+
+- Pending until this slice is committed and pushed.
+
+### Remaining Work
+
+- Trigger GitHub Actions verify after push and document the result.
+- Continue local launch-hardening while the recurring GitHub Actions
+  billing/spending-limit blocker prevents remote CI from executing jobs.
+
 ## 2026-06-21 Launch Support Profile
 
 ### What Changed

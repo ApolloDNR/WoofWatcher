@@ -1653,9 +1653,11 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Launch Readiness"/);
   assert.match(more, /deriveAttachmentManifest/);
   assert.match(more, /deriveLaunchReadiness/);
+  assert.match(more, /deriveSupportRunbookPlan/);
   assert.match(more, /buildReleasePacket/);
   assert.match(more, /buildReleasePacketShareText/);
   assert.match(more, /storageQueue: attachmentManifest\.launchQueue/);
+  assert.match(more, /supportRunbookOwnerReviewed/);
   assert.match(more, /launchReadinessPlan\.badgeLabel/);
   assert.match(more, /launchReadinessPlan\.summary/);
   assert.match(more, /launchReleasePacket\.readinessScore/);

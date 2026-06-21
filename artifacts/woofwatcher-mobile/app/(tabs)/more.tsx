@@ -52,6 +52,7 @@ import {
   type LaunchReadinessTileStatus,
 } from "@/lib/launchReadiness";
 import { buildReleasePacket, buildReleasePacketShareText } from "@/lib/releasePacket";
+import { deriveSupportRunbookPlan } from "@/lib/supportRunbook";
 import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -224,6 +225,14 @@ export default function MoreScreen() {
       ),
     [entries, state.adventureMemories, state.records, state.reportArtifacts],
   );
+  const launchSupportPlan = useMemo(
+    () => deriveSupportRunbookPlan(state.launchSupportProfile),
+    [state.launchSupportProfile],
+  );
+  const supportRunbookOwnerReviewed =
+    state.launchSupportProfile.providerStatus === "owner-reviewed" && launchSupportPlan.supportRunbookApproved;
+  const privacyLegalOwnerReviewed =
+    state.launchSupportProfile.providerStatus === "owner-reviewed" && launchSupportPlan.privacyLegalApproved;
 
   const syncTone =
     syncDashboard.status === "attention"
@@ -762,11 +771,20 @@ export default function MoreScreen() {
           pushNotificationsConfigured: false,
           appStoreAccountsReady: false,
           privacyLegalApproved: false,
+          privacyLegalOwnerReviewed,
           supportRunbookApproved: false,
+          supportRunbookOwnerReviewed,
         },
         syncStatus: syncDashboard.status,
       }),
-    [attachmentManifest.launchQueue, me.data?.user?.id, household, syncDashboard.status],
+    [
+      attachmentManifest.launchQueue,
+      me.data?.user?.id,
+      household,
+      privacyLegalOwnerReviewed,
+      supportRunbookOwnerReviewed,
+      syncDashboard.status,
+    ],
   );
   const launchReadiness = launchReadinessPlan.tiles.map((tile) => ({
     ...tile,
