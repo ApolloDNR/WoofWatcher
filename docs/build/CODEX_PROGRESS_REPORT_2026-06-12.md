@@ -1232,6 +1232,9 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Expo web export:
   - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-privacy-attachment-export --clear`
   - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-privacy-attachment-export`.
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: remote run `27898784073` failed before job execution with job `82555140283`; `gh run view` reported `steps: []`, and `gh run view --log-failed` returned `log not found: 82555140283`.
 
 ### Remaining Work
 
