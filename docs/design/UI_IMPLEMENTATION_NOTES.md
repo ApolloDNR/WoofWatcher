@@ -802,3 +802,24 @@ Design intent:
   actionable.
 - Let the next visual polish pass improve the tile art/animation without
   weakening the truth model.
+
+## 2026-06-21 Attachment Storage Queue
+
+More's Launch Readiness card now gets concrete storage context from a shared
+attachment manifest instead of generic copy:
+
+- `attachmentManifest.ts` collects local medication proof photos, record
+  attachments, Adventure memory photos, Care Pass print artifacts, and QA
+  screenshots.
+- Manifest items are classified as local-only, upload-ready, or provider-saved,
+  keeping the UI truthful before cloud storage exists.
+- The Records Storage launch tile can now say how many local files are gated and
+  name the types of files involved.
+
+Design intent:
+
+- Make storage readiness feel operational and specific for Apollo and future
+  builders.
+- Preserve the local-first experience while making the future Supabase/storage
+  migration path explicit.
+- Avoid fake cloud sync, fake uploads, or hidden local-only media.

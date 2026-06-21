@@ -133,6 +133,14 @@ support, store-account, and Apollo approval gates. More now uses that model for
 six actionable launch tiles instead of hard-coded optimistic copy, so the app can
 show exactly why it is not store-ready yet.
 
+The follow-up 2026-06-21 storage backbone pass added a shared attachment
+manifest for the local-first media/report queue. `attachmentManifest.ts` now
+collects medication proof photos, record attachments, Adventure memory photos,
+Care Pass print artifacts, and QA screenshots; marks each item local-only,
+upload-ready, or provider-saved; and feeds the queue into Launch Readiness. More
+can now show a concrete local-file storage gate without claiming cloud upload,
+cross-device persistence, or provider-backed deletion is active.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete both the Mobile Release QA checklist and the 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm iOS and Android counts are both satisfied, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

@@ -68,6 +68,15 @@ test("keeps launch readiness truthful when native QA and providers are still ope
       authConfigured: true,
       databaseConfigured: true,
       storageProviderConfigured: false,
+      storageQueue: {
+        total: 5,
+        localOnly: 5,
+        uploadReady: 0,
+        providerSaved: 0,
+        labels: ["care-log proof", "record document", "adventure memory"],
+        detail:
+          "5 local files across care-log proof, record document, adventure memory. Keep them local until storage rules are approved.",
+      },
       aiProviderConfigured: false,
       paymentsEnabled: false,
       accountDeletionEnabled: false,
@@ -94,6 +103,8 @@ test("keeps launch readiness truthful when native QA and providers are still ope
   assert.equal(nativeTile?.status, "blocked");
   assert.match(nativeTile?.value ?? "", /8 screenshot/);
   assert.equal(storageTile?.status, "blocked");
+  assert.equal(storageTile?.value, "5 local files gated");
+  assert.match(storageTile?.detail ?? "", /care-log proof, record document, adventure memory/i);
   assert.equal(plusTile?.value, "Checkout gated");
 });
 

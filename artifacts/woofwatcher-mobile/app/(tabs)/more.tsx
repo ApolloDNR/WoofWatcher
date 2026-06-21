@@ -44,6 +44,7 @@ import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
+import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
   deriveLaunchReadiness,
   type LaunchReadinessOverallStatus,
@@ -208,6 +209,19 @@ export default function MoreScreen() {
       household,
       entries.length,
     ],
+  );
+  const attachmentManifest = useMemo(
+    () =>
+      deriveAttachmentManifest(
+        {
+          entries,
+          records: state.records,
+          adventureMemories: state.adventureMemories,
+          reportArtifacts: state.reportArtifacts,
+        },
+        { storageProviderConfigured: false },
+      ),
+    [entries, state.adventureMemories, state.records, state.reportArtifacts],
   );
 
   const syncTone =
@@ -740,6 +754,7 @@ export default function MoreScreen() {
           authConfigured: Boolean(me.data?.user?.id && household),
           databaseConfigured: Boolean(household && syncDashboard.status !== "attention"),
           storageProviderConfigured: false,
+          storageQueue: attachmentManifest.launchQueue,
           aiProviderConfigured: false,
           paymentsEnabled: false,
           accountDeletionEnabled: false,
@@ -750,7 +765,7 @@ export default function MoreScreen() {
         },
         syncStatus: syncDashboard.status,
       }),
-    [me.data?.user?.id, household, syncDashboard.status],
+    [attachmentManifest.launchQueue, me.data?.user?.id, household, syncDashboard.status],
   );
   const launchReadiness = launchReadinessPlan.tiles.map((tile) => ({
     ...tile,

@@ -1637,9 +1637,13 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Responsibility Center"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Sync Health"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Launch Readiness"/);
+  assert.match(more, /deriveAttachmentManifest/);
   assert.match(more, /deriveLaunchReadiness/);
+  assert.match(more, /storageQueue: attachmentManifest\.launchQueue/);
   assert.match(more, /launchReadinessPlan\.badgeLabel/);
   assert.match(more, /launchReadinessPlan\.summary/);
+  assert.match(launchModel, /storageQueue/);
+  assert.match(launchModel, /local file/);
   assert.match(launchModel, /Device proof required/);
   assert.match(launchModel, /Native iOS\/Android QA evidence is not attached/);
   assert.match(launchModel, /Checkout gated/);

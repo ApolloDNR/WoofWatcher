@@ -34,6 +34,15 @@ export interface LaunchReadinessLocalInput {
   privacyExportReady?: boolean;
 }
 
+export interface LaunchReadinessStorageQueueInput {
+  total?: number;
+  localOnly?: number;
+  uploadReady?: number;
+  providerSaved?: number;
+  labels?: readonly string[];
+  detail?: string;
+}
+
 export interface LaunchReadinessProviderInput {
   accountDeletionEnabled?: boolean;
   aiProviderConfigured?: boolean;
@@ -44,6 +53,7 @@ export interface LaunchReadinessProviderInput {
   privacyLegalApproved?: boolean;
   pushNotificationsConfigured?: boolean;
   storageProviderConfigured?: boolean;
+  storageQueue?: LaunchReadinessStorageQueueInput;
   supportRunbookApproved?: boolean;
 }
 
@@ -178,22 +188,55 @@ function careSyncTile(syncStatus: string | undefined, provider: LaunchReadinessP
   };
 }
 
+function queueTotal(queue: LaunchReadinessStorageQueueInput | undefined): number {
+  return Math.max(0, Math.floor(queue?.total ?? 0));
+}
+
+function queueUploadReady(queue: LaunchReadinessStorageQueueInput | undefined): number {
+  return Math.max(0, Math.floor(queue?.uploadReady ?? 0));
+}
+
+function storageQueueDetail(queue: LaunchReadinessStorageQueueInput | undefined): string {
+  const detail = typeof queue?.detail === "string" ? queue.detail.trim() : "";
+  if (detail) return detail;
+
+  const labels = Array.isArray(queue?.labels) ? queue.labels.map((label) => label.trim()).filter(Boolean) : [];
+  if (labels.length) {
+    return `Local files across ${labels.join(", ")} need storage, signed access, retention, export, and deletion rules.`;
+  }
+
+  return "Document uploads, proof photos, and Care Pass attachments stay local until storage rules are approved.";
+}
+
 function storageTile(provider: LaunchReadinessProviderInput): LaunchReadinessTile {
-  return provider.storageProviderConfigured
-    ? {
-        key: "storage",
-        label: "Records Storage",
-        value: "Storage rules ready",
-        detail: "Record uploads can be household-scoped with retention, export, and deletion rules.",
-        status: "ready",
-      }
-    : {
-        key: "storage",
-        label: "Records Storage",
-        value: "Storage gated",
-        detail: "Document uploads, proof photos, and Care Pass attachments stay local until storage rules are approved.",
-        status: "blocked",
-      };
+  const totalQueued = queueTotal(provider.storageQueue);
+  const uploadReady = queueUploadReady(provider.storageQueue);
+
+  if (provider.storageProviderConfigured) {
+    return uploadReady > 0
+      ? {
+          key: "storage",
+          label: "Records Storage",
+          value: `${plural(uploadReady, "upload")} ready`,
+          detail: storageQueueDetail(provider.storageQueue),
+          status: "review",
+        }
+      : {
+          key: "storage",
+          label: "Records Storage",
+          value: "Storage rules ready",
+          detail: "Record uploads can be household-scoped with retention, export, and deletion rules.",
+          status: "ready",
+        };
+  }
+
+  return {
+    key: "storage",
+    label: "Records Storage",
+    value: totalQueued > 0 ? `${plural(totalQueued, "local file")} gated` : "Storage gated",
+    detail: storageQueueDetail(provider.storageQueue),
+    status: "blocked",
+  };
 }
 
 function aiTile(provider: LaunchReadinessProviderInput): LaunchReadinessTile {
@@ -271,6 +314,9 @@ function providerBlockers(provider: LaunchReadinessProviderInput): string[] {
   if (!provider.authConfigured) blockers.push("Production auth is not configured.");
   if (!provider.databaseConfigured) blockers.push("Production household database sync is not configured.");
   if (!provider.storageProviderConfigured) blockers.push("Document storage provider and access rules are not approved.");
+  if (provider.storageProviderConfigured && queueUploadReady(provider.storageQueue) > 0) {
+    blockers.push("Local attachment upload queue needs provider migration verification.");
+  }
   if (!provider.aiProviderConfigured) blockers.push("AI provider key, model policy, and disclosure workflow are not configured.");
   if (!provider.paymentsEnabled) blockers.push("Payments remain blocked until subscription, support, refund, and app-store obligations are approved.");
   return blockers;

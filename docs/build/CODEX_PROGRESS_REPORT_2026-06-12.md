@@ -1129,3 +1129,58 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Production auth/database, storage, AI, payments, push notifications,
   app-store accounts, privacy/legal, support, and self-serve deletion gates still
   need Apollo/provider approval.
+
+## 2026-06-21 Attachment Manifest Storage Backbone
+
+### What Changed
+
+- Added `attachmentManifest.ts`, a shared local media/report manifest that
+  collects medication proof photos, record attachments, Adventure memory photos,
+  Care Pass print artifacts, and QA screenshots into one storage queue.
+- Each manifest item is classified as local-only, upload-ready, or
+  provider-saved based on whether storage provider rules exist.
+- `launchReadiness.ts` now accepts the storage queue so the Records Storage tile
+  can report concrete local files waiting on provider-backed storage instead of
+  vague storage-gated copy.
+- More now derives the manifest from the current care document and passes it
+  into launch readiness.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/attachmentManifest.ts`
+- `artifacts/woofwatcher-mobile/lib/attachmentManifest.test.ts`
+- `artifacts/woofwatcher-mobile/lib/launchReadiness.ts`
+- `artifacts/woofwatcher-mobile/lib/launchReadiness.test.ts`
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused attachment/launch/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/attachmentManifest.test.ts artifacts/woofwatcher-mobile/lib/launchReadiness.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 76 tests.
+- Full behavior/readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 313 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, 149 ok, 0 missing, 0 invalid.
+- Diff hygiene:
+  - Command: `git diff --check`
+  - Result: passed, with Windows line-ending warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-attachment-manifest-export --clear`
+  - Result: passed.
+
+### Remaining Work
+
+- Provider-backed upload/storage still needs Apollo-approved rules for signed
+  access, household scoping, retention, export, deletion, and cross-device
+  migration of the local attachment queue.
