@@ -1,3 +1,9 @@
+import {
+  deriveAttachmentManifest,
+  formatAttachmentManifestSummary,
+  type AttachmentLaunchQueue,
+} from "./attachmentManifest.ts";
+
 export interface PrivacyExportProfile {
   name?: string;
   breed?: string;
@@ -81,6 +87,11 @@ export interface PrivacyExportBundle {
     reportArtifacts: number;
     calendarEvents: number;
     attachedDocuments: number;
+    localAttachments: number;
+  };
+  storage: {
+    attachmentQueue: AttachmentLaunchQueue;
+    attachmentSummary: string;
   };
   care: {
     profile: PrivacyExportProfile | null;
@@ -167,6 +178,16 @@ export function buildPrivacyExportBundle(
   const calendarEvents = safeArray(state.calendarEvents);
   const reportArtifacts = safeArray(state.reportArtifacts);
   const entries = safeArray(state.entries);
+  const attachmentManifest = deriveAttachmentManifest(
+    {
+      entries,
+      records,
+      adventureMemories,
+      reportArtifacts,
+    },
+    { storageProviderConfigured: false },
+  );
+  const attachmentSummary = formatAttachmentManifestSummary(attachmentManifest);
 
   return {
     app: "WoofWatcher",
@@ -192,6 +213,11 @@ export function buildPrivacyExportBundle(
       reportArtifacts: reportArtifacts.length,
       calendarEvents: calendarEvents.length,
       attachedDocuments: attachedDocumentCount(records),
+      localAttachments: attachmentManifest.total,
+    },
+    storage: {
+      attachmentQueue: attachmentManifest.launchQueue,
+      attachmentSummary,
     },
     care: {
       profile: state.profile ?? null,
@@ -211,7 +237,7 @@ export function buildPrivacyExportBundle(
     },
     disclosures: {
       ai: "WoofGuide may summarize owner-entered care context and draft owner-reviewed notes. It is not a veterinary diagnosis or emergency triage.",
-      documents: "Record metadata can be exported here. Real document uploads require approved storage rules before public launch.",
+      documents: `${attachmentSummary} Record metadata can be exported here. Real document uploads require approved storage rules before public launch.`,
       deletion: "Account deletion is not self-serve until provider-backed deletion and audit rules are enabled. Export data before deletion.",
     },
   };
@@ -230,6 +256,8 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
   const storageProviderConfigured = Boolean(input.storageProviderConfigured);
   const aiProviderConfigured = Boolean(input.aiProviderConfigured);
   const paymentsEnabled = Boolean(input.paymentsEnabled);
+  const attachmentManifest = deriveAttachmentManifest(input.state, { storageProviderConfigured });
+  const attachmentSummary = formatAttachmentManifestSummary(attachmentManifest);
 
   if (!accountDeletionEnabled) {
     launchBlockers.push("Self-serve account deletion is not enabled.");
@@ -271,8 +299,10 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
       status: storageProviderConfigured ? "ready" : "blocked",
       title: "Document storage rules",
       detail: storageProviderConfigured
-        ? "Uploaded records must stay household-scoped with reviewable export and deletion rules."
-        : "Uploads stay disabled until storage, signed access, retention, and deletion rules are approved.",
+        ? attachmentManifest.uploadReady > 0
+          ? `${attachmentSummary} Verify provider migration before release.`
+          : "Uploaded records must stay household-scoped with reviewable export and deletion rules."
+        : `${attachmentSummary} Uploads stay disabled until storage, signed access, retention, and deletion rules are approved.`,
       action: "Review rules",
     },
     payments: {
@@ -297,6 +327,8 @@ export function buildAccountDeletionRequest(
   const householdName = context.householdName?.trim() || "Unknown household";
   const userId = context.userId?.trim() || "Unknown user";
   const householdId = context.householdId?.trim() || "Unknown household id";
+  const attachmentManifest = deriveAttachmentManifest(state, { storageProviderConfigured: false });
+  const attachmentSummary = formatAttachmentManifestSummary(attachmentManifest);
 
   return {
     subject: `WoofWatcher Account deletion request - ${name}`,
@@ -312,6 +344,7 @@ export function buildAccountDeletionRequest(
       "Requested scope:",
       "- Delete my account profile and household membership.",
       "- Delete or anonymize care logs, routines, diet profile, pet roster slots, Access Pass drafts, Adventure memories, records, report artifacts, and calendar reminders where legally and technically allowed.",
+      `- Review the local attachment queue before deletion: ${attachmentSummary}`,
       "- Delete generated report artifacts and uploaded documents once production storage exists.",
       "",
       "Safety note: manual review is required before destructive deletion.",

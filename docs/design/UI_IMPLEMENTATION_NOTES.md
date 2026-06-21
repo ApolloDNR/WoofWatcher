@@ -823,3 +823,20 @@ Design intent:
 - Preserve the local-first experience while making the future Supabase/storage
   migration path explicit.
 - Avoid fake cloud sync, fake uploads, or hidden local-only media.
+
+## 2026-06-21 Privacy Files Count
+
+Privacy & Safety now uses the same attachment queue as Launch Readiness:
+
+- The Export summary Files stat counts local proof photos, record attachments,
+  Adventure memory photos, Care Pass print artifacts, and QA screenshots.
+- Launch safety copy names the local queue when uploads are disabled.
+- Deletion request copy explicitly asks for local attachment queue review before
+  destructive deletion.
+
+Design intent:
+
+- Make data ownership feel complete and trustworthy.
+- Keep the owner-facing privacy surface aligned with the real storage model.
+- Avoid implying cloud deletion/export exists before provider object storage is
+  implemented.

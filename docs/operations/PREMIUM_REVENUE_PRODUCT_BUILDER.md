@@ -141,6 +141,13 @@ upload-ready, or provider-saved; and feeds the queue into Launch Readiness. More
 can now show a concrete local-file storage gate without claiming cloud upload,
 cross-device persistence, or provider-backed deletion is active.
 
+The privacy continuation pass wires the same queue into owner data controls.
+Privacy export bundles now include the local attachment queue count/summary, the
+Privacy screen Files stat uses that full queue, document-storage gate copy names
+local queued files, and deletion requests explicitly call for attachment-queue
+review before destructive deletion. Provider object ids, signed downloads,
+retention, and deletion receipts are still future storage-provider work.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete both the Mobile Release QA checklist and the 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm iOS and Android counts are both satisfied, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

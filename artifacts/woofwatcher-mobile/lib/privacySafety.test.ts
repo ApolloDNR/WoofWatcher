@@ -79,7 +79,10 @@ test("builds an owner export bundle with counts and care data", () => {
     reportArtifacts: 1,
     calendarEvents: 1,
     attachedDocuments: 1,
+    localAttachments: 2,
   });
+  assert.equal(bundle.storage.attachmentQueue.total, 2);
+  assert.deepEqual(bundle.storage.attachmentQueue.labels, ["record document", "report artifact"]);
   assert.equal(bundle.care.profile?.name, "Phoenix");
   assert.equal(bundle.care.activePetId, "primary");
   assert.equal(bundle.care.pets[0]?.name, "London");
@@ -89,6 +92,7 @@ test("builds an owner export bundle with counts and care data", () => {
   assert.equal(bundle.care.entries[0]?.id, "meal_1");
   assert.deepEqual(bundle.care.reportArtifacts[0], state.reportArtifacts[0]);
   assert.match(bundle.disclosures.ai, /not a veterinary diagnosis/i);
+  assert.match(bundle.disclosures.documents, /2 local files waiting/i);
 });
 
 test("serializes export without auth tokens or secrets", () => {
@@ -121,6 +125,7 @@ test("derives launch safety plan before storage, deletion, AI, and payments are 
   assert.equal(plan.accountDeletion.status, "manual_required");
   assert.equal(plan.aiDisclosure.status, "limited");
   assert.equal(plan.documentStorage.status, "blocked");
+  assert.match(plan.documentStorage.detail, /2 local files waiting/i);
   assert.equal(plan.payments.status, "blocked");
   assert.ok(plan.launchBlockers.some((blocker) => /account deletion/i.test(blocker)));
   assert.ok(plan.launchBlockers.some((blocker) => /document storage/i.test(blocker)));
@@ -141,4 +146,5 @@ test("builds a non-destructive account deletion request", () => {
   assert.match(request.body, /pet roster slots/i);
   assert.match(request.body, /Access Pass drafts/i);
   assert.match(request.body, /Adventure memories/i);
+  assert.match(request.body, /local attachment queue/i);
 });

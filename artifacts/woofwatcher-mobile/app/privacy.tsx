@@ -146,7 +146,7 @@ export default function PrivacyScreen() {
             <StatCard label="Logs" value={String(bundle.counts.entries)} colors={colors} />
             <StatCard label="Records" value={String(bundle.counts.records)} colors={colors} />
             <StatCard label="Reports" value={String(bundle.counts.reportArtifacts)} colors={colors} />
-            <StatCard label="Files" value={String(bundle.counts.attachedDocuments)} colors={colors} />
+            <StatCard label="Files" value={String(bundle.counts.localAttachments)} colors={colors} />
           </View>
         </BoardCard>
 
