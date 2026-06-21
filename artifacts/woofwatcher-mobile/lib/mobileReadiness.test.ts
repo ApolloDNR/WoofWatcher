@@ -1691,6 +1691,27 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.doesNotMatch(more, /sectionTitle:/);
 });
 
+test("feeds saved native QA session proof into More launch readiness", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const qaEvidence = readMobileLibFile("mobileLaunchQaEvidence.ts");
+
+  assert.match(more, /AsyncStorage/);
+  assert.match(more, /MOBILE_QA_SESSION_STORAGE_KEY/);
+  assert.match(more, /parseMobileQaSessionSnapshot/);
+  assert.match(more, /deriveNativeQaSummaryFromMobileQaSession/);
+  assert.match(more, /savedNativeQaSummary/);
+  assert.match(more, /setSavedNativeQaSummary/);
+  assert.match(more, /nativeQa:\s*savedNativeQaSummary/);
+  assert.doesNotMatch(more, /nativeQa:\s*null/);
+  assert.match(more, /router\.push\("\/care-twin-qa" as never\)/);
+
+  assert.match(qaEvidence, /listMobileLaunchQaSurfaces/);
+  assert.match(qaEvidence, /buildStoreSubmissionScreenshotQaSurfaces/);
+  assert.match(qaEvidence, /summarizeMobileReleaseQaReviews/);
+  assert.match(qaEvidence, /LaunchReadinessNativeQaSummary/);
+  assert.match(qaEvidence, /hasMobileQaSessionReviewData/);
+});
+
 test("keeps care document refresh conflict-safe in CareContext", () => {
   const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
 

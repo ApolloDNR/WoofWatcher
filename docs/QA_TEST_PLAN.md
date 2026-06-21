@@ -255,6 +255,13 @@ screenshots use the same platform-aware evidence controls as the release
 workflow checklist, including explicit iOS and Android screenshot slots, route
 targets, Pass/Needs tune controls, store-safe prompts, and share-report output.
 
+Current evidence, 2026-06-21: saved `/care-twin-qa` release evidence now feeds
+More's Launch Readiness cockpit. `mobileLaunchQaEvidence.ts` builds the combined
+launch/store QA surface set, derives `LaunchReadinessNativeQaSummary` from the
+saved local QA session, and returns `null` for empty sessions so native proof is
+not invented. More reloads that saved session on focus and recalculates Launch
+Readiness from it. Focused saved-QA/mobile readiness tests pass at 73 tests.
+
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.
 

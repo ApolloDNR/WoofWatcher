@@ -206,11 +206,20 @@ native share reports. Store screenshot capture remains preparation evidence only
 until Apollo completes final App Store, Play Store, legal/privacy, support,
 deletion, notification, provider, and native QA approval.
 
+The saved-QA launch-readiness pass closed the loop between the internal QA
+route and the main operator cockpit. `mobileLaunchQaEvidence.ts` derives the
+combined launch/store QA surface list and turns the saved `/care-twin-qa`
+session into the exact native QA summary used by `deriveLaunchReadiness`, while
+returning `null` for empty sessions. More reloads the saved session on focus, so
+real iOS/Android evidence can move the launch tile from generic "Device proof
+required" to the specific missing evidence state without claiming store
+approval.
+
 Next highest-impact work:
 
-1. Commit/push the store screenshot QA cockpit slice, trigger GitHub verify,
-   and document the remote CI blocker if it repeats.
-2. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete both the Mobile Release QA checklist and the 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm iOS and Android counts are both satisfied, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
+1. Commit/push the saved-QA launch-readiness slice, trigger GitHub verify, and
+   document the remote CI blocker if it repeats.
+2. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete the Mobile Release QA checklist, Store Screenshot QA checklist, and 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
 3. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 4. Continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.

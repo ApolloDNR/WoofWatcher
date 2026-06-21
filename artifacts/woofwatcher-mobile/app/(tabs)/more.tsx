@@ -1,7 +1,8 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -47,10 +48,16 @@ import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRo
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
   deriveLaunchReadiness,
+  type LaunchReadinessNativeQaSummary,
   type LaunchReadinessOverallStatus,
   type LaunchReadinessTileKey,
   type LaunchReadinessTileStatus,
 } from "@/lib/launchReadiness";
+import { deriveNativeQaSummaryFromMobileQaSession } from "@/lib/mobileLaunchQaEvidence";
+import {
+  MOBILE_QA_SESSION_STORAGE_KEY,
+  parseMobileQaSessionSnapshot,
+} from "@/lib/mobileQaSession";
 import { buildReleasePacket, buildReleasePacketShareText } from "@/lib/releasePacket";
 import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
 import { deriveSupportRunbookPlan } from "@/lib/supportRunbook";
@@ -374,6 +381,28 @@ export default function MoreScreen() {
   const [dAppetiteQuirks, setDAppetiteQuirks] = useState("");
   const [dVetNotes, setDVetNotes] = useState("");
   const [dSupplements, setDSupplements] = useState("");
+  const [savedNativeQaSummary, setSavedNativeQaSummary] =
+    useState<LaunchReadinessNativeQaSummary | null>(null);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let cancelled = false;
+
+      AsyncStorage.getItem(MOBILE_QA_SESSION_STORAGE_KEY)
+        .then((raw) => {
+          if (cancelled) return;
+          const savedSession = parseMobileQaSessionSnapshot(raw);
+          setSavedNativeQaSummary(deriveNativeQaSummaryFromMobileQaSession(savedSession));
+        })
+        .catch(() => {
+          if (!cancelled) setSavedNativeQaSummary(null);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
 
   const memberColor = (idx: number) => {
     const palette = [colors.primary, colors.copper, colors.sage, colors.amber, colors.rose];
@@ -754,7 +783,7 @@ export default function MoreScreen() {
   const launchReadinessPlan = useMemo(
     () =>
       deriveLaunchReadiness({
-        nativeQa: null,
+        nativeQa: savedNativeQaSummary,
         local: {
           careWorkflowsReady: true,
           easProfilesReady: true,
@@ -783,6 +812,7 @@ export default function MoreScreen() {
       me.data?.user?.id,
       household,
       privacyLegalOwnerReviewed,
+      savedNativeQaSummary,
       supportRunbookOwnerReviewed,
       syncDashboard.status,
     ],

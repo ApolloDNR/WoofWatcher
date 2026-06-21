@@ -983,3 +983,24 @@ Design intent:
   polish.
 - Preserve trust: store screenshots are evidence for review, not submission
   approval.
+
+## 2026-06-21 Saved QA Proof In Launch Readiness
+
+More's Launch Readiness card now reacts to the saved `/care-twin-qa` session:
+
+- `mobileLaunchQaEvidence.ts` builds the same launch/store QA surface set used
+  by the QA cockpit and derives the native QA summary from saved status, notes,
+  and screenshot evidence.
+- More reloads that local QA session on focus, so returning from the QA route
+  can update the iOS + Android launch tile from generic device-proof copy to the
+  exact missing-evidence state.
+- Empty sessions intentionally return no native QA summary. This prevents the UI
+  from implying device proof exists just because a local QA route is present.
+
+Design intent:
+
+- Make launch readiness feel connected to real review work.
+- Keep the visual system honest: progress is earned by attached device evidence,
+  not decorative status badges.
+- Give Apollo, Fable, and future QA collaborators a direct loop from screenshot
+  capture to launch decision clarity.

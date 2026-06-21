@@ -78,6 +78,13 @@ controls, notes, explicit iOS screenshot slot, explicit Android screenshot slot,
 and store-safety prompt. Store screenshot evidence helps prepare the listing;
 it does not approve submission.
 
+As of 2026-06-21, More's Launch Readiness cockpit reads the same saved local QA
+session. After attaching real device screenshots and marking surfaces, return to
+More and verify the iOS + Android tile no longer stays at generic "Device proof
+required"; it should show the derived missing iOS, Android, or flexible
+evidence counts from the saved `/care-twin-qa` session. If the QA session is
+empty, More intentionally keeps native proof blocked.
+
 Each state card also shows a Motion recipe generated from the same choreography
 model Home uses. Reviewers should confirm the primary loop, ambient micro-loops,
 and tap reaction match the state: happy states may bark/playfully react, rest

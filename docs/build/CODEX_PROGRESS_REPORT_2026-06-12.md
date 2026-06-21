@@ -1350,6 +1350,59 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Continue local launch-hardening while the recurring GitHub Actions
   billing/spending-limit blocker prevents remote CI from executing jobs.
 
+## 2026-06-21 - Saved QA Proof Feeds Launch Readiness
+
+### What Changed
+
+- Added `mobileLaunchQaEvidence.ts`, a shared model that builds the combined
+  Mobile Release QA plus Store Screenshot QA surface set and converts a saved
+  `/care-twin-qa` session into the native QA summary expected by
+  `deriveLaunchReadiness`.
+- Kept the launch model truthful: empty or purely unreviewed QA sessions return
+  `null`, so More still says native proof is required until there is actual
+  status, notes, or screenshot evidence.
+- More now reloads the saved mobile QA session from AsyncStorage when the screen
+  receives focus, derives the native QA summary, and feeds it into Launch
+  Readiness instead of hardcoding `nativeQa: null`.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+
+### Tests And Checks Run
+
+- Focused saved QA/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 73 tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 330 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with Windows CRLF warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-saved-qa-launch-export --clear`
+  - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-saved-qa-launch-export`.
+
+### Remaining Work
+
+- Commit/push this slice, trigger GitHub verify, and record whether the
+  recurring pre-job billing blocker repeats.
+- Real iOS and Android QA is still required before launch confidence. The app
+  can now reflect saved proof in More, but the proof must still be captured on
+  devices or simulators through `/care-twin-qa`.
+
 ## 2026-06-21 Store Screenshot QA Cockpit
 
 ### What Changed
