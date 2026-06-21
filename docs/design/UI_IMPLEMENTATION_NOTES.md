@@ -961,3 +961,25 @@ Design intent:
 - Keep App Store / Play Store submission copy truthful: preparation is allowed,
   approval is not implied.
 - Make screenshot and privacy-review needs visible in the app, not just docs.
+
+## 2026-06-21 Store Screenshot QA Cockpit
+
+The internal `/care-twin-qa` route now turns store-submission screenshot needs
+into real QA work, not a static checklist:
+
+- `mobileReleaseQa.ts` maps the Store Submission screenshot checklist into
+  phone-review surfaces with explicit iOS and Android evidence requirements.
+- The QA cockpit now has a Store Screenshot QA section with a store-boundary
+  card, share action, and per-screen Pass/Needs tune cards.
+- Store screenshots feed the same platform evidence math as the launch workflow
+  surfaces, so the cockpit can show how many iOS/Android slots remain open.
+- Store prompts ask reviewers to avoid private household data and unfinished
+  provider claims in screenshots.
+
+Design intent:
+
+- Make App Store / Play Store preparation operational and visual.
+- Keep screenshot capture tied to the actual app routes Fable/Replit/Apollo will
+  polish.
+- Preserve trust: store screenshots are evidence for review, not submission
+  approval.

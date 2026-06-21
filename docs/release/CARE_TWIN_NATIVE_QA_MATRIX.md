@@ -61,6 +61,23 @@ Android count toward Android slots. Web/unknown attachments remain visible in
 the report but must not be used as native release proof. Do not mark the device
 pass complete until both the iOS and Android counts satisfy the required slots.
 
+As of 2026-06-21, `/care-twin-qa` also includes Store Screenshot QA generated
+from the Store Submission packet. Use those cards to capture App Store and Play
+Store screenshot evidence for:
+
+- Phoenix Home.
+- Quick Log.
+- Plans & Schedule.
+- Health Watch.
+- Care Pass.
+- Avatar Studio.
+- Privacy & Launch Gates.
+
+Each store screenshot card has its own route-open action, Pass/Needs tune
+controls, notes, explicit iOS screenshot slot, explicit Android screenshot slot,
+and store-safety prompt. Store screenshot evidence helps prepare the listing;
+it does not approve submission.
+
 Each state card also shows a Motion recipe generated from the same choreography
 model Home uses. Reviewers should confirm the primary loop, ambient micro-loops,
 and tap reaction match the state: happy states may bark/playfully react, rest
@@ -109,6 +126,10 @@ For every scenario below:
 - Records Incident Watch screenshot showing trend signal, follow-up tasks, trainer goals, and non-diagnostic boundary language.
 - Trainer Care Pass screenshot or shared text snippet showing Incident Watch trend/follow-up/goal lines.
 - Combined Mobile Release QA share report from `/care-twin-qa`.
+- Store Screenshot QA attachments for Phoenix Home, Quick Log, Plans &
+  Schedule, Health Watch, Care Pass, Avatar Studio, and Privacy & Launch Gates
+  on both iOS and Android.
+- Store Submission packet share text from `/care-twin-qa`.
 - Attached screenshot evidence names visible in the shared QA report for each reviewed surface/state.
 - Notes for any clipped sprite, weak gait, unreadable action, duplicate dog, or room/sprite scale mismatch.
 

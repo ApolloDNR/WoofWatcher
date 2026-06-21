@@ -21,6 +21,15 @@ Latest local evidence, 2026-06-20:
 - PREVIOUS 2026-06-19: Headless Chrome visual smoke captured `/portrait` and Home from the exported web build; this was not rerun in the 2026-06-20 platform-evidence slice.
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` is currently blocked before job start by the account billing/spending-limit issue documented in `docs/BLOCKERS_FOR_APOLLO.md`. Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 
+Latest local evidence, 2026-06-21:
+
+- PASS: 326 behavior/readiness tests with bundled Node across `artifacts\woofwatcher-mobile\lib\*.test.ts` and `lib\care-domain\test\*.test.ts`.
+- PASS: 75 focused mobile QA/readiness tests covering Store Screenshot QA, platform evidence, and static mobile route wiring.
+- PASS: mobile TypeScript check with bundled Node and workspace TypeScript.
+- PASS: PixelLab asset verifier checked 149 registered assets with 0 missing and 0 invalid.
+- PASS: Expo web export completed to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-store-screenshot-qa-export`.
+- PASS: `/care-twin-qa` now turns Store Submission screenshot checklist rows into iOS/Android store screenshot QA surfaces with route-open actions, Pass/Needs tune controls, notes, store-safe prompts, and native share packet output.
+
 ## Required Automated Coverage
 
 - Event taxonomy and normalization.
@@ -73,6 +82,7 @@ Latest local evidence, 2026-06-20:
 - Expo app identity smoke for release-grade slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
 - Expo/EAS release profile smoke for committed iOS/Android development, preview, production, and submit paths.
 - Mobile release runbook smoke for iOS, Android, TestFlight, Google Play, Fable, and web dashboard/PWA handoff coverage.
+- Store submission screenshot QA surfaces derived from the Store Submission packet, including iOS/Android evidence slots, route targets, store-safe prompts, launch-risk copy, and `/care-twin-qa` wiring.
 - CI `build:ci` runs a mobile Expo web export smoke and verifies emitted HTML/JavaScript assets.
 
 ## Manual Mobile QA
@@ -164,6 +174,9 @@ Latest local evidence, 2026-06-20:
 85. Open Records Incident Watch and confirm the trend signal, 7/30/lookback counts, follow-up plan, trainer goals, and non-diagnostic boundary are visible.
 86. Tap an Incident Watch follow-up row and confirm it routes to the Incident composer or trainer Care Pass preview instead of becoming a dead recommendation.
 87. Preview a trainer Care Pass and confirm Incident Watch includes trend, owner follow-ups, trainer goal ideas, and factual non-diagnostic language.
+88. Open `/care-twin-qa`, review the Store Screenshot QA section, and confirm it lists Phoenix Home, Quick Log, Plans & Schedule, Health Watch, Care Pass, Avatar Studio, and Privacy & Launch Gates as store screenshot surfaces.
+89. For each Store Screenshot QA surface, open the target route, capture one iOS screenshot and one Android screenshot, attach each screenshot back to the matching store card, and confirm the platform evidence counts update separately.
+90. Share the QA summary and confirm the report includes the Store Submission packet plus the store screenshot surface notes without claiming App Store or Play Store approval.
 
 ## Missing QA
 
@@ -235,6 +248,12 @@ count toward Android slots, and web/unknown attachments stay visible without
 falsely satisfying native proof. The Mobile Release QA cockpit header and share
 report show iOS and Android coverage separately, and the care-twin matrix report
 lists attached screenshot platforms beside file names.
+
+Current evidence, 2026-06-21: `/care-twin-qa` now also includes Store
+Screenshot QA surfaces generated from the Store Submission packet. Store
+screenshots use the same platform-aware evidence controls as the release
+workflow checklist, including explicit iOS and Android screenshot slots, route
+targets, Pass/Needs tune controls, store-safe prompts, and share-report output.
 
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.

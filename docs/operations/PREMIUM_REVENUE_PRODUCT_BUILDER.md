@@ -196,10 +196,20 @@ action inside Launch Readiness. This is preparation only; final Apple, Google,
 legal/privacy, support, deletion, notification, native-QA, and provider approvals
 still control public launch.
 
+The store screenshot QA cockpit pass connected that packet to the actual device
+review path. `mobileReleaseQa.ts` now converts the Store Submission screenshot
+checklist into route-targeted QA surfaces with explicit iOS and Android
+evidence slots, and `/care-twin-qa` renders those screens under Store Screenshot
+QA. The same cockpit now tracks launch workflow screenshots, store listing
+screenshots, care-twin state screenshots, notes, Pass/Needs tune status, and
+native share reports. Store screenshot capture remains preparation evidence only
+until Apollo completes final App Store, Play Store, legal/privacy, support,
+deletion, notification, provider, and native QA approval.
+
 Next highest-impact work:
 
-1. Commit/push the store submission packet slice, trigger GitHub verify, and
-   document the remote CI blocker if it repeats.
+1. Commit/push the store screenshot QA cockpit slice, trigger GitHub verify,
+   and document the remote CI blocker if it repeats.
 2. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete both the Mobile Release QA checklist and the 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm iOS and Android counts are both satisfied, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
 3. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 4. Continue screen-by-screen polish, accessibility traversal, and visual regression.

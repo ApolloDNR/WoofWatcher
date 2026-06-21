@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildStoreSubmissionScreenshotQaSurfaces,
   buildMobileReleaseQaShareText,
   formatMobileReleaseQaMissingEvidence,
   formatMobileReleaseQaPlatformEvidence,
@@ -12,6 +13,7 @@ import {
   summarizeMobileReleaseQaReviews,
   type MobileReleaseQaReview,
 } from "./mobileReleaseQa.ts";
+import type { StoreSubmissionPacket } from "./storeSubmissionPacket.ts";
 
 test("lists the launch-critical mobile QA surfaces for the next native pass", () => {
   const surfaces = listMobileReleaseQaSurfaces();
@@ -155,6 +157,54 @@ test("keeps flexible screenshot slots separate from required iOS and Android pro
 
   assert.equal(mobileReleaseQaScreenshotEvidenceComplete(complete), true);
   assert.equal(formatMobileReleaseQaMissingEvidence(complete), "All required platform evidence attached");
+});
+
+test("turns the store submission screenshot checklist into device QA surfaces", () => {
+  const packet: StoreSubmissionPacket = {
+    title: "WoofWatcher Store Submission Packet",
+    buildName: "candidate",
+    generatedAtLabel: "Jun 21, 2026",
+    submissionReady: false,
+    verdictLabel: "Submission prep only",
+    metadata: {
+      appName: "WoofWatcher",
+      subtitle: "Real care. Pixel heart.",
+      shortDescription: "Dog care, logs, records, and a living pixel care twin.",
+      fullDescription: "Store draft.",
+      category: "Lifestyle",
+      contentBoundary: "Owner-reviewed care organization only.",
+    },
+    keywords: ["dog care"],
+    screenshotChecklist: [
+      {
+        screen: "Phoenix Home",
+        requirement: "Capture iOS and Android hero screenshots showing the pixel care twin.",
+        status: "needed",
+      },
+      {
+        screen: "Privacy & Launch Gates",
+        requirement: "Capture export, deletion request, support runbook, and launch-gate truth before submission.",
+        status: "blocked",
+      },
+    ],
+    reviewNotes: ["Not approved for App Store or Play Store submission."],
+    privacyDisclosures: ["Care logs may be stored."],
+    blockedUntil: ["Native iOS/Android QA evidence is not attached."],
+  };
+
+  const surfaces = buildStoreSubmissionScreenshotQaSurfaces(packet);
+  const ids = surfaces.map((surface) => surface.id);
+
+  assert.deepEqual(ids, ["store-phoenix-home", "store-privacy-launch-gates"]);
+  assert.equal(surfaces[0].route, "/");
+  assert.equal(surfaces[1].route, "/privacy");
+  assert.equal(surfaces[0].priority, "release-polish");
+  assert.equal(surfaces[1].priority, "launch-critical");
+  assert.match(surfaces[0].title, /Store: Phoenix Home/);
+  assert.match(surfaces[0].devicePrompt, /App Store and Play Store/);
+  assert.match(surfaces[0].requiredEvidence.join("\n"), /iOS screenshot for store packet/);
+  assert.match(surfaces[0].requiredEvidence.join("\n"), /Android screenshot for store packet/);
+  assert.match(surfaces[1].launchRisk, /blocked/);
 });
 
 test("builds a release QA share report with the screenshot boundary intact", () => {

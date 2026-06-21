@@ -24,6 +24,7 @@ import {
   type CareTwinQaReviewStatus,
 } from "@/lib/careTwinQaReport";
 import {
+  buildStoreSubmissionScreenshotQaSurfaces,
   buildMobileReleaseQaShareText,
   formatMobileReleaseQaMissingEvidence,
   formatMobileReleaseQaPlatformEvidence,
@@ -41,8 +42,11 @@ import {
   parseMobileQaSessionSnapshot,
 } from "@/lib/mobileQaSession";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
+import { deriveLaunchReadiness } from "@/lib/launchReadiness";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { buildQaScreenshotEvidence, type QaScreenshotEvidence, type QaScreenshotEvidencePlatform } from "@/lib/qaScreenshotEvidence";
+import { buildReleasePacket } from "@/lib/releasePacket";
+import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -173,6 +177,52 @@ export default function CareTwinQaScreen() {
     [],
   );
   const releaseSurfaces = useMemo(() => listMobileReleaseQaSurfaces(), []);
+  const storeLaunchReadinessPlan = useMemo(
+    () =>
+      deriveLaunchReadiness({
+        nativeQa: null,
+        local: {
+          careWorkflowsReady: true,
+          easProfilesReady: true,
+          pixelAssetsReady: true,
+          privacyExportReady: true,
+        },
+        provider: {
+          authConfigured: false,
+          databaseConfigured: false,
+          storageProviderConfigured: false,
+          aiProviderConfigured: false,
+          paymentsEnabled: false,
+          accountDeletionEnabled: false,
+          pushNotificationsConfigured: false,
+          appStoreAccountsReady: false,
+          privacyLegalApproved: false,
+          supportRunbookApproved: false,
+        },
+        syncStatus: "healthy",
+      }),
+    [],
+  );
+  const storeReleasePacket = useMemo(
+    () =>
+      buildReleasePacket(storeLaunchReadinessPlan, {
+        appName: "WoofWatcher",
+        buildName: "mobile screenshot candidate",
+      }),
+    [storeLaunchReadinessPlan],
+  );
+  const storeSubmissionPacket = useMemo(
+    () => buildStoreSubmissionPacket(storeReleasePacket),
+    [storeReleasePacket],
+  );
+  const storeScreenshotSurfaces = useMemo(
+    () => buildStoreSubmissionScreenshotQaSurfaces(storeSubmissionPacket),
+    [storeSubmissionPacket],
+  );
+  const releaseQaSurfaces = useMemo(
+    () => [...releaseSurfaces, ...storeScreenshotSurfaces],
+    [releaseSurfaces, storeScreenshotSurfaces],
+  );
   const readyCount = scenarios.filter((result) => result.readiness.layeredReady).length;
   const qaReviews = useMemo<CareTwinQaReview[]>(
     () =>
@@ -190,17 +240,17 @@ export default function CareTwinQaScreen() {
   );
   const releaseReviews = useMemo<MobileReleaseQaReview[]>(
     () =>
-      releaseSurfaces.map((surface) => ({
+      releaseQaSurfaces.map((surface) => ({
         surfaceId: surface.id,
         status: surfaceStatusById[surface.id] ?? "unreviewed",
         note: surfaceNotes[surface.id]?.trim(),
         screenshotEvidence: surfaceEvidenceById[surface.id],
       })),
-    [releaseSurfaces, surfaceEvidenceById, surfaceNotes, surfaceStatusById],
+    [releaseQaSurfaces, surfaceEvidenceById, surfaceNotes, surfaceStatusById],
   );
   const releaseSummary = useMemo(
-    () => summarizeMobileReleaseQaReviews(releaseSurfaces, releaseReviews),
-    [releaseReviews, releaseSurfaces],
+    () => summarizeMobileReleaseQaReviews(releaseQaSurfaces, releaseReviews),
+    [releaseQaSurfaces, releaseReviews],
   );
   const releaseScreenshotEvidenceComplete = mobileReleaseQaScreenshotEvidenceComplete(releaseSummary);
   const releasePlatformEvidenceLabel = formatMobileReleaseQaPlatformEvidence(releaseSummary);
@@ -337,7 +387,8 @@ export default function CareTwinQaScreen() {
   const shareQaSummary = async () => {
     const reviewedAtIso = new Date().toISOString();
     const message = [
-      buildMobileReleaseQaShareText(releaseSurfaces, releaseReviews, reviewedAtIso),
+      buildMobileReleaseQaShareText(releaseQaSurfaces, releaseReviews, reviewedAtIso),
+      buildStoreSubmissionPacketShareText(storeSubmissionPacket),
       buildCareTwinQaShareText(scenarios, qaReviews, reviewedAtIso),
     ].join("\n\n");
 
@@ -348,6 +399,17 @@ export default function CareTwinQaScreen() {
       });
     } catch {
       Alert.alert("Share failed", "Could not open the native share sheet for this QA report.");
+    }
+  };
+
+  const shareStoreSubmissionPacket = async () => {
+    try {
+      await Share.share({
+        title: storeSubmissionPacket.title,
+        message: buildStoreSubmissionPacketShareText(storeSubmissionPacket),
+      });
+    } catch {
+      Alert.alert("Store Submission", buildStoreSubmissionPacketShareText(storeSubmissionPacket));
     }
   };
 
@@ -435,7 +497,7 @@ export default function CareTwinQaScreen() {
                       {surface.title}
                     </Text>
                     <Text style={[s.surfaceRoute, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      {surface.route} · {surface.priority === "launch-critical" ? "Launch critical" : "Release polish"}
+                      {surface.route} - {surface.priority === "launch-critical" ? "Launch critical" : "Release polish"}
                     </Text>
                   </View>
                 </View>
@@ -524,6 +586,185 @@ export default function CareTwinQaScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Open QA surface: ${surface.title}`}
+                onPress={() => openSurface(surface)}
+                style={({ pressed }) => [
+                  s.openSurfaceButton,
+                  {
+                    backgroundColor: pressed ? `${colors.sage}1A` : colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text style={[s.openSurfaceText, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>
+                  Open surface
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.brandNavy} />
+              </Pressable>
+            </BoardCard>
+          );
+        })}
+
+        <BoardSectionHeader title="Store Screenshot QA" action={storeSubmissionPacket.verdictLabel} />
+
+        <BoardCard style={s.surfaceCard}>
+          <View style={s.surfaceHeader}>
+            <View style={s.surfaceTitleWrap}>
+              <View style={[s.surfaceIcon, { backgroundColor: `${colors.copper}18` }]}>
+                <Ionicons name="storefront-outline" size={18} color={colors.copper} />
+              </View>
+              <View style={s.surfaceTitleCopy}>
+                <Text style={[s.surfaceTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                  {storeSubmissionPacket.title}
+                </Text>
+                <Text style={[s.surfaceRoute, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  {storeSubmissionPacket.metadata.subtitle} - {storeSubmissionPacket.metadata.category}
+                </Text>
+              </View>
+            </View>
+            <QaBadge label={`${storeSubmissionPacket.screenshotChecklist.length} store screens`} tone={colors.copper} />
+          </View>
+          <Text style={[s.surfaceGoal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+            {storeSubmissionPacket.metadata.shortDescription}
+          </Text>
+          <View style={[s.promptBox, { backgroundColor: colors.accent, borderColor: colors.border }]}>
+            <Text style={[s.promptLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+              Store boundary
+            </Text>
+            <Text style={[s.promptText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+              Capture truthful App Store and Play Store screenshots only. Do not show private household data or claim live AI, cloud storage, payments, or submission approval until those gates are actually closed.
+            </Text>
+          </View>
+          {storeSubmissionPacket.blockedUntil.slice(0, 2).map((blocker) => (
+            <View key={blocker} style={s.evidenceRow}>
+              <Ionicons name="warning-outline" size={14} color={colors.amber} />
+              <Text style={[s.evidenceText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                {blocker}
+              </Text>
+            </View>
+          ))}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Share WoofWatcher store submission packet from QA"
+            onPress={shareStoreSubmissionPacket}
+            style={({ pressed }) => [
+              s.shareButton,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.brandNavy,
+                borderColor: colors.brandNavy,
+              },
+            ]}
+          >
+            <Ionicons name="share-outline" size={18} color="#FFF9EF" />
+            <Text style={[s.shareButtonText, { fontFamily: "Inter_700Bold" }]}>Share store packet</Text>
+          </Pressable>
+        </BoardCard>
+
+        {storeScreenshotSurfaces.map((surface) => {
+          const reviewStatus = surfaceStatusById[surface.id] ?? "unreviewed";
+          const reviewTone = statusTone(reviewStatus, colors);
+          const attachedScreenshots = surfaceEvidenceById[surface.id] ?? [];
+
+          return (
+            <BoardCard key={surface.id} style={s.surfaceCard}>
+              <View style={s.surfaceHeader}>
+                <View style={s.surfaceTitleWrap}>
+                  <View style={[s.surfaceIcon, { backgroundColor: `${colors.copper}18` }]}>
+                    <Ionicons name="images-outline" size={18} color={colors.copper} />
+                  </View>
+                  <View style={s.surfaceTitleCopy}>
+                    <Text style={[s.surfaceTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                      {surface.title}
+                    </Text>
+                    <Text style={[s.surfaceRoute, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      {surface.route} - {surface.priority === "launch-critical" ? "Store blocker" : "Store screenshot"}
+                    </Text>
+                  </View>
+                </View>
+                <QaBadge label={mobileReleaseQaStatusLabel(reviewStatus)} tone={reviewTone} />
+              </View>
+
+              <Text style={[s.surfaceGoal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {surface.goal}
+              </Text>
+              <View style={[s.promptBox, { backgroundColor: colors.accent, borderColor: colors.border }]}>
+                <Text style={[s.promptLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                  Store prompt
+                </Text>
+                <Text style={[s.promptText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {surface.devicePrompt}
+                </Text>
+              </View>
+
+              <View style={s.evidenceList}>
+                {surface.requiredEvidence.map((evidence) => (
+                  <View key={evidence} style={s.evidenceRow}>
+                    <Ionicons name="camera-outline" size={14} color={colors.copper} />
+                    <Text style={[s.evidenceText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      {evidence}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              <EvidenceCapture
+                label={`${attachedScreenshots.length} attached`}
+                evidence={attachedScreenshots}
+                onAttach={() => attachSurfaceScreenshot(surface)}
+                onClear={() =>
+                  setSurfaceEvidenceById((current) => ({
+                    ...current,
+                    [surface.id]: [],
+                  }))
+                }
+              />
+
+              <Text style={[s.launchRisk, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
+                Release risk: {surface.launchRisk}
+              </Text>
+
+              <View style={s.reviewGrid}>
+                <ReviewButton
+                  active={reviewStatus === "pass"}
+                  icon="checkmark-circle"
+                  label="Pass"
+                  onPress={() => markSurface(surface.id, "pass")}
+                  tone={colors.sage}
+                />
+                <ReviewButton
+                  active={reviewStatus === "needs-review"}
+                  icon="build"
+                  label="Needs tune"
+                  onPress={() => markSurface(surface.id, "needs-review")}
+                  tone={colors.amber}
+                />
+              </View>
+
+              <TextInput
+                accessibilityLabel={`Store QA notes for ${surface.title}`}
+                multiline
+                onChangeText={(text) =>
+                  setSurfaceNotes((current) => ({
+                    ...current,
+                    [surface.id]: text,
+                  }))
+                }
+                placeholder="Store notes: screenshot frame, privacy, claim accuracy, crop, App Store or Play Store fit..."
+                placeholderTextColor={colors.mutedForeground}
+                style={[
+                  s.noteInput,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.foreground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+                value={surfaceNotes[surface.id] ?? ""}
+              />
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Open store QA surface: ${surface.title}`}
                 onPress={() => openSurface(surface)}
                 style={({ pressed }) => [
                   s.openSurfaceButton,

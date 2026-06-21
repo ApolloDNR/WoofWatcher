@@ -300,6 +300,14 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /buildCareTwinQaShareText/);
   assert.match(qaRoute, /listMobileReleaseQaSurfaces/);
   assert.match(qaRoute, /buildMobileReleaseQaShareText/);
+  assert.match(qaRoute, /buildStoreSubmissionScreenshotQaSurfaces/);
+  assert.match(qaRoute, /buildStoreSubmissionPacket/);
+  assert.match(qaRoute, /buildStoreSubmissionPacketShareText/);
+  assert.match(qaRoute, /buildReleasePacket/);
+  assert.match(qaRoute, /deriveLaunchReadiness/);
+  assert.match(qaRoute, /storeSubmissionPacket\.screenshotChecklist/);
+  assert.match(qaRoute, /Store Screenshot QA/);
+  assert.match(qaRoute, /Share store packet/);
   assert.match(qaRoute, /AsyncStorage/);
   assert.match(qaRoute, /MOBILE_QA_SESSION_STORAGE_KEY/);
   assert.match(qaRoute, /parseMobileQaSessionSnapshot/);

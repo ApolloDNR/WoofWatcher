@@ -1350,6 +1350,63 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Continue local launch-hardening while the recurring GitHub Actions
   billing/spending-limit blocker prevents remote CI from executing jobs.
 
+## 2026-06-21 Store Screenshot QA Cockpit
+
+### What Changed
+
+- Connected the store submission screenshot checklist to the internal native QA
+  cockpit instead of leaving store screenshots as a separate handoff note.
+- `mobileReleaseQa.ts` now maps store submission checklist rows into mobile QA
+  surfaces with explicit iOS screenshot, Android screenshot, store-note, route,
+  priority, and launch-risk fields.
+- `/care-twin-qa` now renders a Store Screenshot QA section, includes those
+  store screenshot surfaces in platform evidence counts, and can share the
+  Store Submission packet directly from the QA route.
+- The store QA copy keeps the product truthful: screenshots are preparation
+  evidence, not App Store, Play Store, legal, provider, payment, AI, storage,
+  push, or account-deletion approval.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/mobileReleaseQa.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts`
+- `artifacts/woofwatcher-mobile/app/care-twin-qa.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
+- `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`
+
+### Tests And Checks Run
+
+- Focused store QA/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 75 tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 326 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with Windows CRLF warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-store-screenshot-qa-export --clear`
+  - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-store-screenshot-qa-export`.
+
+### Remaining Work
+
+- Commit/push this slice, trigger GitHub verify, and document the remote CI
+  result. Native iOS/Android screenshots still need real device or simulator
+  execution.
+
 ## 2026-06-21 Store Submission Packet
 
 ### What Changed

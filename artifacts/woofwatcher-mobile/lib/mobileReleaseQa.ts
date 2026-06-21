@@ -1,5 +1,6 @@
 import type { QaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
 import { qaScreenshotEvidenceNames } from "./qaScreenshotEvidence.ts";
+import type { StoreSubmissionPacket, StoreScreenshotChecklistItem } from "./storeSubmissionPacket.ts";
 
 export type MobileReleaseQaReviewStatus = "unreviewed" | "pass" | "needs-review";
 
@@ -138,6 +139,61 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If trainer handoff language is vague, the feature loses the premium report value that supports Family/Pro packaging.",
   },
 ];
+
+function slugForQaId(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function routeForStoreScreenshot(screen: string): string {
+  const normalized = screen.toLowerCase();
+  if (normalized.includes("phoenix") || normalized.includes("home")) return "/";
+  if (normalized.includes("quick log") || normalized.includes("log")) return "/log";
+  if (normalized.includes("plans") || normalized.includes("schedule")) return "/calendar";
+  if (normalized.includes("health")) return "/health";
+  if (normalized.includes("care pass")) return "/records";
+  if (normalized.includes("avatar")) return "/portrait";
+  if (normalized.includes("privacy") || normalized.includes("launch gates")) return "/privacy";
+  return "/care-twin-qa";
+}
+
+function storeScreenshotEvidenceFor(item: StoreScreenshotChecklistItem): string[] {
+  const evidence = [
+    `iOS screenshot for store packet: ${item.screen}.`,
+    `Android screenshot for store packet: ${item.screen}.`,
+    `Store note: ${item.requirement}`,
+  ];
+
+  if (item.status === "blocked") {
+    evidence.push("Screenshot or note showing why this store claim remains blocked before submission.");
+  }
+
+  return evidence;
+}
+
+export function buildStoreSubmissionScreenshotQaSurfaces(
+  packet: StoreSubmissionPacket,
+): readonly MobileReleaseQaSurface[] {
+  return packet.screenshotChecklist.map((item) => {
+    const blocked = item.status === "blocked";
+    return {
+      id: `store-${slugForQaId(item.screen)}`,
+      title: `Store: ${item.screen}`,
+      route: routeForStoreScreenshot(item.screen),
+      priority: blocked ? "launch-critical" : "release-polish",
+      goal: `Capture store-ready ${item.screen} evidence for ${packet.title}.`,
+      devicePrompt: `${item.requirement} Use App Store and Play Store safe frames, avoid private household data, and keep unfinished provider claims out of the screenshot.`,
+      requiredEvidence: storeScreenshotEvidenceFor(item),
+      launchRisk: blocked
+        ? `Store checklist marks ${item.screen} as blocked; do not submit until the blocker is closed and re-captured.`
+        : `If ${item.screen} is missing, the store listing cannot show the product promise with truthful visual proof.`,
+    };
+  });
+}
 
 function reviewFor(
   reviews: readonly MobileReleaseQaReview[],
