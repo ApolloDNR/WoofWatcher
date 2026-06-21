@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-21: Route-Local Actions Use The Shared 48px Touch Target
+
+Decision: Plans add/discover controls, Log sync/detail controls, the Premium hero mark, and Setup finish-later action should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of local 40-42px boxes.
+
+Reason: Native accessibility traversal is still waiting on simulator/device access, and these route-local controls sit outside the shared board primitive layer. Reusing the existing 48px contract keeps compact route actions aligned with the mobile tap-target baseline without adding a new visual system.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows a route needs different sizing, final Figma/native components replace these route-local controls, or platform-specific accessibility guidance requires separate iOS/Android values.
+
 ### 2026-06-21: Inline Route Actions Use Shared Mobile Hit Slop
 
 Decision: Home, Plans, More, Records, Privacy, and WoofGuide inline icon/text actions should use `MOBILE_INLINE_HIT_SLOP` from the shared mobile layout helper instead of route-local `hitSlop={8}` or `hitSlop={10}` literals.

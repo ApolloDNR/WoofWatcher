@@ -33,6 +33,7 @@ import {
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
   MOBILE_INLINE_HIT_SLOP,
+  MIN_MOBILE_TOUCH_TARGET,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
@@ -1175,7 +1176,7 @@ const s = StyleSheet.create({
   headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
-  addBtn: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  addBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, alignItems: "center", justifyContent: "center" },
 
   discoverCard: {
     flexDirection: "row",
@@ -1195,7 +1196,7 @@ const s = StyleSheet.create({
   discoverPanel: { borderRadius: 20, padding: 14, marginTop: 10, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
   discoverInputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   discoverInput: { flex: 1, fontSize: 15, paddingVertical: 8 },
-  discoverGo: { paddingHorizontal: 18, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", minWidth: 64 },
+  discoverGo: { paddingHorizontal: 18, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13, alignItems: "center", justifyContent: "center", minWidth: 64 },
   discoverGoText: { color: "#fff", fontSize: 14 },
   discoverHint: { fontSize: 12, lineHeight: 17, marginTop: 10, marginBottom: 4 },
 
@@ -1204,7 +1205,7 @@ const s = StyleSheet.create({
   sugTitle: { fontSize: 14.5 },
   sugMeta: { fontSize: 12, marginTop: 2 },
   sugNote: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
-  sugAdd: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  sugAdd: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
 
   scheduleCard: { marginBottom: 14 },
   scheduleTabs: {

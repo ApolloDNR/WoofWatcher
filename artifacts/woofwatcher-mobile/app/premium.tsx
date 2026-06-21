@@ -24,7 +24,7 @@ import {
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getStandaloneRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -321,8 +321,8 @@ const s = StyleSheet.create({
   },
   heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   heroMark: {
-    width: 42,
-    height: 42,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 14,
     backgroundColor: "rgba(255,255,255,0.16)",
     alignItems: "center",

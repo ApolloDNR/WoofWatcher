@@ -447,6 +447,38 @@ test("keeps route inline action hit slop on the shared mobile contract", () => {
   }
 });
 
+test("keeps route-local action controls on the shared mobile touch target", () => {
+  const routeFiles = [
+    join("(tabs)", "calendar.tsx"),
+    join("(tabs)", "log.tsx"),
+    "premium.tsx",
+    "setup.tsx",
+  ];
+
+  for (const file of routeFiles) {
+    const source = readAppFile(file);
+    assert.match(source, /MIN_MOBILE_TOUCH_TARGET/, `${file} should import the shared touch target`);
+  }
+
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const premium = readAppFile("premium.tsx");
+  const setup = readAppFile("setup.tsx");
+
+  assert.match(calendar, /addBtn: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /addBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /discoverGo: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /sugAdd: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /sugAdd: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(log, /syncBtn: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(log, /syncBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(log, /detailIconBtn: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(log, /detailIconBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(premium, /heroMark: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(premium, /heroMark: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(setup, /laterBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+});
+
 test("keeps floating tab safe-area spacing on shared mobile layout helpers", () => {
   const tabLayout = readAppFile(join("(tabs)", "_layout.tsx"));
   const home = readAppFile(join("(tabs)", "index.tsx"));

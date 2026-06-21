@@ -37,7 +37,14 @@ import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { getCenteredModalBackdropPadding, getKeyboardAvoidingVerticalOffset, getModalSheetBottomPadding, getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getCenteredModalBackdropPadding,
+  getKeyboardAvoidingVerticalOffset,
+  getModalSheetBottomPadding,
+  getRouteTopPadding,
+  getTabbedRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
+} from "@/lib/mobileLayout";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -2756,7 +2763,7 @@ const s = StyleSheet.create({
 
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 18 },
   headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  syncBtn: { width: 40, height: 40, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  syncBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
 
@@ -3184,7 +3191,7 @@ const s = StyleSheet.create({
   detailPrimaryBtn: { flex: 1, height: 48, borderRadius: 15, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   detailPrimaryText: { color: "#fff", fontSize: 14.5 },
   detailIconActions: { flexDirection: "row", gap: 7 },
-  detailIconBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  detailIconBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   editSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
   editHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   editSheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },

@@ -26,6 +26,7 @@ Latest local evidence, 2026-06-20:
 - PASS: WoofGuide owner-review draft sheets now use the shared modal-sheet safe-area contract, and mobile readiness protects the assistant review surface from reverting to fixed-only sheet padding before native screenshot QA is available.
 - PASS: keyboard-heavy Setup, WoofGuide, Log sticky-note prompt, and Records sheet surfaces now use the shared keyboard-avoidance safe-area contract, with focused flat/notched/web coverage and static readiness checks before native screenshot QA is available.
 - PASS: inline route actions now use `MOBILE_INLINE_HIT_SLOP` from the shared mobile layout contract, and static readiness protects Home, Plans, More, Records, Privacy, and WoofGuide from reverting to literal route-local hit slop before native accessibility traversal is available.
+- PASS: route-local action controls now use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout contract, and static readiness protects Plans add/discover controls, Log sync/detail controls, Premium hero mark, and Setup finish-later action from drifting below 48px before native accessibility traversal is available.
 - LIMIT: mobile TypeScript could not run in this checkout because `node_modules/typescript` is missing (`tsc-missing`).
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` runs continue to fail before job start or without executing workflow steps with GitHub's account billing/spending-limit blocker; checked examples include `27865345974` for commit `5159a3b`, `27865371635` for commit `24d8575`, `27869581404` for commit `8d08825`, `27873733286` for commit `f542db3`, `27878278274` for commit `c915eac`, `27882750930` for commit `de55710`, and `27890798715` for commit `0ce53ea`. Run `27890798715` completed in 5 seconds, its `Install, Test, Typecheck, Build` job had `steps: []`, and the failed-job log was absent (`log not found: 82533812340`). Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 
@@ -74,6 +75,7 @@ Latest local evidence, 2026-06-20:
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
 - Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, Records printable report and Dog ID actions, Hydration/Walk/Potty Records wiring, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
+- Route-local mobile action control touch-target readiness for Plans, Log, Premium, and Setup actions.
 - Expo app identity smoke for release-grade slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
 - Expo/EAS release profile smoke for committed iOS/Android development, preview, production, and submit paths.
 - Mobile release runbook smoke for iOS, Android, TestFlight, Google Play, Fable, and web dashboard/PWA handoff coverage.

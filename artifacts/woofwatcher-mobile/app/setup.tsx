@@ -17,7 +17,12 @@ import { deriveOnboardingStatus } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
-import { getKeyboardAvoidingVerticalOffset, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getKeyboardAvoidingVerticalOffset,
+  getRouteTopPadding,
+  getStandaloneRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
+} from "@/lib/mobileLayout";
 import {
   applySetupWizardDraft,
   createSetupWizardDraft,
@@ -311,6 +316,6 @@ const s = StyleSheet.create({
   actions: { gap: 12, marginTop: 8 },
   saveBtn: { height: 54, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   saveText: { color: "#fff", fontSize: 15.5 },
-  laterBtn: { height: 42, alignItems: "center", justifyContent: "center" },
+  laterBtn: { minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   laterText: { fontSize: 14 },
 });
