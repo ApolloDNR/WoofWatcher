@@ -1350,6 +1350,62 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Continue local launch-hardening while the recurring GitHub Actions
   billing/spending-limit blocker prevents remote CI from executing jobs.
 
+## 2026-06-21 Store Submission Packet
+
+### What Changed
+
+- Added `storeSubmissionPacket.ts` to derive an App Store / Play Store prep
+  packet from the existing launch release packet.
+- The packet includes metadata draft, short and full descriptions, keyword
+  draft, screenshot checklist, store review notes, privacy disclosures, and
+  blocked-until gates.
+- More now renders a Store Submission panel inside Launch Readiness with the
+  store-prep verdict, screenshot count, short description, first review note,
+  and a separate Share Store Packet action.
+- Store-prep copy explicitly avoids claiming public download, submission
+  approval, veterinary advice, AI readiness, storage readiness, payments, or
+  provider-backed sync before those gates are actually closed.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/storeSubmissionPacket.ts`
+- `artifacts/woofwatcher-mobile/lib/storeSubmissionPacket.test.ts`
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused store submission/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/storeSubmissionPacket.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 72 tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 325 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with Windows CRLF warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-store-submission-export --clear`
+  - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-store-submission-export`.
+
+### Remote Verification
+
+- Pending until this slice completes the full local gate, commit, and push.
+
+### Remaining Work
+
+- Trigger GitHub Actions verify after push and document the result.
+
 ## 2026-06-21 Owner-Staged Launch Cockpit
 
 ### What Changed

@@ -52,6 +52,7 @@ import {
   type LaunchReadinessTileStatus,
 } from "@/lib/launchReadiness";
 import { buildReleasePacket, buildReleasePacketShareText } from "@/lib/releasePacket";
+import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
 import { deriveSupportRunbookPlan } from "@/lib/supportRunbook";
 import {
   getModalSheetBottomPadding,
@@ -813,11 +814,23 @@ export default function MoreScreen() {
       }),
     [launchReadinessPlan, now],
   );
+  const launchStoreSubmissionPacket = useMemo(
+    () => buildStoreSubmissionPacket(launchReleasePacket),
+    [launchReleasePacket],
+  );
+  const storeSubmissionTone = launchStoreSubmissionPacket.submissionReady ? colors.sage : colors.amber;
 
   const shareLaunchPacket = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Share.share({ message: buildReleasePacketShareText(launchReleasePacket), title: launchReleasePacket.title }).catch(() =>
       Alert.alert("Launch Packet", buildReleasePacketShareText(launchReleasePacket)),
+    );
+  };
+
+  const shareStoreSubmissionPacket = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Share.share({ message: buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket), title: launchStoreSubmissionPacket.title }).catch(() =>
+      Alert.alert("Store Submission", buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket)),
     );
   };
 
@@ -1168,6 +1181,36 @@ export default function MoreScreen() {
             >
               <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
               <Text style={[s.launchShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share Launch Packet</Text>
+            </Pressable>
+            <View style={[s.launchPacket, { backgroundColor: storeSubmissionTone + "10", borderColor: storeSubmissionTone + "33" }]}>
+              <View style={[s.launchScore, { backgroundColor: storeSubmissionTone + "18" }]}>
+                <Text style={[s.launchScoreValue, { color: storeSubmissionTone, fontFamily: DISPLAY_SEMI }]}>
+                  {launchStoreSubmissionPacket.screenshotChecklist.length}
+                </Text>
+                <Text style={[s.launchScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  screens
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.launchPacketTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                  Store Submission - {launchStoreSubmissionPacket.verdictLabel}
+                </Text>
+                <Text style={[s.launchPacketCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {launchStoreSubmissionPacket.metadata.shortDescription} {launchStoreSubmissionPacket.reviewNotes[0]}
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Share WoofWatcher store submission packet"
+              onPress={shareStoreSubmissionPacket}
+              style={({ pressed }) => [
+                s.launchShare,
+                { backgroundColor: colors.copper, opacity: pressed ? 0.84 : 1 },
+              ]}
+            >
+              <Ionicons name="storefront-outline" size={16} color="#FFFFFF" />
+              <Text style={[s.launchShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share Store Packet</Text>
             </Pressable>
           </BoardCard>
 

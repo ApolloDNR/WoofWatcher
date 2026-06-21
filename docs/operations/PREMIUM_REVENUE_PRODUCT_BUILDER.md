@@ -187,9 +187,18 @@ and `supportRunbook.ts`, so the launch cockpit can say "Owner packet staged"
 while still naming the remaining final legal/provider, support/provider,
 app-store account, notification, and account-deletion approvals.
 
+The store submission packet pass made store-prep actionable without pretending
+the app is approved for submission. `storeSubmissionPacket.ts` derives App
+Store/Play Store metadata draft, keyword draft, screenshot checklist, review
+notes, privacy disclosures, and blocked-until gates from the release packet.
+More now shows this as a Store Submission panel and a separate native share
+action inside Launch Readiness. This is preparation only; final Apple, Google,
+legal/privacy, support, deletion, notification, native-QA, and provider approvals
+still control public launch.
+
 Next highest-impact work:
 
-1. Commit/push the owner-staged launch cockpit slice, trigger GitHub verify, and
+1. Commit/push the store submission packet slice, trigger GitHub verify, and
    document the remote CI blocker if it repeats.
 2. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete both the Mobile Release QA checklist and the 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm iOS and Android counts are both satisfied, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
 3. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.

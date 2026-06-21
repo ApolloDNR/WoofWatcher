@@ -940,3 +940,24 @@ Design intent:
 - Keep Apollo's next action clear: owner packet staged locally, final approvals
   still required before public launch.
 - Preserve the app's launch-truth doctrine in both the UI and shared model.
+
+## 2026-06-21 Store Submission Packet
+
+More's Launch Readiness surface now includes a separate Store Submission prep
+panel:
+
+- `storeSubmissionPacket.ts` converts the release packet into store metadata,
+  keyword draft, screenshot checklist, review notes, privacy disclosures, and
+  blocked-until gates.
+- The More screen shows the store-prep verdict, screenshot count, short
+  description, and first review note directly under the release packet.
+- A separate Share Store Packet action exports the store-prep text without
+  mixing it up with the operator launch packet.
+
+Design intent:
+
+- Help Apollo and future store-prep collaborators move faster without hiding
+  blockers.
+- Keep App Store / Play Store submission copy truthful: preparation is allowed,
+  approval is not implied.
+- Make screenshot and privacy-review needs visible in the app, not just docs.
