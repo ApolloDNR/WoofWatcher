@@ -64,6 +64,7 @@ import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
@@ -2228,9 +2229,9 @@ const s = StyleSheet.create({
     marginTop: 6,
   },
   medSearchInput: { flex: 1, fontSize: 13.5, minHeight: 26, paddingVertical: 0 },
-  medSearchClear: { width: 26, height: 26, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  medSearchClear: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   medFilterRow: { gap: 7, paddingVertical: 9 },
-  medFilterPill: { borderWidth: 1, borderRadius: 13, paddingHorizontal: 11, paddingVertical: 7 },
+  medFilterPill: { borderWidth: 1, borderRadius: 13, paddingHorizontal: 13, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   medFilterText: { fontSize: 11.5 },
   medHistorySummary: { fontSize: 12, lineHeight: 17, marginBottom: 1 },
   medHistoryRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12 },
@@ -2254,7 +2255,7 @@ const s = StyleSheet.create({
   reportArtifactRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13 },
   reportArtifactActions: { alignItems: "flex-end", gap: 8 },
   reportArtifactButtonRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  artifactIconButton: { width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  artifactIconButton: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   artifactBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
   artifactBadgeText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
 
@@ -2305,9 +2306,10 @@ const s = StyleSheet.create({
   segRow: { flexDirection: "row", borderRadius: 14, padding: 4, marginBottom: 16 },
   segPill: {
     flex: 1,
-    paddingVertical: 9,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 11,
     alignItems: "center",
+    justifyContent: "center",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,

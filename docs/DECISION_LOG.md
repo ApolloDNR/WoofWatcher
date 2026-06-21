@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-21: Compact Search Report And Household Controls Use The Shared 48px Touch Target
+
+Decision: Quick Log type chips, timeline filters, search clear, Records medication search/filter controls, report artifact actions, report period tabs, More invite, and dog-profile unit pills should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local sub-48px sizing.
+
+Reason: Native accessibility traversal is still waiting on simulator/device access, and these controls sit in high-frequency care review workflows: filtering logs, searching medication evidence, resending/printing reports, switching report periods, inviting household caregivers, and editing profile units. Reusing the 48px contract reduces tap-risk without changing care data behavior or claiming native QA has run.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows these controls need different sizing, final Figma/native components replace the current route-local controls, or platform-specific accessibility guidance requires separate iOS/Android values.
+
 ### 2026-06-21: Plans Schedule And Routine Controls Use The Shared 48px Touch Target
 
 Decision: Plans schedule tabs, the schedule mark-done status control, the Daily Routine add button, and routine done buttons should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 21/30/32/36px sizing.

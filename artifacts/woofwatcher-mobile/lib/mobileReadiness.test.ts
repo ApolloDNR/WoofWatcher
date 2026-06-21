@@ -452,6 +452,8 @@ test("keeps route-local action controls on the shared mobile touch target", () =
     join("(tabs)", "calendar.tsx"),
     join("(tabs)", "log.tsx"),
     join("(tabs)", "health.tsx"),
+    join("(tabs)", "more.tsx"),
+    join("(tabs)", "records.tsx"),
     "premium.tsx",
     "setup.tsx",
   ];
@@ -464,6 +466,8 @@ test("keeps route-local action controls on the shared mobile touch target", () =
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const health = readAppFile(join("(tabs)", "health.tsx"));
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const records = readAppFile(join("(tabs)", "records.tsx"));
   const premium = readAppFile("premium.tsx");
   const setup = readAppFile("setup.tsx");
 
@@ -483,9 +487,21 @@ test("keeps route-local action controls on the shared mobile touch target", () =
   assert.match(log, /syncBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(log, /detailIconBtn: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(log, /detailIconBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(log, /typeChip: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(log, /filterChip: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(log, /searchClear: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(log, /searchClear: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(health, /tabPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(health, /heroActionPrimary: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(health, /heroActionSecondary: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(more, /shareBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(more, /unitPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(records, /medSearchClear: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(records, /medSearchClear: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(records, /medFilterPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(records, /artifactIconButton: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(records, /artifactIconButton: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(records, /segPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(premium, /heroMark: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(premium, /heroMark: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(setup, /laterBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);

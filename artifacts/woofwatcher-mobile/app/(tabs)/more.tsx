@@ -44,6 +44,7 @@ import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
@@ -1704,7 +1705,7 @@ const s = StyleSheet.create({
   },
   codeLabel: { fontSize: 10.5, letterSpacing: 0.6 },
   codeValue: { fontSize: 21, letterSpacing: 1, marginTop: 3 },
-  shareBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, height: 40, borderRadius: 13 },
+  shareBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 16, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13 },
   shareBtnText: { color: "#fff", fontSize: 14 },
 
   signOut: {
@@ -1801,7 +1802,7 @@ const s = StyleSheet.create({
   profField: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   profWeightRow: { flexDirection: "row", alignItems: "flex-end", gap: 12 },
   unitRow: { flexDirection: "row", gap: 8, paddingBottom: 1 },
-  unitPill: { paddingHorizontal: 16, paddingVertical: 11, borderRadius: 13, borderWidth: 1 },
+  unitPill: { paddingHorizontal: 16, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   unitText: { fontSize: 14 },
   profSaveBtn: { marginTop: 24, borderRadius: 15, paddingVertical: 15, alignItems: "center" },
   profSaveBtnText: { color: "#fff", fontSize: 15.5 },

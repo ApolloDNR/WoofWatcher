@@ -158,6 +158,8 @@ Current evidence, 2026-06-21: Health/Bile Watch route controls now derive their 
 
 Current evidence, 2026-06-21: Plans schedule and routine controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of local 21/30/32/36px sizing. Focused readiness protects the schedule tabs, schedule mark-done status control, Daily Routine add button, and routine done button before native accessibility traversal is available.
 
+Current evidence, 2026-06-21: Log, Records, and More compact owner-action controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of route-local sub-48px sizing. Focused readiness protects Quick Log type chips, timeline filters, search clear, Records medication search/filter controls, report artifact actions, report period tabs, More invite, and dog-profile unit pills before native accessibility traversal is available.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety
