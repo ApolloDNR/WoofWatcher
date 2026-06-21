@@ -148,6 +148,13 @@ local queued files, and deletion requests explicitly call for attachment-queue
 review before destructive deletion. Provider object ids, signed downloads,
 retention, and deletion receipts are still future storage-provider work.
 
+The privacy queue review pass makes that queue owner-visible. Privacy export
+bundles now include grouped review rows and the mobile Privacy screen renders
+care proof photos, record documents, Adventure memories, Care Pass reports, and
+QA screenshots with counts, status labels, safe action copy, and sample
+filenames. The product remains truthful: rows stay local/provider-gated until
+approved storage rules exist.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete both the Mobile Release QA checklist and the 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm iOS and Android counts are both satisfied, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

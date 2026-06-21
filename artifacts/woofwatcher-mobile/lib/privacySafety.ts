@@ -1,6 +1,8 @@
 import {
+  buildAttachmentReviewRows,
   deriveAttachmentManifest,
   formatAttachmentManifestSummary,
+  type AttachmentReviewRow,
   type AttachmentLaunchQueue,
 } from "./attachmentManifest.ts";
 
@@ -91,6 +93,7 @@ export interface PrivacyExportBundle {
   };
   storage: {
     attachmentQueue: AttachmentLaunchQueue;
+    attachmentReviewRows: AttachmentReviewRow[];
     attachmentSummary: string;
   };
   care: {
@@ -217,6 +220,7 @@ export function buildPrivacyExportBundle(
     },
     storage: {
       attachmentQueue: attachmentManifest.launchQueue,
+      attachmentReviewRows: buildAttachmentReviewRows(attachmentManifest),
       attachmentSummary,
     },
     care: {

@@ -94,6 +94,8 @@ test("keeps launch-blocking safety copy on premium, privacy, and WoofGuide surfa
   assert.match(privacySurface, /document storage/i);
   assert.match(privacyModel, /deriveAttachmentManifest/);
   assert.match(privacy, /bundle\.counts\.localAttachments/);
+  assert.match(privacy, /Attachment queue/);
+  assert.match(privacy, /bundle\.storage\.attachmentReviewRows/);
   assert.match(woofGuide, /Owner review required/);
 });
 

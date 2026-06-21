@@ -27,6 +27,7 @@ import {
   type AccountSafetySection,
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
+import type { AttachmentReviewRow } from "@/lib/attachmentManifest";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -43,6 +44,21 @@ function statusColor(status: AccountSafetyStatus, colors: ReturnType<typeof useC
   if (status === "limited") return colors.amber;
   if (status === "manual_required") return colors.copper;
   return colors.rose;
+}
+
+function attachmentIcon(kind: AttachmentReviewRow["kind"]): keyof typeof Ionicons.glyphMap {
+  if (kind === "care-log-proof") return "camera-outline";
+  if (kind === "record-document") return "document-text-outline";
+  if (kind === "adventure-memory") return "map-outline";
+  if (kind === "report-artifact") return "receipt-outline";
+  return "phone-portrait-outline";
+}
+
+function attachmentStatusColor(status: AttachmentReviewRow["status"], colors: ReturnType<typeof useColors>): string {
+  if (status === "synced") return colors.sage;
+  if (status === "upload-ready") return colors.amber;
+  if (status === "provider-required") return colors.copper;
+  return colors.mutedForeground;
 }
 
 export default function PrivacyScreen() {
@@ -150,6 +166,24 @@ export default function PrivacyScreen() {
           </View>
         </BoardCard>
 
+        <BoardCard style={s.privacyBoard}>
+          <BoardSectionHeader title="Attachment queue" action={`${bundle.storage.attachmentQueue.total} files`} />
+          <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            {bundle.storage.attachmentSummary}
+          </Text>
+          <View style={s.queueStack}>
+            {bundle.storage.attachmentReviewRows.length > 0 ? (
+              bundle.storage.attachmentReviewRows.map((row) => (
+                <AttachmentQueueRow key={row.kind} row={row} colors={colors} />
+              ))
+            ) : (
+              <Text style={[s.emptyQueue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                No proof photos, record uploads, memories, reports, or QA screenshots are waiting for storage.
+              </Text>
+            )}
+          </View>
+        </BoardCard>
+
         <View style={s.actionRow}>
           <Pressable
             onPress={shareExport}
@@ -242,6 +276,41 @@ function SafetyRow({
   );
 }
 
+function AttachmentQueueRow({
+  row,
+  colors,
+}: {
+  row: AttachmentReviewRow;
+  colors: ReturnType<typeof useColors>;
+}) {
+  const tone = attachmentStatusColor(row.status, colors);
+  return (
+    <View style={[s.queueRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      <View style={[s.queueIcon, { backgroundColor: tone + "16" }]}>
+        <Ionicons name={attachmentIcon(row.kind)} size={17} color={tone} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <View style={s.queueTop}>
+          <Text style={[s.queueTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{row.label}</Text>
+          <Text style={[s.queueCount, { color: tone, fontFamily: "Inter_700Bold" }]}>
+            {row.count} {row.count === 1 ? "file" : "files"}
+          </Text>
+        </View>
+        <Text style={[s.queueStatus, { color: tone, fontFamily: "Inter_700Bold" }]}>{row.statusLabel}</Text>
+        <Text style={[s.queueDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          {row.detail}
+        </Text>
+        {row.sampleFileNames.length > 0 ? (
+          <Text numberOfLines={1} style={[s.queueFiles, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+            {row.sampleFileNames.join(", ")}
+          </Text>
+        ) : null}
+        <Text style={[s.queueAction, { color: tone, fontFamily: "Inter_700Bold" }]}>{row.actionLabel}</Text>
+      </View>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   root: { flex: 1 },
   hero: { borderRadius: 26, padding: 22, minHeight: 230, justifyContent: "space-between" },
@@ -261,6 +330,18 @@ const s = StyleSheet.create({
   statTile: { width: "48.5%", borderRadius: 16, borderWidth: 1, padding: 15 },
   statValue: { fontSize: 24 },
   statLabel: { fontSize: 11.5, marginTop: 3, textTransform: "uppercase", letterSpacing: 0.6 },
+  queueSummary: { fontSize: 12.5, lineHeight: 18, marginBottom: 10 },
+  queueStack: { gap: 10 },
+  queueRow: { flexDirection: "row", gap: 12, borderRadius: 18, borderWidth: 1, padding: 14 },
+  queueIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  queueTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  queueTitle: { flex: 1, fontSize: 14.5 },
+  queueCount: { fontSize: 11.5, textTransform: "uppercase" },
+  queueStatus: { fontSize: 11.5, marginTop: 4, textTransform: "uppercase" },
+  queueDetail: { fontSize: 12.5, lineHeight: 18, marginTop: 5 },
+  queueFiles: { fontSize: 11.5, marginTop: 6 },
+  queueAction: { fontSize: 12, marginTop: 8 },
+  emptyQueue: { fontSize: 12.5, lineHeight: 18 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 14 },
   primaryBtn: { flex: 1.2, height: 52, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   primaryText: { color: "#FFFFFF", fontSize: 14 },

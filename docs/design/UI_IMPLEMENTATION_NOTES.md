@@ -840,3 +840,20 @@ Design intent:
 - Keep the owner-facing privacy surface aligned with the real storage model.
 - Avoid implying cloud deletion/export exists before provider object storage is
   implemented.
+
+## 2026-06-21 Privacy Attachment Queue Review
+
+Privacy & Safety now shows a real Attachment queue board:
+
+- Each local file class is grouped by source: care proof photos, record
+  documents, Adventure memories, Care Pass reports, and QA screenshots.
+- Rows show count, status, safe action, storage-boundary detail, and sample
+  filenames.
+- Empty state copy stays explicit instead of implying hidden cloud sync.
+
+Design intent:
+
+- Make owner data control feel complete and navigable.
+- Keep local-first storage limits visible without turning the screen into a
+  technical admin console.
+- Prepare the surface for provider object ids and signed downloads later.

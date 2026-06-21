@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildAttachmentReviewRows,
   deriveAttachmentManifest,
   formatAttachmentManifestSummary,
   type AttachmentManifestInput,
@@ -113,4 +114,28 @@ test("does not invent storage work when there are no local attachments", () => {
   assert.equal(manifest.status, "empty");
   assert.equal(manifest.launchQueue.total, 0);
   assert.equal(formatAttachmentManifestSummary(manifest), "No local files are waiting for storage.");
+});
+
+test("builds owner-facing attachment review rows by source kind", () => {
+  const manifest = deriveAttachmentManifest(mixedLocalState, { storageProviderConfigured: false });
+  const rows = buildAttachmentReviewRows(manifest);
+
+  assert.deepEqual(
+    rows.map((row) => row.label),
+    ["Care proof photos", "Record documents", "Adventure memories", "Care Pass reports", "QA screenshots"],
+  );
+  assert.equal(rows[0]?.count, 1);
+  assert.equal(rows[0]?.statusLabel, "Waiting for storage rules");
+  assert.equal(rows[0]?.actionLabel, "Keep local");
+  assert.deepEqual(rows[0]?.sampleFileNames, ["heartgard-proof.jpg"]);
+  assert.match(rows[0]?.detail ?? "", /signed access, retention, export, and deletion/i);
+});
+
+test("marks attachment review rows upload-ready after provider storage is configured", () => {
+  const manifest = deriveAttachmentManifest(mixedLocalState, { storageProviderConfigured: true });
+  const rows = buildAttachmentReviewRows(manifest);
+
+  assert.equal(rows[0]?.statusLabel, "Ready for provider upload");
+  assert.equal(rows[0]?.actionLabel, "Verify migration");
+  assert.match(rows[0]?.detail ?? "", /ready to migrate/i);
 });

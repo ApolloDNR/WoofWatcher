@@ -83,6 +83,11 @@ test("builds an owner export bundle with counts and care data", () => {
   });
   assert.equal(bundle.storage.attachmentQueue.total, 2);
   assert.deepEqual(bundle.storage.attachmentQueue.labels, ["record document", "report artifact"]);
+  assert.deepEqual(
+    bundle.storage.attachmentReviewRows.map((row) => row.label),
+    ["Record documents", "Care Pass reports"],
+  );
+  assert.equal(bundle.storage.attachmentReviewRows[0]?.statusLabel, "Waiting for storage rules");
   assert.equal(bundle.care.profile?.name, "Phoenix");
   assert.equal(bundle.care.activePetId, "primary");
   assert.equal(bundle.care.pets[0]?.name, "London");

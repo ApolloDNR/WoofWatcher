@@ -50,12 +50,42 @@ export interface AttachmentManifest {
   launchQueue: AttachmentLaunchQueue;
 }
 
+export interface AttachmentReviewRow {
+  kind: AttachmentManifestKind;
+  label: string;
+  count: number;
+  localOnly: number;
+  uploadReady: number;
+  providerSaved: number;
+  status: AttachmentManifestStatus;
+  statusLabel: string;
+  detail: string;
+  actionLabel: string;
+  sampleFileNames: string[];
+}
+
 const KIND_LABELS: Record<AttachmentManifestKind, string> = {
   "care-log-proof": "care-log proof",
   "record-document": "record document",
   "adventure-memory": "adventure memory",
   "report-artifact": "report artifact",
   "qa-screenshot": "qa screenshot",
+};
+
+const REVIEW_KIND_ORDER: AttachmentManifestKind[] = [
+  "care-log-proof",
+  "record-document",
+  "adventure-memory",
+  "report-artifact",
+  "qa-screenshot",
+];
+
+const REVIEW_LABELS: Record<AttachmentManifestKind, string> = {
+  "care-log-proof": "Care proof photos",
+  "record-document": "Record documents",
+  "adventure-memory": "Adventure memories",
+  "report-artifact": "Care Pass reports",
+  "qa-screenshot": "QA screenshots",
 };
 
 function clean(value: unknown): string {
@@ -281,6 +311,39 @@ function queueDetail(total: number, labels: readonly string[]): string {
   return `${fileLabel(total)} across ${labels.join(", ")}. Keep them local until storage, signed access, retention, export, and deletion rules are approved.`;
 }
 
+function reviewStatusLabel(status: AttachmentManifestStatus): string {
+  if (status === "provider-required") return "Waiting for storage rules";
+  if (status === "upload-ready") return "Ready for provider upload";
+  if (status === "synced") return "Provider saved";
+  return "No files waiting";
+}
+
+function reviewActionLabel(status: AttachmentManifestStatus): string {
+  if (status === "provider-required") return "Keep local";
+  if (status === "upload-ready") return "Verify migration";
+  if (status === "synced") return "Audit export";
+  return "No action";
+}
+
+function reviewDetail(kind: AttachmentManifestKind, count: number, status: AttachmentManifestStatus): string {
+  const label = KIND_LABELS[kind];
+  const files = plural(count, "file");
+
+  if (status === "upload-ready") {
+    return `${files} of ${label} are ready to migrate into provider storage. Verify object ids, signed access, retention, export, and deletion receipts before release.`;
+  }
+
+  if (status === "synced") {
+    return `${files} of ${label} are saved with the provider. Keep them included in owner export and deletion audit trails.`;
+  }
+
+  return `${files} of ${label} stay local until storage, signed access, retention, export, and deletion rules are approved.`;
+}
+
+function plural(value: number, singular: string, pluralLabel = `${singular}s`): string {
+  return `${value} ${value === 1 ? singular : pluralLabel}`;
+}
+
 export function deriveAttachmentManifest(
   input: AttachmentManifestInput,
   options: AttachmentManifestOptions = {},
@@ -328,4 +391,32 @@ export function formatAttachmentManifestSummary(manifest: AttachmentManifest): s
     return `${fileLabel(manifest.uploadReady)} ready for provider upload.`;
   }
   return `${manifest.providerSaved} ${manifest.providerSaved === 1 ? "file is" : "files are"} stored with the provider.`;
+}
+
+export function buildAttachmentReviewRows(manifest: AttachmentManifest): AttachmentReviewRow[] {
+  return REVIEW_KIND_ORDER.flatMap((kind) => {
+    const items = manifest.items.filter((item) => item.kind === kind);
+    if (!items.length) return [];
+
+    const localOnly = items.filter((item) => item.storageState === "local-only").length;
+    const uploadReady = items.filter((item) => item.storageState === "upload-ready").length;
+    const providerSaved = items.filter((item) => item.storageState === "provider-saved").length;
+    const status = manifestStatus(items.length, localOnly, uploadReady);
+
+    return [
+      {
+        kind,
+        label: REVIEW_LABELS[kind],
+        count: items.length,
+        localOnly,
+        uploadReady,
+        providerSaved,
+        status,
+        statusLabel: reviewStatusLabel(status),
+        detail: reviewDetail(kind, items.length, status),
+        actionLabel: reviewActionLabel(status),
+        sampleFileNames: items.slice(0, 3).map((item) => item.fileName),
+      },
+    ];
+  });
 }

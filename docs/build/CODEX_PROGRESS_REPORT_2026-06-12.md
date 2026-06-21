@@ -1241,3 +1241,55 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Real provider-backed object storage still needs object ids, signed download
   review, retention policy, destructive deletion audit receipts, and native QA
   before the app can promise cross-device uploaded-file durability.
+
+## 2026-06-21 Privacy Attachment Queue Review
+
+### What Changed
+
+- Added grouped owner-facing attachment review rows for care proof photos,
+  record documents, Adventure memories, Care Pass reports, and QA screenshots.
+- Privacy export bundles now include those review rows alongside the attachment
+  queue summary/count.
+- The mobile Privacy & Safety screen now renders an Attachment queue board with
+  status, safe action copy, and sample filenames instead of hiding local files
+  behind a single Files number.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/attachmentManifest.ts`
+- `artifacts/woofwatcher-mobile/lib/attachmentManifest.test.ts`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.ts`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.test.ts`
+- `artifacts/woofwatcher-mobile/app/privacy.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused attachment/privacy/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/attachmentManifest.test.ts artifacts/woofwatcher-mobile/lib/privacySafety.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 78 tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 315 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with Windows CRLF warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-attachment-review-export --clear`
+  - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-attachment-review-export`.
+
+### Remaining Work
+
+- Provider-backed attachment deletion/export guarantees still require approved
+  storage rules, provider object ids, signed download review, retention policy,
+  destructive deletion audit receipts, and native iOS/Android cross-device QA.
