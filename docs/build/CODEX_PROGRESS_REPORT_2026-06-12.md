@@ -1400,12 +1400,15 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Expo web export:
   - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-store-screenshot-qa-export --clear`
   - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-store-screenshot-qa-export`.
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: remote run `27903415928` failed before job execution with job `82567714718`; `gh run view` reported `steps: []`, and `gh run view --log-failed` returned `log not found: 82567714718`.
 
 ### Remaining Work
 
-- Commit/push this slice, trigger GitHub verify, and document the remote CI
-  result. Native iOS/Android screenshots still need real device or simulator
-  execution.
+- Continue local launch-hardening while the recurring GitHub Actions
+  billing/spending-limit blocker prevents remote CI from executing jobs.
+- Native iOS/Android screenshots still need real device or simulator execution.
 
 ## 2026-06-21 Store Submission Packet
 
