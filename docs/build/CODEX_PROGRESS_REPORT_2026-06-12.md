@@ -1354,6 +1354,68 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Continue local launch-hardening while the recurring GitHub Actions
   billing/spending-limit blocker prevents remote CI from executing jobs.
 
+## 2026-06-21 Provider Launch Setup Cockpit
+
+### What Changed
+
+- Added `launchProviderSetup.ts`, a shared model for the eight production
+  provider gates: production auth, household database sync, records/media
+  storage, WoofGuide AI, Plus payments, push notifications, Apple/Google store
+  accounts, and self-serve account deletion.
+- Added `launchProviderProfile` to `CareContext` so Apollo can save provider
+  setup state locally and keep it in sync/export scope with the rest of the
+  care document.
+- Extended Privacy export so owner data includes the provider launch setup
+  profile.
+- Updated More's Launch Readiness cockpit with a Provider Launch Setup panel,
+  Edit Provider Plan sheet, and Share Provider Plan action.
+- Launch Readiness now consumes saved provider gates instead of treating every
+  provider item as a hard-coded false state, while still requiring native QA,
+  legal/support/store approval, and Apollo sign-off.
+- The provider setup model clamps partial `provider-approved` status back to
+  owner-reviewed so the app cannot claim provider approval before all eight
+  gates are ready.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/launchProviderSetup.ts`
+- `artifacts/woofwatcher-mobile/lib/launchProviderSetup.test.ts`
+- `artifacts/woofwatcher-mobile/context/CareContext.tsx`
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.ts`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+
+### Tests And Checks Run
+
+- Focused provider/privacy/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/launchProviderSetup.test.ts artifacts/woofwatcher-mobile/lib/privacySafety.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 78 tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 337 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with Windows CRLF warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-provider-launch-setup-export --clear`
+  - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-provider-launch-setup-export`.
+
+### Remaining Work
+
+- Fill Provider Launch Setup only as real production providers are configured.
+  The app now has the cockpit, but Clerk/Supabase/storage/AI/payments/push/store
+  accounts/account-deletion credentials and approvals still require Apollo and
+  provider action.
+- Run native iOS/Android QA and attach screenshots through `/care-twin-qa`
+  before calling the mobile app store-ready.
+
 ## 2026-06-21 - Saved QA Proof Feeds Launch Readiness
 
 ### What Changed

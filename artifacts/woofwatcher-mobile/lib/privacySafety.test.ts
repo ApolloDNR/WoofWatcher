@@ -35,6 +35,19 @@ const state = {
     ownerReviewedAt: "2026-06-21T10:00:00.000Z",
     providerStatus: "owner-reviewed",
   },
+  launchProviderProfile: {
+    authConfigured: true,
+    databaseConfigured: false,
+    storageProviderConfigured: false,
+    aiProviderConfigured: false,
+    paymentsEnabled: false,
+    pushNotificationsConfigured: false,
+    appStoreAccountsReady: false,
+    accountDeletionEnabled: false,
+    ownerReviewedAt: "2026-06-21T10:05:00.000Z",
+    providerStatus: "owner-reviewed",
+    notes: "Production provider checklist is staged for Apollo review.",
+  },
   accessPasses: [{ id: "access_maya", holderName: "Maya", role: "Sitter", status: "draft" }],
   adventureMemories: [{ id: "memory_1", title: "Wildflower Loop", petName: "Phoenix", storageStatus: "local-draft" }],
   caregivers: [{ name: "Apollo", role: "Owner" }],
@@ -104,6 +117,7 @@ test("builds an owner export bundle with counts and care data", () => {
   assert.equal(bundle.care.pets[0]?.name, "London");
   assert.deepEqual(bundle.care.householdSetup, state.householdSetup);
   assert.deepEqual(bundle.care.launchSupportProfile, state.launchSupportProfile);
+  assert.deepEqual(bundle.care.launchProviderProfile, state.launchProviderProfile);
   assert.equal((bundle.care.accessPasses[0] as { holderName?: string })?.holderName, "Maya");
   assert.equal((bundle.care.adventureMemories[0] as { title?: string })?.title, "Wildflower Loop");
   assert.equal(bundle.care.entries[0]?.id, "meal_1");

@@ -94,6 +94,20 @@ export interface LaunchSupportProfile {
   providerStatus: "local-draft" | "owner-reviewed" | "provider-approved";
 }
 
+export interface LaunchProviderProfile {
+  authConfigured: boolean;
+  databaseConfigured: boolean;
+  storageProviderConfigured: boolean;
+  aiProviderConfigured: boolean;
+  paymentsEnabled: boolean;
+  pushNotificationsConfigured: boolean;
+  appStoreAccountsReady: boolean;
+  accountDeletionEnabled: boolean;
+  ownerReviewedAt?: string;
+  providerStatus: "local-draft" | "owner-reviewed" | "provider-approved";
+  notes: string;
+}
+
 export interface Routine {
   id: string;
   label: string;
@@ -182,6 +196,7 @@ export interface CareDoc {
   caregivers: Caregiver[];
   householdSetup: HouseholdSetup;
   launchSupportProfile: LaunchSupportProfile;
+  launchProviderProfile: LaunchProviderProfile;
   dietProfile: DietProfile;
   routines: Routine[];
   goals: Goal[];
@@ -240,6 +255,18 @@ function getDefaultDoc(): CareDoc {
       incidentResponseApproved: false,
       providerStatus: "local-draft",
     },
+    launchProviderProfile: {
+      authConfigured: false,
+      databaseConfigured: false,
+      storageProviderConfigured: false,
+      aiProviderConfigured: false,
+      paymentsEnabled: false,
+      pushNotificationsConfigured: false,
+      appStoreAccountsReady: false,
+      accountDeletionEnabled: false,
+      providerStatus: "local-draft",
+      notes: "",
+    },
     dietProfile: {
       primaryFood: "",
       normalPortion: "",
@@ -266,6 +293,7 @@ function getDefaultDoc(): CareDoc {
 function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
   const merged = { ...getDefaultDoc(), ...(partial ?? {}) };
   const launchSupportProfile = merged.launchSupportProfile ?? getDefaultDoc().launchSupportProfile;
+  const launchProviderProfile = merged.launchProviderProfile ?? getDefaultDoc().launchProviderProfile;
   return {
     ...merged,
     activePetId: typeof merged.activePetId === "string" && merged.activePetId.trim() ? merged.activePetId : "primary",
@@ -301,6 +329,24 @@ function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
         launchSupportProfile.providerStatus === "provider-approved"
           ? launchSupportProfile.providerStatus
           : "local-draft",
+    },
+    launchProviderProfile: {
+      authConfigured: Boolean(launchProviderProfile.authConfigured),
+      databaseConfigured: Boolean(launchProviderProfile.databaseConfigured),
+      storageProviderConfigured: Boolean(launchProviderProfile.storageProviderConfigured),
+      aiProviderConfigured: Boolean(launchProviderProfile.aiProviderConfigured),
+      paymentsEnabled: Boolean(launchProviderProfile.paymentsEnabled),
+      pushNotificationsConfigured: Boolean(launchProviderProfile.pushNotificationsConfigured),
+      appStoreAccountsReady: Boolean(launchProviderProfile.appStoreAccountsReady),
+      accountDeletionEnabled: Boolean(launchProviderProfile.accountDeletionEnabled),
+      ownerReviewedAt:
+        typeof launchProviderProfile.ownerReviewedAt === "string" ? launchProviderProfile.ownerReviewedAt : undefined,
+      providerStatus:
+        launchProviderProfile.providerStatus === "owner-reviewed" ||
+        launchProviderProfile.providerStatus === "provider-approved"
+          ? launchProviderProfile.providerStatus
+          : "local-draft",
+      notes: typeof launchProviderProfile.notes === "string" ? launchProviderProfile.notes : "",
     },
   };
 }
@@ -748,6 +794,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       caregivers: doc.caregivers,
       householdSetup: doc.householdSetup,
       launchSupportProfile: doc.launchSupportProfile,
+      launchProviderProfile: doc.launchProviderProfile,
       dietProfile: doc.dietProfile,
       routines: doc.routines,
       goals: doc.goals,

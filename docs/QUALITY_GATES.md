@@ -375,6 +375,17 @@ owner/tester script with progress, routes, missing proof, attached counts, and
 the final device-review boundary. More exposes this through `Share QA Plan`
 inside the launch cockpit.
 
+Current evidence, 2026-06-21: Provider launch readiness is now a durable,
+truthful owner workflow. `launchProviderSetup.ts` derives an eight-gate
+production setup plan for auth, database sync, storage, AI, payments, push,
+store accounts, and self-serve deletion; More renders it inside Launch
+Readiness with an edit sheet and share action; `CareContext` persists
+`launchProviderProfile`; Privacy export includes the profile; and the shared
+launch-readiness model consumes the saved gates. The model intentionally clamps
+partial "provider approved" state back to owner-reviewed until every gate is
+ready, and the share packet states that it is not App Store or Play Store
+approval.
+
 Current evidence, 2026-06-19: The Option B living-room polish pass keeps Phoenix as one layered main sprite instead of a second-avatar illusion. Home quick-log actions now request action-specific sprite reactions, the room renderer adds ambient micro-behaviors and rest-state safeguards, Avatar Studio suppresses oversized still/accessory overlays when a live sprite pack is active, and PixelIcon paths use crisp pixel rendering on web.
 
 Current evidence, 2026-06-19: PixelLab subscription review did not promote weaker replacement candidates. The clean single still candidate is archived for reference, while the duplicate/cropped and gray identity-drift candidates are explicitly rejected in the PixelLab generation log. The current hard-pixel Option B runtime family remains the approved live source until native QA or a stronger reference-guided generation beats it.

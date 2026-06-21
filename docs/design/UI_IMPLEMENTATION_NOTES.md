@@ -1043,3 +1043,28 @@ Design intent:
 - Make tester handoff feel professional and operational.
 - Keep the launch boundary explicit: the shared plan guides evidence capture,
   not App Store or Play Store approval.
+
+## 2026-06-21 Provider Launch Setup
+
+Launch Readiness now includes an operator-grade provider setup panel:
+
+- The panel shows Provider Launch Setup progress as a compact score plus the
+  first open/ready production gates, matching the premium board-card visual
+  language instead of adding a generic settings table.
+- Edit Provider Plan opens a bottom sheet with checkbox-style production gates
+  for auth, database, storage, AI, payments, push, store accounts, and account
+  deletion.
+- Share Provider Plan exports the same setup model as plain text for Apollo,
+  Fable/Replit, or a developer handoff.
+- The UI copy keeps the boundary visible: provider setup is not App Store or
+  Play Store approval, and partial approval is treated as owner-reviewed until
+  every gate is actually ready.
+
+Design intent:
+
+- Move launch work from vague blocker lists into the app's actual operating
+  cockpit.
+- Keep final production setup calm, serious, and truthful while still feeling
+  like part of the WoofWatcher system.
+- Make the final handoff easier for Apollo: one screen now shows native QA,
+  provider setup, launch packet, and store packet.

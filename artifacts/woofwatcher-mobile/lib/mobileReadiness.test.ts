@@ -1650,6 +1650,8 @@ test("keeps CareTwin roster readiness visible without fake multi-dog switching",
 test("keeps More household, tools, and diet sections on shared board card anatomy", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const launchModel = readMobileLibFile("launchReadiness.ts");
+  const providerSetup = readMobileLibFile("launchProviderSetup.ts");
+  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
 
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="CareTwin Roster"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Team"/);
@@ -1662,6 +1664,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /deriveAttachmentManifest/);
   assert.match(more, /deriveLaunchReadiness/);
   assert.match(more, /deriveSupportRunbookPlan/);
+  assert.match(more, /deriveLaunchProviderSetup/);
+  assert.match(more, /buildLaunchProviderSetupShareText/);
   assert.match(more, /buildReleasePacket/);
   assert.match(more, /buildReleasePacketShareText/);
   assert.match(more, /buildStoreSubmissionPacket/);
@@ -1673,12 +1677,22 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /launchReleasePacket\.readinessScore/);
   assert.match(more, /launchStoreSubmissionPacket\.verdictLabel/);
   assert.match(more, /Store Submission/);
+  assert.match(more, /Provider Launch Setup/);
+  assert.match(more, /Edit Provider Plan/);
+  assert.match(more, /Share Provider Plan/);
+  assert.match(more, /PROVIDER_SETUP_FIELDS\.every\(\(field\) => normalized\[field\.key\]\)/);
   assert.match(more, /Share Store Packet/);
   assert.match(more, /Share Launch Packet/);
+  assert.match(more, /accessibilityLabel="Edit WoofWatcher provider launch setup"/);
+  assert.match(more, /accessibilityLabel="Share WoofWatcher provider setup plan"/);
   assert.match(more, /accessibilityLabel="Share WoofWatcher release packet"/);
   assert.match(more, /accessibilityLabel="Share WoofWatcher store submission packet"/);
+  assert.match(more, /Share\.share\(\{[\s\S]*message:\s*buildLaunchProviderSetupShareText\(launchProviderSetupPlan/);
   assert.match(more, /Share\.share\(\{ message: buildReleasePacketShareText\(launchReleasePacket\)/);
   assert.match(more, /Share\.share\(\{ message: buildStoreSubmissionPacketShareText\(launchStoreSubmissionPacket\)/);
+  assert.match(careContext, /launchProviderProfile/);
+  assert.match(providerSetup, /Provider Launch Setup/);
+  assert.match(providerSetup, /No App Store or Play Store submission is approved by this checklist/);
   assert.match(launchModel, /storageQueue/);
   assert.match(launchModel, /local file/);
   assert.match(launchModel, /Device proof required/);

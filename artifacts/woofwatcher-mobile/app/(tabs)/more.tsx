@@ -54,6 +54,12 @@ import {
   type LaunchReadinessTileStatus,
 } from "@/lib/launchReadiness";
 import {
+  buildLaunchProviderSetupShareText,
+  deriveLaunchProviderSetup,
+  normalizeLaunchProviderProfile,
+  type LaunchProviderProfile,
+} from "@/lib/launchProviderSetup";
+import {
   buildMobileLaunchQaCapturePlan,
   buildMobileLaunchQaCaptureShareText,
   deriveNativeQaSummaryFromMobileQaSession,
@@ -83,6 +89,65 @@ type HouseholdMemberSummary = {
   email?: string | null;
   role?: string | null;
 };
+
+type LaunchProviderFlagKey = keyof Pick<
+  LaunchProviderProfile,
+  | "authConfigured"
+  | "databaseConfigured"
+  | "storageProviderConfigured"
+  | "aiProviderConfigured"
+  | "paymentsEnabled"
+  | "pushNotificationsConfigured"
+  | "appStoreAccountsReady"
+  | "accountDeletionEnabled"
+>;
+
+const PROVIDER_SETUP_FIELDS: Array<{
+  key: LaunchProviderFlagKey;
+  label: string;
+  detail: string;
+}> = [
+  {
+    key: "authConfigured",
+    label: "Production auth",
+    detail: "Clerk keys, redirects, household sign-in, and session rules.",
+  },
+  {
+    key: "databaseConfigured",
+    label: "Household database",
+    detail: "Supabase/Postgres tables, RLS, backups, and migrations.",
+  },
+  {
+    key: "storageProviderConfigured",
+    label: "Records storage",
+    detail: "Signed uploads/downloads, retention, export, and deletion rules.",
+  },
+  {
+    key: "aiProviderConfigured",
+    label: "WoofGuide AI",
+    detail: "Provider key, model policy, owner review, and vet boundary.",
+  },
+  {
+    key: "paymentsEnabled",
+    label: "Plus payments",
+    detail: "Subscription tiers, app-store billing, refunds, and entitlement checks.",
+  },
+  {
+    key: "pushNotificationsConfigured",
+    label: "Push reminders",
+    detail: "Expo push, APNs/FCM, permission copy, quiet hours, and opt-out.",
+  },
+  {
+    key: "appStoreAccountsReady",
+    label: "Store accounts",
+    detail: "Apple Developer, App Store Connect, Google Play Console, bundle ids.",
+  },
+  {
+    key: "accountDeletionEnabled",
+    label: "Account deletion",
+    detail: "Self-serve deletion, export warning, provider deletion, and audit receipt.",
+  },
+];
 
 function launchTileIcon(
   key: LaunchReadinessTileKey,
@@ -390,6 +455,10 @@ export default function MoreScreen() {
     useState<LaunchReadinessNativeQaSummary | null>(null);
   const [nativeQaCapturePlan, setNativeQaCapturePlan] =
     useState<MobileLaunchQaCapturePlan>(() => buildMobileLaunchQaCapturePlan(null));
+  const [providerSetupOpen, setProviderSetupOpen] = useState(false);
+  const [providerDraft, setProviderDraft] = useState<LaunchProviderProfile>(() =>
+    normalizeLaunchProviderProfile(state.launchProviderProfile),
+  );
 
   useFocusEffect(
     React.useCallback(() => {
@@ -791,6 +860,11 @@ export default function MoreScreen() {
     },
   ];
 
+  const launchProviderSetupPlan = useMemo(
+    () => deriveLaunchProviderSetup(state.launchProviderProfile),
+    [state.launchProviderProfile],
+  );
+
   const launchReadinessPlan = useMemo(
     () =>
       deriveLaunchReadiness({
@@ -802,15 +876,15 @@ export default function MoreScreen() {
           privacyExportReady: true,
         },
         provider: {
-          authConfigured: Boolean(me.data?.user?.id && household),
-          databaseConfigured: Boolean(household && syncDashboard.status !== "attention"),
-          storageProviderConfigured: false,
+          authConfigured: Boolean(launchProviderSetupPlan.providerInput.authConfigured || (me.data?.user?.id && household)),
+          databaseConfigured: Boolean(launchProviderSetupPlan.providerInput.databaseConfigured || (household && syncDashboard.status !== "attention")),
+          storageProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.storageProviderConfigured),
           storageQueue: attachmentManifest.launchQueue,
-          aiProviderConfigured: false,
-          paymentsEnabled: false,
-          accountDeletionEnabled: false,
-          pushNotificationsConfigured: false,
-          appStoreAccountsReady: false,
+          aiProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.aiProviderConfigured),
+          paymentsEnabled: Boolean(launchProviderSetupPlan.providerInput.paymentsEnabled),
+          accountDeletionEnabled: Boolean(launchProviderSetupPlan.providerInput.accountDeletionEnabled),
+          pushNotificationsConfigured: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsConfigured),
+          appStoreAccountsReady: Boolean(launchProviderSetupPlan.providerInput.appStoreAccountsReady),
           privacyLegalApproved: false,
           privacyLegalOwnerReviewed,
           supportRunbookApproved: false,
@@ -820,6 +894,7 @@ export default function MoreScreen() {
       }),
     [
       attachmentManifest.launchQueue,
+      launchProviderSetupPlan.providerInput,
       me.data?.user?.id,
       household,
       privacyLegalOwnerReviewed,
@@ -860,6 +935,52 @@ export default function MoreScreen() {
     [launchReleasePacket],
   );
   const storeSubmissionTone = launchStoreSubmissionPacket.submissionReady ? colors.sage : colors.amber;
+  const providerSetupTone =
+    launchProviderSetupPlan.status === "provider-approved"
+      ? colors.sage
+      : launchProviderSetupPlan.status === "owner-reviewed"
+        ? colors.copper
+        : colors.rose;
+
+  const openProviderSetup = () => {
+    setProviderDraft(normalizeLaunchProviderProfile(state.launchProviderProfile));
+    setProviderSetupOpen(true);
+  };
+
+  const toggleProviderDraft = (key: LaunchProviderFlagKey) => {
+    Haptics.selectionAsync();
+    setProviderDraft((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const saveProviderSetup = () => {
+    const reviewedAt = new Date(now).toISOString();
+    const normalized = normalizeLaunchProviderProfile(providerDraft);
+    const allProviderGatesReady = PROVIDER_SETUP_FIELDS.every((field) => normalized[field.key]);
+    const providerStatus =
+      normalized.providerStatus === "provider-approved" && !allProviderGatesReady
+        ? "owner-reviewed"
+        : normalized.providerStatus;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateCareDoc((doc) => ({
+      ...doc,
+      launchProviderProfile: {
+        ...normalized,
+        ownerReviewedAt: reviewedAt,
+        providerStatus,
+      },
+    }));
+    setProviderSetupOpen(false);
+  };
+
+  const shareProviderSetupPlan = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Share.share({
+      message: buildLaunchProviderSetupShareText(launchProviderSetupPlan, new Date(now).toISOString()),
+      title: launchProviderSetupPlan.title,
+    }).catch(() =>
+      Alert.alert("Provider Launch Setup", buildLaunchProviderSetupShareText(launchProviderSetupPlan, new Date(now).toISOString())),
+    );
+  };
 
   const shareLaunchPacket = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1202,6 +1323,80 @@ export default function MoreScreen() {
               <Text style={[s.launchNoticeText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                 {launchReadinessPlan.summary} {launchReadinessPlan.nextActions[0] ?? "Prepare the final store packet after Apollo approval."}
               </Text>
+            </View>
+            <View style={[s.providerSetupPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={s.providerSetupHeader}>
+                <View style={[s.providerSetupScore, { backgroundColor: providerSetupTone + "16" }]}>
+                  <Text style={[s.providerSetupScoreValue, { color: providerSetupTone, fontFamily: DISPLAY_SEMI }]}>
+                    {launchProviderSetupPlan.percent}%
+                  </Text>
+                  <Text style={[s.providerSetupScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    providers
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.providerSetupTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                    Provider Launch Setup
+                  </Text>
+                  <Text style={[s.providerSetupSub, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {launchProviderSetupPlan.headline}. {launchProviderSetupPlan.statusLabel}.
+                  </Text>
+                  <Text style={[s.providerSetupCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {launchProviderSetupPlan.summary}
+                  </Text>
+                </View>
+              </View>
+              <View style={s.providerSetupRows}>
+                {launchProviderSetupPlan.rows.slice(0, 4).map((row) => {
+                  const rowTone = row.status === "ready" ? colors.sage : colors.amber;
+                  return (
+                    <View key={row.key} style={[s.providerSetupRow, { borderTopColor: colors.border }]}>
+                      <Ionicons
+                        name={row.status === "ready" ? "checkmark-circle" : "ellipse-outline"}
+                        size={16}
+                        color={rowTone}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.providerSetupRowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {row.label}
+                        </Text>
+                        <Text
+                          numberOfLines={2}
+                          style={[s.providerSetupRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                        >
+                          {row.status === "ready" ? row.detail : row.nextAction}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+              <View style={s.providerSetupActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit WoofWatcher provider launch setup"
+                  onPress={openProviderSetup}
+                  style={({ pressed }) => [
+                    s.providerSetupButton,
+                    { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
+                  ]}
+                >
+                  <Ionicons name="construct-outline" size={15} color="#FFFFFF" />
+                  <Text style={[s.providerSetupButtonText, { fontFamily: "Inter_800ExtraBold" }]}>Edit Provider Plan</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share WoofWatcher provider setup plan"
+                  onPress={shareProviderSetupPlan}
+                  style={({ pressed }) => [
+                    s.providerSetupButton,
+                    { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+                  ]}
+                >
+                  <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
+                  <Text style={[s.providerSetupButtonText, { fontFamily: "Inter_800ExtraBold" }]}>Share Provider Plan</Text>
+                </Pressable>
+              </View>
             </View>
             {nativeQaCapturePlan.nextTargets.length > 0 ? (
               <View style={[s.nativeQaCapturePanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -2132,6 +2327,118 @@ export default function MoreScreen() {
         </Pressable>
       </Modal>
 
+      <Modal visible={providerSetupOpen} transparent animationType="slide" onRequestClose={() => setProviderSetupOpen(false)}>
+        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
+          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
+              bounces={false}
+            >
+              <View style={s.modalHandle} />
+              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Provider Launch Setup</Text>
+              <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Mark only production providers you have actually configured. This updates Launch Readiness but does not approve App Store or Play Store submission.
+              </Text>
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>REVIEW STATUS</Text>
+              <View style={s.providerStatusGrid}>
+                {[
+                  { key: "local-draft" as const, label: "Draft" },
+                  { key: "owner-reviewed" as const, label: "Owner reviewed" },
+                  { key: "provider-approved" as const, label: "Provider approved" },
+                ].map((statusOption) => {
+                  const selected = providerDraft.providerStatus === statusOption.key;
+                  return (
+                    <Pressable
+                      key={statusOption.key}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setProviderDraft((prev) => ({ ...prev, providerStatus: statusOption.key }));
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set provider setup status to ${statusOption.label}`}
+                      style={[
+                        s.providerStatusPill,
+                        {
+                          backgroundColor: selected ? colors.primary + "18" : colors.background,
+                          borderColor: selected ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.providerStatusText, { color: selected ? colors.primary : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {statusOption.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <View style={[s.providerChecklist, { borderTopColor: colors.border }]}>
+                {PROVIDER_SETUP_FIELDS.map((field) => {
+                  const checked = providerDraft[field.key];
+                  return (
+                    <Pressable
+                      key={field.key}
+                      onPress={() => toggleProviderDraft(field.key)}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked }}
+                      accessibilityLabel={`${field.label}. ${field.detail}`}
+                      style={({ pressed }) => [
+                        s.providerChecklistRow,
+                        { borderBottomColor: colors.border, opacity: pressed ? 0.72 : 1 },
+                      ]}
+                    >
+                      <Ionicons
+                        name={checked ? "checkbox" : "square-outline"}
+                        size={21}
+                        color={checked ? colors.sage : colors.mutedForeground}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.providerChecklistTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {field.label}
+                        </Text>
+                        <Text style={[s.providerChecklistSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {field.detail}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>OPERATOR NOTES</Text>
+              <TextInput
+                value={providerDraft.notes}
+                onChangeText={(notes) => setProviderDraft((prev) => ({ ...prev, notes }))}
+                placeholder="What still needs keys, rules, account approval, or QA?"
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                style={[
+                  s.profField,
+                  {
+                    backgroundColor: colors.background,
+                    color: colors.foreground,
+                    fontFamily: "Inter_400Regular",
+                    minHeight: 74,
+                    textAlignVertical: "top",
+                  },
+                ]}
+              />
+
+              <Pressable
+                onPress={saveProviderSetup}
+                accessibilityRole="button"
+                accessibilityLabel="Save provider launch setup"
+                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+              >
+                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save provider setup</Text>
+              </Pressable>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* Dog profile edit modal */}
       <Modal visible={profileOpen} transparent animationType="slide" onRequestClose={() => setProfileOpen(false)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProfileOpen(false)}>
@@ -2485,6 +2792,52 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   launchNoticeText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  providerSetupPanel: {
+    marginTop: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+  },
+  providerSetupHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  providerSetupScore: {
+    width: 74,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  providerSetupScoreValue: { fontSize: 22, lineHeight: 25 },
+  providerSetupScoreLabel: { fontSize: 8.7, lineHeight: 12, textTransform: "uppercase", marginTop: 2 },
+  providerSetupTitle: { fontSize: 13.5, lineHeight: 18 },
+  providerSetupSub: { fontSize: 11.2, lineHeight: 15, marginTop: 2 },
+  providerSetupCopy: { fontSize: 11.2, lineHeight: 16, marginTop: 4 },
+  providerSetupRows: { marginTop: 8 },
+  providerSetupRow: {
+    minHeight: 52,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    paddingVertical: 9,
+  },
+  providerSetupRowTitle: { fontSize: 12.4, lineHeight: 16 },
+  providerSetupRowSub: { fontSize: 10.8, lineHeight: 15, marginTop: 2 },
+  providerSetupActions: { flexDirection: "row", gap: 8, marginTop: 10 },
+  providerSetupButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 7,
+    paddingHorizontal: 9,
+  },
+  providerSetupButtonText: { color: "#FFFFFF", fontSize: 11.8 },
   nativeQaCapturePanel: {
     marginTop: 12,
     borderRadius: 8,
@@ -2737,6 +3090,28 @@ const s = StyleSheet.create({
   modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   sheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
   sheetSubtitle: { fontSize: 12.5, lineHeight: 18, marginBottom: 2 },
+  providerStatusGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2 },
+  providerStatusPill: {
+    flexGrow: 1,
+    minHeight: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  providerStatusText: { fontSize: 12.2, lineHeight: 16 },
+  providerChecklist: { borderTopWidth: 1, marginTop: 14 },
+  providerChecklistRow: {
+    minHeight: 62,
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    paddingVertical: 11,
+  },
+  providerChecklistTitle: { fontSize: 13.2, lineHeight: 17 },
+  providerChecklistSub: { fontSize: 11.2, lineHeight: 16, marginTop: 2 },
   profFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 16 },
   profField: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   profWeightRow: { flexDirection: "row", alignItems: "flex-end", gap: 12 },

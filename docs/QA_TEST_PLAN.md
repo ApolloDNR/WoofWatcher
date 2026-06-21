@@ -274,6 +274,14 @@ progress counts, ordered route list, missing evidence, and done condition.
 Static readiness tests verify More exposes `Share QA Plan` from the same saved
 QA capture plan.
 
+Current evidence, 2026-06-21: Provider Launch Setup is now covered by focused
+tests and static mobile readiness checks. `launchProviderSetup.test.ts` verifies
+profile normalization, eight-gate progress math, share text, and the rule that
+partial provider approval cannot be shown as fully provider-approved. Privacy
+export tests verify `launchProviderProfile` is included in owner data, and
+mobile readiness checks verify More renders Provider Launch Setup, Edit Provider
+Plan, and Share Provider Plan inside Launch Readiness.
+
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.
 
@@ -323,3 +331,10 @@ Latest local evidence, 2026-06-21:
 - PixelLab asset verification passed with 149 registered assets, 0 missing, and 0 invalid.
 - Expo web export passed to `tmp/woofwatcher-mobile-interaction-contract-export`.
 - Shared mobile layout contracts now cover route top spacing, modal sheets, centered modals, keyboard offsets, touch targets, and inline hit slop across launch-critical tabbed, standalone, setup/auth, WoofGuide, Records, Log, and fallback surfaces. Native iOS/Android visual QA still needs screenshots for notch clearance, keyboard/composer fit, modal reach, touch response, stage crop, and animation approval.
+
+Latest local evidence, 2026-06-21:
+
+- Focused provider/privacy/mobile readiness tests passed at 78 tests.
+- Full local behavior/readiness suite passed at 337 tests across `artifacts/woofwatcher-mobile/lib/*.test.ts` and `lib/care-domain/test/*.test.ts`.
+- Mobile TypeScript compile passed for the WoofWatcher Expo app.
+- Provider Launch Setup now gives Apollo an editable/shareable production checklist while still keeping native QA, provider credentials, legal/support, store-account, and App Store/Play Store approval outside the app until actually completed.

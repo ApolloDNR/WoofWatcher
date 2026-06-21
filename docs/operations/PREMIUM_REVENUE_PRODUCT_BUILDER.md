@@ -228,10 +228,21 @@ plan, including progress, missing proof, evidence counts, and a done condition.
 This lets Apollo send the next device-testing plan to himself, Fable/Replit, or
 a helper without drifting from the live app state.
 
+The Provider Launch Setup pass turns production setup from vague blockers into
+a saved operator workflow. `launchProviderSetup.ts` derives the eight provider
+gates needed for a real public release: production auth, household database
+sync, record/media storage, WoofGuide AI, Plus payments, push notifications,
+Apple/Google store accounts, and self-serve account deletion. More renders the
+plan inside Launch Readiness with a progress score, first open rows, an edit
+sheet, and a native Share Provider Plan action. `CareContext` persists
+`launchProviderProfile`, Privacy export includes it, and Launch Readiness now
+consumes those saved gates while still refusing to claim public launch until
+native QA, legal/support/store approval, and Apollo sign-off are complete.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete the Mobile Release QA checklist, Store Screenshot QA checklist, and 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm More's Launch Readiness and Native QA Next Captures update from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
-2. Continue local launch hardening while GitHub Actions is blocked by the recurring billing/spending-limit pre-job failure; favor work that makes real device QA, provider approval, support/legal approval, or store submission easier to finish truthfully.
+2. Fill the Provider Launch Setup sheet only as real providers are configured: Clerk, Supabase/Postgres, storage buckets/rules, AI key/model policy, app-store payments, push, Apple/Google accounts, and self-serve deletion. Share the provider plan for Apollo/Fable/Replit handoff, but do not treat it as store approval.
 3. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 4. Continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.
