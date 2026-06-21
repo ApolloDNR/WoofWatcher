@@ -2,23 +2,30 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { Stack, useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   Share,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
-import { useCare } from "@/context/CareContext";
+import { useCare, type LaunchSupportProfile } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
+import {
+  getModalSheetBottomPadding,
+  getRouteTopPadding,
+  getStandaloneRouteBottomPadding,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 import {
   buildAccountDeletionRequest,
   buildPrivacyExportBundle,
@@ -74,7 +81,9 @@ export default function PrivacyScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state } = useCare();
+  const { state, updateCareDoc } = useCare();
+  const [launchEditorOpen, setLaunchEditorOpen] = useState(false);
+  const [launchDraft, setLaunchDraft] = useState<LaunchSupportProfile>(state.launchSupportProfile);
   const me = useGetMe();
   const context = useMemo(
     () => ({
@@ -99,18 +108,13 @@ export default function PrivacyScreen() {
 
   const bundle = useMemo(() => buildPrivacyExportBundle(state, context), [state, context]);
   const supportPlan = useMemo(
-    () =>
-      deriveSupportRunbookPlan({
-        supportEmail: null,
-        privacyPolicyUrl: null,
-        termsUrl: null,
-        refundPolicyApproved: false,
-        veterinaryBoundaryApproved: false,
-        accountDeletionEscalationApproved: false,
-        incidentResponseApproved: false,
-      }),
-    [],
+    () => deriveSupportRunbookPlan(state.launchSupportProfile),
+    [state.launchSupportProfile],
   );
+  useEffect(() => {
+    if (!launchEditorOpen) setLaunchDraft(state.launchSupportProfile);
+  }, [launchEditorOpen, state.launchSupportProfile]);
+
   const sections = [
     plan.export,
     plan.accountDeletion,
@@ -127,6 +131,49 @@ export default function PrivacyScreen() {
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
+  const modalSheetBottomPadding = getModalSheetBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
+
+  const launchProfileStatus =
+    state.launchSupportProfile.providerStatus === "owner-reviewed"
+      ? "Owner-reviewed local packet"
+      : state.launchSupportProfile.providerStatus === "provider-approved"
+        ? "Provider-approved packet"
+        : "Local draft";
+
+  const updateLaunchDraft = <K extends keyof LaunchSupportProfile>(
+    key: K,
+    value: LaunchSupportProfile[K],
+  ) => {
+    setLaunchDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const openLaunchProfileEditor = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLaunchDraft(state.launchSupportProfile);
+    setLaunchEditorOpen(true);
+  };
+
+  const saveLaunchSupportProfile = (providerStatus: LaunchSupportProfile["providerStatus"]) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateCareDoc((doc) => ({
+      ...doc,
+      launchSupportProfile: {
+        ...launchDraft,
+        supportEmail: launchDraft.supportEmail.trim(),
+        privacyPolicyUrl: launchDraft.privacyPolicyUrl.trim(),
+        termsUrl: launchDraft.termsUrl.trim(),
+        providerStatus,
+        ownerReviewedAt:
+          providerStatus === "owner-reviewed" || providerStatus === "provider-approved"
+            ? new Date().toISOString()
+            : doc.launchSupportProfile.ownerReviewedAt,
+      },
+    }));
+    setLaunchEditorOpen(false);
+  };
 
   const shareExport = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -247,6 +294,31 @@ export default function PrivacyScreen() {
           <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             {supportPlan.summary}
           </Text>
+          <View style={[s.launchProfilePanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.launchProfileEyebrow, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                Launch support profile
+              </Text>
+              <Text style={[s.launchProfileStatus, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                {launchProfileStatus}
+              </Text>
+              <Text style={[s.launchProfileDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {supportPlan.supportEmail ?? "No support inbox yet"} / {supportPlan.privacyPolicyUrl ? "Policy links staged" : "Policy links needed"}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Edit WoofWatcher launch support profile"
+              onPress={openLaunchProfileEditor}
+              style={({ pressed }) => [
+                s.profileEditBtn,
+                { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+              ]}
+            >
+              <Ionicons name="create-outline" size={15} color={colors.foreground} />
+              <Text style={[s.profileEditText, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>Edit</Text>
+            </Pressable>
+          </View>
           <View style={s.sectionStack}>
             {supportPlan.sections.map((section) => (
               <SafetyRow key={section.title} section={section} colors={colors} />
@@ -298,6 +370,115 @@ export default function PrivacyScreen() {
           </View>
         </BoardCard>
       </ScrollView>
+      <Modal visible={launchEditorOpen} transparent animationType="slide" onRequestClose={() => setLaunchEditorOpen(false)}>
+        <Pressable style={s.modalBackdrop} onPress={() => setLaunchEditorOpen(false)}>
+          <Pressable
+            style={[s.launchModal, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <View style={s.modalHandle} />
+            <View style={s.modalHeader}>
+              <View>
+                <Text style={[s.modalEyebrow, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                  Launch profile
+                </Text>
+                <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Support readiness</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close launch support profile editor"
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={() => setLaunchEditorOpen(false)}
+              >
+                <Ionicons name="close" size={23} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.modalScroll}>
+              <ProfileInput
+                label="Support email"
+                value={launchDraft.supportEmail}
+                placeholder="help@woofwatcher.app"
+                colors={colors}
+                keyboardType="email-address"
+                onChangeText={(value) => updateLaunchDraft("supportEmail", value)}
+              />
+              <ProfileInput
+                label="Privacy policy URL"
+                value={launchDraft.privacyPolicyUrl}
+                placeholder="https://woofwatcher.app/privacy"
+                colors={colors}
+                keyboardType="url"
+                onChangeText={(value) => updateLaunchDraft("privacyPolicyUrl", value)}
+              />
+              <ProfileInput
+                label="Terms URL"
+                value={launchDraft.termsUrl}
+                placeholder="https://woofwatcher.app/terms"
+                colors={colors}
+                keyboardType="url"
+                onChangeText={(value) => updateLaunchDraft("termsUrl", value)}
+              />
+              <View style={s.policyStack}>
+                <PolicyToggle
+                  label="Refund and subscription policy approved"
+                  value={launchDraft.refundPolicyApproved}
+                  colors={colors}
+                  onPress={() => updateLaunchDraft("refundPolicyApproved", !launchDraft.refundPolicyApproved)}
+                />
+                <PolicyToggle
+                  label="Veterinary boundary approved"
+                  value={launchDraft.veterinaryBoundaryApproved}
+                  colors={colors}
+                  onPress={() => updateLaunchDraft("veterinaryBoundaryApproved", !launchDraft.veterinaryBoundaryApproved)}
+                />
+                <PolicyToggle
+                  label="Deletion escalation approved"
+                  value={launchDraft.accountDeletionEscalationApproved}
+                  colors={colors}
+                  onPress={() =>
+                    updateLaunchDraft("accountDeletionEscalationApproved", !launchDraft.accountDeletionEscalationApproved)
+                  }
+                />
+                <PolicyToggle
+                  label="Incident response owner approved"
+                  value={launchDraft.incidentResponseApproved}
+                  colors={colors}
+                  onPress={() => updateLaunchDraft("incidentResponseApproved", !launchDraft.incidentResponseApproved)}
+                />
+              </View>
+              <Text style={[s.modalBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                This is a local owner checklist. It does not claim legal, store, or provider approval until those approvals are actually complete.
+              </Text>
+            </ScrollView>
+            <View style={s.modalActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Save launch support profile draft"
+                onPress={() => saveLaunchSupportProfile("local-draft")}
+                style={({ pressed }) => [
+                  s.modalSecondaryBtn,
+                  { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
+                ]}
+              >
+                <Text style={[s.modalSecondaryText, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                  Save draft
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Save owner reviewed launch support profile"
+                onPress={() => saveLaunchSupportProfile("owner-reviewed")}
+                style={({ pressed }) => [
+                  s.modalPrimaryBtn,
+                  { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
+                ]}
+              >
+                <Text style={[s.modalPrimaryText, { fontFamily: "Inter_800ExtraBold" }]}>Owner-reviewed</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -379,6 +560,82 @@ function AttachmentQueueRow({
   );
 }
 
+function ProfileInput({
+  label,
+  value,
+  placeholder,
+  keyboardType,
+  colors,
+  onChangeText,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  keyboardType: "default" | "email-address" | "url";
+  colors: ReturnType<typeof useColors>;
+  onChangeText: (value: string) => void;
+}) {
+  return (
+    <View style={s.profileInputGroup}>
+      <Text style={[s.profileInputLabel, { color: colors.mutedForeground, fontFamily: "Inter_800ExtraBold" }]}>
+        {label}
+      </Text>
+      <TextInput
+        value={value}
+        placeholder={placeholder}
+        placeholderTextColor={colors.mutedForeground}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType={keyboardType}
+        onChangeText={onChangeText}
+        style={[
+          s.profileInput,
+          {
+            backgroundColor: colors.background,
+            borderColor: colors.border,
+            color: colors.foreground,
+            fontFamily: "Inter_700Bold",
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
+function PolicyToggle({
+  label,
+  value,
+  colors,
+  onPress,
+}: {
+  label: string;
+  value: boolean;
+  colors: ReturnType<typeof useColors>;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [
+        s.policyToggle,
+        {
+          backgroundColor: value ? colors.sage + "18" : colors.background,
+          borderColor: value ? colors.sage + "66" : colors.border,
+          opacity: pressed ? 0.72 : 1,
+        },
+      ]}
+    >
+      <View style={[s.policyCheck, { backgroundColor: value ? colors.sage : colors.card, borderColor: value ? colors.sage : colors.border }]}>
+        <Ionicons name={value ? "checkmark" : "ellipse-outline"} size={15} color={value ? "#FFFFFF" : colors.mutedForeground} />
+      </View>
+      <Text style={[s.policyLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const s = StyleSheet.create({
   root: { flex: 1 },
   hero: { borderRadius: 26, padding: 22, minHeight: 230, justifyContent: "space-between" },
@@ -417,6 +674,29 @@ const s = StyleSheet.create({
   secondaryText: { fontSize: 13.5 },
   sectionStack: { gap: 10 },
   supportVerdict: { fontSize: 14, lineHeight: 18, marginBottom: 5 },
+  launchProfilePanel: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  launchProfileEyebrow: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.6 },
+  launchProfileStatus: { fontSize: 14.5, marginTop: 4 },
+  launchProfileDetail: { fontSize: 12, lineHeight: 17, marginTop: 4 },
+  profileEditBtn: {
+    minHeight: 38,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+  profileEditText: { fontSize: 12 },
   supportBlockers: {
     borderRadius: 16,
     borderWidth: 1,
@@ -446,4 +726,41 @@ const s = StyleSheet.create({
   noticeContent: { flexDirection: "row", gap: 10 },
   noticeTitle: { fontSize: 14, marginBottom: 5 },
   noticeLine: { fontSize: 12.5, lineHeight: 18 },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(8, 26, 42, 0.42)",
+  },
+  launchModal: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    maxHeight: "88%",
+  },
+  modalHandle: {
+    alignSelf: "center",
+    width: 42,
+    height: 5,
+    borderRadius: 99,
+    backgroundColor: "rgba(120, 132, 146, 0.35)",
+    marginBottom: 16,
+  },
+  modalHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+  modalEyebrow: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.6 },
+  modalTitle: { fontSize: 26, letterSpacing: 0 },
+  modalScroll: { paddingTop: 16, paddingBottom: 14 },
+  profileInputGroup: { marginBottom: 12 },
+  profileInputLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 7 },
+  profileInput: { minHeight: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 13.5 },
+  policyStack: { gap: 9, marginTop: 2 },
+  policyToggle: { minHeight: 50, borderRadius: 15, borderWidth: 1, padding: 12, flexDirection: "row", alignItems: "center", gap: 10 },
+  policyCheck: { width: 25, height: 25, borderRadius: 9, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  policyLabel: { flex: 1, fontSize: 13, lineHeight: 18 },
+  modalBoundary: { fontSize: 12.5, lineHeight: 18, marginTop: 14 },
+  modalActions: { flexDirection: "row", gap: 10, paddingTop: 8 },
+  modalSecondaryBtn: { flex: 1, minHeight: 50, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  modalSecondaryText: { fontSize: 13 },
+  modalPrimaryBtn: { flex: 1.2, minHeight: 50, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  modalPrimaryText: { color: "#FFFFFF", fontSize: 13 },
 });

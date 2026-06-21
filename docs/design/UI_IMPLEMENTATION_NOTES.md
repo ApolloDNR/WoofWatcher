@@ -896,3 +896,24 @@ Design intent:
 - Keep payment/public-account readiness honest and owner-reviewed.
 - Preserve the health boundary: WoofWatcher organizes dog care, but it is not
   veterinary advice, diagnosis, treatment, or emergency triage.
+
+## 2026-06-21 Launch Support Profile Sheet
+
+Privacy & Safety now makes the support runbook configurable instead of static:
+
+- The Support runbook card reads from `state.launchSupportProfile`, so support
+  email, policy URLs, refund/subscription approval, veterinary-boundary
+  approval, deletion escalation, and incident response all come from persisted
+  local care data.
+- The new edit action opens a compact bottom sheet with release-style inputs and
+  checkbox rows for the owner launch checklist.
+- The sheet has separate draft and owner-reviewed saves, and the copy explicitly
+  says local owner review does not equal legal, store, or provider approval.
+
+Design intent:
+
+- Let Apollo close real launch details inside the app without turning the screen
+  into a technical settings dump.
+- Keep the Support runbook card actionable and honest: the app can stage the
+  packet locally, but public launch remains blocked until real approvals exist.
+- Preserve mobile reachability by using the shared modal bottom-padding helper.

@@ -1350,6 +1350,61 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Continue local launch-hardening while the recurring GitHub Actions
   billing/spending-limit blocker prevents remote CI from executing jobs.
 
+## 2026-06-21 Launch Support Profile
+
+### What Changed
+
+- Added `launchSupportProfile` to the local-first care document so support,
+  privacy, terms, refund, veterinary-boundary, deletion-escalation, and
+  incident-response launch settings survive backup/import and sync snapshots.
+- Privacy export bundles now include that launch support profile alongside
+  household setup, access passes, Adventure memories, reports, records, logs,
+  and attachment queue state.
+- Privacy & Safety now derives the Support runbook from
+  `state.launchSupportProfile` instead of hardcoded blanks.
+- Added an editable launch-profile sheet on Privacy & Safety with support
+  email and policy-link inputs, owner checklist toggles, draft save, and
+  owner-reviewed save while explicitly avoiding claims of legal, store, or
+  provider approval.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/context/CareContext.tsx`
+- `artifacts/woofwatcher-mobile/app/privacy.tsx`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.ts`
+- `artifacts/woofwatcher-mobile/lib/privacySafety.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused privacy/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/privacySafety.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 73 tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 321 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with Windows CRLF warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-launch-support-profile-export --clear`
+  - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-launch-support-profile-export`.
+
+### Remaining Work
+
+- Commit/push, trigger GitHub verify, and document the remote CI result for
+  this slice.
+
 ## 2026-06-21 Support Runbook Readiness
 
 ### What Changed

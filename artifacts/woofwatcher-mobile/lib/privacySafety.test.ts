@@ -24,6 +24,17 @@ const state = {
     inviteCode: "WW-42",
     providerStatus: "pending-provider",
   },
+  launchSupportProfile: {
+    supportEmail: "help@woofwatcher.app",
+    privacyPolicyUrl: "https://woofwatcher.app/privacy",
+    termsUrl: "https://woofwatcher.app/terms",
+    refundPolicyApproved: true,
+    veterinaryBoundaryApproved: true,
+    accountDeletionEscalationApproved: false,
+    incidentResponseApproved: false,
+    ownerReviewedAt: "2026-06-21T10:00:00.000Z",
+    providerStatus: "owner-reviewed",
+  },
   accessPasses: [{ id: "access_maya", holderName: "Maya", role: "Sitter", status: "draft" }],
   adventureMemories: [{ id: "memory_1", title: "Wildflower Loop", petName: "Phoenix", storageStatus: "local-draft" }],
   caregivers: [{ name: "Apollo", role: "Owner" }],
@@ -92,6 +103,7 @@ test("builds an owner export bundle with counts and care data", () => {
   assert.equal(bundle.care.activePetId, "primary");
   assert.equal(bundle.care.pets[0]?.name, "London");
   assert.deepEqual(bundle.care.householdSetup, state.householdSetup);
+  assert.deepEqual(bundle.care.launchSupportProfile, state.launchSupportProfile);
   assert.equal((bundle.care.accessPasses[0] as { holderName?: string })?.holderName, "Maya");
   assert.equal((bundle.care.adventureMemories[0] as { title?: string })?.title, "Wildflower Loop");
   assert.equal(bundle.care.entries[0]?.id, "meal_1");

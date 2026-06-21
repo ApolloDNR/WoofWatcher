@@ -82,6 +82,18 @@ export interface HouseholdSetup {
   updatedAt?: string;
 }
 
+export interface LaunchSupportProfile {
+  supportEmail: string;
+  privacyPolicyUrl: string;
+  termsUrl: string;
+  refundPolicyApproved: boolean;
+  veterinaryBoundaryApproved: boolean;
+  accountDeletionEscalationApproved: boolean;
+  incidentResponseApproved: boolean;
+  ownerReviewedAt?: string;
+  providerStatus: "local-draft" | "owner-reviewed" | "provider-approved";
+}
+
 export interface Routine {
   id: string;
   label: string;
@@ -169,6 +181,7 @@ export interface CareDoc {
   pets: PetProfile[];
   caregivers: Caregiver[];
   householdSetup: HouseholdSetup;
+  launchSupportProfile: LaunchSupportProfile;
   dietProfile: DietProfile;
   routines: Routine[];
   goals: Goal[];
@@ -217,6 +230,16 @@ function getDefaultDoc(): CareDoc {
       inviteCode: "",
       providerStatus: "local-only",
     },
+    launchSupportProfile: {
+      supportEmail: "",
+      privacyPolicyUrl: "",
+      termsUrl: "",
+      refundPolicyApproved: false,
+      veterinaryBoundaryApproved: false,
+      accountDeletionEscalationApproved: false,
+      incidentResponseApproved: false,
+      providerStatus: "local-draft",
+    },
     dietProfile: {
       primaryFood: "",
       normalPortion: "",
@@ -242,6 +265,7 @@ function getDefaultDoc(): CareDoc {
 
 function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
   const merged = { ...getDefaultDoc(), ...(partial ?? {}) };
+  const launchSupportProfile = merged.launchSupportProfile ?? getDefaultDoc().launchSupportProfile;
   return {
     ...merged,
     activePetId: typeof merged.activePetId === "string" && merged.activePetId.trim() ? merged.activePetId : "primary",
@@ -259,6 +283,24 @@ function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
       providerStatus:
         merged.householdSetup?.providerStatus === "pending-provider" ? "pending-provider" : "local-only",
       updatedAt: typeof merged.householdSetup?.updatedAt === "string" ? merged.householdSetup.updatedAt : undefined,
+    },
+    launchSupportProfile: {
+      supportEmail:
+        typeof launchSupportProfile.supportEmail === "string" ? launchSupportProfile.supportEmail : "",
+      privacyPolicyUrl:
+        typeof launchSupportProfile.privacyPolicyUrl === "string" ? launchSupportProfile.privacyPolicyUrl : "",
+      termsUrl: typeof launchSupportProfile.termsUrl === "string" ? launchSupportProfile.termsUrl : "",
+      refundPolicyApproved: Boolean(launchSupportProfile.refundPolicyApproved),
+      veterinaryBoundaryApproved: Boolean(launchSupportProfile.veterinaryBoundaryApproved),
+      accountDeletionEscalationApproved: Boolean(launchSupportProfile.accountDeletionEscalationApproved),
+      incidentResponseApproved: Boolean(launchSupportProfile.incidentResponseApproved),
+      ownerReviewedAt:
+        typeof launchSupportProfile.ownerReviewedAt === "string" ? launchSupportProfile.ownerReviewedAt : undefined,
+      providerStatus:
+        launchSupportProfile.providerStatus === "owner-reviewed" ||
+        launchSupportProfile.providerStatus === "provider-approved"
+          ? launchSupportProfile.providerStatus
+          : "local-draft",
     },
   };
 }
@@ -705,6 +747,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       pets: doc.pets,
       caregivers: doc.caregivers,
       householdSetup: doc.householdSetup,
+      launchSupportProfile: doc.launchSupportProfile,
       dietProfile: doc.dietProfile,
       routines: doc.routines,
       goals: doc.goals,

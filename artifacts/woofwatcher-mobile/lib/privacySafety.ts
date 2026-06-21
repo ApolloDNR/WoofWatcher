@@ -47,6 +47,7 @@ export interface PrivacyExportState {
   profile?: PrivacyExportProfile;
   pets?: readonly PrivacyExportPet[];
   householdSetup?: unknown;
+  launchSupportProfile?: unknown;
   accessPasses?: readonly unknown[];
   adventureMemories?: readonly unknown[];
   caregivers?: readonly unknown[];
@@ -101,6 +102,7 @@ export interface PrivacyExportBundle {
     activePetId: string | null;
     pets: readonly PrivacyExportPet[];
     householdSetup: unknown | null;
+    launchSupportProfile: unknown | null;
     accessPasses: readonly unknown[];
     adventureMemories: readonly unknown[];
     caregivers: readonly unknown[];
@@ -228,6 +230,7 @@ export function buildPrivacyExportBundle(
       activePetId: state.activePetId ?? null,
       pets,
       householdSetup: state.householdSetup ?? null,
+      launchSupportProfile: state.launchSupportProfile ?? null,
       accessPasses,
       adventureMemories,
       caregivers,
