@@ -160,6 +160,8 @@ Current evidence, 2026-06-21: Plans schedule and routine controls now derive the
 
 Current evidence, 2026-06-21: Log, Records, and More compact owner-action controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of route-local sub-48px sizing. Focused readiness protects Quick Log type chips, timeline filters, search clear, Records medication search/filter controls, report artifact actions, report period tabs, More invite, and dog-profile unit pills before native accessibility traversal is available.
 
+Current evidence, 2026-06-21: Calendar event discovery and upcoming-event controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of route-local 28/38/40px sizing. Focused readiness protects the discover icon, suggested-event icon, upcoming-event icon, and remove-event control before native accessibility traversal is available.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

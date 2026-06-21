@@ -104,7 +104,7 @@ As of 2026-06-21, the current queue points to native runtime QA and premium poli
 
 Latest completed local runtime/accessibility hardening:
 
-- Log, Records, and More compact owner-action controls now use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract. Quick Log type chips, timeline filters, search clear, Records medication search/filter controls, report artifact actions, report period tabs, More invite, and dog-profile unit pills have mobile readiness coverage before native accessibility traversal is available.
+- Calendar event discovery and upcoming-event controls now use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract. The discover icon, suggested-event icon, upcoming-event icon, and remove-event control have mobile readiness coverage before native accessibility traversal is available.
 
 Next highest-impact work:
 

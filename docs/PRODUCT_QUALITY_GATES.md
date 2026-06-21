@@ -163,6 +163,7 @@ Current gaps:
 - Static mobile readiness now protects Health/Bile Watch segmented tabs plus Log health note and Records hero actions from reverting to local 36/42px tap boxes instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Static mobile readiness now protects Plans schedule tabs, schedule mark-done status control, Daily Routine add button, and routine done button from reverting to local 21/30/32/36px tap boxes instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Static mobile readiness now protects Log type chips, timeline filters, search clear, Records medication search/filter controls, report artifact actions, report period tabs, More invite, and dog-profile unit pills from reverting below the shared 48px `MIN_MOBILE_TOUCH_TARGET` contract.
+- Static mobile readiness now protects Calendar event discovery and upcoming-event controls from reverting to route-local 28/38/40px tap boxes instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
 - Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.
 - Walk quick-log visibility, full Log walk route fields, Walk Activity summary logic, Saved Routes derivation, Care Pass walk activity/Saved Routes language, and Records walk activity wiring are covered by focused tests.

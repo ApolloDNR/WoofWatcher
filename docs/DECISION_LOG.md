@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-21: Calendar Event Controls Use The Shared 48px Touch Target
+
+Decision: Calendar event discovery and upcoming-event controls should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 28/38/40px sizing.
+
+Reason: Native accessibility traversal is still waiting on simulator/device access, and these controls sit in the Plans event-management workflow where owners discover outings, review suggestions, and remove one-off events. Reusing the 48px contract reduces tap-risk without changing calendar data behavior or claiming native QA has run.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows Calendar event controls need different sizing, final Figma/native event components replace the current controls, or platform-specific accessibility guidance requires separate iOS/Android values.
+
 ### 2026-06-21: Compact Search Report And Household Controls Use The Shared 48px Touch Target
 
 Decision: Quick Log type chips, timeline filters, search clear, Records medication search/filter controls, report artifact actions, report period tabs, More invite, and dog-profile unit pills should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local sub-48px sizing.
