@@ -1406,6 +1406,10 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Expo web export:
   - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-provider-launch-setup-export --clear`
   - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-provider-launch-setup-export`.
+- Remote GitHub Actions verify:
+  - Run: `27907578184`
+  - Result: failed before job execution with job `82578864889`, `steps: []`, and `gh run view --log-failed` returning `log not found: 82578864889`.
+  - Interpretation: matches the standing GitHub billing/spending-limit blocker, not a local verification failure.
 
 ### Remaining Work
 
