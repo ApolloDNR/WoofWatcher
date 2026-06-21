@@ -472,6 +472,13 @@ test("keeps route-local action controls on the shared mobile touch target", () =
   assert.match(calendar, /discoverGo: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(calendar, /sugAdd: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(calendar, /sugAdd: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /scheduleTab: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /scheduleStatus: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /scheduleStatus: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /sectionAddBtn: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /sectionAddBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /routineDoneBtn: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /routineDoneBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(log, /syncBtn: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(log, /syncBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(log, /detailIconBtn: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);

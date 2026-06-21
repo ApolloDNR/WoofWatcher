@@ -1215,7 +1215,7 @@ const s = StyleSheet.create({
   },
   scheduleTab: {
     flex: 1,
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 10,
     borderWidth: 1,
     alignItems: "center",
@@ -1241,9 +1241,9 @@ const s = StyleSheet.create({
   scheduleTitle: { fontSize: 13.5 },
   scheduleDetail: { fontSize: 11.5, marginTop: 2 },
   scheduleStatus: {
-    width: 21,
-    height: 21,
-    borderRadius: 11,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 16,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
@@ -1261,7 +1261,7 @@ const s = StyleSheet.create({
 
   plansBoardCard: { marginTop: 14 },
   routineHeaderAccessory: { flexDirection: "row", alignItems: "center", gap: 10 },
-  sectionAddBtn: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  sectionAddBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   routineProgress: { fontSize: 12, marginTop: 1 },
 
   emptyPanel: { borderRadius: 14, padding: 24, alignItems: "center", gap: 12 },
@@ -1364,7 +1364,7 @@ const s = StyleSheet.create({
   routineStatusPill: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
   routineStatusText: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
   routineTime: { fontSize: 13 },
-  routineDoneBtn: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  routineDoneBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },

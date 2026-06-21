@@ -156,6 +156,8 @@ Current evidence, 2026-06-21: Avatar Studio compact owner-input controls now der
 
 Current evidence, 2026-06-21: Health/Bile Watch route controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of local 36/42px sizing. Focused readiness protects the segmented Health/Bile tabs plus Log health note and Records hero actions before native accessibility traversal is available.
 
+Current evidence, 2026-06-21: Plans schedule and routine controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of local 21/30/32/36px sizing. Focused readiness protects the schedule tabs, schedule mark-done status control, Daily Routine add button, and routine done button before native accessibility traversal is available.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

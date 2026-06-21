@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-21: Plans Schedule And Routine Controls Use The Shared 48px Touch Target
+
+Decision: Plans schedule tabs, the schedule mark-done status control, the Daily Routine add button, and routine done buttons should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 21/30/32/36px sizing.
+
+Reason: Native accessibility traversal is still waiting on simulator/device access, and Plans is the core household routine surface where owners switch schedule views, add routines, and mark care as handled. Keeping these high-frequency controls on the same 48px contract reduces tap-risk without changing routine/log behavior or claiming native QA has run.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows Plans needs different sizing, final Figma/native routine components replace the current controls, or platform-specific accessibility guidance requires separate iOS/Android values.
+
 ### 2026-06-21: Health/Bile Route Controls Use The Shared 48px Touch Target
 
 Decision: The Health/Bile segmented tabs plus Log health note and Records hero actions should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 36/42px sizing.
