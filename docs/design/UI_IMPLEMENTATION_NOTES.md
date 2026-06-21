@@ -1023,3 +1023,23 @@ Design intent:
 - Keep the launcher useful even before provider-backed storage exists.
 - Preserve the premium operating-system feel: every status points to a real
   next action.
+
+## 2026-06-21 Native QA Share Plan
+
+The launch cockpit can now hand off the next device-testing steps:
+
+- `mobileLaunchQaEvidence.ts` formats the current capture queue into a
+  shareable QA script with route targets, missing evidence, attached counts, and
+  a clear done condition.
+- More adds a compact `Share QA Plan` button inside `Native QA Next Captures`
+  using the same dark primary action language as the launch packet controls.
+- The action is intentionally attached to the live capture queue, not a static
+  doc, so the shared checklist follows the saved local QA session.
+
+Design intent:
+
+- Let Apollo coordinate real-device QA from the phone without rewriting the
+  checklist.
+- Make tester handoff feel professional and operational.
+- Keep the launch boundary explicit: the shared plan guides evidence capture,
+  not App Store or Play Store approval.

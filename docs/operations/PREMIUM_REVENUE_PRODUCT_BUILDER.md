@@ -222,6 +222,12 @@ launch-critical screens first. More renders those targets as direct route jumps
 inside Launch Readiness so Apollo or a device tester can see exactly which
 screens to capture next.
 
+The Native QA share-plan pass makes that queue handoff-ready. More can now
+share a route-by-route QA script generated from the same saved-session capture
+plan, including progress, missing proof, evidence counts, and a done condition.
+This lets Apollo send the next device-testing plan to himself, Fable/Replit, or
+a helper without drifting from the live app state.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete the Mobile Release QA checklist, Store Screenshot QA checklist, and 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm More's Launch Readiness and Native QA Next Captures update from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

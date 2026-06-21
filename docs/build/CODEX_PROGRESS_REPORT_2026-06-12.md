@@ -1475,6 +1475,58 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
   tells testers exactly which native screenshots/screens to capture next, but
   those screenshots still need to be captured on real devices or simulators.
 
+## 2026-06-21 - Native QA Share Plan
+
+### What Changed
+
+- Added `buildMobileLaunchQaCaptureShareText` so the same Native QA capture
+  plan can produce a concise route-by-route testing script for Apollo, Fable,
+  Replit, or a helper.
+- More now shows a `Share QA Plan` action inside `Native QA Next Captures`,
+  using the native share sheet with a fallback alert.
+- The share text includes progress, ordered next routes, missing evidence,
+  attached evidence counts, and the boundary that screenshots and store approval
+  still need human/native review.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused capture-plan/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 76 tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 333 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with Windows CRLF warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-native-qa-share-plan-export --clear`
+  - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-native-qa-share-plan-export`.
+
+### Remaining Work
+
+- Commit/push, trigger GitHub verify, and record whether the recurring pre-job
+  billing blocker repeats.
+
 ## 2026-06-21 Store Screenshot QA Cockpit
 
 ### What Changed

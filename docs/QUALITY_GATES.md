@@ -369,6 +369,12 @@ surfaces, and missing evidence labels from the saved QA session, then More shows
 the next capture targets as direct route jumps. This reduces manual checklist
 drift during device QA without claiming that screenshots are complete.
 
+Current evidence, 2026-06-21: Native QA next-captures now has a shareable guide.
+`buildMobileLaunchQaCaptureShareText` formats the same capture plan into an
+owner/tester script with progress, routes, missing proof, attached counts, and
+the final device-review boundary. More exposes this through `Share QA Plan`
+inside the launch cockpit.
+
 Current evidence, 2026-06-19: The Option B living-room polish pass keeps Phoenix as one layered main sprite instead of a second-avatar illusion. Home quick-log actions now request action-specific sprite reactions, the room renderer adds ambient micro-behaviors and rest-state safeguards, Avatar Studio suppresses oversized still/accessory overlays when a live sprite pack is active, and PixelIcon paths use crisp pixel rendering on web.
 
 Current evidence, 2026-06-19: PixelLab subscription review did not promote weaker replacement candidates. The clean single still candidate is archived for reference, while the duplicate/cropped and gray identity-drift candidates are explicitly rejected in the PixelLab generation log. The current hard-pixel Option B runtime family remains the approved live source until native QA or a stronger reference-guided generation beats it.

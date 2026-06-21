@@ -55,6 +55,7 @@ import {
 } from "@/lib/launchReadiness";
 import {
   buildMobileLaunchQaCapturePlan,
+  buildMobileLaunchQaCaptureShareText,
   deriveNativeQaSummaryFromMobileQaSession,
   type MobileLaunchQaCapturePlan,
 } from "@/lib/mobileLaunchQaEvidence";
@@ -874,6 +875,16 @@ export default function MoreScreen() {
     );
   };
 
+  const shareNativeQaCapturePlan = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Share.share({
+      message: buildMobileLaunchQaCaptureShareText(nativeQaCapturePlan, new Date(now).toISOString()),
+      title: "WoofWatcher Native QA Plan",
+    }).catch(() =>
+      Alert.alert("Native QA Plan", buildMobileLaunchQaCaptureShareText(nativeQaCapturePlan, new Date(now).toISOString())),
+    );
+  };
+
   const H_PAD = 20;
 
   return (
@@ -1209,6 +1220,18 @@ export default function MoreScreen() {
                     </Text>
                   </View>
                 </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share Native QA capture plan"
+                  onPress={shareNativeQaCapturePlan}
+                  style={({ pressed }) => [
+                    s.nativeQaCaptureShare,
+                    { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+                  ]}
+                >
+                  <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
+                  <Text style={[s.nativeQaCaptureShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share QA Plan</Text>
+                </Pressable>
                 {nativeQaCapturePlan.nextTargets.map((target) => (
                   <Pressable
                     key={target.surfaceId}
@@ -2484,6 +2507,16 @@ const s = StyleSheet.create({
   },
   nativeQaCaptureTitle: { fontSize: 13.5, lineHeight: 18 },
   nativeQaCaptureSub: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  nativeQaCaptureShare: {
+    minHeight: 40,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 2,
+  },
+  nativeQaCaptureShareText: { color: "#FFFFFF", fontSize: 12.5 },
   nativeQaCaptureRow: {
     minHeight: 54,
     borderTopWidth: 1,

@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildMobileLaunchQaCaptureShareText,
   buildMobileLaunchQaCapturePlan,
   deriveNativeQaSummaryFromMobileQaSession,
   listMobileLaunchQaSurfaces,
@@ -172,4 +173,18 @@ test("prioritizes launch-critical unreviewed targets before release-polish targe
     "Attach 1 Android screenshot for Home.",
   ]);
   assert.equal(plan.nextTargets[1]?.surfaceId, "care-pass");
+});
+
+test("builds a shareable native QA capture script for Apollo and device testers", () => {
+  const plan = buildMobileLaunchQaCapturePlan(null, focusedSurfaces);
+  const text = buildMobileLaunchQaCaptureShareText(plan, "2026-06-21T09:30:00.000Z");
+
+  assert.match(text, /WoofWatcher Native QA Capture Plan/);
+  assert.match(text, /Generated: 2026-06-21T09:30:00.000Z/);
+  assert.match(text, /Progress: 0\/2 complete, 2 open/);
+  assert.match(text, /1\. Home \(\/\)/);
+  assert.match(text, /Priority: launch-critical/);
+  assert.match(text, /Missing: Attach 1 iOS screenshot for Home\. Attach 1 Android screenshot for Home\./);
+  assert.match(text, /2\. Care Pass \(\/records\)/);
+  assert.match(text, /Done condition: capture iOS and Android proof in \/care-twin-qa/);
 });

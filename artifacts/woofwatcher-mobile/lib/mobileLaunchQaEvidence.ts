@@ -171,6 +171,39 @@ export function buildMobileLaunchQaCapturePlan(
   };
 }
 
+export function buildMobileLaunchQaCaptureShareText(
+  plan: MobileLaunchQaCapturePlan,
+  generatedAtIso = new Date().toISOString(),
+): string {
+  const lines = [
+    "WoofWatcher Native QA Capture Plan",
+    `Generated: ${generatedAtIso}`,
+    `Progress: ${plan.completeSurfaces}/${plan.totalSurfaces} complete, ${plan.openSurfaces} open.`,
+    "",
+    "Next captures:",
+  ];
+
+  if (!plan.nextTargets.length) {
+    lines.push("- All listed capture surfaces are locally complete.");
+  }
+
+  plan.nextTargets.forEach((target, index) => {
+    lines.push(`${index + 1}. ${target.title} (${target.route})`);
+    lines.push(`   Priority: ${target.priority}`);
+    lines.push(`   Status: ${target.status}`);
+    lines.push(`   Missing: ${target.missingEvidence.join(" ") || "No missing evidence."}`);
+    lines.push(`   Evidence attached: ${target.evidenceAttached}`);
+    if (target.note) lines.push(`   Note: ${target.note}`);
+  });
+
+  lines.push(
+    "",
+    "Done condition: capture iOS and Android proof in /care-twin-qa, mark Pass or Needs tune for each surface, share the QA report, and keep store approval separate from local evidence.",
+  );
+
+  return lines.join("\n");
+}
+
 export function deriveNativeQaSummaryFromMobileQaSession(
   session: MobileQaSessionState | null | undefined,
   surfaces: readonly MobileReleaseQaSurface[] = listMobileLaunchQaSurfaces(),

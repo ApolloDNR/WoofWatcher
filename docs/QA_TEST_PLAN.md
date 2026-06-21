@@ -268,6 +268,12 @@ launch-critical priority and names missing iOS, Android, or flexible screenshot
 evidence per surface. Focused capture-plan/mobile readiness tests pass at 75
 tests.
 
+Current evidence, 2026-06-21: Native QA next-captures now has a shareable
+capture script. Focused tests cover the share text header, generated timestamp,
+progress counts, ordered route list, missing evidence, and done condition.
+Static readiness tests verify More exposes `Share QA Plan` from the same saved
+QA capture plan.
+
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.
 

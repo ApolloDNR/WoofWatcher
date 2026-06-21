@@ -1698,6 +1698,7 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /AsyncStorage/);
   assert.match(more, /MOBILE_QA_SESSION_STORAGE_KEY/);
   assert.match(more, /parseMobileQaSessionSnapshot/);
+  assert.match(more, /buildMobileLaunchQaCaptureShareText/);
   assert.match(more, /buildMobileLaunchQaCapturePlan/);
   assert.match(more, /deriveNativeQaSummaryFromMobileQaSession/);
   assert.match(more, /savedNativeQaSummary/);
@@ -1705,12 +1706,15 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /nativeQaCapturePlan/);
   assert.match(more, /setNativeQaCapturePlan/);
   assert.match(more, /Native QA Next Captures/);
+  assert.match(more, /Share QA Plan/);
   assert.match(more, /nativeQaCapturePlan\.nextTargets/);
+  assert.match(more, /Share\.share\(\{[\s\S]*message:\s*buildMobileLaunchQaCaptureShareText\(nativeQaCapturePlan/);
   assert.match(more, /nativeQa:\s*savedNativeQaSummary/);
   assert.doesNotMatch(more, /nativeQa:\s*null/);
   assert.match(more, /router\.push\("\/care-twin-qa" as never\)/);
 
   assert.match(qaEvidence, /buildMobileLaunchQaCapturePlan/);
+  assert.match(qaEvidence, /buildMobileLaunchQaCaptureShareText/);
   assert.match(qaEvidence, /listMobileLaunchQaSurfaces/);
   assert.match(qaEvidence, /buildStoreSubmissionScreenshotQaSurfaces/);
   assert.match(qaEvidence, /summarizeMobileReleaseQaReviews/);
