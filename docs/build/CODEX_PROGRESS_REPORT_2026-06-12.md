@@ -1210,6 +1210,8 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - `artifacts/woofwatcher-mobile/app/privacy.tsx`
 - `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
 - `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
 - `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
 - `docs/design/UI_IMPLEMENTATION_NOTES.md`
 - `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
@@ -1459,10 +1461,19 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
   - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-native-qa-captures-export --clear`
   - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-native-qa-captures-export`.
 
+### Remote Verification
+
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: remote run `27905215517` for commit `bea5793` failed before job execution with job `82572570665`; `gh run view` reported `steps: []`, and `gh run view --log-failed` returned `log not found: 82572570665`.
+
 ### Remaining Work
 
-- Commit/push, trigger GitHub verify, and record whether the recurring pre-job
-  billing blocker repeats.
+- Continue local launch-hardening while the recurring GitHub Actions
+  billing/spending-limit blocker prevents remote CI from executing jobs.
+- Real iOS and Android QA is still required before launch confidence. More now
+  tells testers exactly which native screenshots/screens to capture next, but
+  those screenshots still need to be captured on real devices or simulators.
 
 ## 2026-06-21 Store Screenshot QA Cockpit
 
