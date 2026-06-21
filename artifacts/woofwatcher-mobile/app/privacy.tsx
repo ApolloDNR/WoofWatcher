@@ -27,19 +27,28 @@ import {
   type AccountSafetySection,
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
+import {
+  buildSupportRunbookShareText,
+  deriveSupportRunbookPlan,
+  type SupportRunbookSection,
+  type SupportRunbookStatus,
+} from "@/lib/supportRunbook";
 import type { AttachmentReviewRow } from "@/lib/attachmentManifest";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
-function statusIcon(status: AccountSafetyStatus): keyof typeof Ionicons.glyphMap {
+type SafetySectionLike = AccountSafetySection | SupportRunbookSection;
+type SafetyStatusLike = AccountSafetyStatus | SupportRunbookStatus;
+
+function statusIcon(status: SafetyStatusLike): keyof typeof Ionicons.glyphMap {
   if (status === "ready") return "checkmark-circle";
   if (status === "limited") return "information-circle";
   if (status === "manual_required") return "clipboard";
   return "lock-closed";
 }
 
-function statusColor(status: AccountSafetyStatus, colors: ReturnType<typeof useColors>): string {
+function statusColor(status: SafetyStatusLike, colors: ReturnType<typeof useColors>): string {
   if (status === "ready") return colors.sage;
   if (status === "limited") return colors.amber;
   if (status === "manual_required") return colors.copper;
@@ -89,6 +98,19 @@ export default function PrivacyScreen() {
   );
 
   const bundle = useMemo(() => buildPrivacyExportBundle(state, context), [state, context]);
+  const supportPlan = useMemo(
+    () =>
+      deriveSupportRunbookPlan({
+        supportEmail: null,
+        privacyPolicyUrl: null,
+        termsUrl: null,
+        refundPolicyApproved: false,
+        veterinaryBoundaryApproved: false,
+        accountDeletionEscalationApproved: false,
+        incidentResponseApproved: false,
+      }),
+    [],
+  );
   const sections = [
     plan.export,
     plan.accountDeletion,
@@ -122,6 +144,18 @@ export default function PrivacyScreen() {
       title: request.subject,
       message: `${request.subject}\n\n${request.body}`,
     }).catch(() => Alert.alert("Deletion request", request.body));
+  };
+
+  const shareSupportRunbook = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const message = buildSupportRunbookShareText(supportPlan, {
+      appName: "WoofWatcher",
+      generatedAtIso: new Date().toISOString(),
+    });
+    Share.share({
+      title: "WoofWatcher Support Runbook",
+      message,
+    }).catch(() => Alert.alert("Support runbook", message));
   };
 
   return (
@@ -206,6 +240,40 @@ export default function PrivacyScreen() {
         </View>
 
         <BoardCard style={s.privacyBoard}>
+          <BoardSectionHeader title="Support runbook" action="Launch gate" />
+          <Text style={[s.supportVerdict, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+            {supportPlan.verdictLabel}
+          </Text>
+          <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            {supportPlan.summary}
+          </Text>
+          <View style={s.sectionStack}>
+            {supportPlan.sections.map((section) => (
+              <SafetyRow key={section.title} section={section} colors={colors} />
+            ))}
+          </View>
+          <View style={[s.supportBlockers, { backgroundColor: colors.amber + "12", borderColor: colors.amber + "33" }]}>
+            {supportPlan.launchBlockers.slice(0, 4).map((blocker) => (
+              <Text key={blocker} style={[s.supportBlockerText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                - {blocker}
+              </Text>
+            ))}
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Share WoofWatcher support runbook"
+            onPress={shareSupportRunbook}
+            style={({ pressed }) => [
+              s.supportShareBtn,
+              { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+            ]}
+          >
+            <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
+            <Text style={[s.supportShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share support runbook</Text>
+          </Pressable>
+        </BoardCard>
+
+        <BoardCard style={s.privacyBoard}>
           <BoardSectionHeader title="Launch safety gates" action={`${sections.length} gates`} />
           <View style={s.sectionStack}>
             {sections.map((section) => (
@@ -255,7 +323,7 @@ function SafetyRow({
   section,
   colors,
 }: {
-  section: AccountSafetySection;
+  section: SafetySectionLike;
   colors: ReturnType<typeof useColors>;
 }) {
   const tone = statusColor(section.status, colors);
@@ -348,6 +416,25 @@ const s = StyleSheet.create({
   secondaryBtn: { flex: 1, height: 52, borderRadius: 17, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   secondaryText: { fontSize: 13.5 },
   sectionStack: { gap: 10 },
+  supportVerdict: { fontSize: 14, lineHeight: 18, marginBottom: 5 },
+  supportBlockers: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    gap: 5,
+    marginTop: 12,
+  },
+  supportBlockerText: { fontSize: 12, lineHeight: 17 },
+  supportShareBtn: {
+    marginTop: 12,
+    minHeight: 46,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  supportShareText: { color: "#FFFFFF", fontSize: 13 },
   safetyRow: { flexDirection: "row", gap: 12, borderRadius: 18, borderWidth: 1, padding: 14 },
   safetyIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   safetyTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },

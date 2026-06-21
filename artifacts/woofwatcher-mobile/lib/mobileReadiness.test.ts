@@ -92,6 +92,10 @@ test("keeps launch-blocking safety copy on premium, privacy, and WoofGuide surfa
   assert.match(privacy, /Deletion request/);
   assert.match(privacySurface, /AI disclosure/);
   assert.match(privacySurface, /document storage/i);
+  assert.match(privacy, /deriveSupportRunbookPlan/);
+  assert.match(privacy, /buildSupportRunbookShareText/);
+  assert.match(privacy, /Support runbook/);
+  assert.match(privacy, /supportPlan\.launchBlockers/);
   assert.match(privacyModel, /deriveAttachmentManifest/);
   assert.match(privacy, /bundle\.counts\.localAttachments/);
   assert.match(privacy, /Attachment queue/);
@@ -141,6 +145,7 @@ test("keeps critical mobile actions accessible to screen readers", () => {
   assert.match(privacy, /accessibilityLabel="Close Privacy and Safety"/);
   assert.match(privacy, /accessibilityLabel="Export WoofWatcher care data"/);
   assert.match(privacy, /accessibilityLabel="Prepare account deletion request"/);
+  assert.match(privacy, /accessibilityLabel="Share WoofWatcher support runbook"/);
   assert.match(premium, /accessibilityLabel="Open premium launch checklist"/);
   assert.match(premium, /accessibilityLabel="Back to care"/);
   assert.match(woofGuide, /accessibilityLabel=\{`Ask WoofGuide: \$\{q\}`\}/);
@@ -722,6 +727,7 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
 
   assert.match(privacy, /@\/components\/board\/BoardPrimitives/);
   assert.match(privacy, /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Export summary"/);
+  assert.match(privacy, /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Support runbook"/);
   assert.match(privacy, /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch safety gates"/);
   assert.match(privacy, /<BoardCard style=\{\[s\.noticeBoard/);
   assert.match(privacy, /Export care data/);

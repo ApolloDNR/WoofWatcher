@@ -163,9 +163,16 @@ score/verdict and exposes Share Launch Packet through native sharing. This is a
 handoff artifact only; it does not approve App Store, Play Store, payments, AI,
 storage, provider sync, or account deletion.
 
+The support runbook pass makes one of the remaining launch gates concrete.
+`supportRunbook.ts` derives support inbox, refund/subscription policy,
+veterinary/emergency boundary, privacy/terms links, deletion escalation,
+incident response, blockers, and share text. Privacy & Safety now shows a
+Support runbook card with explicit blockers and native sharing. It is still a
+readiness packet, not legal approval or payment activation.
+
 Next highest-impact work:
 
-1. Finish full local verification for the release packet slice, commit/push it,
+1. Finish full local verification for the support runbook slice, commit/push it,
    trigger GitHub verify, and document the remote CI blocker if it repeats.
 2. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete both the Mobile Release QA checklist and the 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm iOS and Android counts are both satisfied, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
 3. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.

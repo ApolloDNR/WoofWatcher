@@ -1349,3 +1349,53 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 
 - Continue local launch-hardening while the recurring GitHub Actions
   billing/spending-limit blocker prevents remote CI from executing jobs.
+
+## 2026-06-21 Support Runbook Readiness
+
+### What Changed
+
+- Added a shared support runbook model for support inbox, refund/subscription
+  policy, veterinary/emergency boundary, privacy/terms links, deletion
+  escalation, incident response, blockers, and share text.
+- Privacy & Safety now includes a Support runbook launch-gate card with verdict
+  text, status rows, explicit blockers, and a native share action.
+- The support packet keeps subscriptions/public accounts blocked until Apollo
+  supplies approved support, legal, refund, deletion, and incident-response
+  details.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/lib/supportRunbook.ts`
+- `artifacts/woofwatcher-mobile/lib/supportRunbook.test.ts`
+- `artifacts/woofwatcher-mobile/app/privacy.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused support runbook/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/supportRunbook.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 72 tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 321 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with Windows CRLF warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-support-runbook-export --clear`
+  - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-support-runbook-export`.
+
+### Remaining Work
+
+- Commit/push, trigger GitHub verify, and document the recurring GitHub Actions
+  billing/spending-limit blocker if remote CI still fails before job execution.

@@ -877,3 +877,22 @@ Design intent:
 - Give Apollo a clean handoff artifact while keeping all provider/native/store
   blockers explicit.
 - Avoid fake App Store, Play Store, payment, AI, storage, or deletion claims.
+
+## 2026-06-21 Support Runbook Surface
+
+Privacy & Safety now includes the support/legal launch gate:
+
+- `supportRunbook.ts` derives the support inbox, refund/subscription policy,
+  veterinary/emergency boundary, privacy/terms links, deletion escalation, and
+  incident-response readiness.
+- The Privacy screen renders a Support runbook card with a short launch-gate
+  chip, verdict text, status rows, blocker callout, and native share action.
+- The default state remains blocked/manual until Apollo supplies approved
+  support, legal, refund, deletion, and incident-response details.
+
+Design intent:
+
+- Make launch blockers feel actionable instead of buried in docs.
+- Keep payment/public-account readiness honest and owner-reviewed.
+- Preserve the health boundary: WoofWatcher organizes dog care, but it is not
+  veterinary advice, diagnosis, treatment, or emergency triage.
