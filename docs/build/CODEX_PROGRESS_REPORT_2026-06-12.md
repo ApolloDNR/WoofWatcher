@@ -1372,7 +1372,13 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - `artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts`
 - `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
 - `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/BLOCKERS_FOR_APOLLO.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
 - `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+- `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`
 
 ### Tests And Checks Run
 
@@ -1394,11 +1400,14 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Expo web export:
   - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-saved-qa-launch-export --clear`
   - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-saved-qa-launch-export`.
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: remote run `27904305112` failed before job execution with job `82570057038`; `gh run view` reported `steps: []`, and `gh run view --log-failed` returned `log not found: 82570057038`.
 
 ### Remaining Work
 
-- Commit/push this slice, trigger GitHub verify, and record whether the
-  recurring pre-job billing blocker repeats.
+- Continue local launch-hardening while the recurring GitHub Actions
+  billing/spending-limit blocker prevents remote CI from executing jobs.
 - Real iOS and Android QA is still required before launch confidence. The app
   can now reflect saved proof in More, but the proof must still be captured on
   devices or simulators through `/care-twin-qa`.
