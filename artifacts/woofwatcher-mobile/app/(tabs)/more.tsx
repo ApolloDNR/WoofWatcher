@@ -53,7 +53,11 @@ import {
   type LaunchReadinessTileKey,
   type LaunchReadinessTileStatus,
 } from "@/lib/launchReadiness";
-import { deriveNativeQaSummaryFromMobileQaSession } from "@/lib/mobileLaunchQaEvidence";
+import {
+  buildMobileLaunchQaCapturePlan,
+  deriveNativeQaSummaryFromMobileQaSession,
+  type MobileLaunchQaCapturePlan,
+} from "@/lib/mobileLaunchQaEvidence";
 import {
   MOBILE_QA_SESSION_STORAGE_KEY,
   parseMobileQaSessionSnapshot,
@@ -383,6 +387,8 @@ export default function MoreScreen() {
   const [dSupplements, setDSupplements] = useState("");
   const [savedNativeQaSummary, setSavedNativeQaSummary] =
     useState<LaunchReadinessNativeQaSummary | null>(null);
+  const [nativeQaCapturePlan, setNativeQaCapturePlan] =
+    useState<MobileLaunchQaCapturePlan>(() => buildMobileLaunchQaCapturePlan(null));
 
   useFocusEffect(
     React.useCallback(() => {
@@ -393,9 +399,13 @@ export default function MoreScreen() {
           if (cancelled) return;
           const savedSession = parseMobileQaSessionSnapshot(raw);
           setSavedNativeQaSummary(deriveNativeQaSummaryFromMobileQaSession(savedSession));
+          setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(savedSession));
         })
         .catch(() => {
-          if (!cancelled) setSavedNativeQaSummary(null);
+          if (!cancelled) {
+            setSavedNativeQaSummary(null);
+            setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(null));
+          }
         });
 
       return () => {
@@ -1182,6 +1192,73 @@ export default function MoreScreen() {
                 {launchReadinessPlan.summary} {launchReadinessPlan.nextActions[0] ?? "Prepare the final store packet after Apollo approval."}
               </Text>
             </View>
+            {nativeQaCapturePlan.nextTargets.length > 0 ? (
+              <View style={[s.nativeQaCapturePanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View style={s.nativeQaCaptureHeader}>
+                  <View style={[s.nativeQaCaptureIcon, { backgroundColor: colors.primary + "14" }]}>
+                    <Ionicons name="camera-outline" size={17} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.nativeQaCaptureTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                      Native QA Next Captures
+                    </Text>
+                    <Text style={[s.nativeQaCaptureSub, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      {nativeQaCapturePlan.completeSurfaces}/{nativeQaCapturePlan.totalSurfaces} surfaces complete.
+                      {" "}
+                      {nativeQaCapturePlan.openSurfaces} still open.
+                    </Text>
+                  </View>
+                </View>
+                {nativeQaCapturePlan.nextTargets.map((target) => (
+                  <Pressable
+                    key={target.surfaceId}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open ${target.title} QA capture. ${target.missingEvidence.join(" ")}`}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      router.push(target.route as never);
+                    }}
+                    style={({ pressed }) => [
+                      s.nativeQaCaptureRow,
+                      { borderTopColor: colors.border, opacity: pressed ? 0.72 : 1 },
+                    ]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.nativeQaCaptureRowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {target.title}
+                      </Text>
+                      <Text
+                        numberOfLines={2}
+                        style={[s.nativeQaCaptureRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                      >
+                        {target.missingEvidence.join(" ")}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        s.nativeQaCapturePill,
+                        {
+                          backgroundColor: (target.priority === "launch-critical" ? colors.rose : colors.copper) + "14",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.nativeQaCapturePillText,
+                          {
+                            color: target.priority === "launch-critical" ? colors.rose : colors.copper,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        {target.priority === "launch-critical" ? "Critical" : "Polish"}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
             <View style={[s.launchPacket, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <View style={[s.launchScore, { backgroundColor: readinessBadgeTone + "16" }]}>
                 <Text style={[s.launchScoreValue, { color: readinessBadgeTone, fontFamily: DISPLAY_SEMI }]}>
@@ -2385,6 +2462,46 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   launchNoticeText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  nativeQaCapturePanel: {
+    marginTop: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+  },
+  nativeQaCaptureHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingBottom: 10,
+  },
+  nativeQaCaptureIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nativeQaCaptureTitle: { fontSize: 13.5, lineHeight: 18 },
+  nativeQaCaptureSub: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  nativeQaCaptureRow: {
+    minHeight: 54,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+  },
+  nativeQaCaptureRowTitle: { fontSize: 12.5, lineHeight: 17 },
+  nativeQaCaptureRowSub: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  nativeQaCapturePill: {
+    minHeight: 26,
+    borderRadius: 7,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nativeQaCapturePillText: { fontSize: 9.5, lineHeight: 12 },
   launchPacket: {
     marginTop: 12,
     borderRadius: 8,

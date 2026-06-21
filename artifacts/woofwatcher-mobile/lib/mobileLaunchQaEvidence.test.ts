@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildMobileLaunchQaCapturePlan,
   deriveNativeQaSummaryFromMobileQaSession,
   listMobileLaunchQaSurfaces,
 } from "./mobileLaunchQaEvidence.ts";
@@ -101,4 +102,74 @@ test("lists the combined native release and store screenshot QA surfaces", () =>
   assert.ok(ids.includes("store-phoenix-home"));
   assert.ok(ids.includes("store-privacy-launch-gates"));
   assert.ok(surfaces.every((surface) => surface.requiredEvidence.some((item) => /screenshot/i.test(item))));
+});
+
+test("builds a prioritized capture plan from missing native QA evidence", () => {
+  const session: MobileQaSessionState = {
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {
+      home: "pass",
+      "care-pass": "pass",
+    },
+    surfaceNotes: {},
+    surfaceEvidenceById: {
+      home: [
+        {
+          uri: "file:///qa/ios-home.png",
+          fileName: "ios-home.png",
+          source: "library",
+          targetPlatform: "ios",
+          capturedAtIso: "2026-06-21T09:00:00.000Z",
+        },
+        {
+          uri: "file:///qa/android-home.png",
+          fileName: "android-home.png",
+          source: "library",
+          targetPlatform: "android",
+          capturedAtIso: "2026-06-21T09:02:00.000Z",
+        },
+      ],
+    },
+  };
+
+  const plan = buildMobileLaunchQaCapturePlan(session, focusedSurfaces);
+
+  assert.equal(plan.totalSurfaces, 2);
+  assert.equal(plan.openSurfaces, 1);
+  assert.equal(plan.completeSurfaces, 1);
+  assert.deepEqual(plan.nextTargets, [
+    {
+      surfaceId: "care-pass",
+      title: "Care Pass",
+      route: "/records",
+      priority: "release-polish",
+      status: "pass",
+      missingEvidence: ["Attach 1 screenshot for Care Pass."],
+      evidenceAttached: 0,
+      note: undefined,
+    },
+  ]);
+});
+
+test("prioritizes launch-critical unreviewed targets before release-polish targets", () => {
+  const emptySession: MobileQaSessionState = {
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {},
+    surfaceNotes: {},
+    surfaceEvidenceById: {},
+  };
+
+  const plan = buildMobileLaunchQaCapturePlan(emptySession, focusedSurfaces);
+
+  assert.equal(plan.openSurfaces, 2);
+  assert.equal(plan.nextTargets[0]?.surfaceId, "home");
+  assert.deepEqual(plan.nextTargets[0]?.missingEvidence, [
+    "Attach 1 iOS screenshot for Home.",
+    "Attach 1 Android screenshot for Home.",
+  ]);
+  assert.equal(plan.nextTargets[1]?.surfaceId, "care-pass");
 });

@@ -1004,3 +1004,22 @@ Design intent:
   not decorative status badges.
 - Give Apollo, Fable, and future QA collaborators a direct loop from screenshot
   capture to launch decision clarity.
+
+## 2026-06-21 Native QA Next Captures
+
+Launch Readiness now includes a compact capture queue:
+
+- `mobileLaunchQaEvidence.ts` ranks open Mobile Release QA and Store Screenshot
+  QA surfaces by launch-critical priority.
+- More renders `Native QA Next Captures` below the launch notice with complete
+  and open counts, the next target screens, missing evidence text, and route
+  jumps.
+- Rows stay concise and action-oriented so QA does not become another
+  checklist page hidden away from the operator cockpit.
+
+Design intent:
+
+- Make the next device-testing move obvious in under five seconds.
+- Keep the launcher useful even before provider-backed storage exists.
+- Preserve the premium operating-system feel: every status points to a real
+  next action.

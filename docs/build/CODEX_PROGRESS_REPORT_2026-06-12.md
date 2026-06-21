@@ -1154,6 +1154,8 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
 - `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
 - `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/QA_TEST_PLAN.md`
+- `docs/QUALITY_GATES.md`
 - `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
 - `docs/design/UI_IMPLEMENTATION_NOTES.md`
 - `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
@@ -1411,6 +1413,56 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Real iOS and Android QA is still required before launch confidence. The app
   can now reflect saved proof in More, but the proof must still be captured on
   devices or simulators through `/care-twin-qa`.
+
+## 2026-06-21 - Native QA Next Captures
+
+### What Changed
+
+- Extended `mobileLaunchQaEvidence.ts` with a capture-plan model that ranks
+  open QA surfaces by launch-critical priority and computes missing iOS,
+  Android, and flexible screenshot evidence per surface.
+- More now shows a compact `Native QA Next Captures` panel inside Launch
+  Readiness with complete/open counts, the next target screens, missing evidence
+  copy, Critical/Polish labels, and direct route jumps.
+- The panel is still a local QA helper. It does not imply App Store, Play Store,
+  provider, legal, payment, storage, or native approval.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/more.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused capture-plan/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 75 tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 332 tests.
+- Mobile TypeScript:
+  - Command: `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with Windows CRLF warnings only.
+- Expo web export:
+  - Command: `node node_modules/@expo/cli/build/bin/cli export --platform web --output-dir tmp/woofwatcher-native-qa-captures-export --clear`
+  - Result: passed; exported to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-native-qa-captures-export`.
+
+### Remaining Work
+
+- Commit/push, trigger GitHub verify, and record whether the recurring pre-job
+  billing blocker repeats.
 
 ## 2026-06-21 Store Screenshot QA Cockpit
 

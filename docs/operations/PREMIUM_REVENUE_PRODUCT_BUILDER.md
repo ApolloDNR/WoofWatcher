@@ -215,11 +215,18 @@ real iOS/Android evidence can move the launch tile from generic "Device proof
 required" to the specific missing evidence state without claiming store
 approval.
 
+The Native QA next-captures pass made that cockpit more actionable. The same
+model now computes the next open capture targets, including missing iOS,
+Android, and flexible screenshot evidence by surface, sorted with
+launch-critical screens first. More renders those targets as direct route jumps
+inside Launch Readiness so Apollo or a device tester can see exactly which
+screens to capture next.
+
 Next highest-impact work:
 
-1. Commit/push the saved-QA launch-readiness slice, trigger GitHub verify, and
-   document the remote CI blocker if it repeats.
-2. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete the Mobile Release QA checklist, Store Screenshot QA checklist, and 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
+1. Verify, commit, push, and trigger GitHub verify for the Native QA
+   next-captures pass; document the remote CI blocker if it repeats.
+2. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete the Mobile Release QA checklist, Store Screenshot QA checklist, and 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm More's Launch Readiness and Native QA Next Captures update from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
 3. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 4. Continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.

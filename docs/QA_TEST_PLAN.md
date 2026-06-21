@@ -262,6 +262,12 @@ saved local QA session, and returns `null` for empty sessions so native proof is
 not invented. More reloads that saved session on focus and recalculates Launch
 Readiness from it. Focused saved-QA/mobile readiness tests pass at 73 tests.
 
+Current evidence, 2026-06-21: More now also shows `Native QA Next Captures`
+inside Launch Readiness. The capture plan ranks missing screenshot targets by
+launch-critical priority and names missing iOS, Android, or flexible screenshot
+evidence per surface. Focused capture-plan/mobile readiness tests pass at 75
+tests.
+
 Native QA still needs real iOS/Android screenshots for room/sprite scale, stage
 cropping, touch response, and loop readability.
 
