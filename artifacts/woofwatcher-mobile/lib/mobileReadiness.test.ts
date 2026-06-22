@@ -523,6 +523,17 @@ test("keeps route-local action controls on the shared mobile touch target", () =
   assert.match(setup, /laterBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
 });
 
+test("keeps auth action controls on the shared mobile touch target", () => {
+  const authUi = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "auth-ui.tsx"),
+    "utf8",
+  );
+
+  assert.match(authUi, /MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(authUi, /button: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(authUi, /googleButton: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+});
+
 test("keeps Avatar Studio compact controls on the shared mobile touch target", () => {
   const avatarStudio = readAppFile("portrait.tsx");
 

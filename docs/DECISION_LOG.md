@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-22: Auth Actions Use The Shared 48px Touch Target
+
+Decision: The shared mobile auth primary button and Google SSO button should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of relying only on padding-driven height.
+
+Reason: Native accessibility traversal is still waiting on simulator/device access, and sign-in/sign-up are release-critical onboarding actions. Reusing the 48px contract reduces missed-tap risk without changing auth behavior, provider truth, or claiming native QA has run.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows auth controls need different sizing, final Figma/native auth components replace the current shared auth UI, or platform-specific accessibility guidance requires separate iOS/Android values.
+
 ### 2026-06-22: Plans Modal Controls Use The Shared 48px Touch Target
 
 Decision: Plans routine and event modal controls should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of relying on padding-only local sizing.

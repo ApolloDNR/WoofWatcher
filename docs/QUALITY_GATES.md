@@ -168,6 +168,8 @@ Current evidence, 2026-06-21: Home header navigation controls now derive their t
 
 Current evidence, 2026-06-22: Plans routine/event modal controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of padding-only local sizing. Focused readiness protects routine type chips, owner quick chips, save buttons, delete routine, and add-event save controls before native accessibility traversal is available.
 
+Current evidence, 2026-06-22: Auth onboarding action controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of relying only on visual padding. Focused readiness protects the shared primary auth button and Google SSO button before native accessibility traversal is available.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

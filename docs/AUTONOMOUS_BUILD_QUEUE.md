@@ -115,6 +115,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 107. DONE 2026-06-21: Error recovery debug and close controls now share the 48px touch-target contract before native accessibility traversal. The development error-details button and error-details modal close control use `MIN_MOBILE_TOUCH_TARGET`, and mobile readiness protects the app-wide recovery surface from drifting back to 44px route-local sizing while simulator/device QA remains blocked.
 108. DONE 2026-06-21: Home header navigation controls now share the 48px touch-target contract before native accessibility traversal. The More menu and Health Watch notification buttons use `MIN_MOBILE_TOUCH_TARGET` instead of 42px route-local sizing, and mobile readiness protects the first-screen Home navigation controls from drifting below release-safe tap sizes.
 109. DONE 2026-06-22: Plans routine/event modal controls now share the 48px touch-target contract before native accessibility traversal. Routine type chips, owner quick chips, save buttons, delete routine, and add-event save controls use `MIN_MOBILE_TOUCH_TARGET`, and mobile readiness protects these modal planning controls from relying on padding-only sub-48px tap areas.
+110. DONE 2026-06-22: Auth onboarding action controls now share the 48px touch-target contract before native accessibility traversal. The primary auth button and Google SSO button in the shared auth UI use `MIN_MOBILE_TOUCH_TARGET`, and mobile readiness protects sign-in/sign-up actions from relying only on visual padding.
 
 ## Cadence
 

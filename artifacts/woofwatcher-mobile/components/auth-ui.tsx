@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getStandaloneRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 
 export function AuthShell({
   title,
@@ -257,6 +257,7 @@ const styles = StyleSheet.create({
   },
   button: {
     borderRadius: 14,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
@@ -271,6 +272,7 @@ const styles = StyleSheet.create({
     gap: 10,
     borderWidth: 1,
     borderRadius: 14,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     paddingVertical: 15,
     alignItems: "center",
     justifyContent: "center",
