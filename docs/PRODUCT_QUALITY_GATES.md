@@ -86,10 +86,11 @@ Passing evidence:
 - API server typechecks and builds in CI.
 - API includes auth, household, care state, care entries, health, avatar, and WoofGuide-related routes.
 - Production CORS is documented and guarded.
+- Focused API route readiness now protects authenticated household scoping, optimistic care-state conflict responses, household-isolated care-entry create/update/delete behavior, and care-entry list query contracts across OpenAPI, zod, and generated React client types.
 
 Current gaps:
 
-- Need integration tests for authenticated household-scoped routes.
+- Need live integration tests for authenticated household-scoped routes against a test database/provider-auth harness.
 - Need storage for record documents and generated reports.
 - Need role-aware permissions, broader audit trail policy for documents/accounts/roles, and provider-backed data export/delete paths.
 - Need deeper multi-device conflict policy, server-backed delete/edit retention rules, and native offline recovery QA.

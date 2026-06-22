@@ -164,5 +164,6 @@ export interface CareEntryUpdate {
 
 export type ListCareEntriesParams = {
 since?: string;
+limit?: number;
 };
 

@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-22: API Route Contract Readiness Runs In Focused Tests
+
+Decision: The focused test suite should include CI-safe API route contract readiness while live Express/Drizzle integration tests remain blocked by local dependency, database, and provider-auth setup. The first API readiness slice protects authenticated household scoping, care-state optimistic conflict responses, household-isolated care-entry create/update/delete behavior, and the `/care-entries?limit=` query contract across OpenAPI, zod, and generated React client types.
+
+Reason: Backend route regressions can break household trust and sync safety even before production providers are approved. The current Codex checkout has no `node_modules` or `DATABASE_URL`, so static contract readiness is the strongest local coverage that can run in the same zero-dependency gate as the mobile/domain tests without pretending live provider integration has been verified.
+
+Owner: Codex.
+
+Revisit trigger: A local or CI test database/auth harness is available, API dependencies are installed in the checkout, or provider-backed auth/roles/storage become active release work.
+
 ### 2026-06-22: Avatar Studio Owner Inputs Use The Shared Touch Target
 
 Decision: Avatar Studio scan actions, template tiles, accessory tiles, and mood preview chips should use the shared `MIN_MOBILE_TOUCH_TARGET` floor before native accessibility traversal, while preserving larger visual tile heights where the character-creator layout already needs them. Face-marking options should also expose explicit screen-reader labels.

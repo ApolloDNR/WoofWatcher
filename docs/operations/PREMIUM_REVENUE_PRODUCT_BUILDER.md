@@ -113,6 +113,7 @@ Latest completed local runtime/accessibility hardening:
 - Remaining high-frequency route actions use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract. Quick Log launcher tabs and outbox retry, Records empty-add/delete controls, More Care Intelligence/tool/premium/profile-edit actions, and Privacy export/delete buttons have mobile readiness coverage before native accessibility traversal is available.
 - Onboarding and Avatar Studio creation actions expose explicit screen-reader roles, labels, and state where relevant. Shared auth primary/Google buttons, Setup starter-routine/save/finish-later actions, and Avatar Studio reset/save controls now have mobile readiness coverage before native accessibility traversal is available.
 - Avatar Studio owner-input controls now finish the shared mobile touch-target pass. Scan gallery/camera actions, template tiles, accessory tiles, and mood preview chips use the shared `MIN_MOBILE_TOUCH_TARGET` floor, and face-marking choices expose explicit screen-reader labels before native accessibility traversal is available.
+- API route contract readiness now runs in the focused test suite before live database/provider integration tests are available. Authenticated household scoping, care-state optimistic conflicts, household-isolated care-entry writes, and the `/care-entries?limit=` query contract are covered across the API routes, OpenAPI, zod, and generated React client types.
 
 Next highest-impact work:
 
@@ -120,4 +121,5 @@ Next highest-impact work:
 2. Continue accessibility traversal and visual runtime inspection for the live mobile app and Avatar Studio once simulator/device access is available.
 3. Replace first-pass derived room variants with final illustrated room art.
 4. Replace first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art, then continue screen-by-screen polish, accessibility traversal, and visual regression.
-5. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.
+5. Add live API integration tests once a test database and provider-auth harness are available.
+6. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.

@@ -12,7 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-22:
 
-- PASS: 254 focused tests with the command above.
+- PASS: 273 focused tests with the command above, now including API route contract readiness for authenticated household scoping, care-state optimistic conflicts, household-isolated care-entry writes, and the `/care-entries?limit=` contract across OpenAPI, zod, and the generated React client.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -174,7 +174,7 @@ Latest local evidence, 2026-06-22:
 ## Missing QA
 
 - Simulator/device runtime smoke. CI web export smoke exists, but it does not replace native runtime rendering.
-- API integration tests.
+- Live API integration tests against a test database and provider-auth harness. Focused API contract readiness now covers route scoping/concurrency/query wiring without requiring `DATABASE_URL`, Clerk, or installed Express/Drizzle dependencies in this Codex checkout.
 - Auth onboarding smoke.
 - Visual regression or screenshot review.
 - Rive/Lottie/Reanimated avatar asset runtime checks.
