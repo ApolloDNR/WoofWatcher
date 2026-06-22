@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-22: Avatar Studio Owner Inputs Use The Shared Touch Target
+
+Decision: Avatar Studio scan actions, template tiles, accessory tiles, and mood preview chips should use the shared `MIN_MOBILE_TOUCH_TARGET` floor before native accessibility traversal, while preserving larger visual tile heights where the character-creator layout already needs them. Face-marking options should also expose explicit screen-reader labels.
+
+Reason: Avatar Studio is a high-touch care-twin creation workflow where owners repeatedly scan, choose templates, customize markings, select accessories, and preview moods. Native accessibility traversal is still blocked, so the in-code contract should keep those owner-input controls aligned with the rest of the mobile release-safe target baseline without changing the truthful PixelLab/template readiness model.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows Avatar Studio needs different sizing, final Figma/native character-creator components replace the current controls, or platform-specific guidance requires separate iOS/Android values.
+
 ### 2026-06-22: Onboarding And Avatar Creation Actions Expose Screen-Reader State
 
 Decision: Release-critical onboarding and Avatar Studio creation actions should expose explicit screen-reader roles, labels, and state before native accessibility traversal. This covers shared auth primary/Google buttons, Setup starter-routine type selection, Setup save/finish-later actions, and Avatar Studio reset/save controls.

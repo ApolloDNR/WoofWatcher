@@ -800,6 +800,7 @@ export default function PortraitScreen() {
                       key={marking.id}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
+                      accessibilityLabel={`Set face marking ${marking.label}`}
                       onPress={() => setDraft((current) => updateConfig(current, { faceMarkingId: marking.id }))}
                       style={[
                         s.optionPill,
@@ -1277,7 +1278,7 @@ const s = StyleSheet.create({
   actionRow: { flexDirection: "row", gap: 10, marginTop: 4, marginBottom: 12 },
   secondaryBtn: {
     flex: 1,
-    minHeight: 48,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
     alignItems: "center",
@@ -1288,7 +1289,7 @@ const s = StyleSheet.create({
   secondaryBtnText: { fontSize: 14 },
   primaryBtn: {
     flex: 1,
-    minHeight: 48,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -1300,7 +1301,7 @@ const s = StyleSheet.create({
   templateTile: {
     flexBasis: "48%",
     flexGrow: 1,
-    minHeight: 178,
+    minHeight: Math.max(MIN_MOBILE_TOUCH_TARGET, 178),
     borderRadius: 8,
     borderWidth: 1,
     padding: 10,
@@ -1381,7 +1382,7 @@ const s = StyleSheet.create({
   accessoryTile: {
     flexBasis: "47.5%",
     flexGrow: 1,
-    minHeight: 82,
+    minHeight: Math.max(MIN_MOBILE_TOUCH_TARGET, 82),
     borderRadius: 8,
     borderWidth: 1,
     padding: 10,
@@ -1393,7 +1394,12 @@ const s = StyleSheet.create({
   accessorySlot: { fontSize: 10, textTransform: "uppercase" },
   accessoryStatus: { fontSize: 10.5, textTransform: "uppercase" },
   moodGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
-  moodChip: { width: "30.9%", alignItems: "center" },
+  moodChip: {
+    flexBasis: "30.9%",
+    flexGrow: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    alignItems: "center",
+  },
   moodThumbWrap: {
     width: "100%",
     aspectRatio: 1,

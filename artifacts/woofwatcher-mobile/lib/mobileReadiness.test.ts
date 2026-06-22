@@ -163,6 +163,7 @@ test("keeps onboarding and avatar creation actions accessible to screen readers"
   assert.match(setup, /accessibilityLabel="Finish setup later"/);
   assert.match(avatarStudio, /accessibilityLabel="Reset avatar draft"/);
   assert.match(avatarStudio, /accessibilityLabel="Save avatar configuration"/);
+  assert.match(avatarStudio, /accessibilityLabel=\{`Set face marking \$\{marking\.label\}`\}/);
 });
 
 test("shows premium entitlement policy before checkout is enabled", () => {
@@ -589,12 +590,20 @@ test("keeps Avatar Studio compact controls on the shared mobile touch target", (
 
   assert.match(avatarStudio, /MIN_MOBILE_TOUCH_TARGET/);
   assert.match(avatarStudio, /tab: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(avatarStudio, /secondaryBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(avatarStudio, /primaryBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(avatarStudio, /templateTile: \{[\s\S]*minHeight: Math\.max\(MIN_MOBILE_TOUCH_TARGET, 178\)/);
   assert.match(avatarStudio, /swatch: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(avatarStudio, /swatch: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(avatarStudio, /optionPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(avatarStudio, /accessoryTile: \{[\s\S]*minHeight: Math\.max\(MIN_MOBILE_TOUCH_TARGET, 82\)/);
+  assert.match(avatarStudio, /moodChip: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.doesNotMatch(avatarStudio, /tab: \{[\s\S]*minHeight: 40/);
+  assert.doesNotMatch(avatarStudio, /secondaryBtn: \{[\s\S]*minHeight: 48/);
+  assert.doesNotMatch(avatarStudio, /primaryBtn: \{[\s\S]*minHeight: 48/);
   assert.doesNotMatch(avatarStudio, /swatch: \{[\s\S]*width: 42/);
   assert.doesNotMatch(avatarStudio, /optionPill: \{[\s\S]*minHeight: 36/);
+  assert.doesNotMatch(avatarStudio, /moodChip: \{[\s\S]*width: "30\.9%"/);
 });
 
 test("keeps floating tab safe-area spacing on shared mobile layout helpers", () => {
