@@ -33,6 +33,7 @@ import {
 } from "@/lib/careTwinAssets";
 import { deriveCareTwinScene, type AvatarRoomZone, type CareTwinHudTone } from "@/lib/avatarLifeEngine";
 import type { AvatarMotionModel } from "@/lib/avatarMotion";
+import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 import type { Mood } from "@/lib/phoenixStatus";
 
 const ROOM_SCENE = require("@/assets/board/hero.png");
@@ -333,6 +334,7 @@ export function LivingPhoenixRoom({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Phoenix room. ${motion.label}. ${plan.tapVerb}. ${speech}`}
+      hitSlop={MOBILE_INLINE_HIT_SLOP}
       onPress={handlePress}
       style={styles.root}
     >
@@ -668,7 +670,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 12,
     bottom: 76,
-    minHeight: 42,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 10,
@@ -852,7 +854,7 @@ const styles = StyleSheet.create({
     right: 14,
     bottom: 75,
     maxWidth: "55%",
-    minHeight: 32,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 7,
     borderWidth: 1,
     paddingHorizontal: 10,

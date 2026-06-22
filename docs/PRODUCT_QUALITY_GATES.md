@@ -127,7 +127,7 @@ Current gaps:
 - Need design system.
 - Need screen-by-screen polish.
 - Need full motion spec, Rive/Lottie/Reanimated asset pipeline, transition rules, and runtime animation QA.
-- Need full accessibility pass. Critical action screen-reader labels, shared board touch targets, route-local action and error-recovery touch targets, keyboard avoidance, and inline action hit slop are covered by focused static smoke, but contrast, dynamic type, and native screen-reader traversal still need QA.
+- Need full accessibility pass. Critical action screen-reader labels, shared board touch targets, route-local action and error-recovery touch targets, keyboard avoidance, inline action hit slop, and living Phoenix room tap cues are covered by focused static smoke, but contrast, dynamic type, and native screen-reader traversal still need QA.
 - Shared auth action touch targets are now covered by focused static smoke for primary and Google SSO buttons before native screen-reader traversal is available.
 - Need visual regression or screenshot review.
 - Need Figma alignment if Figma becomes the canonical design source.
@@ -169,6 +169,7 @@ Current gaps:
 - Static mobile readiness now protects Home header navigation controls from reverting to route-local 42px tap boxes instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Static mobile readiness now protects Plans routine/event modal controls from reverting to padding-only sub-48px tap areas instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Static mobile readiness now protects shared auth action buttons from relying only on visual padding instead of `MIN_MOBILE_TOUCH_TARGET`.
+- Static mobile readiness now protects the living Phoenix room pressable and visible status/next-action cue chips with `MOBILE_INLINE_HIT_SLOP` and `MIN_MOBILE_TOUCH_TARGET`.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
 - Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.
 - Walk quick-log visibility, full Log walk route fields, Walk Activity summary logic, Saved Routes derivation, Care Pass walk activity/Saved Routes language, and Records walk activity wiring are covered by focused tests.

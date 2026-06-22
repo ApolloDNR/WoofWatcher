@@ -10,9 +10,9 @@ Run focused behavior tests:
 
 CI must pass `WoofWatcher Verify` on `main`.
 
-Latest local evidence, 2026-06-21:
+Latest local evidence, 2026-06-22:
 
-- PASS: 251 focused tests with the command above.
+- PASS: 253 focused tests with the command above.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -36,6 +36,7 @@ Latest local evidence, 2026-06-21:
 - PASS: Home header navigation controls now use `MIN_MOBILE_TOUCH_TARGET`, and static readiness protects the More menu and Health Watch notification buttons from reverting to 42px route-local sizing before native accessibility traversal is available.
 - PASS: Plans routine/event modal controls now use `MIN_MOBILE_TOUCH_TARGET`, and static readiness protects routine type chips, owner quick chips, save buttons, delete routine, and add-event save controls from reverting to padding-only sub-48px tap areas before native accessibility traversal is available.
 - PASS: Auth onboarding action controls now use `MIN_MOBILE_TOUCH_TARGET`, and static readiness protects the primary auth button and Google SSO button from relying only on visual padding before native accessibility traversal is available.
+- PASS: Living Phoenix room tap cues now use the shared tap contract: the full-room pressable uses `MOBILE_INLINE_HIT_SLOP`, and the visible status/next-action cue chips use `MIN_MOBILE_TOUCH_TARGET` before native accessibility traversal is available.
 - LIMIT: mobile TypeScript could not run in this checkout because `node_modules/typescript` is missing (`tsc-missing`).
 - REMOTE CI: GitHub Actions `WoofWatcher Verify` runs continue to fail before job start or without executing workflow steps with GitHub's account billing/spending-limit blocker; checked examples include `27865345974` for commit `5159a3b`, `27865371635` for commit `24d8575`, `27869581404` for commit `8d08825`, `27873733286` for commit `f542db3`, `27878278274` for commit `c915eac`, `27882750930` for commit `de55710`, `27890798715` for commit `0ce53ea`, `27894565111` for commit `0c6371b`, `27898593508` for commit `81647b3`, `27902673966` for commit `c0b1815`, `27907301395` for commit `9411286`, `27911939637` for commit `940a449`, `27916377118` for commit `a6b3951`, `27920782525` for commit `fbe03bb`, `27925717536` for commit `2fccfa2`, and `27931616821` for commit `755ed56`. Run `27931616821` completed in 4 seconds with billing/spending-limit annotation, job `82644483194`, and the failed-job log was absent (`log not found: 82644483194`). Use the Actions run list as live evidence instead of treating this static doc as current CI state.
 - Latest remote check, 2026-06-22: Run `27939650557` for commit `3683979` failed in 5 seconds with the same billing/spending-limit annotation; job `82669639349` did not start executable steps and `gh run view --log-failed` returned `log not found: 82669639349`.
@@ -87,6 +88,7 @@ Latest local evidence, 2026-06-21:
 - Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, Records printable report and Dog ID actions, Hydration/Walk/Potty Records wiring, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
 - Route-local mobile action control touch-target readiness for Home header navigation, Plans schedule/routine controls, Calendar event-management controls, ErrorFallback recovery controls, Log search/filter controls, Records medication/report controls, More household/profile controls, Health/Bile, Premium, Setup, and Avatar Studio compact controls.
 - Shared auth action control touch-target readiness for sign-in/sign-up primary and Google SSO buttons.
+- Living Phoenix room tap-contract readiness for the animated care-twin room pressable and visible status/next-action cue chips.
 - Expo app identity smoke for release-grade slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
 - Expo/EAS release profile smoke for committed iOS/Android development, preview, production, and submit paths.
 - Mobile release runbook smoke for iOS, Android, TestFlight, Google Play, Fable, and web dashboard/PWA handoff coverage.

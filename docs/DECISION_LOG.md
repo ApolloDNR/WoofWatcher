@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-22: Living Phoenix Room Uses Shared Tap Contracts
+
+Decision: The living Phoenix room should use the shared mobile tap contracts before native accessibility traversal. The full-room pressable uses `MOBILE_INLINE_HIT_SLOP`, and the visible status and next-action cue chips use `MIN_MOBILE_TOUCH_TARGET`.
+
+Reason: The animated care-twin room is the premium first-screen care surface for Home and Avatar Studio. Simulator/device QA is still blocked, so keeping its tap target and visible action cues on the same shared mobile contract reduces missed-tap and drift risk without changing care-state behavior, avatar motion, or claiming native QA has run.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows the room needs different touch behavior, the final Figma/native care-twin component changes the room interaction model, or platform-specific accessibility guidance requires separate iOS/Android values.
+
 ### 2026-06-22: Auth Actions Use The Shared 48px Touch Target
 
 Decision: The shared mobile auth primary button and Google SSO button should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of relying only on padding-driven height.

@@ -284,6 +284,21 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.doesNotMatch(room, /speechWrap/);
 });
 
+test("keeps the living Phoenix room on shared mobile tap contracts", () => {
+  const room = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "LivingPhoenixRoom.tsx"),
+    "utf8",
+  );
+
+  assert.match(room, /MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(room, /MOBILE_INLINE_HIT_SLOP/);
+  assert.match(room, /hitSlop=\{MOBILE_INLINE_HIT_SLOP\}/);
+  assert.match(room, /statusPatch: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(room, /nextChip: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.doesNotMatch(room, /statusPatch: \{[\s\S]*minHeight: 42/);
+  assert.doesNotMatch(room, /nextChip: \{[\s\S]*minHeight: 32/);
+});
+
 test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {
   const domain = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-intelligence.ts"), "utf8");
   const home = readAppFile(join("(tabs)", "index.tsx"));
