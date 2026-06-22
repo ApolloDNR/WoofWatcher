@@ -177,6 +177,9 @@ export default function SetupScreen() {
                       Haptics.selectionAsync();
                       setField("routineType", item.value);
                     }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Use ${item.label} as the starter routine type`}
+                    accessibilityState={{ selected }}
                     style={({ pressed }) => [
                       s.typePill,
                       {
@@ -205,6 +208,9 @@ export default function SetupScreen() {
             <Pressable
               onPress={saveSetup}
               disabled={!canSave}
+              accessibilityRole="button"
+              accessibilityLabel="Save care foundation"
+              accessibilityState={{ disabled: !canSave }}
               style={({ pressed }) => [
                 s.saveBtn,
                 { backgroundColor: canSave ? colors.primary : colors.border, opacity: pressed ? 0.82 : 1 },
@@ -213,7 +219,12 @@ export default function SetupScreen() {
               <Ionicons name="checkmark-circle" size={18} color="#fff" />
               <Text style={[s.saveText, { fontFamily: "Inter_700Bold" }]}>Save foundation</Text>
             </Pressable>
-            <Pressable onPress={finishLater} style={({ pressed }) => [s.laterBtn, { opacity: pressed ? 0.65 : 1 }]}>
+            <Pressable
+              onPress={finishLater}
+              accessibilityRole="button"
+              accessibilityLabel="Finish setup later"
+              style={({ pressed }) => [s.laterBtn, { opacity: pressed ? 0.65 : 1 }]}
+            >
               <Text style={[s.laterText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Finish later</Text>
             </Pressable>
           </View>

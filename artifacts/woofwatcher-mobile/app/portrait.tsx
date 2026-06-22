@@ -1033,6 +1033,8 @@ export default function PortraitScreen() {
         <View style={s.actionRow}>
           <Pressable
             onPress={resetDraft}
+            accessibilityRole="button"
+            accessibilityLabel="Reset avatar draft"
             style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: pressed ? 0.65 : 1 }]}
           >
             <Ionicons name="refresh" size={18} color={colors.foreground} />
@@ -1040,6 +1042,8 @@ export default function PortraitScreen() {
           </Pressable>
           <Pressable
             onPress={saveDraft}
+            accessibilityRole="button"
+            accessibilityLabel="Save avatar configuration"
             style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}
           >
             <Ionicons name="heart" size={18} color="#FFF9EF" />

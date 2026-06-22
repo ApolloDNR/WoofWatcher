@@ -144,6 +144,27 @@ test("keeps critical mobile actions accessible to screen readers", () => {
   assert.match(more, /accessibilityLabel="Sign out of WoofWatcher"/);
 });
 
+test("keeps onboarding and avatar creation actions accessible to screen readers", () => {
+  const authUi = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "auth-ui.tsx"),
+    "utf8",
+  );
+  const setup = readAppFile("setup.tsx");
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  assert.match(authUi, /accessibilityRole="button"[\s\S]*accessibilityLabel=\{label\}/);
+  assert.match(authUi, /accessibilityState=\{\{ disabled: isDisabled, busy: Boolean\(loading\) \}\}/);
+  assert.match(authUi, /accessibilityRole="button"[\s\S]*accessibilityLabel="Continue with Google"/);
+  assert.match(authUi, /accessibilityState=\{\{ disabled: Boolean\(loading\), busy: Boolean\(loading\) \}\}/);
+  assert.match(setup, /accessibilityLabel=\{`Use \$\{item\.label\} as the starter routine type`\}/);
+  assert.match(setup, /accessibilityState=\{\{ selected \}\}/);
+  assert.match(setup, /accessibilityLabel="Save care foundation"/);
+  assert.match(setup, /accessibilityState=\{\{ disabled: !canSave \}\}/);
+  assert.match(setup, /accessibilityLabel="Finish setup later"/);
+  assert.match(avatarStudio, /accessibilityLabel="Reset avatar draft"/);
+  assert.match(avatarStudio, /accessibilityLabel="Save avatar configuration"/);
+});
+
 test("shows premium entitlement policy before checkout is enabled", () => {
   const premium = readAppFile("premium.tsx");
 

@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-22: Onboarding And Avatar Creation Actions Expose Screen-Reader State
+
+Decision: Release-critical onboarding and Avatar Studio creation actions should expose explicit screen-reader roles, labels, and state before native accessibility traversal. This covers shared auth primary/Google buttons, Setup starter-routine type selection, Setup save/finish-later actions, and Avatar Studio reset/save controls.
+
+Reason: Account setup, care foundation setup, and care-twin creation are first-run release paths. Native screen-reader traversal is still blocked, so static readiness should prevent these controls from regressing to text-only tappables or unlabeled icon/text combinations while preserving the existing auth, setup, and avatar behavior.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader traversal shows different labeling/state requirements, final Figma/native components replace these controls, or provider-backed onboarding changes the first-run flow.
+
 ### 2026-06-22: Remaining Route Actions Use The Shared 48px Touch Target
 
 Decision: Remaining high-frequency route actions should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper before native accessibility traversal. This covers Quick Log launcher tabs and outbox retry, Records empty-add and delete controls, More Care Intelligence, tool, premium, and profile-edit actions, and Privacy export/delete actions.

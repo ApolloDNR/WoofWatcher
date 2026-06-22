@@ -121,6 +121,9 @@ export function PrimaryButton({
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: isDisabled, busy: Boolean(loading) }}
       style={({ pressed }) => [
         styles.button,
         {
@@ -152,6 +155,9 @@ export function GoogleButton({
     <Pressable
       onPress={onPress}
       disabled={loading}
+      accessibilityRole="button"
+      accessibilityLabel="Continue with Google"
+      accessibilityState={{ disabled: Boolean(loading), busy: Boolean(loading) }}
       style={({ pressed }) => [
         styles.googleButton,
         {

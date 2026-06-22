@@ -129,6 +129,7 @@ Current gaps:
 - Need full motion spec, Rive/Lottie/Reanimated asset pipeline, transition rules, and runtime animation QA.
 - Need full accessibility pass. Critical action screen-reader labels, shared board touch targets, route-local action and error-recovery touch targets, keyboard avoidance, inline action hit slop, and living Phoenix room tap cues are covered by focused static smoke, but contrast, dynamic type, and native screen-reader traversal still need QA.
 - Shared auth action touch targets are now covered by focused static smoke for primary and Google SSO buttons before native screen-reader traversal is available.
+- Onboarding and Avatar Studio creation actions now expose explicit screen-reader roles, labels, and selected/disabled/busy state where relevant for shared auth primary/Google buttons, Setup starter-routine/save/finish-later actions, and Avatar Studio reset/save controls before native accessibility traversal is available.
 - Need visual regression or screenshot review.
 - Need Figma alignment if Figma becomes the canonical design source.
 
@@ -171,6 +172,7 @@ Current gaps:
 - Static mobile readiness now protects shared auth action buttons from relying only on visual padding instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Static mobile readiness now protects the living Phoenix room pressable and visible status/next-action cue chips with `MOBILE_INLINE_HIT_SLOP` and `MIN_MOBILE_TOUCH_TARGET`.
 - Static mobile readiness now protects remaining high-frequency route actions from reverting to sub-48px or padding-only tap areas, including Quick Log launcher tabs/outbox retry, Records empty-add/delete, More Care Intelligence/tool/premium/profile-edit actions, and Privacy export/delete controls.
+- Static mobile readiness now protects onboarding and Avatar Studio creation actions from regressing to unlabeled/text-only tappables, including auth primary/Google buttons, Setup starter-routine/save/finish-later actions, and Avatar Studio reset/save controls.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
 - Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.
 - Walk quick-log visibility, full Log walk route fields, Walk Activity summary logic, Saved Routes derivation, Care Pass walk activity/Saved Routes language, and Records walk activity wiring are covered by focused tests.
