@@ -42,6 +42,7 @@ import { getRouteTopPadding, getTabbedRouteBottomPadding, MOBILE_INLINE_HIT_SLOP
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import { deriveCareTwinScene, type CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
+import { buildHomeMissionDeck, type HomeMissionTone } from "@/lib/homeMissionDeck";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
@@ -447,6 +448,70 @@ export default function HomeScreen() {
     { label: "Hunger", value: hungerLabel, icon: "hunger" as PixelIconName, tone: fed ? colors.sage : colors.copper },
     { label: "Bond", value: bondLabel, icon: "heart" as PixelIconName, tone: colors.rose },
   ];
+  const homeMissions = useMemo(
+    () =>
+      buildHomeMissionDeck({
+        petName,
+        caregiverName: caregiver,
+        nextCare: {
+          label: nextPrimary?.label ?? "Review today's care",
+          detail: nextDetail,
+          icon: nextPrimary?.icon ?? "clock",
+          route: pendingMeal ? "/log?type=meal" : openAloneSession || openWalkSession ? "/log" : "/calendar",
+          openLoop: Boolean(pendingMeal || openAloneSession || openWalkSession),
+        },
+        adventure: {
+          title: adventureQuest.title,
+          level: adventureMode.level,
+          todayXp: adventureMode.todayXp,
+          memoriesCount: adventureMode.memoriesCount,
+        },
+        health: {
+          label: bileCount ? "Bile Watch" : "Health Watch",
+          status: bile.status,
+          detail: bileCount ? bile.sub : health.sub,
+          needsReview: Boolean(bileCount || status.counts.healthAlert),
+        },
+        carePass: {
+          label: state.reportArtifacts[0]?.title ?? "Care Pass",
+          detail:
+            state.records.length || state.reportArtifacts.length
+              ? `${state.records.length} records and ${state.reportArtifacts.length} reports ready`
+              : "Build a vet, sitter, or trainer packet from Phoenix's care history",
+          ready: Boolean(state.records.length || state.reportArtifacts.length),
+        },
+      }),
+    [
+      adventureMode.level,
+      adventureMode.memoriesCount,
+      adventureMode.todayXp,
+      adventureQuest.title,
+      bile.status,
+      bile.sub,
+      bileCount,
+      caregiver,
+      health.sub,
+      nextDetail,
+      nextPrimary?.icon,
+      nextPrimary?.label,
+      openAloneSession,
+      openWalkSession,
+      pendingMeal,
+      petName,
+      state.records.length,
+      state.reportArtifacts.length,
+      state.reportArtifacts[0]?.title,
+      status.counts.healthAlert,
+    ],
+  );
+
+  const missionToneColor = (tone: HomeMissionTone) => {
+    if (tone === "copper") return colors.copper;
+    if (tone === "amber") return colors.amber;
+    if (tone === "rose") return colors.rose;
+    if (tone === "navy") return colors.blueSignal;
+    return colors.sage;
+  };
 
   const [toast, setToast] = useState<string | null>(null);
   const [roomReaction, setRoomReaction] = useState<PhoenixRoomReaction | null>(null);
@@ -696,6 +761,69 @@ export default function HomeScreen() {
               </View>
             ))}
           </View>
+
+          <BoardCard tone="navy" style={s.missionDeck}>
+            <View style={s.missionHeader}>
+              <View>
+                <Text style={[s.missionKicker, { color: colors.amber, fontFamily: "Fredoka_600SemiBold" }]}>
+                  Today's Missions
+                </Text>
+                <Text style={[s.missionTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                  Care RPG command center
+                </Text>
+              </View>
+              <View style={s.missionBadge}>
+                <PixelIcon name="heart" size={25} />
+                <Text style={[s.missionBadgeText, { fontFamily: "Inter_800ExtraBold" }]}>Care RPG</Text>
+              </View>
+            </View>
+            <View style={s.missionRows}>
+              {homeMissions.map((mission) => {
+                const tone = missionToneColor(mission.tone);
+                return (
+                  <Pressable
+                    key={mission.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${mission.label}. ${mission.title}. ${mission.detail}`}
+                    onPress={() => router.push(mission.route as never)}
+                    style={({ pressed }) => [
+                      s.missionRow,
+                      {
+                        borderColor: pressed ? tone : "rgba(255,249,239,0.18)",
+                        backgroundColor: pressed ? "rgba(255,249,239,0.16)" : "rgba(255,249,239,0.08)",
+                      },
+                    ]}
+                  >
+                    <View style={[s.missionIcon, { backgroundColor: tone + "24", borderColor: tone + "80" }]}>
+                      <PixelIcon name={mission.icon as PixelIconName} size={25} />
+                    </View>
+                    <View style={s.missionCopy}>
+                      <View style={s.missionCopyTop}>
+                        <Text numberOfLines={1} style={[s.missionLabel, { fontFamily: "Inter_800ExtraBold" }]}>
+                          {mission.label}
+                        </Text>
+                        <Text style={[s.missionStatus, { color: tone, fontFamily: "Inter_800ExtraBold" }]}>
+                          {mission.statusLabel}
+                        </Text>
+                      </View>
+                      <Text numberOfLines={1} style={[s.missionRowTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                        {mission.title}
+                      </Text>
+                      <Text numberOfLines={2} style={[s.missionDetail, { fontFamily: "Inter_600SemiBold" }]}>
+                        {mission.detail}
+                      </Text>
+                    </View>
+                    <View style={s.missionCta}>
+                      <Text numberOfLines={1} style={[s.missionCtaText, { fontFamily: "Inter_800ExtraBold" }]}>
+                        {mission.cta}
+                      </Text>
+                      <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </BoardCard>
 
           <View style={s.homeSplit}>
             <BoardCard style={[s.nextCard, s.homeSplitCard]}>
@@ -1104,6 +1232,115 @@ const s = StyleSheet.create({
   },
   statusTileLabel: { fontSize: 11, textAlign: "center" },
   statusTileValue: { fontSize: 13, marginTop: 3, textAlign: "center" },
+
+  missionDeck: {
+    marginBottom: 10,
+    padding: 12,
+    overflow: "hidden",
+  },
+  missionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 10,
+  },
+  missionKicker: {
+    fontSize: 11,
+    textTransform: "uppercase",
+  },
+  missionTitle: {
+    color: "#FFF9EF",
+    fontSize: 17,
+    lineHeight: 21,
+    marginTop: 1,
+  },
+  missionBadge: {
+    minHeight: 34,
+    borderRadius: 7,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(255,249,239,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.2)",
+  },
+  missionBadgeText: {
+    color: "#FFF9EF",
+    fontSize: 9,
+    textTransform: "uppercase",
+  },
+  missionRows: {
+    gap: 8,
+  },
+  missionRow: {
+    minHeight: 72,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  missionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,249,239,0.14)",
+  },
+  missionCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  missionCopyTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  missionLabel: {
+    color: "rgba(255,249,239,0.76)",
+    fontSize: 9.5,
+    textTransform: "uppercase",
+    flexShrink: 1,
+  },
+  missionStatus: {
+    fontSize: 9.5,
+    textTransform: "uppercase",
+  },
+  missionRowTitle: {
+    color: "#FFF9EF",
+    fontSize: 14.5,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  missionDetail: {
+    color: "rgba(255,249,239,0.7)",
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  missionCta: {
+    maxWidth: 82,
+    minHeight: 34,
+    borderRadius: 7,
+    paddingHorizontal: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    backgroundColor: "rgba(255,249,239,0.12)",
+  },
+  missionCtaText: {
+    color: "#FFF9EF",
+    fontSize: 9.5,
+    maxWidth: 58,
+  },
 
   homeSplit: {
     flexDirection: "row",

@@ -1068,3 +1068,29 @@ Design intent:
   like part of the WoofWatcher system.
 - Make the final handoff easier for Apollo: one screen now shows native QA,
   provider setup, launch packet, and store packet.
+
+## 2026-06-22 Home Care-RPG Mission Deck
+
+Phoenix Home now has a real command-center layer between the living room hero
+and the older utility cards:
+
+- `homeMissionDeck.ts` builds four missions from local-first product state:
+  My Care Today, Adventure, Health Watch, and Care Pass.
+- Pending care loops stay operational. A served meal with outcome pending routes
+  to `/log?type=meal`; active walk or alone-time sessions route to Log; ordinary
+  next care routes to Plans.
+- Adventure, Health, and Care Pass missions route to `/adventure`, `/health`,
+  and Records so the Home screen mirrors the final care-RPG boards without
+  creating dead panels.
+- The UI uses a dark navy pixel-console treatment with compact rows, status
+  labels, pixel icons, and short CTAs. It is intentionally not a marketing hero
+  and does not claim live cloud sync or provider readiness.
+
+Design intent:
+
+- Make Home answer "what should I do next?" in one glance while keeping Phoenix's
+  room as the emotional center.
+- Move the app closer to the saved mockups: premium, neo-retro, operational,
+  and RPG-flavored without losing health/care seriousness.
+- Give Fable/Replit/future design polish a stable, tested structure to style
+  instead of asking them to invent navigation architecture.

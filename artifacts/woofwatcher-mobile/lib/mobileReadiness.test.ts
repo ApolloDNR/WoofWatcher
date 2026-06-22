@@ -526,6 +526,28 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.doesNotMatch(room, /speechWrap/);
 });
 
+test("keeps Home organized around real care-RPG missions, not decorative cards", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const missionDeck = readMobileLibFile("homeMissionDeck.ts");
+
+  assert.match(home, /buildHomeMissionDeck/);
+  assert.match(home, /homeMissions/);
+  assert.match(home, /Today's Missions/);
+  assert.match(home, /Care RPG/);
+  assert.match(home, /router\.push\(mission\.route as never\)/);
+  assert.match(home, /\/log\?type=meal/);
+  assert.match(home, /\/calendar/);
+  assert.match(home, /\/adventure/);
+  assert.match(home, /\/health/);
+
+  assert.match(missionDeck, /care-today/);
+  assert.match(missionDeck, /\/records/);
+  assert.match(missionDeck, /Open loop/);
+  assert.match(missionDeck, /Start quest/);
+  assert.match(missionDeck, /Care Pass/);
+  assert.match(missionDeck, /No mission in this deck should pretend to be live cloud sync/);
+});
+
 test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {
   const domain = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-intelligence.ts"), "utf8");
   const home = readAppFile(join("(tabs)", "index.tsx"));
