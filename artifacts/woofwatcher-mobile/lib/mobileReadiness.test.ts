@@ -452,6 +452,7 @@ test("keeps route-local action controls on the shared mobile touch target", () =
     join("(tabs)", "calendar.tsx"),
     join("(tabs)", "log.tsx"),
     join("(tabs)", "health.tsx"),
+    join("(tabs)", "index.tsx"),
     join("(tabs)", "more.tsx"),
     join("(tabs)", "records.tsx"),
     "premium.tsx",
@@ -464,6 +465,7 @@ test("keeps route-local action controls on the shared mobile touch target", () =
   }
 
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+  const home = readAppFile(join("(tabs)", "index.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const health = readAppFile(join("(tabs)", "health.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
@@ -502,6 +504,8 @@ test("keeps route-local action controls on the shared mobile touch target", () =
   assert.match(health, /tabPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(health, /heroActionPrimary: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(health, /heroActionSecondary: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(home, /headerButton: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(home, /headerButton: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(more, /shareBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(more, /unitPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(records, /medSearchClear: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);

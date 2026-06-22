@@ -34,6 +34,7 @@ import {
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
   MOBILE_INLINE_HIT_SLOP,
+  MIN_MOBILE_TOUCH_TARGET,
 } from "@/lib/mobileLayout";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 
@@ -729,8 +730,8 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   headerButton: {
-    width: 42,
-    height: 42,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",

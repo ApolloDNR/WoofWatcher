@@ -164,6 +164,8 @@ Current evidence, 2026-06-21: Calendar event discovery and upcoming-event contro
 
 Current evidence, 2026-06-21: Error recovery debug and close controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of route-local 44px sizing. Focused readiness protects the development error-details button and error-details modal close control before native accessibility traversal is available.
 
+Current evidence, 2026-06-21: Home header navigation controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of route-local 42px sizing. Focused readiness protects the More menu and Health Watch notification buttons on the first screen before native accessibility traversal is available.
+
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
 ## Gate 5: Health Safety

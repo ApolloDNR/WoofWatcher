@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-21: Home Header Navigation Uses The Shared 48px Touch Target
+
+Decision: The Home header More menu and Health Watch notification controls should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 42px sizing.
+
+Reason: Native accessibility traversal is still waiting on simulator/device access, and Home is the first-screen command surface owners use to reach More, household tools, and Health Watch. Reusing the 48px contract reduces tap-risk without changing the existing header navigation or claiming native QA has run.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows the Home header needs different sizing, final Figma/native header components replace the current controls, or platform-specific accessibility guidance requires separate iOS/Android values.
+
 ### 2026-06-21: Error Recovery Controls Use The Shared 48px Touch Target
 
 Decision: The development error-details button and error-details modal close control should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 44px sizing.
