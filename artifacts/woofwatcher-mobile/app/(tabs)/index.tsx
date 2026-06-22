@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,6 +44,7 @@ import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import { deriveCareTwinScene, type CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
 import { buildHomeMissionDeck, type HomeMissionTone } from "@/lib/homeMissionDeck";
+import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
@@ -162,6 +164,7 @@ function adventureQuestIcon(id: string): PixelIconName {
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth } = useWindowDimensions();
   const router = useRouter();
   const { state, addEntry } = useCare();
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
@@ -504,6 +507,10 @@ export default function HomeScreen() {
       status.counts.healthAlert,
     ],
   );
+  const missionLayout = useMemo(
+    () => getHomeMissionDeckLayout({ width: viewportWidth, missionCount: homeMissions.length }),
+    [homeMissions.length, viewportWidth],
+  );
 
   const missionToneColor = (tone: HomeMissionTone) => {
     if (tone === "copper") return colors.copper;
@@ -762,22 +769,24 @@ export default function HomeScreen() {
             ))}
           </View>
 
-          <BoardCard tone="navy" style={s.missionDeck}>
-            <View style={s.missionHeader}>
+          <BoardCard tone="navy" style={[s.missionDeck, { padding: missionLayout.deckPadding }]}>
+            <View style={[s.missionHeader, { marginBottom: missionLayout.headerGap }]}>
               <View>
                 <Text style={[s.missionKicker, { color: colors.amber, fontFamily: "Fredoka_600SemiBold" }]}>
                   Today's Missions
                 </Text>
-                <Text style={[s.missionTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                <Text numberOfLines={1} style={[s.missionTitle, { fontFamily: "Fredoka_700Bold" }]}>
                   Care RPG command center
                 </Text>
               </View>
-              <View style={s.missionBadge}>
-                <PixelIcon name="heart" size={25} />
-                <Text style={[s.missionBadgeText, { fontFamily: "Inter_800ExtraBold" }]}>Care RPG</Text>
-              </View>
+              {missionLayout.showBadge ? (
+                <View style={s.missionBadge}>
+                  <PixelIcon name="heart" size={25} />
+                  <Text style={[s.missionBadgeText, { fontFamily: "Inter_800ExtraBold" }]}>Care RPG</Text>
+                </View>
+              ) : null}
             </View>
-            <View style={s.missionRows}>
+            <View style={[s.missionRows, { gap: missionLayout.rowGap }]}>
               {homeMissions.map((mission) => {
                 const tone = missionToneColor(mission.tone);
                 return (
@@ -785,36 +794,66 @@ export default function HomeScreen() {
                     key={mission.key}
                     accessibilityRole="button"
                     accessibilityLabel={`${mission.label}. ${mission.title}. ${mission.detail}`}
+                    accessibilityHint={missionLayout.qaLabel}
                     onPress={() => router.push(mission.route as never)}
                     style={({ pressed }) => [
                       s.missionRow,
+                      {
+                        minHeight: missionLayout.rowMinHeight,
+                        paddingHorizontal: missionLayout.rowPaddingHorizontal,
+                        paddingVertical: missionLayout.rowPaddingVertical,
+                      },
                       {
                         borderColor: pressed ? tone : "rgba(255,249,239,0.18)",
                         backgroundColor: pressed ? "rgba(255,249,239,0.16)" : "rgba(255,249,239,0.08)",
                       },
                     ]}
                   >
-                    <View style={[s.missionIcon, { backgroundColor: tone + "24", borderColor: tone + "80" }]}>
-                      <PixelIcon name={mission.icon as PixelIconName} size={25} />
+                    <View
+                      style={[
+                        s.missionIcon,
+                        {
+                          width: missionLayout.iconBoxSize,
+                          height: missionLayout.iconBoxSize,
+                          backgroundColor: tone + "24",
+                          borderColor: tone + "80",
+                        },
+                      ]}
+                    >
+                      <PixelIcon name={mission.icon as PixelIconName} size={missionLayout.iconSize} />
                     </View>
                     <View style={s.missionCopy}>
                       <View style={s.missionCopyTop}>
                         <Text numberOfLines={1} style={[s.missionLabel, { fontFamily: "Inter_800ExtraBold" }]}>
                           {mission.label}
                         </Text>
-                        <Text style={[s.missionStatus, { color: tone, fontFamily: "Inter_800ExtraBold" }]}>
+                        <Text numberOfLines={1} style={[s.missionStatus, { color: tone, fontFamily: "Inter_800ExtraBold" }]}>
                           {mission.statusLabel}
                         </Text>
                       </View>
                       <Text numberOfLines={1} style={[s.missionRowTitle, { fontFamily: "Fredoka_700Bold" }]}>
                         {mission.title}
                       </Text>
-                      <Text numberOfLines={2} style={[s.missionDetail, { fontFamily: "Inter_600SemiBold" }]}>
+                      <Text numberOfLines={missionLayout.detailLines} style={[s.missionDetail, { fontFamily: "Inter_600SemiBold" }]}>
                         {mission.detail}
                       </Text>
                     </View>
-                    <View style={s.missionCta}>
-                      <Text numberOfLines={1} style={[s.missionCtaText, { fontFamily: "Inter_800ExtraBold" }]}>
+                    <View
+                      style={[
+                        s.missionCta,
+                        {
+                          maxWidth: missionLayout.ctaMaxWidth,
+                          minHeight: missionLayout.ctaMinHeight,
+                        },
+                      ]}
+                    >
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          s.missionCtaText,
+                          { maxWidth: missionLayout.ctaTextMaxWidth, fontFamily: "Inter_800ExtraBold" },
+                        ]}
+                      >
                         {mission.cta}
                       </Text>
                       <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />

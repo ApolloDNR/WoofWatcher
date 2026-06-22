@@ -529,8 +529,13 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
 test("keeps Home organized around real care-RPG missions, not decorative cards", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const missionDeck = readMobileLibFile("homeMissionDeck.ts");
+  const missionLayout = readMobileLibFile("homeMissionLayout.ts");
 
   assert.match(home, /buildHomeMissionDeck/);
+  assert.match(home, /getHomeMissionDeckLayout/);
+  assert.match(home, /useWindowDimensions/);
+  assert.match(home, /missionLayout\.qaLabel/);
+  assert.match(home, /missionLayout\.detailLines/);
   assert.match(home, /homeMissions/);
   assert.match(home, /Today's Missions/);
   assert.match(home, /Care RPG/);
@@ -546,6 +551,10 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(missionDeck, /Start quest/);
   assert.match(missionDeck, /Care Pass/);
   assert.match(missionDeck, /No mission in this deck should pretend to be live cloud sync/);
+
+  assert.match(missionLayout, /compact/);
+  assert.match(missionLayout, /estimatedDeckHeight/);
+  assert.match(missionLayout, /Small-phone/);
 });
 
 test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {

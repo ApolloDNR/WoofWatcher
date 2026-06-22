@@ -1094,3 +1094,28 @@ Design intent:
   and RPG-flavored without losing health/care seriousness.
 - Give Fable/Replit/future design polish a stable, tested structure to style
   instead of asking them to invent navigation architecture.
+
+## 2026-06-22 Home Mission Phone-Fit Contract
+
+The Home mission deck now has a shared layout model for phone-size QA:
+
+- `homeMissionLayout.ts` derives compact versus regular mission density from
+  viewport width.
+- Small iPhone-class widths hide the secondary Care RPG badge, tighten row
+  height, use one-line mission details, and keep icons/CTAs compact.
+- Regular phone and web-preview widths keep the richer two-line mission detail
+  treatment from the mockups.
+- The model estimates mission-deck height and keeps rows above the shared mobile
+  touch-target floor.
+- Home uses `useWindowDimensions` and attaches the layout QA label to mission
+  rows, so testers can confirm whether they are reviewing the compact or regular
+  treatment.
+- Static readiness tests now protect the Home wiring so future polish cannot
+  accidentally turn the mission deck back into an unbounded card stack.
+
+Design intent:
+
+- Make the first-screen command center more resilient before real device QA.
+- Preserve the premium care-RPG look while avoiding small-phone overflow.
+- Keep native screenshots as the required final proof; this contract is a
+  pre-device guardrail, not a replacement for iOS/Android inspection.
