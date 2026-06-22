@@ -110,6 +110,7 @@ Latest completed local runtime/accessibility hardening:
 - Plans routine/event modal controls use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract. Routine type chips, owner quick chips, save buttons, delete routine, and add-event save controls have mobile readiness coverage before native accessibility traversal is available.
 - Auth onboarding action controls use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract. The primary auth button and Google SSO button have mobile readiness coverage before native accessibility traversal is available.
 - Living Phoenix room tap cues use the shared mobile tap contract. The animated care-twin room pressable uses `MOBILE_INLINE_HIT_SLOP`, and the visible status/next-action cue chips use `MIN_MOBILE_TOUCH_TARGET` before native accessibility traversal is available.
+- Remaining high-frequency route actions use the shared `MIN_MOBILE_TOUCH_TARGET` 48px contract. Quick Log launcher tabs and outbox retry, Records empty-add/delete controls, More Care Intelligence/tool/premium/profile-edit actions, and Privacy export/delete buttons have mobile readiness coverage before native accessibility traversal is available.
 
 Next highest-impact work:
 
