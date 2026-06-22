@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-22: Plans Modal Controls Use The Shared 48px Touch Target
+
+Decision: Plans routine and event modal controls should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of relying on padding-only local sizing.
+
+Reason: Native accessibility traversal is still waiting on simulator/device access, and Plans modals are where owners create and edit the routines that define what should happen. Reusing the 48px contract reduces missed-tap risk for type chips, owner quick chips, save actions, and delete routine without changing routine/log behavior or claiming native QA has run.
+
+Owner: Codex.
+
+Revisit trigger: Native screen-reader or device QA shows Plans modal controls need different sizing, final Figma/native planning components replace the current modal controls, or platform-specific accessibility guidance requires separate iOS/Android values.
+
 ### 2026-06-21: Home Header Navigation Uses The Shared 48px Touch Target
 
 Decision: The Home header More menu and Health Watch notification controls should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 42px sizing.

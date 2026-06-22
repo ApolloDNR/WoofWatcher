@@ -166,6 +166,7 @@ Current gaps:
 - Static mobile readiness now protects Calendar event discovery and upcoming-event controls from reverting to route-local 28/38/40px tap boxes instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Static mobile readiness now protects ErrorFallback recovery controls from reverting to route-local 44px tap boxes instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Static mobile readiness now protects Home header navigation controls from reverting to route-local 42px tap boxes instead of `MIN_MOBILE_TOUCH_TARGET`.
+- Static mobile readiness now protects Plans routine/event modal controls from reverting to padding-only sub-48px tap areas instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
 - Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.
 - Walk quick-log visibility, full Log walk route fields, Walk Activity summary logic, Saved Routes derivation, Care Pass walk activity/Saved Routes language, and Records walk activity wiring are covered by focused tests.

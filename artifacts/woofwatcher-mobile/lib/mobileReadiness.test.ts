@@ -485,6 +485,10 @@ test("keeps route-local action controls on the shared mobile touch target", () =
   assert.match(calendar, /sectionAddBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(calendar, /routineDoneBtn: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(calendar, /routineDoneBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /typeChip: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /ownerQuickChip: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /saveBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(calendar, /deleteBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(calendar, /discoverIcon: \{[^}]*width: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(calendar, /discoverIcon: \{[^}]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(calendar, /sugIcon: \{[^}]*width: MIN_MOBILE_TOUCH_TARGET/);
