@@ -2820,7 +2820,7 @@ const s = StyleSheet.create({
   outboxTitle: { fontSize: 15.5, marginTop: 2 },
   outboxMessage: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
   outboxButton: {
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
@@ -2846,7 +2846,7 @@ const s = StyleSheet.create({
   },
   launcherTab: {
     flex: 1,
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
     alignItems: "center",

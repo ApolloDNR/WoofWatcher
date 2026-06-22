@@ -170,6 +170,7 @@ Current gaps:
 - Static mobile readiness now protects Plans routine/event modal controls from reverting to padding-only sub-48px tap areas instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Static mobile readiness now protects shared auth action buttons from relying only on visual padding instead of `MIN_MOBILE_TOUCH_TARGET`.
 - Static mobile readiness now protects the living Phoenix room pressable and visible status/next-action cue chips with `MOBILE_INLINE_HIT_SLOP` and `MIN_MOBILE_TOUCH_TARGET`.
+- Static mobile readiness now protects remaining high-frequency route actions from reverting to sub-48px or padding-only tap areas, including Quick Log launcher tabs/outbox retry, Records empty-add/delete, More Care Intelligence/tool/premium/profile-edit actions, and Privacy export/delete controls.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
 - Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.
 - Walk quick-log visibility, full Log walk route fields, Walk Activity summary logic, Saved Routes derivation, Care Pass walk activity/Saved Routes language, and Records walk activity wiring are covered by focused tests.

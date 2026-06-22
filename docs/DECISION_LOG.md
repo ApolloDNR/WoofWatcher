@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-22: Remaining Route Actions Use The Shared 48px Touch Target
+
+Decision: Remaining high-frequency route actions should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper before native accessibility traversal. This covers Quick Log launcher tabs and outbox retry, Records empty-add and delete controls, More Care Intelligence, tool, premium, and profile-edit actions, and Privacy export/delete actions.
+
+Reason: Native screen-reader and device QA are still blocked, and these actions sit in core care logging, sync recovery, records, household tools, monetization preview, profile editing, and privacy/export workflows. Reusing the shared 48px contract reduces missed-tap risk without changing care data behavior, provider truth, or claiming native QA has run.
+
+Owner: Codex.
+
+Revisit trigger: Native accessibility traversal shows a route needs a different target, final Figma/native components replace these route-local controls, or platform-specific guidance requires separate iOS/Android values.
+
 ### 2026-06-22: Living Phoenix Room Uses Shared Tap Contracts
 
 Decision: The living Phoenix room should use the shared mobile tap contracts before native accessibility traversal. The full-room pressable uses `MOBILE_INLINE_HIT_SLOP`, and the visible status and next-action cue chips use `MIN_MOBILE_TOUCH_TARGET`.

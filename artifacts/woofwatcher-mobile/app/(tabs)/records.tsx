@@ -2270,9 +2270,9 @@ const s = StyleSheet.create({
   duePill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   dueText: { fontSize: 11.5 },
   recordDueRef: { fontSize: 10.5, maxWidth: 96 },
-  deleteRecordBtn: { padding: 4 },
+  deleteRecordBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   recordEmpty: { alignItems: "center", gap: 8, paddingVertical: 10 },
-  emptyAddBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
+  emptyAddBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 14, paddingHorizontal: 14, minHeight: MIN_MOBILE_TOUCH_TARGET },
   emptyAddText: { color: "#FFFFFF", fontSize: 13.5 },
 
   highlightStrip: {

@@ -520,6 +520,8 @@ test("keeps route-local action controls on the shared mobile touch target", () =
   assert.match(log, /filterChip: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(log, /searchClear: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(log, /searchClear: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(log, /outboxButton: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(log, /launcherTab: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(health, /tabPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(health, /heroActionPrimary: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(health, /heroActionSecondary: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
@@ -527,14 +529,26 @@ test("keeps route-local action controls on the shared mobile touch target", () =
   assert.match(home, /headerButton: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(more, /shareBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(more, /unitPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(more, /intelligenceAction: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(more, /linkRow: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(more, /premiumCard: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(more, /profileEditBtn: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(more, /profileEditBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(records, /medSearchClear: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(records, /medSearchClear: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(records, /medFilterPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(records, /artifactIconButton: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(records, /artifactIconButton: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(records, /segPill: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(records, /deleteRecordBtn: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(records, /deleteRecordBtn: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(records, /emptyAddBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(premium, /heroMark: \{[\s\S]*width: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(premium, /heroMark: \{[\s\S]*height: MIN_MOBILE_TOUCH_TARGET/);
+  const privacy = readAppFile("privacy.tsx");
+  assert.match(privacy, /MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(privacy, /primaryBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(privacy, /secondaryBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(setup, /laterBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
 });
 
