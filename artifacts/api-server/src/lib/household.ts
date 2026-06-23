@@ -75,19 +75,24 @@ export async function ensureCareState(householdId: string, userId: string): Prom
 /**
  * Ensures the user exists and belongs to at least one household, creating a
  * default household + membership + care state on first sign-in. Returns the
- * user's active (earliest) household id.
+ * user's active household id when it still matches a membership, otherwise the
+ * earliest membership id.
  */
 export async function ensureUserAndHousehold(
   userId: string,
 ): Promise<{ user: User; householdId: string }> {
   const user = await ensureUser(userId);
 
-  const [membership] = await db
-    .select()
+  const memberships = await db
+    .select({ householdId: householdMembersTable.householdId })
     .from(householdMembersTable)
     .where(eq(householdMembersTable.userId, userId))
-    .orderBy(householdMembersTable.createdAt)
-    .limit(1);
+    .orderBy(householdMembersTable.createdAt);
+
+  const activeMembership = memberships.find(
+    (membership) => membership.householdId === user.activeHouseholdId,
+  );
+  const membership = activeMembership ?? memberships[0];
 
   if (membership) {
     await ensureCareState(membership.householdId, userId);
@@ -106,6 +111,10 @@ export async function ensureUserAndHousehold(
     role: "owner",
     displayName: user.displayName,
   });
+  await db
+    .update(usersTable)
+    .set({ activeHouseholdId: household.id })
+    .where(eq(usersTable.id, userId));
   await ensureCareState(household.id, userId);
   return { user, householdId: household.id };
 }

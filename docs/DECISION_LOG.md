@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-23: Invite Accepts Persist The Active Household
+
+Decision: API `POST /household/join` should set `users.activeHouseholdId` to the joined household after a valid invite accept, and the active-household helper should prefer that saved membership before falling back to the earliest valid membership.
+
+Reason: Invite acceptance should move the caregiver's real care loop into the shared pack immediately. Without a persisted active-household pointer, later care-state and care-entry calls can drift back to an older default household even though the join response showed the invited pack.
+
+Owner: Codex.
+
+Revisit trigger: Explicit household switching UI, provider-backed invite approval, caregiver administration, role changes, or multi-household management becomes active release work.
+
 ### 2026-06-23: Invite Codes Are Owner/Admin Visible
 
 Decision: API `/me` should return the shared household invite code only when the authenticated member's active-household role is `owner` or `admin`. Ordinary members still receive household context and member lists, but their household invite code is blank so mobile Household Access treats invite sharing as unavailable.

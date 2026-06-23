@@ -87,6 +87,22 @@ test("keeps invite joins from creating a throwaway default household first", () 
   );
 });
 
+test("keeps joined households active for later care sync routes", () => {
+  const householdRoute = readApiFile(join("routes", "household.ts"));
+  const householdLib = readApiFile(join("lib", "household.ts"));
+  const usersSchema = readFileSync(join(root, "lib", "db", "src", "schema", "users.ts"), "utf8");
+
+  assert.match(usersSchema, /activeHouseholdId: uuid\("active_household_id"\)/);
+  assert.match(
+    householdLib,
+    /memberships\.find\([\s\S]*membership\.householdId === user\.activeHouseholdId/,
+  );
+  assert.match(
+    householdRoute,
+    /\.update\(usersTable\)[\s\S]*activeHouseholdId: household\.id[\s\S]*eq\(usersTable\.id, userId\)/,
+  );
+});
+
 test("keeps care-state writes optimistic and conflict recoverable", () => {
   const careState = readApiFile(join("routes", "care-state.ts"));
   const mobileContext = readFileSync(

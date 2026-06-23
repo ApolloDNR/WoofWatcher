@@ -90,6 +90,8 @@ Current evidence, 2026-06-23: API household rename now requires the authenticate
 
 Current evidence, 2026-06-23: API household invite joins now provision the authenticated user directly instead of creating a default personal pack before accepting the invite. The join route ensures the invited household has care state, avoids duplicate membership inserts, and adds new caregivers as ordinary members so a first-time invite accept lands on the real shared pack first.
 
+Current evidence, 2026-06-23: API household invite accepts now persist the joined pack as `users.activeHouseholdId`, and the active-household helper prefers that valid membership for later care-state, care-entry, profile, and rename routes. This prevents a caregiver from seeing the joined pack once and then accidentally syncing care back into an older default household before explicit household switching exists.
+
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
 Current evidence, 2026-06-11: Reminder Center now combines routine-board status, medication follow-ups, record reminders, and grooming due dates into one Calendar action list with urgent/watch/total counts, private-log exclusion through the underlying domain helpers, and explicit notification-readiness copy before real push delivery exists.

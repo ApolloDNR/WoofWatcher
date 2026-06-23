@@ -120,6 +120,7 @@ Latest completed local runtime/accessibility hardening:
 - Household rename is now owner/admin gated before provider-backed role enforcement. `PATCH /household` checks the authenticated user's active-household membership role and returns 403 for non-owner/admin members before changing the shared pack name.
 - Household invite joins now avoid creating a throwaway default pack before accepting an invite. `POST /household/join` provisions the authenticated user directly, ensures the invited household has care state, avoids duplicate memberships, and adds first-time invitees as `member`.
 - Household invite codes are now visible only to owner/admin members in `/me` before provider-backed role enforcement. Ordinary members still receive the shared household context, but invite sharing stays unavailable so care contributors cannot spread pack access.
+- Household invite accepts now persist the joined pack as the user's active household before explicit household switching exists. Later active-household care-state, care-entry, profile, and household routes stay pointed at the joined pack when that membership is still valid.
 
 Next highest-impact work:
 
@@ -128,5 +129,5 @@ Next highest-impact work:
 3. Replace first-pass derived room variants with final illustrated room art.
 4. Replace first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art, then continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Add live API integration tests for care-state write races and care-entry delete retention once a test database and provider-auth harness are available.
-6. Add live household provisioning, invite-join, role-gated household rename, invite-code visibility, and multi-household membership integration tests once a test database and provider-auth harness are available.
+6. Add live household provisioning, invite-join, active-household persistence, role-gated household rename, invite-code visibility, and multi-household membership integration tests once a test database and provider-auth harness are available.
 7. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.

@@ -107,6 +107,11 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
     });
   }
 
+  await db
+    .update(usersTable)
+    .set({ activeHouseholdId: household.id })
+    .where(eq(usersTable.id, userId));
+
   res.json(GetMeResponse.parse(await buildMe(userId, household.id)));
 });
 
