@@ -16,6 +16,7 @@ Latest local evidence, 2026-06-22:
 - PASS: 259 focused tests with the local zero-dependency suite on 2026-06-22, including API route readiness for server-retained care-entry delete audit notes and mobile Log duplicate-audit suppression for server-backed deletes.
 - PASS: 259 focused tests with the local zero-dependency suite on 2026-06-23, including API readiness for atomic care-state optimistic writes that update by household id and version, then return a refreshed 409 conflict response if another device wins the race.
 - PASS: API readiness now also protects `PATCH /me` household member display-name updates so the membership row is constrained by authenticated user id and active household id before provider-backed role enforcement exists.
+- PASS: API readiness now protects `PATCH /household` so only owner/admin members in the active household can rename the shared pack before broader provider-backed role enforcement exists.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -73,7 +74,7 @@ Latest local evidence, 2026-06-22:
 - Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
 - Care-state optimistic writes across the API, including atomic household-and-version update predicates and refreshed 409 conflict responses when concurrent writes race.
-- Household profile updates across the API, including active-household scoping for member display-name writes when a caregiver belongs to multiple households.
+- Household profile and shared pack updates across the API, including active-household scoping for member display-name writes when a caregiver belongs to multiple households and owner/admin gating for household rename.
 - Care-entry delete retention across the API and mobile Log, including server-created non-health audit notes with deleted-entry snapshots for synced deletes and local/offline deletion audits without duplicate notes after server retention.
 - Household Responsibility derivation for care-team routine ownership, open/overdue/unassigned routines, visible today log counts, next household action copy, and Calendar/More mobile wiring.
 - Household Access derivation for synced members, local-only caregivers, routine-only owners, invite readiness, permission labels, next-step copy, and More mobile wiring.

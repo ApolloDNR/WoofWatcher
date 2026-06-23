@@ -86,6 +86,8 @@ Current evidence, 2026-06-23: API care-state writes now make optimistic concurre
 
 Current evidence, 2026-06-23: API household member profile updates now constrain the member display-name write by both authenticated user id and active household id. This keeps a caregiver's name change for one pack from mutating membership rows in other households before provider-backed role enforcement and multi-household management are complete.
 
+Current evidence, 2026-06-23: API household rename now requires the authenticated user's active-household membership role to be owner or admin. Invited members can still belong to the pack and contribute care, but they cannot rename the shared household before fuller provider-backed role enforcement, invite approval, and caregiver administration exist.
+
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
 Current evidence, 2026-06-11: Reminder Center now combines routine-board status, medication follow-ups, record reminders, and grooming due dates into one Calendar action list with urgent/watch/total counts, private-log exclusion through the underlying domain helpers, and explicit notification-readiness copy before real push delivery exists.

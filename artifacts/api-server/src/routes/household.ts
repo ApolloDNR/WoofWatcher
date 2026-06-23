@@ -8,7 +8,11 @@ import {
   JoinHouseholdBody,
 } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
-import { ensureUserAndHousehold, buildMe } from "../lib/household";
+import {
+  ensureUserAndHousehold,
+  buildMe,
+  requireActiveHouseholdRole,
+} from "../lib/household";
 
 const router: IRouter = Router();
 
@@ -51,7 +55,11 @@ router.patch("/household", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { householdId } = await ensureUserAndHousehold(userId);
+  const { householdId, allowed } = await requireActiveHouseholdRole(userId, ["owner", "admin"]);
+  if (!allowed) {
+    res.status(403).json({ error: "Only household owners can rename this pack" });
+    return;
+  }
   await db
     .update(householdsTable)
     .set({ name: parsed.data.name })

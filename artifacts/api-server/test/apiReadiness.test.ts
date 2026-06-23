@@ -47,6 +47,22 @@ test("keeps household member profile updates scoped to the active household", ()
   );
 });
 
+test("keeps household rename restricted to owner or admin members", () => {
+  const householdRoute = readApiFile(join("routes", "household.ts"));
+  const householdLib = readApiFile(join("lib", "household.ts"));
+
+  assert.match(householdLib, /requireActiveHouseholdRole/);
+  assert.match(householdLib, /allowedRoles: readonly string\[\]/);
+  assert.match(householdLib, /eq\(householdMembersTable\.userId, userId\)/);
+  assert.match(householdLib, /eq\(householdMembersTable\.householdId, householdId\)/);
+  assert.match(householdLib, /allowedRoles\.includes\(membership\.role\.toLowerCase\(\)\)/);
+
+  assert.match(householdRoute, /UpdateHouseholdBody\.safeParse\(req\.body\)/);
+  assert.match(householdRoute, /requireActiveHouseholdRole\(userId, \["owner", "admin"\]\)/);
+  assert.match(householdRoute, /res\.status\(403\)\.json\(\{ error: "Only household owners can rename this pack" \}\)/);
+  assert.match(householdRoute, /\.update\(householdsTable\)/);
+});
+
 test("keeps care-state writes optimistic and conflict recoverable", () => {
   const careState = readApiFile(join("routes", "care-state.ts"));
   const mobileContext = readFileSync(

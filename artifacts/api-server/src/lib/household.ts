@@ -115,6 +115,29 @@ export async function getActiveHouseholdId(userId: string): Promise<string> {
   return householdId;
 }
 
+export async function requireActiveHouseholdRole(
+  userId: string,
+  allowedRoles: readonly string[],
+): Promise<{ householdId: string; role: string; allowed: boolean }> {
+  const { householdId } = await ensureUserAndHousehold(userId);
+  const [membership] = await db
+    .select({ role: householdMembersTable.role })
+    .from(householdMembersTable)
+    .where(
+      and(
+        eq(householdMembersTable.userId, userId),
+        eq(householdMembersTable.householdId, householdId),
+      ),
+    )
+    .limit(1);
+  const role = membership?.role ?? "member";
+  return {
+    householdId,
+    role,
+    allowed: membership ? allowedRoles.includes(membership.role.toLowerCase()) : false,
+  };
+}
+
 export async function getCaregiverName(
   householdId: string,
   userId: string,

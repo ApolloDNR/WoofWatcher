@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-23: Household Rename Requires Owner Or Admin Membership
+
+Decision: API `PATCH /household` should allow shared pack renames only when the authenticated user's active-household membership role is `owner` or `admin`. Non-owner/admin members receive a 403 response and can continue using the household for normal care workflows.
+
+Reason: The household name is shared pack identity, not a personal profile field. Invited caregivers should be able to contribute logs and care context without being able to rename the household before provider-backed role enforcement, invite approval, caregiver editing, and account audit policy are complete.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed role enforcement, household admin tools, caregiver editing, role changes, invite approval, or broader account/household audit policy becomes active release work.
+
 ### 2026-06-23: Member Profile Updates Stay In The Active Household
 
 Decision: API `PATCH /me` should update the authenticated user's global display name, but the household membership display-name row must be constrained by both user id and active household id.
