@@ -71,6 +71,30 @@ test("keeps care-entry routes append-safe and household isolated", () => {
   assert.match(careEntries, /res\.sendStatus\(204\)/);
 });
 
+test("keeps care-entry deletes retained as household audit notes", () => {
+  const careEntries = readApiFile(join("routes", "care-entries.ts"));
+  const mobileContext = readFileSync(
+    join(root, "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"),
+    "utf8",
+  );
+  const mobileLog = readFileSync(
+    join(root, "artifacts", "woofwatcher-mobile", "app", "(tabs)", "log.tsx"),
+    "utf8",
+  );
+
+  assert.match(careEntries, /buildCareLogDeletionAuditEntry/);
+  assert.match(careEntries, /deletedEntryTitle/);
+  assert.match(careEntries, /auditSubjectId/);
+  assert.match(careEntries, /deletedEntrySnapshot/);
+  assert.match(careEntries, /\.insert\(careEntriesTable\)[\s\S]*type: auditEntry\.type/);
+  assert.match(careEntries, /title: auditEntry\.title/);
+  assert.match(careEntries, /caregiverUserId: userId/);
+
+  assert.match(mobileContext, /auditHandledByServer/);
+  assert.match(mobileContext, /return \{ ok: true, auditHandledByServer: true \}/);
+  assert.match(mobileLog, /!deleted\.auditHandledByServer/);
+});
+
 test("keeps care-entry list limit query documented across server, OpenAPI, and generated clients", () => {
   const careEntries = readApiFile(join("routes", "care-entries.ts"));
   const openapi = readFileSync(join(root, "lib", "api-spec", "openapi.yaml"), "utf8");

@@ -282,13 +282,18 @@ function isConflict(err: unknown): err is { status: number; data: unknown } {
 interface CareContextValue {
   state: CareState;
   addEntry: (entry: Omit<Entry, "id">) => string;
-  deleteEntry: (id: string) => Promise<boolean>;
+  deleteEntry: (id: string) => Promise<DeleteEntryResult>;
   updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => void;
   updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => void;
   refresh: () => void;
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
+}
+
+interface DeleteEntryResult {
+  ok: boolean;
+  auditHandledByServer: boolean;
 }
 
 const CareContext = createContext<CareContextValue | null>(null);
@@ -553,19 +558,21 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         removed = prev.find((e) => e.id === id);
         return prev.filter((e) => e.id !== id);
       });
-      if (!signedInRef.current || id.startsWith("temp_")) return true;
+      if (!signedInRef.current || id.startsWith("temp_")) {
+        return { ok: true, auditHandledByServer: false };
+      }
       try {
         await deleteCareEntry(id);
         queryClient.invalidateQueries({
           queryKey: getListCareEntriesQueryKey(),
         });
-        return true;
+        return { ok: true, auditHandledByServer: true };
       } catch {
         if (removed) {
           const restored = removed;
           setEntries((prev) => [restored, ...prev]);
         }
-        return false;
+        return { ok: false, auditHandledByServer: false };
       }
     },
     [queryClient],

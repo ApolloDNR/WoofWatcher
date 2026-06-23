@@ -1,7 +1,10 @@
 import { Router, type IRouter } from "express";
 import { and, desc, eq, gte } from "drizzle-orm";
 import { db, careEntriesTable } from "@workspace/db";
-import { normalizeCareEventType } from "@workspace/care-domain";
+import {
+  buildCareLogDeletionAuditEntry,
+  normalizeCareEventType,
+} from "@workspace/care-domain";
 import {
   ListCareEntriesResponse,
   ListCareEntriesResponseItem,
@@ -15,6 +18,10 @@ import { requireAuth, getUserId } from "../lib/auth";
 import { getActiveHouseholdId, getCaregiverName } from "../lib/household";
 
 const router: IRouter = Router();
+
+function toIso(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value;
+}
 
 router.get("/care-entries", requireAuth, async (req, res): Promise<void> => {
   const userId = getUserId(req);
@@ -135,6 +142,7 @@ router.delete(
       return;
     }
     const householdId = await getActiveHouseholdId(userId);
+    const caregiverName = await getCaregiverName(householdId, userId);
 
     const [deleted] = await db
       .delete(careEntriesTable)
@@ -150,6 +158,46 @@ router.delete(
       res.status(404).json({ error: "Entry not found" });
       return;
     }
+
+    const deletedEntryDetails =
+      deleted.details != null && typeof deleted.details === "object"
+        ? deleted.details
+        : {};
+    const deletedEntryTitle =
+      typeof deletedEntryDetails.title === "string" &&
+      deletedEntryDetails.title.trim()
+        ? deletedEntryDetails.title.trim()
+        : deleted.type;
+    const auditEntry = buildCareLogDeletionAuditEntry({
+      caregiver: caregiverName,
+      occurredAt: new Date().toISOString(),
+      entry: {
+        id: deleted.id,
+        type: deleted.type,
+        title: deletedEntryTitle,
+        caregiver: deleted.caregiverName ?? undefined,
+        occurredAt: toIso(deleted.occurredAt),
+        note: deleted.note ?? undefined,
+      },
+    });
+
+    await db.insert(careEntriesTable).values({
+      householdId,
+      petId: deleted.petId,
+      type: auditEntry.type,
+      occurredAt: new Date(auditEntry.occurredAt),
+      caregiverUserId: userId,
+      caregiverName,
+      note: auditEntry.note,
+      details: {
+        auditAction: auditEntry.details.auditAction,
+        auditSubjectId: auditEntry.details.auditSubjectId,
+        householdVisible: auditEntry.details.householdVisible,
+        deletedEntrySnapshot: auditEntry.details.deletedEntrySnapshot,
+        auditTrail: auditEntry.details.auditTrail,
+        title: auditEntry.title,
+      },
+    });
 
     res.sendStatus(204);
   },

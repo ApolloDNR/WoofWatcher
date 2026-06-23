@@ -13,6 +13,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 Latest local evidence, 2026-06-22:
 
 - PASS: 273 focused tests with the command above, now including API route contract readiness for authenticated household scoping, care-state optimistic conflicts, household-isolated care-entry writes, and the `/care-entries?limit=` contract across OpenAPI, zod, and the generated React client.
+- PASS: 259 focused tests with the local zero-dependency suite on 2026-06-22, including API route readiness for server-retained care-entry delete audit notes and mobile Log duplicate-audit suppression for server-backed deletes.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -69,6 +70,7 @@ Latest local evidence, 2026-06-22:
 - Potty quick-log defaults for household-visible potty evidence.
 - Potty composer and Potty Health derivation for visible potty logs, pee/poop counts, stool review signals, condition summaries, stool colors, accident/urgent/straining context, caregiver participation, Records mobile wiring, and Care Pass report language.
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
+- Care-entry delete retention across the API and mobile Log, including server-created non-health audit notes with deleted-entry snapshots for synced deletes and local/offline deletion audits without duplicate notes after server retention.
 - Household Responsibility derivation for care-team routine ownership, open/overdue/unassigned routines, visible today log counts, next household action copy, and Calendar/More mobile wiring.
 - Household Access derivation for synced members, local-only caregivers, routine-only owners, invite readiness, permission labels, next-step copy, and More mobile wiring.
 - Reminder Center derivation for routine reminders, missed/due medication follow-ups, expiring/missing records, grooming due dates, private-log exclusion, urgency sorting, display limits, notification-readiness copy, and Calendar mobile wiring.

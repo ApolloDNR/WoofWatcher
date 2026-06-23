@@ -1135,11 +1135,11 @@ export default function LogScreen() {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             const entry = state.entries.find((item) => item.id === id);
             const deleted = await deleteEntry(id);
-            if (!deleted) {
+            if (!deleted.ok) {
               Alert.alert("Delete failed", "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.");
               return;
             }
-            if (entry) {
+            if (entry && !deleted.auditHandledByServer) {
               addEntry(
                 buildCareLogDeletionAuditEntry({
                   id: auditId(),

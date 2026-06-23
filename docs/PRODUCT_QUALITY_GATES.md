@@ -44,6 +44,7 @@ Passing evidence:
 - The Log composer captures Grooming Care type, duration, coat/skin notes, products/groomer context, next due date, sticky notes, and household visibility, and Records includes Grooming Care derived from visible grooming logs.
 - Dedicated Setup route can save dog profile, diet baseline, starter routine, and household caregiver basics in one flow.
 - Log entries have a detail sheet with sticky notes, audit trail history, sync/error visibility, edit/delete actions, and shareable handoff text.
+- Server-backed care-entry deletes create a retained non-health household audit note with the deleted-entry snapshot, and mobile Log avoids duplicate local audit notes when the server already retained the delete audit.
 - Log exposes a durable Offline Outbox banner for local, pending, and failed care-entry changes with retryable create/update counts and a Retry sync action.
 - More exposes household Sync Health with healthy/loading/syncing/attention status, care-log count, household member count, outbox count, and retry/refresh guidance.
 - Calendar and More expose Household Responsibility derived from routine-board truth, including care-team routine ownership, open/overdue/unassigned counts, visible today log activity, and a next household action.
@@ -86,14 +87,14 @@ Passing evidence:
 - API server typechecks and builds in CI.
 - API includes auth, household, care state, care entries, health, avatar, and WoofGuide-related routes.
 - Production CORS is documented and guarded.
-- Focused API route readiness now protects authenticated household scoping, optimistic care-state conflict responses, household-isolated care-entry create/update/delete behavior, and care-entry list query contracts across OpenAPI, zod, and generated React client types.
+- Focused API route readiness now protects authenticated household scoping, optimistic care-state conflict responses, household-isolated care-entry create/update/delete behavior, server-retained delete audit notes, and care-entry list query contracts across OpenAPI, zod, and generated React client types.
 
 Current gaps:
 
-- Need live integration tests for authenticated household-scoped routes against a test database/provider-auth harness.
+- Need live integration tests for authenticated household-scoped routes against a test database/provider-auth harness, including the care-entry delete audit retention path.
 - Need storage for record documents and generated reports.
 - Need role-aware permissions, broader audit trail policy for documents/accounts/roles, and provider-backed data export/delete paths.
-- Need deeper multi-device conflict policy, server-backed delete/edit retention rules, and native offline recovery QA.
+- Need deeper multi-device conflict policy, final server-backed delete/edit restore and retention rules, and native offline recovery QA.
 
 ## Gate 5: AI Safety And Usefulness
 
@@ -147,7 +148,7 @@ Passing evidence:
 Current gaps:
 
 - Local environment does not currently have pnpm/node_modules installed in this Codex checkout.
-- Need API integration tests.
+- Need API integration tests, including live validation for care-entry delete audit retention.
 - Need mobile runtime smoke.
 - Critical mobile action accessibility labels are covered by focused static smoke.
 - Home avatar motion state and wiring are covered by focused tests.
@@ -188,6 +189,7 @@ Current gaps:
 - Household Responsibility derivation and Calendar/More responsibility wiring are covered by focused tests.
 - Household Access derivation and More wiring are covered by focused tests.
 - Care Log Audit Trail derivation and Log edit/sticky/delete/detail wiring are covered by focused tests.
+- Server-backed care-entry delete audit retention and mobile duplicate-audit suppression are covered by focused API readiness.
 - Full Log search derivation, normalized type filters, sticky-note/detail search, and mobile Log wiring are covered by focused tests.
 - Durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, and mobile Log/More/CareContext wiring are covered by focused tests.
 - Need report/export tests.
@@ -207,7 +209,7 @@ Current gaps:
 
 - Need privacy copy and data handling policy.
 - Need role-based access control.
-- Care-log edit/delete audit trail exists in mobile/domain; broader role, record, household, and account audit policy remains open.
+- Care-log edit/delete audit trail exists in mobile/domain, and synced care-entry deletes now retain server-side audit notes; broader role, record, household, and account audit policy remains open.
 - Need document storage access rules.
 - AI usage disclosure, owner care-data export, and non-destructive deletion request preparation exist in mobile; provider-backed policy and destructive deletion still need approval.
 

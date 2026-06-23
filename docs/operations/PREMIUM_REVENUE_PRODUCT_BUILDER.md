@@ -100,7 +100,7 @@ Stop only for:
 
 ## Current Next Slice
 
-As of 2026-06-21, the current queue points to native runtime QA and premium polish. The mobile app now has a registered full Phoenix sprite manifest, first-pass dogless room variants, PixelLab frame-to-strip tooling, room-variant tooling, a 12-item Avatar Studio template preview catalog, a full 12-template base still pack, full animated launch template packs, premium board anatomy across the core routes, release-grade Expo identity, EAS profiles, local-first care workflows, report/handoff surfaces, medication/water/walk/potty/training/alone-time/weight/grooming derivations, bounded WoofGuide drafts, and shared safe-area/accessibility contracts for bottom route clearance, composers, modal sheets, floating feedback, centered prompts, route top clearance, error-recovery debug controls, keyboard avoidance, inline hit slop, and 48px touch targets.
+As of 2026-06-22, the current queue points to native runtime QA and premium polish. The mobile app now has a registered full Phoenix sprite manifest, first-pass dogless room variants, PixelLab frame-to-strip tooling, room-variant tooling, a 12-item Avatar Studio template preview catalog, a full 12-template base still pack, full animated launch template packs, premium board anatomy across the core routes, release-grade Expo identity, EAS profiles, local-first care workflows, report/handoff surfaces, medication/water/walk/potty/training/alone-time/weight/grooming derivations, bounded WoofGuide drafts, and shared safe-area/accessibility contracts for bottom route clearance, composers, modal sheets, floating feedback, centered prompts, route top clearance, error-recovery debug controls, keyboard avoidance, inline hit slop, and 48px touch targets.
 
 Latest completed local runtime/accessibility hardening:
 
@@ -114,6 +114,7 @@ Latest completed local runtime/accessibility hardening:
 - Onboarding and Avatar Studio creation actions expose explicit screen-reader roles, labels, and state where relevant. Shared auth primary/Google buttons, Setup starter-routine/save/finish-later actions, and Avatar Studio reset/save controls now have mobile readiness coverage before native accessibility traversal is available.
 - Avatar Studio owner-input controls now finish the shared mobile touch-target pass. Scan gallery/camera actions, template tiles, accessory tiles, and mood preview chips use the shared `MIN_MOBILE_TOUCH_TARGET` floor, and face-marking choices expose explicit screen-reader labels before native accessibility traversal is available.
 - API route contract readiness now runs in the focused test suite before live database/provider integration tests are available. Authenticated household scoping, care-state optimistic conflicts, household-isolated care-entry writes, and the `/care-entries?limit=` query contract are covered across the API routes, OpenAPI, zod, and generated React client types.
+- Server-backed care-entry deletes now retain a household audit note before final live retention policy work. The API creates a non-health audit note with the deleted-entry snapshot and audit trail after a scoped delete, and mobile Log avoids duplicate local audit notes for synced deletes while preserving local/offline deletion audits.
 
 Next highest-impact work:
 

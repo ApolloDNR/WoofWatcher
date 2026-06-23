@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-22: Server Deletes Retain Household Audit Notes
+
+Decision: Care-entry deletes through the API should create a retained non-health household audit note after a household-scoped delete succeeds. The audit note stores the deleted entry snapshot, audit subject id, caregiver, and audit trail using the shared care-domain deletion audit shape. Mobile Log should avoid adding a duplicate local deletion audit when the server already retained one, while local/offline deletes still create the local audit note.
+
+Reason: Deleted care logs should stop satisfying routines and health summaries, but the household still needs an evidence trail of what changed. Keeping the server-backed delete audit in the API reduces trust and retention risk before the final live database retention/restore policy is approved, without pretending provider-backed deletion policy or live integration tests are complete.
+
+Owner: Codex.
+
+Revisit trigger: A live test database/provider-auth harness is available, final delete/restore retention policy is approved, or role-aware audit events for records/documents/accounts become active release work.
+
 ### 2026-06-22: API Route Contract Readiness Runs In Focused Tests
 
 Decision: The focused test suite should include CI-safe API route contract readiness while live Express/Drizzle integration tests remain blocked by local dependency, database, and provider-auth setup. The first API readiness slice protects authenticated household scoping, care-state optimistic conflict responses, household-isolated care-entry create/update/delete behavior, and the `/care-entries?limit=` query contract across OpenAPI, zod, and generated React client types.
