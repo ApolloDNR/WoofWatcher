@@ -26,6 +26,7 @@ test("lists the launch-critical mobile QA surfaces for the next native pass", ()
   assert.ok(ids.includes("incident-composer"));
   assert.ok(ids.includes("records-incident-watch"));
   assert.ok(surfaces.every((surface) => surface.requiredEvidence.length > 0));
+  assert.ok(surfaces.every((surface) => surface.verificationSteps.length > 0));
   assert.ok(surfaces.every((surface) => surface.launchRisk.length > 0));
 });
 
@@ -39,6 +40,8 @@ test("keeps the Home mission deck as a launch-critical device QA target", () => 
   assert.match(surface.goal, /care-RPG mission deck/);
   assert.match(surface.devicePrompt, /small iOS and Android phones/);
   assert.match(surface.devicePrompt, /floating paw nav/);
+  assert.match(surface.verificationSteps.join("\n"), /Tap the pending meal mission/);
+  assert.match(surface.verificationSteps.join("\n"), /Adventure, Health, and Care Pass/);
   assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of the compact Home mission deck/);
   assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of the compact Home mission deck/);
   assert.match(surface.requiredEvidence.join("\n"), /pending meal routes to Meal Log/);
@@ -103,6 +106,7 @@ test("keeps flexible screenshot slots separate from required iOS and Android pro
       priority: "launch-critical",
       goal: "Check both native platforms.",
       devicePrompt: "Open on both phones.",
+      verificationSteps: ["Open Home.", "Capture iOS and Android screenshots."],
       requiredEvidence: [
         "iOS screenshot of Home.",
         "Android screenshot of Home.",
@@ -220,6 +224,8 @@ test("turns the store submission screenshot checklist into device QA surfaces", 
   assert.equal(surfaces[1].priority, "launch-critical");
   assert.match(surfaces[0].title, /Store: Phoenix Home/);
   assert.match(surfaces[0].devicePrompt, /App Store and Play Store/);
+  assert.match(surfaces[0].verificationSteps.join("\n"), /Open \//);
+  assert.match(surfaces[0].verificationSteps.join("\n"), /Do not show private household data/);
   assert.match(surfaces[0].requiredEvidence.join("\n"), /iOS screenshot for store packet/);
   assert.match(surfaces[0].requiredEvidence.join("\n"), /Android screenshot for store packet/);
   assert.match(surfaces[1].launchRisk, /blocked/);
@@ -251,6 +257,8 @@ test("builds a release QA share report with the screenshot boundary intact", () 
   assert.match(text, /Records Incident Watch: Needs tune/);
   assert.match(text, /Follow-up row needs larger touch target/);
   assert.match(text, /Required screenshot slots:/);
+  assert.match(text, /Steps:/);
+  assert.match(text, /Confirm Phoenix Home answers presence, feeling, next care, and quick logging/);
   assert.match(text, /Screenshot evidence: 1 attached/);
   assert.match(text, /Platform evidence: iOS 1\/\d+, Android 0\/\d+, flexible 0\/\d+/);
   assert.match(text, /Evidence gap: Missing/);

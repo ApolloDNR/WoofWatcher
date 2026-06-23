@@ -146,6 +146,36 @@ function QaBadge({ label, tone }: { label: string; tone: string }) {
   );
 }
 
+function VerificationStepList({
+  colors,
+  label = "Device steps",
+  steps,
+}: {
+  colors: ReturnType<typeof useColors>;
+  label?: string;
+  steps: readonly string[];
+}) {
+  if (!steps.length) return null;
+
+  return (
+    <View style={[s.stepList, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      <Text style={[s.stepListLabel, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>{label}</Text>
+      {steps.map((step, index) => (
+        <View key={`${index}-${step}`} style={s.stepRow}>
+          <View style={[s.stepNumber, { backgroundColor: `${colors.brandNavy}12` }]}>
+            <Text style={[s.stepNumberText, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+              {index + 1}
+            </Text>
+          </View>
+          <Text style={[s.stepText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+            {step}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function statusTone(
   status: CareTwinQaReviewStatus | MobileReleaseQaReviewStatus,
   colors: ReturnType<typeof useColors>,
@@ -516,6 +546,8 @@ export default function CareTwinQaScreen() {
                 </Text>
               </View>
 
+              <VerificationStepList colors={colors} steps={surface.verificationSteps} />
+
               <View style={s.evidenceList}>
                 {surface.requiredEvidence.map((evidence) => (
                   <View key={evidence} style={s.evidenceRow}>
@@ -694,6 +726,8 @@ export default function CareTwinQaScreen() {
                   {surface.devicePrompt}
                 </Text>
               </View>
+
+              <VerificationStepList colors={colors} label="Store steps" steps={surface.verificationSteps} />
 
               <View style={s.evidenceList}>
                 {surface.requiredEvidence.map((evidence) => (
@@ -1155,6 +1189,37 @@ const s = StyleSheet.create({
   },
   evidenceList: {
     gap: 7,
+  },
+  stepList: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 8,
+  },
+  stepListLabel: {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  stepNumber: {
+    width: 22,
+    minHeight: 22,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepNumberText: {
+    fontSize: 11,
+  },
+  stepText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
   },
   evidenceRow: {
     flexDirection: "row",

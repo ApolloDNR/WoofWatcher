@@ -20,6 +20,7 @@ export interface MobileLaunchQaCaptureTarget {
   priority: MobileReleaseQaSurface["priority"];
   status: MobileReleaseQaReview["status"];
   missingEvidence: string[];
+  verificationSteps: readonly string[];
   evidenceAttached: number;
   note?: string;
 }
@@ -152,6 +153,7 @@ export function buildMobileLaunchQaCapturePlan(
         priority: surface.priority,
         status: review.status,
         missingEvidence,
+        verificationSteps: surface.verificationSteps,
         evidenceAttached: review.screenshotEvidence?.length ?? 0,
         note: review.note,
       };
@@ -193,6 +195,7 @@ export function buildMobileLaunchQaCaptureShareText(
     lines.push(`   Priority: ${target.priority}`);
     lines.push(`   Status: ${target.status}`);
     lines.push(`   Missing: ${target.missingEvidence.join(" ") || "No missing evidence."}`);
+    lines.push(`   Steps: ${target.verificationSteps.join(" ")}`);
     lines.push(`   Evidence attached: ${target.evidenceAttached}`);
     if (target.note) lines.push(`   Note: ${target.note}`);
   });

@@ -7,11 +7,14 @@
 - Required proof now calls for iOS and Android compact-deck screenshots, floating paw-nav visibility, no-overflow review, and route confirmation for pending meal, active walk/alone sessions, Adventure, Health, and Care Pass.
 - Added tests so the Home mission deck cannot be dropped from the native QA plan during future design polish.
 - Tuned the Native QA capture plan to preserve release-surface order within priority groups, so tester scripts start with Phoenix Home and Home Mission Deck before moving to the rest of the launch-critical surfaces.
+- Added explicit numbered device verification steps to every Mobile Release QA surface and generated Store Screenshot QA surface.
+- `/care-twin-qa` now shows Device steps/Store steps before screenshot evidence capture, the Mobile Release QA share report includes the same route-check steps, and More's Native QA Next Captures rows show the first step for each next route.
 
 ## Verification
 
 - `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts` - 84 passing.
 - `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts` - 85 passing.
+- `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts` - 85 passing after the device-steps QA contract.
 - `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 360 passing.
 - `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
@@ -26,4 +29,4 @@
 
 ## Next Best Slice
 
-Run the Home Mission Deck QA surface on iOS and Android, attach screenshots, share the QA report, and tune the first visible phone-size issue.
+Run the Home Mission Deck QA surface on iOS and Android using the in-app numbered device steps, attach screenshots, share the QA report, and tune the first visible phone-size issue.

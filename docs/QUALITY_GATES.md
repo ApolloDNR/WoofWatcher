@@ -375,6 +375,14 @@ owner/tester script with progress, routes, missing proof, attached counts, and
 the final device-review boundary. More exposes this through `Share QA Plan`
 inside the launch cockpit.
 
+Current evidence, 2026-06-23: Mobile Release QA surfaces now carry explicit
+numbered device verification steps in the shared `mobileReleaseQa.ts` model.
+The `/care-twin-qa` cockpit renders those Device steps and generated Store
+steps before evidence capture, Mobile Release QA share reports include the
+same route-check instructions, and More's Native QA Next Captures panel shows
+the first concrete step for each next target. This makes the phone QA handoff
+more executable without claiming iOS/Android screenshots are complete.
+
 Current evidence, 2026-06-21: Provider launch readiness is now a durable,
 truthful owner workflow. `launchProviderSetup.ts` derives an eight-gate
 production setup plan for auth, database sync, storage, AI, payments, push,

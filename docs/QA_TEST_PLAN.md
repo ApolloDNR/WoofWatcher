@@ -30,6 +30,14 @@ Latest local evidence, 2026-06-21:
 - PASS: Expo web export completed to `C:\Users\Apoll\OneDrive\Documentos\New project\tmp\woofwatcher-store-screenshot-qa-export`.
 - PASS: `/care-twin-qa` now turns Store Submission screenshot checklist rows into iOS/Android store screenshot QA surfaces with route-open actions, Pass/Needs tune controls, notes, store-safe prompts, and native share packet output.
 
+Latest local evidence, 2026-06-23:
+
+- PASS: 85 focused mobile QA/readiness tests covering Mobile Release QA surfaces, Native QA Next Captures, and static mobile readiness.
+- PASS: Mobile Release QA surfaces now require explicit numbered `verificationSteps` in addition to screenshot evidence and launch-risk copy.
+- PASS: `/care-twin-qa` renders Device steps/Store steps before evidence capture, and the native share report includes the same route-check steps.
+- PASS: More's Native QA Next Captures panel shows the first concrete step for each next QA target.
+- STILL REQUIRED: real iOS and Android device/simulator execution, screenshot attachment, QA report sharing, and visible issue tuning.
+
 ## Required Automated Coverage
 
 - Event taxonomy and normalization.
