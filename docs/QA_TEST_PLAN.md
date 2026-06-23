@@ -36,6 +36,8 @@ Latest local evidence, 2026-06-23:
 - PASS: Mobile Release QA surfaces now require explicit numbered `verificationSteps` in addition to screenshot evidence and launch-risk copy.
 - PASS: `/care-twin-qa` renders Device steps/Store steps before evidence capture, and the native share report includes the same route-check steps.
 - PASS: More's Native QA Next Captures panel shows the first concrete step for each next QA target.
+- PASS: 14 focused Mobile Release QA and Native QA Capture Plan tests covering setup/precondition steps before screenshot capture.
+- PASS: `/care-twin-qa`, native QA share text, generated Store Screenshot QA surfaces, and More's Native QA Next Captures now carry setup/prep guidance before route-check steps.
 - STILL REQUIRED: real iOS and Android device/simulator execution, screenshot attachment, QA report sharing, and visible issue tuning.
 
 ## Required Automated Coverage

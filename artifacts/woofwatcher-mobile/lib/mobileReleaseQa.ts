@@ -11,6 +11,7 @@ export interface MobileReleaseQaSurface {
   priority: "launch-critical" | "release-polish";
   goal: string;
   devicePrompt: string;
+  setupSteps: readonly string[];
   verificationSteps: readonly string[];
   requiredEvidence: readonly string[];
   launchRisk: string;
@@ -51,6 +52,10 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     goal: "Prove the first screen answers where Phoenix is, how she feels, what is next, and what can be logged quickly.",
     devicePrompt:
       "Check header safe area, bottom-nav clearance, one main Phoenix sprite, room crop, quick-log response, and Next Up reachability on iOS and Android.",
+    setupSteps: [
+      "Use a local preview household with Phoenix sample care data.",
+      "Start from the Home tab with no modal or bottom sheet covering the room.",
+    ],
     verificationSteps: [
       "Open Phoenix Home from the Home tab and confirm header, date, bell, and profile controls sit below the safe area.",
       "Confirm Phoenix Home answers presence, feeling, next care, and quick logging without scrolling past the main room.",
@@ -73,6 +78,12 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     goal: "Prove the care-RPG mission deck fits the first screen and routes open care loops to real workflows.",
     devicePrompt:
       "On small iOS and Android phones, confirm the compact mission deck stays readable above the floating paw nav, has no text overflow, and routes pending meal, walk/alone, Adventure, Health, and Care Pass rows correctly.",
+    setupSteps: [
+      "Use a local preview household with Phoenix sample care data.",
+      "Create a meal served with outcome pending from Quick Log or Log before capture.",
+      "Start a walk or Alone Time session before route-testing the active-care mission row.",
+      "Leave Adventure, Health, and Care Pass local preview data visible; do not mark provider-gated work as live.",
+    ],
     verificationSteps: [
       "Open Phoenix Home on a compact phone width and scroll to the mission deck under the status tiles.",
       "Confirm at least three mission rows are readable, reachable, and clear of the floating paw nav.",
@@ -96,6 +107,10 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     goal: "Review every registered Phoenix room/sprite state through production LivingPhoenixRoom assets.",
     devicePrompt:
       "Run the 12-state matrix, mark Pass or Needs tune, add notes for crop, scale, loop timing, gait, and touch response, then share the QA summary.",
+    setupSteps: [
+      "Open an internal/development build where /care-twin-qa is available.",
+      "Confirm the PixelLab asset verifier has passed for the current build before reviewing sprite quality.",
+    ],
     verificationSteps: [
       "Open /care-twin-qa and review every care-twin scenario through the production LivingPhoenixRoom renderer.",
       "Tap the room in happy, rest, health-watch, and home-alone states and confirm the reaction fits the state.",
@@ -119,6 +134,10 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     goal: "Prove PixelLab-backed templates feel like intentional live care twins and unfinished states remain truthful.",
     devicePrompt:
       "Switch at least Shepherd, Retriever, Husky, Bully, Doodle, and Mixed Breed; verify live/still badges, thumbnail crispness, and no oversized overlays.",
+    setupSteps: [
+      "Use the current PixelLab template pack and approved Option B Phoenix runtime family.",
+      "Start from Avatar Studio with no unsaved scan/import sheet covering the live stage.",
+    ],
     verificationSteps: [
       "Open Avatar Studio and inspect the live Phoenix/Shepherd stage before switching templates.",
       "Switch Shepherd, Retriever, Husky, Bully, Doodle, and Mixed Breed templates and check live/still readiness badges.",
@@ -141,6 +160,10 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     goal: "Confirm behavior-safety events can be logged with trigger, exposure, injury/action, follow-up, notes, and household visibility.",
     devicePrompt:
       "Open the Incident detail flow from Log, verify all fields fit in a phone bottom sheet, and confirm safety copy stays factual and non-diagnostic.",
+    setupSteps: [
+      "Use local preview data and prepare a non-real incident draft for QA only.",
+      "Do not save sensitive real incident details while capturing shared QA screenshots.",
+    ],
     verificationSteps: [
       "Open Log with the Incident detail flow and confirm it starts in a detail-first safety composer.",
       "Fill trigger, exposure, injury/action, follow-up, note, trust, and household visibility fields without keyboard overlap.",
@@ -163,6 +186,10 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     goal: "Confirm Incident Watch turns logged events into trend signal, follow-up tasks, trainer goals, and safe handoff language.",
     devicePrompt:
       "Review Records on a small phone screen, tap Incident Watch follow-up rows, and verify routes go to the Incident composer or trainer Care Pass preview.",
+    setupSteps: [
+      "Use a local preview household with at least one household-visible incident or altercation log.",
+      "If Incident Watch is empty, create a QA-only incident draft first and keep screenshots free of private details.",
+    ],
     verificationSteps: [
       "Open Records and locate Incident Watch trend signal, follow-up tasks, and trainer goal cards.",
       "Tap an Incident Watch follow-up row and confirm it opens the Incident composer when follow-up detail is needed.",
@@ -185,6 +212,10 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     goal: "Verify trainer handoff output includes Incident Watch trend, owner follow-ups, and goal ideas without diagnosing behavior.",
     devicePrompt:
       "Preview or share the trainer Care Pass from Records, then verify incident trend/follow-up/goal lines are readable and factual.",
+    setupSteps: [
+      "Use Records with visible Incident Watch evidence or local preview sample data.",
+      "Keep trainer handoff screenshots free of private contact details and real addresses.",
+    ],
     verificationSteps: [
       "Open Records and preview the Trainer Care Pass.",
       "Confirm Incident Watch trend, owner follow-up, and trainer goal lines are included in the handoff.",
@@ -252,6 +283,19 @@ function storeScreenshotVerificationStepsFor(
   return steps;
 }
 
+function storeScreenshotSetupStepsFor(item: StoreScreenshotChecklistItem): string[] {
+  const steps = [
+    "Use demo-safe or scrubbed household data before capturing any store-facing image.",
+    "Set the screen to a realistic launch state without hiding unfinished provider, payment, AI, or storage gates.",
+  ];
+
+  if (item.status === "blocked") {
+    steps.push("Leave the blocker visible or capture a blocker note instead of staging a misleading finished screen.");
+  }
+
+  return steps;
+}
+
 export function buildStoreSubmissionScreenshotQaSurfaces(
   packet: StoreSubmissionPacket,
 ): readonly MobileReleaseQaSurface[] {
@@ -265,6 +309,7 @@ export function buildStoreSubmissionScreenshotQaSurfaces(
       priority: blocked ? "launch-critical" : "release-polish",
       goal: `Capture store-ready ${item.screen} evidence for ${packet.title}.`,
       devicePrompt: `${item.requirement} Use App Store and Play Store safe frames, avoid private household data, and keep unfinished provider claims out of the screenshot.`,
+      setupSteps: storeScreenshotSetupStepsFor(item),
       verificationSteps: storeScreenshotVerificationStepsFor(item, route),
       requiredEvidence: storeScreenshotEvidenceFor(item),
       launchRisk: blocked
@@ -410,6 +455,7 @@ export function buildMobileReleaseQaShareText(
       `- ${surface.title}: ${mobileReleaseQaStatusLabel(review.status)} | route=${surface.route} | priority=${surface.priority}`,
     );
     lines.push(`  Goal: ${surface.goal}`);
+    lines.push(`  Setup: ${surface.setupSteps.join(" ")}`);
     lines.push(`  Steps: ${surface.verificationSteps.join(" ")}`);
 
     if (note) {

@@ -546,6 +546,7 @@ export default function CareTwinQaScreen() {
                 </Text>
               </View>
 
+              <VerificationStepList colors={colors} label="Setup first" steps={surface.setupSteps} />
               <VerificationStepList colors={colors} steps={surface.verificationSteps} />
 
               <View style={s.evidenceList}>
@@ -727,6 +728,7 @@ export default function CareTwinQaScreen() {
                 </Text>
               </View>
 
+              <VerificationStepList colors={colors} label="Store prep" steps={surface.setupSteps} />
               <VerificationStepList colors={colors} label="Store steps" steps={surface.verificationSteps} />
 
               <View style={s.evidenceList}>

@@ -1431,7 +1431,7 @@ export default function MoreScreen() {
                   <Pressable
                     key={target.surfaceId}
                     accessibilityRole="button"
-                    accessibilityLabel={`Open ${target.title} QA capture. ${target.missingEvidence.join(" ")} ${target.verificationSteps[0] ?? ""}`}
+                    accessibilityLabel={`Open ${target.title} QA capture. ${target.missingEvidence.join(" ")} ${target.setupSteps[0] ?? ""} ${target.verificationSteps[0] ?? ""}`}
                     onPress={() => {
                       Haptics.selectionAsync();
                       router.push(target.route as never);
@@ -1451,6 +1451,14 @@ export default function MoreScreen() {
                       >
                         {target.missingEvidence.join(" ")}
                       </Text>
+                      {target.setupSteps[0] ? (
+                        <Text
+                          numberOfLines={2}
+                          style={[s.nativeQaCaptureRowPrep, { color: colors.copper, fontFamily: "Inter_700Bold" }]}
+                        >
+                          Prep: {target.setupSteps[0]}
+                        </Text>
+                      ) : null}
                       {target.verificationSteps[0] ? (
                         <Text
                           numberOfLines={2}
@@ -2888,6 +2896,7 @@ const s = StyleSheet.create({
   },
   nativeQaCaptureRowTitle: { fontSize: 12.5, lineHeight: 17 },
   nativeQaCaptureRowSub: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  nativeQaCaptureRowPrep: { fontSize: 11, lineHeight: 15, marginTop: 4 },
   nativeQaCaptureRowStep: { fontSize: 11, lineHeight: 15, marginTop: 4 },
   nativeQaCapturePill: {
     minHeight: 26,

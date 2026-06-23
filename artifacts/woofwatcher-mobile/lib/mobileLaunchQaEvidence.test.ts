@@ -18,6 +18,7 @@ const focusedSurfaces: readonly MobileReleaseQaSurface[] = [
     priority: "launch-critical",
     goal: "Verify the main screen.",
     devicePrompt: "Capture the screen.",
+    setupSteps: ["Use a local preview household with Phoenix sample care data."],
     verificationSteps: ["Open Home.", "Capture iOS and Android screenshots."],
     requiredEvidence: ["iOS screenshot of Home.", "Android screenshot of Home."],
     launchRisk: "Home is the first impression.",
@@ -29,6 +30,7 @@ const focusedSurfaces: readonly MobileReleaseQaSurface[] = [
     priority: "release-polish",
     goal: "Verify Care Pass.",
     devicePrompt: "Capture the handoff.",
+    setupSteps: ["Open Records with visible report history."],
     verificationSteps: ["Open Records.", "Preview Care Pass."],
     requiredEvidence: ["Screenshot of Care Pass share preview."],
     launchRisk: "Care Pass needs proof.",
@@ -150,6 +152,7 @@ test("builds a prioritized capture plan from missing native QA evidence", () => 
       priority: "release-polish",
       status: "pass",
       missingEvidence: ["Attach 1 screenshot for Care Pass."],
+      setupSteps: ["Open Records with visible report history."],
       verificationSteps: ["Open Records.", "Preview Care Pass."],
       evidenceAttached: 0,
       note: undefined,
@@ -187,6 +190,7 @@ test("preserves release surface order inside each priority group", () => {
       priority: "launch-critical",
       goal: "Verify the first screen.",
       devicePrompt: "Capture Home first.",
+      setupSteps: ["Use a local preview household with Phoenix sample care data."],
       verificationSteps: ["Open Phoenix Home.", "Verify Home first."],
       requiredEvidence: ["iOS screenshot of Phoenix Home."],
       launchRisk: "Home is the first impression.",
@@ -198,6 +202,7 @@ test("preserves release surface order inside each priority group", () => {
       priority: "launch-critical",
       goal: "Verify the mission deck.",
       devicePrompt: "Capture mission deck second.",
+      setupSteps: ["Create pending meal and active session state."],
       verificationSteps: ["Open Phoenix Home.", "Verify mission route rows."],
       requiredEvidence: ["iOS screenshot of Home Mission Deck."],
       launchRisk: "Mission rows must not hide behind the nav.",
@@ -209,6 +214,7 @@ test("preserves release surface order inside each priority group", () => {
       priority: "launch-critical",
       goal: "Verify Avatar Studio.",
       devicePrompt: "Capture Avatar Studio after Home.",
+      setupSteps: ["Use the current PixelLab template pack."],
       verificationSteps: ["Open Avatar Studio.", "Switch template families."],
       requiredEvidence: ["iOS screenshot of Avatar Studio."],
       launchRisk: "Avatar Studio is the product hook.",
@@ -220,6 +226,7 @@ test("preserves release surface order inside each priority group", () => {
       priority: "release-polish",
       goal: "Verify Care Pass.",
       devicePrompt: "Capture Care Pass.",
+      setupSteps: ["Open Records with visible report history."],
       verificationSteps: ["Open Records.", "Preview Care Pass."],
       requiredEvidence: ["Screenshot of Care Pass."],
       launchRisk: "Care Pass needs proof.",
@@ -244,6 +251,7 @@ test("builds a shareable native QA capture script for Apollo and device testers"
   assert.match(text, /1\. Home \(\/\)/);
   assert.match(text, /Priority: launch-critical/);
   assert.match(text, /Missing: Attach 1 iOS screenshot for Home\. Attach 1 Android screenshot for Home\./);
+  assert.match(text, /Setup: Use a local preview household with Phoenix sample care data\./);
   assert.match(text, /Steps: Open Home\. Capture iOS and Android screenshots\./);
   assert.match(text, /2\. Care Pass \(\/records\)/);
   assert.match(text, /Done condition: capture iOS and Android proof in \/care-twin-qa/);

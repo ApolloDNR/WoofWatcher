@@ -383,6 +383,14 @@ same route-check instructions, and More's Native QA Next Captures panel shows
 the first concrete step for each next target. This makes the phone QA handoff
 more executable without claiming iOS/Android screenshots are complete.
 
+Current evidence, 2026-06-23: The same Mobile Release QA surfaces now carry
+setup/precondition steps before the numbered verification steps. The handoff
+can tell testers how to prepare demo-safe state for pending meal, active walk,
+Alone Time, Incident Watch, Avatar Studio, and blocked store-screenshot review
+before attaching native screenshots. `/care-twin-qa` renders Setup first/Store
+prep ahead of evidence capture, More shows the first prep step in Native QA
+Next Captures, and share text includes both setup and verification instructions.
+
 Current evidence, 2026-06-21: Provider launch readiness is now a durable,
 truthful owner workflow. `launchProviderSetup.ts` derives an eight-gate
 production setup plan for auth, database sync, storage, AI, payments, push,
