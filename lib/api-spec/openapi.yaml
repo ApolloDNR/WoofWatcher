@@ -346,6 +346,14 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 250
       responses:
         "200":
           description: Care entries

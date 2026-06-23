@@ -64,3 +64,17 @@ test("root focused tests include API readiness so backend contracts do not drift
     "package.json test:focused must run API readiness tests",
   );
 });
+
+test("care entries list limit query stays documented and typed", () => {
+  const route = read("artifacts/api-server/src/routes/care-entries.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const reactSchemas = read("lib/api-client-react/src/generated/api.schemas.ts");
+  const zodSchemas = read("lib/api-zod/src/generated/api.ts");
+  const zodTypes = read("lib/api-zod/src/generated/types/listCareEntriesParams.ts");
+
+  assert.match(route, /req\.query\.limit/, "care-entries route should still read the limit query");
+  assert.match(openapi, /name:\s+limit/, "OpenAPI must document the care-entries limit query");
+  assert.match(reactSchemas, /limit\?:\s*number/, "React API client must type the care-entries limit query");
+  assert.match(zodTypes, /limit\?:\s*number/, "Zod generated param types must type the care-entries limit query");
+  assert.match(zodSchemas, /"limit":\s*zod\.number\(\)/, "Zod generated validator must validate the care-entries limit query");
+});

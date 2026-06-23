@@ -356,6 +356,9 @@ Latest local evidence, 2026-06-23:
 - API readiness now has a focused zero-dependency test for OpenAPI/generated-client coverage of `/woofguide-events`, `/avatar-stylize`, and `/avatar-emotions`.
 - `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` passed with 2 tests.
 - Full local focused behavior/readiness suite passed with 362 tests across API readiness, mobile library tests, PWA vanilla tests, and shared care-domain tests.
+- API readiness now also covers `/care-entries?limit=...` so the server-supported pagination cap stays documented and typed in OpenAPI, React generated params, and Zod generated validators/types.
+- `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` passed with 3 tests after the `limit` query contract fix.
+- Full local focused behavior/readiness suite passed with 363 tests after the `limit` query contract fix.
 - `node --check lib/api-client-react/src/generated/api.ts` and `node --check lib/api-zod/src/generated/api.ts` passed syntax checks for the generated-client edits.
 - PixelLab asset verification passed with 149 registered assets, 0 missing, and 0 invalid.
 - `git diff --check` passed with only expected Windows line-ending warnings.

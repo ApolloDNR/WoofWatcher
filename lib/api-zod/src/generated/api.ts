@@ -274,7 +274,8 @@ export const PutCareStateResponse = zod.object({
  * @summary List the household's care log entries
  */
 export const ListCareEntriesQueryParams = zod.object({
-  "since": zod.date().optional()
+  "since": zod.date().optional(),
+  "limit": zod.number().min(1).max(500).optional()
 })
 
 export const ListCareEntriesResponseItem = zod.object({
@@ -350,5 +351,4 @@ export const UpdateCareEntryResponse = zod.object({
 export const DeleteCareEntryParams = zod.object({
   "id": zod.coerce.string()
 })
-
 
