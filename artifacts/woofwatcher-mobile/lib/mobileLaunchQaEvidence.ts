@@ -138,6 +138,7 @@ export function buildMobileLaunchQaCapturePlan(
   session: MobileQaSessionState | null | undefined,
   surfaces: readonly MobileReleaseQaSurface[] = listMobileLaunchQaSurfaces(),
 ): MobileLaunchQaCapturePlan {
+  const surfaceOrder = new Map(surfaces.map((surface, index) => [surface.id, index]));
   const targets = surfaces
     .map<MobileLaunchQaCaptureTarget | null>((surface) => {
       const review = reviewForSessionSurface(session, surface);
@@ -160,7 +161,7 @@ export function buildMobileLaunchQaCapturePlan(
       const priorityDelta =
         (first.priority === "launch-critical" ? 0 : 1) - (second.priority === "launch-critical" ? 0 : 1);
       if (priorityDelta !== 0) return priorityDelta;
-      return first.title.localeCompare(second.title);
+      return (surfaceOrder.get(first.surfaceId) ?? 0) - (surfaceOrder.get(second.surfaceId) ?? 0);
     });
 
   return {

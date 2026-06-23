@@ -175,6 +175,58 @@ test("prioritizes launch-critical unreviewed targets before release-polish targe
   assert.equal(plan.nextTargets[1]?.surfaceId, "care-pass");
 });
 
+test("preserves release surface order inside each priority group", () => {
+  const surfaces: readonly MobileReleaseQaSurface[] = [
+    {
+      id: "phoenix-home",
+      title: "Phoenix Home",
+      route: "/",
+      priority: "launch-critical",
+      goal: "Verify the first screen.",
+      devicePrompt: "Capture Home first.",
+      requiredEvidence: ["iOS screenshot of Phoenix Home."],
+      launchRisk: "Home is the first impression.",
+    },
+    {
+      id: "home-mission-deck",
+      title: "Home Mission Deck",
+      route: "/",
+      priority: "launch-critical",
+      goal: "Verify the mission deck.",
+      devicePrompt: "Capture mission deck second.",
+      requiredEvidence: ["iOS screenshot of Home Mission Deck."],
+      launchRisk: "Mission rows must not hide behind the nav.",
+    },
+    {
+      id: "avatar-studio",
+      title: "Avatar Studio",
+      route: "/portrait",
+      priority: "launch-critical",
+      goal: "Verify Avatar Studio.",
+      devicePrompt: "Capture Avatar Studio after Home.",
+      requiredEvidence: ["iOS screenshot of Avatar Studio."],
+      launchRisk: "Avatar Studio is the product hook.",
+    },
+    {
+      id: "care-pass",
+      title: "Care Pass",
+      route: "/records",
+      priority: "release-polish",
+      goal: "Verify Care Pass.",
+      devicePrompt: "Capture Care Pass.",
+      requiredEvidence: ["Screenshot of Care Pass."],
+      launchRisk: "Care Pass needs proof.",
+    },
+  ];
+
+  const plan = buildMobileLaunchQaCapturePlan(null, surfaces);
+
+  assert.deepEqual(
+    plan.nextTargets.map((target) => target.surfaceId),
+    ["phoenix-home", "home-mission-deck", "avatar-studio", "care-pass"],
+  );
+});
+
 test("builds a shareable native QA capture script for Apollo and device testers", () => {
   const plan = buildMobileLaunchQaCapturePlan(null, focusedSurfaces);
   const text = buildMobileLaunchQaCaptureShareText(plan, "2026-06-21T09:30:00.000Z");

@@ -1132,6 +1132,9 @@ The Home mission deck is now part of the internal release QA cockpit:
   active walk/alone, Adventure, Health, and Care Pass missions.
 - `mobileReadiness.test.ts` now ties the Home mission deck, compact layout
   contract, and release QA surface together.
+- `mobileLaunchQaEvidence.ts` preserves release-surface order within each
+  priority group, so the shareable native QA plan starts with Phoenix Home and
+  Home Mission Deck before lower-sequence launch-critical surfaces.
 
 Design intent:
 
@@ -1141,3 +1144,5 @@ Design intent:
   verify the route behavior, then tune the first visible issue.
 - Prevent later visual polish from treating the mission deck as decorative
   when it is actually a launch-critical care workflow surface.
+- Keep the QA script aligned with the app's hierarchy: first prove the emotional
+  Home experience, then the care-command layer, then the supporting surfaces.
