@@ -6,6 +6,7 @@ import {
   UpdateMeBody,
   UpdateHouseholdBody,
   JoinHouseholdBody,
+  SetActiveHouseholdBody,
 } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
 import {
@@ -48,6 +49,40 @@ router.patch("/me", requireAuth, async (req, res): Promise<void> => {
       );
   }
   res.json(GetMeResponse.parse(await buildMe(userId, householdId)));
+});
+
+router.patch("/me/active-household", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const parsed = SetActiveHouseholdBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  await ensureUser(userId);
+  const [membership] = await db
+    .select({ householdId: householdMembersTable.householdId })
+    .from(householdMembersTable)
+    .where(
+      and(
+        eq(householdMembersTable.userId, userId),
+        eq(householdMembersTable.householdId, parsed.data.householdId),
+      ),
+    )
+    .limit(1);
+
+  if (!membership) {
+    res.status(404).json({ error: "Household membership not found" });
+    return;
+  }
+
+  await ensureCareState(parsed.data.householdId, userId);
+  await db
+    .update(usersTable)
+    .set({ activeHouseholdId: parsed.data.householdId })
+    .where(eq(usersTable.id, userId));
+
+  res.json(GetMeResponse.parse(await buildMe(userId, parsed.data.householdId)));
 });
 
 router.patch("/household", requireAuth, async (req, res): Promise<void> => {

@@ -100,6 +100,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Me"
+  /me/active-household:
+    patch:
+      operationId: setActiveHousehold
+      tags: [household]
+      summary: Set the active household for the current user
+      description: >-
+        Switches the authenticated user's active household only when they already
+        have membership in that household. Later care-state and care-entry routes
+        use this active household.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetActiveHousehold"
+      responses:
+        "200":
+          description: Active household context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "404":
+          description: Household membership not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /household:
     patch:
       operationId: updateHousehold
@@ -401,6 +429,14 @@ components:
         displayName:
           type: string
           minLength: 1
+    SetActiveHousehold:
+      type: object
+      properties:
+        householdId:
+          type: string
+          minLength: 1
+      required:
+        - householdId
     HouseholdUpdate:
       type: object
       properties:

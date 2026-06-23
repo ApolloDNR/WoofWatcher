@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-23: Active Household Switching Requires Membership
+
+Decision: API `PATCH /me/active-household` should set `users.activeHouseholdId` only when the authenticated user already has membership in the requested household. The route should ensure that household has care state and return the normal `/me` payload for the selected pack.
+
+Reason: Invite acceptance and fallback selection are not enough for multi-household caregivers. Care-state, care-entry, profile, and household routes need one explicit active-household pointer, but the API must not let a caller switch into an arbitrary household id before provider-backed admin tooling exists.
+
+Owner: Codex.
+
+Revisit trigger: Mobile household switcher UI, provider-backed invite approval, role changes, caregiver administration, or full multi-household management becomes active release work.
+
 ### 2026-06-23: Invite Accepts Persist The Active Household
 
 Decision: API `POST /household/join` should set `users.activeHouseholdId` to the joined household after a valid invite accept, and the active-household helper should prefer that saved membership before falling back to the earliest valid membership.

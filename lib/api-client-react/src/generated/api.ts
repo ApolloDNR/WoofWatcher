@@ -35,7 +35,8 @@ import type {
   JoinHouseholdInput,
   ListCareEntriesParams,
   Me,
-  MeUpdate
+  MeUpdate,
+  SetActiveHouseholdBody
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -424,6 +425,77 @@ export const useUpdateMe = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateMeMutationOptions(options));
+    }
+
+export const getSetActiveHouseholdUrl = () => {
+
+
+
+
+  return `/api/me/active-household`
+}
+
+/**
+ * @summary Set the active household for the current user
+ */
+export const setActiveHousehold = async (setActiveHouseholdBody: SetActiveHouseholdBody, options?: RequestInit): Promise<Me> => {
+
+  return customFetch<Me>(getSetActiveHouseholdUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setActiveHouseholdBody,)
+  }
+);}
+
+
+
+
+export const getSetActiveHouseholdMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setActiveHousehold>>, TError,{data: BodyType<SetActiveHouseholdBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setActiveHousehold>>, TError,{data: BodyType<SetActiveHouseholdBody>}, TContext> => {
+
+const mutationKey = ['setActiveHousehold'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setActiveHousehold>>, {data: BodyType<SetActiveHouseholdBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setActiveHousehold(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetActiveHouseholdMutationResult = NonNullable<Awaited<ReturnType<typeof setActiveHousehold>>>
+    export type SetActiveHouseholdMutationBody = BodyType<SetActiveHouseholdBody>
+    export type SetActiveHouseholdMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Set the active household for the current user
+ */
+export const useSetActiveHousehold = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setActiveHousehold>>, TError,{data: BodyType<SetActiveHouseholdBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setActiveHousehold>>,
+        TError,
+        {data: BodyType<SetActiveHouseholdBody>},
+        TContext
+      > => {
+      return useMutation(getSetActiveHouseholdMutationOptions(options));
     }
 
 export const getUpdateHouseholdUrl = () => {

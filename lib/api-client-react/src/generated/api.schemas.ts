@@ -77,6 +77,11 @@ export interface MeUpdate {
   displayName?: string;
 }
 
+export interface SetActiveHouseholdBody {
+  /** @minLength 1 */
+  householdId: string;
+}
+
 export interface HouseholdUpdate {
   /** @minLength 1 */
   name: string;

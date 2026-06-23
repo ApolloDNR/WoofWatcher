@@ -104,6 +104,38 @@ export const UpdateMeResponse = zod.object({
 
 
 /**
+ * @summary Set the active household for the current user
+ */
+
+
+
+export const SetActiveHouseholdBody = zod.object({
+  "householdId": zod.string().min(1)
+})
+
+export const SetActiveHouseholdResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "displayName": zod.string().nullish()
+}),
+  "household": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+}),
+  "members": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "role": zod.string(),
+  "displayName": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "isSelf": zod.boolean()
+}))
+})
+
+
+/**
  * @summary Rename the current household
  */
 

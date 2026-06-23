@@ -92,6 +92,8 @@ Current evidence, 2026-06-23: API household invite joins now provision the authe
 
 Current evidence, 2026-06-23: API household invite accepts now persist the joined pack as `users.activeHouseholdId`, and the active-household helper prefers that valid membership for later care-state, care-entry, profile, and rename routes. This prevents a caregiver from seeing the joined pack once and then accidentally syncing care back into an older default household before explicit household switching exists.
 
+Current evidence, 2026-06-23: API active-household switching now requires existing membership before changing `users.activeHouseholdId`. `PATCH /me/active-household` ensures the selected household has care state and returns that household's `/me` context, so later care-state and care-entry routes can be pointed at the intended shared pack without allowing arbitrary household id selection.
+
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
 Current evidence, 2026-06-11: Reminder Center now combines routine-board status, medication follow-ups, record reminders, and grooming due dates into one Calendar action list with urgent/watch/total counts, private-log exclusion through the underlying domain helpers, and explicit notification-readiness copy before real push delivery exists.
@@ -324,4 +326,4 @@ Current evidence, 2026-06-22: Focused API readiness now protects care-entry dele
 
 Current evidence, 2026-06-23: Focused API readiness now also protects the care-state update predicate itself, requiring household-and-version matching plus a refreshed 409 path when concurrent writes race before live database/provider-auth integration tests are available.
 
-Current evidence, 2026-06-23: Focused API readiness protects household invite joins from creating a throwaway default household before accepting an invite. `POST /household/join` now provisions the user directly, ensures invited-household care state, and keeps new invitees at the `member` role unless provider-backed administration later changes the policy.
+Current evidence, 2026-06-23: Focused API readiness protects household invite joins from creating a throwaway default household before accepting an invite. `POST /household/join` now provisions the user directly, ensures invited-household care state, and keeps new invitees at the `member` role unless provider-backed administration later changes the policy. Focused readiness also protects membership-scoped active-household switching and the OpenAPI/zod/generated React client contract for `PATCH /me/active-household`.

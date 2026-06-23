@@ -103,6 +103,39 @@ test("keeps joined households active for later care sync routes", () => {
   );
 });
 
+test("keeps active household switching membership scoped", () => {
+  const householdRoute = readApiFile(join("routes", "household.ts"));
+  const openapi = readFileSync(join(root, "lib", "api-spec", "openapi.yaml"), "utf8");
+  const zodApi = readFileSync(join(root, "lib", "api-zod", "src", "generated", "api.ts"), "utf8");
+  const reactClient = readFileSync(join(root, "lib", "api-client-react", "src", "generated", "api.ts"), "utf8");
+  const reactSchemas = readFileSync(
+    join(root, "lib", "api-client-react", "src", "generated", "api.schemas.ts"),
+    "utf8",
+  );
+
+  assert.match(householdRoute, /SetActiveHouseholdBody\.safeParse\(req\.body\)/);
+  assert.match(householdRoute, /router\.patch\("\/me\/active-household"/);
+  assert.match(householdRoute, /eq\(householdMembersTable\.userId, userId\)/);
+  assert.match(householdRoute, /eq\(householdMembersTable\.householdId, parsed\.data\.householdId\)/);
+  assert.match(householdRoute, /res\.status\(404\)\.json\(\{ error: "Household membership not found" \}\)/);
+  assert.match(householdRoute, /await ensureCareState\(parsed\.data\.householdId, userId\)/);
+  assert.match(
+    householdRoute,
+    /\.update\(usersTable\)[\s\S]*activeHouseholdId: parsed\.data\.householdId[\s\S]*eq\(usersTable\.id, userId\)/,
+  );
+  assert.match(householdRoute, /buildMe\(userId, parsed\.data\.householdId\)/);
+
+  assert.match(openapi, /\/me\/active-household:/);
+  assert.match(openapi, /SetActiveHousehold/);
+  assert.match(openapi, /householdId:/);
+  assert.match(zodApi, /export const SetActiveHouseholdBody/);
+  assert.match(zodApi, /householdId": zod\.string\(\)\.min\(1\)/);
+  assert.match(reactClient, /getSetActiveHouseholdUrl/);
+  assert.match(reactClient, /setActiveHousehold/);
+  assert.match(reactSchemas, /export interface SetActiveHouseholdBody/);
+  assert.match(reactSchemas, /householdId: string/);
+});
+
 test("keeps care-state writes optimistic and conflict recoverable", () => {
   const careState = readApiFile(join("routes", "care-state.ts"));
   const mobileContext = readFileSync(
