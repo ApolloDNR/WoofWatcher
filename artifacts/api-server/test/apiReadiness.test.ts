@@ -63,6 +63,14 @@ test("keeps household rename restricted to owner or admin members", () => {
   assert.match(householdRoute, /\.update\(householdsTable\)/);
 });
 
+test("keeps household invite codes visible only to owner or admin members", () => {
+  const householdLib = readApiFile(join("lib", "household.ts"));
+
+  assert.match(householdLib, /const selfMember = memberRows\.find\(\(m\) => m\.userId === userId\)/);
+  assert.match(householdLib, /const canShareInvite = \["owner", "admin"\]\.includes\(selfMember\?\.role\?\.toLowerCase\(\) \?\? ""\)/);
+  assert.match(householdLib, /inviteCode: canShareInvite \? household\.inviteCode : ""/);
+});
+
 test("keeps invite joins from creating a throwaway default household first", () => {
   const householdRoute = readApiFile(join("routes", "household.ts"));
   const householdLib = readApiFile(join("lib", "household.ts"));

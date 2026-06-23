@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-23: Invite Codes Are Owner/Admin Visible
+
+Decision: API `/me` should return the shared household invite code only when the authenticated member's active-household role is `owner` or `admin`. Ordinary members still receive household context and member lists, but their household invite code is blank so mobile Household Access treats invite sharing as unavailable.
+
+Reason: Joining a pack and contributing care is different from spreading access to the pack. Until provider-backed caregiver administration, invite approval, role changes, and account audit policy exist, invite-code visibility should follow the same owner/admin trust boundary as household rename.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed invite approval, caregiver editing, active household switching, role changes, or a formal share-invite endpoint becomes active release work.
+
 ### 2026-06-23: Invite Join Does Not Create A Default Pack First
 
 Decision: API `POST /household/join` should provision the authenticated user directly, find the invited household by normalized invite code, ensure that household has care state, avoid duplicate membership inserts, and add a new invitee as a normal `member` without first creating a personal default household.

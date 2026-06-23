@@ -18,6 +18,7 @@ Latest local evidence, 2026-06-22:
 - PASS: API readiness now also protects `PATCH /me` household member display-name updates so the membership row is constrained by authenticated user id and active household id before provider-backed role enforcement exists.
 - PASS: API readiness now protects `PATCH /household` so only owner/admin members in the active household can rename the shared pack before broader provider-backed role enforcement exists.
 - PASS: API readiness now protects `POST /household/join` so first-time invite joins provision the user without creating a throwaway default household, ensure the invited household has care state, and add the caregiver as a normal member only when needed.
+- PASS: API readiness now protects `/me` household invite-code visibility so only owner/admin members receive the shared invite code before provider-backed caregiver administration exists; ordinary members still receive household context with invite sharing unavailable.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -76,7 +77,7 @@ Latest local evidence, 2026-06-22:
 - Care sync local/pending/failed/retry behavior, durable outbox derivation, retryable create/update counts, mobile Log outbox visibility, household Sync Health dashboard derivation, More Sync Health visibility, and conflict-safe care document refresh reconciliation.
 - Care-state optimistic writes across the API, including atomic household-and-version update predicates and refreshed 409 conflict responses when concurrent writes race.
 - Household profile and shared pack updates across the API, including active-household scoping for member display-name writes when a caregiver belongs to multiple households and owner/admin gating for household rename.
-- Household invite joins across the API, including direct user provisioning, invited-household care-state readiness, duplicate membership avoidance, and default-pack avoidance for first-time invite accepts.
+- Household invite joins and invite-code visibility across the API, including direct user provisioning, invited-household care-state readiness, duplicate membership avoidance, default-pack avoidance for first-time invite accepts, and owner/admin-only invite-code exposure.
 - Care-entry delete retention across the API and mobile Log, including server-created non-health audit notes with deleted-entry snapshots for synced deletes and local/offline deletion audits without duplicate notes after server retention.
 - Household Responsibility derivation for care-team routine ownership, open/overdue/unassigned routines, visible today log counts, next household action copy, and Calendar/More mobile wiring.
 - Household Access derivation for synced members, local-only caregivers, routine-only owners, invite readiness, permission labels, next-step copy, and More mobile wiring.
@@ -184,7 +185,7 @@ Latest local evidence, 2026-06-22:
 ## Missing QA
 
 - Simulator/device runtime smoke. CI web export smoke exists, but it does not replace native runtime rendering.
-- Live API integration tests against a test database and provider-auth harness. Focused API contract readiness now covers route scoping/concurrency/query wiring without requiring `DATABASE_URL`, Clerk, or installed Express/Drizzle dependencies in this Codex checkout.
+- Live API integration tests against a test database and provider-auth harness. Focused API contract readiness now covers route scoping/concurrency/query/invite-code wiring without requiring `DATABASE_URL`, Clerk, or installed Express/Drizzle dependencies in this Codex checkout.
 - Auth onboarding smoke.
 - Visual regression or screenshot review.
 - Rive/Lottie/Reanimated avatar asset runtime checks.

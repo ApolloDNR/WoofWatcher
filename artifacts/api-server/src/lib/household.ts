@@ -193,6 +193,8 @@ export async function buildMe(
       .where(eq(householdMembersTable.householdId, householdId))
       .orderBy(householdMembersTable.createdAt),
   ]);
+  const selfMember = memberRows.find((m) => m.userId === userId);
+  const canShareInvite = ["owner", "admin"].includes(selfMember?.role?.toLowerCase() ?? "");
 
   return {
     user: {
@@ -203,7 +205,7 @@ export async function buildMe(
     household: {
       id: household.id,
       name: household.name,
-      inviteCode: household.inviteCode,
+      inviteCode: canShareInvite ? household.inviteCode : "",
     },
     members: memberRows.map((m) => ({
       id: m.id,
