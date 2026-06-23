@@ -530,6 +530,7 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const missionDeck = readMobileLibFile("homeMissionDeck.ts");
   const missionLayout = readMobileLibFile("homeMissionLayout.ts");
+  const releaseQa = readMobileLibFile("mobileReleaseQa.ts");
 
   assert.match(home, /buildHomeMissionDeck/);
   assert.match(home, /getHomeMissionDeckLayout/);
@@ -555,6 +556,11 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(missionLayout, /compact/);
   assert.match(missionLayout, /estimatedDeckHeight/);
   assert.match(missionLayout, /Small-phone/);
+
+  assert.match(releaseQa, /home-mission-deck/);
+  assert.match(releaseQa, /compact Home mission deck/);
+  assert.match(releaseQa, /pending meal routes to Meal Log/);
+  assert.match(releaseQa, /floating paw nav/);
 });
 
 test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {

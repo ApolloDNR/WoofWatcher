@@ -59,6 +59,22 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If Home fails, the app reads as a prototype instead of a trustworthy daily dog-care command center.",
   },
   {
+    id: "home-mission-deck",
+    title: "Home Mission Deck",
+    route: "/",
+    priority: "launch-critical",
+    goal: "Prove the care-RPG mission deck fits the first screen and routes open care loops to real workflows.",
+    devicePrompt:
+      "On small iOS and Android phones, confirm the compact mission deck stays readable above the floating paw nav, has no text overflow, and routes pending meal, walk/alone, Adventure, Health, and Care Pass rows correctly.",
+    requiredEvidence: [
+      "iOS screenshot of the compact Home mission deck with at least three mission rows visible.",
+      "Android screenshot of the compact Home mission deck with the floating paw nav visible.",
+      "Note confirming pending meal routes to Meal Log, active walk or alone-time routes to Log, Adventure routes to Adventure, Health routes to Health, and Care Pass routes to Records.",
+    ],
+    launchRisk:
+      "If the mission deck overflows, hides behind the paw nav, or routes to dead ends, the flagship Home screen loses the planned premium care-command feel.",
+  },
+  {
     id: "care-twin-state-lab",
     title: "Care Twin State Lab",
     route: "/care-twin-qa",

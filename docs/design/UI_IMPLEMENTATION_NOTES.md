@@ -1119,3 +1119,25 @@ Design intent:
 - Preserve the premium care-RPG look while avoiding small-phone overflow.
 - Keep native screenshots as the required final proof; this contract is a
   pre-device guardrail, not a replacement for iOS/Android inspection.
+
+## 2026-06-23 Home Mission Deck Native QA Gate
+
+The Home mission deck is now part of the internal release QA cockpit:
+
+- `mobileReleaseQa.ts` includes a launch-critical `Home Mission Deck` surface.
+- `/care-twin-qa` inherits that surface automatically through the shared
+  Mobile Release QA model.
+- Required proof asks for iOS and Android compact-deck screenshots, floating
+  paw-nav visibility, no-overflow review, and route checks for pending meal,
+  active walk/alone, Adventure, Health, and Care Pass missions.
+- `mobileReadiness.test.ts` now ties the Home mission deck, compact layout
+  contract, and release QA surface together.
+
+Design intent:
+
+- Keep the flagship Home command layer aligned with the saved mockups and
+  ready for real phone review.
+- Make Fable/Replit/Apollo testing concrete: capture this exact section,
+  verify the route behavior, then tune the first visible issue.
+- Prevent later visual polish from treating the mission deck as decorative
+  when it is actually a launch-critical care workflow surface.

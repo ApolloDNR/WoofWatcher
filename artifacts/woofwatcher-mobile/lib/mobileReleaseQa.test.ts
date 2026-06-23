@@ -20,12 +20,30 @@ test("lists the launch-critical mobile QA surfaces for the next native pass", ()
   const ids = surfaces.map((surface) => surface.id);
 
   assert.ok(ids.includes("phoenix-home"));
+  assert.ok(ids.includes("home-mission-deck"));
   assert.ok(ids.includes("care-twin-state-lab"));
   assert.ok(ids.includes("avatar-studio"));
   assert.ok(ids.includes("incident-composer"));
   assert.ok(ids.includes("records-incident-watch"));
   assert.ok(surfaces.every((surface) => surface.requiredEvidence.length > 0));
   assert.ok(surfaces.every((surface) => surface.launchRisk.length > 0));
+});
+
+test("keeps the Home mission deck as a launch-critical device QA target", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const surface = surfaces.find((item) => item.id === "home-mission-deck");
+
+  assert.ok(surface);
+  assert.equal(surface.route, "/");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /care-RPG mission deck/);
+  assert.match(surface.devicePrompt, /small iOS and Android phones/);
+  assert.match(surface.devicePrompt, /floating paw nav/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of the compact Home mission deck/);
+  assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of the compact Home mission deck/);
+  assert.match(surface.requiredEvidence.join("\n"), /pending meal routes to Meal Log/);
+  assert.match(surface.requiredEvidence.join("\n"), /Care Pass routes to Records/);
+  assert.match(surface.launchRisk, /dead ends/);
 });
 
 test("summarizes mobile release QA review status and screenshot evidence", () => {
