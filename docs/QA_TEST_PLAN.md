@@ -359,6 +359,9 @@ Latest local evidence, 2026-06-23:
 - API readiness now also covers `/care-entries?limit=...` so the server-supported pagination cap stays documented and typed in OpenAPI, React generated params, and Zod generated validators/types.
 - `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` passed with 3 tests after the `limit` query contract fix.
 - Full local focused behavior/readiness suite passed with 363 tests after the `limit` query contract fix.
+- API readiness now covers `PUT /care-state` write-error contracts so validation errors, missing-document errors, and optimistic conflict envelopes stay documented and typed.
+- `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing care-state `400` OpenAPI coverage, then passed with 4 tests after the contract update.
+- Full local focused behavior/readiness suite passed with 364 tests after the care-state write-error contract fix.
 - `node --check lib/api-client-react/src/generated/api.ts` and `node --check lib/api-zod/src/generated/api.ts` passed syntax checks for the generated-client edits.
 - PixelLab asset verification passed with 149 registered assets, 0 missing, and 0 invalid.
 - `git diff --check` passed with only expected Windows line-ending warnings.

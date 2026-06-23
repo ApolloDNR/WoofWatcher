@@ -78,3 +78,28 @@ test("care entries list limit query stays documented and typed", () => {
   assert.match(zodTypes, /limit\?:\s*number/, "Zod generated param types must type the care-entries limit query");
   assert.match(zodSchemas, /"limit":\s*zod\.number\(\)/, "Zod generated validator must validate the care-entries limit query");
 });
+
+test("care state write errors stay documented and typed", () => {
+  const route = read("artifacts/api-server/src/routes/care-state.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+
+  const putCareStateBlock = openapi.match(/    put:\r?\n[\s\S]*?  \/care-entries:/)?.[0] ?? "";
+
+  assert.match(route, /res\.status\(400\)/, "care-state PUT should still return validation errors");
+  assert.match(route, /res\.status\(404\)/, "care-state PUT should still return missing document errors");
+  assert.match(route, /res\.status\(409\)/, "care-state PUT should still return optimistic conflict envelopes");
+  assert.match(putCareStateBlock, /"400":/, "OpenAPI must document invalid care-state payload errors");
+  assert.match(putCareStateBlock, /"404":/, "OpenAPI must document missing care-state document errors");
+  assert.match(putCareStateBlock, /"409":/, "OpenAPI must document stale care-state write conflicts");
+  assert.match(
+    reactClient,
+    /getPutCareStateMutationOptions = <TError = ErrorType<ApiError \| CareStateEnvelope>/,
+    "React API mutation must type care-state write errors as ApiError or conflict envelope",
+  );
+  assert.match(
+    reactClient,
+    /PutCareStateMutationError = ErrorType<ApiError \| CareStateEnvelope>/,
+    "React API mutation error alias must preserve validation/not-found and conflict response shapes",
+  );
+});

@@ -972,7 +972,7 @@ export const putCareState = async (careStateInput: CareStateInput, options?: Req
 
 
 
-export const getPutCareStateMutationOptions = <TError = ErrorType<CareStateEnvelope>,
+export const getPutCareStateMutationOptions = <TError = ErrorType<ApiError | CareStateEnvelope>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putCareState>>, TError,{data: BodyType<CareStateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof putCareState>>, TError,{data: BodyType<CareStateInput>}, TContext> => {
 
@@ -1001,12 +1001,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type PutCareStateMutationResult = NonNullable<Awaited<ReturnType<typeof putCareState>>>
     export type PutCareStateMutationBody = BodyType<CareStateInput>
-    export type PutCareStateMutationError = ErrorType<CareStateEnvelope>
+    export type PutCareStateMutationError = ErrorType<ApiError | CareStateEnvelope>
 
     /**
  * @summary Replace the household's synced care document
  */
-export const usePutCareState = <TError = ErrorType<CareStateEnvelope>,
+export const usePutCareState = <TError = ErrorType<ApiError | CareStateEnvelope>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putCareState>>, TError,{data: BodyType<CareStateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof putCareState>>,

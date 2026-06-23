@@ -19,6 +19,7 @@
 - React API client schemas/hooks and Zod generated validators/exports now cover WoofGuide event status/creation, Avatar Studio stylized portrait creation, and Avatar Studio emotion-set creation.
 - Root `test:focused` now includes `artifacts/api-server/test/*.test.ts` so API contract drift is caught with the same zero-dependency behavior suite.
 - Closed `/care-entries?limit=` contract drift: the API route already accepts `limit`, and OpenAPI plus React/Zod generated clients now expose it with the documented 1-500 range and 250 default.
+- Closed `PUT /care-state` write-error contract drift: the route already returns `400` validation errors, `404` missing-document errors, and `409` optimistic conflict envelopes, and OpenAPI plus the React generated mutation now document/type those shapes as `ApiError | CareStateEnvelope`.
 
 ## Verification
 
@@ -32,6 +33,8 @@
 - `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 362 passing.
 - `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` - 3 passing after the care-entries `limit` contract fix.
 - `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 363 passing.
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing care-state `400` contract coverage, then passed with 4 tests after OpenAPI and generated React client updates.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 364 passing after the care-state write-error contract fix.
 - `node --check lib/api-client-react/src/generated/api.ts` and `node --check lib/api-zod/src/generated/api.ts` - passing syntax checks.
 - `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.

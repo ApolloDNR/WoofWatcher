@@ -328,8 +328,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareStateEnvelope"
+        "400":
+          description: Invalid care state payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Care state document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "409":
-          description: Version conflict — refetch and retry
+          description: Version conflict - refetch and retry
           content:
             application/json:
               schema:
