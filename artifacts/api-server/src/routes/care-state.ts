@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, careStateTable } from "@workspace/db";
 import { GetCareStateResponse, PutCareStateBody } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
@@ -68,8 +68,35 @@ router.put("/care-state", requireAuth, async (req, res): Promise<void> => {
       version: current.version + 1,
       updatedBy: userId,
     })
-    .where(eq(careStateTable.householdId, householdId))
+    .where(
+      and(
+        eq(careStateTable.householdId, householdId),
+        eq(careStateTable.version, current.version),
+      ),
+    )
     .returning();
+
+  if (!updated) {
+    const [refreshed] = await db
+      .select()
+      .from(careStateTable)
+      .where(eq(careStateTable.householdId, householdId));
+
+    if (!refreshed) {
+      res.status(404).json({ error: "Care state not found" });
+      return;
+    }
+
+    res.status(409).json(
+      GetCareStateResponse.parse({
+        version: refreshed.version,
+        updatedAt: refreshed.updatedAt,
+        updatedBy: refreshed.updatedBy,
+        doc: refreshed.doc,
+      }),
+    );
+    return;
+  }
 
   res.json(
     GetCareStateResponse.parse({

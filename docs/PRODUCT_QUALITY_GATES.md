@@ -52,6 +52,7 @@ Passing evidence:
 - Calendar exposes Reminder Center derived from routine-board status, medication follow-ups, record reminders, and grooming due dates, with urgency counts, explicit notification-readiness copy, and row routing to routine edit, Records, Medication log, or Grooming log before provider-backed push delivery exists.
 - Log search combines text query and type filters across titles, notes, caregivers, nested details, route/place fields, medication fields, and sticky notes with owner-readable summary and empty-state copy.
 - Care document refresh keeps newer local/offline profile, routine, record, and report changes when server care-state data is older, then pushes the newer doc back to the household.
+- API care-state writes use an atomic household-and-version optimistic update and return a refreshed 409 response if another device wins the write race, so stale devices do not clobber newer shared care documents after the initial version read.
 - Care Pass reports can be previewed by audience before sharing.
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
 - Records show expired, due-soon, current, and reference status for saved record rows.
@@ -87,7 +88,7 @@ Passing evidence:
 - API server typechecks and builds in CI.
 - API includes auth, household, care state, care entries, health, avatar, and WoofGuide-related routes.
 - Production CORS is documented and guarded.
-- Focused API route readiness now protects authenticated household scoping, optimistic care-state conflict responses, household-isolated care-entry create/update/delete behavior, server-retained delete audit notes, and care-entry list query contracts across OpenAPI, zod, and generated React client types.
+- Focused API route readiness now protects authenticated household scoping, optimistic care-state conflict responses, atomic care-state update predicates, household-isolated care-entry create/update/delete behavior, server-retained delete audit notes, and care-entry list query contracts across OpenAPI, zod, and generated React client types.
 
 Current gaps:
 
@@ -192,6 +193,7 @@ Current gaps:
 - Server-backed care-entry delete audit retention and mobile duplicate-audit suppression are covered by focused API readiness.
 - Full Log search derivation, normalized type filters, sticky-note/detail search, and mobile Log wiring are covered by focused tests.
 - Durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, and mobile Log/More/CareContext wiring are covered by focused tests.
+- API care-state optimistic write conflict safety is covered by focused readiness so concurrent household document writes use the version predicate in the update itself before live database integration tests are available.
 - Need report/export tests.
 - Need release smoke checklist.
 

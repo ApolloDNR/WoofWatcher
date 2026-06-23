@@ -115,6 +115,7 @@ Latest completed local runtime/accessibility hardening:
 - Avatar Studio owner-input controls now finish the shared mobile touch-target pass. Scan gallery/camera actions, template tiles, accessory tiles, and mood preview chips use the shared `MIN_MOBILE_TOUCH_TARGET` floor, and face-marking choices expose explicit screen-reader labels before native accessibility traversal is available.
 - API route contract readiness now runs in the focused test suite before live database/provider integration tests are available. Authenticated household scoping, care-state optimistic conflicts, household-isolated care-entry writes, and the `/care-entries?limit=` query contract are covered across the API routes, OpenAPI, zod, and generated React client types.
 - Server-backed care-entry deletes now retain a household audit note before final live retention policy work. The API creates a non-health audit note with the deleted-entry snapshot and audit trail after a scoped delete, and mobile Log avoids duplicate local audit notes for synced deletes while preserving local/offline deletion audits.
+- Care-state optimistic writes now use an atomic household-and-version update before live database/provider integration tests are available. A raced write refetches the latest household care document and returns the existing recoverable 409 response shape instead of clobbering newer shared care data.
 
 Next highest-impact work:
 
@@ -122,5 +123,5 @@ Next highest-impact work:
 2. Continue accessibility traversal and visual runtime inspection for the live mobile app and Avatar Studio once simulator/device access is available.
 3. Replace first-pass derived room variants with final illustrated room art.
 4. Replace first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art, then continue screen-by-screen polish, accessibility traversal, and visual regression.
-5. Add live API integration tests once a test database and provider-auth harness are available.
+5. Add live API integration tests for care-state write races and care-entry delete retention once a test database and provider-auth harness are available.
 6. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.

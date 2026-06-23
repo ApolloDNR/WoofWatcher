@@ -26,6 +26,7 @@
 - Provider-backed WoofGuide generation, source citations, and permission-aware assistant writes require the AI provider key/model policy plus privacy/account safety rules. Current WoofGuide actions are deterministic owner-reviewed drafts only.
 - Expo/EAS, Apple Developer, and Google Play Console accounts. The repo now has EAS build/submit profiles and a mobile release runbook, but no provider account credentials or store submission approval are available to Codex.
 - Vercel/API deployment target if applicable.
+- Live API integration harness for concurrent care-state writes and care-entry delete retention. Focused readiness now protects the static API contracts, but a real test database and provider-auth harness are still required before calling those paths live-verified.
 
 ## Development Environment
 

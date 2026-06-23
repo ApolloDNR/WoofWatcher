@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-23: Care-State Optimistic Writes Are Atomic
+
+Decision: API `PUT /care-state` writes should update the shared household care document only when both the household id and the current version still match. If another device updates the document after the initial read, the API should refetch the latest household state and return the existing recoverable 409 response shape instead of overwriting it.
+
+Reason: Dog Profile, routines, records, reports, and setup data live in the shared care document. A pre-check alone can still lose a race between two household devices, so the version predicate belongs in the update itself before live database integration tests and deeper multi-device conflict policy are available.
+
+Owner: Codex.
+
+Revisit trigger: Live API integration tests are available, care-state rows gain a stronger compare-and-swap helper, or deeper multi-device merge/restore policy becomes active release work.
+
 ### 2026-06-22: Server Deletes Retain Household Audit Notes
 
 Decision: Care-entry deletes through the API should create a retained non-health household audit note after a household-scoped delete succeeds. The audit note stores the deleted entry snapshot, audit subject id, caregiver, and audit trail using the shared care-domain deletion audit shape. Mobile Log should avoid adding a duplicate local deletion audit when the server already retained one, while local/offline deletes still create the local audit note.

@@ -49,6 +49,11 @@ test("keeps care-state writes optimistic and conflict recoverable", () => {
   assert.match(careState, /doc: current\.doc/);
   assert.match(careState, /version: current\.version \+ 1/);
   assert.match(careState, /updatedBy: userId/);
+  assert.match(
+    careState,
+    /and\([\s\S]*eq\(careStateTable\.householdId, householdId\),[\s\S]*eq\(careStateTable\.version, current\.version\)/,
+  );
+  assert.match(careState, /refreshed/);
 
   assert.match(mobileContext, /reconcileCareDocFromServer/);
   assert.match(mobileContext, /putCareState\(\{\s*version: plan\.version/);

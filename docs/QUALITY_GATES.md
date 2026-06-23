@@ -82,6 +82,8 @@ Current evidence, 2026-06-11: Care Log Audit Trail now records create, edit, sti
 
 Current evidence, 2026-06-22: Server-backed care-entry deletes now retain the same non-health audit shape in the API. A household-scoped delete creates an audit note with the deleted-entry snapshot, audit subject id, caregiver, and audit trail, while mobile Log suppresses duplicate local audit notes for server-backed deletes and keeps local/offline deletion audits intact.
 
+Current evidence, 2026-06-23: API care-state writes now make optimistic concurrency atomic by updating only when the household id and current version still match. If another device updates the shared care document after the initial read, the API refetches the latest household state and returns the same recoverable 409 response shape instead of overwriting newer Dog Profile, routine, record, or report data.
+
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
 Current evidence, 2026-06-11: Reminder Center now combines routine-board status, medication follow-ups, record reminders, and grooming due dates into one Calendar action list with urgent/watch/total counts, private-log exclusion through the underlying domain helpers, and explicit notification-readiness copy before real push delivery exists.
@@ -311,3 +313,5 @@ Current evidence, 2026-06-13: Focused tests now cover durable sync outbox deriva
 Current evidence, 2026-06-14: `WoofWatcher Verify` uses Node 24-compatible action majors for checkout, setup-node, and pnpm setup, and keeps the project test/build runtime pinned to Node 24.
 
 Current evidence, 2026-06-22: Focused API readiness now protects care-entry delete retention in addition to household scoping, optimistic care-state conflicts, append-safe care-entry writes, and list query contracts. Synced deletes retain a server-side household audit note instead of relying only on a local mobile audit artifact.
+
+Current evidence, 2026-06-23: Focused API readiness now also protects the care-state update predicate itself, requiring household-and-version matching plus a refreshed 409 path when concurrent writes race before live database/provider-auth integration tests are available.
