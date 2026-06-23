@@ -12,6 +12,10 @@ tags:
     description: Health operations
   - name: care-helper
     description: WoofWatcher AI care assistant
+  - name: woofguide-events
+    description: Dog-friendly outing suggestions for WoofGuide and Adventure Mode
+  - name: avatar
+    description: Avatar Studio image generation helpers
 paths:
   /healthz:
     get:
@@ -68,6 +72,159 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareHelperError"
+  /woofguide-events:
+    get:
+      operationId: getWoofguideEventsStatus
+      tags: [woofguide-events]
+      summary: Get WoofGuide events provider status
+      description: >-
+        Returns whether provider-backed dog-friendly event curation is
+        configured. When unavailable, the API falls back to local curated
+        suggestions instead of claiming live provider data.
+      responses:
+        "200":
+          description: WoofGuide events provider status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WoofguideEventsStatus"
+    post:
+      operationId: createWoofguideEvents
+      tags: [woofguide-events]
+      summary: Create dog-friendly WoofGuide event suggestions
+      description: >-
+        Creates owner-reviewed outing ideas for a household dog. Suggestions are
+        inspirational and not bookings, addresses, prices, or provider-verified
+        events.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WoofguideEventsInput"
+      responses:
+        "200":
+          description: Local or provider-backed event suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WoofguideEventsResponse"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Provider request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /avatar-stylize:
+    post:
+      operationId: stylizeAvatar
+      tags: [avatar]
+      summary: Create a stylized dog avatar portrait
+      description: >-
+        Generates an owner-reviewed stylized portrait from a dog photo when the
+        image provider is configured. This is a helper for Avatar Studio and
+        must not be represented as automatic identity verification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarStylizeInput"
+      responses:
+        "200":
+          description: Generated portrait image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvatarStylizeResponse"
+        "400":
+          description: Missing image payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "413":
+          description: Image too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Image provider is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Image provider request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /avatar-emotions:
+    post:
+      operationId: createAvatarEmotions
+      tags: [avatar]
+      summary: Create a set of stylized dog avatar emotion portraits
+      description: >-
+        Generates a small owner-reviewed emotion set for the same dog from one
+        photo when the image provider is configured. Some emotions can fail
+        independently and are returned in the errors map.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarEmotionsInput"
+      responses:
+        "200":
+          description: Generated emotion image set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvatarEmotionsResponse"
+        "400":
+          description: Missing image payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "413":
+          description: Image too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Image provider is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Image provider request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /me:
     get:
       operationId: getMe
@@ -328,6 +485,120 @@ components:
           type: string
       required:
         - error
+    WoofguideEventsStatus:
+      type: object
+      properties:
+        configured:
+          type: boolean
+        model:
+          type: string
+      required:
+        - configured
+        - model
+    WoofguideEventsProfile:
+      type: object
+      properties:
+        name:
+          type: string
+        breed:
+          type: string
+        careFocus:
+          type: string
+        background:
+          type: string
+    WoofguideEventsInput:
+      type: object
+      properties:
+        location:
+          type: string
+        profile:
+          $ref: "#/components/schemas/WoofguideEventsProfile"
+    WoofguideEvent:
+      type: object
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+        location:
+          type: string
+        note:
+          type: string
+      required:
+        - title
+        - type
+        - date
+        - location
+    WoofguideEventsResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/WoofguideEvent"
+        mode:
+          type: string
+      required:
+        - events
+        - mode
+    AvatarStylizeInput:
+      type: object
+      properties:
+        imageBase64:
+          type: string
+          minLength: 1
+        mimeType:
+          type: string
+      required:
+        - imageBase64
+    AvatarStylizeResponse:
+      type: object
+      properties:
+        imageBase64:
+          type: string
+        mimeType:
+          type: string
+      required:
+        - imageBase64
+        - mimeType
+    AvatarEmotionImage:
+      type: object
+      properties:
+        imageBase64:
+          type: string
+        mimeType:
+          type: string
+      required:
+        - imageBase64
+        - mimeType
+    AvatarEmotionsInput:
+      type: object
+      properties:
+        imageBase64:
+          type: string
+          minLength: 1
+        mimeType:
+          type: string
+      required:
+        - imageBase64
+    AvatarEmotionsResponse:
+      type: object
+      properties:
+        images:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AvatarEmotionImage"
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - images
     User:
       type: object
       properties:

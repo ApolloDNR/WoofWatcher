@@ -7,6 +7,13 @@
  */
 
 export * from './apiError';
+export * from './avatarEmotionImage';
+export * from './avatarEmotionsInput';
+export * from './avatarEmotionsResponse';
+export * from './avatarEmotionsResponseErrors';
+export * from './avatarEmotionsResponseImages';
+export * from './avatarStylizeInput';
+export * from './avatarStylizeResponse';
 export * from './careEntry';
 export * from './careEntryDetails';
 export * from './careEntryInput';
@@ -31,3 +38,8 @@ export * from './me';
 export * from './member';
 export * from './meUpdate';
 export * from './user';
+export * from './woofguideEvent';
+export * from './woofguideEventsInput';
+export * from './woofguideEventsProfile';
+export * from './woofguideEventsResponse';
+export * from './woofguideEventsStatus';

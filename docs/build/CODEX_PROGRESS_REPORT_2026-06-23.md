@@ -14,6 +14,10 @@
 - `/care-twin-qa` now shows Setup first/Store prep before Device steps, and More's Native QA Next Captures rows show the first prep step plus the first route-check step.
 - Added explicit pass criteria and Needs tune escalation to every Mobile Release QA surface and generated Store Screenshot QA surface.
 - `/care-twin-qa`, More's Native QA Next Captures, Mobile Release QA reports, and Native QA capture-plan share text now expose pass/failure criteria before screenshot evidence so tester proof cannot drift into a fake launch pass.
+- Added API readiness coverage for mounted WoofGuide event and Avatar Studio routes that were not represented in OpenAPI or generated clients.
+- OpenAPI now documents `/woofguide-events`, `/avatar-stylize`, and `/avatar-emotions` with safe provider-boundary language, rate/error responses, and owner-reviewed request/response models.
+- React API client schemas/hooks and Zod generated validators/exports now cover WoofGuide event status/creation, Avatar Studio stylized portrait creation, and Avatar Studio emotion-set creation.
+- Root `test:focused` now includes `artifacts/api-server/test/*.test.ts` so API contract drift is caught with the same zero-dependency behavior suite.
 
 ## Verification
 
@@ -23,10 +27,15 @@
 - `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts` - 14 passing after the setup/precondition QA contract.
 - `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts` - 14 passing after the pass-criteria and Needs tune escalation QA contract.
 - `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 360 passing.
+- `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` - 2 passing after the API contract-readiness slice.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 362 passing.
+- `node --check lib/api-client-react/src/generated/api.ts` and `node --check lib/api-zod/src/generated/api.ts` - passing syntax checks.
 - `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`.
+- `node node_modules/typescript/bin/tsc -p lib/api-client-react/tsconfig.json --noEmit` and `node node_modules/typescript/bin/tsc -p lib/api-zod/tsconfig.json --noEmit` could not run as direct package checks in this Windows runtime because workspace package symlinks are not materialized without pnpm; failures were missing `@tanstack/react-query`/`zod`, not edited-code diagnostics.
+- `node artifacts/api-server/build.mjs` could not run directly because `esbuild` is not resolvable without the pnpm workspace execution layer.
 
 ## Still Not Done
 

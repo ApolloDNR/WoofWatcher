@@ -84,7 +84,7 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 - Add storage provider for uploaded records and generated reports.
 - Add role-aware authorization checks beyond basic household membership.
 - Care-log edit/delete audit trail exists in mobile and care-domain; add broader audit trails for important medical records, documents, account actions, and role changes.
-- Add API tests for care entries, care state, household provisioning, WoofGuide events, and rate limits.
+- API readiness now guards OpenAPI/generated-client coverage for WoofGuide events and Avatar Studio image routes; continue with behavior/integration tests for care entries, care state, household provisioning, rate limits, and provider-backed WoofGuide/action flows.
 - Add deeper multi-device conflict policy, server-backed delete retention, and broader background retry recovery policy.
 
 ## Test And QA Gaps

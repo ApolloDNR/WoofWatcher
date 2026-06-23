@@ -46,6 +46,82 @@ export const AskCareHelperResponse = zod.object({
 
 
 /**
+ * Returns whether provider-backed dog-friendly event curation is configured. When unavailable, the API falls back to local curated suggestions instead of claiming live provider data.
+ * @summary Get WoofGuide events provider status
+ */
+export const GetWoofguideEventsStatusResponse = zod.object({
+  "configured": zod.boolean(),
+  "model": zod.string()
+})
+
+
+/**
+ * Creates owner-reviewed outing ideas for a household dog. Suggestions are inspirational and not bookings, addresses, prices, or provider-verified events.
+ * @summary Create dog-friendly WoofGuide event suggestions
+ */
+export const CreateWoofguideEventsBody = zod.object({
+  "location": zod.string().optional(),
+  "profile": zod.object({
+  "name": zod.string().optional(),
+  "breed": zod.string().optional(),
+  "careFocus": zod.string().optional(),
+  "background": zod.string().optional()
+}).optional()
+})
+
+export const CreateWoofguideEventsResponse = zod.object({
+  "events": zod.array(zod.object({
+  "title": zod.string(),
+  "type": zod.string(),
+  "date": zod.coerce.date(),
+  "time": zod.string().optional(),
+  "location": zod.string(),
+  "note": zod.string().optional()
+})),
+  "mode": zod.string()
+})
+
+
+/**
+ * Generates an owner-reviewed stylized portrait from a dog photo when the image provider is configured. This is a helper for Avatar Studio and must not be represented as automatic identity verification.
+ * @summary Create a stylized dog avatar portrait
+ */
+
+
+
+export const StylizeAvatarBody = zod.object({
+  "imageBase64": zod.string().min(1),
+  "mimeType": zod.string().optional()
+})
+
+export const StylizeAvatarResponse = zod.object({
+  "imageBase64": zod.string(),
+  "mimeType": zod.string()
+})
+
+
+/**
+ * Generates a small owner-reviewed emotion set for the same dog from one photo when the image provider is configured. Some emotions can fail independently and are returned in the errors map.
+ * @summary Create a set of stylized dog avatar emotion portraits
+ */
+
+
+
+export const CreateAvatarEmotionsBody = zod.object({
+  "imageBase64": zod.string().min(1),
+  "mimeType": zod.string().optional()
+})
+
+export const CreateAvatarEmotionsResponse = zod.object({
+  "images": zod.record(zod.string(), zod.object({
+  "imageBase64": zod.string(),
+  "mimeType": zod.string()
+})),
+  "errors": zod.record(zod.string(), zod.string()).optional()
+})
+
+
+/**
  * Returns the authenticated user. On first call this JIT-provisions the user, a default household, and a membership.
  * @summary Get the current user, their household and members
  */

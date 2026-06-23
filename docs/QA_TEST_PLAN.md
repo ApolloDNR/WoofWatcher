@@ -350,3 +350,14 @@ Latest local evidence, 2026-06-21:
 - Full local behavior/readiness suite passed at 337 tests across `artifacts/woofwatcher-mobile/lib/*.test.ts` and `lib/care-domain/test/*.test.ts`.
 - Mobile TypeScript compile passed for the WoofWatcher Expo app.
 - Provider Launch Setup now gives Apollo an editable/shareable production checklist while still keeping native QA, provider credentials, legal/support, store-account, and App Store/Play Store approval outside the app until actually completed.
+
+Latest local evidence, 2026-06-23:
+
+- API readiness now has a focused zero-dependency test for OpenAPI/generated-client coverage of `/woofguide-events`, `/avatar-stylize`, and `/avatar-emotions`.
+- `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` passed with 2 tests.
+- Full local focused behavior/readiness suite passed with 362 tests across API readiness, mobile library tests, PWA vanilla tests, and shared care-domain tests.
+- `node --check lib/api-client-react/src/generated/api.ts` and `node --check lib/api-zod/src/generated/api.ts` passed syntax checks for the generated-client edits.
+- PixelLab asset verification passed with 149 registered assets, 0 missing, and 0 invalid.
+- `git diff --check` passed with only expected Windows line-ending warnings.
+- Expo web export passed by invoking the package-local Expo CLI directly because the local Windows shell does not expose `pnpm`.
+- Direct workspace `tsc` checks for `lib/api-client-react` and `lib/api-zod` and direct `artifacts/api-server/build.mjs` remain environment-limited without the pnpm workspace symlink layer; the observed failures were missing package resolution for existing dependencies (`@tanstack/react-query`, `zod`, `esbuild`), not route-contract assertion failures.

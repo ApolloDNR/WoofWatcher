@@ -41,6 +41,68 @@ export interface ApiError {
   error: string;
 }
 
+export interface WoofguideEventsStatus {
+  configured: boolean;
+  model: string;
+}
+
+export interface WoofguideEventsProfile {
+  name?: string;
+  breed?: string;
+  careFocus?: string;
+  background?: string;
+}
+
+export interface WoofguideEventsInput {
+  location?: string;
+  profile?: WoofguideEventsProfile;
+}
+
+export interface WoofguideEvent {
+  title: string;
+  type: string;
+  date: string;
+  time?: string;
+  location: string;
+  note?: string;
+}
+
+export interface WoofguideEventsResponse {
+  events: WoofguideEvent[];
+  mode: string;
+}
+
+export interface AvatarStylizeInput {
+  /** @minLength 1 */
+  imageBase64: string;
+  mimeType?: string;
+}
+
+export interface AvatarStylizeResponse {
+  imageBase64: string;
+  mimeType: string;
+}
+
+export interface AvatarEmotionImage {
+  imageBase64: string;
+  mimeType: string;
+}
+
+export interface AvatarEmotionsInput {
+  /** @minLength 1 */
+  imageBase64: string;
+  mimeType?: string;
+}
+
+export type AvatarEmotionsResponseImages = { [key: string]: AvatarEmotionImage };
+
+export type AvatarEmotionsResponseErrors = { [key: string]: string };
+
+export interface AvatarEmotionsResponse {
+  images: AvatarEmotionsResponseImages;
+  errors?: AvatarEmotionsResponseErrors;
+}
+
 export interface User {
   id: string;
   /** @nullable */

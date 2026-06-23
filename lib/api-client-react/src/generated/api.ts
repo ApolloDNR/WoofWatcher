@@ -21,6 +21,10 @@ import type {
 
 import type {
   ApiError,
+  AvatarEmotionsInput,
+  AvatarEmotionsResponse,
+  AvatarStylizeInput,
+  AvatarStylizeResponse,
   CareEntry,
   CareEntryInput,
   CareEntryUpdate,
@@ -35,7 +39,10 @@ import type {
   JoinHouseholdInput,
   ListCareEntriesParams,
   Me,
-  MeUpdate
+  MeUpdate,
+  WoofguideEventsInput,
+  WoofguideEventsResponse,
+  WoofguideEventsStatus
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -275,6 +282,300 @@ export const useAskCareHelper = <TError = ErrorType<CareHelperError>,
         TContext
       > => {
       return useMutation(getAskCareHelperMutationOptions(options));
+    }
+
+export const getGetWoofguideEventsStatusUrl = () => {
+
+
+
+
+  return `/api/woofguide-events`
+}
+
+/**
+ * Returns whether provider-backed dog-friendly event curation is configured. When unavailable, the API falls back to local curated suggestions instead of claiming live provider data.
+ * @summary Get WoofGuide events provider status
+ */
+export const getWoofguideEventsStatus = async ( options?: RequestInit): Promise<WoofguideEventsStatus> => {
+
+  return customFetch<WoofguideEventsStatus>(getGetWoofguideEventsStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWoofguideEventsStatusQueryKey = () => {
+    return [
+    `/api/woofguide-events`
+    ] as const;
+    }
+
+
+export const getGetWoofguideEventsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWoofguideEventsStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWoofguideEventsStatus>>> = ({ signal }) => getWoofguideEventsStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWoofguideEventsStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getWoofguideEventsStatus>>>
+export type GetWoofguideEventsStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get WoofGuide events provider status
+ */
+
+export function useGetWoofguideEventsStatus<TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWoofguideEventsStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateWoofguideEventsUrl = () => {
+
+
+
+
+  return `/api/woofguide-events`
+}
+
+/**
+ * Creates owner-reviewed outing ideas for a household dog. Suggestions are inspirational and not bookings, addresses, prices, or provider-verified events.
+ * @summary Create dog-friendly WoofGuide event suggestions
+ */
+export const createWoofguideEvents = async (woofguideEventsInput: WoofguideEventsInput, options?: RequestInit): Promise<WoofguideEventsResponse> => {
+
+  return customFetch<WoofguideEventsResponse>(getCreateWoofguideEventsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      woofguideEventsInput,)
+  }
+);}
+
+
+
+
+export const getCreateWoofguideEventsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWoofguideEvents>>, TError,{data: BodyType<WoofguideEventsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWoofguideEvents>>, TError,{data: BodyType<WoofguideEventsInput>}, TContext> => {
+
+const mutationKey = ['createWoofguideEvents'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWoofguideEvents>>, {data: BodyType<WoofguideEventsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createWoofguideEvents(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWoofguideEventsMutationResult = NonNullable<Awaited<ReturnType<typeof createWoofguideEvents>>>
+    export type CreateWoofguideEventsMutationBody = BodyType<WoofguideEventsInput>
+    export type CreateWoofguideEventsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Create dog-friendly WoofGuide event suggestions
+ */
+export const useCreateWoofguideEvents = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWoofguideEvents>>, TError,{data: BodyType<WoofguideEventsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createWoofguideEvents>>,
+        TError,
+        {data: BodyType<WoofguideEventsInput>},
+        TContext
+      > => {
+      return useMutation(getCreateWoofguideEventsMutationOptions(options));
+    }
+
+export const getStylizeAvatarUrl = () => {
+
+
+
+
+  return `/api/avatar-stylize`
+}
+
+/**
+ * Generates an owner-reviewed stylized portrait from a dog photo when the image provider is configured. This is a helper for Avatar Studio and must not be represented as automatic identity verification.
+ * @summary Create a stylized dog avatar portrait
+ */
+export const stylizeAvatar = async (avatarStylizeInput: AvatarStylizeInput, options?: RequestInit): Promise<AvatarStylizeResponse> => {
+
+  return customFetch<AvatarStylizeResponse>(getStylizeAvatarUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      avatarStylizeInput,)
+  }
+);}
+
+
+
+
+export const getStylizeAvatarMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stylizeAvatar>>, TError,{data: BodyType<AvatarStylizeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof stylizeAvatar>>, TError,{data: BodyType<AvatarStylizeInput>}, TContext> => {
+
+const mutationKey = ['stylizeAvatar'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stylizeAvatar>>, {data: BodyType<AvatarStylizeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  stylizeAvatar(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StylizeAvatarMutationResult = NonNullable<Awaited<ReturnType<typeof stylizeAvatar>>>
+    export type StylizeAvatarMutationBody = BodyType<AvatarStylizeInput>
+    export type StylizeAvatarMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Create a stylized dog avatar portrait
+ */
+export const useStylizeAvatar = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stylizeAvatar>>, TError,{data: BodyType<AvatarStylizeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof stylizeAvatar>>,
+        TError,
+        {data: BodyType<AvatarStylizeInput>},
+        TContext
+      > => {
+      return useMutation(getStylizeAvatarMutationOptions(options));
+    }
+
+export const getCreateAvatarEmotionsUrl = () => {
+
+
+
+
+  return `/api/avatar-emotions`
+}
+
+/**
+ * Generates a small owner-reviewed emotion set for the same dog from one photo when the image provider is configured. Some emotions can fail independently and are returned in the errors map.
+ * @summary Create a set of stylized dog avatar emotion portraits
+ */
+export const createAvatarEmotions = async (avatarEmotionsInput: AvatarEmotionsInput, options?: RequestInit): Promise<AvatarEmotionsResponse> => {
+
+  return customFetch<AvatarEmotionsResponse>(getCreateAvatarEmotionsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      avatarEmotionsInput,)
+  }
+);}
+
+
+
+
+export const getCreateAvatarEmotionsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAvatarEmotions>>, TError,{data: BodyType<AvatarEmotionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAvatarEmotions>>, TError,{data: BodyType<AvatarEmotionsInput>}, TContext> => {
+
+const mutationKey = ['createAvatarEmotions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAvatarEmotions>>, {data: BodyType<AvatarEmotionsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAvatarEmotions(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAvatarEmotionsMutationResult = NonNullable<Awaited<ReturnType<typeof createAvatarEmotions>>>
+    export type CreateAvatarEmotionsMutationBody = BodyType<AvatarEmotionsInput>
+    export type CreateAvatarEmotionsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Create a set of stylized dog avatar emotion portraits
+ */
+export const useCreateAvatarEmotions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAvatarEmotions>>, TError,{data: BodyType<AvatarEmotionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAvatarEmotions>>,
+        TError,
+        {data: BodyType<AvatarEmotionsInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAvatarEmotionsMutationOptions(options));
     }
 
 export const getGetMeUrl = () => {

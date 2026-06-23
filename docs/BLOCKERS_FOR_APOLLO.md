@@ -47,7 +47,8 @@
 
 ## Development Environment
 
-- The local Windows shell still relies on the bundled Node runtime and package-local CLIs instead of a normal global `pnpm`/`npm` setup. Current focused tests, mobile TypeScript, PixelLab asset verification, and Expo web export pass through those paths.
+- The local Windows shell still relies on the bundled Node runtime and package-local CLIs instead of a normal global `pnpm`/`npm` setup. Current focused tests, PixelLab asset verification, and Expo web export pass through those paths; direct Expo export can be run through the package-local Expo CLI when `pnpm exec expo` is unavailable.
+- Direct package typechecks/builds that depend on pnpm workspace symlinks remain environment-limited in this shell. On 2026-06-23, direct `tsc -p lib/api-client-react`, direct `tsc -p lib/api-zod`, and direct `artifacts/api-server/build.mjs` failed because `@tanstack/react-query`, `zod`, and `esbuild` were not resolvable without the pnpm workspace command/symlink layer. The API readiness and focused behavior suites still pass with bundled Node.
 - The 2026-06-13 in-app Browser attach blocker is superseded for web visual smoke: headless Chrome captured `/portrait` and Home from the exported build on 2026-06-18 and again supported the 2026-06-19 Option B living-room/Avatar Studio polish pass. Native iOS/Android visual QA is still pending, now with a concrete care-twin state matrix to execute once runtime access is available.
 
 ## Legal, Privacy, And Safety
