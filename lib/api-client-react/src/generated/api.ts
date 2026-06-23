@@ -1127,7 +1127,7 @@ export const createCareEntry = async (careEntryInput: CareEntryInput, options?: 
 
 
 
-export const getCreateCareEntryMutationOptions = <TError = ErrorType<unknown>,
+export const getCreateCareEntryMutationOptions = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCareEntry>>, TError,{data: BodyType<CareEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createCareEntry>>, TError,{data: BodyType<CareEntryInput>}, TContext> => {
 
@@ -1156,12 +1156,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateCareEntryMutationResult = NonNullable<Awaited<ReturnType<typeof createCareEntry>>>
     export type CreateCareEntryMutationBody = BodyType<CareEntryInput>
-    export type CreateCareEntryMutationError = ErrorType<unknown>
+    export type CreateCareEntryMutationError = ErrorType<ApiError>
 
     /**
  * @summary Append a care log entry
  */
-export const useCreateCareEntry = <TError = ErrorType<unknown>,
+export const useCreateCareEntry = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCareEntry>>, TError,{data: BodyType<CareEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createCareEntry>>,

@@ -362,6 +362,9 @@ Latest local evidence, 2026-06-23:
 - API readiness now covers `PUT /care-state` write-error contracts so validation errors, missing-document errors, and optimistic conflict envelopes stay documented and typed.
 - `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing care-state `400` OpenAPI coverage, then passed with 4 tests after the contract update.
 - Full local focused behavior/readiness suite passed with 364 tests after the care-state write-error contract fix.
+- API readiness now covers care-entry create/update/delete write-error contracts so invalid log bodies or ids stay documented as `400` responses and generated create mutation errors are typed as `ApiError`.
+- `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing create-care-entry `400` OpenAPI coverage, then passed with 5 tests after the contract update.
+- Full local focused behavior/readiness suite passed with 365 tests after the care-entry write-error contract fix.
 - `node --check lib/api-client-react/src/generated/api.ts` and `node --check lib/api-zod/src/generated/api.ts` passed syntax checks for the generated-client edits.
 - PixelLab asset verification passed with 149 registered assets, 0 missing, and 0 invalid.
 - `git diff --check` passed with only expected Windows line-ending warnings.

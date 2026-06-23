@@ -392,6 +392,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareEntry"
+        "400":
+          description: Invalid care entry payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /care-entries/{id}:
     patch:
       operationId: updateCareEntry
@@ -416,6 +422,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareEntry"
+        "400":
+          description: Invalid care entry update payload or id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Entry not found
           content:
@@ -435,6 +447,12 @@ paths:
       responses:
         "204":
           description: Deleted
+        "400":
+          description: Invalid care entry id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Entry not found
           content:

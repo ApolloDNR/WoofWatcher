@@ -9,6 +9,15 @@ function read(path: string): string {
   return readFileSync(join(root, path), "utf8");
 }
 
+function section(source: string, start: string, end: string): string {
+  const normalized = source.replace(/\r\n/g, "\n");
+  const startIndex = normalized.indexOf(start);
+  assert.notEqual(startIndex, -1, `Missing section start: ${start.trim()}`);
+  const endIndex = normalized.indexOf(end, startIndex + start.length);
+  assert.notEqual(endIndex, -1, `Missing section end: ${end.trim()}`);
+  return normalized.slice(startIndex, endIndex);
+}
+
 test("OpenAPI and generated clients cover WoofGuide events and Avatar Studio API routes", () => {
   const openapi = read("lib/api-spec/openapi.yaml");
   const reactClient = read("lib/api-client-react/src/generated/api.ts");
@@ -101,5 +110,57 @@ test("care state write errors stay documented and typed", () => {
     reactClient,
     /PutCareStateMutationError = ErrorType<ApiError \| CareStateEnvelope>/,
     "React API mutation error alias must preserve validation/not-found and conflict response shapes",
+  );
+});
+
+test("care entry write errors stay documented and typed", () => {
+  const route = read("artifacts/api-server/src/routes/care-entries.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+
+  const createBlock = section(
+    openapi,
+    "    post:\n      operationId: createCareEntry",
+    "  /care-entries/{id}:",
+  );
+  const updateBlock = section(
+    openapi,
+    "    patch:\n      operationId: updateCareEntry",
+    "    delete:\n      operationId: deleteCareEntry",
+  );
+  const deleteBlock = section(
+    openapi,
+    "    delete:\n      operationId: deleteCareEntry",
+    "\ncomponents:",
+  );
+
+  assert.match(route, /CreateCareEntryBody\.safeParse/, "care-entry create should still validate request bodies");
+  assert.match(route, /UpdateCareEntryParams\.safeParse/, "care-entry update should still validate route params");
+  assert.match(route, /UpdateCareEntryBody\.safeParse/, "care-entry update should still validate request bodies");
+  assert.match(route, /DeleteCareEntryParams\.safeParse/, "care-entry delete should still validate route params");
+  assert.match(createBlock, /"400":/, "OpenAPI must document invalid create-care-entry payload errors");
+  assert.match(updateBlock, /"400":/, "OpenAPI must document invalid update-care-entry payload or param errors");
+  assert.match(updateBlock, /"404":/, "OpenAPI must keep documenting update-care-entry not-found errors");
+  assert.match(deleteBlock, /"400":/, "OpenAPI must document invalid delete-care-entry param errors");
+  assert.match(deleteBlock, /"404":/, "OpenAPI must keep documenting delete-care-entry not-found errors");
+  assert.match(
+    reactClient,
+    /getCreateCareEntryMutationOptions = <TError = ErrorType<ApiError>/,
+    "React API create mutation must type validation errors as ApiError",
+  );
+  assert.match(
+    reactClient,
+    /CreateCareEntryMutationError = ErrorType<ApiError>/,
+    "React API create mutation error alias must expose validation error bodies",
+  );
+  assert.match(
+    reactClient,
+    /UpdateCareEntryMutationError = ErrorType<ApiError>/,
+    "React API update mutation error alias must preserve invalid and not-found error bodies",
+  );
+  assert.match(
+    reactClient,
+    /DeleteCareEntryMutationError = ErrorType<ApiError>/,
+    "React API delete mutation error alias must preserve invalid and not-found error bodies",
   );
 });
