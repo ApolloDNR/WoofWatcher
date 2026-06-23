@@ -20,6 +20,8 @@ const focusedSurfaces: readonly MobileReleaseQaSurface[] = [
     devicePrompt: "Capture the screen.",
     setupSteps: ["Use a local preview household with Phoenix sample care data."],
     verificationSteps: ["Open Home.", "Capture iOS and Android screenshots."],
+    acceptanceCriteria: ["Home is readable above the fold on both platforms."],
+    failureEscalation: "Mark Needs tune if Home clips under the safe area or hides the main action.",
     requiredEvidence: ["iOS screenshot of Home.", "Android screenshot of Home."],
     launchRisk: "Home is the first impression.",
   },
@@ -32,6 +34,8 @@ const focusedSurfaces: readonly MobileReleaseQaSurface[] = [
     devicePrompt: "Capture the handoff.",
     setupSteps: ["Open Records with visible report history."],
     verificationSteps: ["Open Records.", "Preview Care Pass."],
+    acceptanceCriteria: ["Care Pass preview is readable and shareable."],
+    failureEscalation: "Mark Needs tune if Care Pass copy clips or the share path is unclear.",
     requiredEvidence: ["Screenshot of Care Pass share preview."],
     launchRisk: "Care Pass needs proof.",
   },
@@ -154,6 +158,8 @@ test("builds a prioritized capture plan from missing native QA evidence", () => 
       missingEvidence: ["Attach 1 screenshot for Care Pass."],
       setupSteps: ["Open Records with visible report history."],
       verificationSteps: ["Open Records.", "Preview Care Pass."],
+      acceptanceCriteria: ["Care Pass preview is readable and shareable."],
+      failureEscalation: "Mark Needs tune if Care Pass copy clips or the share path is unclear.",
       evidenceAttached: 0,
       note: undefined,
     },
@@ -192,6 +198,8 @@ test("preserves release surface order inside each priority group", () => {
       devicePrompt: "Capture Home first.",
       setupSteps: ["Use a local preview household with Phoenix sample care data."],
       verificationSteps: ["Open Phoenix Home.", "Verify Home first."],
+      acceptanceCriteria: ["Home is readable and actionable."],
+      failureEscalation: "Mark Needs tune if Home is clipped or confusing.",
       requiredEvidence: ["iOS screenshot of Phoenix Home."],
       launchRisk: "Home is the first impression.",
     },
@@ -204,6 +212,8 @@ test("preserves release surface order inside each priority group", () => {
       devicePrompt: "Capture mission deck second.",
       setupSteps: ["Create pending meal and active session state."],
       verificationSteps: ["Open Phoenix Home.", "Verify mission route rows."],
+      acceptanceCriteria: ["Mission rows are readable and reachable."],
+      failureEscalation: "Mark Needs tune if rows are hidden behind navigation.",
       requiredEvidence: ["iOS screenshot of Home Mission Deck."],
       launchRisk: "Mission rows must not hide behind the nav.",
     },
@@ -216,6 +226,8 @@ test("preserves release surface order inside each priority group", () => {
       devicePrompt: "Capture Avatar Studio after Home.",
       setupSteps: ["Use the current PixelLab template pack."],
       verificationSteps: ["Open Avatar Studio.", "Switch template families."],
+      acceptanceCriteria: ["Avatar Studio shows truthful template readiness."],
+      failureEscalation: "Mark Needs tune if a template looks blurry or mislabeled.",
       requiredEvidence: ["iOS screenshot of Avatar Studio."],
       launchRisk: "Avatar Studio is the product hook.",
     },
@@ -228,6 +240,8 @@ test("preserves release surface order inside each priority group", () => {
       devicePrompt: "Capture Care Pass.",
       setupSteps: ["Open Records with visible report history."],
       verificationSteps: ["Open Records.", "Preview Care Pass."],
+      acceptanceCriteria: ["Care Pass preview is readable and shareable."],
+      failureEscalation: "Mark Needs tune if Care Pass copy clips or the share path is unclear.",
       requiredEvidence: ["Screenshot of Care Pass."],
       launchRisk: "Care Pass needs proof.",
     },
@@ -253,6 +267,8 @@ test("builds a shareable native QA capture script for Apollo and device testers"
   assert.match(text, /Missing: Attach 1 iOS screenshot for Home\. Attach 1 Android screenshot for Home\./);
   assert.match(text, /Setup: Use a local preview household with Phoenix sample care data\./);
   assert.match(text, /Steps: Open Home\. Capture iOS and Android screenshots\./);
+  assert.match(text, /Pass criteria: Home is readable above the fold on both platforms\./);
+  assert.match(text, /Needs tune if: Mark Needs tune if Home clips under the safe area or hides the main action\./);
   assert.match(text, /2\. Care Pass \(\/records\)/);
   assert.match(text, /Done condition: capture iOS and Android proof in \/care-twin-qa/);
 });

@@ -13,6 +13,8 @@ export interface MobileReleaseQaSurface {
   devicePrompt: string;
   setupSteps: readonly string[];
   verificationSteps: readonly string[];
+  acceptanceCriteria: readonly string[];
+  failureEscalation: string;
   requiredEvidence: readonly string[];
   launchRisk: string;
 }
@@ -62,6 +64,13 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Tap one safe quick-log tile and confirm the main Phoenix sprite reacts without spawning a second avatar.",
       "Scroll to Next Up and confirm the floating paw nav does not cover the next action or quick-log controls.",
     ],
+    acceptanceCriteria: [
+      "Header controls, room crop, status strip, quick-log actions, and Next Up stay readable on both platforms.",
+      "The main Phoenix sprite reacts without a second avatar, duplicate sprite, or pasted-on overlay.",
+      "The floating paw nav never hides the next action, quick-log controls, or visible care status.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if there is safe-area clipping, duplicate avatar behavior, hidden controls, unreadable status copy, or a room crop that weakens the premium first impression.",
     requiredEvidence: [
       "iOS screenshot of Phoenix Home above the fold.",
       "Android screenshot of Phoenix Home above the fold.",
@@ -91,6 +100,13 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Tap the walk or alone-time mission when available and confirm it lands in the active Log workflow.",
       "Tap Adventure, Health, and Care Pass mission rows and confirm they route to Adventure, Health, and Records.",
     ],
+    acceptanceCriteria: [
+      "No mission row is hidden behind the floating paw nav or clipped by the phone viewport.",
+      "The pending meal, active care, Adventure, Health, and Care Pass rows remain readable and tappable.",
+      "Every mission row routes to the named care workflow and returns without creating a dead end.",
+    ],
+    failureEscalation:
+      "Mark Needs tune and note the first blocked row or overflow if any mission is clipped, unreachable, unreadable, or routed to the wrong workflow.",
     requiredEvidence: [
       "iOS screenshot of the compact Home mission deck with at least three mission rows visible.",
       "Android screenshot of the compact Home mission deck with the floating paw nav visible.",
@@ -117,6 +133,13 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Mark each state Pass or Needs tune and note crop, scale, loop timing, gait, or touch-response issues.",
       "Attach iOS and Android screenshots for the required states before treating the matrix as release-reviewed.",
     ],
+    acceptanceCriteria: [
+      "Every state renders one layered Phoenix in the correct room variant with readable motion recipe copy.",
+      "Tap reactions match the care state: playful when happy, calm when resting or on Health Watch.",
+      "Loop timing, scale, crop, and gait are acceptable on phone-sized iOS and Android screens.",
+    ],
+    failureEscalation:
+      "Mark Needs tune for any duplicate sprite, wrong room, awkward gait, clipped crop, unreadable HUD, or reaction that conflicts with the current care state.",
     requiredEvidence: [
       "iOS screenshot of happy idle.",
       "iOS screenshot of Health Watch state.",
@@ -144,6 +167,13 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Confirm thumbnails render as crisp pixel assets and no still or accessory overlay covers the live sprite stage.",
       "Note any gait, crop, accessory alignment, or template identity issue before final asset approval.",
     ],
+    acceptanceCriteria: [
+      "Avatar Studio shows one clear care twin stage with truthful live or still readiness labels.",
+      "Template thumbnails and emotes stay crisp, dog-specific, and visually distinct from Phoenix when appropriate.",
+      "Accessories and still previews do not cover or compete with a live sprite stage.",
+    ],
+    failureEscalation:
+      "Mark Needs tune for blurry art, wrong-dog fallback, oversized overlays, misleading live labels, or any template whose identity drifts from the selected breed/body type.",
     requiredEvidence: [
       "iOS screenshot with a live template selected.",
       "Android screenshot with a non-Phoenix template selected.",
@@ -170,6 +200,13 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Confirm medication or emergency-style language is not used and behavior wording stays factual and non-diagnostic.",
       "Save or cancel the draft and confirm the user can return to the prior route without losing navigation context.",
     ],
+    acceptanceCriteria: [
+      "Incident fields fit in the phone sheet and stay reachable with the keyboard open.",
+      "The composer collects trigger, exposure, injury/action, follow-up, notes, trust, and visibility without medical or behavior diagnosis.",
+      "Save, cancel, and back navigation preserve context and never strand the tester.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if keyboard overlap blocks a required field, language sounds diagnostic, trust/visibility is unclear, or navigation loses the tester after save or cancel.",
     requiredEvidence: [
       "iOS screenshot of the Incident detail composer.",
       "Android screenshot of the Incident detail composer.",
@@ -196,6 +233,13 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Tap trainer handoff or goal action and confirm it opens the trainer Care Pass preview rather than a dead end.",
       "Confirm every Incident Watch sentence stays factual, owner-reviewed, and non-diagnostic.",
     ],
+    acceptanceCriteria: [
+      "Incident Watch trend, follow-up, and trainer goal sections are readable on a small phone.",
+      "Follow-up rows route to the Incident composer or trainer Care Pass preview with no dead recommendations.",
+      "Every sentence stays factual, owner-reviewed, and non-diagnostic.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if a follow-up row is dead, a trainer handoff is missing, copy sounds diagnostic, or the section is too dense to scan on a phone.",
     requiredEvidence: [
       "iOS screenshot of Records Incident Watch.",
       "Android screenshot after tapping a follow-up row or trainer goal.",
@@ -221,6 +265,13 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Confirm Incident Watch trend, owner follow-up, and trainer goal lines are included in the handoff.",
       "Share or preview the report text and confirm it remains factual, non-diagnostic, and readable on a phone.",
     ],
+    acceptanceCriteria: [
+      "Trainer Care Pass includes Incident Watch trend, owner follow-up, and goal context.",
+      "The report remains readable, factual, and non-diagnostic when previewed or shared from a phone.",
+      "Private contacts or addresses are not exposed in screenshots or share text.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if Incident Watch context is missing, report text clips, the share path is unclear, or private household details appear.",
     requiredEvidence: [
       "Screenshot of trainer Care Pass preview with Incident Watch.",
       "Shared text report snippet showing incident trend and follow-up lines.",
@@ -296,6 +347,28 @@ function storeScreenshotSetupStepsFor(item: StoreScreenshotChecklistItem): strin
   return steps;
 }
 
+function storeScreenshotAcceptanceCriteriaFor(item: StoreScreenshotChecklistItem): string[] {
+  const criteria = [
+    "No private household data, real contact details, tokens, credentials, or personal addresses appear in the image.",
+    "No provider claim appears unless the matching gate is actually closed in Launch Readiness.",
+    `The screenshot truthfully supports the store requirement: ${item.requirement}`,
+  ];
+
+  if (item.status === "blocked") {
+    criteria.push("Blocked screens show the blocker or blocker note instead of pretending the launch gate is complete.");
+  }
+
+  return criteria;
+}
+
+function storeScreenshotFailureEscalationFor(item: StoreScreenshotChecklistItem): string {
+  if (item.status === "blocked") {
+    return `Mark Needs tune and do not stage a fake finished screenshot if ${item.screen} still has provider, legal, payment, AI, storage, or store approval blockers.`;
+  }
+
+  return `Mark Needs tune if ${item.screen} exposes private data, overclaims provider readiness, crops poorly, or fails to prove the store screenshot requirement.`;
+}
+
 export function buildStoreSubmissionScreenshotQaSurfaces(
   packet: StoreSubmissionPacket,
 ): readonly MobileReleaseQaSurface[] {
@@ -311,6 +384,8 @@ export function buildStoreSubmissionScreenshotQaSurfaces(
       devicePrompt: `${item.requirement} Use App Store and Play Store safe frames, avoid private household data, and keep unfinished provider claims out of the screenshot.`,
       setupSteps: storeScreenshotSetupStepsFor(item),
       verificationSteps: storeScreenshotVerificationStepsFor(item, route),
+      acceptanceCriteria: storeScreenshotAcceptanceCriteriaFor(item),
+      failureEscalation: storeScreenshotFailureEscalationFor(item),
       requiredEvidence: storeScreenshotEvidenceFor(item),
       launchRisk: blocked
         ? `Store checklist marks ${item.screen} as blocked; do not submit until the blocker is closed and re-captured.`
@@ -457,6 +532,8 @@ export function buildMobileReleaseQaShareText(
     lines.push(`  Goal: ${surface.goal}`);
     lines.push(`  Setup: ${surface.setupSteps.join(" ")}`);
     lines.push(`  Steps: ${surface.verificationSteps.join(" ")}`);
+    lines.push(`  Pass criteria: ${surface.acceptanceCriteria.join(" ")}`);
+    lines.push(`  Needs tune if: ${surface.failureEscalation}`);
 
     if (note) {
       lines.push(`  Note: ${note}`);

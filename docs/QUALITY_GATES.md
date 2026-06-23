@@ -391,6 +391,13 @@ before attaching native screenshots. `/care-twin-qa` renders Setup first/Store
 prep ahead of evidence capture, More shows the first prep step in Native QA
 Next Captures, and share text includes both setup and verification instructions.
 
+Current evidence, 2026-06-23: Mobile Release QA and generated Store Screenshot
+surfaces now include explicit pass criteria plus Needs tune failure escalation.
+`/care-twin-qa` renders pass criteria before capture, More's Native QA Next
+Captures rows surface the first criterion, and Mobile Release QA / Native QA
+share scripts carry the pass/failure language. This prevents fake visual passes
+and tells testers exactly when to mark a route Needs tune.
+
 Current evidence, 2026-06-21: Provider launch readiness is now a durable,
 truthful owner workflow. `launchProviderSetup.ts` derives an eight-gate
 production setup plan for auth, database sync, storage, AI, payments, push,

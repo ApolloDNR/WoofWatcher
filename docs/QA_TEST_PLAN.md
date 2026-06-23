@@ -38,6 +38,8 @@ Latest local evidence, 2026-06-23:
 - PASS: More's Native QA Next Captures panel shows the first concrete step for each next QA target.
 - PASS: 14 focused Mobile Release QA and Native QA Capture Plan tests covering setup/precondition steps before screenshot capture.
 - PASS: `/care-twin-qa`, native QA share text, generated Store Screenshot QA surfaces, and More's Native QA Next Captures now carry setup/prep guidance before route-check steps.
+- PASS: all Mobile Release QA and Store Screenshot QA surfaces now carry explicit pass criteria plus Needs tune escalation so visual QA cannot be marked complete without the real launch-quality checks.
+- PASS: `/care-twin-qa`, More Native QA Next Captures, Mobile Release QA reports, and Native QA capture-plan share text all expose pass/failure criteria before screenshot evidence.
 - STILL REQUIRED: real iOS and Android device/simulator execution, screenshot attachment, QA report sharing, and visible issue tuning.
 
 ## Required Automated Coverage

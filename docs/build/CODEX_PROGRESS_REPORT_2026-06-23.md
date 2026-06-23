@@ -12,6 +12,8 @@
 - Added setup/precondition steps to every Mobile Release QA surface and generated Store Screenshot QA surface.
 - QA packets now explain how to prepare demo-safe state before capture, including pending meal setup, active walk/Alone Time setup, Incident Watch sample-data setup, PixelLab readiness, and blocked store-screenshot boundaries.
 - `/care-twin-qa` now shows Setup first/Store prep before Device steps, and More's Native QA Next Captures rows show the first prep step plus the first route-check step.
+- Added explicit pass criteria and Needs tune escalation to every Mobile Release QA surface and generated Store Screenshot QA surface.
+- `/care-twin-qa`, More's Native QA Next Captures, Mobile Release QA reports, and Native QA capture-plan share text now expose pass/failure criteria before screenshot evidence so tester proof cannot drift into a fake launch pass.
 
 ## Verification
 
@@ -19,6 +21,7 @@
 - `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts` - 85 passing.
 - `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts` - 85 passing after the device-steps QA contract.
 - `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts` - 14 passing after the setup/precondition QA contract.
+- `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts` - 14 passing after the pass-criteria and Needs tune escalation QA contract.
 - `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 360 passing.
 - `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
@@ -33,4 +36,4 @@
 
 ## Next Best Slice
 
-Run the Home Mission Deck QA surface on iOS and Android using the in-app setup + numbered device steps, attach screenshots, share the QA report, and tune the first visible phone-size issue.
+Run the Home Mission Deck QA surface on iOS and Android using the in-app setup, numbered device steps, pass criteria, and Needs tune escalation, attach screenshots, share the QA report, and tune the first visible phone-size issue.

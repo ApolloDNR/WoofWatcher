@@ -548,6 +548,7 @@ export default function CareTwinQaScreen() {
 
               <VerificationStepList colors={colors} label="Setup first" steps={surface.setupSteps} />
               <VerificationStepList colors={colors} steps={surface.verificationSteps} />
+              <VerificationStepList colors={colors} label="Pass criteria" steps={surface.acceptanceCriteria} />
 
               <View style={s.evidenceList}>
                 {surface.requiredEvidence.map((evidence) => (
@@ -574,6 +575,9 @@ export default function CareTwinQaScreen() {
 
               <Text style={[s.launchRisk, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
                 Release risk: {surface.launchRisk}
+              </Text>
+              <Text style={[s.launchRisk, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                Needs tune if: {surface.failureEscalation}
               </Text>
 
               <View style={s.reviewGrid}>
@@ -730,6 +734,7 @@ export default function CareTwinQaScreen() {
 
               <VerificationStepList colors={colors} label="Store prep" steps={surface.setupSteps} />
               <VerificationStepList colors={colors} label="Store steps" steps={surface.verificationSteps} />
+              <VerificationStepList colors={colors} label="Store pass criteria" steps={surface.acceptanceCriteria} />
 
               <View style={s.evidenceList}>
                 {surface.requiredEvidence.map((evidence) => (
@@ -756,6 +761,9 @@ export default function CareTwinQaScreen() {
 
               <Text style={[s.launchRisk, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
                 Release risk: {surface.launchRisk}
+              </Text>
+              <Text style={[s.launchRisk, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                Needs tune if: {surface.failureEscalation}
               </Text>
 
               <View style={s.reviewGrid}>

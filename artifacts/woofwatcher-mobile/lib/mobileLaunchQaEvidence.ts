@@ -22,6 +22,8 @@ export interface MobileLaunchQaCaptureTarget {
   missingEvidence: string[];
   setupSteps: readonly string[];
   verificationSteps: readonly string[];
+  acceptanceCriteria: readonly string[];
+  failureEscalation: string;
   evidenceAttached: number;
   note?: string;
 }
@@ -156,6 +158,8 @@ export function buildMobileLaunchQaCapturePlan(
         missingEvidence,
         setupSteps: surface.setupSteps,
         verificationSteps: surface.verificationSteps,
+        acceptanceCriteria: surface.acceptanceCriteria,
+        failureEscalation: surface.failureEscalation,
         evidenceAttached: review.screenshotEvidence?.length ?? 0,
         note: review.note,
       };
@@ -199,6 +203,8 @@ export function buildMobileLaunchQaCaptureShareText(
     lines.push(`   Missing: ${target.missingEvidence.join(" ") || "No missing evidence."}`);
     lines.push(`   Setup: ${target.setupSteps.join(" ")}`);
     lines.push(`   Steps: ${target.verificationSteps.join(" ")}`);
+    lines.push(`   Pass criteria: ${target.acceptanceCriteria.join(" ")}`);
+    lines.push(`   Needs tune if: ${target.failureEscalation}`);
     lines.push(`   Evidence attached: ${target.evidenceAttached}`);
     if (target.note) lines.push(`   Note: ${target.note}`);
   });
