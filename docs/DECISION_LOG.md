@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-23: Member Profile Updates Stay In The Active Household
+
+Decision: API `PATCH /me` should update the authenticated user's global display name, but the household membership display-name row must be constrained by both user id and active household id.
+
+Reason: A caregiver can belong to more than one household. Updating membership rows by user id alone can rename that caregiver across unrelated packs, which weakens household trust before provider-backed role enforcement, active household switching, and richer caregiver management are complete.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed role enforcement, explicit active-household selection, caregiver editing, invite approval, or account audit policy becomes active release work.
+
 ### 2026-06-23: Care-State Optimistic Writes Are Atomic
 
 Decision: API `PUT /care-state` writes should update the shared household care document only when both the household id and the current version still match. If another device updates the document after the initial read, the API should refetch the latest household state and return the existing recoverable 409 response shape instead of overwriting it.

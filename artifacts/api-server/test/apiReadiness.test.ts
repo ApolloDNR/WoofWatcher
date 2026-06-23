@@ -35,6 +35,18 @@ test("keeps authenticated API routes household scoped", () => {
   assert.match(household, /ensureUserAndHousehold\(userId\)/);
 });
 
+test("keeps household member profile updates scoped to the active household", () => {
+  const household = readApiFile(join("routes", "household.ts"));
+
+  assert.match(household, /UpdateMeBody\.safeParse\(req\.body\)/);
+  assert.match(household, /const \{ householdId \} = await ensureUserAndHousehold\(userId\)/);
+  assert.match(household, /\.update\(householdMembersTable\)/);
+  assert.match(
+    household,
+    /and\([\s\S]*eq\(householdMembersTable\.userId, userId\),[\s\S]*eq\(householdMembersTable\.householdId, householdId\)/,
+  );
+});
+
 test("keeps care-state writes optimistic and conflict recoverable", () => {
   const careState = readApiFile(join("routes", "care-state.ts"));
   const mobileContext = readFileSync(

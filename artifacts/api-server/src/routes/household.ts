@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, householdsTable, householdMembersTable, usersTable } from "@workspace/db";
 import {
   GetMeResponse,
@@ -34,7 +34,12 @@ router.patch("/me", requireAuth, async (req, res): Promise<void> => {
     await db
       .update(householdMembersTable)
       .set({ displayName: parsed.data.displayName })
-      .where(eq(householdMembersTable.userId, userId));
+      .where(
+        and(
+          eq(householdMembersTable.userId, userId),
+          eq(householdMembersTable.householdId, householdId),
+        ),
+      );
   }
   res.json(GetMeResponse.parse(await buildMe(userId, householdId)));
 });
