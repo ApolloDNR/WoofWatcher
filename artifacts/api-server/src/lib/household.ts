@@ -33,7 +33,7 @@ async function uniqueInviteCode(): Promise<string> {
   return `${generateInviteCode()}${generateInviteCode()}`;
 }
 
-async function ensureUser(userId: string): Promise<User> {
+export async function ensureUser(userId: string): Promise<User> {
   const [existing] = await db
     .select()
     .from(usersTable)
@@ -65,7 +65,7 @@ async function ensureUser(userId: string): Promise<User> {
   return user;
 }
 
-async function ensureCareState(householdId: string, userId: string): Promise<void> {
+export async function ensureCareState(householdId: string, userId: string): Promise<void> {
   await db
     .insert(careStateTable)
     .values({ householdId, doc: {}, version: 1, updatedBy: userId })

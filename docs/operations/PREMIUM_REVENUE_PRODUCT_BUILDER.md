@@ -118,6 +118,7 @@ Latest completed local runtime/accessibility hardening:
 - Care-state optimistic writes now use an atomic household-and-version update before live database/provider integration tests are available. A raced write refetches the latest household care document and returns the existing recoverable 409 response shape instead of clobbering newer shared care data.
 - Household member profile updates now stay active-household scoped before provider-backed role enforcement. `PATCH /me` keeps the global user display-name update, but the household member display-name row is constrained by both authenticated user id and active household id.
 - Household rename is now owner/admin gated before provider-backed role enforcement. `PATCH /household` checks the authenticated user's active-household membership role and returns 403 for non-owner/admin members before changing the shared pack name.
+- Household invite joins now avoid creating a throwaway default pack before accepting an invite. `POST /household/join` provisions the authenticated user directly, ensures the invited household has care state, avoids duplicate memberships, and adds first-time invitees as `member`.
 
 Next highest-impact work:
 
@@ -126,5 +127,5 @@ Next highest-impact work:
 3. Replace first-pass derived room variants with final illustrated room art.
 4. Replace first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art, then continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Add live API integration tests for care-state write races and care-entry delete retention once a test database and provider-auth harness are available.
-6. Add live household provisioning, role-gated household rename, and multi-household membership integration tests once a test database and provider-auth harness are available.
+6. Add live household provisioning, invite-join, role-gated household rename, and multi-household membership integration tests once a test database and provider-auth harness are available.
 7. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.

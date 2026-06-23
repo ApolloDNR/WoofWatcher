@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-23: Invite Join Does Not Create A Default Pack First
+
+Decision: API `POST /household/join` should provision the authenticated user directly, find the invited household by normalized invite code, ensure that household has care state, avoid duplicate membership inserts, and add a new invitee as a normal `member` without first creating a personal default household.
+
+Reason: A first-time caregiver who accepts an invite intends to join the shared pack, not create a separate empty household that can become the earliest active household for later care-state and care-entry routes. This keeps household sync truth closer to the invite workflow while full active-household switching, invite approval, and provider-backed role administration remain future work.
+
+Owner: Codex.
+
+Revisit trigger: Active-household selection, invite approval, caregiver editing, role changes, or provider-backed household administration becomes active release work.
+
 ### 2026-06-23: Household Rename Requires Owner Or Admin Membership
 
 Decision: API `PATCH /household` should allow shared pack renames only when the authenticated user's active-household membership role is `owner` or `admin`. Non-owner/admin members receive a 403 response and can continue using the household for normal care workflows.

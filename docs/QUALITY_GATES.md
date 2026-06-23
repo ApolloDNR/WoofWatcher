@@ -88,6 +88,8 @@ Current evidence, 2026-06-23: API household member profile updates now constrain
 
 Current evidence, 2026-06-23: API household rename now requires the authenticated user's active-household membership role to be owner or admin. Invited members can still belong to the pack and contribute care, but they cannot rename the shared household before fuller provider-backed role enforcement, invite approval, and caregiver administration exist.
 
+Current evidence, 2026-06-23: API household invite joins now provision the authenticated user directly instead of creating a default personal pack before accepting the invite. The join route ensures the invited household has care state, avoids duplicate membership inserts, and adds new caregivers as ordinary members so a first-time invite accept lands on the real shared pack first.
+
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
 Current evidence, 2026-06-11: Reminder Center now combines routine-board status, medication follow-ups, record reminders, and grooming due dates into one Calendar action list with urgent/watch/total counts, private-log exclusion through the underlying domain helpers, and explicit notification-readiness copy before real push delivery exists.
@@ -319,3 +321,5 @@ Current evidence, 2026-06-14: `WoofWatcher Verify` uses Node 24-compatible actio
 Current evidence, 2026-06-22: Focused API readiness now protects care-entry delete retention in addition to household scoping, optimistic care-state conflicts, append-safe care-entry writes, and list query contracts. Synced deletes retain a server-side household audit note instead of relying only on a local mobile audit artifact.
 
 Current evidence, 2026-06-23: Focused API readiness now also protects the care-state update predicate itself, requiring household-and-version matching plus a refreshed 409 path when concurrent writes race before live database/provider-auth integration tests are available.
+
+Current evidence, 2026-06-23: Focused API readiness protects household invite joins from creating a throwaway default household before accepting an invite. `POST /household/join` now provisions the user directly, ensures invited-household care state, and keeps new invitees at the `member` role unless provider-backed administration later changes the policy.

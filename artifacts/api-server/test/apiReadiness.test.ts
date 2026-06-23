@@ -63,6 +63,22 @@ test("keeps household rename restricted to owner or admin members", () => {
   assert.match(householdRoute, /\.update\(householdsTable\)/);
 });
 
+test("keeps invite joins from creating a throwaway default household first", () => {
+  const householdRoute = readApiFile(join("routes", "household.ts"));
+  const householdLib = readApiFile(join("lib", "household.ts"));
+
+  assert.match(householdLib, /export async function ensureUser\(/);
+  assert.match(householdLib, /export async function ensureCareState\(/);
+  assert.match(householdRoute, /JoinHouseholdBody\.safeParse\(req\.body\)/);
+  assert.match(householdRoute, /const user = await ensureUser\(userId\)/);
+  assert.match(householdRoute, /await ensureCareState\(household\.id, userId\)/);
+  assert.match(householdRoute, /role: "member"/);
+  assert.doesNotMatch(
+    householdRoute,
+    /router\.post\("\/household\/join"[\s\S]*ensureUserAndHousehold\(userId\)/,
+  );
+});
+
 test("keeps care-state writes optimistic and conflict recoverable", () => {
   const careState = readApiFile(join("routes", "care-state.ts"));
   const mobileContext = readFileSync(

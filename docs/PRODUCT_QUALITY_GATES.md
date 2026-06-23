@@ -55,6 +55,7 @@ Passing evidence:
 - API care-state writes use an atomic household-and-version optimistic update and return a refreshed 409 response if another device wins the write race, so stale devices do not clobber newer shared care documents after the initial version read.
 - API household member display-name updates are scoped to the authenticated user and active household, so a caregiver who belongs to more than one household does not accidentally rename their membership across unrelated packs.
 - API household rename requires owner/admin membership in the active household, so ordinary invited caregivers cannot rename the shared pack before full provider-backed role enforcement exists.
+- API household invite joins provision the authenticated user directly, ensure the invited household has care state, avoid duplicate memberships, and add first-time invitees as normal members without creating a throwaway default pack first.
 - Care Pass reports can be previewed by audience before sharing.
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
 - Records show expired, due-soon, current, and reference status for saved record rows.
@@ -90,7 +91,7 @@ Passing evidence:
 - API server typechecks and builds in CI.
 - API includes auth, household, care state, care entries, health, avatar, and WoofGuide-related routes.
 - Production CORS is documented and guarded.
-- Focused API route readiness now protects authenticated household scoping, active-household member profile updates, owner/admin household rename gating, optimistic care-state conflict responses, atomic care-state update predicates, household-isolated care-entry create/update/delete behavior, server-retained delete audit notes, and care-entry list query contracts across OpenAPI, zod, and generated React client types.
+- Focused API route readiness now protects authenticated household scoping, active-household member profile updates, owner/admin household rename gating, invite joins that do not create default packs first, optimistic care-state conflict responses, atomic care-state update predicates, household-isolated care-entry create/update/delete behavior, server-retained delete audit notes, and care-entry list query contracts across OpenAPI, zod, and generated React client types.
 
 Current gaps:
 
@@ -198,6 +199,7 @@ Current gaps:
 - API care-state optimistic write conflict safety is covered by focused readiness so concurrent household document writes use the version predicate in the update itself before live database integration tests are available.
 - API household profile update scoping is covered by focused readiness so member display-name writes stay constrained to the active household before provider-backed role enforcement exists.
 - API household rename role gating is covered by focused readiness so only active-household owner/admin members can rename the shared pack before provider-backed role enforcement exists.
+- API household invite join provisioning is covered by focused readiness so first-time invite accepts do not create a default personal pack before joining the intended shared household.
 - Need report/export tests.
 - Need release smoke checklist.
 

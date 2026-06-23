@@ -10,6 +10,8 @@ import {
 import { requireAuth, getUserId } from "../lib/auth";
 import {
   ensureUserAndHousehold,
+  ensureUser,
+  ensureCareState,
   buildMe,
   requireActiveHouseholdRole,
 } from "../lib/household";
@@ -74,8 +76,6 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  // Ensure the user is provisioned first.
-  await ensureUserAndHousehold(userId);
 
   const code = parsed.data.inviteCode.trim().toUpperCase();
   const [household] = await db
@@ -87,6 +87,9 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  const user = await ensureUser(userId);
+  await ensureCareState(household.id, userId);
+
   const memberships = await db
     .select({ householdId: householdMembersTable.householdId })
     .from(householdMembersTable)
@@ -96,10 +99,6 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
   );
 
   if (!inThisHousehold) {
-    const [user] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.id, userId));
     await db.insert(householdMembersTable).values({
       householdId: household.id,
       userId,
