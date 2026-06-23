@@ -46,7 +46,7 @@
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`.
-- Remote GitHub Actions runs `28063020164` and `28064200143` failed before job start with the account billing/spending-limit annotation, so local verification remains the authoritative evidence for these slices.
+- Remote GitHub Actions runs `28063020164`, `28064200143`, and `28065179874` failed before job start with the account billing/spending-limit annotation, so local verification remains the authoritative evidence for these slices.
 - `node node_modules/typescript/bin/tsc -p lib/api-client-react/tsconfig.json --noEmit` and `node node_modules/typescript/bin/tsc -p lib/api-zod/tsconfig.json --noEmit` could not run as direct package checks in this Windows runtime because workspace package symlinks are not materialized without pnpm; failures were missing `@tanstack/react-query`/`zod`, not edited-code diagnostics.
 - `node artifacts/api-server/build.mjs` could not run directly because `esbuild` is not resolvable without the pnpm workspace execution layer.
 
