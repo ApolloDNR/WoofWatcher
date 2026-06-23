@@ -366,4 +366,5 @@ Latest local evidence, 2026-06-23:
 - PixelLab asset verification passed with 149 registered assets, 0 missing, and 0 invalid.
 - `git diff --check` passed with only expected Windows line-ending warnings.
 - Expo web export passed by invoking the package-local Expo CLI directly because the local Windows shell does not expose `pnpm`.
+- Remote GitHub Actions run `28063020164` failed before job start with the standing account billing/spending-limit annotation.
 - Direct workspace `tsc` checks for `lib/api-client-react` and `lib/api-zod` and direct `artifacts/api-server/build.mjs` remain environment-limited without the pnpm workspace symlink layer; the observed failures were missing package resolution for existing dependencies (`@tanstack/react-query`, `zod`, `esbuild`), not route-contract assertion failures.
