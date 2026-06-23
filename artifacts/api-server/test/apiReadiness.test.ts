@@ -164,3 +164,86 @@ test("care entry write errors stay documented and typed", () => {
     "React API delete mutation error alias must preserve invalid and not-found error bodies",
   );
 });
+
+test("household provisioning and auth errors stay documented and typed", () => {
+  const route = read("artifacts/api-server/src/routes/household.ts");
+  const auth = read("artifacts/api-server/src/lib/auth.ts");
+  const household = read("artifacts/api-server/src/lib/household.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+
+  const getMeBlock = section(
+    openapi,
+    "    get:\n      operationId: getMe",
+    "    patch:\n      operationId: updateMe",
+  );
+  const updateMeBlock = section(
+    openapi,
+    "    patch:\n      operationId: updateMe",
+    "  /household:",
+  );
+  const updateHouseholdBlock = section(
+    openapi,
+    "    patch:\n      operationId: updateHousehold",
+    "  /household/join:",
+  );
+  const joinHouseholdBlock = section(
+    openapi,
+    "    post:\n      operationId: joinHousehold",
+    "  /care-state:",
+  );
+
+  assert.match(auth, /res\.status\(401\)\.json\(\{ error: "Unauthorized" \}\)/, "requireAuth should return ApiError-shaped 401 bodies");
+  assert.match(household, /default household \+ membership \+ care state/, "household provisioning should keep first-login care-state bootstrap documented");
+  assert.match(route, /router\.get\("\/me", requireAuth/, "getMe must stay authenticated");
+  assert.match(route, /router\.patch\("\/me", requireAuth/, "updateMe must stay authenticated");
+  assert.match(route, /router\.patch\("\/household", requireAuth/, "updateHousehold must stay authenticated");
+  assert.match(route, /router\.post\("\/household\/join", requireAuth/, "joinHousehold must stay authenticated");
+  assert.match(route, /UpdateMeBody\.safeParse/, "updateMe should still validate profile payloads");
+  assert.match(route, /UpdateHouseholdBody\.safeParse/, "updateHousehold should still validate household payloads");
+  assert.match(route, /JoinHouseholdBody\.safeParse/, "joinHousehold should still validate invite payloads");
+  assert.match(route, /Invite code not found/, "joinHousehold must keep the owner-readable missing-invite error");
+  assert.match(getMeBlock, /"401":/, "OpenAPI must document unauthenticated getMe errors");
+  assert.match(updateMeBlock, /"400":/, "OpenAPI must document invalid profile update payload errors");
+  assert.match(updateMeBlock, /"401":/, "OpenAPI must document unauthenticated profile update errors");
+  assert.match(updateHouseholdBlock, /"400":/, "OpenAPI must document invalid household update payload errors");
+  assert.match(updateHouseholdBlock, /"401":/, "OpenAPI must document unauthenticated household update errors");
+  assert.match(joinHouseholdBlock, /"400":/, "OpenAPI must document invalid invite payload errors");
+  assert.match(joinHouseholdBlock, /"401":/, "OpenAPI must document unauthenticated join errors");
+  assert.match(joinHouseholdBlock, /"404":/, "OpenAPI must keep documenting missing invite errors");
+  assert.match(
+    reactClient,
+    /getGetMeQueryOptions = <TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<ApiError>>/,
+    "React API getMe query must type auth errors as ApiError",
+  );
+  assert.match(
+    reactClient,
+    /GetMeQueryError = ErrorType<ApiError>/,
+    "React API getMe query error alias must expose auth error bodies",
+  );
+  assert.match(
+    reactClient,
+    /getUpdateMeMutationOptions = <TError = ErrorType<ApiError>/,
+    "React API updateMe mutation must type validation/auth errors as ApiError",
+  );
+  assert.match(
+    reactClient,
+    /UpdateMeMutationError = ErrorType<ApiError>/,
+    "React API updateMe mutation error alias must expose validation/auth error bodies",
+  );
+  assert.match(
+    reactClient,
+    /getUpdateHouseholdMutationOptions = <TError = ErrorType<ApiError>/,
+    "React API updateHousehold mutation must type validation/auth errors as ApiError",
+  );
+  assert.match(
+    reactClient,
+    /UpdateHouseholdMutationError = ErrorType<ApiError>/,
+    "React API updateHousehold mutation error alias must expose validation/auth error bodies",
+  );
+  assert.match(
+    reactClient,
+    /JoinHouseholdMutationError = ErrorType<ApiError>/,
+    "React API joinHousehold mutation error alias must preserve invalid/auth/not-found error bodies",
+  );
+});

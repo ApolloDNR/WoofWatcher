@@ -612,7 +612,7 @@ export const getGetMeQueryKey = () => {
     }
 
 
-export const getGetMeQueryOptions = <TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetMeQueryOptions = <TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -631,7 +631,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>
-export type GetMeQueryError = ErrorType<unknown>
+export type GetMeQueryError = ErrorType<ApiError>
 
 
 /**
@@ -682,7 +682,7 @@ export const updateMe = async (meUpdate: MeUpdate, options?: RequestInit): Promi
 
 
 
-export const getUpdateMeMutationOptions = <TError = ErrorType<unknown>,
+export const getUpdateMeMutationOptions = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMe>>, TError,{data: BodyType<MeUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateMe>>, TError,{data: BodyType<MeUpdate>}, TContext> => {
 
@@ -711,7 +711,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateMeMutationResult = NonNullable<Awaited<ReturnType<typeof updateMe>>>
     export type UpdateMeMutationBody = BodyType<MeUpdate>
-    export type UpdateMeMutationError = ErrorType<unknown>
+    export type UpdateMeMutationError = ErrorType<ApiError>
 
     /**
  * @summary Update the current user's profile / display name
@@ -753,7 +753,7 @@ export const updateHousehold = async (householdUpdate: HouseholdUpdate, options?
 
 
 
-export const getUpdateHouseholdMutationOptions = <TError = ErrorType<unknown>,
+export const getUpdateHouseholdMutationOptions = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHousehold>>, TError,{data: BodyType<HouseholdUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateHousehold>>, TError,{data: BodyType<HouseholdUpdate>}, TContext> => {
 
@@ -782,7 +782,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateHouseholdMutationResult = NonNullable<Awaited<ReturnType<typeof updateHousehold>>>
     export type UpdateHouseholdMutationBody = BodyType<HouseholdUpdate>
-    export type UpdateHouseholdMutationError = ErrorType<unknown>
+    export type UpdateHouseholdMutationError = ErrorType<ApiError>
 
     /**
  * @summary Rename the current household

@@ -21,6 +21,7 @@
 - Closed `/care-entries?limit=` contract drift: the API route already accepts `limit`, and OpenAPI plus React/Zod generated clients now expose it with the documented 1-500 range and 250 default.
 - Closed `PUT /care-state` write-error contract drift: the route already returns `400` validation errors, `404` missing-document errors, and `409` optimistic conflict envelopes, and OpenAPI plus the React generated mutation now document/type those shapes as `ApiError | CareStateEnvelope`.
 - Closed care-entry write-error contract drift: create/update/delete routes already validate bodies or ids, and OpenAPI plus the React generated create mutation now expose those invalid-write errors as `ApiError` instead of leaving create errors as `unknown`.
+- Closed household provisioning/auth contract drift: `/me`, profile update, household rename, and join-household routes already require auth and validate payloads, and OpenAPI plus generated React household hooks now document/type `401`, `400`, and missing-invite `404` errors as `ApiError`.
 
 ## Verification
 
@@ -38,6 +39,8 @@
 - `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 364 passing after the care-state write-error contract fix.
 - RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing create-care-entry `400` OpenAPI coverage, then passed with 5 tests after care-entry write contract updates.
 - `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 365 passing after the care-entry write-error contract fix.
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing `getMe` `401` OpenAPI coverage, then passed with 6 tests after household contract updates.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 366 passing after the household provisioning/auth contract fix.
 - `node --check lib/api-client-react/src/generated/api.ts` and `node --check lib/api-zod/src/generated/api.ts` - passing syntax checks.
 - `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.

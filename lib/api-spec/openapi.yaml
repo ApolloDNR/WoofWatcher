@@ -240,6 +240,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Me"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     patch:
       operationId: updateMe
       tags: [household]
@@ -257,6 +263,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Me"
+        "400":
+          description: Invalid profile update payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /household:
     patch:
       operationId: updateHousehold
@@ -275,6 +293,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Me"
+        "400":
+          description: Invalid household update payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /household/join:
     post:
       operationId: joinHousehold
@@ -293,6 +323,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Me"
+        "400":
+          description: Invalid invite payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Invite code not found
           content:
