@@ -410,3 +410,16 @@ Latest local evidence, 2026-06-23:
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.
 - Direct `node artifacts/api-server/build.mjs` remains environment-limited in this Windows shell because `esbuild` is present in pnpm's store but not resolvable without the pnpm workspace symlink/runner layer. The failure is `ERR_MODULE_NOT_FOUND: Cannot find package 'esbuild'`, not an edited route-contract assertion failure.
 - Remote GitHub Actions run `28074177667` for commit `fa26845` failed before job execution with job `83114878625`, `steps: []`, `log not found: 83114878625`, and the billing/spending-limit annotation. Local verification remains the current evidence for this slice until GitHub billing/platform execution is fixed.
+
+Latest local evidence, 2026-06-24:
+
+- API readiness and behavior tests now cover durable household audit readiness: `household_audit_events` schema, provider-durable audit storage status, invite/member/Access Pass lifecycle states, Access Pass future-expiry validation, route-level audit inserts, and generated OpenAPI/Zod/React contract typing.
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/householdAccessPass.test.ts artifacts/api-server/test/apiReadiness.test.ts` first failed on the missing durable audit schema and helper import/runtime surface, then passed with 14 tests after the schema, helper, route, and generated contract updates.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 374 passing after the durable household audit/Access Pass expiry slice.
+- `NODE_PATH=artifacts/woofwatcher-mobile/node_modules node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
+- `node --check artifacts/api-server/src/lib/household-access-pass.ts`, `node --check artifacts/api-server/src/routes/household.ts`, `node --check lib/db/src/schema/householdAuditEvents.ts`, `node --check lib/api-zod/src/generated/api.ts`, and `node --check lib/api-client-react/src/generated/api.schemas.ts` - passing syntax checks.
+- `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with only expected Windows line-ending warnings.
+- Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.
+- Direct `node node_modules/typescript/bin/tsc -p lib/db/tsconfig.json --noEmit` remains environment-limited in this Windows shell because local Node type definitions are not resolvable; the failure is `TS2688: Cannot find type definition file for 'node'`.
+- Direct `node artifacts/api-server/build.mjs` remains environment-limited in this Windows shell because `esbuild` is not resolvable without the pnpm workspace symlink/runner layer. The failure is still `ERR_MODULE_NOT_FOUND: Cannot find package 'esbuild'`, not an edited route-contract assertion failure.

@@ -718,3 +718,75 @@ test("household invitations and Access Pass mutations emit typed audit contracts
     "React revocation mutation must expose ApiError bodies",
   );
 });
+
+test("household invite and Access Pass audit storage has provider-ready lifecycle contracts", () => {
+  const householdRoute = read("artifacts/api-server/src/routes/household.ts");
+  const accessPassPolicy = read("artifacts/api-server/src/lib/household-access-pass.ts");
+  const auditSchema = read("lib/db/src/schema/householdAuditEvents.ts");
+  const schemaIndex = read("lib/db/src/schema/index.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const zodApi = read("lib/api-zod/src/generated/api.ts");
+  const reactSchemas = read("lib/api-client-react/src/generated/api.schemas.ts");
+
+  assert.match(auditSchema, /pgTable\("household_audit_events"/, "database schema must define durable household audit events");
+  assert.match(auditSchema, /lifecycleState:\s*text\("lifecycle_state"\)/, "audit rows must store invite/access-pass lifecycle state");
+  assert.match(auditSchema, /expiresAt:\s*timestamp\("expires_at"/, "audit rows must store Access Pass expiration metadata");
+  assert.match(auditSchema, /metadata:\s*jsonb\("metadata"\)/, "audit rows must preserve provider/export metadata");
+  assert.match(schemaIndex, /export \* from "\.\/householdAuditEvents"/, "database schema index must export household audit events");
+
+  assert.match(
+    accessPassPolicy,
+    /assertAccessPassExpiryAllowed/,
+    "Access Pass helper policy must reject expired helper windows before activation",
+  );
+  assert.match(
+    accessPassPolicy,
+    /buildHouseholdAuditInsert/,
+    "Access Pass helper policy must map audit events into provider-durable insert records",
+  );
+  assert.match(
+    accessPassPolicy,
+    /provider-durable/,
+    "audit events should no longer be response-only once the durable schema exists",
+  );
+  assert.match(
+    accessPassPolicy,
+    /access-pass-expired/,
+    "Access Pass lifecycle states must include expired access windows",
+  );
+
+  assert.match(
+    householdRoute,
+    /householdAuditEventsTable/,
+    "household routes must import the durable household audit table",
+  );
+  assert.match(
+    householdRoute,
+    /db\.insert\(householdAuditEventsTable\)\.values\(buildHouseholdAuditInsert\(auditEvent\)\)/,
+    "household mutations must persist audit events before returning them",
+  );
+  assert.match(
+    householdRoute,
+    /assertAccessPassExpiryAllowed\(parsed\.data\.expiresAt/,
+    "Access Pass activation must enforce future expiration windows",
+  );
+
+  assert.match(openapi, /lifecycleState:/, "OpenAPI must expose household audit lifecycle state");
+  assert.match(openapi, /provider-durable/, "OpenAPI must expose durable audit storage status");
+  assert.match(openapi, /access-pass-expired/, "OpenAPI must expose expired Access Pass lifecycle state");
+  assert.match(
+    zodApi,
+    /"lifecycleState": zod\.enum\(\["invite-accepted", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"\]\)/,
+    "Zod must validate household audit lifecycle states",
+  );
+  assert.match(
+    zodApi,
+    /"storage": zod\.enum\(\["provider-durable"\]\)/,
+    "Zod must no longer allow response-only audit storage for provider-ready household mutations",
+  );
+  assert.match(
+    reactSchemas,
+    /export type HouseholdAuditLifecycleState = "invite-accepted" \| "member-updated" \| "member-revoked" \| "access-pass-active" \| "access-pass-revoked" \| "access-pass-expired"/,
+    "React schemas must expose typed household audit lifecycle states",
+  );
+});

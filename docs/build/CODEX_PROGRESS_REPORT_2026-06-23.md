@@ -74,9 +74,9 @@
 ## Still Not Done
 
 - Real iOS and Android device/simulator screenshots still need to be captured and attached in `/care-twin-qa`.
-- Provider launch setup still requires real Clerk, Supabase/Postgres, storage, AI, payments, push, store-account, durable audit storage, Access Pass expiry enforcement, and deletion gates before public release.
+- Provider launch setup still requires real Clerk, Supabase/Postgres, storage, AI, payments, push, store-account, provider migration/RLS/retention rules for durable audit rows, invite approval workflows, scheduled Access Pass expiry cleanup, and deletion gates before public release.
 - GitHub Actions remote CI has recently failed before job execution due to the account billing/spending-limit blocker; latest checked run is `28074177667` / job `83114878625` with zero steps and `log not found`.
 
 ## Next Best Slice
 
-When device QA is available, run the Home Mission Deck QA surface on iOS and Android using the in-app setup, numbered device steps, pass criteria, and Needs tune escalation, attach screenshots, share the QA report, and tune the first visible phone-size issue. While device QA remains unavailable, continue provider-backed readiness with durable audit storage, Access Pass expiry enforcement, invite lifecycle states, and household/Access Pass integration tests.
+When device QA is available, run the Home Mission Deck QA surface on iOS and Android using the in-app setup, numbered device steps, pass criteria, and Needs tune escalation, attach screenshots, share the QA report, and tune the first visible phone-size issue. While device QA remains unavailable, continue provider-backed readiness with invite approval states, audit review/admin APIs, scheduled Access Pass expiry cleanup, provider migration/RLS notes, and household/Access Pass integration tests.

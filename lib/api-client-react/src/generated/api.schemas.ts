@@ -136,9 +136,12 @@ export interface Me {
 
 export type HouseholdAuditAction = "invitation-accepted" | "member-role-updated" | "member-revoked" | "access-pass-activated" | "access-pass-revoked";
 
+export type HouseholdAuditLifecycleState = "invite-accepted" | "member-updated" | "member-revoked" | "access-pass-active" | "access-pass-revoked" | "access-pass-expired";
+
 export interface HouseholdAuditEvent {
   id: string;
   action: HouseholdAuditAction;
+  lifecycleState: HouseholdAuditLifecycleState;
   actorUserId: string;
   householdId: string;
   /** @nullable */
@@ -156,7 +159,7 @@ export interface HouseholdAuditEvent {
   /** @nullable */
   expiresAt?: string | null;
   createdAt: string;
-  storage: "response-only";
+  storage: "provider-durable";
   boundary: string;
 }
 

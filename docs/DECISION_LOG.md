@@ -1461,6 +1461,24 @@ Owner: Codex.
 
 Revisit trigger: Supabase/Postgres provider rules, invite lifecycle storage, Access Pass expiry, or account-action audit retention become approved implementation work.
 
+### 2026-06-24: Household Audit Rows Can Be Provider-Durable Before Full Invite Workflow
+
+Decision: household invite acceptance, member role changes, member revocation, and Access Pass activation/revocation may now write provider-durable audit rows through the `household_audit_events` schema, while full invite approval workflow, audit review APIs, scheduled expiry cleanup, provider RLS, retention, export, and deletion policy remain launch gates.
+
+Reason: WoofWatcher's household trust layer should not rely on response-only metadata once helper role mutations exist. Persisting account-action evidence makes Access Passes, sitter/trainer/vet-viewer changes, and future owner review flows safer, but it would be dishonest to claim production audit compliance before provider migration and policy approvals are complete.
+
+Consequences:
+
+- `household_audit_events` stores action, lifecycle state, actor, target member/user, role transition, note/reason, expiry metadata, created time, and provider/export metadata.
+- Household join/update/revoke and Access Pass activation/revocation routes insert durable audit rows before returning typed audit responses.
+- Access Pass activation rejects invalid or past expiration values before helper access changes.
+- OpenAPI, Zod, and React generated schemas expose provider-durable audit storage plus lifecycle states.
+- Production still needs migrations, RLS/provider access rules, audit review APIs, scheduled expiry cleanup, retention/export/deletion policy, and legal/privacy review.
+
+Owner: Codex.
+
+Revisit trigger: provider migrations/RLS are approved, audit review APIs are built, or Access Pass expiry cleanup moves from readiness into production enforcement.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

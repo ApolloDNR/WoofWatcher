@@ -1,6 +1,12 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
-import { db, householdsTable, householdMembersTable, usersTable } from "@workspace/db";
+import {
+  db,
+  householdsTable,
+  householdAuditEventsTable,
+  householdMembersTable,
+  usersTable,
+} from "@workspace/db";
 import {
   GetMeResponse,
   JoinHouseholdResponse,
@@ -28,7 +34,9 @@ import {
 } from "../lib/household-authorization";
 import {
   assertAccessPassMutationAllowed,
+  assertAccessPassExpiryAllowed,
   buildHouseholdAuditEvent,
+  buildHouseholdAuditInsert,
   normalizeAccessPassRole,
 } from "../lib/household-access-pass";
 
@@ -128,6 +136,7 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
       ? "Existing household member opened an invite code."
       : "Invite code accepted and caregiver membership created.",
   });
+  await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
 
   res.json(
     JoinHouseholdResponse.parse({
@@ -215,6 +224,7 @@ router.patch("/household/members/:id", requireAuth, async (req, res): Promise<vo
     nextRole,
     reason: policy.reason,
   });
+  await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
 
   res.json(
     UpdateHouseholdMemberResponse.parse({
@@ -273,6 +283,7 @@ router.delete(
       targetRole: normalizeHouseholdMemberRole(target.role),
       reason: policy.reason,
     });
+    await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
 
     await db
       .delete(householdMembersTable)
@@ -319,6 +330,12 @@ router.post("/household/access-passes/activate", requireAuth, async (req, res): 
   }
 
   const nextRole = normalizeAccessPassRole(parsed.data.role);
+  const expiryPolicy = assertAccessPassExpiryAllowed(parsed.data.expiresAt);
+  if (!expiryPolicy.allowed) {
+    res.status(400).json({ error: expiryPolicy.reason });
+    return;
+  }
+
   const policy = assertAccessPassMutationAllowed({
     actorRole: actor?.role,
     targetRole: target.role,
@@ -356,8 +373,9 @@ router.post("/household/access-passes/activate", requireAuth, async (req, res): 
     nextRole,
     reason: policy.reason,
     note: parsed.data.note,
-    expiresAt: parsed.data.expiresAt,
+    expiresAt: expiryPolicy.expiresAt,
   });
+  await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
 
   res.json(
     HouseholdAccessPassMutationResponse.parse({
@@ -367,7 +385,7 @@ router.post("/household/access-passes/activate", requireAuth, async (req, res): 
         userId: target.userId,
         role: nextRole,
         status: "active",
-        expiresAt: parsed.data.expiresAt ?? null,
+        expiresAt: expiryPolicy.expiresAt,
         note: parsed.data.note ?? null,
       },
       auditEvent,
@@ -421,6 +439,7 @@ router.post("/household/access-passes/revoke", requireAuth, async (req, res): Pr
     targetRole: normalizeHouseholdMemberRole(target.role),
     reason: parsed.data.reason ?? policy.reason,
   });
+  await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
 
   await db
     .delete(householdMembersTable)

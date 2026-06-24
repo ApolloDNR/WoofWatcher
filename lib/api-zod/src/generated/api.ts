@@ -149,6 +149,7 @@ export const GetMeResponse = zod.object({
 export const HouseholdAuditEvent = zod.object({
   "id": zod.string(),
   "action": zod.enum(["invitation-accepted", "member-role-updated", "member-revoked", "access-pass-activated", "access-pass-revoked"]),
+  "lifecycleState": zod.enum(["invite-accepted", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"]),
   "actorUserId": zod.string(),
   "householdId": zod.string(),
   "targetMemberId": zod.string().nullish(),
@@ -159,7 +160,7 @@ export const HouseholdAuditEvent = zod.object({
   "note": zod.string().nullish(),
   "expiresAt": zod.string().nullish(),
   "createdAt": zod.string(),
-  "storage": zod.literal("response-only"),
+  "storage": zod.enum(["provider-durable"]),
   "boundary": zod.string()
 })
 

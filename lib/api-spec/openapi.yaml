@@ -1024,6 +1024,15 @@ components:
             - member-revoked
             - access-pass-activated
             - access-pass-revoked
+        lifecycleState:
+          type: string
+          enum:
+            - invite-accepted
+            - member-updated
+            - member-revoked
+            - access-pass-active
+            - access-pass-revoked
+            - access-pass-expired
         actorUserId:
           type: string
         householdId:
@@ -1047,12 +1056,13 @@ components:
           format: date-time
         storage:
           type: string
-          enum: [response-only]
+          enum: [provider-durable]
         boundary:
           type: string
       required:
         - id
         - action
+        - lifecycleState
         - actorUserId
         - householdId
         - createdAt
