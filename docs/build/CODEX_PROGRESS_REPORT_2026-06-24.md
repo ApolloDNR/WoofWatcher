@@ -30,6 +30,7 @@
 - `node node_modules/typescript/bin/tsc -p lib/db/tsconfig.json --noEmit` failed because this shell cannot resolve local Node type definitions: `TS2688: Cannot find type definition file for 'node'`.
 - `node artifacts/api-server/build.mjs` failed because this shell cannot resolve `esbuild` without the pnpm workspace runner/symlink layer: `ERR_MODULE_NOT_FOUND: Cannot find package 'esbuild'`.
 - These are the same local dependency-runner limitations seen in prior backend slices, not evidence of a route/schema test failure.
+- Remote GitHub Actions run `28075849741` for commit `c67364e` failed before job execution with job `83119832168`, zero steps, `log not found: 83119832168`, and GitHub's billing/spending-limit annotation.
 
 ## Still Not Done
 
@@ -37,7 +38,7 @@
 - The durable audit table still needs provider migration execution, RLS/provider access rules, retention/export/deletion policy, and production approval before public launch.
 - Invite approval lifecycle storage and admin/audit review APIs are not complete yet.
 - Scheduled or request-time cleanup for expired Access Pass helper roles is not complete yet.
-- GitHub Actions remote CI is still blocked by the account billing/spending-limit issue until Apollo fixes GitHub billing/platform execution.
+- GitHub Actions remote CI is still blocked by the account billing/spending-limit issue until Apollo fixes GitHub billing/platform execution; latest checked run is `28075849741` / job `83119832168`.
 
 ## Next Best Slice
 
