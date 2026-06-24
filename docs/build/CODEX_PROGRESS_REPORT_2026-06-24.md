@@ -36,7 +36,7 @@
 
 - Real iOS and Android device/simulator screenshots still need to be captured and attached in `/care-twin-qa`.
 - The durable audit table still needs provider migration execution, RLS/provider access rules, retention/export/deletion policy, and production approval before public launch.
-- Invite approval lifecycle storage is not complete yet.
+- Provider-backed invite delivery, UI wiring, retention policy, and expired-invite cleanup are not complete yet.
 - Scheduled or request-time cleanup for expired Access Pass helper roles is not complete yet.
 - GitHub Actions remote CI is still blocked by the account billing/spending-limit issue until Apollo fixes GitHub billing/platform execution; latest checked run is `28078084503` / job `83126533628`.
 
@@ -113,3 +113,27 @@ If device QA remains unavailable, continue provider readiness with invite approv
 - Invite approval lifecycle storage is still not complete.
 - Expired helper memberships are blocked at request time, but scheduled cleanup or an owner-facing cleanup UI remains a separate production polish task.
 - Real iOS and Android device/simulator screenshot QA remains the highest visual release blocker.
+
+## Completed - Household Invitation Lifecycle Follow-Up
+
+- Added durable `household_invitations` schema readiness for provider-backed sharing.
+- Added owner/admin `GET /household/invitations`, `POST /household/invitations`, and `POST /household/invitations/{id}/revoke` routes with authentication, active-household scoping, safe filters, canonical role validation, future-expiry validation, and typed responses.
+- Added lifecycle support for `pending-approval`, `approved`, `accepted`, `revoked`, `expired`, and `rejected` invitations.
+- Updated `/household/join` to prefer durable invitation rows, block pending/revoked/expired/rejected/accepted invites, update runtime-expired rows, apply invitation roles to new memberships, and mark accepted invitations without removing the legacy invite-code fallback.
+- Added invitation-created and invitation-revoked audit lifecycle states so invite creation and revocation can join the existing household trust trail.
+- Updated OpenAPI, generated Zod validators/types, generated React schemas/hooks, and API readiness coverage for the full invite list/create/revoke/join lifecycle.
+
+## Verification - Household Invitation Lifecycle Follow-Up
+
+- RED/GREEN: `node --experimental-strip-types --test artifacts\api-server\test\householdInvitation.test.ts artifacts\api-server\test\apiReadiness.test.ts` first failed on missing `/household/invitations` OpenAPI coverage, then passed with 17 tests after implementation.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 381 passing.
+- `node --check` passed for edited household invitation helpers, household routes, household access-pass helpers, DB schema, generated Zod files, and generated React client files.
+- `git diff --check` - passing with only expected Windows line-ending warnings.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node artifacts\woofwatcher-mobile\scripts\verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
+- Package-local Expo web export - passing, emitted `.expo-smoke`; the generated folder was removed after verification.
+
+## Environment-Limited Checks - Household Invitation Lifecycle Follow-Up
+
+- Running the mobile TypeScript command from the repo root still hits the known Windows workspace dependency-resolution issue for `@tanstack/react-query`; the same command passes from the Expo app directory where the package-local dependencies resolve.
+- Provider migration execution, Supabase RLS/policy approval, invite notification delivery, scheduled expiry cleanup, retention/export/deletion policy, legal/privacy approval, and real iOS/Android screenshots remain launch gates.

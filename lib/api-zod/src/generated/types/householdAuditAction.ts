@@ -7,7 +7,9 @@
  */
 
 export type HouseholdAuditAction =
+  | "invitation-created"
   | "invitation-accepted"
+  | "invitation-revoked"
   | "member-role-updated"
   | "member-revoked"
   | "access-pass-activated"

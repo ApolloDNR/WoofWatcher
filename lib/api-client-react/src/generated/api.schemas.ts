@@ -137,9 +137,9 @@ export interface Me {
   members: Member[];
 }
 
-export type HouseholdAuditAction = "invitation-accepted" | "member-role-updated" | "member-revoked" | "access-pass-activated" | "access-pass-revoked";
+export type HouseholdAuditAction = "invitation-created" | "invitation-accepted" | "invitation-revoked" | "member-role-updated" | "member-revoked" | "access-pass-activated" | "access-pass-revoked";
 
-export type HouseholdAuditLifecycleState = "invite-accepted" | "member-updated" | "member-revoked" | "access-pass-active" | "access-pass-revoked" | "access-pass-expired";
+export type HouseholdAuditLifecycleState = "invite-created" | "invite-accepted" | "invite-revoked" | "member-updated" | "member-revoked" | "access-pass-active" | "access-pass-revoked" | "access-pass-expired";
 
 export interface HouseholdAuditEvent {
   id: string;
@@ -190,6 +190,83 @@ export interface HouseholdAuditEventListResponse {
   limit: number;
   filters: HouseholdAuditEventListFilters;
   boundary: string;
+}
+
+export type HouseholdInvitationLifecycleState = "pending-approval" | "approved" | "accepted" | "revoked" | "expired" | "rejected";
+
+export interface HouseholdInvitation {
+  id: string;
+  householdId: string;
+  inviteCode: string;
+  /** @nullable */
+  invitedEmail?: string | null;
+  /** @nullable */
+  invitedUserId?: string | null;
+  role: string;
+  lifecycleState: HouseholdInvitationLifecycleState;
+  runtimeLifecycleState: HouseholdInvitationLifecycleState;
+  expired: boolean;
+  createdByUserId: string;
+  /** @nullable */
+  approvedByUserId?: string | null;
+  /** @nullable */
+  acceptedByUserId?: string | null;
+  /** @nullable */
+  revokedByUserId?: string | null;
+  /** @nullable */
+  rejectedByUserId?: string | null;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
+  /** @nullable */
+  acceptedAt?: string | null;
+  /** @nullable */
+  revokedAt?: string | null;
+  /** @nullable */
+  rejectedAt?: string | null;
+  createdAt: string;
+  /** @nullable */
+  updatedAt?: string | null;
+  storage: "provider-durable";
+  boundary: string;
+}
+
+export interface ListHouseholdInvitationsParams {
+  limit?: number;
+  lifecycleState?: HouseholdInvitationLifecycleState;
+}
+
+export interface HouseholdInvitationListFilters {
+  lifecycleState?: HouseholdInvitationLifecycleState;
+}
+
+export interface HouseholdInvitationListResponse {
+  invitations: HouseholdInvitation[];
+  limit: number;
+  filters: HouseholdInvitationListFilters;
+  boundary: string;
+}
+
+export interface HouseholdInvitationCreateInput {
+  /** @nullable */
+  invitedEmail?: string | null;
+  role?: string;
+  lifecycleState?: HouseholdInvitationLifecycleState;
+  /** @nullable */
+  expiresAt?: string | null;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface HouseholdInvitationRevokeInput {
+  /** @nullable */
+  reason?: string | null;
+}
+
+export interface HouseholdInvitationMutationResponse {
+  invitation: HouseholdInvitation;
+  auditEvent: HouseholdAuditEvent;
 }
 
 export interface MeUpdate {

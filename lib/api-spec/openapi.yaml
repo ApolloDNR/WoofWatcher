@@ -327,6 +327,145 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /household/invitations:
+    get:
+      operationId: listHouseholdInvitations
+      tags: [household]
+      summary: List household invitations
+      description: >-
+        Owner/admin-only review of provider-durable household invitation
+        lifecycle rows scoped to the authenticated active household. Production
+        Supabase migration, RLS, retention, export/deletion policy, and
+        notification delivery remain launch approval gates.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: lifecycleState
+          in: query
+          schema:
+            $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
+      responses:
+        "200":
+          description: Durable household invitation review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdInvitationListResponse"
+        "400":
+          description: Invalid invitation review query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Only owners can review invitations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: createHouseholdInvitation
+      tags: [household]
+      summary: Create a household invitation
+      description: >-
+        Owner/admin-only creation of provider-durable invitation rows. New
+        invitations may start approved or pending owner approval, and the join
+        flow only creates caregiver memberships after the row is approved and
+        unexpired.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HouseholdInvitationCreateInput"
+      responses:
+        "201":
+          description: Household invitation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdInvitationMutationResponse"
+        "400":
+          description: Invalid invitation payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Only owners can create invitations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /household/invitations/{id}/revoke:
+    post:
+      operationId: revokeHouseholdInvitation
+      tags: [household]
+      summary: Revoke a household invitation
+      description: >-
+        Owner/admin-only revocation of a provider-durable invitation before or
+        after acceptance. The returned invitation reflects the revoked lifecycle
+        state and includes the household audit event for owner review.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HouseholdInvitationRevokeInput"
+      responses:
+        "200":
+          description: Household invitation revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdInvitationMutationResponse"
+        "400":
+          description: Invalid invitation revoke payload or id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Only owners can revoke invitations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Household invitation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /household/join:
     post:
       operationId: joinHousehold
@@ -577,7 +716,9 @@ paths:
           schema:
             type: string
             enum:
+              - invitation-created
               - invitation-accepted
+              - invitation-revoked
               - member-role-updated
               - member-revoked
               - access-pass-activated
@@ -587,7 +728,9 @@ paths:
           schema:
             type: string
             enum:
+              - invite-created
               - invite-accepted
+              - invite-revoked
               - member-updated
               - member-revoked
               - access-pass-active
@@ -1089,7 +1232,9 @@ components:
         action:
           type: string
           enum:
+            - invitation-created
             - invitation-accepted
+            - invitation-revoked
             - member-role-updated
             - member-revoked
             - access-pass-activated
@@ -1097,7 +1242,9 @@ components:
         lifecycleState:
           type: string
           enum:
+            - invite-created
             - invite-accepted
+            - invite-revoked
             - member-updated
             - member-revoked
             - access-pass-active
@@ -1162,7 +1309,9 @@ components:
         action:
           type: string
           enum:
+            - invitation-created
             - invitation-accepted
+            - invitation-revoked
             - member-role-updated
             - member-revoked
             - access-pass-activated
@@ -1170,7 +1319,9 @@ components:
         lifecycleState:
           type: string
           enum:
+            - invite-created
             - invite-accepted
+            - invite-revoked
             - member-updated
             - member-revoked
             - access-pass-active
@@ -1194,6 +1345,136 @@ components:
         - limit
         - filters
         - boundary
+    HouseholdInvitationLifecycleState:
+      type: string
+      enum:
+        - pending-approval
+        - approved
+        - accepted
+        - revoked
+        - expired
+        - rejected
+    HouseholdInvitation:
+      type: object
+      properties:
+        id:
+          type: string
+        householdId:
+          type: string
+        inviteCode:
+          type: string
+        invitedEmail:
+          type: ["string", "null"]
+        invitedUserId:
+          type: ["string", "null"]
+        role:
+          type: string
+        lifecycleState:
+          $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
+        runtimeLifecycleState:
+          $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
+        expired:
+          type: boolean
+        createdByUserId:
+          type: string
+        approvedByUserId:
+          type: ["string", "null"]
+        acceptedByUserId:
+          type: ["string", "null"]
+        revokedByUserId:
+          type: ["string", "null"]
+        rejectedByUserId:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        acceptedAt:
+          type: ["string", "null"]
+          format: date-time
+        revokedAt:
+          type: ["string", "null"]
+          format: date-time
+        rejectedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: ["string", "null"]
+          format: date-time
+        storage:
+          type: string
+          enum: [provider-durable]
+        boundary:
+          type: string
+      required:
+        - id
+        - householdId
+        - inviteCode
+        - role
+        - lifecycleState
+        - runtimeLifecycleState
+        - expired
+        - createdByUserId
+        - createdAt
+        - storage
+        - boundary
+    HouseholdInvitationListFilters:
+      type: object
+      properties:
+        lifecycleState:
+          $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
+    HouseholdInvitationListResponse:
+      type: object
+      properties:
+        invitations:
+          type: array
+          items:
+            $ref: "#/components/schemas/HouseholdInvitation"
+        limit:
+          type: integer
+        filters:
+          $ref: "#/components/schemas/HouseholdInvitationListFilters"
+        boundary:
+          type: string
+      required:
+        - invitations
+        - limit
+        - filters
+        - boundary
+    HouseholdInvitationCreateInput:
+      type: object
+      properties:
+        invitedEmail:
+          type: ["string", "null"]
+          format: email
+        role:
+          type: string
+        lifecycleState:
+          $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        note:
+          type: ["string", "null"]
+    HouseholdInvitationRevokeInput:
+      type: object
+      properties:
+        reason:
+          type: ["string", "null"]
+    HouseholdInvitationMutationResponse:
+      type: object
+      properties:
+        invitation:
+          $ref: "#/components/schemas/HouseholdInvitation"
+        auditEvent:
+          $ref: "#/components/schemas/HouseholdAuditEvent"
+      required:
+        - invitation
+        - auditEvent
     MeUpdate:
       type: object
       properties:

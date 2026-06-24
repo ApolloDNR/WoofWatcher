@@ -7,7 +7,9 @@
  */
 
 export type HouseholdAuditLifecycleState =
+  | "invite-created"
   | "invite-accepted"
+  | "invite-revoked"
   | "member-updated"
   | "member-revoked"
   | "access-pass-active"

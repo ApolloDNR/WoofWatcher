@@ -448,3 +448,14 @@ Latest local evidence, 2026-06-24:
 - Syntax checks passed for edited API helpers/routes, generated member schemas, and the household member DB schema.
 - `git diff --check` - passing with only expected Windows line-ending warnings.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.
+
+Latest local evidence, 2026-06-24:
+
+- API readiness and behavior tests now cover durable household invitation lifecycle readiness: `household_invitations` schema, owner/admin invite list/create/revoke routes, safe lifecycle filters, canonical role validation, future-expiry validation, invitation-created/revoked audit events, and durable invite acceptance checks in `/household/join`.
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/householdInvitation.test.ts artifacts/api-server/test/apiReadiness.test.ts` first failed on missing `/household/invitations` OpenAPI coverage, then passed with 17 tests after implementation.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 381 passing after the durable household invitation lifecycle slice.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules/typescript/bin/tsc -p tsconfig.json --noEmit` - passing.
+- `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
+- Syntax checks passed for edited API helpers/routes, generated invitation schemas/hooks/types, generated audit enums, and the household invitation DB schema.
+- `git diff --check` - passing with only expected Windows line-ending warnings.
+- Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.

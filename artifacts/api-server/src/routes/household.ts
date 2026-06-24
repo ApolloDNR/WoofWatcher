@@ -1,9 +1,11 @@
+import { randomBytes } from "node:crypto";
 import { Router, type IRouter } from "express";
 import { and, desc, eq } from "drizzle-orm";
 import {
   db,
   householdsTable,
   householdAuditEventsTable,
+  householdInvitationsTable,
   householdMembersTable,
   usersTable,
 } from "@workspace/db";
@@ -23,6 +25,12 @@ import {
   HouseholdAccessPassMutationResponse,
   ListHouseholdAuditEventsQueryParams,
   ListHouseholdAuditEventsResponse,
+  ListHouseholdInvitationsQueryParams,
+  ListHouseholdInvitationsResponse,
+  CreateHouseholdInvitationBody,
+  HouseholdInvitationMutationResponse,
+  RevokeHouseholdInvitationParams,
+  RevokeHouseholdInvitationBody,
 } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
 import {
@@ -44,8 +52,44 @@ import {
   normalizeAccessPassRole,
   isAccessPassHelperRole,
 } from "../lib/household-access-pass";
+import {
+  HOUSEHOLD_INVITATION_BOUNDARY,
+  assertHouseholdInvitationAcceptAllowed,
+  buildHouseholdInvitationView,
+  deriveHouseholdInvitationRuntimeStatus,
+  normalizeHouseholdInvitationExpiry,
+  normalizeHouseholdInvitationLifecycleState,
+  normalizeHouseholdInvitationListQuery,
+} from "../lib/household-invitations";
 
 const router: IRouter = Router();
+
+const INVITATION_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function makeInvitationCode(): string {
+  return Array.from(randomBytes(8), (byte) =>
+    INVITATION_CODE_ALPHABET[byte % INVITATION_CODE_ALPHABET.length],
+  ).join("");
+}
+
+async function makeUniqueInvitationCode(): Promise<string> {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const code = makeInvitationCode();
+    const [invitationCollision] = await db
+      .select({ id: householdInvitationsTable.id })
+      .from(householdInvitationsTable)
+      .where(eq(householdInvitationsTable.inviteCode, code))
+      .limit(1);
+    const [legacyCollision] = await db
+      .select({ id: householdsTable.id })
+      .from(householdsTable)
+      .where(eq(householdsTable.inviteCode, code))
+      .limit(1);
+    if (!invitationCollision && !legacyCollision) return code;
+  }
+
+  throw new Error("Unable to create a unique household invitation code.");
+}
 
 router.get("/me", requireAuth, async (req, res): Promise<void> => {
   const userId = getUserId(req);
@@ -89,6 +133,213 @@ router.patch("/household", requireAuth, async (req, res): Promise<void> => {
   res.json(GetMeResponse.parse(await buildMe(userId, householdId)));
 });
 
+router.get("/household/invitations", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const parsed = ListHouseholdInvitationsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { householdId } = await ensureUserAndHousehold(userId);
+  const actor = await getHouseholdMemberAuthz(householdId, userId);
+  if (actor?.role !== "owner") {
+    res.status(403).json({
+      error:
+        "Only an owner/admin can review household invitations before caregiver memberships are created.",
+    });
+    return;
+  }
+
+  const filters = normalizeHouseholdInvitationListQuery(parsed.data);
+  const conditions = [eq(householdInvitationsTable.householdId, householdId)];
+  if (filters.lifecycleState) {
+    conditions.push(eq(householdInvitationsTable.lifecycleState, filters.lifecycleState));
+  }
+
+  const rows = await db
+    .select()
+    .from(householdInvitationsTable)
+    .where(and(...conditions))
+    .orderBy(desc(householdInvitationsTable.createdAt))
+    .limit(filters.limit);
+
+  res.json(
+    ListHouseholdInvitationsResponse.parse({
+      invitations: rows.map((row) => buildHouseholdInvitationView(row)),
+      limit: filters.limit,
+      filters: {
+        ...(filters.lifecycleState
+          ? { lifecycleState: filters.lifecycleState }
+          : {}),
+      },
+      boundary: HOUSEHOLD_INVITATION_BOUNDARY,
+    }),
+  );
+});
+
+router.post("/household/invitations", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const parsed = CreateHouseholdInvitationBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { householdId } = await ensureUserAndHousehold(userId);
+  const actor = await getHouseholdMemberAuthz(householdId, userId);
+  if (actor?.role !== "owner") {
+    res.status(403).json({
+      error:
+        "Only an owner/admin can create household invitations for caregiver access.",
+    });
+    return;
+  }
+
+  const lifecycleState = normalizeHouseholdInvitationLifecycleState(
+    parsed.data.lifecycleState ?? "approved",
+  );
+  if (lifecycleState !== "approved" && lifecycleState !== "pending-approval") {
+    res.status(400).json({
+      error:
+        "New household invitations can only start as approved or pending approval.",
+    });
+    return;
+  }
+
+  const expiresAt = normalizeHouseholdInvitationExpiry(
+    parsed.data.expiresAt ?? null,
+  );
+  if (parsed.data.expiresAt && !expiresAt) {
+    res.status(400).json({ error: "Invitation expiration must be a valid ISO date." });
+    return;
+  }
+  if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
+    res.status(400).json({
+      error: "Invitation expiration must be in the future before sharing.",
+    });
+    return;
+  }
+
+  const requestedRole = normalizeHouseholdMemberRole(parsed.data.role ?? "adult");
+  const role = requestedRole === "owner" ? "adult" : requestedRole;
+  const inviteCode = await makeUniqueInvitationCode();
+  const [invitation] = await db
+    .insert(householdInvitationsTable)
+    .values({
+      householdId,
+      inviteCode,
+      invitedEmail: parsed.data.invitedEmail ?? null,
+      role,
+      lifecycleState,
+      createdByUserId: userId,
+      approvedByUserId: lifecycleState === "approved" ? userId : null,
+      note: parsed.data.note ?? null,
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+      metadata: {
+        boundary: HOUSEHOLD_INVITATION_BOUNDARY,
+        storage: "provider-durable",
+      },
+    })
+    .returning();
+
+  const auditEvent = buildHouseholdAuditEvent({
+    action: "invitation-created",
+    actorUserId: userId,
+    householdId,
+    nextRole: role,
+    reason:
+      lifecycleState === "approved"
+        ? "Owner/admin created an approved household invitation."
+        : "Owner/admin staged an invitation that still needs approval before acceptance.",
+    note: parsed.data.note,
+    expiresAt,
+  });
+  await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
+
+  res.status(201).json(
+    HouseholdInvitationMutationResponse.parse({
+      invitation: buildHouseholdInvitationView(invitation),
+      auditEvent,
+    }),
+  );
+});
+
+router.post("/household/invitations/:id/revoke", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const params = RevokeHouseholdInvitationParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const parsed = RevokeHouseholdInvitationBody.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { householdId } = await ensureUserAndHousehold(userId);
+  const actor = await getHouseholdMemberAuthz(householdId, userId);
+  if (actor?.role !== "owner") {
+    res.status(403).json({
+      error:
+        "Only an owner/admin can revoke household invitations before acceptance.",
+    });
+    return;
+  }
+
+  const [existing] = await db
+    .select()
+    .from(householdInvitationsTable)
+    .where(
+      and(
+        eq(householdInvitationsTable.id, params.data.id),
+        eq(householdInvitationsTable.householdId, householdId),
+      ),
+    )
+    .limit(1);
+
+  if (!existing) {
+    res.status(404).json({ error: "Household invitation not found" });
+    return;
+  }
+
+  const now = new Date();
+  const [invitation] = await db
+    .update(householdInvitationsTable)
+    .set({
+      lifecycleState: "revoked",
+      revokedByUserId: userId,
+      revokedAt: now,
+      note: parsed.data.reason ?? existing.note ?? null,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(householdInvitationsTable.id, params.data.id),
+        eq(householdInvitationsTable.householdId, householdId),
+      ),
+    )
+    .returning();
+
+  const auditEvent = buildHouseholdAuditEvent({
+    action: "invitation-revoked",
+    actorUserId: userId,
+    householdId,
+    targetRole: existing.role,
+    reason: parsed.data.reason ?? "Owner/admin revoked a household invitation.",
+    expiresAt: invitation.expiresAt ? invitation.expiresAt.toISOString() : null,
+  });
+  await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
+
+  res.json(
+    HouseholdInvitationMutationResponse.parse({
+      invitation: buildHouseholdInvitationView(invitation),
+      auditEvent,
+    }),
+  );
+});
+
 router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
   const userId = getUserId(req);
   const parsed = JoinHouseholdBody.safeParse(req.body);
@@ -100,10 +351,54 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
   await ensureUserAndHousehold(userId);
 
   const code = parsed.data.inviteCode.trim().toUpperCase();
-  const [household] = await db
+  const [invitation] = await db
     .select()
-    .from(householdsTable)
-    .where(eq(householdsTable.inviteCode, code));
+    .from(householdInvitationsTable)
+    .where(eq(householdInvitationsTable.inviteCode, code))
+    .limit(1);
+  let household;
+  let acceptedInvitation = null;
+  let nextMemberRole = normalizeHouseholdMemberRole("adult");
+
+  if (invitation) {
+    const runtime = deriveHouseholdInvitationRuntimeStatus({
+      lifecycleState: invitation.lifecycleState,
+      expiresAt: invitation.expiresAt,
+    });
+    const policy = assertHouseholdInvitationAcceptAllowed(runtime);
+    if (!policy.allowed) {
+      if (
+        policy.lifecycleState === "expired" &&
+        invitation.lifecycleState !== "expired"
+      ) {
+        await db
+          .update(householdInvitationsTable)
+          .set({ lifecycleState: "expired", updatedAt: new Date() })
+          .where(eq(householdInvitationsTable.id, invitation.id));
+      }
+      res.status(403).json({
+        error: policy.reason ?? "Invitation is not approved for acceptance.",
+      });
+      return;
+    }
+
+    const [invitedHousehold] = await db
+      .select()
+      .from(householdsTable)
+      .where(eq(householdsTable.id, invitation.householdId))
+      .limit(1);
+    household = invitedHousehold;
+    acceptedInvitation = invitation;
+    nextMemberRole = normalizeHouseholdMemberRole(invitation.role);
+  } else {
+    const [legacyHousehold] = await db
+      .select()
+      .from(householdsTable)
+      .where(eq(householdsTable.inviteCode, code))
+      .limit(1);
+    household = legacyHousehold;
+  }
+
   if (!household) {
     res.status(404).json({ error: "Invite code not found" });
     return;
@@ -125,7 +420,7 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
     await db.insert(householdMembersTable).values({
       householdId: household.id,
       userId,
-      role: normalizeHouseholdMemberRole("adult"),
+      role: nextMemberRole,
       displayName: user?.displayName ?? null,
     });
   }
@@ -136,12 +431,25 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
     householdId: household.id,
     targetUserId: userId,
     targetRole: inThisHousehold ? "existing-member" : null,
-    nextRole: normalizeHouseholdMemberRole("adult"),
+    nextRole: nextMemberRole,
     reason: inThisHousehold
       ? "Existing household member opened an invite code."
       : "Invite code accepted and caregiver membership created.",
   });
   await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
+
+  if (acceptedInvitation) {
+    await db
+      .update(householdInvitationsTable)
+      .set({
+        lifecycleState: "accepted",
+        acceptedByUserId: userId,
+        acceptedAt: new Date(auditEvent.createdAt),
+        invitedUserId: userId,
+        updatedAt: new Date(auditEvent.createdAt),
+      })
+      .where(eq(householdInvitationsTable.id, acceptedInvitation.id));
+  }
 
   res.json(
     JoinHouseholdResponse.parse({

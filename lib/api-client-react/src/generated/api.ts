@@ -39,11 +39,16 @@ import type {
   HealthStatus,
   HouseholdAccessPassMutationResponse,
   HouseholdAuditEventListResponse,
+  HouseholdInvitationCreateInput,
+  HouseholdInvitationListResponse,
+  HouseholdInvitationMutationResponse,
+  HouseholdInvitationRevokeInput,
   HouseholdMemberUpdate,
   HouseholdMemberMutationResponse,
   HouseholdUpdate,
   JoinHouseholdInput,
   HouseholdJoinResponse,
+  ListHouseholdInvitationsParams,
   ListHouseholdAuditEventsParams,
   ListCareEntriesParams,
   Me,
@@ -877,6 +882,228 @@ export const useJoinHousehold = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getJoinHouseholdMutationOptions(options));
+    }
+
+export const getListHouseholdInvitationsUrl = (params?: ListHouseholdInvitationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/household/invitations?${stringifiedParams}` : `/api/household/invitations`
+}
+
+/**
+ * Owner/admin-only review of provider-durable household invitation lifecycle rows.
+ * @summary List household invitations
+ */
+export const listHouseholdInvitations = async (params?: ListHouseholdInvitationsParams, options?: RequestInit): Promise<HouseholdInvitationListResponse> => {
+
+  return customFetch<HouseholdInvitationListResponse>(getListHouseholdInvitationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHouseholdInvitationsQueryKey = (params?: ListHouseholdInvitationsParams,) => {
+    return [
+    `/api/household/invitations`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListHouseholdInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof listHouseholdInvitations>>, TError = ErrorType<ApiError>>(params?: ListHouseholdInvitationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdInvitations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHouseholdInvitationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHouseholdInvitations>>> = ({ signal }) => listHouseholdInvitations(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHouseholdInvitations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHouseholdInvitationsQueryResult = NonNullable<Awaited<ReturnType<typeof listHouseholdInvitations>>>
+export type ListHouseholdInvitationsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List household invitations
+ */
+
+export function useListHouseholdInvitations<TData = Awaited<ReturnType<typeof listHouseholdInvitations>>, TError = ErrorType<ApiError>>(
+ params?: ListHouseholdInvitationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdInvitations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHouseholdInvitationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateHouseholdInvitationUrl = () => {
+
+
+
+
+  return `/api/household/invitations`
+}
+
+/**
+ * @summary Create a household invitation
+ */
+export const createHouseholdInvitation = async (householdInvitationCreateInput: HouseholdInvitationCreateInput, options?: RequestInit): Promise<HouseholdInvitationMutationResponse> => {
+
+  return customFetch<HouseholdInvitationMutationResponse>(getCreateHouseholdInvitationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      householdInvitationCreateInput,)
+  }
+);}
+
+
+
+
+export const getCreateHouseholdInvitationMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createHouseholdInvitation>>, TError,{data: BodyType<HouseholdInvitationCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createHouseholdInvitation>>, TError,{data: BodyType<HouseholdInvitationCreateInput>}, TContext> => {
+
+const mutationKey = ['createHouseholdInvitation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createHouseholdInvitation>>, {data: BodyType<HouseholdInvitationCreateInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createHouseholdInvitation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateHouseholdInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof createHouseholdInvitation>>>
+    export type CreateHouseholdInvitationMutationBody = BodyType<HouseholdInvitationCreateInput>
+    export type CreateHouseholdInvitationMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Create a household invitation
+ */
+export const useCreateHouseholdInvitation = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createHouseholdInvitation>>, TError,{data: BodyType<HouseholdInvitationCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createHouseholdInvitation>>,
+        TError,
+        {data: BodyType<HouseholdInvitationCreateInput>},
+        TContext
+      > => {
+      return useMutation(getCreateHouseholdInvitationMutationOptions(options));
+    }
+
+export const getRevokeHouseholdInvitationUrl = (id: string,) => {
+
+
+
+
+  return `/api/household/invitations/${id}/revoke`
+}
+
+/**
+ * @summary Revoke a household invitation
+ */
+export const revokeHouseholdInvitation = async (id: string,
+    householdInvitationRevokeInput: HouseholdInvitationRevokeInput, options?: RequestInit): Promise<HouseholdInvitationMutationResponse> => {
+
+  return customFetch<HouseholdInvitationMutationResponse>(getRevokeHouseholdInvitationUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      householdInvitationRevokeInput,)
+  }
+);}
+
+
+
+
+export const getRevokeHouseholdInvitationMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdInvitation>>, TError,{id: string;data: BodyType<HouseholdInvitationRevokeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdInvitation>>, TError,{id: string;data: BodyType<HouseholdInvitationRevokeInput>}, TContext> => {
+
+const mutationKey = ['revokeHouseholdInvitation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeHouseholdInvitation>>, {id: string;data: BodyType<HouseholdInvitationRevokeInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  revokeHouseholdInvitation(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeHouseholdInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof revokeHouseholdInvitation>>>
+    export type RevokeHouseholdInvitationMutationBody = BodyType<HouseholdInvitationRevokeInput>
+    export type RevokeHouseholdInvitationMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Revoke a household invitation
+ */
+export const useRevokeHouseholdInvitation = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdInvitation>>, TError,{id: string;data: BodyType<HouseholdInvitationRevokeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeHouseholdInvitation>>,
+        TError,
+        {id: string;data: BodyType<HouseholdInvitationRevokeInput>},
+        TContext
+      > => {
+      return useMutation(getRevokeHouseholdInvitationMutationOptions(options));
     }
 
 export const getListHouseholdAuditEventsUrl = (params?: ListHouseholdAuditEventsParams,) => {

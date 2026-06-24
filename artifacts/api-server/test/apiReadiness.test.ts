@@ -608,8 +608,8 @@ test("household invitations and Access Pass mutations emit typed audit contracts
   );
   assert.match(
     householdRoute,
-    /role:\s*normalizeHouseholdMemberRole\("adult"\)/,
-    "invite acceptance should store the canonical adult caregiver role instead of legacy member",
+    /role:\s*nextMemberRole/,
+    "invite acceptance should store the approved invitation role instead of legacy member",
   );
   assert.match(
     householdRoute,
@@ -776,7 +776,7 @@ test("household invite and Access Pass audit storage has provider-ready lifecycl
   assert.match(openapi, /access-pass-expired/, "OpenAPI must expose expired Access Pass lifecycle state");
   assert.match(
     zodApi,
-    /"lifecycleState": zod\.enum\(\["invite-accepted", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"\]\)/,
+    /"lifecycleState": zod\.enum\(\["invite-created", "invite-accepted", "invite-revoked", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"\]\)/,
     "Zod must validate household audit lifecycle states",
   );
   assert.match(
@@ -786,7 +786,7 @@ test("household invite and Access Pass audit storage has provider-ready lifecycl
   );
   assert.match(
     reactSchemas,
-    /export type HouseholdAuditLifecycleState = "invite-accepted" \| "member-updated" \| "member-revoked" \| "access-pass-active" \| "access-pass-revoked" \| "access-pass-expired"/,
+    /export type HouseholdAuditLifecycleState = "invite-created" \| "invite-accepted" \| "invite-revoked" \| "member-updated" \| "member-revoked" \| "access-pass-active" \| "access-pass-revoked" \| "access-pass-expired"/,
     "React schemas must expose typed household audit lifecycle states",
   );
 });
@@ -951,4 +951,118 @@ test("Access Pass expiry is enforced at member-auth request time", () => {
     /accessPassExpired\?: boolean/,
     "React schemas must expose expired-helper status for UI warnings",
   );
+});
+
+test("household invitations have provider-ready lifecycle storage and typed routes", () => {
+  const route = read("artifacts/api-server/src/routes/household.ts");
+  const invitationPolicy = read("artifacts/api-server/src/lib/household-invitations.ts");
+  const invitationSchema = read("lib/db/src/schema/householdInvitations.ts");
+  const schemaIndex = read("lib/db/src/schema/index.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const zodApi = read("lib/api-zod/src/generated/api.ts");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+  const reactSchemas = read("lib/api-client-react/src/generated/api.schemas.ts");
+
+  const invitationListBlock = section(
+    openapi,
+    "  /household/invitations:",
+    "  /household/invitations/{id}/revoke:",
+  );
+  const invitationRevokeBlock = section(
+    openapi,
+    "  /household/invitations/{id}/revoke:",
+    "components:",
+  );
+
+  assert.match(
+    invitationSchema,
+    /pgTable\("household_invitations"/,
+    "database schema must define durable household invitations",
+  );
+  assert.match(
+    invitationSchema,
+    /lifecycleState:\s*text\("lifecycle_state"\)/,
+    "invitation rows must store explicit lifecycle state",
+  );
+  assert.match(
+    invitationSchema,
+    /approvedByUserId:\s*text\("approved_by_user_id"\)/,
+    "invitation rows must preserve owner approval evidence",
+  );
+  assert.match(
+    invitationSchema,
+    /acceptedAt:\s*timestamp\("accepted_at"/,
+    "invitation rows must store accepted-at evidence",
+  );
+  assert.match(
+    schemaIndex,
+    /export \* from "\.\/householdInvitations"/,
+    "database schema index must export household invitations",
+  );
+
+  assert.match(
+    invitationPolicy,
+    /pending-approval/,
+    "invitation policy must model pending approval before membership creation",
+  );
+  assert.match(
+    invitationPolicy,
+    /assertHouseholdInvitationAcceptAllowed/,
+    "join route must be able to block non-approved invitation lifecycles",
+  );
+  assert.match(
+    invitationPolicy,
+    /normalizeHouseholdInvitationListQuery/,
+    "owner/admin invitation review must share safe query normalization",
+  );
+
+  assert.match(
+    route,
+    /householdInvitationsTable/,
+    "household routes must use durable invitation rows",
+  );
+  assert.match(
+    route,
+    /router\.get\("\/household\/invitations", requireAuth/,
+    "owner/admin invitation review should be authenticated",
+  );
+  assert.match(
+    route,
+    /router\.post\("\/household\/invitations", requireAuth/,
+    "owner/admin invitation creation should be authenticated",
+  );
+  assert.match(
+    route,
+    /router\.post\("\/household\/invitations\/:id\/revoke", requireAuth/,
+    "owner/admin invitation revocation should be authenticated",
+  );
+  assert.match(
+    route,
+    /assertHouseholdInvitationAcceptAllowed/,
+    "join route should check invitation lifecycle before creating membership",
+  );
+  assert.match(
+    route,
+    /lifecycleState:\s*"accepted"/,
+    "join route should mark durable invitation rows accepted",
+  );
+
+  assert.match(invitationListBlock, /operationId: listHouseholdInvitations/, "OpenAPI must document invitation list");
+  assert.match(invitationListBlock, /operationId: createHouseholdInvitation/, "OpenAPI must document invitation creation");
+  assert.match(invitationRevokeBlock, /operationId: revokeHouseholdInvitation/, "OpenAPI must document invitation revocation");
+  assert.match(openapi, /HouseholdInvitation:/, "OpenAPI must expose household invitation schema");
+  assert.match(openapi, /pending-approval/, "OpenAPI must expose pending invitation lifecycle state");
+  assert.match(openapi, /HouseholdInvitationMutationResponse:/, "OpenAPI must expose invitation mutation response");
+
+  assert.match(zodApi, /export const ListHouseholdInvitationsQueryParams/, "Zod must validate invitation list queries");
+  assert.match(zodApi, /export const CreateHouseholdInvitationBody/, "Zod must validate invitation creation body");
+  assert.match(zodApi, /export const RevokeHouseholdInvitationParams/, "Zod must validate invitation revoke params");
+  assert.match(zodApi, /export const HouseholdInvitationMutationResponse/, "Zod must expose invitation mutation response");
+
+  assert.match(reactSchemas, /export type HouseholdInvitationLifecycleState/, "React schemas must type invitation lifecycle");
+  assert.match(reactSchemas, /export interface HouseholdInvitation/, "React schemas must type invitation rows");
+  assert.match(reactSchemas, /export interface HouseholdInvitationMutationResponse/, "React schemas must type invitation mutations");
+  assert.match(reactClient, /listHouseholdInvitations/, "React client must expose invitation list fetcher");
+  assert.match(reactClient, /createHouseholdInvitation/, "React client must expose invitation creation mutation");
+  assert.match(reactClient, /revokeHouseholdInvitation/, "React client must expose invitation revoke mutation");
 });

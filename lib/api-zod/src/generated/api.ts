@@ -150,8 +150,8 @@ export const GetMeResponse = zod.object({
 
 export const HouseholdAuditEvent = zod.object({
   "id": zod.string(),
-  "action": zod.enum(["invitation-accepted", "member-role-updated", "member-revoked", "access-pass-activated", "access-pass-revoked"]),
-  "lifecycleState": zod.enum(["invite-accepted", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"]),
+  "action": zod.enum(["invitation-created", "invitation-accepted", "invitation-revoked", "member-role-updated", "member-revoked", "access-pass-activated", "access-pass-revoked"]),
+  "lifecycleState": zod.enum(["invite-created", "invite-accepted", "invite-revoked", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"]),
   "actorUserId": zod.string(),
   "householdId": zod.string(),
   "targetMemberId": zod.string().nullish(),
@@ -262,8 +262,8 @@ export const ListHouseholdAuditEventsQueryParams = zod.object({
 })
 
 export const HouseholdAuditEventListFilters = zod.object({
-  "action": zod.enum(["invitation-accepted", "member-role-updated", "member-revoked", "access-pass-activated", "access-pass-revoked"]).optional(),
-  "lifecycleState": zod.enum(["invite-accepted", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"]).optional()
+  "action": zod.enum(["invitation-created", "invitation-accepted", "invitation-revoked", "member-role-updated", "member-revoked", "access-pass-activated", "access-pass-revoked"]).optional(),
+  "lifecycleState": zod.enum(["invite-created", "invite-accepted", "invite-revoked", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"]).optional()
 })
 
 export const ListHouseholdAuditEventsResponse = zod.object({
@@ -272,6 +272,75 @@ export const ListHouseholdAuditEventsResponse = zod.object({
   "filters": HouseholdAuditEventListFilters,
   "boundary": zod.string()
 })
+
+export const HouseholdInvitationLifecycleState = zod.enum(["pending-approval", "approved", "accepted", "revoked", "expired", "rejected"])
+
+export const HouseholdInvitation = zod.object({
+  "id": zod.string(),
+  "householdId": zod.string(),
+  "inviteCode": zod.string(),
+  "invitedEmail": zod.string().nullish(),
+  "invitedUserId": zod.string().nullish(),
+  "role": zod.string(),
+  "lifecycleState": HouseholdInvitationLifecycleState,
+  "runtimeLifecycleState": HouseholdInvitationLifecycleState,
+  "expired": zod.boolean(),
+  "createdByUserId": zod.string(),
+  "approvedByUserId": zod.string().nullish(),
+  "acceptedByUserId": zod.string().nullish(),
+  "revokedByUserId": zod.string().nullish(),
+  "rejectedByUserId": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "expiresAt": zod.string().nullish(),
+  "acceptedAt": zod.string().nullish(),
+  "revokedAt": zod.string().nullish(),
+  "rejectedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().nullish(),
+  "storage": zod.enum(["provider-durable"]),
+  "boundary": zod.string()
+})
+
+export const ListHouseholdInvitationsQueryParams = zod.object({
+  "limit": zod.coerce.number().optional(),
+  "lifecycleState": HouseholdInvitationLifecycleState.optional()
+})
+
+export const HouseholdInvitationListFilters = zod.object({
+  "lifecycleState": HouseholdInvitationLifecycleState.optional()
+})
+
+export const ListHouseholdInvitationsResponse = zod.object({
+  "invitations": zod.array(HouseholdInvitation),
+  "limit": zod.number(),
+  "filters": HouseholdInvitationListFilters,
+  "boundary": zod.string()
+})
+
+export const CreateHouseholdInvitationBody = zod.object({
+  "invitedEmail": zod.string().email().nullish(),
+  "role": zod.string().optional(),
+  "lifecycleState": HouseholdInvitationLifecycleState.optional(),
+  "expiresAt": zod.string().nullish(),
+  "note": zod.string().nullish()
+})
+
+export const RevokeHouseholdInvitationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RevokeHouseholdInvitationBody = zod.object({
+  "reason": zod.string().nullish()
+})
+
+export const HouseholdInvitationMutationResponse = zod.object({
+  "invitation": HouseholdInvitation,
+  "auditEvent": HouseholdAuditEvent
+})
+
+export const CreateHouseholdInvitationResponse = HouseholdInvitationMutationResponse
+
+export const RevokeHouseholdInvitationResponse = HouseholdInvitationMutationResponse
 
 /**
  * @summary Update a household member role or display name

@@ -451,5 +451,20 @@ React generated member schemas expose `accessPassExpiresAt` plus
 RED/GREEN Access Pass/API readiness tests, 378 focused behavior/readiness tests,
 mobile TypeScript, syntax checks, PixelLab asset verification at 149 files,
 `git diff --check`, and package-local Expo export. Provider migration, RLS,
-retention/export/deletion policy, invite approval lifecycle storage, and
-expired-helper cleanup remain launch gates.
+retention/export/deletion policy, provider invite UI/delivery, expired-invite
+cleanup, and expired-helper cleanup remain launch gates.
+
+Current evidence, 2026-06-24: Household invitation lifecycle readiness is now a
+durable provider-facing contract instead of a legacy static invite code only.
+`household_invitations` stores unique invite codes, invited email/user metadata,
+canonical roles, pending/approved/accepted/revoked/expired/rejected lifecycle
+states, actor timestamps, notes, expiry windows, and provider metadata.
+Owner/admin invite list/create/revoke APIs are authenticated and active-household
+scoped; `/household/join` prefers durable invitation rows, blocks unsafe states,
+marks accepted invites, applies invitation roles, and keeps the legacy code path
+only as a fallback. Local verification passed RED/GREEN invitation/API readiness
+tests, 381 focused behavior/readiness tests, mobile TypeScript, syntax checks,
+PixelLab asset verification at 149 files, `git diff --check`, and package-local
+Expo export. Provider migration, RLS, invite notification delivery, provider UI
+wiring, scheduled expired-invite cleanup, retention/export/deletion policy, and
+legal/privacy approval remain launch gates.

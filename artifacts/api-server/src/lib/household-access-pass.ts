@@ -1,12 +1,16 @@
 export type AccessPassMutationAction = "activate" | "revoke";
 export type HouseholdAuditAction =
+  | "invitation-created"
   | "invitation-accepted"
+  | "invitation-revoked"
   | "member-role-updated"
   | "member-revoked"
   | "access-pass-activated"
   | "access-pass-revoked";
 export type HouseholdAuditLifecycleState =
+  | "invite-created"
   | "invite-accepted"
+  | "invite-revoked"
   | "member-updated"
   | "member-revoked"
   | "access-pass-active"
@@ -152,14 +156,18 @@ const ACCESS_PASS_COMPATIBLE_ROLES = [
 
 const ACCESS_PASS_ROLE_SET = new Set<string>(ACCESS_PASS_COMPATIBLE_ROLES);
 const HOUSEHOLD_AUDIT_ACTIONS = [
+  "invitation-created",
   "invitation-accepted",
+  "invitation-revoked",
   "member-role-updated",
   "member-revoked",
   "access-pass-activated",
   "access-pass-revoked",
 ] as const satisfies readonly HouseholdAuditAction[];
 const HOUSEHOLD_AUDIT_LIFECYCLE_STATES = [
+  "invite-created",
   "invite-accepted",
+  "invite-revoked",
   "member-updated",
   "member-revoked",
   "access-pass-active",
@@ -215,7 +223,9 @@ function isHouseholdAuditLifecycleState(value: string): value is HouseholdAuditL
 }
 
 function deriveLifecycleState(input: HouseholdAuditEventInput): HouseholdAuditLifecycleState {
+  if (input.action === "invitation-created") return "invite-created";
   if (input.action === "invitation-accepted") return "invite-accepted";
+  if (input.action === "invitation-revoked") return "invite-revoked";
   if (input.action === "member-role-updated") return "member-updated";
   if (input.action === "member-revoked") return "member-revoked";
   if (input.action === "access-pass-revoked") return "access-pass-revoked";

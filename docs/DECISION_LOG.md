@@ -1515,6 +1515,24 @@ Owner: Codex.
 
 Revisit trigger: provider migrations/RLS are approved, scheduled cleanup is added, or the UI needs owner/admin controls for expired helper memberships.
 
+### 2026-06-24: Household Invitations Are Durable Lifecycle Rows Before Provider Delivery
+
+Decision: household invitations now live as durable lifecycle rows with owner/admin list/create/revoke APIs, and `/household/join` must prefer those rows over the legacy household invite code whenever a durable invitation exists.
+
+Reason: shared household care and temporary helper access cannot rely on one static invite code once WoofWatcher supports roles, approval windows, Access Passes, audit review, and future provider-backed delivery. A durable invitation record lets the product distinguish pending approval, approved, accepted, revoked, expired, and rejected invitations while keeping legacy local-preview joins available until provider setup is complete.
+
+Consequences:
+
+- `household_invitations` stores invite code, household, invited email/user, canonical role, lifecycle state, actor ids, lifecycle timestamps, expiry, notes, and provider metadata.
+- Owner/admin invite list/create/revoke APIs are authenticated and active-household scoped.
+- `/household/join` blocks pending, revoked, expired, rejected, and already accepted durable invitations, applies the invitation role on acceptance, and marks accepted invites.
+- Invite creation and revocation emit durable audit events through the existing household audit trail.
+- Production still needs Supabase migration/RLS, notification/email delivery, invite UI polish, scheduled expiry cleanup, retention/export/deletion policy, and legal/privacy approval.
+
+Owner: Codex.
+
+Revisit trigger: provider migrations/RLS are approved, invite delivery is implemented, or invite approval/rejection needs fine-grained UI.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
