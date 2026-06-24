@@ -363,6 +363,98 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /household/members/{id}:
+    patch:
+      operationId: updateHouseholdMember
+      tags: [household]
+      summary: Update a household member role or display name
+      description: >-
+        Owner/admin-only helper management for household roles, sitter/trainer
+        scopes, and vet viewer read-only access. This is the server contract
+        foundation for future Access Pass enforcement.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HouseholdMemberUpdate"
+      responses:
+        "200":
+          description: Updated household context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "400":
+          description: Invalid member update payload or id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to update household members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Household member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: revokeHouseholdMember
+      tags: [household]
+      summary: Revoke a household member from the current household
+      description: >-
+        Owner/admin-only helper revocation. Self-revocation and protected owner
+        role changes remain blocked until last-owner-safe account flows exist.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Household member revoked
+        "400":
+          description: Invalid member id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to revoke household members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Household member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /care-state:
     get:
       operationId: getCareState
@@ -842,6 +934,16 @@ components:
           minLength: 1
       required:
         - inviteCode
+    HouseholdMemberUpdate:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [owner, adult, teen, kid, sitter, trainer, walker, vet viewer]
+          description: "Owner-reviewed household role such as adult, kid, sitter, trainer, walker, or vet viewer."
+        displayName:
+          type: ["string", "null"]
+          minLength: 1
     CareStateEnvelope:
       type: object
       properties:

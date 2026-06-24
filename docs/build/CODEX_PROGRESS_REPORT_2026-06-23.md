@@ -27,6 +27,8 @@
 - Closed care-state/care-entry household scoping contract drift: API readiness now proves these read/write paths resolve the active household from the authenticated user, scope reads and mutations to that household, stamp created logs with household/caregiver ids, and expose auth/not-found errors to generated React query clients.
 - Closed the first role-aware care-entry write policy contract: API readiness now proves the server exposes authenticated household member role lookup, applies care-entry write policy before create/update/delete writes, returns documented ApiError-shaped `403` bodies for read-only or non-adult delete attempts, keeps kid/helper logs pending confirmation, keeps safety-critical medication/vomit/symptom/incident logs reviewable, and preserves medication proof metadata.
 - OpenAPI now documents care-entry create/update/delete `403` responses so provider-backed household roles and generated clients can handle forbidden helper/vet-viewer writes without drifting from the server.
+- Closed the household member role mutation contract: owner/admin helper management now has an authorization helper, authenticated active-household-scoped update/revoke routes, canonical role payloads, empty-patch rejection, self-change/self-revocation blocking, protected-owner safeguards, Access Pass-compatible role language, typed `403` errors, and generated OpenAPI/Zod/React client coverage.
+- Tightened role-update safety during the slice: unknown role strings are rejected by the generated Zod validator and OpenAPI enum instead of silently normalizing to an adult role.
 
 ## Verification
 
@@ -52,7 +54,10 @@
 - `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 368 passing after the care-state/care-entry household scoping contract fix.
 - RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing `care-entry-authorization.ts`, then passed with 9 tests after the role-aware care-entry policy contract was added.
 - `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 369 passing after the care-entry role-policy contract fix.
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on the missing household member empty-patch guard, then passed with 10 tests after household role mutation/revocation contracts and canonical role typing were added.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 370 passing after the household member role mutation contract fix.
 - `node --check artifacts/api-server/src/lib/care-entry-authorization.ts` and `node --check artifacts/api-server/src/routes/care-entries.ts` - passing syntax checks.
+- `node --check artifacts/api-server/src/lib/household-authorization.ts` and `node --check artifacts/api-server/src/routes/household.ts` - passing syntax checks.
 - `node --check lib/api-client-react/src/generated/api.ts` and `node --check lib/api-zod/src/generated/api.ts` - passing syntax checks.
 - `NODE_PATH=artifacts/woofwatcher-mobile/node_modules node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing with the package-local dependency path used for the generated React API client in this Windows checkout.
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
@@ -70,4 +75,4 @@
 
 ## Next Best Slice
 
-When device QA is available, run the Home Mission Deck QA surface on iOS and Android using the in-app setup, numbered device steps, pass criteria, and Needs tune escalation, attach screenshots, share the QA report, and tune the first visible phone-size issue. While device QA remains unavailable, continue provider-backed role/access hardening with household role mutation, invite acceptance, Access Pass enforcement, revocation, and audit trail contracts.
+When device QA is available, run the Home Mission Deck QA surface on iOS and Android using the in-app setup, numbered device steps, pass criteria, and Needs tune escalation, attach screenshots, share the QA report, and tune the first visible phone-size issue. While device QA remains unavailable, continue provider-backed role/access hardening with invite acceptance, Access Pass activation/enforcement, helper audit trails, and membership mutation audit events.

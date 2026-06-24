@@ -149,6 +149,14 @@ export interface JoinHouseholdInput {
   inviteCode: string;
 }
 
+export type HouseholdMemberRole = "owner" | "adult" | "teen" | "kid" | "sitter" | "trainer" | "walker" | "vet viewer";
+
+export interface HouseholdMemberUpdate {
+  role?: HouseholdMemberRole;
+  /** @nullable */
+  displayName?: string | null;
+}
+
 export type CareStateEnvelopeDoc = { [key: string]: unknown };
 
 export interface CareStateEnvelope {

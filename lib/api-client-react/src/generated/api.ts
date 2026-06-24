@@ -35,6 +35,7 @@ import type {
   CareStateEnvelope,
   CareStateInput,
   HealthStatus,
+  HouseholdMemberUpdate,
   HouseholdUpdate,
   JoinHouseholdInput,
   ListCareEntriesParams,
@@ -869,6 +870,148 @@ export const useJoinHousehold = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getJoinHouseholdMutationOptions(options));
+    }
+
+export const getUpdateHouseholdMemberUrl = (id: string,) => {
+
+
+
+
+  return `/api/household/members/${id}`
+}
+
+/**
+ * @summary Update a household member role or display name
+ */
+export const updateHouseholdMember = async (id: string,
+    householdMemberUpdate: HouseholdMemberUpdate, options?: RequestInit): Promise<Me> => {
+
+  return customFetch<Me>(getUpdateHouseholdMemberUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      householdMemberUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateHouseholdMemberMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHouseholdMember>>, TError,{id: string;data: BodyType<HouseholdMemberUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateHouseholdMember>>, TError,{id: string;data: BodyType<HouseholdMemberUpdate>}, TContext> => {
+
+const mutationKey = ['updateHouseholdMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateHouseholdMember>>, {id: string;data: BodyType<HouseholdMemberUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateHouseholdMember(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateHouseholdMemberMutationResult = NonNullable<Awaited<ReturnType<typeof updateHouseholdMember>>>
+    export type UpdateHouseholdMemberMutationBody = BodyType<HouseholdMemberUpdate>
+    export type UpdateHouseholdMemberMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update a household member role or display name
+ */
+export const useUpdateHouseholdMember = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHouseholdMember>>, TError,{id: string;data: BodyType<HouseholdMemberUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateHouseholdMember>>,
+        TError,
+        {id: string;data: BodyType<HouseholdMemberUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateHouseholdMemberMutationOptions(options));
+    }
+
+export const getRevokeHouseholdMemberUrl = (id: string,) => {
+
+
+
+
+  return `/api/household/members/${id}`
+}
+
+/**
+ * @summary Revoke a household member from the current household
+ */
+export const revokeHouseholdMember = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRevokeHouseholdMemberUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeHouseholdMemberMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdMember>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdMember>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['revokeHouseholdMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeHouseholdMember>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  revokeHouseholdMember(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeHouseholdMemberMutationResult = NonNullable<Awaited<ReturnType<typeof revokeHouseholdMember>>>
+
+    export type RevokeHouseholdMemberMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Revoke a household member from the current household
+ */
+export const useRevokeHouseholdMember = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdMember>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeHouseholdMember>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getRevokeHouseholdMemberMutationOptions(options));
     }
 
 export const getGetCareStateUrl = () => {

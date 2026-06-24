@@ -242,6 +242,28 @@ export const JoinHouseholdResponse = zod.object({
 }))
 })
 
+/**
+ * @summary Update a household member role or display name
+ */
+export const UpdateHouseholdMemberParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateHouseholdMemberBody = zod.object({
+  "role": zod.enum(["owner", "adult", "teen", "kid", "sitter", "trainer", "walker", "vet viewer"]).optional(),
+  "displayName": zod.string().min(1).nullish()
+})
+
+export const UpdateHouseholdMemberResponse = GetMeResponse
+
+
+/**
+ * @summary Revoke a household member from the current household
+ */
+export const RevokeHouseholdMemberParams = zod.object({
+  "id": zod.coerce.string()
+})
+
 
 /**
  * @summary Get the household's synced care document

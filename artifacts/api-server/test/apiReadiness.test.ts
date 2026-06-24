@@ -477,3 +477,97 @@ test("care entry writes keep role-aware trust and read-only boundaries", () => {
     "React API delete mutation must keep role-policy errors typed as ApiError",
   );
 });
+
+test("household member role mutations keep owner-only and revocation contracts", () => {
+  const householdRoute = read("artifacts/api-server/src/routes/household.ts");
+  const householdPolicy = read("artifacts/api-server/src/lib/household-authorization.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const zodApi = read("lib/api-zod/src/generated/api.ts");
+  const reactSchemas = read("lib/api-client-react/src/generated/api.schemas.ts");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+
+  const memberBlock = section(
+    openapi,
+    "  /household/members/{id}:",
+    "  /care-state:",
+  );
+
+  assert.match(
+    householdRoute,
+    /router\.patch\("\/household\/members\/:id", requireAuth/,
+    "household member role updates should be authenticated",
+  );
+  assert.match(
+    householdRoute,
+    /router\.delete\(\s*"\/household\/members\/:id",\s*requireAuth/,
+    "household member revocation should be authenticated",
+  );
+  assert.match(
+    householdRoute,
+    /UpdateHouseholdMemberParams\.safeParse/,
+    "role updates should validate member ids",
+  );
+  assert.match(
+    householdRoute,
+    /UpdateHouseholdMemberBody\.safeParse/,
+    "role updates should validate role payloads",
+  );
+  assert.match(
+    householdRoute,
+    /role === undefined && parsed\.data\.displayName === undefined/,
+    "role updates should reject empty member patches instead of issuing no-op writes",
+  );
+  assert.match(
+    householdRoute,
+    /RevokeHouseholdMemberParams\.safeParse/,
+    "revocation should validate member ids",
+  );
+  assert.match(
+    householdRoute,
+    /getHouseholdMemberAuthz\(householdId, userId\)/,
+    "member mutations should resolve the authenticated actor role",
+  );
+  assert.match(
+    householdRoute,
+    /assertHouseholdMemberMutationAllowed\(/,
+    "member mutations should use the owner/admin authorization policy",
+  );
+  assert.match(
+    householdRoute,
+    /eq\(householdMembersTable\.householdId, householdId\)/,
+    "member mutations must stay scoped to the active household",
+  );
+  assert.match(
+    householdRoute,
+    /res\.status\(403\)\.json\(\{ error: policy\.reason \}\)/,
+    "member mutations should return ApiError-shaped 403 bodies",
+  );
+
+  assert.match(householdPolicy, /owner\/admin/i, "role policy should name owner/admin-only authority");
+  assert.match(householdPolicy, /Access Pass/i, "role policy should stay aligned with future Access Pass scopes");
+  assert.match(householdPolicy, /helper revocation/i, "role policy should explicitly cover helper revocation");
+  assert.match(householdPolicy, /vet viewer/i, "role policy should keep vet viewer as a managed read-only role");
+  assert.match(householdPolicy, /targetIsSelf/, "role policy should prevent self-revocation or self-demotion");
+
+  assert.match(memberBlock, /operationId: updateHouseholdMember/, "OpenAPI must document household member role updates");
+  assert.match(memberBlock, /operationId: revokeHouseholdMember/, "OpenAPI must document household member revocation");
+  assert.match(openapi, /HouseholdMemberUpdate:[\s\S]*enum: \[owner, adult, teen, kid, sitter, trainer, walker, vet viewer\]/, "OpenAPI must keep household role updates on canonical roles");
+  for (const status of ['"400"', '"401"', '"403"', '"404"']) {
+    assert.match(memberBlock, new RegExp(`${status}:`), `OpenAPI must document member mutation ${status} responses`);
+  }
+  assert.match(zodApi, /export const UpdateHouseholdMemberParams/, "Zod must export update-member params");
+  assert.match(zodApi, /export const UpdateHouseholdMemberBody/, "Zod must export update-member body");
+  assert.match(zodApi, /zod\.enum\(\["owner", "adult", "teen", "kid", "sitter", "trainer", "walker", "vet viewer"\]\)/, "Zod must reject unknown household roles");
+  assert.match(zodApi, /export const RevokeHouseholdMemberParams/, "Zod must export revoke-member params");
+  assert.match(reactSchemas, /role\?: HouseholdMemberRole/, "React schemas must expose typed household member roles");
+  assert.match(
+    reactClient,
+    /UpdateHouseholdMemberMutationError = ErrorType<ApiError>/,
+    "React API update-member mutation must expose ApiError",
+  );
+  assert.match(
+    reactClient,
+    /RevokeHouseholdMemberMutationError = ErrorType<ApiError>/,
+    "React API revoke-member mutation must expose ApiError",
+  );
+});

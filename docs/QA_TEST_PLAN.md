@@ -385,3 +385,14 @@ Latest local evidence, 2026-06-23:
 - Expo web export passed by invoking the package-local Expo CLI directly because the local Windows shell does not expose `pnpm`.
 - Remote GitHub Actions runs `28063020164`, `28064200143`, `28065179874`, `28066357245`, `28067734120`, and `28069107846` failed before job start with the standing account billing/spending-limit annotation.
 - Direct workspace `tsc` checks for `lib/api-client-react` and `lib/api-zod` and direct `artifacts/api-server/build.mjs` remain environment-limited without the pnpm workspace symlink layer; the observed failures were missing package resolution for existing dependencies (`@tanstack/react-query`, `zod`, `esbuild`), not route-contract assertion failures.
+
+Latest local evidence, 2026-06-23:
+
+- API readiness now covers household member role mutation and revocation contracts so owner/admin-only helper management, canonical role payloads, active-household scoping, empty-patch rejection, self-change/self-revocation blocking, protected-owner safeguards, Access Pass-compatible helper scopes, and typed `ApiError` mutation failures stay aligned across server routes, OpenAPI, Zod validators, and the generated React client.
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on the missing empty-patch guard, then passed with 10 tests after role-update validation, OpenAPI enum coverage, Zod enum coverage, and generated React schema typing were added.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 370 passing after the household member mutation contract fix.
+- `NODE_PATH=artifacts/woofwatcher-mobile/node_modules node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
+- `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
+- `node --check artifacts/api-server/src/lib/household-authorization.ts`, `node --check artifacts/api-server/src/routes/household.ts`, `node --check lib/api-client-react/src/generated/api.ts`, and `node --check lib/api-zod/src/generated/api.ts` - passing syntax checks.
+- `git diff --check` - passing with only expected Windows line-ending warnings.
+- Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.
