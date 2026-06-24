@@ -24,6 +24,7 @@ import {
   useGetMe,
   useUpdateHousehold,
   useJoinHousehold,
+  useSetActiveHousehold,
   useUpdateMe,
   getGetMeQueryKey,
 } from "@workspace/api-client-react";
@@ -69,9 +70,11 @@ export default function MoreScreen() {
   const me = useGetMe();
   const updateHousehold = useUpdateHousehold();
   const joinHousehold = useJoinHousehold();
+  const setActiveHousehold = useSetActiveHousehold();
   const updateMe = useUpdateMe();
 
   const household = me.data?.household;
+  const households = me.data?.households ?? (household ? [household] : []);
   const members = me.data?.members ?? [];
   const myName = me.data?.user?.displayName?.trim() || "";
 
@@ -192,6 +195,16 @@ export default function MoreScreen() {
       }),
     [household, members, caregivers, routines],
   );
+  const householdChoices = useMemo(
+    () =>
+      households
+        .filter((choice) => choice.id && choice.name)
+        .map((choice) => ({
+          ...choice,
+          isActive: choice.id === household?.id,
+        })),
+    [households, household?.id],
+  );
   const responsibilityTone =
     householdResponsibility.status === "needs-care"
       ? colors.rose
@@ -279,6 +292,25 @@ export default function MoreScreen() {
           refresh();
         },
         onError: () => Alert.alert("Couldn't join", "That invite code didn't match a household."),
+      },
+    );
+  };
+
+  const switchHousehold = (householdId: string) => {
+    if (!householdId || householdId === household?.id || setActiveHousehold.isPending) return;
+    setActiveHousehold.mutate(
+      { data: { householdId } },
+      {
+        onSuccess: () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          refreshMe();
+          refresh();
+        },
+        onError: () =>
+          Alert.alert(
+            "Couldn't switch household",
+            "WoofWatcher only switches to packs where your account is already a member.",
+          ),
       },
     );
   };
@@ -869,6 +901,54 @@ export default function MoreScreen() {
               </Pressable>
             </View>
 
+            <View style={[s.boardDivider, { borderTopColor: colors.border }]} />
+            <View style={s.householdSwitcher}>
+              <View style={s.householdSwitcherHeader}>
+                <View>
+                  <Text style={[s.householdSwitcherLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    Switch household
+                  </Text>
+                  <Text style={[s.householdSwitcherCopy, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                    Choose which pack care logs and routines sync into.
+                  </Text>
+                </View>
+                {setActiveHousehold.isPending && (
+                  <Text style={[s.householdSwitchingText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                    Switching
+                  </Text>
+                )}
+              </View>
+              <View style={s.householdChoiceList}>
+                {householdChoices.map((choice) => (
+                  <Pressable
+                    key={choice.id}
+                    onPress={() => switchHousehold(choice.id)}
+                    disabled={choice.isActive || setActiveHousehold.isPending}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Switch to ${choice.name}`}
+                    accessibilityState={{ selected: choice.isActive, disabled: choice.isActive || setActiveHousehold.isPending }}
+                    style={({ pressed }) => [
+                      s.householdChoice,
+                      {
+                        backgroundColor: choice.isActive ? colors.primary + "16" : colors.background,
+                        borderColor: choice.isActive ? colors.primary + "55" : colors.border,
+                        opacity: pressed ? 0.78 : choice.isActive ? 0.88 : 1,
+                      },
+                    ]}
+                  >
+                    <View style={[s.householdChoiceIcon, { backgroundColor: choice.isActive ? colors.primary : colors.sage + "1A" }]}>
+                      <Ionicons name={choice.isActive ? "checkmark" : "swap-horizontal"} size={16} color={choice.isActive ? "#fff" : colors.sage} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.householdChoiceName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{choice.name}</Text>
+                      <Text style={[s.householdChoiceMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {choice.isActive ? "Active care sync pack" : "Switch care sync here"}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
             <View style={[s.boardDivider, { borderTopColor: colors.border }]} />
             {householdAccess.people.length === 0 ? (
               <View style={s.teamRow}>
@@ -1707,6 +1787,25 @@ const s = StyleSheet.create({
   codeValue: { fontSize: 21, letterSpacing: 1, marginTop: 3 },
   shareBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 16, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13 },
   shareBtnText: { color: "#fff", fontSize: 14 },
+  householdSwitcher: { paddingTop: 14 },
+  householdSwitcherHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
+  householdSwitcherLabel: { fontSize: 10.5, letterSpacing: 0.6 },
+  householdSwitcherCopy: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
+  householdSwitchingText: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 },
+  householdChoiceList: { gap: 8, marginTop: 10 },
+  householdChoice: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  householdChoiceIcon: { width: 32, height: 32, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  householdChoiceName: { fontSize: 13.5 },
+  householdChoiceMeta: { fontSize: 11.5, marginTop: 2 },
 
   signOut: {
     flexDirection: "row",

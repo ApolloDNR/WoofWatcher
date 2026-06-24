@@ -415,6 +415,10 @@ components:
           $ref: "#/components/schemas/User"
         household:
           $ref: "#/components/schemas/Household"
+        households:
+          type: array
+          items:
+            $ref: "#/components/schemas/Household"
         members:
           type: array
           items:
@@ -422,6 +426,7 @@ components:
       required:
         - user
         - household
+        - households
         - members
     MeUpdate:
       type: object

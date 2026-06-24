@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-24: Mobile Household Switching Uses Existing Memberships
+
+Decision: `/me` should include the authenticated user's existing household list, with invite codes still hidden unless that user is owner/admin for a given pack. Mobile More should render those households as the active-pack switcher and call the membership-scoped `PATCH /me/active-household` endpoint, then refresh `/me` and care state after a successful switch.
+
+Reason: The active-household API contract was complete, but caregivers still had no owner-visible way to choose which pack routines and logs sync into. Showing only existing memberships preserves the household trust boundary and avoids implying invite approval, role editing, or arbitrary household lookup are complete.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed invite approval, role changes, caregiver administration, account audit policy, or richer multi-household management becomes active release work.
+
 ### 2026-06-23: Active Household Switching Requires Membership
 
 Decision: API `PATCH /me/active-household` should set `users.activeHouseholdId` only when the authenticated user already has membership in the requested household. The route should ensure that household has care state and return the normal `/me` payload for the selected pack.

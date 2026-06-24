@@ -1506,6 +1506,15 @@ test("keeps Log search wired across text query and type filters", () => {
 
 test("keeps household access readiness visible from More", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
+  const householdLib = readFileSync(join(process.cwd(), "artifacts", "api-server", "src", "lib", "household.ts"), "utf8");
+  const reactClient = readFileSync(
+    join(process.cwd(), "lib", "api-client-react", "src", "generated", "api.ts"),
+    "utf8",
+  );
+  const reactSchemas = readFileSync(
+    join(process.cwd(), "lib", "api-client-react", "src", "generated", "api.schemas.ts"),
+    "utf8",
+  );
 
   assert.match(more, /deriveHouseholdAccessPlan/);
   assert.match(more, /householdAccess/);
@@ -1513,6 +1522,17 @@ test("keeps household access readiness visible from More", () => {
   assert.match(more, /localOnlyCaregivers/);
   assert.match(more, /routineOnlyOwners/);
   assert.match(more, /accessibilityLabel="Share household invite"/);
+  assert.match(householdLib, /households:/);
+  assert.match(reactSchemas, /households: Household\[\]/);
+  assert.match(reactClient, /useSetActiveHousehold/);
+  assert.match(more, /useSetActiveHousehold/);
+  assert.match(more, /householdChoices/);
+  assert.match(more, /Switch household/);
+  assert.match(more, /setActiveHousehold\.mutate/);
+  assert.match(more, /accessibilityLabel=\{`Switch to \$\{choice\.name\}`\}/);
+  assert.match(more, /accessibilityState=\{\{ selected: choice\.isActive, disabled: choice\.isActive \|\| setActiveHousehold\.isPending \}\}/);
+  assert.match(more, /refresh\(\)/);
+  assert.match(more, /Couldn't switch household/);
 });
 
 test("keeps More household, tools, and diet sections on shared board card anatomy", () => {

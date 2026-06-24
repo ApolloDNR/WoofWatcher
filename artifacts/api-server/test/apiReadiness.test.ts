@@ -126,12 +126,15 @@ test("keeps active household switching membership scoped", () => {
   assert.match(householdRoute, /buildMe\(userId, parsed\.data\.householdId\)/);
 
   assert.match(openapi, /\/me\/active-household:/);
+  assert.match(openapi, /households:[\s\S]*items:[\s\S]*#\/components\/schemas\/Household/);
   assert.match(openapi, /SetActiveHousehold/);
   assert.match(openapi, /householdId:/);
+  assert.match(zodApi, /"households": zod\.array\(zod\.object/);
   assert.match(zodApi, /export const SetActiveHouseholdBody/);
   assert.match(zodApi, /householdId": zod\.string\(\)\.min\(1\)/);
   assert.match(reactClient, /getSetActiveHouseholdUrl/);
   assert.match(reactClient, /setActiveHousehold/);
+  assert.match(reactSchemas, /households: Household\[\]/);
   assert.match(reactSchemas, /export interface SetActiveHouseholdBody/);
   assert.match(reactSchemas, /householdId: string/);
 });

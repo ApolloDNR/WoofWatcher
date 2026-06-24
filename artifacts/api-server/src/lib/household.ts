@@ -171,6 +171,7 @@ export async function getCaregiverName(
 export interface MePayload {
   user: { id: string; email: string | null; displayName: string | null };
   household: { id: string; name: string; inviteCode: string };
+  households: Array<{ id: string; name: string; inviteCode: string }>;
   members: Array<{
     id: string;
     userId: string;
@@ -185,7 +186,7 @@ export async function buildMe(
   userId: string,
   householdId: string,
 ): Promise<MePayload> {
-  const [[user], [household], memberRows] = await Promise.all([
+  const [[user], [household], memberRows, householdRows] = await Promise.all([
     db.select().from(usersTable).where(eq(usersTable.id, userId)),
     db.select().from(householdsTable).where(eq(householdsTable.id, householdId)),
     db
@@ -200,6 +201,17 @@ export async function buildMe(
       .from(householdMembersTable)
       .leftJoin(usersTable, eq(usersTable.id, householdMembersTable.userId))
       .where(eq(householdMembersTable.householdId, householdId))
+      .orderBy(householdMembersTable.createdAt),
+    db
+      .select({
+        id: householdsTable.id,
+        name: householdsTable.name,
+        inviteCode: householdsTable.inviteCode,
+        role: householdMembersTable.role,
+      })
+      .from(householdMembersTable)
+      .innerJoin(householdsTable, eq(householdsTable.id, householdMembersTable.householdId))
+      .where(eq(householdMembersTable.userId, userId))
       .orderBy(householdMembersTable.createdAt),
   ]);
   const selfMember = memberRows.find((m) => m.userId === userId);
@@ -216,6 +228,11 @@ export async function buildMe(
       name: household.name,
       inviteCode: canShareInvite ? household.inviteCode : "",
     },
+    households: householdRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      inviteCode: ["owner", "admin"].includes(row.role.toLowerCase()) ? row.inviteCode : "",
+    })),
     members: memberRows.map((m) => ({
       id: m.id,
       userId: m.userId,

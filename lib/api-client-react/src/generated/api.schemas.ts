@@ -69,6 +69,7 @@ export interface Member {
 export interface Me {
   user: User;
   household: Household;
+  households: Household[];
   members: Member[];
 }
 

@@ -59,6 +59,7 @@ Passing evidence:
 - API `/me` withholds the household invite code from non-owner/admin members, so ordinary caregivers can contribute care without being able to spread pack access before provider-backed caregiver administration exists.
 - API household activation persists the joined household on the user row when an invite is accepted, so later active-household care-state, care-entry, profile, and household routes continue using the joined pack instead of reverting to an older default household.
 - API active-household switching is membership-scoped, so `PATCH /me/active-household` can move care-state and care-entry routes between a caregiver's existing packs without accepting arbitrary household ids.
+- Mobile More exposes active-household switching from the Care Team surface. `/me` returns the authenticated user's existing household list, invite-code visibility stays owner/admin gated for each pack, and successful switches refresh care state so later routines and logs use the selected household.
 - Care Pass reports can be previewed by audience before sharing.
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
 - Records show expired, due-soon, current, and reference status for saved record rows.
@@ -67,7 +68,7 @@ Passing evidence:
 
 Current gaps:
 
-- Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning, invite approval, and post-setup confirmation remain incomplete.
+- Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning, invite approval, richer multi-household management, and post-setup confirmation remain incomplete.
 - Multiple dogs, provider-backed role enforcement, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
 - Runtime smoke has not been added.
 
@@ -202,7 +203,7 @@ Current gaps:
 - API care-state optimistic write conflict safety is covered by focused readiness so concurrent household document writes use the version predicate in the update itself before live database integration tests are available.
 - API household profile update scoping is covered by focused readiness so member display-name writes stay constrained to the active household before provider-backed role enforcement exists.
 - API household rename role gating is covered by focused readiness so only active-household owner/admin members can rename the shared pack before provider-backed role enforcement exists.
-- API household invite join provisioning, active-household persistence, active-household switching, and invite-code visibility are covered by focused readiness so first-time invite accepts join the intended shared household, later care sync routes stay pointed at the selected pack, and ordinary members cannot share the invite code before provider-backed admin tools exist.
+- API household invite join provisioning, active-household persistence, active-household switching, `/me.households`, invite-code visibility, and the mobile More switcher are covered by focused readiness so first-time invite accepts join the intended shared household, later care sync routes stay pointed at the selected pack, and ordinary members cannot share the invite code before provider-backed admin tools exist.
 - Need report/export tests.
 - Need release smoke checklist.
 

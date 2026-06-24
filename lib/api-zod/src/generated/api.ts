@@ -60,6 +60,11 @@ export const GetMeResponse = zod.object({
   "name": zod.string(),
   "inviteCode": zod.string()
 }),
+  "households": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+})),
   "members": zod.array(zod.object({
   "id": zod.string(),
   "userId": zod.string(),
@@ -92,6 +97,11 @@ export const UpdateMeResponse = zod.object({
   "name": zod.string(),
   "inviteCode": zod.string()
 }),
+  "households": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+})),
   "members": zod.array(zod.object({
   "id": zod.string(),
   "userId": zod.string(),
@@ -124,6 +134,11 @@ export const SetActiveHouseholdResponse = zod.object({
   "name": zod.string(),
   "inviteCode": zod.string()
 }),
+  "households": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+})),
   "members": zod.array(zod.object({
   "id": zod.string(),
   "userId": zod.string(),
@@ -156,6 +171,11 @@ export const UpdateHouseholdResponse = zod.object({
   "name": zod.string(),
   "inviteCode": zod.string()
 }),
+  "households": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+})),
   "members": zod.array(zod.object({
   "id": zod.string(),
   "userId": zod.string(),
@@ -188,6 +208,11 @@ export const JoinHouseholdResponse = zod.object({
   "name": zod.string(),
   "inviteCode": zod.string()
 }),
+  "households": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+})),
   "members": zod.array(zod.object({
   "id": zod.string(),
   "userId": zod.string(),

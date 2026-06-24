@@ -122,6 +122,7 @@ Latest completed local runtime/accessibility hardening:
 - Household invite codes are now visible only to owner/admin members in `/me` before provider-backed role enforcement. Ordinary members still receive the shared household context, but invite sharing stays unavailable so care contributors cannot spread pack access.
 - Household invite accepts now persist the joined pack as the user's active household before explicit household switching exists. Later active-household care-state, care-entry, profile, and household routes stay pointed at the joined pack when that membership is still valid.
 - Active-household switching now has a membership-scoped API contract before mobile switching UI exists. `PATCH /me/active-household` only accepts households where the authenticated user is already a member, ensures care-state readiness, updates `users.activeHouseholdId`, and returns the selected household context across the OpenAPI/zod/generated React client contract.
+- Mobile active-household switching now turns that API contract into an owner-visible More workflow. `/me` returns the authenticated user's existing household list with per-pack invite-code gating, the Care Team surface lets caregivers switch the active sync pack, and successful switches refresh `/me` plus care state so routines and logs stay pointed at the selected household.
 
 Next highest-impact work:
 
@@ -130,5 +131,5 @@ Next highest-impact work:
 3. Replace first-pass derived room variants with final illustrated room art.
 4. Replace first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art, then continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Add live API integration tests for care-state write races and care-entry delete retention once a test database and provider-auth harness are available.
-6. Add live household provisioning, invite-join, active-household persistence, active-household switching, role-gated household rename, invite-code visibility, and multi-household membership integration tests once a test database and provider-auth harness are available.
+6. Add live household provisioning, invite-join, active-household persistence, `/me.households`, active-household switching, role-gated household rename, invite-code visibility, mobile switcher, and multi-household membership integration tests once a test database and provider-auth harness are available.
 7. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.
