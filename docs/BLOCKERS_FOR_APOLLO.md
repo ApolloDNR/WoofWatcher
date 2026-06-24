@@ -36,6 +36,7 @@
 - Clerk production configuration.
 - Database/Supabase production configuration.
 - Provider/database rules for multi-dog care document scoping, including per-dog logs, routines, records, reports, avatars, privacy export, and household permissions.
+- Latest remote verify for WoofGuide provider/action contracts, GitHub Actions run `28066357245`, failed before job execution with job `83091412840` and GitHub's billing/spending-limit annotation: "The job was not started because recent account payments have failed or your spending limit needs to be increased." Local verification passed for the WoofGuide contract slice; the remote failure is not evidence of a code regression.
 - Storage provider for records and generated reports.
 - Document upload/storage rules for real record files; local metadata, reminders, visible storage gates, and local-only medication proof attachment now exist, but durable cross-device production file storage is not approved/configured.
 - AI provider key and model policy.
