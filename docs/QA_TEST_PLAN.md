@@ -396,3 +396,4 @@ Latest local evidence, 2026-06-23:
 - `node --check artifacts/api-server/src/lib/household-authorization.ts`, `node --check artifacts/api-server/src/routes/household.ts`, `node --check lib/api-client-react/src/generated/api.ts`, and `node --check lib/api-zod/src/generated/api.ts` - passing syntax checks.
 - `git diff --check` - passing with only expected Windows line-ending warnings.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.
+- Remote GitHub Actions run `28072320208` for commit `6e25c2f` failed before job execution with job `83109274416`, `steps: []`, `runner_id: 0`, `log not found: 83109274416`, and the billing/spending-limit annotation. Local verification remains the current evidence for this slice until the GitHub account billing/spending-limit blocker is fixed.
