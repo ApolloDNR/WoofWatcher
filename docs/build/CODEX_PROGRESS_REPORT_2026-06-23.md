@@ -25,6 +25,8 @@
 - Closed WoofGuide provider/action contract drift: care-helper questions and WoofGuide event flows now have readiness coverage for authenticated routes, rate-limit surfaces, truthful local fallbacks, provider-failure boundaries, and generated client error types.
 - OpenAPI now documents care-helper `401`, provider-backed `429`, and provider `502` responses without falsely representing local fallback as a provider-missing error, and WoofGuide event status/creation now document authenticated `401` responses.
 - Closed care-state/care-entry household scoping contract drift: API readiness now proves these read/write paths resolve the active household from the authenticated user, scope reads and mutations to that household, stamp created logs with household/caregiver ids, and expose auth/not-found errors to generated React query clients.
+- Closed the first role-aware care-entry write policy contract: API readiness now proves the server exposes authenticated household member role lookup, applies care-entry write policy before create/update/delete writes, returns documented ApiError-shaped `403` bodies for read-only or non-adult delete attempts, keeps kid/helper logs pending confirmation, keeps safety-critical medication/vomit/symptom/incident logs reviewable, and preserves medication proof metadata.
+- OpenAPI now documents care-entry create/update/delete `403` responses so provider-backed household roles and generated clients can handle forbidden helper/vet-viewer writes without drifting from the server.
 
 ## Verification
 
@@ -48,6 +50,9 @@
 - `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 367 passing after the WoofGuide provider/action contract fix.
 - RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing care-state read `401` OpenAPI coverage, then passed with 8 tests after household scoping contract updates.
 - `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 368 passing after the care-state/care-entry household scoping contract fix.
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing `care-entry-authorization.ts`, then passed with 9 tests after the role-aware care-entry policy contract was added.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 369 passing after the care-entry role-policy contract fix.
+- `node --check artifacts/api-server/src/lib/care-entry-authorization.ts` and `node --check artifacts/api-server/src/routes/care-entries.ts` - passing syntax checks.
 - `node --check lib/api-client-react/src/generated/api.ts` and `node --check lib/api-zod/src/generated/api.ts` - passing syntax checks.
 - `NODE_PATH=artifacts/woofwatcher-mobile/node_modules node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing with the package-local dependency path used for the generated React API client in this Windows checkout.
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
@@ -65,4 +70,4 @@
 
 ## Next Best Slice
 
-Run the Home Mission Deck QA surface on iOS and Android using the in-app setup, numbered device steps, pass criteria, and Needs tune escalation, attach screenshots, share the QA report, and tune the first visible phone-size issue.
+When device QA is available, run the Home Mission Deck QA surface on iOS and Android using the in-app setup, numbered device steps, pass criteria, and Needs tune escalation, attach screenshots, share the QA report, and tune the first visible phone-size issue. While device QA remains unavailable, continue provider-backed role/access hardening with household role mutation, invite acceptance, Access Pass enforcement, revocation, and audit trail contracts.

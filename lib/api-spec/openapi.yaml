@@ -492,6 +492,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to create shared care logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /care-entries/{id}:
     patch:
       operationId: updateCareEntry
@@ -528,6 +534,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to update shared care logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Entry not found
           content:
@@ -555,6 +567,12 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to delete shared care logs
           content:
             application/json:
               schema:

@@ -12,7 +12,15 @@ import {
   DeleteCareEntryParams,
 } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
-import { getActiveHouseholdId, getCaregiverName } from "../lib/household";
+import {
+  getActiveHouseholdId,
+  getCaregiverName,
+  getHouseholdMemberAuthz,
+} from "../lib/household";
+import {
+  applyCareEntryWritePolicy,
+  assertCareEntryWriteAllowed,
+} from "../lib/care-entry-authorization";
 
 const router: IRouter = Router();
 
@@ -56,20 +64,31 @@ router.post("/care-entries", requireAuth, async (req, res): Promise<void> => {
   }
   const householdId = await getActiveHouseholdId(userId);
   const caregiverName = await getCaregiverName(householdId, userId);
+  const member = await getHouseholdMemberAuthz(householdId, userId);
+  const policy = applyCareEntryWritePolicy({
+    role: member?.role,
+    type: parsed.data.type,
+    details: parsed.data.details,
+    action: "create",
+  });
+  if (!policy.allowed) {
+    res.status(403).json({ error: policy.reason });
+    return;
+  }
 
   const [entry] = await db
     .insert(careEntriesTable)
     .values({
       householdId,
       petId: parsed.data.petId ?? null,
-      type: normalizeCareEventType(parsed.data.type, parsed.data.details),
+      type: normalizeCareEventType(parsed.data.type, policy.details),
       occurredAt: parsed.data.occurredAt ?? new Date(),
       caregiverUserId: userId,
       caregiverName,
       mood: parsed.data.mood ?? null,
       severity: parsed.data.severity ?? null,
       note: parsed.data.note ?? null,
-      details: parsed.data.details ?? null,
+      details: policy.details,
     })
     .returning();
 
@@ -89,12 +108,40 @@ router.patch("/care-entries/:id", requireAuth, async (req, res): Promise<void> =
     return;
   }
   const householdId = await getActiveHouseholdId(userId);
+  const member = await getHouseholdMemberAuthz(householdId, userId);
+
+  const [existing] = await db
+    .select()
+    .from(careEntriesTable)
+    .where(
+      and(
+        eq(careEntriesTable.id, params.data.id),
+        eq(careEntriesTable.householdId, householdId),
+      ),
+    )
+    .limit(1);
+
+  if (!existing) {
+    res.status(404).json({ error: "Entry not found" });
+    return;
+  }
+
+  const policy = applyCareEntryWritePolicy({
+    role: member?.role,
+    type: parsed.data.type ?? existing.type,
+    details: parsed.data.details ?? existing.details ?? {},
+    action: "update",
+  });
+  if (!policy.allowed) {
+    res.status(403).json({ error: policy.reason });
+    return;
+  }
 
   const [updated] = await db
     .update(careEntriesTable)
     .set({
       ...(parsed.data.type !== undefined
-        ? { type: normalizeCareEventType(parsed.data.type, parsed.data.details) }
+        ? { type: normalizeCareEventType(parsed.data.type, policy.details) }
         : {}),
       ...(parsed.data.occurredAt !== undefined
         ? { occurredAt: parsed.data.occurredAt }
@@ -104,9 +151,7 @@ router.patch("/care-entries/:id", requireAuth, async (req, res): Promise<void> =
         ? { severity: parsed.data.severity }
         : {}),
       ...(parsed.data.note !== undefined ? { note: parsed.data.note } : {}),
-      ...(parsed.data.details !== undefined
-        ? { details: parsed.data.details }
-        : {}),
+      details: policy.details,
     })
     .where(
       and(
@@ -115,11 +160,6 @@ router.patch("/care-entries/:id", requireAuth, async (req, res): Promise<void> =
       ),
     )
     .returning();
-
-  if (!updated) {
-    res.status(404).json({ error: "Entry not found" });
-    return;
-  }
 
   res.json(UpdateCareEntryResponse.parse(updated));
 });
@@ -135,6 +175,15 @@ router.delete(
       return;
     }
     const householdId = await getActiveHouseholdId(userId);
+    const member = await getHouseholdMemberAuthz(householdId, userId);
+    const policy = assertCareEntryWriteAllowed({
+      role: member?.role,
+      action: "delete",
+    });
+    if (!policy.allowed) {
+      res.status(403).json({ error: policy.reason });
+      return;
+    }
 
     const [deleted] = await db
       .delete(careEntriesTable)

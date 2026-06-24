@@ -82,9 +82,9 @@ Full Premium Release means the app is credible enough for a dog owner to use eve
 
 - Confirm database schema supports multiple dogs, household roles, record documents, report artifacts, notification preferences, and per-dog care document scoping. The mobile care document now has local `activePetId` and planned `pets` fields, but provider-backed separation is not implemented.
 - Add storage provider for uploaded records and generated reports.
-- Add role-aware authorization checks beyond basic household membership.
+- Expand role-aware authorization beyond the new care-entry write policy into provider-backed household role mutation, invite acceptance, Access Pass enforcement, revocation, and audit trails.
 - Care-log edit/delete audit trail exists in mobile and care-domain; add broader audit trails for important medical records, documents, account actions, and role changes.
-- API readiness now guards OpenAPI/generated-client coverage for WoofGuide events, Avatar Studio image routes, household provisioning/auth errors, `/care-entries?limit=...`, care-entry create/update/delete validation/not-found response shapes, `PUT /care-state` validation/not-found/conflict response shapes, provider-gated WoofGuide action auth/rate-limit/local-fallback contracts, and active-household scoping across care-state/care-entry read/write paths; continue with role-aware authorization readiness beyond basic household membership.
+- API readiness now guards OpenAPI/generated-client coverage for WoofGuide events, Avatar Studio image routes, household provisioning/auth errors, `/care-entries?limit=...`, care-entry create/update/delete validation/not-found/forbidden response shapes, `PUT /care-state` validation/not-found/conflict response shapes, provider-gated WoofGuide action auth/rate-limit/local-fallback contracts, active-household scoping across care-state/care-entry read/write paths, and role-aware care-entry write policy for read-only roles, kid/helper pending confirmation, safety-critical review, and medication proof metadata; continue with provider-backed household role mutation and Access Pass enforcement readiness.
 - Add deeper multi-device conflict policy, server-backed delete retention, and broader background retry recovery policy.
 
 ## Test And QA Gaps

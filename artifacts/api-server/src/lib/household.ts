@@ -136,6 +136,37 @@ export async function getCaregiverName(
   return row?.memberName ?? row?.userName ?? null;
 }
 
+export interface HouseholdMemberAuthz {
+  id: string;
+  userId: string;
+  householdId: string;
+  role: string;
+  displayName: string | null;
+}
+
+export async function getHouseholdMemberAuthz(
+  householdId: string,
+  userId: string,
+): Promise<HouseholdMemberAuthz | null> {
+  const [row] = await db
+    .select({
+      id: householdMembersTable.id,
+      userId: householdMembersTable.userId,
+      householdId: householdMembersTable.householdId,
+      role: householdMembersTable.role,
+      displayName: householdMembersTable.displayName,
+    })
+    .from(householdMembersTable)
+    .where(
+      and(
+        eq(householdMembersTable.householdId, householdId),
+        eq(householdMembersTable.userId, userId),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
 export interface MePayload {
   user: { id: string; email: string | null; displayName: string | null };
   household: { id: string; name: string; inviteCode: string };

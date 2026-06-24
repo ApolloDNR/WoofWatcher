@@ -400,3 +400,80 @@ test("care state and care entry routes keep household scoping documented and typ
     "React API care-entry list query error alias must expose auth error bodies",
   );
 });
+
+test("care entry writes keep role-aware trust and read-only boundaries", () => {
+  const careEntriesRoute = read("artifacts/api-server/src/routes/care-entries.ts");
+  const householdLib = read("artifacts/api-server/src/lib/household.ts");
+  const rolePolicy = read("artifacts/api-server/src/lib/care-entry-authorization.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+
+  const createCareEntryBlock = section(
+    openapi,
+    "    post:\n      operationId: createCareEntry",
+    "  /care-entries/{id}:",
+  );
+  const updateCareEntryBlock = section(
+    openapi,
+    "    patch:\n      operationId: updateCareEntry",
+    "    delete:\n      operationId: deleteCareEntry",
+  );
+  const deleteCareEntryBlock = section(
+    openapi,
+    "    delete:\n      operationId: deleteCareEntry",
+    "\ncomponents:",
+  );
+
+  assert.match(
+    householdLib,
+    /export async function getHouseholdMemberAuthz/,
+    "household auth should expose the authenticated member role for write policy checks",
+  );
+  assert.match(
+    careEntriesRoute,
+    /getHouseholdMemberAuthz\(householdId, userId\)/,
+    "care-entry writes should resolve the authenticated member before applying write policy",
+  );
+  assert.match(
+    careEntriesRoute,
+    /applyCareEntryWritePolicy\(/,
+    "care-entry create/update routes should pass details through the role-aware trust policy",
+  );
+  assert.match(
+    careEntriesRoute,
+    /assertCareEntryWriteAllowed\(/,
+    "care-entry delete routes should still enforce read-only helper boundaries",
+  );
+  assert.match(
+    careEntriesRoute,
+    /res\.status\(403\)\.json\(\{ error: policy\.reason \}\)/,
+    "care-entry writes should return ApiError-shaped 403 bodies when a role is not allowed",
+  );
+
+  assert.match(rolePolicy, /read-only/i, "role policy should define read-only helper boundaries");
+  assert.match(rolePolicy, /vet viewer/i, "role policy should name vet viewer as read-only");
+  assert.match(rolePolicy, /kid-log/, "role policy should keep kid logs pending adult confirmation");
+  assert.match(rolePolicy, /helper-log/, "role policy should keep sitter and trainer logs pending adult confirmation");
+  assert.match(rolePolicy, /safety-critical/, "role policy should keep medication and serious health logs adult-reviewable");
+  assert.match(rolePolicy, /photoProofPolicy:\s*"medication-proof"/, "medication writes should keep proof policy metadata");
+  assert.match(rolePolicy, /trustState:\s*"pending-confirmation"/, "restricted or serious logs should not be silently confirmed");
+
+  assert.match(createCareEntryBlock, /"403":/, "OpenAPI must document forbidden care-entry creates for read-only roles");
+  assert.match(updateCareEntryBlock, /"403":/, "OpenAPI must document forbidden care-entry updates for read-only roles");
+  assert.match(deleteCareEntryBlock, /"403":/, "OpenAPI must document forbidden care-entry deletes for read-only roles");
+  assert.match(
+    reactClient,
+    /CreateCareEntryMutationError = ErrorType<ApiError>/,
+    "React API create mutation must keep role-policy errors typed as ApiError",
+  );
+  assert.match(
+    reactClient,
+    /UpdateCareEntryMutationError = ErrorType<ApiError>/,
+    "React API update mutation must keep role-policy errors typed as ApiError",
+  );
+  assert.match(
+    reactClient,
+    /DeleteCareEntryMutationError = ErrorType<ApiError>/,
+    "React API delete mutation must keep role-policy errors typed as ApiError",
+  );
+});
