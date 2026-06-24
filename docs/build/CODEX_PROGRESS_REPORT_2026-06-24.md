@@ -36,9 +36,9 @@
 
 - Real iOS and Android device/simulator screenshots still need to be captured and attached in `/care-twin-qa`.
 - The durable audit table still needs provider migration execution, RLS/provider access rules, retention/export/deletion policy, and production approval before public launch.
-- Invite approval lifecycle storage and admin/audit review APIs are not complete yet.
+- Invite approval lifecycle storage is not complete yet.
 - Scheduled or request-time cleanup for expired Access Pass helper roles is not complete yet.
-- GitHub Actions remote CI is still blocked by the account billing/spending-limit issue until Apollo fixes GitHub billing/platform execution; latest checked run is `28075849741` / job `83119832168`.
+- GitHub Actions remote CI is still blocked by the account billing/spending-limit issue until Apollo fixes GitHub billing/platform execution; latest checked run is `28078084503` / job `83126533628`.
 
 ## Next Best Slice
 
@@ -74,6 +74,7 @@ If device QA remains unavailable, continue provider readiness with invite approv
 - `node node_modules/typescript/bin/tsc -p lib/api-client-react/tsconfig.json --noEmit` remains environment-limited because this shell cannot resolve local `@tanstack/react-query`.
 - `node node_modules/typescript/bin/tsc -p artifacts/api-server/tsconfig.json --noEmit` remains environment-limited because this shell cannot resolve local `@types/node`.
 - These are workspace dependency-resolution limits in the local Windows runner, not failing audit-readiness assertions.
+- Remote GitHub Actions run `28078084503` for commit `eb50f5c` failed before job execution with job `83126533628`, zero steps, and `gh run view --log-failed` returned `log not found: 83126533628`, matching the standing GitHub billing/spending-limit blocker.
 
 ## Next Best Slice - Updated
 

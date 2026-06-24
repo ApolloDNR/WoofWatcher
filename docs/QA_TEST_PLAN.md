@@ -436,3 +436,4 @@ Latest local evidence, 2026-06-24:
 - `git diff --check` - passing with only expected Windows line-ending warnings.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.
 - Direct package TypeScript checks for `lib/api-zod`, `lib/api-client-react`, and `artifacts/api-server` remain environment-limited by unresolved local workspace dependencies (`zod`, `@tanstack/react-query`, and `@types/node`). The previous generated-type export collision in `lib/api-zod` is fixed; the remaining failures are dependency-resolution limits in this Windows shell, not audit-readiness assertion failures.
+- Remote GitHub Actions run `28078084503` for commit `eb50f5c` failed before job execution with job `83126533628`, `steps: []`, and `log not found: 83126533628`, matching the billing/spending-limit blocker. Local verification remains the current evidence for this slice until GitHub billing/platform execution is fixed.
