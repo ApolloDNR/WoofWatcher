@@ -397,3 +397,15 @@ Latest local evidence, 2026-06-23:
 - `git diff --check` - passing with only expected Windows line-ending warnings.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.
 - Remote GitHub Actions run `28072320208` for commit `6e25c2f` failed before job execution with job `83109274416`, `steps: []`, `runner_id: 0`, `log not found: 83109274416`, and the billing/spending-limit annotation. Local verification remains the current evidence for this slice until the GitHub account billing/spending-limit blocker is fixed.
+
+Latest local evidence, 2026-06-23:
+
+- API readiness now covers household invite acceptance and Access Pass helper mutation contracts so join-by-invite emits typed audit metadata, stores canonical adult caregiver roles, and Access Pass activation/revocation stay owner/admin-only, active-household-scoped, helper-role-limited, and generated-client typed.
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on the missing `household-access-pass.ts` policy/audit module, then passed with 11 tests after invitation audit events, Access Pass activation/revocation routes, OpenAPI schemas, Zod validators, and generated React hooks were added.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 371 passing after the household invitation/Access Pass audit contract fix.
+- `NODE_PATH=artifacts/woofwatcher-mobile/node_modules node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
+- `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
+- `node --check artifacts/api-server/src/lib/household-access-pass.ts`, `node --check artifacts/api-server/src/routes/household.ts`, `node --check lib/api-client-react/src/generated/api.ts`, `node --check lib/api-client-react/src/generated/api.schemas.ts`, and `node --check lib/api-zod/src/generated/api.ts` - passing syntax checks.
+- `git diff --check` - passing with only expected Windows line-ending warnings.
+- Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.
+- Direct `node artifacts/api-server/build.mjs` remains environment-limited in this Windows shell because `esbuild` is present in pnpm's store but not resolvable without the pnpm workspace symlink/runner layer. The failure is `ERR_MODULE_NOT_FOUND: Cannot find package 'esbuild'`, not an edited route-contract assertion failure.

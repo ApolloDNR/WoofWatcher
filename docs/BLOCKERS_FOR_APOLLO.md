@@ -5,7 +5,7 @@
 - Confirm launch target: Expo preview, TestFlight, App Store, web dashboard, or staged launch.
 - Confirm subscription packaging and exact paid tiers.
 - Confirm whether WoofWatcher should support provider-backed multi-dog switching before paid launch. Local CareTwin roster staging exists now, but scoped per-dog care documents still need provider/database approval.
-- Confirm whether Access Pass should become a launch feature or post-launch feature. Local Access Pass drafts exist now, but real helper access requires provider-backed invites, revocation, role enforcement, helper audit trails, and legal/privacy approval.
+- Confirm whether Access Pass should become a launch feature or post-launch feature. Local Access Pass drafts exist and the API now has owner/admin helper activation/revocation contracts for existing household members, but production launch still requires provider-backed invite lifecycle, durable helper audit storage, expiry enforcement, account retention rules, and legal/privacy approval.
 - Confirm whether Adventure Mode should remain a private local memory feature for launch or include provider-backed photo storage, map/location retention, share links, or community discovery. The local quest/memory foundation exists now; cloud media, maps, public sharing, and community safety are not approved or live.
 - Confirm whether Figma is the canonical visual design source.
 - Confirm final high-end animation asset pipeline: code-only Reanimated first, Rive/Lottie assets, Figma-to-code design source, or hired illustrator/motion designer support.

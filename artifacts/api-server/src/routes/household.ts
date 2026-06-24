@@ -3,12 +3,18 @@ import { and, eq } from "drizzle-orm";
 import { db, householdsTable, householdMembersTable, usersTable } from "@workspace/db";
 import {
   GetMeResponse,
+  JoinHouseholdResponse,
   UpdateMeBody,
   UpdateHouseholdBody,
   JoinHouseholdBody,
   UpdateHouseholdMemberParams,
   UpdateHouseholdMemberBody,
+  UpdateHouseholdMemberResponse,
   RevokeHouseholdMemberParams,
+  RevokeHouseholdMemberResponse,
+  AccessPassActivationBody,
+  AccessPassRevocationBody,
+  HouseholdAccessPassMutationResponse,
 } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
 import {
@@ -20,6 +26,11 @@ import {
   assertHouseholdMemberMutationAllowed,
   normalizeHouseholdMemberRole,
 } from "../lib/household-authorization";
+import {
+  assertAccessPassMutationAllowed,
+  buildHouseholdAuditEvent,
+  normalizeAccessPassRole,
+} from "../lib/household-access-pass";
 
 const router: IRouter = Router();
 
@@ -101,12 +112,29 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
     await db.insert(householdMembersTable).values({
       householdId: household.id,
       userId,
-      role: "member",
+      role: normalizeHouseholdMemberRole("adult"),
       displayName: user?.displayName ?? null,
     });
   }
 
-  res.json(GetMeResponse.parse(await buildMe(userId, household.id)));
+  const auditEvent = buildHouseholdAuditEvent({
+    action: "invitation-accepted",
+    actorUserId: userId,
+    householdId: household.id,
+    targetUserId: userId,
+    targetRole: inThisHousehold ? "existing-member" : null,
+    nextRole: normalizeHouseholdMemberRole("adult"),
+    reason: inThisHousehold
+      ? "Existing household member opened an invite code."
+      : "Invite code accepted and caregiver membership created.",
+  });
+
+  res.json(
+    JoinHouseholdResponse.parse({
+      ...(await buildMe(userId, household.id)),
+      auditEvent,
+    }),
+  );
 });
 
 router.patch("/household/members/:id", requireAuth, async (req, res): Promise<void> => {
@@ -155,12 +183,16 @@ router.patch("/household/members/:id", requireAuth, async (req, res): Promise<vo
     res.status(403).json({ error: policy.reason });
     return;
   }
+  const nextRole =
+    parsed.data.role !== undefined
+      ? normalizeHouseholdMemberRole(parsed.data.role)
+      : normalizeHouseholdMemberRole(target.role);
 
   await db
     .update(householdMembersTable)
     .set({
       ...(parsed.data.role !== undefined
-        ? { role: normalizeHouseholdMemberRole(parsed.data.role) }
+        ? { role: nextRole }
         : {}),
       ...(parsed.data.displayName !== undefined
         ? { displayName: parsed.data.displayName ?? null }
@@ -173,7 +205,23 @@ router.patch("/household/members/:id", requireAuth, async (req, res): Promise<vo
       ),
     );
 
-  res.json(GetMeResponse.parse(await buildMe(userId, householdId)));
+  const auditEvent = buildHouseholdAuditEvent({
+    action: "member-role-updated",
+    actorUserId: userId,
+    householdId,
+    targetMemberId: target.id,
+    targetUserId: target.userId,
+    targetRole: normalizeHouseholdMemberRole(target.role),
+    nextRole,
+    reason: policy.reason,
+  });
+
+  res.json(
+    UpdateHouseholdMemberResponse.parse({
+      ...(await buildMe(userId, householdId)),
+      auditEvent,
+    }),
+  );
 });
 
 router.delete(
@@ -216,6 +264,16 @@ router.delete(
       return;
     }
 
+    const auditEvent = buildHouseholdAuditEvent({
+      action: "member-revoked",
+      actorUserId: userId,
+      householdId,
+      targetMemberId: target.id,
+      targetUserId: target.userId,
+      targetRole: normalizeHouseholdMemberRole(target.role),
+      reason: policy.reason,
+    });
+
     await db
       .delete(householdMembersTable)
       .where(
@@ -225,8 +283,168 @@ router.delete(
         ),
       );
 
-    res.sendStatus(204);
+    res.json(
+      RevokeHouseholdMemberResponse.parse({
+        ...(await buildMe(userId, householdId)),
+        auditEvent,
+      }),
+    );
   },
 );
+
+router.post("/household/access-passes/activate", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const parsed = AccessPassActivationBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { householdId } = await ensureUserAndHousehold(userId);
+  const actor = await getHouseholdMemberAuthz(householdId, userId);
+  const [target] = await db
+    .select()
+    .from(householdMembersTable)
+    .where(
+      and(
+        eq(householdMembersTable.id, parsed.data.memberId),
+        eq(householdMembersTable.householdId, householdId),
+      ),
+    )
+    .limit(1);
+
+  if (!target) {
+    res.status(404).json({ error: "Household member not found" });
+    return;
+  }
+
+  const nextRole = normalizeAccessPassRole(parsed.data.role);
+  const policy = assertAccessPassMutationAllowed({
+    actorRole: actor?.role,
+    targetRole: target.role,
+    nextRole,
+    targetIsSelf: target.userId === userId,
+    action: "activate",
+  });
+  if (!policy.allowed) {
+    res.status(403).json({ error: policy.reason });
+    return;
+  }
+
+  await db
+    .update(householdMembersTable)
+    .set({
+      role: nextRole,
+      ...(parsed.data.displayName !== undefined
+        ? { displayName: parsed.data.displayName ?? null }
+        : {}),
+    })
+    .where(
+      and(
+        eq(householdMembersTable.id, parsed.data.memberId),
+        eq(householdMembersTable.householdId, householdId),
+      ),
+    );
+
+  const auditEvent = buildHouseholdAuditEvent({
+    action: "access-pass-activated",
+    actorUserId: userId,
+    householdId,
+    targetMemberId: target.id,
+    targetUserId: target.userId,
+    targetRole: normalizeHouseholdMemberRole(target.role),
+    nextRole,
+    reason: policy.reason,
+    note: parsed.data.note,
+    expiresAt: parsed.data.expiresAt,
+  });
+
+  res.json(
+    HouseholdAccessPassMutationResponse.parse({
+      ...(await buildMe(userId, householdId)),
+      accessPass: {
+        memberId: target.id,
+        userId: target.userId,
+        role: nextRole,
+        status: "active",
+        expiresAt: parsed.data.expiresAt ?? null,
+        note: parsed.data.note ?? null,
+      },
+      auditEvent,
+    }),
+  );
+});
+
+router.post("/household/access-passes/revoke", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const parsed = AccessPassRevocationBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { householdId } = await ensureUserAndHousehold(userId);
+  const actor = await getHouseholdMemberAuthz(householdId, userId);
+  const [target] = await db
+    .select()
+    .from(householdMembersTable)
+    .where(
+      and(
+        eq(householdMembersTable.id, parsed.data.memberId),
+        eq(householdMembersTable.householdId, householdId),
+      ),
+    )
+    .limit(1);
+
+  if (!target) {
+    res.status(404).json({ error: "Household member not found" });
+    return;
+  }
+
+  const policy = assertAccessPassMutationAllowed({
+    actorRole: actor?.role,
+    targetRole: target.role,
+    targetIsSelf: target.userId === userId,
+    action: "revoke",
+  });
+  if (!policy.allowed) {
+    res.status(403).json({ error: policy.reason });
+    return;
+  }
+
+  const auditEvent = buildHouseholdAuditEvent({
+    action: "access-pass-revoked",
+    actorUserId: userId,
+    householdId,
+    targetMemberId: target.id,
+    targetUserId: target.userId,
+    targetRole: normalizeHouseholdMemberRole(target.role),
+    reason: parsed.data.reason ?? policy.reason,
+  });
+
+  await db
+    .delete(householdMembersTable)
+    .where(
+      and(
+        eq(householdMembersTable.id, parsed.data.memberId),
+        eq(householdMembersTable.householdId, householdId),
+      ),
+    );
+
+  res.json(
+    HouseholdAccessPassMutationResponse.parse({
+      ...(await buildMe(userId, householdId)),
+      accessPass: {
+        memberId: target.id,
+        userId: target.userId,
+        role: normalizeHouseholdMemberRole(target.role),
+        status: "revoked",
+        expiresAt: null,
+        note: parsed.data.reason ?? null,
+      },
+      auditEvent,
+    }),
+  );
+});
 
 export default router;

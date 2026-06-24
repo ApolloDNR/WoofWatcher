@@ -25,6 +25,8 @@ import type {
   AvatarEmotionsResponse,
   AvatarStylizeInput,
   AvatarStylizeResponse,
+  AccessPassActivationInput,
+  AccessPassRevocationInput,
   CareEntry,
   CareEntryInput,
   CareEntryUpdate,
@@ -35,9 +37,12 @@ import type {
   CareStateEnvelope,
   CareStateInput,
   HealthStatus,
+  HouseholdAccessPassMutationResponse,
   HouseholdMemberUpdate,
+  HouseholdMemberMutationResponse,
   HouseholdUpdate,
   JoinHouseholdInput,
+  HouseholdJoinResponse,
   ListCareEntriesParams,
   Me,
   MeUpdate,
@@ -812,9 +817,9 @@ export const getJoinHouseholdUrl = () => {
 /**
  * @summary Join an existing household by invite code
  */
-export const joinHousehold = async (joinHouseholdInput: JoinHouseholdInput, options?: RequestInit): Promise<Me> => {
+export const joinHousehold = async (joinHouseholdInput: JoinHouseholdInput, options?: RequestInit): Promise<HouseholdJoinResponse> => {
 
-  return customFetch<Me>(getJoinHouseholdUrl(),
+  return customFetch<HouseholdJoinResponse>(getJoinHouseholdUrl(),
   {
     ...options,
     method: 'POST',
@@ -884,9 +889,9 @@ export const getUpdateHouseholdMemberUrl = (id: string,) => {
  * @summary Update a household member role or display name
  */
 export const updateHouseholdMember = async (id: string,
-    householdMemberUpdate: HouseholdMemberUpdate, options?: RequestInit): Promise<Me> => {
+    householdMemberUpdate: HouseholdMemberUpdate, options?: RequestInit): Promise<HouseholdMemberMutationResponse> => {
 
-  return customFetch<Me>(getUpdateHouseholdMemberUrl(id),
+  return customFetch<HouseholdMemberMutationResponse>(getUpdateHouseholdMemberUrl(id),
   {
     ...options,
     method: 'PATCH',
@@ -955,9 +960,9 @@ export const getRevokeHouseholdMemberUrl = (id: string,) => {
 /**
  * @summary Revoke a household member from the current household
  */
-export const revokeHouseholdMember = async (id: string, options?: RequestInit): Promise<void> => {
+export const revokeHouseholdMember = async (id: string, options?: RequestInit): Promise<HouseholdMemberMutationResponse> => {
 
-  return customFetch<void>(getRevokeHouseholdMemberUrl(id),
+  return customFetch<HouseholdMemberMutationResponse>(getRevokeHouseholdMemberUrl(id),
   {
     ...options,
     method: 'DELETE'
@@ -1012,6 +1017,148 @@ export const useRevokeHouseholdMember = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getRevokeHouseholdMemberMutationOptions(options));
+    }
+
+export const getActivateHouseholdAccessPassUrl = () => {
+
+
+
+
+  return `/api/household/access-passes/activate`
+}
+
+/**
+ * @summary Activate an Access Pass helper role for a household member
+ */
+export const activateHouseholdAccessPass = async (accessPassActivationInput: AccessPassActivationInput, options?: RequestInit): Promise<HouseholdAccessPassMutationResponse> => {
+
+  return customFetch<HouseholdAccessPassMutationResponse>(getActivateHouseholdAccessPassUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      accessPassActivationInput,)
+  }
+);}
+
+
+
+
+export const getActivateHouseholdAccessPassMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateHouseholdAccessPass>>, TError,{data: BodyType<AccessPassActivationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activateHouseholdAccessPass>>, TError,{data: BodyType<AccessPassActivationInput>}, TContext> => {
+
+const mutationKey = ['activateHouseholdAccessPass'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateHouseholdAccessPass>>, {data: BodyType<AccessPassActivationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  activateHouseholdAccessPass(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivateHouseholdAccessPassMutationResult = NonNullable<Awaited<ReturnType<typeof activateHouseholdAccessPass>>>
+    export type ActivateHouseholdAccessPassMutationBody = BodyType<AccessPassActivationInput>
+    export type ActivateHouseholdAccessPassMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Activate an Access Pass helper role for a household member
+ */
+export const useActivateHouseholdAccessPass = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateHouseholdAccessPass>>, TError,{data: BodyType<AccessPassActivationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof activateHouseholdAccessPass>>,
+        TError,
+        {data: BodyType<AccessPassActivationInput>},
+        TContext
+      > => {
+      return useMutation(getActivateHouseholdAccessPassMutationOptions(options));
+    }
+
+export const getRevokeHouseholdAccessPassUrl = () => {
+
+
+
+
+  return `/api/household/access-passes/revoke`
+}
+
+/**
+ * @summary Revoke an Access Pass helper role
+ */
+export const revokeHouseholdAccessPass = async (accessPassRevocationInput: AccessPassRevocationInput, options?: RequestInit): Promise<HouseholdAccessPassMutationResponse> => {
+
+  return customFetch<HouseholdAccessPassMutationResponse>(getRevokeHouseholdAccessPassUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      accessPassRevocationInput,)
+  }
+);}
+
+
+
+
+export const getRevokeHouseholdAccessPassMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdAccessPass>>, TError,{data: BodyType<AccessPassRevocationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdAccessPass>>, TError,{data: BodyType<AccessPassRevocationInput>}, TContext> => {
+
+const mutationKey = ['revokeHouseholdAccessPass'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeHouseholdAccessPass>>, {data: BodyType<AccessPassRevocationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  revokeHouseholdAccessPass(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeHouseholdAccessPassMutationResult = NonNullable<Awaited<ReturnType<typeof revokeHouseholdAccessPass>>>
+    export type RevokeHouseholdAccessPassMutationBody = BodyType<AccessPassRevocationInput>
+    export type RevokeHouseholdAccessPassMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Revoke an Access Pass helper role
+ */
+export const useRevokeHouseholdAccessPass = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeHouseholdAccessPass>>, TError,{data: BodyType<AccessPassRevocationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeHouseholdAccessPass>>,
+        TError,
+        {data: BodyType<AccessPassRevocationInput>},
+        TContext
+      > => {
+      return useMutation(getRevokeHouseholdAccessPassMutationOptions(options));
     }
 
 export const getGetCareStateUrl = () => {

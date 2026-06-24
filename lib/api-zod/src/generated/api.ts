@@ -146,6 +146,27 @@ export const GetMeResponse = zod.object({
 }))
 })
 
+export const HouseholdAuditEvent = zod.object({
+  "id": zod.string(),
+  "action": zod.enum(["invitation-accepted", "member-role-updated", "member-revoked", "access-pass-activated", "access-pass-revoked"]),
+  "actorUserId": zod.string(),
+  "householdId": zod.string(),
+  "targetMemberId": zod.string().nullish(),
+  "targetUserId": zod.string().nullish(),
+  "targetRole": zod.string().nullish(),
+  "nextRole": zod.string().nullish(),
+  "reason": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "expiresAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "storage": zod.literal("response-only"),
+  "boundary": zod.string()
+})
+
+export const HouseholdJoinResponse = GetMeResponse.extend({
+  "auditEvent": HouseholdAuditEvent
+})
+
 
 /**
  * @summary Update the current user's profile / display name
@@ -221,25 +242,10 @@ export const JoinHouseholdBody = zod.object({
   "inviteCode": zod.string().min(1)
 })
 
-export const JoinHouseholdResponse = zod.object({
-  "user": zod.object({
-  "id": zod.string(),
-  "email": zod.string().nullish(),
-  "displayName": zod.string().nullish()
-}),
-  "household": zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "inviteCode": zod.string()
-}),
-  "members": zod.array(zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "role": zod.string(),
-  "displayName": zod.string().nullish(),
-  "email": zod.string().nullish(),
-  "isSelf": zod.boolean()
-}))
+export const JoinHouseholdResponse = HouseholdJoinResponse
+
+export const HouseholdMemberMutationResponse = GetMeResponse.extend({
+  "auditEvent": HouseholdAuditEvent
 })
 
 /**
@@ -254,7 +260,7 @@ export const UpdateHouseholdMemberBody = zod.object({
   "displayName": zod.string().min(1).nullish()
 })
 
-export const UpdateHouseholdMemberResponse = GetMeResponse
+export const UpdateHouseholdMemberResponse = HouseholdMemberMutationResponse
 
 
 /**
@@ -262,6 +268,33 @@ export const UpdateHouseholdMemberResponse = GetMeResponse
  */
 export const RevokeHouseholdMemberParams = zod.object({
   "id": zod.coerce.string()
+})
+
+export const RevokeHouseholdMemberResponse = HouseholdMemberMutationResponse
+
+export const AccessPassActivationBody = zod.object({
+  "memberId": zod.string().min(1),
+  "role": zod.enum(["sitter", "trainer", "walker", "vet viewer"]),
+  "displayName": zod.string().min(1).nullish(),
+  "expiresAt": zod.string().nullish(),
+  "note": zod.string().nullish()
+})
+
+export const AccessPassRevocationBody = zod.object({
+  "memberId": zod.string().min(1),
+  "reason": zod.string().nullish()
+})
+
+export const HouseholdAccessPassMutationResponse = GetMeResponse.extend({
+  "accessPass": zod.object({
+    "memberId": zod.string(),
+    "userId": zod.string(),
+    "role": zod.enum(["sitter", "trainer", "walker", "vet viewer"]),
+    "status": zod.enum(["active", "revoked"]),
+    "expiresAt": zod.string().nullish(),
+    "note": zod.string().nullish()
+  }),
+  "auditEvent": HouseholdAuditEvent
 })
 
 

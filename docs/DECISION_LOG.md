@@ -1444,6 +1444,23 @@ Revisit trigger: the app adopts a native sheet/navigation library, changes the
 floating paw navigation, or real device QA proves the shared constants need
 surface-specific tuning.
 
+### 2026-06-23: Access Pass Mutations Return Audit Metadata Before Durable Audit Storage
+
+Decision: provider-backed household helper work can expose owner/admin Access Pass activation and revocation routes now, but those routes return response-level `HouseholdAuditEvent` metadata instead of pretending durable provider audit storage exists.
+
+Reason: WoofWatcher needs a trustworthy household-sharing contract before launch. Owners should be able to assign sitter, trainer, walker, and vet-viewer helper roles through typed API operations, and clients need audit metadata to show what happened. Durable account-action audit storage still needs database/provider approval and retention rules.
+
+Consequences:
+
+- Join-by-invite returns an invitation-accepted audit event and stores the canonical adult caregiver role.
+- Access Pass activation/revocation are owner/admin-only, active-household scoped, and limited to helper-compatible roles.
+- Generated OpenAPI, Zod, and React client contracts expose the audit-aware responses.
+- Durable audit storage, expiry enforcement, invite approval lifecycle states, and account-action retention remain separate provider-launch work.
+
+Owner: Codex.
+
+Revisit trigger: Supabase/Postgres provider rules, invite lifecycle storage, Access Pass expiry, or account-action audit retention become approved implementation work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

@@ -134,6 +134,40 @@ export interface Me {
   members: Member[];
 }
 
+export type HouseholdAuditAction = "invitation-accepted" | "member-role-updated" | "member-revoked" | "access-pass-activated" | "access-pass-revoked";
+
+export interface HouseholdAuditEvent {
+  id: string;
+  action: HouseholdAuditAction;
+  actorUserId: string;
+  householdId: string;
+  /** @nullable */
+  targetMemberId?: string | null;
+  /** @nullable */
+  targetUserId?: string | null;
+  /** @nullable */
+  targetRole?: string | null;
+  /** @nullable */
+  nextRole?: string | null;
+  /** @nullable */
+  reason?: string | null;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
+  createdAt: string;
+  storage: "response-only";
+  boundary: string;
+}
+
+export interface HouseholdJoinResponse extends Me {
+  auditEvent: HouseholdAuditEvent;
+}
+
+export interface HouseholdMemberMutationResponse extends Me {
+  auditEvent: HouseholdAuditEvent;
+}
+
 export interface MeUpdate {
   /** @minLength 1 */
   displayName?: string;
@@ -155,6 +189,43 @@ export interface HouseholdMemberUpdate {
   role?: HouseholdMemberRole;
   /** @nullable */
   displayName?: string | null;
+}
+
+export type AccessPassRole = "sitter" | "trainer" | "walker" | "vet viewer";
+
+export interface AccessPassActivationInput {
+  /** @minLength 1 */
+  memberId: string;
+  role: AccessPassRole;
+  /** @nullable */
+  displayName?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface AccessPassRevocationInput {
+  /** @minLength 1 */
+  memberId: string;
+  /** @nullable */
+  reason?: string | null;
+}
+
+export interface HouseholdAccessPass {
+  memberId: string;
+  userId: string;
+  role: AccessPassRole;
+  status: "active" | "revoked";
+  /** @nullable */
+  expiresAt?: string | null;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface HouseholdAccessPassMutationResponse extends Me {
+  accessPass: HouseholdAccessPass;
+  auditEvent: HouseholdAuditEvent;
 }
 
 export type CareStateEnvelopeDoc = { [key: string]: unknown };

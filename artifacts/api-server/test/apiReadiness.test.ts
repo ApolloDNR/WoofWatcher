@@ -571,3 +571,150 @@ test("household member role mutations keep owner-only and revocation contracts",
     "React API revoke-member mutation must expose ApiError",
   );
 });
+
+test("household invitations and Access Pass mutations emit typed audit contracts", () => {
+  const householdRoute = read("artifacts/api-server/src/routes/household.ts");
+  const accessPassPolicy = read("artifacts/api-server/src/lib/household-access-pass.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const zodApi = read("lib/api-zod/src/generated/api.ts");
+  const reactSchemas = read("lib/api-client-react/src/generated/api.schemas.ts");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+
+  const joinHouseholdBlock = section(
+    openapi,
+    "    post:\n      operationId: joinHousehold",
+    "  /household/members/{id}:",
+  );
+  const activateBlock = section(
+    openapi,
+    "  /household/access-passes/activate:",
+    "  /household/access-passes/revoke:",
+  );
+  const revokeBlock = section(
+    openapi,
+    "  /household/access-passes/revoke:",
+    "  /care-state:",
+  );
+
+  assert.match(
+    householdRoute,
+    /JoinHouseholdResponse\.parse/,
+    "invite acceptance should return the typed join payload with audit metadata",
+  );
+  assert.match(
+    householdRoute,
+    /buildHouseholdAuditEvent\(\{[\s\S]*action:\s*"invitation-accepted"/,
+    "invite acceptance should emit a household audit event",
+  );
+  assert.match(
+    householdRoute,
+    /role:\s*normalizeHouseholdMemberRole\("adult"\)/,
+    "invite acceptance should store the canonical adult caregiver role instead of legacy member",
+  );
+  assert.match(
+    householdRoute,
+    /router\.post\("\/household\/access-passes\/activate", requireAuth/,
+    "Access Pass activation should be an authenticated route",
+  );
+  assert.match(
+    householdRoute,
+    /router\.post\("\/household\/access-passes\/revoke", requireAuth/,
+    "Access Pass revocation should be an authenticated route",
+  );
+  assert.match(
+    householdRoute,
+    /AccessPassActivationBody\.safeParse/,
+    "Access Pass activation should validate payloads",
+  );
+  assert.match(
+    householdRoute,
+    /AccessPassRevocationBody\.safeParse/,
+    "Access Pass revocation should validate payloads",
+  );
+  assert.match(
+    householdRoute,
+    /assertAccessPassMutationAllowed\(/,
+    "Access Pass routes should use owner/admin authorization policy",
+  );
+  assert.match(
+    householdRoute,
+    /normalizeAccessPassRole\(/,
+    "Access Pass activation should normalize helper roles",
+  );
+  assert.match(
+    householdRoute,
+    /eq\(householdMembersTable\.householdId, householdId\)/,
+    "Access Pass mutations must stay scoped to the active household",
+  );
+  assert.match(
+    householdRoute,
+    /res\.status\(403\)\.json\(\{ error: policy\.reason \}\)/,
+    "Access Pass denials should use ApiError-shaped bodies",
+  );
+  assert.match(
+    householdRoute,
+    /buildHouseholdAuditEvent\(\{[\s\S]*action:\s*"access-pass-activated"/,
+    "Access Pass activation should emit an audit event",
+  );
+  assert.match(
+    householdRoute,
+    /buildHouseholdAuditEvent\(\{[\s\S]*action:\s*"access-pass-revoked"/,
+    "Access Pass revocation should emit an audit event",
+  );
+
+  assert.match(accessPassPolicy, /owner\/admin/i, "Access Pass policy should keep owner/admin-only authority explicit");
+  assert.match(accessPassPolicy, /helper audit/i, "Access Pass policy should describe helper audit trail readiness");
+  assert.match(accessPassPolicy, /invitation-accepted/, "audit helper should support invitation acceptance events");
+  assert.match(accessPassPolicy, /access-pass-activated/, "audit helper should support activation events");
+  assert.match(accessPassPolicy, /access-pass-revoked/, "audit helper should support revocation events");
+  assert.match(accessPassPolicy, /vet viewer/i, "Access Pass policy should keep vet viewer as a read-only helper role");
+  assert.match(accessPassPolicy, /expiresAt/, "Access Pass activation should carry optional expiration metadata for future enforcement");
+
+  assert.match(joinHouseholdBlock, /HouseholdJoinResponse/, "OpenAPI join should return a typed audit-aware response");
+  assert.match(joinHouseholdBlock, /HouseholdAuditEvent/, "OpenAPI join should document the invitation audit event");
+  assert.match(activateBlock, /operationId: activateHouseholdAccessPass/, "OpenAPI must document Access Pass activation");
+  assert.match(revokeBlock, /operationId: revokeHouseholdAccessPass/, "OpenAPI must document Access Pass revocation");
+  for (const block of [activateBlock, revokeBlock]) {
+    for (const status of ['"400"', '"401"', '"403"', '"404"']) {
+      assert.match(block, new RegExp(`${status}:`), `OpenAPI must document Access Pass ${status} responses`);
+    }
+  }
+  assert.match(openapi, /HouseholdAccessPassMutationResponse:/, "OpenAPI must document Access Pass mutation responses");
+  assert.match(openapi, /HouseholdAuditEvent:/, "OpenAPI must document household audit events");
+
+  for (const schema of [
+    "HouseholdAuditEvent",
+    "HouseholdJoinResponse",
+    "AccessPassActivationBody",
+    "AccessPassRevocationBody",
+    "HouseholdAccessPassMutationResponse",
+  ]) {
+    assert.match(zodApi, new RegExp(`export const ${schema}`), `${schema} should be exported from Zod API schemas`);
+  }
+  assert.match(
+    zodApi,
+    /zod\.enum\(\["sitter", "trainer", "walker", "vet viewer"\]\)/,
+    "Zod must constrain Access Pass activation to helper-compatible roles",
+  );
+  for (const typeName of [
+    "HouseholdAuditEvent",
+    "HouseholdJoinResponse",
+    "AccessPassActivationInput",
+    "AccessPassRevocationInput",
+    "HouseholdAccessPassMutationResponse",
+  ]) {
+    assert.match(reactSchemas, new RegExp(`\\b${typeName}\\b`), `${typeName} should be exposed to React clients`);
+  }
+  assert.match(reactClient, /activateHouseholdAccessPass/, "React client must expose Access Pass activation");
+  assert.match(reactClient, /revokeHouseholdAccessPass/, "React client must expose Access Pass revocation");
+  assert.match(
+    reactClient,
+    /ActivateHouseholdAccessPassMutationError = ErrorType<ApiError>/,
+    "React activation mutation must expose ApiError bodies",
+  );
+  assert.match(
+    reactClient,
+    /RevokeHouseholdAccessPassMutationError = ErrorType<ApiError>/,
+    "React revocation mutation must expose ApiError bodies",
+  );
+});

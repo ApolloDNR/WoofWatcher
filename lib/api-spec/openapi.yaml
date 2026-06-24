@@ -332,6 +332,9 @@ paths:
       operationId: joinHousehold
       tags: [household]
       summary: Join an existing household by invite code
+      description: >-
+        Accepts a household invite code, creates or reuses the caregiver
+        membership, and returns a HouseholdAuditEvent for invitation acceptance.
       requestBody:
         required: true
         content:
@@ -344,7 +347,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Me"
+                $ref: "#/components/schemas/HouseholdJoinResponse"
         "400":
           description: Invalid invite payload
           content:
@@ -390,7 +393,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Me"
+                $ref: "#/components/schemas/HouseholdMemberMutationResponse"
         "400":
           description: Invalid member update payload or id
           content:
@@ -429,8 +432,12 @@ paths:
           schema:
             type: string
       responses:
-        "204":
+        "200":
           description: Household member revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdMemberMutationResponse"
         "400":
           description: Invalid member id
           content:
@@ -445,6 +452,98 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "403":
           description: Role is not allowed to revoke household members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Household member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /household/access-passes/activate:
+    post:
+      operationId: activateHouseholdAccessPass
+      tags: [household]
+      summary: Activate an Access Pass helper role for a household member
+      description: >-
+        Owner/admin-only helper activation for existing household members. This
+        assigns a sitter, trainer, walker, or vet viewer role and returns helper
+        audit trail metadata without claiming durable provider audit storage.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessPassActivationInput"
+      responses:
+        "200":
+          description: Access Pass helper role activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdAccessPassMutationResponse"
+        "400":
+          description: Invalid Access Pass activation payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to activate Access Pass helpers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Household member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /household/access-passes/revoke:
+    post:
+      operationId: revokeHouseholdAccessPass
+      tags: [household]
+      summary: Revoke an Access Pass helper role
+      description: >-
+        Owner/admin-only helper revocation for active sitter, trainer, walker,
+        and vet viewer roles. Core household members should use the normal
+        member-management flow instead.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessPassRevocationInput"
+      responses:
+        "200":
+          description: Access Pass helper access revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdAccessPassMutationResponse"
+        "400":
+          description: Invalid Access Pass revocation payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to revoke Access Pass helpers
           content:
             application/json:
               schema:
@@ -912,6 +1011,71 @@ components:
         - user
         - household
         - members
+    HouseholdAuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        action:
+          type: string
+          enum:
+            - invitation-accepted
+            - member-role-updated
+            - member-revoked
+            - access-pass-activated
+            - access-pass-revoked
+        actorUserId:
+          type: string
+        householdId:
+          type: string
+        targetMemberId:
+          type: ["string", "null"]
+        targetUserId:
+          type: ["string", "null"]
+        targetRole:
+          type: ["string", "null"]
+        nextRole:
+          type: ["string", "null"]
+        reason:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        storage:
+          type: string
+          enum: [response-only]
+        boundary:
+          type: string
+      required:
+        - id
+        - action
+        - actorUserId
+        - householdId
+        - createdAt
+        - storage
+        - boundary
+    HouseholdJoinResponse:
+      allOf:
+        - $ref: "#/components/schemas/Me"
+        - type: object
+          properties:
+            auditEvent:
+              $ref: "#/components/schemas/HouseholdAuditEvent"
+          required:
+            - auditEvent
+    HouseholdMemberMutationResponse:
+      allOf:
+        - $ref: "#/components/schemas/Me"
+        - type: object
+          properties:
+            auditEvent:
+              $ref: "#/components/schemas/HouseholdAuditEvent"
+          required:
+            - auditEvent
     MeUpdate:
       type: object
       properties:
@@ -944,6 +1108,70 @@ components:
         displayName:
           type: ["string", "null"]
           minLength: 1
+    AccessPassActivationInput:
+      type: object
+      properties:
+        memberId:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          enum: [sitter, trainer, walker, vet viewer]
+        displayName:
+          type: ["string", "null"]
+          minLength: 1
+        expiresAt:
+          type: ["string", "null"]
+          description: Optional owner-reviewed expiry metadata for future enforcement.
+        note:
+          type: ["string", "null"]
+      required:
+        - memberId
+        - role
+    AccessPassRevocationInput:
+      type: object
+      properties:
+        memberId:
+          type: string
+          minLength: 1
+        reason:
+          type: ["string", "null"]
+      required:
+        - memberId
+    HouseholdAccessPass:
+      type: object
+      properties:
+        memberId:
+          type: string
+        userId:
+          type: string
+        role:
+          type: string
+          enum: [sitter, trainer, walker, vet viewer]
+        status:
+          type: string
+          enum: [active, revoked]
+        expiresAt:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+      required:
+        - memberId
+        - userId
+        - role
+        - status
+    HouseholdAccessPassMutationResponse:
+      allOf:
+        - $ref: "#/components/schemas/Me"
+        - type: object
+          properties:
+            accessPass:
+              $ref: "#/components/schemas/HouseholdAccessPass"
+            auditEvent:
+              $ref: "#/components/schemas/HouseholdAuditEvent"
+          required:
+            - accessPass
+            - auditEvent
     CareStateEnvelope:
       type: object
       properties:
