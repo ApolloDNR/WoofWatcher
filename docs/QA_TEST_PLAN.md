@@ -368,7 +368,11 @@ Latest local evidence, 2026-06-23:
 - API readiness now covers household provisioning and auth-error contracts so `/me`, profile update, household rename, and join-household auth/validation errors stay documented and generated household hooks expose `ApiError`.
 - `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing `getMe` `401` OpenAPI coverage, then passed with 6 tests after household contract updates.
 - Full local focused behavior/readiness suite passed with 366 tests after the household provisioning/auth contract fix.
+- API readiness now covers provider-gated WoofGuide action contracts so care-helper questions and WoofGuide event flows keep authenticated routes, rate-limit surfaces, truthful local fallbacks, and generated client error types.
+- `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing care-helper `401` OpenAPI coverage, then passed with 7 tests after WoofGuide provider/action contract updates.
+- Full local focused behavior/readiness suite passed with 367 tests after the WoofGuide provider/action contract fix.
 - `node --check lib/api-client-react/src/generated/api.ts` and `node --check lib/api-zod/src/generated/api.ts` passed syntax checks for the generated-client edits.
+- `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` passed after the WoofGuide provider/action contract fix.
 - PixelLab asset verification passed with 149 registered assets, 0 missing, and 0 invalid.
 - `git diff --check` passed with only expected Windows line-ending warnings.
 - Expo web export passed by invoking the package-local Expo CLI directly because the local Windows shell does not expose `pnpm`.

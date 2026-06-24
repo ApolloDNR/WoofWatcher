@@ -18,7 +18,7 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * Returns whether OpenAI is configured and what mode is active
+ * Returns whether the provider-backed or local care-helper mode is active.
  * @summary Get AI care helper status
  */
 export const GetCareHelperStatusResponse = zod.object({
@@ -351,4 +351,3 @@ export const UpdateCareEntryResponse = zod.object({
 export const DeleteCareEntryParams = zod.object({
   "id": zod.coerce.string()
 })
-

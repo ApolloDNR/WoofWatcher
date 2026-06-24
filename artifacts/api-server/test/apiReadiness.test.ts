@@ -247,3 +247,72 @@ test("household provisioning and auth errors stay documented and typed", () => {
     "React API joinHousehold mutation error alias must preserve invalid/auth/not-found error bodies",
   );
 });
+
+test("WoofGuide provider actions keep auth, rate-limit, and local-fallback contracts typed", () => {
+  const careHelperRoute = read("artifacts/api-server/src/routes/care-helper.ts");
+  const woofguideEventsRoute = read("artifacts/api-server/src/routes/woofguide-events.ts");
+  const woofguideEvents = read("artifacts/api-server/src/woofguide-events.js");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+
+  const careHelperPostBlock = section(
+    openapi,
+    "    post:\n      operationId: askCareHelper",
+    "  /woofguide-events:",
+  );
+  const woofguideEventsGetBlock = section(
+    openapi,
+    "    get:\n      operationId: getWoofguideEventsStatus",
+    "    post:\n      operationId: createWoofguideEvents",
+  );
+  const woofguideEventsPostBlock = section(
+    openapi,
+    "    post:\n      operationId: createWoofguideEvents",
+    "  /avatar-stylize:",
+  );
+
+  assert.match(careHelperRoute, /router\.post\("\/care-helper", requireAuth/, "care-helper questions must stay authenticated");
+  assert.match(careHelperRoute, /makeRateLimiter\(\{ maxPerWindow: 12, globalMaxPerWindow: 120 \}\)/, "care-helper provider calls must keep their rate limiter");
+  assert.match(careHelperRoute, /if \(ai && rateLimited\(ip\)\)/, "care-helper should rate-limit provider calls without blocking local fallback");
+  assert.match(careHelperRoute, /mode:\s*"local"/, "care-helper must keep the local fallback mode truthful");
+  assert.match(careHelperRoute, /AI assistant isn't available/, "care-helper local fallback should not imply live AI");
+
+  assert.match(woofguideEventsRoute, /router\.get\("\/woofguide-events", requireAuth/, "WoofGuide events status must stay authenticated");
+  assert.match(woofguideEventsRoute, /router\.post\("\/woofguide-events", requireAuth/, "WoofGuide event creation must stay authenticated");
+  assert.match(woofguideEventsRoute, /makeRateLimiter\(\{ maxPerWindow: 8, globalMaxPerWindow: 60 \}\)/, "WoofGuide event creation must keep its rate limiter");
+  assert.match(woofguideEvents, /No key configured: always return curated local events/, "WoofGuide events must keep the no-key local curation boundary");
+  assert.match(woofguideEvents, /mode:\s*"local"/, "WoofGuide events must keep local mode when provider calls are unavailable");
+
+  assert.match(careHelperPostBlock, /"401":/, "OpenAPI must document unauthenticated care-helper question errors");
+  assert.match(careHelperPostBlock, /"429":/, "OpenAPI must document care-helper provider rate-limit errors");
+  assert.doesNotMatch(careHelperPostBlock, /"501":/, "OpenAPI must not claim local fallback is an unconfigured-provider failure");
+  assert.match(woofguideEventsGetBlock, /"401":/, "OpenAPI must document unauthenticated WoofGuide events status errors");
+  assert.match(woofguideEventsPostBlock, /"401":/, "OpenAPI must document unauthenticated WoofGuide event creation errors");
+  assert.match(woofguideEventsPostBlock, /"429":/, "OpenAPI must document WoofGuide event creation rate-limit errors");
+
+  assert.match(
+    reactClient,
+    /getAskCareHelperMutationOptions = <TError = ErrorType<ApiError \| CareHelperError>/,
+    "React API care-helper mutation must type auth/rate-limit errors separately from provider failures",
+  );
+  assert.match(
+    reactClient,
+    /AskCareHelperMutationError = ErrorType<ApiError \| CareHelperError>/,
+    "React API care-helper mutation error alias must expose auth, rate-limit, and provider error bodies",
+  );
+  assert.match(
+    reactClient,
+    /getGetWoofguideEventsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError = ErrorType<ApiError>>/,
+    "React API WoofGuide events status query must type auth errors as ApiError",
+  );
+  assert.match(
+    reactClient,
+    /GetWoofguideEventsStatusQueryError = ErrorType<ApiError>/,
+    "React API WoofGuide events status error alias must expose auth error bodies",
+  );
+  assert.match(
+    reactClient,
+    /CreateWoofguideEventsMutationError = ErrorType<ApiError>/,
+    "React API WoofGuide events creation must keep auth/rate-limit/provider errors typed as ApiError",
+  );
+});

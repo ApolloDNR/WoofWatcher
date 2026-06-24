@@ -35,7 +35,7 @@ paths:
       operationId: getCareHelperStatus
       tags: [care-helper]
       summary: Get AI care helper status
-      description: Returns whether OpenAI is configured and what mode is active
+      description: Returns whether the provider-backed or local care-helper mode is active.
       responses:
         "200":
           description: Status info
@@ -47,6 +47,10 @@ paths:
       operationId: askCareHelper
       tags: [care-helper]
       summary: Ask the AI care helper a question
+      description: >-
+        Asks the authenticated WoofGuide care helper a dog-care question. When
+        the provider is unavailable, the API returns a truthful local fallback
+        response instead of claiming live AI.
       requestBody:
         required: true
         content:
@@ -55,19 +59,25 @@ paths:
               $ref: "#/components/schemas/CareHelperInput"
       responses:
         "200":
-          description: AI answer
+          description: Provider-backed or local care-helper answer
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareHelperAnswer"
-        "501":
-          description: OpenAI not configured
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CareHelperError"
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Provider-backed care-helper question rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "502":
-          description: OpenAI request failed
+          description: Provider request failed
           content:
             application/json:
               schema:
@@ -88,6 +98,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WoofguideEventsStatus"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     post:
       operationId: createWoofguideEvents
       tags: [woofguide-events]
@@ -109,6 +125,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WoofguideEventsResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "429":
           description: Rate limited
           content:

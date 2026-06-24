@@ -22,6 +22,8 @@
 - Closed `PUT /care-state` write-error contract drift: the route already returns `400` validation errors, `404` missing-document errors, and `409` optimistic conflict envelopes, and OpenAPI plus the React generated mutation now document/type those shapes as `ApiError | CareStateEnvelope`.
 - Closed care-entry write-error contract drift: create/update/delete routes already validate bodies or ids, and OpenAPI plus the React generated create mutation now expose those invalid-write errors as `ApiError` instead of leaving create errors as `unknown`.
 - Closed household provisioning/auth contract drift: `/me`, profile update, household rename, and join-household routes already require auth and validate payloads, and OpenAPI plus generated React household hooks now document/type `401`, `400`, and missing-invite `404` errors as `ApiError`.
+- Closed WoofGuide provider/action contract drift: care-helper questions and WoofGuide event flows now have readiness coverage for authenticated routes, rate-limit surfaces, truthful local fallbacks, provider-failure boundaries, and generated client error types.
+- OpenAPI now documents care-helper `401`, provider-backed `429`, and provider `502` responses without falsely representing local fallback as a provider-missing error, and WoofGuide event status/creation now document authenticated `401` responses.
 
 ## Verification
 
@@ -41,6 +43,8 @@
 - `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 365 passing after the care-entry write-error contract fix.
 - RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing `getMe` `401` OpenAPI coverage, then passed with 6 tests after household contract updates.
 - `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 366 passing after the household provisioning/auth contract fix.
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts` first failed on missing care-helper `401` OpenAPI coverage, then passed with 7 tests after WoofGuide provider/action contract updates.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 367 passing after the WoofGuide provider/action contract fix.
 - `node --check lib/api-client-react/src/generated/api.ts` and `node --check lib/api-zod/src/generated/api.ts` - passing syntax checks.
 - `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.

@@ -144,7 +144,7 @@ export const getGetCareHelperStatusUrl = () => {
 }
 
 /**
- * Returns whether OpenAI is configured and what mode is active
+ * Returns whether the provider-backed or local care-helper mode is active.
  * @summary Get AI care helper status
  */
 export const getCareHelperStatus = async ( options?: RequestInit): Promise<CareHelperStatus> => {
@@ -222,6 +222,7 @@ export const getAskCareHelperUrl = () => {
 }
 
 /**
+ * Asks the authenticated WoofGuide care helper a dog-care question. When the provider is unavailable, the API returns a truthful local fallback response instead of claiming live AI.
  * @summary Ask the AI care helper a question
  */
 export const askCareHelper = async (careHelperInput: CareHelperInput, options?: RequestInit): Promise<CareHelperAnswer> => {
@@ -239,7 +240,7 @@ export const askCareHelper = async (careHelperInput: CareHelperInput, options?: 
 
 
 
-export const getAskCareHelperMutationOptions = <TError = ErrorType<CareHelperError>,
+export const getAskCareHelperMutationOptions = <TError = ErrorType<ApiError | CareHelperError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askCareHelper>>, TError,{data: BodyType<CareHelperInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof askCareHelper>>, TError,{data: BodyType<CareHelperInput>}, TContext> => {
 
@@ -268,12 +269,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type AskCareHelperMutationResult = NonNullable<Awaited<ReturnType<typeof askCareHelper>>>
     export type AskCareHelperMutationBody = BodyType<CareHelperInput>
-    export type AskCareHelperMutationError = ErrorType<CareHelperError>
+    export type AskCareHelperMutationError = ErrorType<ApiError | CareHelperError>
 
     /**
+ * Asks the authenticated WoofGuide care helper a dog-care question. When the provider is unavailable, the API returns a truthful local fallback response instead of claiming live AI.
  * @summary Ask the AI care helper a question
  */
-export const useAskCareHelper = <TError = ErrorType<CareHelperError>,
+export const useAskCareHelper = <TError = ErrorType<ApiError | CareHelperError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askCareHelper>>, TError,{data: BodyType<CareHelperInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof askCareHelper>>,
@@ -318,7 +320,7 @@ export const getGetWoofguideEventsStatusQueryKey = () => {
     }
 
 
-export const getGetWoofguideEventsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetWoofguideEventsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -337,14 +339,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetWoofguideEventsStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getWoofguideEventsStatus>>>
-export type GetWoofguideEventsStatusQueryError = ErrorType<unknown>
+export type GetWoofguideEventsStatusQueryError = ErrorType<ApiError>
 
 
 /**
  * @summary Get WoofGuide events provider status
  */
 
-export function useGetWoofguideEventsStatus<TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError = ErrorType<unknown>>(
+export function useGetWoofguideEventsStatus<TData = Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError = ErrorType<ApiError>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWoofguideEventsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
