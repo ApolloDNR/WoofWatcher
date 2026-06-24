@@ -1,12 +1,20 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
-import { db, householdsTable, householdMembersTable, usersTable } from "@workspace/db";
+import { and, desc, eq } from "drizzle-orm";
+import {
+  db,
+  householdsTable,
+  householdAuditEventsTable,
+  householdMembersTable,
+  usersTable,
+} from "@workspace/db";
 import {
   GetMeResponse,
   UpdateMeBody,
   UpdateHouseholdBody,
   JoinHouseholdBody,
   SetActiveHouseholdBody,
+  ListHouseholdAuditEventsQueryParams,
+  ListHouseholdAuditEventsResponse,
 } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
 import {
@@ -102,6 +110,39 @@ router.patch("/household", requireAuth, async (req, res): Promise<void> => {
     .set({ name: parsed.data.name })
     .where(eq(householdsTable.id, householdId));
   res.json(GetMeResponse.parse(await buildMe(userId, householdId)));
+});
+
+router.get("/household/audit-events", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const parsed = ListHouseholdAuditEventsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { householdId, allowed } = await requireActiveHouseholdRole(userId, ["owner", "admin"]);
+  if (!allowed) {
+    res.status(403).json({ error: "Only household owners can review audit events" });
+    return;
+  }
+
+  const limit = Math.min(200, Math.max(1, parsed.data.limit ?? 50));
+  const filters = [eq(householdAuditEventsTable.householdId, householdId)];
+  if (parsed.data.action) {
+    filters.push(eq(householdAuditEventsTable.action, parsed.data.action));
+  }
+  if (parsed.data.lifecycleState) {
+    filters.push(eq(householdAuditEventsTable.lifecycleState, parsed.data.lifecycleState));
+  }
+
+  const rows = await db
+    .select()
+    .from(householdAuditEventsTable)
+    .where(and(...filters))
+    .orderBy(desc(householdAuditEventsTable.createdAt))
+    .limit(limit);
+
+  res.json(ListHouseholdAuditEventsResponse.parse(rows));
 });
 
 router.post("/household/join", requireAuth, async (req, res): Promise<void> => {

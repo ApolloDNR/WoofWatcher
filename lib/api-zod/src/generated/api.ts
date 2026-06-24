@@ -188,6 +188,30 @@ export const UpdateHouseholdResponse = zod.object({
 
 
 /**
+ * Returns durable household audit events for owner/admin review. This is a review surface only; lifecycle changes and retention policy remain provider-gated.
+ * @summary List household audit events
+ */
+export const ListHouseholdAuditEventsQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(200).optional(),
+  "action": zod.string().min(1).optional(),
+  "lifecycleState": zod.string().min(1).optional()
+})
+
+export const ListHouseholdAuditEventsResponseItem = zod.object({
+  "id": zod.string(),
+  "householdId": zod.string(),
+  "actorUserId": zod.string().nullish(),
+  "action": zod.string(),
+  "targetType": zod.string().nullish(),
+  "targetId": zod.string().nullish(),
+  "lifecycleState": zod.string(),
+  "details": zod.record(zod.string(), zod.unknown()).nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListHouseholdAuditEventsResponse = zod.array(ListHouseholdAuditEventsResponseItem)
+
+
+/**
  * @summary Join an existing household by invite code
  */
 

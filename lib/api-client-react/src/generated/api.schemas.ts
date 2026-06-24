@@ -66,6 +66,27 @@ export interface Member {
   isSelf: boolean;
 }
 
+/**
+ * @nullable
+ */
+export type HouseholdAuditEventDetails = { [key: string]: unknown } | null;
+
+export interface HouseholdAuditEvent {
+  id: string;
+  householdId: string;
+  /** @nullable */
+  actorUserId?: string | null;
+  action: string;
+  /** @nullable */
+  targetType?: string | null;
+  /** @nullable */
+  targetId?: string | null;
+  lifecycleState: string;
+  /** @nullable */
+  details?: HouseholdAuditEventDetails;
+  createdAt: string;
+}
+
 export interface Me {
   user: User;
   household: Household;
@@ -92,6 +113,12 @@ export interface JoinHouseholdInput {
   /** @minLength 1 */
   inviteCode: string;
 }
+
+export type ListHouseholdAuditEventsParams = {
+limit?: number;
+action?: string;
+lifecycleState?: string;
+};
 
 export type CareStateEnvelopeDoc = { [key: string]: unknown };
 

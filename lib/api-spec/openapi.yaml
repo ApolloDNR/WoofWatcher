@@ -146,6 +146,45 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Me"
+  /household/audit-events:
+    get:
+      operationId: listHouseholdAuditEvents
+      tags: [household]
+      summary: List household audit events
+      description: >-
+        Returns durable household audit events for owner/admin review. This is a
+        review surface only; lifecycle changes and retention policy remain
+        provider-gated.
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+        - in: query
+          name: action
+          schema:
+            type: string
+        - in: query
+          name: lifecycleState
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Household audit events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HouseholdAuditEvent"
+        "403":
+          description: Owner or admin membership required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /household/join:
     post:
       operationId: joinHousehold
@@ -408,6 +447,36 @@ components:
         - userId
         - role
         - isSelf
+    HouseholdAuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        householdId:
+          type: string
+        actorUserId:
+          type: ["string", "null"]
+        action:
+          type: string
+        targetType:
+          type: ["string", "null"]
+        targetId:
+          type: ["string", "null"]
+        lifecycleState:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - householdId
+        - action
+        - lifecycleState
+        - createdAt
     Me:
       type: object
       properties:

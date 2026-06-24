@@ -139,6 +139,52 @@ test("keeps active household switching membership scoped", () => {
   assert.match(reactSchemas, /householdId: string/);
 });
 
+test("keeps household audit review owner scoped and client documented", () => {
+  const householdRoute = readApiFile(join("routes", "household.ts"));
+  const schemaIndex = readFileSync(join(root, "lib", "db", "src", "schema", "index.ts"), "utf8");
+  const auditSchema = readFileSync(
+    join(root, "lib", "db", "src", "schema", "householdAuditEvents.ts"),
+    "utf8",
+  );
+  const openapi = readFileSync(join(root, "lib", "api-spec", "openapi.yaml"), "utf8");
+  const zodApi = readFileSync(join(root, "lib", "api-zod", "src", "generated", "api.ts"), "utf8");
+  const reactClient = readFileSync(join(root, "lib", "api-client-react", "src", "generated", "api.ts"), "utf8");
+  const reactSchemas = readFileSync(
+    join(root, "lib", "api-client-react", "src", "generated", "api.schemas.ts"),
+    "utf8",
+  );
+
+  assert.match(schemaIndex, /export \* from "\.\/householdAuditEvents"/);
+  assert.match(auditSchema, /pgTable\("household_audit_events"/);
+  assert.match(auditSchema, /householdId: uuid\("household_id"\)/);
+  assert.match(auditSchema, /actorUserId: text\("actor_user_id"\)/);
+  assert.match(auditSchema, /lifecycleState: text\("lifecycle_state"\)/);
+  assert.match(auditSchema, /details: jsonb\("details"\)/);
+
+  assert.match(householdRoute, /ListHouseholdAuditEventsQueryParams\.safeParse\(req\.query\)/);
+  assert.match(householdRoute, /router\.get\("\/household\/audit-events"/);
+  assert.match(householdRoute, /requireActiveHouseholdRole\(userId, \["owner", "admin"\]\)/);
+  assert.match(householdRoute, /res\.status\(403\)\.json\(\{ error: "Only household owners can review audit events" \}\)/);
+  assert.match(householdRoute, /Math\.min\(200, Math\.max\(1/);
+  assert.match(householdRoute, /eq\(householdAuditEventsTable\.householdId, householdId\)/);
+  assert.match(householdRoute, /eq\(householdAuditEventsTable\.action, parsed\.data\.action\)/);
+  assert.match(householdRoute, /eq\(householdAuditEventsTable\.lifecycleState, parsed\.data\.lifecycleState\)/);
+  assert.match(householdRoute, /desc\(householdAuditEventsTable\.createdAt\)/);
+
+  assert.match(openapi, /\/household\/audit-events:/);
+  assert.match(openapi, /operationId: listHouseholdAuditEvents/);
+  assert.match(openapi, /name: lifecycleState[\s\S]*schema:[\s\S]*type: string/);
+  assert.match(openapi, /maximum: 200/);
+  assert.match(openapi, /#\/components\/schemas\/HouseholdAuditEvent/);
+  assert.match(zodApi, /export const ListHouseholdAuditEventsQueryParams/);
+  assert.match(zodApi, /"limit": zod\.coerce\.number\(\)\.min\(1\)\.max\(200\)\.optional\(\)/);
+  assert.match(zodApi, /export const ListHouseholdAuditEventsResponse/);
+  assert.match(reactClient, /getListHouseholdAuditEventsUrl/);
+  assert.match(reactClient, /useListHouseholdAuditEvents/);
+  assert.match(reactSchemas, /export interface HouseholdAuditEvent/);
+  assert.match(reactSchemas, /export type ListHouseholdAuditEventsParams/);
+});
+
 test("keeps care-state writes optimistic and conflict recoverable", () => {
   const careState = readApiFile(join("routes", "care-state.ts"));
   const mobileContext = readFileSync(

@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-24: Household Audit Review Is Owner/Admin Scoped
+
+Decision: Household audit review should use a durable `household_audit_events` table and an owner/admin-only `GET /household/audit-events` route. The route lists newest events first, supports bounded `limit`, `action`, and `lifecycleState` filters, and is documented across OpenAPI, zod, and the generated React client before final provider-backed retention policy exists.
+
+Reason: Care log deletes already retain evidence, but sensitive household/account events need a reviewable backend contract before richer role administration and account audit policy are implemented. Restricting the list endpoint to owner/admin members preserves household trust without pretending audit producers, retention lifecycle changes, or live DB/provider integration tests are complete.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed audit event producers, invite approval, caregiver editing, document access, role changes, retention/export/deletion policy, or live API integration tests become active release work.
+
 ### 2026-06-24: Mobile Household Switching Uses Existing Memberships
 
 Decision: `/me` should include the authenticated user's existing household list, with invite codes still hidden unless that user is owner/admin for a given pack. Mobile More should render those households as the active-pack switcher and call the membership-scoped `PATCH /me/active-household` endpoint, then refresh `/me` and care state after a successful switch.
