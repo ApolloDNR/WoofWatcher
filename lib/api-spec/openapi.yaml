@@ -375,6 +375,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareStateEnvelope"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Care state document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     put:
       operationId: putCareState
       tags: [care-state]
@@ -394,6 +406,12 @@ paths:
                 $ref: "#/components/schemas/CareStateEnvelope"
         "400":
           description: Invalid care state payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -439,6 +457,12 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CareEntry"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     post:
       operationId: createCareEntry
       tags: [care-entries]
@@ -458,6 +482,12 @@ paths:
                 $ref: "#/components/schemas/CareEntry"
         "400":
           description: Invalid care entry payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -492,6 +522,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Entry not found
           content:
@@ -513,6 +549,12 @@ paths:
           description: Deleted
         "400":
           description: Invalid care entry id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:

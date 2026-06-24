@@ -316,3 +316,87 @@ test("WoofGuide provider actions keep auth, rate-limit, and local-fallback contr
     "React API WoofGuide events creation must keep auth/rate-limit/provider errors typed as ApiError",
   );
 });
+
+test("care state and care entry routes keep household scoping documented and typed", () => {
+  const careStateRoute = read("artifacts/api-server/src/routes/care-state.ts");
+  const careEntriesRoute = read("artifacts/api-server/src/routes/care-entries.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+
+  const getCareStateBlock = section(
+    openapi,
+    "    get:\n      operationId: getCareState",
+    "    put:\n      operationId: putCareState",
+  );
+  const putCareStateBlock = section(
+    openapi,
+    "    put:\n      operationId: putCareState",
+    "  /care-entries:",
+  );
+  const listCareEntriesBlock = section(
+    openapi,
+    "    get:\n      operationId: listCareEntries",
+    "    post:\n      operationId: createCareEntry",
+  );
+  const createCareEntryBlock = section(
+    openapi,
+    "    post:\n      operationId: createCareEntry",
+    "  /care-entries/{id}:",
+  );
+  const updateCareEntryBlock = section(
+    openapi,
+    "    patch:\n      operationId: updateCareEntry",
+    "    delete:\n      operationId: deleteCareEntry",
+  );
+  const deleteCareEntryBlock = section(
+    openapi,
+    "    delete:\n      operationId: deleteCareEntry",
+    "\ncomponents:",
+  );
+
+  assert.match(careStateRoute, /router\.get\("\/care-state", requireAuth/, "care-state reads must stay authenticated");
+  assert.match(careStateRoute, /router\.put\("\/care-state", requireAuth/, "care-state writes must stay authenticated");
+  assert.match(careStateRoute, /const householdId = await getActiveHouseholdId\(userId\)/, "care-state should resolve the active household from the authenticated user");
+  assert.match(careStateRoute, /where\(eq\(careStateTable\.householdId, householdId\)\)/, "care-state reads and writes must stay scoped to the active household");
+
+  for (const route of [
+    /router\.get\("\/care-entries", requireAuth/,
+    /router\.post\("\/care-entries", requireAuth/,
+    /router\.patch\("\/care-entries\/:id", requireAuth/,
+    /router\.delete\(\s*"\x2Fcare-entries\/:id",\s*requireAuth/,
+  ]) {
+    assert.match(careEntriesRoute, route, "care-entry list/create/update/delete routes must stay authenticated");
+  }
+  assert.match(careEntriesRoute, /eq\(careEntriesTable\.householdId, householdId\)/, "care-entry queries and mutations must stay household-scoped");
+  assert.match(careEntriesRoute, /householdId,\s*\n\s*petId:/, "care-entry creates must write the authenticated household id");
+  assert.match(careEntriesRoute, /caregiverUserId:\s*userId/, "care-entry creates must preserve the authenticated caregiver id");
+
+  assert.match(getCareStateBlock, /"401":/, "OpenAPI must document unauthenticated care-state reads");
+  assert.match(getCareStateBlock, /"404":/, "OpenAPI must document missing active-household care-state reads");
+  assert.match(putCareStateBlock, /"401":/, "OpenAPI must document unauthenticated care-state writes");
+  assert.match(listCareEntriesBlock, /"401":/, "OpenAPI must document unauthenticated care-entry list reads");
+  assert.match(createCareEntryBlock, /"401":/, "OpenAPI must document unauthenticated care-entry creates");
+  assert.match(updateCareEntryBlock, /"401":/, "OpenAPI must document unauthenticated care-entry updates");
+  assert.match(deleteCareEntryBlock, /"401":/, "OpenAPI must document unauthenticated care-entry deletes");
+
+  assert.match(
+    reactClient,
+    /getGetCareStateQueryOptions = <TData = Awaited<ReturnType<typeof getCareState>>, TError = ErrorType<ApiError>>/,
+    "React API care-state query must type auth and not-found errors as ApiError",
+  );
+  assert.match(
+    reactClient,
+    /GetCareStateQueryError = ErrorType<ApiError>/,
+    "React API care-state query error alias must expose auth and not-found error bodies",
+  );
+  assert.match(
+    reactClient,
+    /getListCareEntriesQueryOptions = <TData = Awaited<ReturnType<typeof listCareEntries>>, TError = ErrorType<ApiError>>/,
+    "React API care-entry list query must type auth errors as ApiError",
+  );
+  assert.match(
+    reactClient,
+    /ListCareEntriesQueryError = ErrorType<ApiError>/,
+    "React API care-entry list query error alias must expose auth error bodies",
+  );
+});

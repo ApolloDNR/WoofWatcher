@@ -904,7 +904,7 @@ export const getGetCareStateQueryKey = () => {
     }
 
 
-export const getGetCareStateQueryOptions = <TData = Awaited<ReturnType<typeof getCareState>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCareState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetCareStateQueryOptions = <TData = Awaited<ReturnType<typeof getCareState>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCareState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -923,14 +923,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetCareStateQueryResult = NonNullable<Awaited<ReturnType<typeof getCareState>>>
-export type GetCareStateQueryError = ErrorType<unknown>
+export type GetCareStateQueryError = ErrorType<ApiError>
 
 
 /**
  * @summary Get the household's synced care document
  */
 
-export function useGetCareState<TData = Awaited<ReturnType<typeof getCareState>>, TError = ErrorType<unknown>>(
+export function useGetCareState<TData = Awaited<ReturnType<typeof getCareState>>, TError = ErrorType<ApiError>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCareState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -1059,7 +1059,7 @@ export const getListCareEntriesQueryKey = (params?: ListCareEntriesParams,) => {
     }
 
 
-export const getListCareEntriesQueryOptions = <TData = Awaited<ReturnType<typeof listCareEntries>>, TError = ErrorType<unknown>>(params?: ListCareEntriesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCareEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListCareEntriesQueryOptions = <TData = Awaited<ReturnType<typeof listCareEntries>>, TError = ErrorType<ApiError>>(params?: ListCareEntriesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCareEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1078,14 +1078,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListCareEntriesQueryResult = NonNullable<Awaited<ReturnType<typeof listCareEntries>>>
-export type ListCareEntriesQueryError = ErrorType<unknown>
+export type ListCareEntriesQueryError = ErrorType<ApiError>
 
 
 /**
  * @summary List the household's care log entries
  */
 
-export function useListCareEntries<TData = Awaited<ReturnType<typeof listCareEntries>>, TError = ErrorType<unknown>>(
+export function useListCareEntries<TData = Awaited<ReturnType<typeof listCareEntries>>, TError = ErrorType<ApiError>>(
  params?: ListCareEntriesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCareEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
