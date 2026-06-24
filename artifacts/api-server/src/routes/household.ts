@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import {
   db,
   householdsTable,
@@ -21,6 +21,8 @@ import {
   AccessPassActivationBody,
   AccessPassRevocationBody,
   HouseholdAccessPassMutationResponse,
+  ListHouseholdAuditEventsQueryParams,
+  ListHouseholdAuditEventsResponse,
 } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
 import {
@@ -36,7 +38,9 @@ import {
   assertAccessPassMutationAllowed,
   assertAccessPassExpiryAllowed,
   buildHouseholdAuditEvent,
+  buildHouseholdAuditEventFromRecord,
   buildHouseholdAuditInsert,
+  normalizeHouseholdAuditListQuery,
   normalizeAccessPassRole,
 } from "../lib/household-access-pass";
 
@@ -142,6 +146,54 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
     JoinHouseholdResponse.parse({
       ...(await buildMe(userId, household.id)),
       auditEvent,
+    }),
+  );
+});
+
+router.get("/household/audit-events", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const parsed = ListHouseholdAuditEventsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { householdId } = await ensureUserAndHousehold(userId);
+  const actor = await getHouseholdMemberAuthz(householdId, userId);
+  if (actor?.role !== "owner") {
+    res.status(403).json({
+      error:
+        "Only an owner/admin can review durable household invite, role, and Access Pass audit events.",
+    });
+    return;
+  }
+
+  const filters = normalizeHouseholdAuditListQuery(parsed.data);
+  const conditions = [eq(householdAuditEventsTable.householdId, householdId)];
+  if (filters.action) {
+    conditions.push(eq(householdAuditEventsTable.action, filters.action));
+  }
+  if (filters.lifecycleState) {
+    conditions.push(eq(householdAuditEventsTable.lifecycleState, filters.lifecycleState));
+  }
+
+  const rows = await db
+    .select()
+    .from(householdAuditEventsTable)
+    .where(and(...conditions))
+    .orderBy(desc(householdAuditEventsTable.createdAt))
+    .limit(filters.limit);
+
+  res.json(
+    ListHouseholdAuditEventsResponse.parse({
+      events: rows.map(buildHouseholdAuditEventFromRecord),
+      limit: filters.limit,
+      filters: {
+        ...(filters.action ? { action: filters.action } : {}),
+        ...(filters.lifecycleState ? { lifecycleState: filters.lifecycleState } : {}),
+      },
+      boundary:
+        "Durable household audit review is provider-ready for owner/admin review; migration, RLS, retention, and export/deletion policy remain launch approval gates.",
     }),
   );
 });

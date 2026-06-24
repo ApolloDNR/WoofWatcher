@@ -62,7 +62,7 @@ Passing evidence:
 Current gaps:
 
 - Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning, invite approval, and post-setup confirmation remain incomplete.
-- Provider-backed multi-dog care documents/switching, provider-backed role enforcement, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
+- Provider-backed multi-dog care documents/switching, provider-backed role enforcement beyond existing household/helper routes, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
 - Runtime smoke has not been added.
 
 ## Gate 3: Care Domain Correctness
@@ -93,7 +93,7 @@ Current gaps:
 
 - Need integration tests for authenticated household-scoped routes.
 - Need storage for record documents and generated reports.
-- Need role-aware permissions, broader audit trail policy for documents/accounts/roles, and provider-backed data export/delete paths.
+- Need provider-backed role-aware permissions beyond existing care-entry and household helper APIs, broader audit trail policy for documents/accounts, provider migration/RLS/retention rules for household audit rows, scheduled Access Pass expiry cleanup, and provider-backed data export/delete paths.
 - Need deeper multi-device conflict policy, server-backed delete/edit retention rules, and native offline recovery QA.
 
 ## Gate 5: AI Safety And Usefulness
@@ -184,7 +184,7 @@ Current gaps:
 
 - Need privacy copy and data handling policy.
 - Need role-based access control.
-- Care-log edit/delete audit trail exists in mobile/domain; broader role, record, household, and account audit policy remains open.
+- Care-log edit/delete audit trail exists in mobile/domain, and household invite/member/Access Pass audit rows now have owner/admin review APIs. Broader record/document/account audit policy, provider migration/RLS, retention/export/deletion, and scheduled expiry cleanup remain open.
 - Need document storage access rules.
 - AI usage disclosure, owner care-data export, staged pet roster export, Access Pass draft export, Adventure memory export, and non-destructive deletion request preparation exist in mobile; provider-backed policy, cloud media storage, and destructive deletion still need approval.
 

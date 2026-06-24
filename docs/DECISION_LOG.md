@@ -1479,6 +1479,23 @@ Owner: Codex.
 
 Revisit trigger: provider migrations/RLS are approved, audit review APIs are built, or Access Pass expiry cleanup moves from readiness into production enforcement.
 
+### 2026-06-24: Household Audit Review Is Owner/Admin Only Before Fine-Grained Admin Roles
+
+Decision: durable household audit rows can now be listed through `GET /household/audit-events`, but the review API stays authenticated, active-household scoped, and owner/admin-only until provider RLS, retention, export/deletion policy, and finer-grained admin roles are approved.
+
+Reason: WoofWatcher needs an owner trust surface for invite acceptance, role changes, revocations, and Access Pass helper activity before launch. Exposing those rows too broadly would weaken household privacy and could leak caregiver or helper access history to roles that should not see account-action evidence.
+
+Consequences:
+
+- The API returns newest-first durable audit rows with safe `limit`, `action`, and `lifecycleState` filters.
+- OpenAPI, Zod validators, React schemas/hooks, and generated type files expose the audit review response and filters.
+- Non-owner roles receive a typed `403` error until a finer provider-backed admin permission model exists.
+- Provider migration, RLS, scheduled expiry cleanup, retention/export/deletion policy, and legal/privacy approval remain separate launch gates.
+
+Owner: Codex.
+
+Revisit trigger: provider RLS is approved, household admin roles become distinct from owner, or audit review needs role-specific views for sitters, trainers, or vet viewers.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

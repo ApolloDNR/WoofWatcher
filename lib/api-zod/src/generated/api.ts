@@ -249,6 +249,24 @@ export const HouseholdMemberMutationResponse = GetMeResponse.extend({
   "auditEvent": HouseholdAuditEvent
 })
 
+export const ListHouseholdAuditEventsQueryParams = zod.object({
+  "limit": zod.coerce.number().optional(),
+  "action": zod.string().optional(),
+  "lifecycleState": zod.string().optional()
+})
+
+export const HouseholdAuditEventListFilters = zod.object({
+  "action": zod.enum(["invitation-accepted", "member-role-updated", "member-revoked", "access-pass-activated", "access-pass-revoked"]).optional(),
+  "lifecycleState": zod.enum(["invite-accepted", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"]).optional()
+})
+
+export const ListHouseholdAuditEventsResponse = zod.object({
+  "events": zod.array(HouseholdAuditEvent),
+  "limit": zod.number(),
+  "filters": HouseholdAuditEventListFilters,
+  "boundary": zod.string()
+})
+
 /**
  * @summary Update a household member role or display name
  */

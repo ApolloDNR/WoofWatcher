@@ -13,6 +13,12 @@ export type HouseholdAuditLifecycleState =
   | "access-pass-revoked"
   | "access-pass-expired";
 
+export interface HouseholdAuditListQuery {
+  limit: number;
+  action?: HouseholdAuditAction;
+  lifecycleState?: HouseholdAuditLifecycleState;
+}
+
 export interface AccessPassMutationInput {
   actorRole?: string | null;
   targetRole?: string | null;
@@ -85,6 +91,26 @@ export interface HouseholdAuditInsertRecord {
   };
 }
 
+export interface HouseholdAuditSelectRecord {
+  id: string;
+  action: string;
+  lifecycleState: string;
+  actorUserId: string;
+  householdId: string;
+  targetMemberId: string | null;
+  targetUserId: string | null;
+  targetRole: string | null;
+  nextRole: string | null;
+  reason: string | null;
+  note: string | null;
+  expiresAt: Date | string | null;
+  createdAt: Date | string;
+  metadata?: {
+    boundary?: string;
+    storage?: string;
+  } | null;
+}
+
 const ROLE_ALIASES: Record<string, string> = {
   admin: "owner",
   "adult admin": "owner",
@@ -117,6 +143,23 @@ const ACCESS_PASS_COMPATIBLE_ROLES = [
 ] as const;
 
 const ACCESS_PASS_ROLE_SET = new Set<string>(ACCESS_PASS_COMPATIBLE_ROLES);
+const HOUSEHOLD_AUDIT_ACTIONS = [
+  "invitation-accepted",
+  "member-role-updated",
+  "member-revoked",
+  "access-pass-activated",
+  "access-pass-revoked",
+] as const satisfies readonly HouseholdAuditAction[];
+const HOUSEHOLD_AUDIT_LIFECYCLE_STATES = [
+  "invite-accepted",
+  "member-updated",
+  "member-revoked",
+  "access-pass-active",
+  "access-pass-revoked",
+  "access-pass-expired",
+] as const satisfies readonly HouseholdAuditLifecycleState[];
+const HOUSEHOLD_AUDIT_ACTION_SET = new Set<string>(HOUSEHOLD_AUDIT_ACTIONS);
+const HOUSEHOLD_AUDIT_LIFECYCLE_SET = new Set<string>(HOUSEHOLD_AUDIT_LIFECYCLE_STATES);
 const DURABLE_AUDIT_BOUNDARY =
   "Durable provider audit storage is ready for household invite, role, and Access Pass mutations; retention/export/deletion policy remains a launch approval gate.";
 
@@ -148,6 +191,21 @@ function parseIsoDate(value: string | null): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function toIsoString(value: Date | string | null): string | null {
+  if (value == null) return null;
+  if (value instanceof Date) return value.toISOString();
+  const date = parseIsoDate(value);
+  return date ? date.toISOString() : null;
+}
+
+function isHouseholdAuditAction(value: string): value is HouseholdAuditAction {
+  return HOUSEHOLD_AUDIT_ACTION_SET.has(value);
+}
+
+function isHouseholdAuditLifecycleState(value: string): value is HouseholdAuditLifecycleState {
+  return HOUSEHOLD_AUDIT_LIFECYCLE_SET.has(value);
+}
+
 function deriveLifecycleState(input: HouseholdAuditEventInput): HouseholdAuditLifecycleState {
   if (input.action === "invitation-accepted") return "invite-accepted";
   if (input.action === "member-role-updated") return "member-updated";
@@ -160,6 +218,23 @@ function deriveLifecycleState(input: HouseholdAuditEventInput): HouseholdAuditLi
 export function normalizeAccessPassRole(role: string | null | undefined): string {
   const normalized = normalizeHouseholdMemberRole(role);
   return isAccessPassRole(normalized) ? normalized : "sitter";
+}
+
+export function normalizeHouseholdAuditListQuery(query: Record<string, unknown>): HouseholdAuditListQuery {
+  const requestedLimit = Number(query.limit ?? 50);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.min(100, Math.max(1, Math.trunc(requestedLimit)))
+    : 50;
+  const action = clean(query.action).toLowerCase();
+  const lifecycleState = clean(query.lifecycleState).toLowerCase();
+
+  return {
+    limit,
+    ...(isHouseholdAuditAction(action) ? { action } : {}),
+    ...(isHouseholdAuditLifecycleState(lifecycleState)
+      ? { lifecycleState }
+      : {}),
+  };
 }
 
 export function assertAccessPassExpiryAllowed(
@@ -310,5 +385,32 @@ export function buildHouseholdAuditInsert(event: HouseholdAuditEvent): Household
       boundary: event.boundary,
       storage: event.storage,
     },
+  };
+}
+
+export function buildHouseholdAuditEventFromRecord(record: HouseholdAuditSelectRecord): HouseholdAuditEvent {
+  const action = isHouseholdAuditAction(record.action)
+    ? record.action
+    : "member-role-updated";
+  const lifecycleState = isHouseholdAuditLifecycleState(record.lifecycleState)
+    ? record.lifecycleState
+    : deriveLifecycleState({ action, actorUserId: record.actorUserId, householdId: record.householdId });
+
+  return {
+    id: clean(record.id),
+    action,
+    lifecycleState,
+    actorUserId: clean(record.actorUserId),
+    householdId: clean(record.householdId),
+    targetMemberId: nullableClean(record.targetMemberId),
+    targetUserId: nullableClean(record.targetUserId),
+    targetRole: nullableClean(record.targetRole),
+    nextRole: nullableClean(record.nextRole),
+    reason: nullableClean(record.reason),
+    note: nullableClean(record.note),
+    expiresAt: toIsoString(record.expiresAt),
+    createdAt: toIsoString(record.createdAt) ?? new Date().toISOString(),
+    storage: "provider-durable",
+    boundary: record.metadata?.boundary ?? DURABLE_AUDIT_BOUNDARY,
   };
 }

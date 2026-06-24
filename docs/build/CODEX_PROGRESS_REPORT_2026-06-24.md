@@ -45,3 +45,38 @@
 If device QA is available, run the Home Mission Deck and care-twin QA surfaces on iOS and Android, attach screenshots, share/export the QA report, and fix the first visible issue.
 
 If device QA remains unavailable, continue provider readiness with invite approval state storage, audit-list/admin review APIs, scheduled Access Pass expiry cleanup, provider migration/RLS notes, and household/Access Pass integration tests.
+
+## Completed - Follow-Up Slice
+
+- Added the owner/admin household audit review API for durable household trust events.
+- Added `GET /household/audit-events` with authentication, active-household scoping, owner/admin-only access, newest-first ordering, limit clamping, and optional `action` plus `lifecycleState` filters.
+- Added `normalizeHouseholdAuditListQuery` and `buildHouseholdAuditEventFromRecord` so route responses use the same safe filter and record-normalization policy as the Access Pass audit helpers.
+- Added typed OpenAPI, Zod, React client, React schema, and generated type surfaces for `ListHouseholdAuditEventsParams` and `HouseholdAuditEventListResponse`.
+- Corrected stale OpenAPI copy so Access Pass audit responses no longer say durable audit storage is missing after the durable audit schema exists.
+
+## Verification - Follow-Up Slice
+
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/householdAccessPass.test.ts artifacts/api-server/test/apiReadiness.test.ts` first failed on the missing audit-list route and query normalizer, then passed with 16 tests.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 376 passing.
+- `NODE_PATH=artifacts/woofwatcher-mobile/node_modules node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
+- `node --check artifacts/api-server/src/lib/household-access-pass.ts` - passing.
+- `node --check artifacts/api-server/src/routes/household.ts` - passing.
+- `node --check lib/api-zod/src/generated/api.ts` - passing.
+- `node --check lib/api-client-react/src/generated/api.ts` - passing.
+- `node --check lib/api-client-react/src/generated/api.schemas.ts` - passing.
+- `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings.
+- Package-local Expo web export - passing, emitted `.expo-smoke`; the generated folder was removed after verification.
+
+## Environment-Limited Checks - Follow-Up Slice
+
+- `node node_modules/typescript/bin/tsc -p lib/api-zod/tsconfig.json --noEmit` remains environment-limited because this shell cannot resolve local `zod`; after this slice the earlier export-name collision is gone.
+- `node node_modules/typescript/bin/tsc -p lib/api-client-react/tsconfig.json --noEmit` remains environment-limited because this shell cannot resolve local `@tanstack/react-query`.
+- `node node_modules/typescript/bin/tsc -p artifacts/api-server/tsconfig.json --noEmit` remains environment-limited because this shell cannot resolve local `@types/node`.
+- These are workspace dependency-resolution limits in the local Windows runner, not failing audit-readiness assertions.
+
+## Next Best Slice - Updated
+
+If device QA is available, run the Home Mission Deck and care-twin QA surfaces on iOS and Android, attach screenshots, share/export the QA report, and fix the first visible issue.
+
+If device QA remains unavailable, continue provider readiness with invite approval state storage/table design, scheduled Access Pass expiry cleanup or request-time expiry enforcement, provider migration/RLS/retention notes for `household_audit_events`, and integration tests around household/Access Pass mutation plus audit-review flows.

@@ -38,11 +38,13 @@ import type {
   CareStateInput,
   HealthStatus,
   HouseholdAccessPassMutationResponse,
+  HouseholdAuditEventListResponse,
   HouseholdMemberUpdate,
   HouseholdMemberMutationResponse,
   HouseholdUpdate,
   JoinHouseholdInput,
   HouseholdJoinResponse,
+  ListHouseholdAuditEventsParams,
   ListCareEntriesParams,
   Me,
   MeUpdate,
@@ -876,6 +878,85 @@ export const useJoinHousehold = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getJoinHouseholdMutationOptions(options));
     }
+
+export const getListHouseholdAuditEventsUrl = (params?: ListHouseholdAuditEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/household/audit-events?${stringifiedParams}` : `/api/household/audit-events`
+}
+
+/**
+ * Owner/admin-only review of durable household invitation, role, and Access Pass audit rows scoped to the authenticated active household.
+ * @summary List durable household audit events
+ */
+export const listHouseholdAuditEvents = async (params?: ListHouseholdAuditEventsParams, options?: RequestInit): Promise<HouseholdAuditEventListResponse> => {
+
+  return customFetch<HouseholdAuditEventListResponse>(getListHouseholdAuditEventsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHouseholdAuditEventsQueryKey = (params?: ListHouseholdAuditEventsParams,) => {
+    return [
+    `/api/household/audit-events`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListHouseholdAuditEventsQueryOptions = <TData = Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError = ErrorType<ApiError>>(params?: ListHouseholdAuditEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHouseholdAuditEventsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHouseholdAuditEvents>>> = ({ signal }) => listHouseholdAuditEvents(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHouseholdAuditEventsQueryResult = NonNullable<Awaited<ReturnType<typeof listHouseholdAuditEvents>>>
+export type ListHouseholdAuditEventsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List durable household audit events
+ */
+
+export function useListHouseholdAuditEvents<TData = Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError = ErrorType<ApiError>>(
+ params?: ListHouseholdAuditEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHouseholdAuditEventsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 export const getUpdateHouseholdMemberUrl = (id: string,) => {
 

@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import {
+import * as householdAccessPass from "../src/lib/household-access-pass.ts";
+
+const {
   assertAccessPassExpiryAllowed,
   buildHouseholdAuditEvent,
   buildHouseholdAuditInsert,
-} from "../src/lib/household-access-pass.ts";
+} = householdAccessPass;
 
 test("Access Pass activation rejects expired helper windows", () => {
   const now = new Date("2026-06-24T12:00:00.000Z");
@@ -77,5 +79,51 @@ test("household audit events map to durable provider insert records", () => {
         "Durable provider audit storage is ready for household invite, role, and Access Pass mutations; retention/export/deletion policy remains a launch approval gate.",
       storage: "provider-durable",
     },
+  });
+});
+
+test("household audit review queries clamp limits and preserve safe filters", () => {
+  const normalizeHouseholdAuditListQuery = (
+    householdAccessPass as typeof householdAccessPass & {
+      normalizeHouseholdAuditListQuery?: (query: Record<string, unknown>) => {
+        limit: number;
+        action?: string;
+        lifecycleState?: string;
+      };
+    }
+  ).normalizeHouseholdAuditListQuery;
+
+  assert.equal(
+    typeof normalizeHouseholdAuditListQuery,
+    "function",
+    "audit review should expose a shared query normalizer",
+  );
+
+  assert.deepEqual(
+    normalizeHouseholdAuditListQuery({
+      limit: "500",
+      action: "access-pass-activated",
+      lifecycleState: "access-pass-active",
+    }),
+    {
+      limit: 100,
+      action: "access-pass-activated",
+      lifecycleState: "access-pass-active",
+    },
+  );
+
+  assert.deepEqual(
+    normalizeHouseholdAuditListQuery({
+      limit: "0",
+      action: "made-up-action",
+      lifecycleState: "made-up-state",
+    }),
+    {
+      limit: 1,
+    },
+  );
+
+  assert.deepEqual(normalizeHouseholdAuditListQuery({}), {
+    limit: 50,
   });
 });

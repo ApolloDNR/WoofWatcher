@@ -88,6 +88,8 @@ Current evidence, 2026-06-11: Household Access now derives synced account member
 
 Current evidence, 2026-06-19: Access Pass now derives local sitter/trainer/vet/emergency helper drafts, allowed/blocked permissions, active/upcoming/draft status, provider-gated sharing boundaries, and My Care Today assigned-care workload from shared care-domain logic, then shows both surfaces in More.
 
+Current evidence, 2026-06-24: Provider-durable household audit events now have an owner/admin review API. `GET /household/audit-events` is authenticated, active-household scoped, owner/admin-only, newest-first, filterable by action/lifecycle state, generated-client typed, and locally verified without claiming provider migration, RLS, retention, export/deletion, or scheduled expiry cleanup is approved.
+
 Current evidence, 2026-06-11: Care Log Audit Trail now records create, edit, sticky-note, and delete evidence with shared care-domain sanitization. Log details show audit history, handoff text includes audit summaries, and successful deletes create a separate non-health audit note instead of silently disappearing.
 
 Current evidence, 2026-06-19: Log details now show a Correction history card above the raw Audit trail. It summarizes the latest update, correction count, and changed-field chips so owners can understand corrections before reading the full audit rows.

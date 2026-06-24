@@ -171,6 +171,24 @@ export interface HouseholdMemberMutationResponse extends Me {
   auditEvent: HouseholdAuditEvent;
 }
 
+export interface ListHouseholdAuditEventsParams {
+  limit?: number;
+  action?: HouseholdAuditAction;
+  lifecycleState?: HouseholdAuditLifecycleState;
+}
+
+export interface HouseholdAuditEventListFilters {
+  action?: HouseholdAuditAction;
+  lifecycleState?: HouseholdAuditLifecycleState;
+}
+
+export interface HouseholdAuditEventListResponse {
+  events: HouseholdAuditEvent[];
+  limit: number;
+  filters: HouseholdAuditEventListFilters;
+  boundary: string;
+}
+
 export interface MeUpdate {
   /** @minLength 1 */
   displayName?: string;

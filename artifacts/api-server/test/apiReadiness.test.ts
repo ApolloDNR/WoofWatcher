@@ -790,3 +790,84 @@ test("household invite and Access Pass audit storage has provider-ready lifecycl
     "React schemas must expose typed household audit lifecycle states",
   );
 });
+
+test("household audit review API stays owner-scoped and typed", () => {
+  const householdRoute = read("artifacts/api-server/src/routes/household.ts");
+  const accessPassPolicy = read("artifacts/api-server/src/lib/household-access-pass.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const zodApi = read("lib/api-zod/src/generated/api.ts");
+  const reactSchemas = read("lib/api-client-react/src/generated/api.schemas.ts");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+
+  const auditListBlock = section(
+    openapi,
+    "  /household/audit-events:",
+    "  /care-state:",
+  );
+
+  assert.match(
+    accessPassPolicy,
+    /normalizeHouseholdAuditListQuery/,
+    "audit review should share a query normalizer for route and generated-contract parity",
+  );
+  assert.match(
+    householdRoute,
+    /router\.get\("\/household\/audit-events", requireAuth/,
+    "audit review should be an authenticated owner/admin route",
+  );
+  assert.match(
+    householdRoute,
+    /ListHouseholdAuditEventsQueryParams\.safeParse\(req\.query\)/,
+    "audit review should validate query filters before querying durable audit rows",
+  );
+  assert.match(
+    householdRoute,
+    /getHouseholdMemberAuthz\(householdId, userId\)/,
+    "audit review should resolve the authenticated member before exposing audit rows",
+  );
+  assert.match(
+    householdRoute,
+    /actor\?\.role !== "owner"/,
+    "audit review should stay owner/admin-only until finer-grained admin roles are approved",
+  );
+  assert.match(
+    householdRoute,
+    /eq\(householdAuditEventsTable\.householdId, householdId\)/,
+    "audit review must stay scoped to the active household",
+  );
+  assert.match(
+    householdRoute,
+    /desc\(householdAuditEventsTable\.createdAt\)/,
+    "audit review should return newest durable audit rows first",
+  );
+  assert.match(
+    householdRoute,
+    /ListHouseholdAuditEventsResponse\.parse/,
+    "audit review should return a typed generated response",
+  );
+
+  assert.match(auditListBlock, /operationId: listHouseholdAuditEvents/, "OpenAPI must document audit review");
+  for (const status of ['"400"', '"401"', '"403"']) {
+    assert.match(auditListBlock, new RegExp(`${status}:`), `OpenAPI must document audit review ${status} responses`);
+  }
+  assert.match(auditListBlock, /name:\s+limit/, "OpenAPI must document audit review limit query");
+  assert.match(auditListBlock, /name:\s+action/, "OpenAPI must document audit review action filter");
+  assert.match(auditListBlock, /name:\s+lifecycleState/, "OpenAPI must document audit review lifecycle filter");
+  assert.match(openapi, /HouseholdAuditEventListResponse:/, "OpenAPI must expose the audit list response schema");
+
+  assert.match(zodApi, /export const ListHouseholdAuditEventsQueryParams/, "Zod must validate audit review query params");
+  assert.match(zodApi, /export const ListHouseholdAuditEventsResponse/, "Zod must expose audit review response");
+  assert.match(reactSchemas, /export interface ListHouseholdAuditEventsParams/, "React schemas must type audit review params");
+  assert.match(reactSchemas, /export interface HouseholdAuditEventListResponse/, "React schemas must type audit review response");
+  assert.match(reactClient, /listHouseholdAuditEvents/, "React client must expose audit review fetcher");
+  assert.match(
+    reactClient,
+    /getListHouseholdAuditEventsQueryOptions = <TData = Awaited<ReturnType<typeof listHouseholdAuditEvents>>, TError = ErrorType<ApiError>>/,
+    "React audit review query must expose ApiError for auth, validation, and forbidden states",
+  );
+  assert.match(
+    reactClient,
+    /ListHouseholdAuditEventsQueryError = ErrorType<ApiError>/,
+    "React audit review error alias must expose ApiError bodies",
+  );
+});
