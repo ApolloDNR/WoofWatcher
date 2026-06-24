@@ -142,7 +142,9 @@ export const GetMeResponse = zod.object({
   "role": zod.string(),
   "displayName": zod.string().nullish(),
   "email": zod.string().nullish(),
-  "isSelf": zod.boolean()
+  "isSelf": zod.boolean(),
+  "accessPassExpiresAt": zod.string().nullish(),
+  "accessPassExpired": zod.boolean().optional()
 }))
 })
 
@@ -196,7 +198,9 @@ export const UpdateMeResponse = zod.object({
   "role": zod.string(),
   "displayName": zod.string().nullish(),
   "email": zod.string().nullish(),
-  "isSelf": zod.boolean()
+  "isSelf": zod.boolean(),
+  "accessPassExpiresAt": zod.string().nullish(),
+  "accessPassExpired": zod.boolean().optional()
 }))
 })
 
@@ -228,7 +232,9 @@ export const UpdateHouseholdResponse = zod.object({
   "role": zod.string(),
   "displayName": zod.string().nullish(),
   "email": zod.string().nullish(),
-  "isSelf": zod.boolean()
+  "isSelf": zod.boolean(),
+  "accessPassExpiresAt": zod.string().nullish(),
+  "accessPassExpired": zod.boolean().optional()
 }))
 })
 

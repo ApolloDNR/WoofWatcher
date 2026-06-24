@@ -871,3 +871,84 @@ test("household audit review API stays owner-scoped and typed", () => {
     "React audit review error alias must expose ApiError bodies",
   );
 });
+
+test("Access Pass expiry is enforced at member-auth request time", () => {
+  const household = read("artifacts/api-server/src/lib/household.ts");
+  const householdRoute = read("artifacts/api-server/src/routes/household.ts");
+  const accessPassPolicy = read("artifacts/api-server/src/lib/household-access-pass.ts");
+  const careEntryPolicy = read("artifacts/api-server/src/lib/care-entry-authorization.ts");
+  const memberSchema = read("lib/db/src/schema/householdMembers.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const zodApi = read("lib/api-zod/src/generated/api.ts");
+  const zodMemberType = read("lib/api-zod/src/generated/types/member.ts");
+  const reactSchemas = read("lib/api-client-react/src/generated/api.schemas.ts");
+
+  assert.match(
+    memberSchema,
+    /accessPassExpiresAt:\s*timestamp\("access_pass_expires_at"/,
+    "household member rows must store the active Access Pass expiry used for request-time auth",
+  );
+  assert.match(
+    accessPassPolicy,
+    /deriveAccessPassRuntimeStatus/,
+    "Access Pass policy must expose a shared runtime expiry helper",
+  );
+  assert.match(
+    accessPassPolicy,
+    /authorizationRole:\s*"expired access pass"/,
+    "expired helpers should receive a denied authorization role instead of keeping helper powers",
+  );
+  assert.match(
+    household,
+    /accessPassExpiresAt:\s*householdMembersTable\.accessPassExpiresAt/,
+    "household member auth should read Access Pass expiry metadata",
+  );
+  assert.match(
+    household,
+    /deriveAccessPassRuntimeStatus\(/,
+    "household member auth should apply request-time expiry status",
+  );
+  assert.match(
+    household,
+    /role:\s*runtime\.authorizationRole/,
+    "care-write authorization should receive the expired access role when an Access Pass lapses",
+  );
+  assert.match(
+    careEntryPolicy,
+    /expired access pass/,
+    "care-entry policy should treat expired Access Pass helpers as read-only",
+  );
+  assert.match(
+    householdRoute,
+    /accessPassExpiresAt:\s*expiryPolicy\.expiresAt \? new Date\(expiryPolicy\.expiresAt\) : null/,
+    "Access Pass activation must persist the approved expiry on the member row",
+  );
+  assert.match(
+    accessPassPolicy,
+    /access-pass-expired/,
+    "Access Pass route contracts should keep expiry lifecycle language visible",
+  );
+
+  assert.match(openapi, /accessPassExpiresAt:/, "OpenAPI Member schema must expose Access Pass expiry status");
+  assert.match(openapi, /accessPassExpired:/, "OpenAPI Member schema must expose expired-helper status");
+  assert.match(
+    zodApi,
+    /"accessPassExpiresAt": zod\.string\(\)\.nullish\(\)/,
+    "Zod member payloads must parse Access Pass expiry status",
+  );
+  assert.match(
+    zodApi,
+    /"accessPassExpired": zod\.boolean\(\)\.optional\(\)/,
+    "Zod member payloads must parse expired-helper status",
+  );
+  assert.match(
+    zodMemberType,
+    /accessPassExpiresAt\?: string \| null/,
+    "generated Zod member type must expose Access Pass expiry",
+  );
+  assert.match(
+    reactSchemas,
+    /accessPassExpired\?: boolean/,
+    "React schemas must expose expired-helper status for UI warnings",
+  );
+});

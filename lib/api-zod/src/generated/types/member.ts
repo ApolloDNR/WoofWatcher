@@ -15,4 +15,7 @@ export interface Member {
   /** @nullable */
   email?: string | null;
   isSelf: boolean;
+  /** @nullable */
+  accessPassExpiresAt?: string | null;
+  accessPassExpired?: boolean;
 }

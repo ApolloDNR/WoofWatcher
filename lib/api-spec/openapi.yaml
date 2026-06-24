@@ -1055,6 +1055,12 @@ components:
           type: ["string", "null"]
         isSelf:
           type: boolean
+        accessPassExpiresAt:
+          type: ["string", "null"]
+          description: Active Access Pass expiry for temporary helpers, if one is set.
+        accessPassExpired:
+          type: boolean
+          description: True when a temporary helper's Access Pass has lapsed and writes should be blocked until renewed.
       required:
         - id
         - userId

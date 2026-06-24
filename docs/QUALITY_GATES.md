@@ -440,3 +440,16 @@ Local verification passed 306 behavior/readiness tests, focused mobile
 layout/readiness tests at 76 tests, mobile TypeScript, PixelLab asset
 verification at 149 files, and Expo web export to
 `tmp/woofwatcher-mobile-interaction-contract-export`.
+
+Current evidence, 2026-06-24: Access Pass expiry is now enforced at request
+time for helper roles before public-launch cleanup jobs exist. Activated helper
+memberships persist `accessPassExpiresAt`; expired sitter/trainer/walker/vet
+viewer helper passes resolve to `expired access pass` inside authorization;
+care-entry writes treat that state as read-only; and `/me`, OpenAPI, Zod, and
+React generated member schemas expose `accessPassExpiresAt` plus
+`accessPassExpired` so the UI can tell the truth. Local verification passed the
+RED/GREEN Access Pass/API readiness tests, 378 focused behavior/readiness tests,
+mobile TypeScript, syntax checks, PixelLab asset verification at 149 files,
+`git diff --check`, and package-local Expo export. Provider migration, RLS,
+retention/export/deletion policy, invite approval lifecycle storage, and
+expired-helper cleanup remain launch gates.

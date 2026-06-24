@@ -93,7 +93,7 @@ Current gaps:
 
 - Need integration tests for authenticated household-scoped routes.
 - Need storage for record documents and generated reports.
-- Need provider-backed role-aware permissions beyond existing care-entry and household helper APIs, broader audit trail policy for documents/accounts, provider migration/RLS/retention rules for household audit rows, scheduled Access Pass expiry cleanup, and provider-backed data export/delete paths.
+- Need provider-backed role-aware permissions beyond existing care-entry and household helper APIs, broader audit trail policy for documents/accounts, provider migration/RLS/retention rules for household audit rows, scheduled or owner-facing cleanup for expired Access Pass helper memberships, and provider-backed data export/delete paths. Request-time helper expiry enforcement exists now.
 - Need deeper multi-device conflict policy, server-backed delete/edit retention rules, and native offline recovery QA.
 
 ## Gate 5: AI Safety And Usefulness
@@ -184,7 +184,7 @@ Current gaps:
 
 - Need privacy copy and data handling policy.
 - Need role-based access control.
-- Care-log edit/delete audit trail exists in mobile/domain, and household invite/member/Access Pass audit rows now have owner/admin review APIs. Broader record/document/account audit policy, provider migration/RLS, retention/export/deletion, and scheduled expiry cleanup remain open.
+- Care-log edit/delete audit trail exists in mobile/domain, and household invite/member/Access Pass audit rows now have owner/admin review APIs plus request-time helper expiry enforcement. Broader record/document/account audit policy, provider migration/RLS, retention/export/deletion, and scheduled or owner-facing expired-helper cleanup remain open.
 - Need document storage access rules.
 - AI usage disclosure, owner care-data export, staged pet roster export, Access Pass draft export, Adventure memory export, and non-destructive deletion request preparation exist in mobile; provider-backed policy, cloud media storage, and destructive deletion still need approval.
 

@@ -81,3 +81,35 @@ If device QA remains unavailable, continue provider readiness with invite approv
 If device QA is available, run the Home Mission Deck and care-twin QA surfaces on iOS and Android, attach screenshots, share/export the QA report, and fix the first visible issue.
 
 If device QA remains unavailable, continue provider readiness with invite approval state storage/table design, scheduled Access Pass expiry cleanup or request-time expiry enforcement, provider migration/RLS/retention notes for `household_audit_events`, and integration tests around household/Access Pass mutation plus audit-review flows.
+
+## Completed - Request-Time Expiry Follow-Up
+
+- Added request-time Access Pass expiry enforcement for helper household roles.
+- Added `accessPassExpiresAt` to household member rows and persisted the Access Pass activation expiry window onto the activated helper membership.
+- Added `deriveAccessPassRuntimeStatus` so expired sitter/trainer/walker/vet-viewer helper passes become `expired access pass` during authorization without hiding the original display role from `/me`.
+- Updated care-entry write authorization so `expired access pass` is read-only.
+- Updated `/me` member payloads to expose `accessPassExpiresAt` and `accessPassExpired` for UI truth.
+- Updated OpenAPI, Zod validators/types, and React generated schemas so clients can see member expiry metadata.
+
+## Verification - Request-Time Expiry Follow-Up
+
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/householdAccessPass.test.ts artifacts/api-server/test/apiReadiness.test.ts` first failed on the missing member expiry schema/runtime helper, then passed with 18 tests after implementation.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 378 passing.
+- `NODE_PATH=artifacts/woofwatcher-mobile/node_modules node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
+- `node --check artifacts/api-server/src/lib/household-access-pass.ts` - passing.
+- `node --check artifacts/api-server/src/lib/household.ts` - passing.
+- `node --check artifacts/api-server/src/routes/household.ts` - passing.
+- `node --check lib/db/src/schema/householdMembers.ts` - passing.
+- `node --check lib/api-zod/src/generated/api.ts` - passing.
+- `node --check lib/api-zod/src/generated/types/member.ts` - passing.
+- `node --check lib/api-client-react/src/generated/api.schemas.ts` - passing.
+- `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings.
+- Package-local Expo web export - passing, emitted `.expo-smoke`; the generated folder was removed after verification.
+
+## Still Not Done - Request-Time Expiry Follow-Up
+
+- Provider migration execution, Supabase RLS/policy approval, retention/export/deletion policy, and legal/privacy review are still required before public launch.
+- Invite approval lifecycle storage is still not complete.
+- Expired helper memberships are blocked at request time, but scheduled cleanup or an owner-facing cleanup UI remains a separate production polish task.
+- Real iOS and Android device/simulator screenshot QA remains the highest visual release blocker.

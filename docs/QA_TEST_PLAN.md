@@ -437,3 +437,14 @@ Latest local evidence, 2026-06-24:
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.
 - Direct package TypeScript checks for `lib/api-zod`, `lib/api-client-react`, and `artifacts/api-server` remain environment-limited by unresolved local workspace dependencies (`zod`, `@tanstack/react-query`, and `@types/node`). The previous generated-type export collision in `lib/api-zod` is fixed; the remaining failures are dependency-resolution limits in this Windows shell, not audit-readiness assertion failures.
 - Remote GitHub Actions run `28078084503` for commit `eb50f5c` failed before job execution with job `83126533628`, `steps: []`, and `log not found: 83126533628`, matching the billing/spending-limit blocker. Local verification remains the current evidence for this slice until GitHub billing/platform execution is fixed.
+
+Latest local evidence, 2026-06-24:
+
+- API readiness and behavior tests now cover request-time Access Pass expiry enforcement: helper memberships persist `accessPassExpiresAt`, expired helper roles become `expired access pass` during authorization, care-entry writes treat expired helper authority as read-only, `/me` exposes `accessPassExpiresAt` plus `accessPassExpired`, and OpenAPI/Zod/React member schemas expose the same expiry metadata.
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/householdAccessPass.test.ts artifacts/api-server/test/apiReadiness.test.ts` first failed on missing member expiry schema/runtime helper coverage, then passed with 18 tests after implementation.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 378 passing after the request-time Access Pass expiry slice.
+- `NODE_PATH=artifacts/woofwatcher-mobile/node_modules node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` - passing.
+- `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
+- Syntax checks passed for edited API helpers/routes, generated member schemas, and the household member DB schema.
+- `git diff --check` - passing with only expected Windows line-ending warnings.
+- Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.

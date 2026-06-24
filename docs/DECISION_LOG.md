@@ -1496,6 +1496,25 @@ Owner: Codex.
 
 Revisit trigger: provider RLS is approved, household admin roles become distinct from owner, or audit review needs role-specific views for sitters, trainers, or vet viewers.
 
+### 2026-06-24: Access Pass Expiry Is Enforced At Request Time Before Cleanup Jobs
+
+Decision: expired Access Pass helper memberships must lose write authority during request-time authorization even before scheduled cleanup jobs, provider migrations, RLS, or owner-facing cleanup UI exist.
+
+Reason: temporary helper access is a trust boundary. A sitter, trainer, walker, or vet-viewer pass that has passed its expiry should not continue satisfying write authorization just because a cleanup task has not run yet. Request-time enforcement gives the API a safer default while still letting `/me` show the original helper role plus expiry metadata so the UI can explain what happened.
+
+Consequences:
+
+- Household member rows carry `accessPassExpiresAt`.
+- Access Pass activation persists the valid future expiry window on the helper membership.
+- Helper roles with expired pass windows resolve to `expired access pass` inside authorization.
+- Care-entry writes treat `expired access pass` as read-only.
+- `/me` exposes `accessPassExpiresAt` and `accessPassExpired` without hiding the member's display role.
+- Scheduled cleanup, provider migration/RLS, retention/export/deletion policy, and legal/privacy approval remain separate launch gates.
+
+Owner: Codex.
+
+Revisit trigger: provider migrations/RLS are approved, scheduled cleanup is added, or the UI needs owner/admin controls for expired helper memberships.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

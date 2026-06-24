@@ -40,6 +40,14 @@ export interface AccessPassExpiryPolicy {
   reason?: string;
 }
 
+export interface AccessPassRuntimeStatus {
+  role: string;
+  authorizationRole: string;
+  accessPassExpiresAt: string | null;
+  accessPassExpired: boolean;
+  reason?: string;
+}
+
 export interface HouseholdAuditEventInput {
   action: HouseholdAuditAction;
   actorUserId: string;
@@ -220,6 +228,10 @@ export function normalizeAccessPassRole(role: string | null | undefined): string
   return isAccessPassRole(normalized) ? normalized : "sitter";
 }
 
+export function isAccessPassHelperRole(role: string | null | undefined): boolean {
+  return isAccessPassRole(normalizeHouseholdMemberRole(role));
+}
+
 export function normalizeHouseholdAuditListQuery(query: Record<string, unknown>): HouseholdAuditListQuery {
   const requestedLimit = Number(query.limit ?? 50);
   const limit = Number.isFinite(requestedLimit)
@@ -273,6 +285,44 @@ export function assertAccessPassExpiryAllowed(
     allowed: true,
     expiresAt: date.toISOString(),
     lifecycleState: "access-pass-active",
+  };
+}
+
+export function deriveAccessPassRuntimeStatus(input: {
+  role?: string | null;
+  accessPassExpiresAt?: Date | string | null;
+  now?: Date;
+}): AccessPassRuntimeStatus {
+  const role = normalizeHouseholdMemberRole(input.role);
+  const accessPassExpiresAt = toIsoString(input.accessPassExpiresAt ?? null);
+  const now = input.now ?? new Date();
+
+  if (!isAccessPassRole(role) || !accessPassExpiresAt) {
+    return {
+      role,
+      authorizationRole: role,
+      accessPassExpiresAt,
+      accessPassExpired: false,
+    };
+  }
+
+  const expiry = parseIsoDate(accessPassExpiresAt);
+  if (expiry && expiry.getTime() <= now.getTime()) {
+    return {
+      role,
+      authorizationRole: "expired access pass",
+      accessPassExpiresAt,
+      accessPassExpired: true,
+      reason:
+        "Access Pass expired; helper writes should be blocked until an owner/admin renews access.",
+    };
+  }
+
+  return {
+    role,
+    authorizationRole: role,
+    accessPassExpiresAt,
+    accessPassExpired: false,
   };
 }
 

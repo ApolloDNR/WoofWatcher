@@ -7,6 +7,7 @@ const {
   assertAccessPassExpiryAllowed,
   buildHouseholdAuditEvent,
   buildHouseholdAuditInsert,
+  deriveAccessPassRuntimeStatus,
 } = householdAccessPass;
 
 test("Access Pass activation rejects expired helper windows", () => {
@@ -126,4 +127,58 @@ test("household audit review queries clamp limits and preserve safe filters", ()
   assert.deepEqual(normalizeHouseholdAuditListQuery({}), {
     limit: 50,
   });
+});
+
+test("Access Pass runtime status expires helper authority at request time", () => {
+  assert.equal(
+    typeof deriveAccessPassRuntimeStatus,
+    "function",
+    "Access Pass helpers need request-time expiry enforcement before scheduler cleanup is approved",
+  );
+
+  const now = new Date("2026-06-24T12:00:00.000Z");
+
+  assert.deepEqual(
+    deriveAccessPassRuntimeStatus({
+      role: "sitter",
+      accessPassExpiresAt: "2026-06-24T12:30:00.000Z",
+      now,
+    }),
+    {
+      role: "sitter",
+      authorizationRole: "sitter",
+      accessPassExpiresAt: "2026-06-24T12:30:00.000Z",
+      accessPassExpired: false,
+    },
+  );
+
+  assert.deepEqual(
+    deriveAccessPassRuntimeStatus({
+      role: "sitter",
+      accessPassExpiresAt: "2026-06-24T11:59:59.000Z",
+      now,
+    }),
+    {
+      role: "sitter",
+      authorizationRole: "expired access pass",
+      accessPassExpiresAt: "2026-06-24T11:59:59.000Z",
+      accessPassExpired: true,
+      reason:
+        "Access Pass expired; helper writes should be blocked until an owner/admin renews access.",
+    },
+  );
+
+  assert.deepEqual(
+    deriveAccessPassRuntimeStatus({
+      role: "adult",
+      accessPassExpiresAt: "2026-06-24T11:59:59.000Z",
+      now,
+    }),
+    {
+      role: "adult",
+      authorizationRole: "adult",
+      accessPassExpiresAt: "2026-06-24T11:59:59.000Z",
+      accessPassExpired: false,
+    },
+  );
 });

@@ -61,8 +61,10 @@ function isReadOnlyRole(role: string): boolean {
     role === "readonly" ||
     role === "vet viewer" ||
     role === "veterinary viewer" ||
+    role === "expired access pass" ||
     role.includes("read-only") ||
-    role.includes("vet viewer")
+    role.includes("vet viewer") ||
+    role.includes("expired access pass")
   );
 }
 

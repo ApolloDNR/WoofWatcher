@@ -42,6 +42,7 @@ import {
   buildHouseholdAuditInsert,
   normalizeHouseholdAuditListQuery,
   normalizeAccessPassRole,
+  isAccessPassHelperRole,
 } from "../lib/household-access-pass";
 
 const router: IRouter = Router();
@@ -253,7 +254,12 @@ router.patch("/household/members/:id", requireAuth, async (req, res): Promise<vo
     .update(householdMembersTable)
     .set({
       ...(parsed.data.role !== undefined
-        ? { role: nextRole }
+        ? {
+            role: nextRole,
+            accessPassExpiresAt: isAccessPassHelperRole(nextRole)
+              ? target.accessPassExpiresAt
+              : null,
+          }
         : {}),
       ...(parsed.data.displayName !== undefined
         ? { displayName: parsed.data.displayName ?? null }
@@ -404,6 +410,7 @@ router.post("/household/access-passes/activate", requireAuth, async (req, res): 
     .update(householdMembersTable)
     .set({
       role: nextRole,
+      accessPassExpiresAt: expiryPolicy.expiresAt ? new Date(expiryPolicy.expiresAt) : null,
       ...(parsed.data.displayName !== undefined
         ? { displayName: parsed.data.displayName ?? null }
         : {}),

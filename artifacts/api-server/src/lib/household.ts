@@ -9,6 +9,7 @@ import {
   careStateTable,
   type User,
 } from "@workspace/db";
+import { deriveAccessPassRuntimeStatus } from "./household-access-pass";
 
 const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -142,6 +143,8 @@ export interface HouseholdMemberAuthz {
   householdId: string;
   role: string;
   displayName: string | null;
+  accessPassExpiresAt: string | null;
+  accessPassExpired: boolean;
 }
 
 export async function getHouseholdMemberAuthz(
@@ -155,6 +158,7 @@ export async function getHouseholdMemberAuthz(
       householdId: householdMembersTable.householdId,
       role: householdMembersTable.role,
       displayName: householdMembersTable.displayName,
+      accessPassExpiresAt: householdMembersTable.accessPassExpiresAt,
     })
     .from(householdMembersTable)
     .where(
@@ -164,7 +168,19 @@ export async function getHouseholdMemberAuthz(
       ),
     )
     .limit(1);
-  return row ?? null;
+  if (!row) return null;
+
+  const runtime = deriveAccessPassRuntimeStatus({
+    role: row.role,
+    accessPassExpiresAt: row.accessPassExpiresAt,
+  });
+
+  return {
+    ...row,
+    role: runtime.authorizationRole,
+    accessPassExpiresAt: runtime.accessPassExpiresAt,
+    accessPassExpired: runtime.accessPassExpired,
+  };
 }
 
 export interface MePayload {
@@ -177,6 +193,8 @@ export interface MePayload {
     displayName: string | null;
     email: string | null;
     isSelf: boolean;
+    accessPassExpiresAt: string | null;
+    accessPassExpired: boolean;
   }>;
 }
 
@@ -192,6 +210,7 @@ export async function buildMe(
         id: householdMembersTable.id,
         userId: householdMembersTable.userId,
         role: householdMembersTable.role,
+        accessPassExpiresAt: householdMembersTable.accessPassExpiresAt,
         memberName: householdMembersTable.displayName,
         userName: usersTable.displayName,
         email: usersTable.email,
@@ -213,13 +232,22 @@ export async function buildMe(
       name: household.name,
       inviteCode: household.inviteCode,
     },
-    members: memberRows.map((m) => ({
-      id: m.id,
-      userId: m.userId,
-      role: m.role,
-      displayName: m.memberName ?? m.userName ?? null,
-      email: m.email ?? null,
-      isSelf: m.userId === userId,
-    })),
+    members: memberRows.map((m) => {
+      const runtime = deriveAccessPassRuntimeStatus({
+        role: m.role,
+        accessPassExpiresAt: m.accessPassExpiresAt,
+      });
+
+      return {
+        id: m.id,
+        userId: m.userId,
+        role: runtime.role,
+        displayName: m.memberName ?? m.userName ?? null,
+        email: m.email ?? null,
+        isSelf: m.userId === userId,
+        accessPassExpiresAt: runtime.accessPassExpiresAt,
+        accessPassExpired: runtime.accessPassExpired,
+      };
+    }),
   };
 }
