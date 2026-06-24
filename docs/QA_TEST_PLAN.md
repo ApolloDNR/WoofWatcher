@@ -409,3 +409,4 @@ Latest local evidence, 2026-06-23:
 - `git diff --check` - passing with only expected Windows line-ending warnings.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.
 - Direct `node artifacts/api-server/build.mjs` remains environment-limited in this Windows shell because `esbuild` is present in pnpm's store but not resolvable without the pnpm workspace symlink/runner layer. The failure is `ERR_MODULE_NOT_FOUND: Cannot find package 'esbuild'`, not an edited route-contract assertion failure.
+- Remote GitHub Actions run `28074177667` for commit `fa26845` failed before job execution with job `83114878625`, `steps: []`, `log not found: 83114878625`, and the billing/spending-limit annotation. Local verification remains the current evidence for this slice until GitHub billing/platform execution is fixed.

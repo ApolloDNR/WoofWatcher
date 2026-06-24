@@ -67,7 +67,7 @@
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`.
-- Remote GitHub Actions runs `28063020164`, `28064200143`, `28065179874`, `28066357245`, `28067734120`, `28069107846`, and `28072320208` failed before job start with the account billing/spending-limit annotation, so local verification remains the authoritative evidence for these slices.
+- Remote GitHub Actions runs `28063020164`, `28064200143`, `28065179874`, `28066357245`, `28067734120`, `28069107846`, `28072320208`, and `28074177667` failed before job start with the account billing/spending-limit annotation, so local verification remains the authoritative evidence for these slices.
 - `node node_modules/typescript/bin/tsc -p lib/api-client-react/tsconfig.json --noEmit` and `node node_modules/typescript/bin/tsc -p lib/api-zod/tsconfig.json --noEmit` could not run as direct package checks in this Windows runtime because workspace package symlinks are not materialized without pnpm; failures were missing `@tanstack/react-query`/`zod`, not edited-code diagnostics.
 - `node artifacts/api-server/build.mjs` could not run directly because `esbuild` is not resolvable without the pnpm workspace execution layer; the direct failure was `ERR_MODULE_NOT_FOUND` for `esbuild`.
 
@@ -75,7 +75,7 @@
 
 - Real iOS and Android device/simulator screenshots still need to be captured and attached in `/care-twin-qa`.
 - Provider launch setup still requires real Clerk, Supabase/Postgres, storage, AI, payments, push, store-account, durable audit storage, Access Pass expiry enforcement, and deletion gates before public release.
-- GitHub Actions remote CI has recently failed before job execution due to the account billing/spending-limit blocker; latest checked run is `28072320208` / job `83109274416` with zero steps and no runner.
+- GitHub Actions remote CI has recently failed before job execution due to the account billing/spending-limit blocker; latest checked run is `28074177667` / job `83114878625` with zero steps and `log not found`.
 
 ## Next Best Slice
 
