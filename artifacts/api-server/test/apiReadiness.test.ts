@@ -291,6 +291,24 @@ test("keeps care-entry routes append-safe and household isolated", () => {
   assert.match(careEntries, /res\.sendStatus\(204\)/);
 });
 
+test("keeps vet viewer memberships read-only on shared care writes", () => {
+  const householdLib = readApiFile(join("lib", "household.ts"));
+  const careState = readApiFile(join("routes", "care-state.ts"));
+  const careEntries = readApiFile(join("routes", "care-entries.ts"));
+
+  assert.match(householdLib, /export const CARE_WRITE_ROLES = \["owner", "admin", "member", "sitter", "trainer"\] as const/);
+  assert.match(householdLib, /export async function requireActiveHouseholdCareWrite/);
+  assert.match(householdLib, /requireActiveHouseholdRole\(userId, CARE_WRITE_ROLES\)/);
+  assert.match(householdLib, /"Vet viewers can review shared care, but cannot change logs or care plans"/);
+
+  assert.match(careState, /requireActiveHouseholdCareWrite\(userId\)/);
+  assert.match(careState, /CARE_WRITE_FORBIDDEN_ERROR/);
+  assert.match(careState, /res\.status\(403\)\.json\(\{ error: CARE_WRITE_FORBIDDEN_ERROR \}\)/);
+  assert.match(careEntries, /requireActiveHouseholdCareWrite\(userId\)/);
+  assert.match(careEntries, /CARE_WRITE_FORBIDDEN_ERROR/);
+  assert.match(careEntries, /res\.status\(403\)\.json\(\{ error: CARE_WRITE_FORBIDDEN_ERROR \}\)/);
+});
+
 test("keeps care-entry deletes retained as household audit notes", () => {
   const careEntries = readApiFile(join("routes", "care-entries.ts"));
   const mobileContext = readFileSync(

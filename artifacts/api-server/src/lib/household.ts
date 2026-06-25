@@ -12,6 +12,9 @@ import {
 } from "@workspace/db";
 
 const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export const CARE_WRITE_ROLES = ["owner", "admin", "member", "sitter", "trainer"] as const;
+export const CARE_WRITE_FORBIDDEN_ERROR =
+  "Vet viewers can review shared care, but cannot change logs or care plans";
 
 function generateInviteCode(): string {
   const bytes = randomBytes(6);
@@ -174,6 +177,12 @@ export async function requireActiveHouseholdRole(
     role,
     allowed: membership ? allowedRoles.includes(membership.role.toLowerCase()) : false,
   };
+}
+
+export async function requireActiveHouseholdCareWrite(
+  userId: string,
+): Promise<{ householdId: string; role: string; allowed: boolean }> {
+  return requireActiveHouseholdRole(userId, CARE_WRITE_ROLES);
 }
 
 export async function getCaregiverName(

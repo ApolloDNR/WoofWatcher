@@ -3,7 +3,11 @@ import { and, eq } from "drizzle-orm";
 import { db, careStateTable } from "@workspace/db";
 import { GetCareStateResponse, PutCareStateBody } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
-import { getActiveHouseholdId } from "../lib/household";
+import {
+  CARE_WRITE_FORBIDDEN_ERROR,
+  getActiveHouseholdId,
+  requireActiveHouseholdCareWrite,
+} from "../lib/household";
 
 const router: IRouter = Router();
 
@@ -35,7 +39,11 @@ router.put("/care-state", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const householdId = await getActiveHouseholdId(userId);
+  const { householdId, allowed } = await requireActiveHouseholdCareWrite(userId);
+  if (!allowed) {
+    res.status(403).json({ error: CARE_WRITE_FORBIDDEN_ERROR });
+    return;
+  }
 
   const [current] = await db
     .select()

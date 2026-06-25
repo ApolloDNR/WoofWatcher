@@ -15,7 +15,12 @@ import {
   DeleteCareEntryParams,
 } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
-import { getActiveHouseholdId, getCaregiverName } from "../lib/household";
+import {
+  CARE_WRITE_FORBIDDEN_ERROR,
+  getActiveHouseholdId,
+  getCaregiverName,
+  requireActiveHouseholdCareWrite,
+} from "../lib/household";
 
 const router: IRouter = Router();
 
@@ -61,7 +66,11 @@ router.post("/care-entries", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const householdId = await getActiveHouseholdId(userId);
+  const { householdId, allowed } = await requireActiveHouseholdCareWrite(userId);
+  if (!allowed) {
+    res.status(403).json({ error: CARE_WRITE_FORBIDDEN_ERROR });
+    return;
+  }
   const caregiverName = await getCaregiverName(householdId, userId);
 
   const [entry] = await db
@@ -95,7 +104,11 @@ router.patch("/care-entries/:id", requireAuth, async (req, res): Promise<void> =
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const householdId = await getActiveHouseholdId(userId);
+  const { householdId, allowed } = await requireActiveHouseholdCareWrite(userId);
+  if (!allowed) {
+    res.status(403).json({ error: CARE_WRITE_FORBIDDEN_ERROR });
+    return;
+  }
 
   const [updated] = await db
     .update(careEntriesTable)
@@ -141,7 +154,11 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    const householdId = await getActiveHouseholdId(userId);
+    const { householdId, allowed } = await requireActiveHouseholdCareWrite(userId);
+    if (!allowed) {
+      res.status(403).json({ error: CARE_WRITE_FORBIDDEN_ERROR });
+      return;
+    }
     const caregiverName = await getCaregiverName(householdId, userId);
 
     const [deleted] = await db

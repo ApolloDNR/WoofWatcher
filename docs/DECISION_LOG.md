@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-25: Vet Viewers Are Read-Only For Shared Care Writes
+
+Decision: API care-write routes should allow owner, admin, member, sitter, and trainer roles to mutate shared care, but `vet_viewer` memberships should remain read-only. `PUT /care-state` and `POST/PATCH/DELETE /care-entries` return a clear 403 for read-only active household roles, while read routes remain available for review.
+
+Reason: Mobile can now assign a vet viewer role and Household Access explains it as report/context review. Letting that role change logs or care plans would contradict the owner-readable permission boundary and weaken household trust before final provider-backed permission policy exists.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed role enforcement, document/report access controls, veterinarian collaboration workflows, or final caregiver administration policy becomes active release work.
+
 ### 2026-06-25: Household Access Shows Role Permission Boundaries
 
 Decision: Household Access should label the launch caregiver role set as Owner, Admin, Caregiver, Sitter, Trainer, and Vet viewer, and each role should carry a short owner-readable permission summary. Mobile More should show that summary under each Care Team person, but final enforcement, invite approval, owner transfer, removal, document access rules, and broader provider-backed policy remain gated.

@@ -129,6 +129,7 @@ Latest completed local runtime/accessibility hardening:
 - Household member role updates now have a bounded owner/admin API contract before full provider-backed caregiver administration. `PATCH /household/members/{memberId}` updates existing active-household memberships to admin/member/sitter/trainer/vet viewer, refuses owner demotion, writes a durable role-change audit event, and is covered across OpenAPI, zod, generated React client, and focused API readiness.
 - Mobile Care Team now exposes that bounded role-update contract for existing synced non-owner members. The More surface uses the generated role mutation, keeps admin/member/sitter/trainer/vet viewer chips 48px and accessible, refreshes `/me`, refetches Pack Audit on success, and keeps owner transfer, member removal, invite approval, and final permission policy provider-gated.
 - Household Access now keeps the launch role set owner-readable before final provider enforcement. The shared domain helper labels owner, admin, sitter, trainer, and vet viewer roles with scoped permission summaries, and Mobile More displays those summaries under each Care Team person without leaking internal role ids.
+- Vet viewer API memberships are now read-only for shared care writes before final provider-backed permission policy. Shared `CARE_WRITE_ROLES` allow owner/admin/member/sitter/trainer mutations while `PUT /care-state` and `POST/PATCH/DELETE /care-entries` return a clear 403 for vet viewers who should only review household context.
 
 Next highest-impact work:
 
