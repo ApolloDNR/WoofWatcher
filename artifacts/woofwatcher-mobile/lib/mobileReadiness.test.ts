@@ -1535,11 +1535,32 @@ test("keeps household access readiness visible from More", () => {
   assert.match(more, /Couldn't switch household/);
 });
 
+test("keeps household audit review visible from More", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const reactClient = readFileSync(
+    join(process.cwd(), "lib", "api-client-react", "src", "generated", "api.ts"),
+    "utf8",
+  );
+
+  assert.match(reactClient, /useListHouseholdAuditEvents/);
+  assert.match(more, /useListHouseholdAuditEvents/);
+  assert.match(more, /householdAudit/);
+  assert.match(more, /Pack Audit/);
+  assert.match(more, /owner\/admin review only/);
+  assert.match(more, /auditEventLabel/);
+  assert.match(more, /formatAuditEventTime/);
+  assert.match(more, /auditEvents\.slice\(0, 4\)/);
+  assert.match(more, /No household trust events yet/);
+  assert.match(more, /Audit review is offline until sync is available/);
+  assert.match(more, /accessibilityLabel=\{`Household audit event: \$\{auditEventLabel\(event\)\}`\}/);
+});
+
 test("keeps More household, tools, and diet sections on shared board card anatomy", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Team"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Household Access"/);
+  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Pack Audit"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Responsibility Center"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Sync Health"/);
   assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Launch Readiness"/);

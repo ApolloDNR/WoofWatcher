@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-25: Mobile Pack Audit Is Review Only
+
+Decision: Mobile More should expose a Pack Audit board that reads `GET /household/audit-events` through the generated React hook and shows recent household trust events with loading, empty, and offline states. The surface is owner/admin review only and does not expose lifecycle changes, deletion, export, or retention actions before provider-backed account audit policy exists.
+
+Reason: The API now writes and lists durable household audit events, but owners need visible trust feedback in the app when pack identity, active household sync, or invite membership changes. Keeping the card review-only makes the trust trail useful without pretending final retention, export, delete, or admin workflows are live.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed account audit policy, retention lifecycle actions, invite approval, caregiver editing, role changes, audit export/delete, or live API integration tests become active release work.
+
 ### 2026-06-24: Sensitive Household Actions Produce Audit Events
 
 Decision: Default household creation, household rename, active-household switching, and invite acceptance should write durable `household_audit_events` rows with bounded action names: `household.created`, `household.renamed`, `household.active_changed`, and `household.member_joined`.

@@ -24,9 +24,11 @@ import {
   useGetMe,
   useUpdateHousehold,
   useJoinHousehold,
+  useListHouseholdAuditEvents,
   useSetActiveHousehold,
   useUpdateMe,
   getGetMeQueryKey,
+  type HouseholdAuditEvent,
 } from "@workspace/api-client-react";
 import {
   deriveCareIntelligence,
@@ -54,6 +56,42 @@ import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/bo
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
+function auditEventLabel(event: HouseholdAuditEvent): string {
+  switch (event.action) {
+    case "household.created":
+      return "Pack created";
+    case "household.renamed":
+      return "Pack renamed";
+    case "household.active_changed":
+      return "Active pack changed";
+    case "household.member_joined":
+      return "Caregiver joined";
+    default:
+      return event.action
+        .split(".")
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).replace(/_/g, " "))
+        .join(" ");
+  }
+}
+
+function auditEventDetail(event: HouseholdAuditEvent): string {
+  const target = event.targetType ? event.targetType.replace(/_/g, " ") : "household";
+  const lifecycle = event.lifecycleState.replace(/_/g, " ");
+  return `${target} - ${lifecycle}`;
+}
+
+function formatAuditEventTime(value: string): string {
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) return "Recent";
+  return new Date(parsed).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -74,6 +112,10 @@ export default function MoreScreen() {
   const updateMe = useUpdateMe();
 
   const household = me.data?.household;
+  const householdAudit = useListHouseholdAuditEvents(
+    { limit: 8 },
+    { query: { enabled: Boolean(household?.id) } },
+  );
   const households = me.data?.households ?? (household ? [household] : []);
   const members = me.data?.members ?? [];
   const myName = me.data?.user?.displayName?.trim() || "";
@@ -205,6 +247,7 @@ export default function MoreScreen() {
         })),
     [households, household?.id],
   );
+  const auditEvents = householdAudit.data ?? [];
   const responsibilityTone =
     householdResponsibility.status === "needs-care"
       ? colors.rose
@@ -1051,6 +1094,85 @@ export default function MoreScreen() {
             )}
           </BoardCard>
 
+          <BoardCard style={[s.moreBoardCard, { borderColor: colors.primary + "44" }]}>
+            <BoardSectionHeader
+              title="Pack Audit"
+              accessory={
+                <Text style={[s.auditAccessLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  owner/admin review only
+                </Text>
+              }
+            />
+            <View style={s.auditTop}>
+              <View style={[s.auditIcon, { backgroundColor: colors.primary + "18" }]}>
+                <Ionicons name="shield-checkmark-outline" size={21} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.auditTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  Household trust events
+                </Text>
+                <Text style={[s.auditSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Review who changed pack identity, active household sync, or invite membership before final provider retention policy.
+                </Text>
+              </View>
+            </View>
+            <View style={[s.auditNotice, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Ionicons name="information-circle-outline" size={17} color={colors.primary} />
+              <Text style={[s.auditNoticeText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Audit review is offline until sync is available, and lifecycle changes still wait for provider-backed policy.
+              </Text>
+            </View>
+            {householdAudit.isLoading ? (
+              <View style={[s.auditEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Text style={[s.auditEmptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  Loading household trust events
+                </Text>
+                <Text style={[s.auditEmptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  WoofWatcher is checking the owner/admin audit log for this pack.
+                </Text>
+              </View>
+            ) : householdAudit.isError ? (
+              <View style={[s.auditEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Text style={[s.auditEmptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  Audit review is offline until sync is available
+                </Text>
+                <Text style={[s.auditEmptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Owners and admins can retry after account sync is available. Care logs still remain local and recoverable.
+                </Text>
+              </View>
+            ) : auditEvents.length === 0 ? (
+              <View style={[s.auditEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Text style={[s.auditEmptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  No household trust events yet
+                </Text>
+                <Text style={[s.auditEmptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  New pack creation, rename, active-pack switching, and invite joins will appear here after sync.
+                </Text>
+              </View>
+            ) : (
+              <View style={s.auditList}>
+                {auditEvents.slice(0, 4).map((event) => (
+                  <View
+                    key={event.id}
+                    accessible
+                    accessibilityLabel={`Household audit event: ${auditEventLabel(event)}`}
+                    style={[s.auditEventRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  >
+                    <View style={[s.auditEventDot, { backgroundColor: colors.primary }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.auditEventTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {auditEventLabel(event)}
+                      </Text>
+                      <Text style={[s.auditEventMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {auditEventDetail(event)} - {formatAuditEventTime(event.createdAt)}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </BoardCard>
+
           {/* Household responsibility */}
           <BoardCard style={[s.moreBoardCard, { borderColor: responsibilityTone + "44" }]}>
             <BoardSectionHeader
@@ -1806,6 +1928,38 @@ const s = StyleSheet.create({
   householdChoiceIcon: { width: 32, height: 32, borderRadius: 9, alignItems: "center", justifyContent: "center" },
   householdChoiceName: { fontSize: 13.5 },
   householdChoiceMeta: { fontSize: 11.5, marginTop: 2 },
+
+  auditAccessLabel: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0.5 },
+  auditTop: { flexDirection: "row", alignItems: "center", gap: 12 },
+  auditIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  auditTitle: { fontSize: 16, letterSpacing: 0 },
+  auditSummary: { fontSize: 12.5, lineHeight: 18, marginTop: 3 },
+  auditNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 11,
+    marginTop: 13,
+  },
+  auditNoticeText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  auditList: { gap: 8, marginTop: 12 },
+  auditEventRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 11,
+  },
+  auditEventDot: { width: 8, height: 8, borderRadius: 4 },
+  auditEventTitle: { fontSize: 13.5 },
+  auditEventMeta: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
+  auditEmpty: { borderRadius: 8, borderWidth: 1, padding: 12, marginTop: 12 },
+  auditEmptyTitle: { fontSize: 13.5 },
+  auditEmptyCopy: { fontSize: 12, lineHeight: 17, marginTop: 3 },
 
   signOut: {
     flexDirection: "row",
