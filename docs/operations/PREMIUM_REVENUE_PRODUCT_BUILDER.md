@@ -316,6 +316,13 @@ QA capture script exports the same owner-readable status. This keeps Apollo,
 phone testers, and design-polish helpers from mistaking a marked Pass for
 complete proof.
 
+The proof-completion navigation pass made that More panel actionable under the
+two-day deadline. Native QA Next Captures now pairs `Share QA Plan` with a
+second 48px action: `Finish Proof` when any target is still `Pass pending proof`,
+otherwise `Open QA Cockpit`. That action routes directly to `/care-twin-qa`, so
+testers can resolve missing screenshots or Mission notes without hunting
+through More.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

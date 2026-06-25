@@ -1013,6 +1013,11 @@ export default function MoreScreen() {
     );
   };
 
+  const nativeQaCaptureHasProofPending = nativeQaCapturePlan.nextTargets.some(
+    (target) => mobileLaunchQaCaptureTargetStatusLabel(target) === "Pass pending proof",
+  );
+  const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "Open QA Cockpit";
+
   const H_PAD = 20;
 
   return (
@@ -1422,18 +1427,57 @@ export default function MoreScreen() {
                     </Text>
                   </View>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Share Native QA capture plan"
-                  onPress={shareNativeQaCapturePlan}
-                  style={({ pressed }) => [
-                    s.nativeQaCaptureShare,
-                    { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
-                  ]}
-                >
-                  <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
-                  <Text style={[s.nativeQaCaptureShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share QA Plan</Text>
-                </Pressable>
+                <View style={s.nativeQaCaptureActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Share Native QA capture plan"
+                    onPress={shareNativeQaCapturePlan}
+                    style={({ pressed }) => [
+                      s.nativeQaCaptureShare,
+                      { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+                    ]}
+                  >
+                    <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
+                    <Text style={[s.nativeQaCaptureShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share QA Plan</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      nativeQaCaptureHasProofPending
+                        ? "Open QA Cockpit to finish pending Native QA proof"
+                        : "Open QA Cockpit for Native QA capture"
+                    }
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      router.push("/care-twin-qa" as never);
+                    }}
+                    style={({ pressed }) => [
+                      s.nativeQaCaptureCockpitAction,
+                      {
+                        borderColor: nativeQaCaptureHasProofPending ? colors.amber + "66" : colors.border,
+                        backgroundColor: nativeQaCaptureHasProofPending ? colors.amber + "14" : colors.card,
+                        opacity: pressed ? 0.78 : 1,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={nativeQaCaptureHasProofPending ? "shield-checkmark-outline" : "clipboard-outline"}
+                      size={15}
+                      color={nativeQaCaptureHasProofPending ? colors.amber : colors.foreground}
+                    />
+                    <Text
+                      style={[
+                        s.nativeQaCaptureCockpitActionText,
+                        {
+                          color: nativeQaCaptureHasProofPending ? colors.amber : colors.foreground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {nativeQaCaptureCockpitActionLabel}
+                    </Text>
+                  </Pressable>
+                </View>
                 {nativeQaCapturePlan.nextTargets.map((target) => {
                   const targetStatusLabel = mobileLaunchQaCaptureTargetStatusLabel(target);
                   const targetStatusTone =
@@ -2963,16 +3007,33 @@ const s = StyleSheet.create({
   },
   nativeQaCaptureTitle: { fontSize: 13.5, lineHeight: 18 },
   nativeQaCaptureSub: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  nativeQaCaptureActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 2,
+  },
   nativeQaCaptureShare: {
-    minHeight: 40,
+    flex: 1,
+    minHeight: 48,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     gap: 8,
-    marginBottom: 2,
   },
   nativeQaCaptureShareText: { color: "#FFFFFF", fontSize: 12.5 },
+  nativeQaCaptureCockpitAction: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 8,
+  },
+  nativeQaCaptureCockpitActionText: { fontSize: 12.2, lineHeight: 15 },
   nativeQaCaptureRow: {
     minHeight: 54,
     borderTopWidth: 1,

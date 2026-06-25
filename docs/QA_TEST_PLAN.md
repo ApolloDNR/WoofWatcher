@@ -586,6 +586,20 @@ Latest local evidence, 2026-06-25:
 
 Latest local evidence, 2026-06-25:
 
+- More's Native QA Next Captures panel now includes an action rail with `Share QA Plan` and a direct cockpit action.
+- The cockpit action says `Finish Proof` when any target is still `Pass pending proof`; otherwise it says `Open QA Cockpit`.
+- The cockpit action routes directly to `/care-twin-qa` and uses accessible labels that distinguish proof completion from normal capture.
+- Static readiness protects `nativeQaCaptureHasProofPending`, visible `Finish Proof` copy, and the `nativeQaCaptureCockpitAction` style/action contract.
+- Red/green evidence: `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` failed before the cockpit action existed, then passed with 71 tests after wiring.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 88 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 389 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+Latest local evidence, 2026-06-25:
+
 - More's Launch Readiness board now renders `Proof status` inside Native QA Next Captures.
 - Pass rows that still have required missing screenshots or Mission note evidence display `Pass pending proof` instead of looking complete.
 - `buildMobileLaunchQaCaptureShareText` now uses the same owner-readable status label, so the shared QA plan does not leak raw internal status strings or hide pending proof.

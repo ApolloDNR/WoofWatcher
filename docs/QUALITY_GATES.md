@@ -623,3 +623,14 @@ verification passed 88 tests, focused behavior/readiness verification passed
 389 tests, mobile TypeScript passed, PixelLab verification passed at 149 files,
 `git diff --check` passed, and package-local Expo web export emitted
 HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: More's Native QA Next Captures panel now gives
+testers a direct proof-completion route. The action rail includes `Share QA
+Plan` and a second 48px mobile action that says `Finish Proof` when any target
+is `Pass pending proof`, otherwise `Open QA Cockpit`, and routes directly to
+`/care-twin-qa` with accessible copy. Red/green mobile readiness passed after
+the guard caught the missing action, targeted QA/readiness verification passed
+88 tests, focused behavior/readiness verification passed 389 tests, mobile
+TypeScript passed, PixelLab verification passed at 149 files, `git diff
+--check` passed, and package-local Expo web export emitted HTML/JavaScript
+output that was verified and cleaned.
