@@ -283,6 +283,17 @@ test("registers the care twin native QA route for device review", () => {
   const qaSession = readMobileLibFile("mobileQaSession.ts");
   const releaseQa = readMobileLibFile("mobileReleaseQa.ts");
   const careTwinReport = readMobileLibFile("careTwinQaReport.ts");
+  const boardPrimitives = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "board",
+      "BoardPrimitives.tsx",
+    ),
+    "utf8",
+  );
 
   assert.match(rootLayout, /name="care-twin-qa"/);
   assert.match(more, /router\.push\("\/care-twin-qa" as never\)/);
@@ -341,7 +352,17 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /48-hour beta run/);
   assert.match(qaRoute, /nextBetaTarget/);
   assert.match(qaRoute, /Open Next Surface/);
+  assert.match(qaRoute, /buildQaReturnRoute/);
+  assert.match(qaRoute, /qaReturn=care-twin-qa/);
+  assert.match(qaRoute, /qaSurface=\$\{encodeURIComponent\(surfaceId\)\}/);
+  assert.match(qaRoute, /qaTitle=\$\{encodeURIComponent\(target\.title\)\}/);
   assert.match(qaRoute, /accessibilityLabel=\{[\s\S]*Open next beta QA surface:/);
+  assert.match(boardPrimitives, /useLocalSearchParams/);
+  assert.match(boardPrimitives, /qaReturn === "care-twin-qa"/);
+  assert.match(boardPrimitives, /Return to QA Cockpit/);
+  assert.match(boardPrimitives, /Capture done\? Attach proof/);
+  assert.match(boardPrimitives, /router\.push\("\/care-twin-qa" as never\)/);
+  assert.match(boardPrimitives, /qaReturnBanner/);
   assert.doesNotMatch(qaRoute, /releaseSummary\.missingScreenshots === 0 \? colors\.sage : colors\.amber/);
   assert.match(qaSession, /careTwinEvidenceById/);
   assert.match(qaSession, /surfaceEvidenceById/);

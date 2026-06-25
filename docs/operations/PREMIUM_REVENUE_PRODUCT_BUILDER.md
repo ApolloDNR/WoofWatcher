@@ -239,6 +239,15 @@ sheet, and a native Share Provider Plan action. `CareContext` persists
 consumes those saved gates while still refusing to claim public launch until
 native QA, legal/support/store approval, and Apollo sign-off are complete.
 
+The two-day beta QA cockpit pass made device capture less fragile. `/care-twin-qa`
+now tags attached screenshot evidence explicitly as iOS, Android, or Web instead
+of relying on the runtime platform, and target routes opened from the cockpit
+carry temporary QA return context. Shared board-header screens show a `Return to
+QA Cockpit` banner during those capture sessions, so a tester can open the next
+surface, screenshot it, return, attach proof, and mark Pass or Needs tune without
+getting lost. This is still capture tooling only; it does not replace actual
+iOS/Android screenshots or human visual approval.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete the Mobile Release QA checklist, Store Screenshot QA checklist, and 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm More's Launch Readiness and Native QA Next Captures update from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

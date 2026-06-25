@@ -202,6 +202,12 @@ const QA_SCREENSHOT_PLATFORM_OPTIONS: { label: string; value: QaScreenshotEviden
   { label: "Web", value: "web" },
 ];
 
+function buildQaReturnRoute(target: { route: string; id?: string; surfaceId?: string; title: string }): string {
+  const separator = target.route.includes("?") ? "&" : "?";
+  const surfaceId = target.surfaceId ?? target.id ?? "qa-surface";
+  return `${target.route}${separator}qaReturn=care-twin-qa&qaSurface=${encodeURIComponent(surfaceId)}&qaTitle=${encodeURIComponent(target.title)}`;
+}
+
 export default function CareTwinQaScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -397,7 +403,7 @@ export default function CareTwinQaScreen() {
     if (Platform.OS !== "web") {
       Haptics.selectionAsync().catch(() => {});
     }
-    router.push(surface.route as never);
+    router.push(buildQaReturnRoute(surface) as never);
   };
 
   const pickScreenshotEvidence = async (fallbackFileName: string): Promise<QaScreenshotEvidence | null> => {
@@ -572,7 +578,7 @@ export default function CareTwinQaScreen() {
               accessibilityLabel={
                 nextBetaTarget ? `Open next beta QA surface: ${nextBetaTarget.title}` : "Share completed beta QA summary"
               }
-              onPress={nextBetaTarget ? () => router.push(nextBetaTarget.route as never) : shareQaSummary}
+              onPress={nextBetaTarget ? () => router.push(buildQaReturnRoute(nextBetaTarget) as never) : shareQaSummary}
               style={({ pressed }) => [
                 s.betaRunPrimary,
                 { backgroundColor: pressed ? colors.secondary : colors.brandNavy },

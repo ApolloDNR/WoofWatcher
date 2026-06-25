@@ -246,3 +246,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Real iOS and Android screenshots still need to be captured and attached by a device tester.
 - Any route marked Needs tune during that run should be fixed before broader beta sharing.
+
+## Completed - Care Twin QA Return Loop
+
+- Added a QA capture return loop for routes opened from `/care-twin-qa`.
+- QA target launches now append `qaReturn=care-twin-qa`, `qaSurface`, and `qaTitle` query context.
+- Shared `BoardRouteHeader` detects that temporary QA context and renders a `Return to QA Cockpit` banner with capture-specific copy.
+- The banner only appears during QA capture sessions, letting testers open target routes, take screenshots, then return to `/care-twin-qa` to attach proof and mark Pass or Needs tune without manually finding the route again.
+- Static mobile readiness coverage now protects the query builder, route params, shared banner, and cockpit return action.
+
+## Verification - Care Twin QA Return Loop
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts` - 85 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 386 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - Care Twin QA Return Loop
+
+- Real iOS and Android screenshots still need to be captured and attached by a device tester.
+- Any screen marked Needs tune during capture must be fixed before the beta goes outside the owner/builder loop.

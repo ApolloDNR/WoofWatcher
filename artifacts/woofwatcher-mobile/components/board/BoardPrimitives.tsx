@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { type ReactNode } from "react";
 import {
   Pressable,
@@ -17,6 +18,10 @@ import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 export function BoardRouteHeader({
   kicker,
@@ -48,72 +53,109 @@ export function BoardRouteHeader({
   plain?: boolean;
 }) {
   const colors = useColors();
+  const router = useRouter();
+  const qaParams = useLocalSearchParams<{
+    qaReturn?: string | string[];
+    qaSurface?: string | string[];
+    qaTitle?: string | string[];
+  }>();
+  const qaReturn = firstParam(qaParams.qaReturn);
+  const qaSurface = firstParam(qaParams.qaSurface);
+  const qaTitle = firstParam(qaParams.qaTitle);
+  const showQaReturn = qaReturn === "care-twin-qa";
 
   return (
-    <View style={[styles.routeHeader, centered && styles.routeHeaderCentered, style]}>
-      {back ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={onBack}
-          style={({ pressed }) => [
-            styles.routeIconButton,
-            plain && styles.routeIconButtonPlain,
-            {
-              backgroundColor: plain ? "transparent" : pressed ? colors.secondary : colors.card,
-              borderColor: plain ? "transparent" : colors.border,
-            },
-          ]}
-        >
-          <Ionicons name="chevron-back" size={plain ? 24 : 20} color={colors.foreground} />
-        </Pressable>
-      ) : icon ? (
-        <View
-          style={[
-            styles.routeIconButton,
-            plain && styles.routeIconButtonPlain,
-            {
-              backgroundColor: plain ? "transparent" : colors.secondary,
-              borderColor: plain ? "transparent" : colors.border,
-            },
-          ]}
-        >
-          <Ionicons name={icon} size={20} color={colors.foreground} />
-        </View>
-      ) : null}
-      <View style={[styles.routeHeaderText, centered && styles.routeHeaderTextCentered]}>
-        {kicker ? (
-          <Text style={[styles.routeKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>{kicker}</Text>
+    <>
+      <View style={[styles.routeHeader, centered && styles.routeHeaderCentered, style]}>
+        {back ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            onPress={onBack}
+            style={({ pressed }) => [
+              styles.routeIconButton,
+              plain && styles.routeIconButtonPlain,
+              {
+                backgroundColor: plain ? "transparent" : pressed ? colors.secondary : colors.card,
+                borderColor: plain ? "transparent" : colors.border,
+              },
+            ]}
+          >
+            <Ionicons name="chevron-back" size={plain ? 24 : 20} color={colors.foreground} />
+          </Pressable>
+        ) : icon ? (
+          <View
+            style={[
+              styles.routeIconButton,
+              plain && styles.routeIconButtonPlain,
+              {
+                backgroundColor: plain ? "transparent" : colors.secondary,
+                borderColor: plain ? "transparent" : colors.border,
+              },
+            ]}
+          >
+            <Ionicons name={icon} size={20} color={colors.foreground} />
+          </View>
         ) : null}
-        <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: DISPLAY }]}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={[styles.routeSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            {subtitle}
+        <View style={[styles.routeHeaderText, centered && styles.routeHeaderTextCentered]}>
+          {kicker ? (
+            <Text style={[styles.routeKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>{kicker}</Text>
+          ) : null}
+          <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: DISPLAY }]}>
+            {title}
           </Text>
+          {subtitle ? (
+            <Text style={[styles.routeSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+        {actionIcon && onAction ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={actionLabel ?? title}
+            onPress={onAction}
+            disabled={actionDisabled}
+            style={({ pressed }) => [
+              styles.routeIconButton,
+              plain && styles.routeIconButtonPlain,
+              {
+                backgroundColor: plain ? "transparent" : pressed || actionDisabled ? colors.secondary : colors.card,
+                borderColor: plain ? "transparent" : colors.border,
+                opacity: actionDisabled ? 0.55 : 1,
+              },
+            ]}
+          >
+            <Ionicons name={actionIcon} size={plain ? 21 : 19} color={colors.foreground} />
+          </Pressable>
         ) : null}
       </View>
-      {actionIcon && onAction ? (
+      {showQaReturn ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={actionLabel ?? title}
-          onPress={onAction}
-          disabled={actionDisabled}
+          accessibilityLabel={`Return to QA Cockpit${qaTitle ? ` for ${qaTitle}` : ""}`}
+          onPress={() => router.push("/care-twin-qa" as never)}
           style={({ pressed }) => [
-            styles.routeIconButton,
-            plain && styles.routeIconButtonPlain,
+            styles.qaReturnBanner,
             {
-              backgroundColor: plain ? "transparent" : pressed || actionDisabled ? colors.secondary : colors.card,
-              borderColor: plain ? "transparent" : colors.border,
-              opacity: actionDisabled ? 0.55 : 1,
+              backgroundColor: pressed ? `${colors.sage}28` : `${colors.sage}16`,
+              borderColor: `${colors.sage}66`,
             },
           ]}
         >
-          <Ionicons name={actionIcon} size={plain ? 21 : 19} color={colors.foreground} />
+          <Ionicons name="camera-outline" size={17} color={colors.sage} />
+          <View style={styles.qaReturnText}>
+            <Text style={[styles.qaReturnTitle, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+              Return to QA Cockpit
+            </Text>
+            <Text style={[styles.qaReturnDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]} numberOfLines={1}>
+              Capture done? Attach proof{qaTitle ? ` for ${qaTitle}` : qaSurface ? ` for ${qaSurface}` : ""}.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={15} color={colors.sage} />
         </Pressable>
       ) : null}
-    </View>
+    </>
   );
 }
 
@@ -425,6 +467,29 @@ const styles = StyleSheet.create({
   routeHeaderCentered: {
     minHeight: 46,
     marginBottom: 12,
+  },
+  qaReturnBanner: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 9,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: -6,
+    marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  qaReturnText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  qaReturnTitle: {
+    fontSize: 12.5,
+  },
+  qaReturnDetail: {
+    marginTop: 1,
+    fontSize: 11,
   },
   routeIconButton: {
     width: MIN_MOBILE_TOUCH_TARGET,

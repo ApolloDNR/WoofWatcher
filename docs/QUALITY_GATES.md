@@ -521,3 +521,14 @@ behavior/readiness tests, mobile TypeScript, PixelLab verification at 149 files,
 `git diff --check`, and package-local Expo web export with HTML/JavaScript output
 verified and cleaned. Real device capture and human visual approval remain
 required before broader beta circulation.
+
+Current evidence, 2026-06-25: The native QA capture loop now has a route-level
+return path. `/care-twin-qa` opens target routes with `qaReturn=care-twin-qa`,
+`qaSurface`, and `qaTitle`; shared board-header routes render a temporary
+`Return to QA Cockpit` banner during those sessions; and the banner returns to
+`/care-twin-qa` so testers can attach proof and mark Pass or Needs tune. Local
+verification passed 85 targeted QA/readiness tests, 386 focused
+behavior/readiness tests, mobile TypeScript, PixelLab verification at 149 files,
+`git diff --check`, and package-local Expo web export with HTML/JavaScript output
+verified and cleaned. This improves capture flow but still requires real iOS and
+Android screenshots plus human review.
