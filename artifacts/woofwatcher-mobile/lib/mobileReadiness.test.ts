@@ -1548,6 +1548,8 @@ test("keeps household audit review visible from More", () => {
   assert.match(more, /Pack Audit/);
   assert.match(more, /owner\/admin review only/);
   assert.match(more, /auditEventLabel/);
+  assert.match(more, /getAuditDetailValue/);
+  assert.match(more, /getAuditDetailBoolean/);
   assert.match(more, /formatAuditEventTime/);
   assert.match(more, /AUDIT_ACTION_FILTERS/);
   assert.match(more, /AUDIT_LIFECYCLE_FILTERS/);
@@ -1562,7 +1564,11 @@ test("keeps household audit review visible from More", () => {
   assert.match(more, /auditEvents\.slice\(0, 4\)/);
   assert.match(more, /No household trust events yet/);
   assert.match(more, /Audit review is offline until sync is available/);
-  assert.match(more, /accessibilityLabel=\{`Household audit event: \$\{auditEventLabel\(event\)\}`\}/);
+  assert.match(more, /Created \$\{name\}/);
+  assert.match(more, /Renamed to \$\{newName\}/);
+  assert.match(more, /New caregiver membership/);
+  assert.match(more, /Existing caregiver rejoined/);
+  assert.match(more, /accessibilityLabel=\{`Household audit event: \$\{auditEventLabel\(event\)\}\. \$\{detail\}`\}/);
 });
 
 test("keeps More household, tools, and diet sections on shared board card anatomy", () => {

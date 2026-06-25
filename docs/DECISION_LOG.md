@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-25: Mobile Pack Audit Shows Owner-Readable Event Context
+
+Decision: Mobile More's Pack Audit rows should summarize stored audit event details in owner-readable language for pack creation, rename, active-household switching, and invite membership events. Row accessibility labels should include the same readable detail. The UI should not expose raw JSON, raw audit detail dumps, lifecycle mutation controls, deletion, export, or retention actions before provider-backed account audit policy exists.
+
+Reason: Owner/admin review is only useful if a household can understand what changed, not just which bounded event type occurred. The existing producers already store safe detail fields such as pack name, renamed-to value, selected household switch context, and whether a caregiver membership was newly created, so rendering those details improves household trust without expanding backend behavior or implying final audit retention policy is ready.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed account audit policy, retention lifecycle actions, audit export/delete, role changes, invite approval, caregiver editing, or live API integration tests become active release work.
+
 ### 2026-06-25: Mobile Pack Audit Uses Review Filters Only
 
 Decision: Mobile More's Pack Audit board should expose event-type and lifecycle filter chips that pass `action` and `lifecycleState` into the existing `GET /household/audit-events` generated hook. The filters are owner/admin review aids only; the board still does not expose audit lifecycle changes, deletion, export, or retention controls before provider-backed account audit policy exists.

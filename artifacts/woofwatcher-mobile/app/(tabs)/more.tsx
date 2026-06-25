@@ -89,10 +89,42 @@ function auditEventLabel(event: HouseholdAuditEvent): string {
   }
 }
 
+function getAuditDetailValue(event: HouseholdAuditEvent, key: string): string {
+  const value = event.details?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function getAuditDetailBoolean(event: HouseholdAuditEvent, key: string): boolean | null {
+  const value = event.details?.[key];
+  return typeof value === "boolean" ? value : null;
+}
+
 function auditEventDetail(event: HouseholdAuditEvent): string {
   const target = event.targetType ? event.targetType.replace(/_/g, " ") : "household";
   const lifecycle = event.lifecycleState.replace(/_/g, " ");
-  return `${target} - ${lifecycle}`;
+  const state = `${target} - ${lifecycle}`;
+  switch (event.action) {
+    case "household.created": {
+      const name = getAuditDetailValue(event, "name");
+      return name ? `Created ${name} - ${state}` : state;
+    }
+    case "household.renamed": {
+      const newName = getAuditDetailValue(event, "newName");
+      return newName ? `Renamed to ${newName} - ${state}` : state;
+    }
+    case "household.active_changed": {
+      const selectedHouseholdId = getAuditDetailValue(event, "selectedHouseholdId");
+      return selectedHouseholdId ? `Sync target switched - ${state}` : state;
+    }
+    case "household.member_joined": {
+      const membershipCreated = getAuditDetailBoolean(event, "membershipCreated");
+      if (membershipCreated === true) return `New caregiver membership - ${state}`;
+      if (membershipCreated === false) return `Existing caregiver rejoined - ${state}`;
+      return state;
+    }
+    default:
+      return state;
+  }
 }
 
 function formatAuditEventTime(value: string): string {
@@ -1251,24 +1283,27 @@ export default function MoreScreen() {
               </View>
             ) : (
               <View style={s.auditList}>
-                {auditEvents.slice(0, 4).map((event) => (
-                  <View
-                    key={event.id}
-                    accessible
-                    accessibilityLabel={`Household audit event: ${auditEventLabel(event)}`}
-                    style={[s.auditEventRow, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  >
-                    <View style={[s.auditEventDot, { backgroundColor: colors.primary }]} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.auditEventTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {auditEventLabel(event)}
-                      </Text>
-                      <Text style={[s.auditEventMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {auditEventDetail(event)} - {formatAuditEventTime(event.createdAt)}
-                      </Text>
+                {auditEvents.slice(0, 4).map((event) => {
+                  const detail = auditEventDetail(event);
+                  return (
+                    <View
+                      key={event.id}
+                      accessible
+                      accessibilityLabel={`Household audit event: ${auditEventLabel(event)}. ${detail}`}
+                      style={[s.auditEventRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    >
+                      <View style={[s.auditEventDot, { backgroundColor: colors.primary }]} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.auditEventTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {auditEventLabel(event)}
+                        </Text>
+                        <Text style={[s.auditEventMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {detail} - {formatAuditEventTime(event.createdAt)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             )}
           </BoardCard>
