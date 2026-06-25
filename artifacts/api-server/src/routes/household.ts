@@ -31,6 +31,8 @@ import {
   HouseholdInvitationMutationResponse,
   RevokeHouseholdInvitationParams,
   RevokeHouseholdInvitationBody,
+  ListHouseholdSharingCleanupQueryParams,
+  ListHouseholdSharingCleanupResponse,
 } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
 import {
@@ -61,6 +63,11 @@ import {
   normalizeHouseholdInvitationLifecycleState,
   normalizeHouseholdInvitationListQuery,
 } from "../lib/household-invitations";
+import {
+  HOUSEHOLD_SHARING_CLEANUP_BOUNDARY,
+  buildHouseholdSharingCleanupCandidates,
+  normalizeHouseholdSharingCleanupQuery,
+} from "../lib/household-sharing-cleanup";
 
 const router: IRouter = Router();
 
@@ -455,6 +462,71 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
     JoinHouseholdResponse.parse({
       ...(await buildMe(userId, household.id)),
       auditEvent,
+    }),
+  );
+});
+
+router.get("/household/sharing-cleanup", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const parsed = ListHouseholdSharingCleanupQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { householdId } = await ensureUserAndHousehold(userId);
+  const actor = await getHouseholdMemberAuthz(householdId, userId);
+  if (actor?.role !== "owner") {
+    res.status(403).json({
+      error:
+        "Only an owner/admin can review expired household sharing cleanup candidates.",
+    });
+    return;
+  }
+
+  const filters = normalizeHouseholdSharingCleanupQuery(parsed.data);
+  const invitations = await db
+    .select()
+    .from(householdInvitationsTable)
+    .where(eq(householdInvitationsTable.householdId, householdId))
+    .orderBy(desc(householdInvitationsTable.createdAt))
+    .limit(200);
+  const members = await db
+    .select({
+      id: householdMembersTable.id,
+      householdId: householdMembersTable.householdId,
+      userId: householdMembersTable.userId,
+      role: householdMembersTable.role,
+      displayName: householdMembersTable.displayName,
+      accessPassExpiresAt: householdMembersTable.accessPassExpiresAt,
+      createdAt: householdMembersTable.createdAt,
+    })
+    .from(householdMembersTable)
+    .where(eq(householdMembersTable.householdId, householdId))
+    .limit(200);
+
+  const candidates = buildHouseholdSharingCleanupCandidates(
+    { invitations, members },
+    filters,
+  );
+  const expiredInvitationCount = candidates.filter(
+    (candidate) => candidate.kind === "expired-invitation",
+  ).length;
+  const expiredAccessPassCount = candidates.filter(
+    (candidate) => candidate.kind === "expired-access-pass",
+  ).length;
+
+  res.json(
+    ListHouseholdSharingCleanupResponse.parse({
+      candidates,
+      limit: filters.limit,
+      filters: {
+        ...(filters.kind ? { kind: filters.kind } : {}),
+      },
+      pendingReviewCount: candidates.length,
+      expiredInvitationCount,
+      expiredAccessPassCount,
+      boundary: HOUSEHOLD_SHARING_CLEANUP_BOUNDARY,
     }),
   );
 });

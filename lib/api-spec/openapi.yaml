@@ -693,6 +693,55 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /household/sharing-cleanup:
+    get:
+      operationId: listHouseholdSharingCleanup
+      tags: [household]
+      summary: Review expired household sharing cleanup candidates
+      description: >-
+        Owner/admin-only, non-destructive review of expired invitation rows and
+        expired Access Pass helper memberships scoped to the authenticated
+        active household. This endpoint does not revoke, delete, or mutate
+        household access; applying cleanup, production Supabase migration/RLS,
+        retention/export/deletion policy, notification delivery, and
+        legal/privacy approval remain launch gates.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: kind
+          in: query
+          schema:
+            $ref: "#/components/schemas/HouseholdSharingCleanupKind"
+      responses:
+        "200":
+          description: Expired household sharing cleanup review candidates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdSharingCleanupResponse"
+        "400":
+          description: Invalid sharing cleanup query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to review household sharing cleanup
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /household/audit-events:
     get:
       operationId: listHouseholdAuditEvents
@@ -1475,6 +1524,99 @@ components:
       required:
         - invitation
         - auditEvent
+    HouseholdSharingCleanupKind:
+      type: string
+      enum:
+        - expired-invitation
+        - expired-access-pass
+    HouseholdSharingCleanupRecommendedAction:
+      type: string
+      enum:
+        - mark-invitation-expired
+        - review-helper-access
+    HouseholdSharingCleanupCandidate:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          $ref: "#/components/schemas/HouseholdSharingCleanupKind"
+        targetId:
+          type: string
+        householdId:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        role:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        invitedEmail:
+          type: ["string", "null"]
+        inviteCode:
+          type: ["string", "null"]
+        userId:
+          type: ["string", "null"]
+        expiresAt:
+          type: string
+          format: date-time
+        staleSince:
+          type: string
+          format: date-time
+        recommendedAction:
+          $ref: "#/components/schemas/HouseholdSharingCleanupRecommendedAction"
+        storage:
+          type: string
+          enum: [review-only]
+        boundary:
+          type: string
+      required:
+        - id
+        - kind
+        - targetId
+        - householdId
+        - title
+        - detail
+        - role
+        - expiresAt
+        - staleSince
+        - recommendedAction
+        - storage
+        - boundary
+    HouseholdSharingCleanupFilters:
+      type: object
+      properties:
+        kind:
+          $ref: "#/components/schemas/HouseholdSharingCleanupKind"
+    HouseholdSharingCleanupResponse:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/HouseholdSharingCleanupCandidate"
+        limit:
+          type: integer
+        filters:
+          $ref: "#/components/schemas/HouseholdSharingCleanupFilters"
+        pendingReviewCount:
+          type: integer
+        expiredInvitationCount:
+          type: integer
+        expiredAccessPassCount:
+          type: integer
+        boundary:
+          type: string
+      required:
+        - candidates
+        - limit
+        - filters
+        - pendingReviewCount
+        - expiredInvitationCount
+        - expiredAccessPassCount
+        - boundary
     MeUpdate:
       type: object
       properties:

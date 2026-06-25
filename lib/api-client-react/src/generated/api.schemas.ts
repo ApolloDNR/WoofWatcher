@@ -269,6 +269,52 @@ export interface HouseholdInvitationMutationResponse {
   auditEvent: HouseholdAuditEvent;
 }
 
+export type HouseholdSharingCleanupKind = "expired-invitation" | "expired-access-pass";
+
+export type HouseholdSharingCleanupRecommendedAction = "mark-invitation-expired" | "review-helper-access";
+
+export interface ListHouseholdSharingCleanupParams {
+  limit?: number;
+  kind?: HouseholdSharingCleanupKind;
+}
+
+export interface HouseholdSharingCleanupCandidate {
+  id: string;
+  kind: HouseholdSharingCleanupKind;
+  targetId: string;
+  householdId: string;
+  title: string;
+  detail: string;
+  role: string;
+  /** @nullable */
+  displayName?: string | null;
+  /** @nullable */
+  invitedEmail?: string | null;
+  /** @nullable */
+  inviteCode?: string | null;
+  /** @nullable */
+  userId?: string | null;
+  expiresAt: string;
+  staleSince: string;
+  recommendedAction: HouseholdSharingCleanupRecommendedAction;
+  storage: "review-only";
+  boundary: string;
+}
+
+export interface HouseholdSharingCleanupFilters {
+  kind?: HouseholdSharingCleanupKind;
+}
+
+export interface HouseholdSharingCleanupResponse {
+  candidates: HouseholdSharingCleanupCandidate[];
+  limit: number;
+  filters: HouseholdSharingCleanupFilters;
+  pendingReviewCount: number;
+  expiredInvitationCount: number;
+  expiredAccessPassCount: number;
+  boundary: string;
+}
+
 export interface MeUpdate {
   /** @minLength 1 */
   displayName?: string;

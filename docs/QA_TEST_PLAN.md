@@ -459,3 +459,13 @@ Latest local evidence, 2026-06-24:
 - Syntax checks passed for edited API helpers/routes, generated invitation schemas/hooks/types, generated audit enums, and the household invitation DB schema.
 - `git diff --check` - passing with only expected Windows line-ending warnings.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, which was removed after verification.
+
+Latest local evidence, 2026-06-24:
+
+- API readiness and behavior tests now cover the owner/admin household sharing cleanup review API: authenticated `GET /household/sharing-cleanup`, active-household scoping, owner/admin-only access, safe `limit` and `kind` filters, non-destructive review-only candidate derivation, runtime-expired invitation rows, expired Access Pass helper memberships, typed response parsing, OpenAPI documentation, Zod validators/types, React schemas/hooks, and generated type exports.
+- RED/GREEN: `node --experimental-strip-types --test artifacts/api-server/test/householdSharingCleanup.test.ts artifacts/api-server/test/apiReadiness.test.ts` first failed on the missing cleanup helper and route contract, then passed with 18 tests after implementation.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 384 passing after the household sharing cleanup review slice.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules/typescript/bin/tsc -p tsconfig.json --noEmit` - passing.
+- `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
+- Syntax checks passed for the new cleanup helper, edited household route, generated Zod API file, generated React client, generated React schemas, and new cleanup generated type files.
+- Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, verified HTML/JavaScript output, and removed the generated folder after verification.

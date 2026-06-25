@@ -1533,6 +1533,23 @@ Owner: Codex.
 
 Revisit trigger: provider migrations/RLS are approved, invite delivery is implemented, or invite approval/rejection needs fine-grained UI.
 
+### 2026-06-24: Household Sharing Cleanup Review Is Read-Only Before Apply Cleanup
+
+Decision: expired household invitations and expired Access Pass helper memberships can be reviewed through owner/admin-only `GET /household/sharing-cleanup`, but cleanup remains read-only until owner approval, provider RLS/migrations, retention/export/deletion policy, and legal/privacy rules are approved.
+
+Reason: expired sharing objects are trust risks, but automatically deleting rows or revoking helper access without an owner-visible review/apply model would be destructive. A read-only packet lets the mobile app show what needs attention while preserving request-time authorization safety.
+
+Consequences:
+
+- `household-sharing-cleanup.ts` derives review-only stale candidates from runtime-expired invitation rows and expired Access Pass helper memberships.
+- The route is authenticated, active-household scoped, owner/admin-only, query-validated, and generated-client typed.
+- Cleanup candidates expose `review-only` storage and recommended actions instead of mutating data.
+- Future cleanup apply, scheduled jobs, Supabase migration/RLS, retention/export/deletion, notification delivery, and legal/privacy approval remain launch gates.
+
+Owner: Codex.
+
+Revisit trigger: owner-approved cleanup apply is designed, provider migrations/RLS are approved, or expired invite/helper cleanup needs a scheduled job.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

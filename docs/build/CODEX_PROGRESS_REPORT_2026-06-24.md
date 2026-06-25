@@ -37,7 +37,7 @@
 - Real iOS and Android device/simulator screenshots still need to be captured and attached in `/care-twin-qa`.
 - The durable audit table still needs provider migration execution, RLS/provider access rules, retention/export/deletion policy, and production approval before public launch.
 - Provider-backed invite delivery, UI wiring, retention policy, and expired-invite cleanup are not complete yet.
-- Scheduled or request-time cleanup for expired Access Pass helper roles is not complete yet.
+- Request-time enforcement for expired Access Pass helper roles is complete, but scheduled cleanup and owner-approved apply cleanup remain separate launch gates.
 - GitHub Actions remote CI is still blocked by the account billing/spending-limit issue until Apollo fixes GitHub billing/platform execution; latest checked run is `28078084503` / job `83126533628`.
 
 ## Next Best Slice
@@ -137,3 +137,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Running the mobile TypeScript command from the repo root still hits the known Windows workspace dependency-resolution issue for `@tanstack/react-query`; the same command passes from the Expo app directory where the package-local dependencies resolve.
 - Provider migration execution, Supabase RLS/policy approval, invite notification delivery, scheduled expiry cleanup, retention/export/deletion policy, legal/privacy approval, and real iOS/Android screenshots remain launch gates.
+
+## Completed - Household Sharing Cleanup Review Follow-Up
+
+- Added a non-destructive owner/admin household sharing cleanup review contract.
+- Added `household-sharing-cleanup.ts` with shared stale-candidate derivation for runtime-expired invitation rows and expired Access Pass helper memberships.
+- Added authenticated, active-household scoped, owner/admin-only `GET /household/sharing-cleanup`.
+- The cleanup review returns `review-only` candidates, counts expired invitations versus expired helper passes, and does not delete, revoke, or mutate household access.
+- Updated OpenAPI, generated Zod validators/types, generated React schemas/hooks, and API readiness coverage for `ListHouseholdSharingCleanupParams`, `HouseholdSharingCleanupCandidate`, and `HouseholdSharingCleanupResponse`.
+
+## Verification - Household Sharing Cleanup Review Follow-Up
+
+- RED/GREEN: `node --experimental-strip-types --test artifacts\api-server\test\householdSharingCleanup.test.ts artifacts\api-server\test\apiReadiness.test.ts` first failed on the missing cleanup helper and route contract, then passed with 18 tests after implementation.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 384 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- Syntax checks passed for the new cleanup helper, edited household route, generated Zod API file, generated React client, generated React schemas, and new cleanup generated type files.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `node scripts\smoke-web-export.js` remains environment-limited because this Windows shell has no global `pnpm`, but direct package-local Expo export passed, emitted 223 files with HTML and JavaScript, and `.expo-smoke` was removed after verification.
+
+## Still Not Done - Household Sharing Cleanup Review Follow-Up
+
+- Applying cleanup remains intentionally unimplemented until owner approval, Supabase migration/RLS, retention/export/deletion policy, legal/privacy review, and destructive access-change rules are approved.
+- Invite notification/email delivery, provider-backed invite UI wiring, and real iOS/Android screenshot QA remain launch gates.

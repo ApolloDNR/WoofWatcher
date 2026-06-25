@@ -43,6 +43,7 @@ import type {
   HouseholdInvitationListResponse,
   HouseholdInvitationMutationResponse,
   HouseholdInvitationRevokeInput,
+  HouseholdSharingCleanupResponse,
   HouseholdMemberUpdate,
   HouseholdMemberMutationResponse,
   HouseholdUpdate,
@@ -50,6 +51,7 @@ import type {
   HouseholdJoinResponse,
   ListHouseholdInvitationsParams,
   ListHouseholdAuditEventsParams,
+  ListHouseholdSharingCleanupParams,
   ListCareEntriesParams,
   Me,
   MeUpdate,
@@ -1105,6 +1107,85 @@ export const useRevokeHouseholdInvitation = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getRevokeHouseholdInvitationMutationOptions(options));
     }
+
+export const getListHouseholdSharingCleanupUrl = (params?: ListHouseholdSharingCleanupParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/household/sharing-cleanup?${stringifiedParams}` : `/api/household/sharing-cleanup`
+}
+
+/**
+ * Owner/admin-only, non-destructive review of expired invitation rows and expired Access Pass helper memberships scoped to the authenticated active household.
+ * @summary Review expired household sharing cleanup candidates
+ */
+export const listHouseholdSharingCleanup = async (params?: ListHouseholdSharingCleanupParams, options?: RequestInit): Promise<HouseholdSharingCleanupResponse> => {
+
+  return customFetch<HouseholdSharingCleanupResponse>(getListHouseholdSharingCleanupUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHouseholdSharingCleanupQueryKey = (params?: ListHouseholdSharingCleanupParams,) => {
+    return [
+    `/api/household/sharing-cleanup`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListHouseholdSharingCleanupQueryOptions = <TData = Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError = ErrorType<ApiError>>(params?: ListHouseholdSharingCleanupParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHouseholdSharingCleanupQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHouseholdSharingCleanup>>> = ({ signal }) => listHouseholdSharingCleanup(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHouseholdSharingCleanupQueryResult = NonNullable<Awaited<ReturnType<typeof listHouseholdSharingCleanup>>>
+export type ListHouseholdSharingCleanupQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Review expired household sharing cleanup candidates
+ */
+
+export function useListHouseholdSharingCleanup<TData = Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError = ErrorType<ApiError>>(
+ params?: ListHouseholdSharingCleanupParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHouseholdSharingCleanupQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 export const getListHouseholdAuditEventsUrl = (params?: ListHouseholdAuditEventsParams,) => {
   const normalizedParams = new URLSearchParams();

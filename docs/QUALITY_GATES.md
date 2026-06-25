@@ -468,3 +468,15 @@ PixelLab asset verification at 149 files, `git diff --check`, and package-local
 Expo export. Provider migration, RLS, invite notification delivery, provider UI
 wiring, scheduled expired-invite cleanup, retention/export/deletion policy, and
 legal/privacy approval remain launch gates.
+
+Current evidence, 2026-06-24: Household sharing cleanup review is now a
+non-destructive owner/admin provider-readiness API. `GET
+/household/sharing-cleanup` is authenticated, active-household scoped,
+owner/admin-only, validates `limit` and `kind` filters, derives `review-only`
+stale candidates from runtime-expired invitation rows and expired Access Pass
+helper memberships, and exposes OpenAPI, Zod, and React generated contracts.
+Local verification passed RED/GREEN cleanup/API readiness tests, 384 focused
+behavior/readiness tests, mobile TypeScript, syntax checks, PixelLab asset
+verification at 149 files, and package-local Expo export. Applying cleanup,
+Supabase migration/RLS, retention/export/deletion policy, invite delivery/UI,
+legal/privacy approval, and native iOS/Android screenshots remain launch gates.

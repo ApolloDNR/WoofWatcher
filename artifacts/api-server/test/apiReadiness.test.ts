@@ -872,6 +872,90 @@ test("household audit review API stays owner-scoped and typed", () => {
   );
 });
 
+test("household sharing cleanup review API stays owner-scoped and typed", () => {
+  const householdRoute = read("artifacts/api-server/src/routes/household.ts");
+  const sharingCleanup = read("artifacts/api-server/src/lib/household-sharing-cleanup.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const zodApi = read("lib/api-zod/src/generated/api.ts");
+  const zodTypesIndex = read("lib/api-zod/src/generated/types/index.ts");
+  const reactSchemas = read("lib/api-client-react/src/generated/api.schemas.ts");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+
+  const cleanupBlock = section(
+    openapi,
+    "  /household/sharing-cleanup:",
+    "  /household/audit-events:",
+  );
+
+  assert.match(
+    sharingCleanup,
+    /buildHouseholdSharingCleanupCandidates/,
+    "sharing cleanup should share stale-invite/helper candidate derivation",
+  );
+  assert.match(
+    sharingCleanup,
+    /review-only/,
+    "sharing cleanup must stay non-destructive until owner approval and provider policy exist",
+  );
+  assert.match(
+    householdRoute,
+    /router\.get\("\/household\/sharing-cleanup", requireAuth/,
+    "sharing cleanup review should be an authenticated owner/admin route",
+  );
+  assert.match(
+    householdRoute,
+    /ListHouseholdSharingCleanupQueryParams\.safeParse\(req\.query\)/,
+    "sharing cleanup review should validate query filters",
+  );
+  assert.match(
+    householdRoute,
+    /actor\?\.role !== "owner"/,
+    "sharing cleanup review should stay owner/admin-only until cleanup approval is designed",
+  );
+  assert.match(
+    householdRoute,
+    /eq\(householdInvitationsTable\.householdId, householdId\)/,
+    "sharing cleanup review must scope stale invitations to the active household",
+  );
+  assert.match(
+    householdRoute,
+    /eq\(householdMembersTable\.householdId, householdId\)/,
+    "sharing cleanup review must scope expired helper memberships to the active household",
+  );
+  assert.match(
+    householdRoute,
+    /ListHouseholdSharingCleanupResponse\.parse/,
+    "sharing cleanup review should return a typed generated response",
+  );
+
+  assert.match(cleanupBlock, /operationId: listHouseholdSharingCleanup/, "OpenAPI must document sharing cleanup review");
+  for (const status of ['"400"', '"401"', '"403"']) {
+    assert.match(cleanupBlock, new RegExp(`${status}:`), `OpenAPI must document sharing cleanup ${status} responses`);
+  }
+  assert.match(cleanupBlock, /name:\s+limit/, "OpenAPI must document sharing cleanup limit query");
+  assert.match(cleanupBlock, /name:\s+kind/, "OpenAPI must document sharing cleanup kind filter");
+  assert.match(openapi, /HouseholdSharingCleanupCandidate:/, "OpenAPI must expose sharing cleanup candidate schema");
+  assert.match(openapi, /HouseholdSharingCleanupResponse:/, "OpenAPI must expose sharing cleanup response schema");
+
+  assert.match(zodApi, /export const ListHouseholdSharingCleanupQueryParams/, "Zod must validate sharing cleanup query params");
+  assert.match(zodApi, /export const HouseholdSharingCleanupCandidate/, "Zod must expose sharing cleanup candidate schema");
+  assert.match(zodApi, /export const ListHouseholdSharingCleanupResponse/, "Zod must expose sharing cleanup response");
+  assert.match(zodTypesIndex, /householdSharingCleanupCandidate/, "Zod type exports must include cleanup candidates");
+  assert.match(reactSchemas, /export type HouseholdSharingCleanupKind/, "React schemas must type sharing cleanup kind");
+  assert.match(reactSchemas, /export interface HouseholdSharingCleanupResponse/, "React schemas must type sharing cleanup response");
+  assert.match(reactClient, /listHouseholdSharingCleanup/, "React client must expose sharing cleanup fetcher");
+  assert.match(
+    reactClient,
+    /getListHouseholdSharingCleanupQueryOptions = <TData = Awaited<ReturnType<typeof listHouseholdSharingCleanup>>, TError = ErrorType<ApiError>>/,
+    "React sharing cleanup query must expose ApiError for auth, validation, and forbidden states",
+  );
+  assert.match(
+    reactClient,
+    /ListHouseholdSharingCleanupQueryError = ErrorType<ApiError>/,
+    "React sharing cleanup error alias must expose ApiError bodies",
+  );
+});
+
 test("Access Pass expiry is enforced at member-auth request time", () => {
   const household = read("artifacts/api-server/src/lib/household.ts");
   const householdRoute = read("artifacts/api-server/src/routes/household.ts");

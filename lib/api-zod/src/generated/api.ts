@@ -342,6 +342,48 @@ export const CreateHouseholdInvitationResponse = HouseholdInvitationMutationResp
 
 export const RevokeHouseholdInvitationResponse = HouseholdInvitationMutationResponse
 
+export const HouseholdSharingCleanupKind = zod.enum(["expired-invitation", "expired-access-pass"])
+
+export const HouseholdSharingCleanupRecommendedAction = zod.enum(["mark-invitation-expired", "review-helper-access"])
+
+export const HouseholdSharingCleanupCandidate = zod.object({
+  "id": zod.string(),
+  "kind": HouseholdSharingCleanupKind,
+  "targetId": zod.string(),
+  "householdId": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "role": zod.string(),
+  "displayName": zod.string().nullish(),
+  "invitedEmail": zod.string().nullish(),
+  "inviteCode": zod.string().nullish(),
+  "userId": zod.string().nullish(),
+  "expiresAt": zod.string(),
+  "staleSince": zod.string(),
+  "recommendedAction": HouseholdSharingCleanupRecommendedAction,
+  "storage": zod.enum(["review-only"]),
+  "boundary": zod.string()
+})
+
+export const ListHouseholdSharingCleanupQueryParams = zod.object({
+  "limit": zod.coerce.number().optional(),
+  "kind": HouseholdSharingCleanupKind.optional()
+})
+
+export const HouseholdSharingCleanupFilters = zod.object({
+  "kind": HouseholdSharingCleanupKind.optional()
+})
+
+export const ListHouseholdSharingCleanupResponse = zod.object({
+  "candidates": zod.array(HouseholdSharingCleanupCandidate),
+  "limit": zod.number(),
+  "filters": HouseholdSharingCleanupFilters,
+  "pendingReviewCount": zod.number(),
+  "expiredInvitationCount": zod.number(),
+  "expiredAccessPassCount": zod.number(),
+  "boundary": zod.string()
+})
+
 /**
  * @summary Update a household member role or display name
  */
