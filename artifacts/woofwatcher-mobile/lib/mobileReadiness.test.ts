@@ -1840,6 +1840,14 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(more, /router\.push\("\/adventure"( as never)?\)/);
 });
 
+test("keeps Adventure Mode actions on shared mobile touch targets", () => {
+  const adventure = readAppFile("adventure.tsx");
+
+  for (const styleName of ["primaryBtn", "secondaryBtn"]) {
+    assertStyleUsesSharedTouchTarget(adventure, styleName);
+  }
+});
+
 test("keeps CareTwin roster readiness visible without fake multi-dog switching", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");

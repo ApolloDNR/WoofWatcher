@@ -617,3 +617,26 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
 - Apollo or a helper still needs to visually approve Avatar Studio's scan, template, customize, emote, and save flows before sharing the beta beyond the builder loop.
+
+## Completed - Adventure Mode Touch Target Hardening
+
+- Hardened Adventure Mode for the owner-preview care-RPG loop and memory capture review.
+- Imported `MIN_MOBILE_TOUCH_TARGET` into Adventure and applied it to `Save Memory` and `Share Adventure`.
+- Extended static mobile readiness so the Adventure `primaryBtn` and `secondaryBtn` controls must use the shared mobile target instead of route-local 47px sizing.
+- Preserved the real-care adventure framing, private quest copy, and safety boundaries while making the key memory actions easier to tap on phones.
+
+## Verification - Adventure Mode Touch Target Hardening
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - failed red on `primaryBtn`, then passed with 76 tests after Adventure used the shared target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 93 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 394 passing.
+- `node node_modules\typescript\bin\tsc -p artifacts\woofwatcher-mobile\tsconfig.json --noEmit` - currently blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found).
+- `node scripts\verify-pixellab-assets.js` from `artifacts\woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Expo web export smoke did not complete in this Windows shell: the sandboxed attempt lacked `pnpm`, and the network-enabled bundled-pnpm attempt reached the registry but failed before export because the root preinstall script calls `sh`, which is unavailable here.
+
+## Still Not Done - Adventure Mode Touch Target Hardening
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- Apollo or a helper still needs to visually approve the Adventure route's quest list, memory capture, Save Memory, Share Adventure, and private/safety copy before sharing the beta beyond the builder loop.
+- Expo web export should be re-run from Git Bash, WSL, CI, or another dependency environment with `sh` available before this slice is treated as export-proven.

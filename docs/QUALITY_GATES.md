@@ -730,3 +730,23 @@ verification passed 393 tests, mobile TypeScript passed, PixelLab verification
 passed at 149 files, `git diff --check` passed with expected Windows
 line-ending warnings only, and package-local Expo web export emitted
 HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: Adventure Mode's owner-preview memory actions now
+share the same mobile touch-target contract. The Adventure route uses
+`MIN_MOBILE_TOUCH_TARGET` for the `Save Memory` primary action and the `Share
+Adventure` secondary action, while leaving the illustrated quest cards and
+private real-care adventure copy unchanged. Static readiness protects
+`primaryBtn` and `secondaryBtn` so the beta's care-RPG layer cannot quietly
+return to route-local 47px controls. Red/green mobile readiness passed after
+first failing on `primaryBtn`, targeted QA/readiness verification passed 93
+tests, focused behavior/readiness verification passed 394 tests, PixelLab
+verification passed at 149 files, and `git diff --check` passed with expected
+Windows line-ending warnings only. Mobile TypeScript is currently
+dependency-blocked in this cleaned Windows shell because the Expo/mobile
+dependency layer is absent (`expo/tsconfig.base` not found). Package-local Expo
+web export was not completed for this slice in the current Windows shell: the
+first attempt lacked `pnpm`, and the network-enabled bundled-pnpm attempt
+reached the registry but failed before export because the root preinstall script
+calls `sh`, which is unavailable in this shell. Re-run export from a
+shell-compatible environment or preinstalled dependency layer before treating
+this slice as export-proven.

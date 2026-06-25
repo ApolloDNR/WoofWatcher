@@ -22,7 +22,12 @@ import {
 import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
+import {
+  getRouteTopPadding,
+  getStandaloneRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -282,9 +287,9 @@ const s = StyleSheet.create({
   boundary: { flexDirection: "row", gap: 8, alignItems: "flex-start", borderRadius: 8, borderWidth: 1, padding: 11, marginTop: 12 },
   boundaryText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 13 },
-  primaryBtn: { flex: 1, minHeight: 47, borderRadius: 8, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
+  primaryBtn: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
   primaryBtnText: { color: "#FFFFFF", fontSize: 13.5 },
-  secondaryBtn: { width: 50, minHeight: 47, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  secondaryBtn: { width: 50, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   questList: { gap: 10 },
   questRow: { flexDirection: "row", gap: 10, borderWidth: 1, borderRadius: 8, padding: 11 },
   questIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },

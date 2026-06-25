@@ -379,9 +379,21 @@ tiles. The larger art tiles remain visually rich, but the route is now guarded
 against cramped mobile controls during the scan, template, customize, emote,
 and save portions of the owner-preview route loop.
 
+The Adventure Mode touch-target pass hardened the beta's game/memory layer.
+Adventure now applies the shared 48px target to `Save Memory` and `Share
+Adventure`, with static readiness guarding the route's `primaryBtn` and
+`secondaryBtn` styles. Local verification passed red/green readiness, targeted
+QA/readiness, broad behavior/readiness, PixelLab verification, and `git diff
+--check`. Mobile TypeScript is currently dependency-blocked in this cleaned
+Windows shell because the Expo/mobile dependency layer is absent
+(`expo/tsconfig.base` not found). Expo web export still needs to be rerun from a
+shell-compatible environment because the current Windows bundled-pnpm attempt
+reached the registry but failed before export when the root preinstall script
+called missing `sh`.
+
 Next highest-impact work:
 
-1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
+1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, Care Pass, and Adventure without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
 2. Fill the Provider Launch Setup sheet only as real providers are configured: Clerk, Supabase/Postgres, storage buckets/rules, AI key/model policy, app-store payments, push, Apple/Google accounts, and self-serve deletion. Share the provider plan for Apollo/Fable/Replit handoff, but do not treat it as store approval.
 3. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 4. Continue screen-by-screen polish, accessibility traversal, and visual regression.
