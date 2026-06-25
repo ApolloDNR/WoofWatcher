@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-25: Mobile Pack Audit Uses Review Filters Only
+
+Decision: Mobile More's Pack Audit board should expose event-type and lifecycle filter chips that pass `action` and `lifecycleState` into the existing `GET /household/audit-events` generated hook. The filters are owner/admin review aids only; the board still does not expose audit lifecycle changes, deletion, export, or retention controls before provider-backed account audit policy exists.
+
+Reason: Owner/admin audit review is more useful when pack creation, rename, active-household switching, invite-join, active, and retained events can be narrowed in place. Reusing the existing API query contract improves household trust inspection without inventing new backend behavior or implying final retention policy is ready.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed account audit policy, retention lifecycle actions, audit export/delete, role changes, invite approval, caregiver editing, or live API integration tests become active release work.
+
 ### 2026-06-25: Mobile Pack Audit Is Review Only
 
 Decision: Mobile More should expose a Pack Audit board that reads `GET /household/audit-events` through the generated React hook and shows recent household trust events with loading, empty, and offline states. The surface is owner/admin review only and does not expose lifecycle changes, deletion, export, or retention actions before provider-backed account audit policy exists.

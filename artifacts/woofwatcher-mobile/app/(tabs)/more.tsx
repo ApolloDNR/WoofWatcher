@@ -56,6 +56,20 @@ import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/bo
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
+const AUDIT_ACTION_FILTERS = [
+  { label: "All", value: "all" },
+  { label: "Created", value: "household.created" },
+  { label: "Renamed", value: "household.renamed" },
+  { label: "Active", value: "household.active_changed" },
+  { label: "Joined", value: "household.member_joined" },
+] as const;
+
+const AUDIT_LIFECYCLE_FILTERS = [
+  { label: "All states", value: "all" },
+  { label: "Active", value: "active" },
+  { label: "Retained", value: "retained" },
+] as const;
+
 function auditEventLabel(event: HouseholdAuditEvent): string {
   switch (event.action) {
     case "household.created":
@@ -112,8 +126,14 @@ export default function MoreScreen() {
   const updateMe = useUpdateMe();
 
   const household = me.data?.household;
+  const [selectedAuditAction, setSelectedAuditAction] = useState<(typeof AUDIT_ACTION_FILTERS)[number]["value"]>("all");
+  const [selectedAuditLifecycle, setSelectedAuditLifecycle] = useState<(typeof AUDIT_LIFECYCLE_FILTERS)[number]["value"]>("all");
   const householdAudit = useListHouseholdAuditEvents(
-    { limit: 8 },
+    {
+      limit: 8,
+      action: selectedAuditAction === "all" ? undefined : selectedAuditAction,
+      lifecycleState: selectedAuditLifecycle === "all" ? undefined : selectedAuditLifecycle,
+    },
     { query: { enabled: Boolean(household?.id) } },
   );
   const households = me.data?.households ?? (household ? [household] : []);
@@ -1122,6 +1142,82 @@ export default function MoreScreen() {
                 Audit review is offline until sync is available, and lifecycle changes still wait for provider-backed policy.
               </Text>
             </View>
+            <View style={s.auditFilterGroup}>
+              <Text style={[s.auditFilterLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                EVENT TYPE
+              </Text>
+              <View style={s.auditFilterRow}>
+                {AUDIT_ACTION_FILTERS.map((filter) => {
+                  const selected = selectedAuditAction === filter.value;
+                  return (
+                    <Pressable
+                      key={filter.value}
+                      onPress={() => setSelectedAuditAction(filter.value)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Filter Pack Audit by ${filter.label}`}
+                      accessibilityState={{ selected }}
+                      style={({ pressed }) => [
+                        s.auditFilterChip,
+                        {
+                          backgroundColor: selected ? colors.primary : colors.background,
+                          borderColor: selected ? colors.primary : colors.border,
+                          opacity: pressed ? 0.78 : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.auditFilterText,
+                          {
+                            color: selected ? "#FFFFFF" : colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {filter.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={[s.auditFilterLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                LIFECYCLE
+              </Text>
+              <View style={s.auditFilterRow}>
+                {AUDIT_LIFECYCLE_FILTERS.map((filter) => {
+                  const selected = selectedAuditLifecycle === filter.value;
+                  return (
+                    <Pressable
+                      key={filter.value}
+                      onPress={() => setSelectedAuditLifecycle(filter.value)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Filter Pack Audit lifecycle by ${filter.label}`}
+                      accessibilityState={{ selected }}
+                      style={({ pressed }) => [
+                        s.auditFilterChip,
+                        {
+                          backgroundColor: selected ? colors.copper : colors.background,
+                          borderColor: selected ? colors.copper : colors.border,
+                          opacity: pressed ? 0.78 : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.auditFilterText,
+                          {
+                            color: selected ? "#FFFFFF" : colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {filter.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
             {householdAudit.isLoading ? (
               <View style={[s.auditEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Text style={[s.auditEmptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
@@ -1143,10 +1239,14 @@ export default function MoreScreen() {
             ) : auditEvents.length === 0 ? (
               <View style={[s.auditEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Text style={[s.auditEmptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  No household trust events yet
+                  {selectedAuditAction === "all" && selectedAuditLifecycle === "all"
+                    ? "No household trust events yet"
+                    : "No matching trust events"}
                 </Text>
                 <Text style={[s.auditEmptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  New pack creation, rename, active-pack switching, and invite joins will appear here after sync.
+                  {selectedAuditAction === "all" && selectedAuditLifecycle === "all"
+                    ? "New pack creation, rename, active-pack switching, and invite joins will appear here after sync."
+                    : "Try another event type or lifecycle state. Review remains owner/admin only until provider policy is final."}
                 </Text>
               </View>
             ) : (
@@ -1944,6 +2044,18 @@ const s = StyleSheet.create({
     marginTop: 13,
   },
   auditNoticeText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  auditFilterGroup: { marginTop: 12, gap: 8 },
+  auditFilterLabel: { fontSize: 10, letterSpacing: 0.5 },
+  auditFilterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  auditFilterChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  auditFilterText: { fontSize: 11.5 },
   auditList: { gap: 8, marginTop: 12 },
   auditEventRow: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,

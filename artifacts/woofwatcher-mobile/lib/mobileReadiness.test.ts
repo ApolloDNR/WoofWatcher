@@ -1549,6 +1549,16 @@ test("keeps household audit review visible from More", () => {
   assert.match(more, /owner\/admin review only/);
   assert.match(more, /auditEventLabel/);
   assert.match(more, /formatAuditEventTime/);
+  assert.match(more, /AUDIT_ACTION_FILTERS/);
+  assert.match(more, /AUDIT_LIFECYCLE_FILTERS/);
+  assert.match(more, /selectedAuditAction/);
+  assert.match(more, /selectedAuditLifecycle/);
+  assert.match(more, /action: selectedAuditAction === "all" \? undefined : selectedAuditAction/);
+  assert.match(more, /lifecycleState: selectedAuditLifecycle === "all" \? undefined : selectedAuditLifecycle/);
+  assert.match(more, /accessibilityLabel=\{`Filter Pack Audit by \$\{filter\.label\}`\}/);
+  assert.match(more, /accessibilityLabel=\{`Filter Pack Audit lifecycle by \$\{filter\.label\}`\}/);
+  assert.match(more, /accessibilityState=\{\{ selected \}\}/);
+  assert.match(more, /No matching trust events/);
   assert.match(more, /auditEvents\.slice\(0, 4\)/);
   assert.match(more, /No household trust events yet/);
   assert.match(more, /Audit review is offline until sync is available/);
