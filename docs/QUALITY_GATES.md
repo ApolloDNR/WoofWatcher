@@ -783,3 +783,20 @@ Windows shell because the Expo/mobile dependency layer is absent
 (`expo/tsconfig.base` not found). Package export should be re-run from Git Bash,
 WSL, CI, or a preinstalled dependency layer before treating this slice as
 export-proven.
+
+Current evidence, 2026-06-25: More's Launch Readiness beta card now has a
+one-tap 48-hour beta handoff packet for Apollo, testers, or design-polish tools.
+`betaHandoffPacket.ts` combines the release packet with the live native QA
+capture plan, including the beta verdict, public-launch verdict, QA progress,
+next device mission, missing proof, setup/device steps, pass criteria, Needs
+tune copy, Owner route loop run order, Pass pending proof instruction, and
+truth boundaries for public launch, provider-backed services, and WoofGuide.
+More imports `buildBetaHandoffPacketShareText`, adds a `Share Beta Handoff`
+action on the beta card, and keeps the new action on `MIN_MOBILE_TOUCH_TARGET`
+through `betaHandoffShareButton`. Red/green verification passed after the new
+helper and More wiring were absent, targeted beta QA/readiness verification
+passed 97 tests, focused behavior/readiness verification passed 398 tests,
+PixelLab verification passed at 149 files, and `git diff --check` passed with
+expected Windows line-ending warnings only. Mobile TypeScript and Expo export
+remain dependency/shell-gated in this cleaned Windows shell and should be rerun
+from Git Bash, WSL, CI, or a preinstalled dependency layer.

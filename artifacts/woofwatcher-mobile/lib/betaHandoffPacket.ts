@@ -1,0 +1,83 @@
+import {
+  mobileLaunchQaCaptureTargetStatusLabel,
+  type MobileLaunchQaCapturePlan,
+  type MobileLaunchQaCaptureTarget,
+} from "./mobileLaunchQaEvidence.ts";
+import type { ReleasePacket } from "./releasePacket.ts";
+
+function formatList(items: readonly string[], fallback: string): string {
+  if (!items.length) return `- ${fallback}`;
+  return items.map((item) => `- ${item}`).join("\n");
+}
+
+function formatCurrentMission(target: MobileLaunchQaCaptureTarget | undefined): string[] {
+  if (!target) {
+    return [
+      "Next device mission: All listed capture surfaces are locally complete.",
+      "Status: No active target",
+      "Missing proof: No missing evidence.",
+    ];
+  }
+
+  const lines = [
+    `Next device mission: ${target.title} (${target.route})`,
+    `Status: ${mobileLaunchQaCaptureTargetStatusLabel(target)}`,
+    `Missing proof: ${target.missingEvidence.join(" ") || "No missing evidence."}`,
+    `Setup: ${target.setupSteps.join(" ") || "Use the local Phoenix preview state."}`,
+    `Steps: ${target.verificationSteps.join(" ") || "Open the route, verify it on phone, and attach proof."}`,
+    `Pass criteria: ${target.acceptanceCriteria.join(" ") || "The route is readable, reachable, and useful."}`,
+    `Needs tune if: ${target.failureEscalation}`,
+    `Evidence attached: ${target.evidenceAttached}`,
+  ];
+
+  if (target.routeChecklist?.length) {
+    lines.push("Run order:");
+    target.routeChecklist.forEach((routeCheck, index) => {
+      lines.push(
+        `${index + 1}. ${routeCheck.label} (${routeCheck.route}): ${routeCheck.expected}${
+          routeCheck.proof ? ` Proof: ${routeCheck.proof}` : ""
+        }`,
+      );
+    });
+  }
+
+  if (mobileLaunchQaCaptureTargetStatusLabel(target) === "Pass pending proof") {
+    lines.push("Tester instruction: finish the missing proof before treating this beta mission as complete.");
+  }
+
+  return lines;
+}
+
+export function buildBetaHandoffPacketShareText(
+  releasePacket: ReleasePacket,
+  capturePlan: MobileLaunchQaCapturePlan,
+  generatedAtIso = new Date().toISOString(),
+): string {
+  const currentMission = capturePlan.nextTargets[0];
+
+  return [
+    "WoofWatcher 48-Hour Beta Handoff",
+    `Generated: ${generatedAtIso}`,
+    `Build: ${releasePacket.buildName}`,
+    `Beta verdict: ${releasePacket.betaVerdictLabel}`,
+    `Public launch verdict: ${releasePacket.verdictLabel}`,
+    `Readiness score: ${releasePacket.readinessScore}%`,
+    `QA progress: ${capturePlan.completeSurfaces}/${capturePlan.totalSurfaces} surfaces complete, ${capturePlan.openSurfaces} open.`,
+    "",
+    releasePacket.betaSummary,
+    "",
+    "Current mission:",
+    ...formatCurrentMission(currentMission),
+    "",
+    "Beta next actions:",
+    formatList(releasePacket.betaNextActions, "Share beta build after final owner sign-off."),
+    "",
+    "Truth boundaries:",
+    "- No App Store or Play Store submission is approved by this packet.",
+    "- Provider-backed auth, database, storage, AI, push, and payments must stay gated until credentials and policies are configured.",
+    "- WoofGuide stays non-diagnostic and owner-reviewed.",
+    "- Public launch remains separate from local beta evidence.",
+    "",
+    "Done condition: capture required iOS/Android proof, save the Mission note, clear Pass pending proof, then share the QA summary.",
+  ].join("\n");
+}

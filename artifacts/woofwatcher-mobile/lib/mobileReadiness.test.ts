@@ -1899,6 +1899,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /buildLaunchProviderSetupShareText/);
   assert.match(more, /buildReleasePacket/);
   assert.match(more, /buildReleasePacketShareText/);
+  assert.match(more, /buildBetaHandoffPacketShareText/);
   assert.match(more, /buildStoreSubmissionPacket/);
   assert.match(more, /buildStoreSubmissionPacketShareText/);
   assert.match(more, /storageQueue: attachmentManifest\.launchQueue/);
@@ -1912,6 +1913,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /accessibilityLabel=\{[\s\S]*Open beta device QA cockpit/);
   assert.match(more, /Open QA Cockpit/);
   assert.match(more, /Share Beta Packet/);
+  assert.match(more, /Share Beta Handoff/);
   assert.match(more, /launchReleasePacket\.readinessScore/);
   assert.match(more, /launchStoreSubmissionPacket\.verdictLabel/);
   assert.match(more, /Store Submission/);
@@ -1926,6 +1928,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /accessibilityLabel="Share WoofWatcher release packet"/);
   assert.match(more, /accessibilityLabel="Share WoofWatcher store submission packet"/);
   assert.match(more, /Share\.share\(\{[\s\S]*message:\s*buildLaunchProviderSetupShareText\(launchProviderSetupPlan/);
+  assert.match(more, /const message = buildBetaHandoffPacketShareText\(launchReleasePacket,\s*nativeQaCapturePlan/);
+  assert.match(more, /Share\.share\(\{ message,\s*title:\s*"WoofWatcher 48-Hour Beta Handoff" \}/);
   assert.match(more, /Share\.share\(\{ message: buildReleasePacketShareText\(launchReleasePacket\)/);
   assert.match(more, /Share\.share\(\{ message: buildStoreSubmissionPacketShareText\(launchStoreSubmissionPacket\)/);
   assert.match(careContext, /launchProviderProfile/);
@@ -1994,6 +1998,7 @@ test("keeps More launch and household gateway actions on shared mobile touch tar
     "nativeQaCaptureShare",
     "nativeQaCaptureCockpitAction",
     "betaNextActionButton",
+    "betaHandoffShareButton",
     "launchShare",
     "passAction",
     "passKind",

@@ -47,6 +47,7 @@ The beta must not claim:
 - From More, open Launch Readiness.
 - Read the 48-hour beta card's next actions.
 - Tap `Open QA Cockpit` if the card says device proof is still needed.
+- Tap `Share Beta Handoff` when you need one owner-readable packet for Apollo, a helper, Fable, Replit, or a design-polish pass.
 - Share the Launch Packet.
 - Open `/care-twin-qa`.
 - Use the `48-hour beta run` card to start with the next required launch-critical surface.
@@ -77,6 +78,7 @@ The beta must not claim:
 - If the card shows `Pass pending proof`, the mission is not complete yet; attach the missing screenshots or save the required Mission note until that gate clears.
 - In More's Launch Readiness panel, check Native QA Next Captures before sharing: if `Proof status` says `Pass pending proof`, tap `Finish Proof`, attach proof or save the Mission note in `/care-twin-qa`, and recheck before moving on.
 - Use `/care-twin-qa`'s `Share QA` action after writing mission notes or attaching proof; it now includes the live native capture plan before the full release QA, store packet, and care-twin state report.
+- Use More's `Share Beta Handoff` action after the saved proof state is current; it combines the beta verdict, public-launch boundary, next device mission, missing proof, route loop, and truth boundaries in one packet.
 - Mark any visual route that feels below App Store quality as Needs tune.
 - Tap `Share Beta Packet` only after local verification and owner sign-off are still truthful for an internal beta.
 
@@ -92,7 +94,7 @@ Shippable for internal beta after local verification passes:
 
 Current environment note:
 
-- The latest WoofGuide touch-target hardening slice passed the targeted 95-test QA/readiness suite, the 396-test focused behavior/readiness suite, PixelLab verification at 149 assets, and `git diff --check`. Mobile TypeScript is currently dependency-blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export smoke did not complete because the bundled-pnpm path reached the registry and then failed before export when the root preinstall script called missing `sh`. Re-run TypeScript/export from Git Bash, WSL, CI, or a preinstalled dependency layer before treating the latest slice as dependency/export-proven.
+- The latest 48-hour beta handoff slice passed the targeted 97-test beta QA/readiness suite, the 398-test focused behavior/readiness suite, PixelLab verification at 149 assets, and `git diff --check`. Mobile TypeScript is currently dependency-blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export smoke did not complete because this shell lacks `sh`/package-manager support. Re-run TypeScript/export from Git Bash, WSL, CI, or a preinstalled dependency layer before treating the latest slice as dependency/export-proven.
 
 Still blocked for public launch:
 

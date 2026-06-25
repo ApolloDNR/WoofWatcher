@@ -46,6 +46,7 @@ import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
+import { buildBetaHandoffPacketShareText } from "@/lib/betaHandoffPacket";
 import {
   deriveLaunchReadiness,
   type LaunchReadinessNativeQaSummary,
@@ -997,6 +998,15 @@ export default function MoreScreen() {
     );
   };
 
+  const shareBetaHandoffPacket = () => {
+    const generatedAtIso = new Date(now).toISOString();
+    const message = buildBetaHandoffPacketShareText(launchReleasePacket, nativeQaCapturePlan, generatedAtIso);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Share.share({ message, title: "WoofWatcher 48-Hour Beta Handoff" }).catch(() =>
+      Alert.alert("Beta Handoff", message),
+    );
+  };
+
   const shareStoreSubmissionPacket = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Share.share({ message: buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket), title: launchStoreSubmissionPacket.title }).catch(() =>
@@ -1597,32 +1607,52 @@ export default function MoreScreen() {
                     </View>
                   ))}
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    launchReleasePacket.betaShipStatus === "qa-first"
-                      ? "Open beta device QA cockpit"
-                      : "Share WoofWatcher beta release packet"
-                  }
-                  onPress={
-                    launchReleasePacket.betaShipStatus === "qa-first"
-                      ? () => router.push("/care-twin-qa" as never)
-                      : shareLaunchPacket
-                  }
-                  style={({ pressed }) => [
-                    s.betaNextActionButton,
-                    { backgroundColor: betaShipTone, opacity: pressed ? 0.86 : 1 },
-                  ]}
-                >
-                  <Ionicons
-                    name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
-                    size={15}
-                    color="#FFFFFF"
-                  />
-                  <Text style={[s.betaNextActionButtonText, { fontFamily: "Inter_800ExtraBold" }]}>
-                    {launchReleasePacket.betaShipStatus === "qa-first" ? "Open QA Cockpit" : "Share Beta Packet"}
-                  </Text>
-                </Pressable>
+                <View style={s.betaNextActionRail}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      launchReleasePacket.betaShipStatus === "qa-first"
+                        ? "Open beta device QA cockpit"
+                        : "Share WoofWatcher beta release packet"
+                    }
+                    onPress={
+                      launchReleasePacket.betaShipStatus === "qa-first"
+                        ? () => router.push("/care-twin-qa" as never)
+                        : shareBetaHandoffPacket
+                    }
+                    style={({ pressed }) => [
+                      s.betaNextActionButton,
+                      { backgroundColor: betaShipTone, opacity: pressed ? 0.86 : 1 },
+                    ]}
+                  >
+                    <Ionicons
+                      name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
+                      size={15}
+                      color="#FFFFFF"
+                    />
+                    <Text style={[s.betaNextActionButtonText, { fontFamily: "Inter_800ExtraBold" }]}>
+                      {launchReleasePacket.betaShipStatus === "qa-first" ? "Open QA Cockpit" : "Share Beta Packet"}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Share WoofWatcher 48-hour beta handoff"
+                    onPress={shareBetaHandoffPacket}
+                    style={({ pressed }) => [
+                      s.betaHandoffShareButton,
+                      {
+                        borderColor: betaShipTone + "66",
+                        backgroundColor: colors.card,
+                        opacity: pressed ? 0.78 : 1,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="document-text-outline" size={15} color={betaShipTone} />
+                    <Text style={[s.betaHandoffShareText, { color: betaShipTone, fontFamily: "Inter_800ExtraBold" }]}>
+                      Share Beta Handoff
+                    </Text>
+                  </Pressable>
+                </View>
               </View>
             </View>
             <View style={[s.launchPacket, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -3095,8 +3125,11 @@ const s = StyleSheet.create({
   betaNextActionRow: { flexDirection: "row", alignItems: "flex-start", gap: 7 },
   betaNextActionDot: { width: 6, height: 6, borderRadius: 3, marginTop: 5 },
   betaNextActionText: { flex: 1, fontSize: 10.5, lineHeight: 15 },
-  betaNextActionButton: {
+  betaNextActionRail: {
     marginTop: 10,
+    gap: 8,
+  },
+  betaNextActionButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     alignItems: "center",
@@ -3105,6 +3138,17 @@ const s = StyleSheet.create({
     gap: 8,
   },
   betaNextActionButtonText: { color: "#FFFFFF", fontSize: 12.5 },
+  betaHandoffShareButton: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 8,
+  },
+  betaHandoffShareText: { fontSize: 12.2, lineHeight: 15 },
   launchShare: {
     marginTop: 12,
     minHeight: MIN_MOBILE_TOUCH_TARGET,

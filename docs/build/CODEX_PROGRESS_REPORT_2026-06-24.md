@@ -686,3 +686,26 @@ If device QA remains unavailable, continue provider readiness with invite approv
 - Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
 - Apollo or a helper still needs to visually approve WoofGuide's quick questions, suggested actions, send control, owner-review draft modal, and non-diagnostic copy before sharing the beta beyond the builder loop.
 - TypeScript/export should be re-run from a shell-compatible dependency environment before this slice is treated as dependency/export-proven.
+
+## Completed - 48-Hour Beta Handoff Packet
+
+- Added a single shareable beta handoff packet for the two-day internal beta deadline.
+- Created `betaHandoffPacket.ts`, which combines the truthful release packet with the live native QA capture plan.
+- The packet includes beta verdict, public-launch verdict, QA progress, current device mission, missing proof, setup/device steps, pass criteria, Needs tune language, Owner route loop run order, Pass pending proof instruction, and public/provider/AI truth boundaries.
+- Wired More's Launch Readiness beta card to a new `Share Beta Handoff` action so Apollo, a device helper, Fable, Replit, or a design-polish pass can start from one owner-readable script.
+- Kept the new handoff action on the shared `MIN_MOBILE_TOUCH_TARGET` contract through `betaHandoffShareButton`.
+
+## Verification - 48-Hour Beta Handoff Packet
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\betaHandoffPacket.test.ts` - failed red because `betaHandoffPacket.ts` did not exist, then passed with 2 tests after the helper was added.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - failed red because More did not import/share the new packet, then passed with 78 tests after More was wired.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\betaHandoffPacket.test.ts artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 97 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 398 passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts\woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+
+## Still Not Done - 48-Hour Beta Handoff Packet
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- The `Share Beta Handoff` packet should be sent after the Mission note and proof state are updated on-device so it reflects live saved QA progress.
+- Mobile TypeScript and Expo export should be re-run from Git Bash, WSL, CI, or another dependency environment with `sh` available before this slice is treated as dependency/export-proven.

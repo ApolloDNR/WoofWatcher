@@ -786,3 +786,15 @@ Latest local evidence, 2026-06-25:
 - `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing with expected Windows line-ending warnings only.
 - Mobile TypeScript is currently blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export should be re-run from Git Bash, WSL, CI, or a preinstalled dependency layer with `sh` available.
+
+Latest local evidence, 2026-06-25:
+
+- More now exposes a `Share Beta Handoff` action that sends a single 48-hour beta packet instead of forcing Apollo or a helper to stitch together Launch Packet, Native QA Plan, and route-loop notes manually.
+- `betaHandoffPacket.ts` combines `ReleasePacket` truth with `MobileLaunchQaCapturePlan` proof gaps, including beta verdict, public-launch verdict, next device mission, missing proof, Owner route loop run order, Pass pending proof instruction, and provider/store/AI truth boundaries.
+- Static readiness now protects the More import/share wiring plus the new `betaHandoffShareButton` shared mobile touch-target contract.
+- Red/green evidence: `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\betaHandoffPacket.test.ts` first failed because `betaHandoffPacket.ts` did not exist; `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` then failed because More did not import/share the packet; both passed after the helper and More wiring landed.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\betaHandoffPacket.test.ts artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 97 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 398 passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Mobile TypeScript is currently blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export should be re-run from Git Bash, WSL, CI, or a preinstalled dependency layer with `sh` available.

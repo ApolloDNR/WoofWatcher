@@ -1,0 +1,140 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+import { buildBetaHandoffPacketShareText } from "./betaHandoffPacket.ts";
+import { deriveLaunchReadiness, type LaunchReadinessInput } from "./launchReadiness.ts";
+import { buildMobileLaunchQaCapturePlan } from "./mobileLaunchQaEvidence.ts";
+import type { MobileQaSessionState } from "./mobileQaSession.ts";
+import { buildReleasePacket } from "./releasePacket.ts";
+import type { MobileReleaseQaSurface } from "./mobileReleaseQa.ts";
+
+const qaFirstInput: LaunchReadinessInput = {
+  nativeQa: null,
+  local: {
+    careWorkflowsReady: true,
+    easProfilesReady: true,
+    pixelAssetsReady: true,
+    privacyExportReady: true,
+  },
+  provider: {
+    authConfigured: false,
+    databaseConfigured: false,
+    storageProviderConfigured: false,
+    aiProviderConfigured: false,
+    paymentsEnabled: false,
+    accountDeletionEnabled: false,
+    pushNotificationsConfigured: false,
+    appStoreAccountsReady: false,
+    privacyLegalApproved: false,
+    supportRunbookApproved: false,
+  },
+  syncStatus: "ready",
+};
+
+const ownerLoopSurface: MobileReleaseQaSurface = {
+  id: "owner-preview-core-loop",
+  title: "Owner Preview Core Loop",
+  route: "/care-twin-qa",
+  priority: "launch-critical",
+  goal: "Verify the real owner journey before beta sharing.",
+  devicePrompt: "Run the owner route loop and attach proof.",
+  setupSteps: ["Use Phoenix demo care data.", "Confirm the app opens on Home."],
+  verificationSteps: ["Open Home.", "Open Log.", "Open More Launch Readiness."],
+  acceptanceCriteria: ["No route dead-ends.", "Primary controls are phone-sized."],
+  failureEscalation: "Mark Needs tune if any route clips, dead-ends, or feels below App Store quality.",
+  requiredEvidence: [
+    "iOS screenshot of Quick Log or Log.",
+    "Android screenshot of More Launch Readiness.",
+    "Note confirming Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass had no dead ends.",
+  ],
+  launchRisk: "This is the beta's real owner path.",
+  routeChecklist: [
+    {
+      label: "Home",
+      route: "/",
+      expected: "Confirm Phoenix status, next care, and bottom navigation are clear.",
+      proof: "Visual pass.",
+    },
+    {
+      label: "Log",
+      route: "/log",
+      expected: "Quick-log one safe care event or open the detail sheet.",
+      proof: "iOS screenshot.",
+    },
+    {
+      label: "More",
+      route: "/more",
+      expected: "Open Launch Readiness and confirm proof status.",
+      proof: "Android screenshot.",
+    },
+  ],
+};
+
+test("builds a 48-hour beta handoff packet from release truth and native QA proof gaps", () => {
+  const releasePacket = buildReleasePacket(deriveLaunchReadiness(qaFirstInput), {
+    appName: "WoofWatcher",
+    buildName: "two-day owner beta",
+    generatedAtIso: "2026-06-25T12:00:00.000Z",
+  });
+  const qaPlan = buildMobileLaunchQaCapturePlan(null, [ownerLoopSurface]);
+
+  const text = buildBetaHandoffPacketShareText(releasePacket, qaPlan, "2026-06-25T12:05:00.000Z");
+
+  assert.match(text, /WoofWatcher 48-Hour Beta Handoff/);
+  assert.match(text, /Generated: 2026-06-25T12:05:00.000Z/);
+  assert.match(text, /Beta verdict: Beta candidate - capture device proof/);
+  assert.match(text, /Public launch verdict: Not ready for public launch/);
+  assert.match(text, /Next device mission: Owner Preview Core Loop \(\/care-twin-qa\)/);
+  assert.match(text, /Status: Not reviewed/);
+  assert.match(text, /Missing proof: Attach 1 iOS screenshot for Owner Preview Core Loop\. Attach 1 Android screenshot/);
+  assert.match(text, /Run order:/);
+  assert.match(text, /1\. Home \(\/\): Confirm Phoenix status/);
+  assert.match(text, /2\. Log \(\/log\): Quick-log one safe care event/);
+  assert.match(text, /Done condition: capture required iOS\/Android proof, save the Mission note, clear Pass pending proof, then share the QA summary/);
+  assert.match(text, /Truth boundaries:/);
+  assert.match(text, /No App Store or Play Store submission is approved by this packet/);
+  assert.match(text, /Provider-backed auth, database, storage, AI, push, and payments must stay gated/);
+  assert.doesNotMatch(text, /STORE READY/i);
+});
+
+test("keeps the beta handoff focused when the current mission is pass pending proof", () => {
+  const releasePacket = buildReleasePacket(deriveLaunchReadiness(qaFirstInput), {
+    appName: "WoofWatcher",
+    buildName: "two-day owner beta",
+    generatedAtIso: "2026-06-25T12:00:00.000Z",
+  });
+  const sessionWithoutMissionNote: MobileQaSessionState = {
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {
+      "owner-preview-core-loop": "pass",
+    },
+    surfaceNotes: {},
+    surfaceEvidenceById: {
+      "owner-preview-core-loop": [
+        {
+          uri: "file:///qa/ios-log.png",
+          fileName: "ios-log.png",
+          source: "library",
+          targetPlatform: "ios",
+          capturedAtIso: "2026-06-25T12:01:00.000Z",
+        },
+        {
+          uri: "file:///qa/android-launch.png",
+          fileName: "android-launch.png",
+          source: "library",
+          targetPlatform: "android",
+          capturedAtIso: "2026-06-25T12:02:00.000Z",
+        },
+      ],
+    },
+  };
+  const qaPlan = buildMobileLaunchQaCapturePlan(sessionWithoutMissionNote, [ownerLoopSurface]);
+
+  const text = buildBetaHandoffPacketShareText(releasePacket, qaPlan, "2026-06-25T12:05:00.000Z");
+
+  assert.match(text, /Status: Pass pending proof/);
+  assert.match(text, /Missing proof: Add QA note for Owner Preview Core Loop\./);
+  assert.match(text, /Tester instruction: finish the missing proof before treating this beta mission as complete\./);
+});
