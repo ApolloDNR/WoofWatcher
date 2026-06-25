@@ -248,6 +248,16 @@ surface, screenshot it, return, attach proof, and mark Pass or Needs tune withou
 getting lost. This is still capture tooling only; it does not replace actual
 iOS/Android screenshots or human visual approval.
 
+The device mission briefing pass made the same two-day QA flow more operator
+proof. `/care-twin-qa` now shows a `Next device mission` panel before route
+launch with the target route, priority, review status, evidence count, setup
+steps, pass criteria, and exact Needs tune escalation copy. Apollo or a helper
+can read the mission, choose the correct platform tag, open the route, capture,
+return, and attach proof without cross-checking separate docs. Real iOS/Android
+screenshots remain the next gate. Local verification passed the targeted QA
+suite, full focused behavior/readiness suite, mobile TypeScript, PixelLab asset
+verification, `git diff --check`, and package-local Expo web export.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete the Mobile Release QA checklist, Store Screenshot QA checklist, and 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm More's Launch Readiness and Native QA Next Captures update from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

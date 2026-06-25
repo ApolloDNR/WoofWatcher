@@ -50,6 +50,7 @@ The beta must not claim:
 - Share the Launch Packet.
 - Open `/care-twin-qa`.
 - Use the `48-hour beta run` card to start with the next required launch-critical surface.
+- Read the `Next device mission` panel before leaving the cockpit: it shows route, setup steps, pass criteria, evidence count, and the Needs tune rule for that screen.
 - Tap `Open Next Surface`, test the route, capture proof, then return to `/care-twin-qa`.
 - If the target screen shows `Return to QA Cockpit`, use that banner after capture instead of manually hunting for the QA route.
 - Capture at least one iOS screenshot and one Android screenshot when devices/simulators are available.

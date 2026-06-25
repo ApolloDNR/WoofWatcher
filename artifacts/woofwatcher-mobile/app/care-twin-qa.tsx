@@ -529,6 +529,82 @@ export default function CareTwinQaScreen() {
               </View>
             ))}
           </View>
+          {nextBetaTarget ? (
+            <View style={[s.betaRunMission, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={s.betaRunMissionHeader}>
+                <View style={s.betaRunMissionTitleWrap}>
+                  <Ionicons name="phone-portrait-outline" size={17} color={colors.copper} />
+                  <View style={s.betaRunMissionCopy}>
+                    <Text style={[s.betaRunMissionKicker, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                      Next device mission
+                    </Text>
+                    <Text style={[s.betaRunMissionTitle, { color: colors.foreground, fontFamily: DISPLAY }]} numberOfLines={1}>
+                      {nextBetaTarget.title}
+                    </Text>
+                  </View>
+                </View>
+                <QaBadge
+                  label={nextBetaTarget.priority === "launch-critical" ? "Launch critical" : "Store prep"}
+                  tone={nextBetaTarget.priority === "launch-critical" ? colors.rose : colors.amber}
+                />
+              </View>
+              <View style={s.betaRunMissionGrid}>
+                <View style={[s.betaRunMissionMeta, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[s.betaRunMissionMetaLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    Route
+                  </Text>
+                  <Text style={[s.betaRunMissionMetaValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]} numberOfLines={1}>
+                    {nextBetaTarget.route}
+                  </Text>
+                </View>
+                <View style={[s.betaRunMissionMeta, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[s.betaRunMissionMetaLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    Evidence
+                  </Text>
+                  <Text style={[s.betaRunMissionMetaValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                    {nextBetaTarget.evidenceAttached} attached
+                  </Text>
+                </View>
+                <View style={[s.betaRunMissionMeta, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[s.betaRunMissionMetaLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    Status
+                  </Text>
+                  <Text style={[s.betaRunMissionMetaValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                    {mobileReleaseQaStatusLabel(nextBetaTarget.status)}
+                  </Text>
+                </View>
+              </View>
+              <VerificationStepList colors={colors} label="Before capture" steps={nextBetaTarget.setupSteps.slice(0, 2)} />
+              <VerificationStepList colors={colors} label="Pass when" steps={nextBetaTarget.acceptanceCriteria.slice(0, 2)} />
+              <View style={[s.betaRunEscalation, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                <Text style={[s.betaRunEscalationLabel, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                  Needs tune if
+                </Text>
+                <Text style={[s.betaRunEscalationText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  {nextBetaTarget.failureEscalation}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={[s.betaRunMission, { backgroundColor: `${colors.sage}12`, borderColor: `${colors.sage}55` }]}>
+              <View style={s.betaRunMissionHeader}>
+                <View style={s.betaRunMissionTitleWrap}>
+                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.sage} />
+                  <View style={s.betaRunMissionCopy}>
+                    <Text style={[s.betaRunMissionKicker, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+                      Beta evidence complete
+                    </Text>
+                    <Text style={[s.betaRunMissionTitle, { color: colors.foreground, fontFamily: DISPLAY }]} numberOfLines={1}>
+                      Share the QA summary
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <Text style={[s.betaRunMissionDoneText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                Local QA evidence is complete for this checklist. Share the report, then keep public store approval separate from beta proof.
+              </Text>
+            </View>
+          )}
           <View style={[s.betaRunPlatformPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <View style={s.betaRunPlatformHeader}>
               <View style={s.betaRunPlatformCopy}>
@@ -1310,6 +1386,80 @@ const s = StyleSheet.create({
   },
   betaRunStepText: {
     flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  betaRunMission: {
+    borderRadius: 13,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
+  betaRunMissionHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  betaRunMissionTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  betaRunMissionCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  betaRunMissionKicker: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  betaRunMissionTitle: {
+    marginTop: 2,
+    fontSize: 16,
+    letterSpacing: 0,
+  },
+  betaRunMissionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  betaRunMissionMeta: {
+    flexGrow: 1,
+    minWidth: "30%",
+    borderRadius: 9,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 2,
+  },
+  betaRunMissionMetaLabel: {
+    fontSize: 9.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
+  betaRunMissionMetaValue: {
+    fontSize: 11.5,
+  },
+  betaRunEscalation: {
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 10,
+    gap: 4,
+  },
+  betaRunEscalationLabel: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
+  betaRunEscalationText: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  betaRunMissionDoneText: {
     fontSize: 12,
     lineHeight: 17,
   },

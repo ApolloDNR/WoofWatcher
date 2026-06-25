@@ -529,3 +529,16 @@ Latest local evidence, 2026-06-25:
 - `node scripts/verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing with expected Windows line-ending warnings only.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, verified HTML/JavaScript output, and removed the generated folder after verification.
+
+Latest local evidence, 2026-06-25:
+
+- `/care-twin-qa` now adds a `Next device mission` briefing to the 48-hour beta run card before testers open a target screen.
+- The briefing shows the target route, launch/store priority, current review status, attached evidence count, setup steps, pass criteria, and the exact `Needs tune if` rule for the selected surface.
+- This reduces phone-test drift during the two-day beta push while preserving the boundary that actual iOS/Android screenshots and human visual approval are still required.
+- Static mobile readiness tests protect `Next device mission`, `Before capture`, `Pass when`, `Needs tune if`, the target route, evidence count, QA status label, setup steps, pass criteria, and failure-escalation copy.
+- `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts` - 85 passing.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 386 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules/typescript/bin/tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts/verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, verified HTML/JavaScript output, and removed the generated folder after verification.
