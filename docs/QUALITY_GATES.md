@@ -836,3 +836,16 @@ suite, PixelLab verification at 149 files, and `git diff --check` with expected
 Windows line-ending warnings only. Real Expo export still requires pnpm and the
 Expo/mobile dependency layer in the execution environment; real iOS/Android
 capture remains the external beta gate.
+
+Current evidence, 2026-06-25: The mobile Expo app config now exposes the
+intended export surfaces instead of relying on implicit defaults.
+`artifacts/woofwatcher-mobile/app.json` declares `ios`, `android`, and `web`
+platforms and sets `expo.web.bundler` to `metro`. Static mobile readiness now
+protects those values inside the Expo web export smoke wiring test. Red/green
+readiness first failed on the missing app-config assertions, then passed after
+the config was wired. A direct package-local Expo CLI export attempt advanced
+past the earlier `No platforms are configured to use the Metro bundler` error
+and now stops at the dependency-layer blocker: `Cannot determine the project's
+Expo SDK version because the module 'expo' is not installed`. Do not mark Expo
+export proven until a dependency-complete mobile environment runs the smoke
+export and verifies emitted HTML/JavaScript output.

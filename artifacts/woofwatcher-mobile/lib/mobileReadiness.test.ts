@@ -133,6 +133,9 @@ test("keeps Expo web export smoke wired into CI", () => {
   const mobilePackage = JSON.parse(
     readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "package.json"), "utf8"),
   );
+  const mobileAppJson = JSON.parse(
+    readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "app.json"), "utf8"),
+  );
   const smokeScript = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "scripts", "smoke-web-export.js"),
     "utf8",
@@ -143,6 +146,8 @@ test("keeps Expo web export smoke wired into CI", () => {
   );
 
   assert.equal(mobilePackage.scripts["smoke:web"], "node scripts/smoke-web-export.js");
+  assert.deepEqual(mobileAppJson.expo.platforms, ["ios", "android", "web"]);
+  assert.equal(mobileAppJson.expo.web.bundler, "metro");
   assert.match(rootPackage.scripts["build:ci"], /woofwatcher-mobile run smoke:web/);
   assert.match(smokeScript, /expo", "export"/);
   assert.match(smokeScript, /const outputDirName = "\.expo-smoke"/);

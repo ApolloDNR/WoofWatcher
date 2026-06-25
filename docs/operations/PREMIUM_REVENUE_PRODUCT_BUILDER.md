@@ -444,9 +444,20 @@ behavior/readiness suite, PixelLab verification at 149 files, and `git diff
 Expo export remain dependency/shell-gated in this cleaned Windows shell. Real
 iOS/Android capture is still the deadline gate.
 
+The Expo export config pass removed another packaging ambiguity before the
+two-day beta. `artifacts/woofwatcher-mobile/app.json` now explicitly declares
+the intended `ios`, `android`, and `web` platforms and sets `expo.web.bundler`
+to `metro`, matching the `smoke:web` route that CI and local export use. Static
+readiness protects those values. A direct package-local Expo CLI export now
+advances past the previous Metro platform-config error and stops at the
+truthful dependency-layer blocker: the mobile package cannot currently resolve
+`expo` in this cleaned Windows shell. Treat the Expo config as ready, but do
+not treat the beta as export-proven until a dependency-complete environment
+runs the smoke export and verifies emitted HTML/JavaScript output.
+
 Next highest-impact work:
 
-1. Run package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`. Use Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
+1. Run package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c` and the mobile app declares Metro web export platforms. Use Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
 2. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, Care Pass, and Adventure without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, use More's `Share Beta Handoff` action after saved proof is current, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, mark the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue as Needs tune, use More's `Share Fix Brief`, and fix that first route before moving on.
 3. Fill the Provider Launch Setup sheet only as real providers are configured: Clerk, Supabase/Postgres, storage buckets/rules, AI key/model policy, app-store payments, push, Apple/Google accounts, and self-serve deletion. Share the provider plan for Apollo/Fable/Replit handoff, but do not treat it as store approval.
 4. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.

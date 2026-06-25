@@ -822,3 +822,12 @@ Latest local evidence, 2026-06-25:
 - Direct guard verification passed with `npm_config_user_agent=pnpm/9.0.0` and failed as expected with `npm_config_user_agent=npm/10.0.0`.
 - Follow-up verification passed the 101-test targeted beta QA/readiness suite, the 402-test focused behavior/readiness suite, PixelLab verification at 149 files, and `git diff --check` with expected Windows line-ending warnings only.
 - Mobile TypeScript remains blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), local `pnpm` is still not on PATH here, and actual Expo export plus iOS/Android capture should be re-run from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or a native-device environment.
+
+Latest local evidence, 2026-06-25:
+
+- `artifacts/woofwatcher-mobile/app.json` now declares `ios`, `android`, and `web` platforms and sets `expo.web.bundler` to `metro`, matching the existing `smoke:web` script.
+- Static mobile readiness now protects those Expo app config values inside the web export smoke wiring test.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on the missing app-config assertions, then passed with 79 tests after wiring.
+- A direct package-local Expo CLI export attempt advanced past the previous `No platforms are configured to use the Metro bundler` error.
+- The remaining direct-export stop is the dependency layer: `Cannot determine the project's Expo SDK version because the module 'expo' is not installed`.
+- Expo web export is therefore config-ready but not dependency/export-proven in this cleaned Windows shell; rerun the smoke from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or any environment where the mobile package can resolve Expo.
