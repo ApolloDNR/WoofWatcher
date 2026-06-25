@@ -52,7 +52,9 @@ The beta must not claim:
 - Use the `48-hour beta run` card to start with the next required launch-critical surface.
 - Tap `Open Next Surface`, test the route, capture proof, then return to `/care-twin-qa`.
 - Capture at least one iOS screenshot and one Android screenshot when devices/simulators are available.
+- In `/care-twin-qa`, set `Tag screenshot evidence` to iOS or Android before attaching the screenshot from Photos.
 - Attach screenshots from Photos to the matching QA surface.
+- Confirm the attached file shows the expected counted platform label.
 - Mark any visual route that feels below App Store quality as Needs tune.
 - Tap `Share Beta Packet` only after local verification and owner sign-off are still truthful for an internal beta.
 

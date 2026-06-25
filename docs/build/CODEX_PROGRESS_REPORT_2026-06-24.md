@@ -224,3 +224,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - The 48-hour beta run card is ready for device testers, but it does not replace real native capture.
 - The next release task is still: capture iOS and Android proof, attach screenshots, mark Pass or Needs tune, and fix the first Needs tune route.
+
+## Completed - Care Twin QA Platform Evidence Tagging
+
+- Added an explicit `Tag screenshot evidence` control to the `/care-twin-qa` 48-hour beta run card.
+- Testers can choose iOS, Android, or Web before attaching screenshots from Photos, so real device proof is counted by intended capture platform instead of whichever runtime attached the file.
+- Saved QA screenshot evidence now uses `selectedEvidencePlatform` for `targetPlatform`.
+- Each attached screenshot row shows the counted platform label, making it easier to see whether the iOS/Android proof gap is actually closing.
+- Static mobile readiness coverage now protects the selected platform state, accessible tag controls, selected target platform write, and visible attachment platform labels.
+
+## Verification - Care Twin QA Platform Evidence Tagging
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts` - 85 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 386 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - Care Twin QA Platform Evidence Tagging
+
+- Real iOS and Android screenshots still need to be captured and attached by a device tester.
+- Any route marked Needs tune during that run should be fixed before broader beta sharing.

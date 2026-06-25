@@ -511,3 +511,13 @@ tests, 386 focused behavior/readiness tests, mobile TypeScript, PixelLab
 verification at 149 files, `git diff --check`, and package-local Expo web export
 with HTML/JavaScript output verified and cleaned. The card reduces device-test
 friction but does not replace real iOS/Android screenshot capture.
+
+Current evidence, 2026-06-25: `/care-twin-qa` now includes explicit screenshot
+platform tagging for the two-day beta run. Testers choose iOS, Android, or Web
+before attaching from Photos; new evidence persists the selected `targetPlatform`;
+and attached screenshot rows display the counted platform label. Local
+verification passed 85 targeted QA/readiness tests, 386 focused
+behavior/readiness tests, mobile TypeScript, PixelLab verification at 149 files,
+`git diff --check`, and package-local Expo web export with HTML/JavaScript output
+verified and cleaned. Real device capture and human visual approval remain
+required before broader beta circulation.

@@ -320,7 +320,12 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /ImagePicker\.launchImageLibraryAsync/);
   assert.match(qaRoute, /buildQaScreenshotEvidence/);
   assert.match(qaRoute, /qaScreenshotPlatformForRuntime/);
-  assert.match(qaRoute, /targetPlatform: qaScreenshotPlatformForRuntime\(\)/);
+  assert.match(qaRoute, /selectedEvidencePlatform/);
+  assert.match(qaRoute, /Tag screenshot evidence/);
+  assert.match(qaRoute, /Tag QA screenshots as \$\{option\.label\}/);
+  assert.match(qaRoute, /targetPlatform: selectedEvidencePlatform/);
+  assert.match(qaRoute, /New attachments are tagged as \{targetPlatformLabel\}/);
+  assert.match(qaRoute, /qaScreenshotEvidencePlatformLabel\(item\.targetPlatform\)/);
   assert.match(qaRoute, /qaEvidenceById/);
   assert.match(qaRoute, /surfaceEvidenceById/);
   assert.match(qaRoute, /Attach screenshot/);

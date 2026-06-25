@@ -45,7 +45,12 @@ import { buildMobileLaunchQaCapturePlan } from "@/lib/mobileLaunchQaEvidence";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
 import { deriveLaunchReadiness } from "@/lib/launchReadiness";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
-import { buildQaScreenshotEvidence, type QaScreenshotEvidence, type QaScreenshotEvidencePlatform } from "@/lib/qaScreenshotEvidence";
+import {
+  buildQaScreenshotEvidence,
+  qaScreenshotEvidencePlatformLabel,
+  type QaScreenshotEvidence,
+  type QaScreenshotEvidencePlatform,
+} from "@/lib/qaScreenshotEvidence";
 import { buildReleasePacket } from "@/lib/releasePacket";
 import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
 
@@ -191,10 +196,19 @@ function qaScreenshotPlatformForRuntime(): QaScreenshotEvidencePlatform {
   return "unknown";
 }
 
+const QA_SCREENSHOT_PLATFORM_OPTIONS: { label: string; value: QaScreenshotEvidencePlatform }[] = [
+  { label: "iOS", value: "ios" },
+  { label: "Android", value: "android" },
+  { label: "Web", value: "web" },
+];
+
 export default function CareTwinQaScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [selectedEvidencePlatform, setSelectedEvidencePlatform] = useState<QaScreenshotEvidencePlatform>(() =>
+    qaScreenshotPlatformForRuntime(),
+  );
   const [qaStatusById, setQaStatusById] = useState<Record<string, CareTwinQaReviewStatus>>({});
   const [qaNotes, setQaNotes] = useState<Record<string, string>>({});
   const [qaEvidenceById, setQaEvidenceById] = useState<Record<string, QaScreenshotEvidence[]>>({});
@@ -302,6 +316,7 @@ export default function CareTwinQaScreen() {
   const releaseScreenshotEvidenceComplete = mobileReleaseQaScreenshotEvidenceComplete(releaseSummary);
   const releasePlatformEvidenceLabel = formatMobileReleaseQaPlatformEvidence(releaseSummary);
   const releaseMissingEvidenceLabel = formatMobileReleaseQaMissingEvidence(releaseSummary);
+  const selectedEvidencePlatformLabel = qaScreenshotEvidencePlatformLabel(selectedEvidencePlatform);
   const attachedEvidenceFiles = releaseSummary.attachedScreenshots + qaSummary.attachedScreenshots;
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -404,7 +419,7 @@ export default function CareTwinQaScreen() {
         uri: asset.uri,
         fileName,
         source: "library",
-        targetPlatform: qaScreenshotPlatformForRuntime(),
+        targetPlatform: selectedEvidencePlatform,
         capturedAtIso: new Date().toISOString(),
       }, fallbackFileName);
     } catch {
@@ -507,6 +522,49 @@ export default function CareTwinQaScreen() {
                 </Text>
               </View>
             ))}
+          </View>
+          <View style={[s.betaRunPlatformPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <View style={s.betaRunPlatformHeader}>
+              <View style={s.betaRunPlatformCopy}>
+                <Text style={[s.betaRunPlatformTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                  Tag screenshot evidence
+                </Text>
+                <Text style={[s.betaRunPlatformHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  Choose the device type before attaching from Photos so iPhone and Android proof count toward the beta gate.
+                </Text>
+              </View>
+              <QaBadge label={selectedEvidencePlatformLabel} tone={selectedEvidencePlatform === "web" ? colors.amber : colors.sage} />
+            </View>
+            <View style={s.betaRunPlatformOptions}>
+              {QA_SCREENSHOT_PLATFORM_OPTIONS.map((option) => {
+                const active = selectedEvidencePlatform === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Tag QA screenshots as ${option.label}`}
+                    onPress={() => setSelectedEvidencePlatform(option.value)}
+                    style={({ pressed }) => [
+                      s.betaRunPlatformOption,
+                      {
+                        backgroundColor: active ? `${colors.sage}1F` : pressed ? `${colors.copper}16` : colors.card,
+                        borderColor: active ? colors.sage : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.betaRunPlatformOptionText,
+                        { color: active ? colors.sage : colors.foreground, fontFamily: "Inter_800ExtraBold" },
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
           <View style={s.betaRunActions}>
             <Pressable
@@ -649,6 +707,7 @@ export default function CareTwinQaScreen() {
               <EvidenceCapture
                 label={`${attachedScreenshots.length} attached`}
                 evidence={attachedScreenshots}
+                targetPlatformLabel={selectedEvidencePlatformLabel}
                 onAttach={() => attachSurfaceScreenshot(surface)}
                 onClear={() =>
                   setSurfaceEvidenceById((current) => ({
@@ -835,6 +894,7 @@ export default function CareTwinQaScreen() {
               <EvidenceCapture
                 label={`${attachedScreenshots.length} attached`}
                 evidence={attachedScreenshots}
+                targetPlatformLabel={selectedEvidencePlatformLabel}
                 onAttach={() => attachSurfaceScreenshot(surface)}
                 onClear={() =>
                   setSurfaceEvidenceById((current) => ({
@@ -985,6 +1045,7 @@ export default function CareTwinQaScreen() {
               <EvidenceCapture
                 label={`${attachedScreenshots.length} attached`}
                 evidence={attachedScreenshots}
+                targetPlatformLabel={selectedEvidencePlatformLabel}
                 onAttach={() => attachScenarioScreenshot(result.scenario.id)}
                 onClear={() =>
                   setQaEvidenceById((current) => ({
@@ -1090,11 +1151,13 @@ function ReviewButton({
 function EvidenceCapture({
   evidence,
   label,
+  targetPlatformLabel,
   onAttach,
   onClear,
 }: {
   evidence: readonly QaScreenshotEvidence[];
   label: string;
+  targetPlatformLabel: string;
   onAttach: () => void;
   onClear: () => void;
 }) {
@@ -1111,7 +1174,7 @@ function EvidenceCapture({
         <QaBadge label={label} tone={evidence.length ? colors.sage : colors.amber} />
       </View>
       <Text style={[s.evidenceCaptureHelp, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-        Capture the screen on iOS or Android, then attach it here from Photos so the QA report keeps local proof with the route notes.
+        Capture the screen on iOS or Android, then attach it here from Photos so the QA report keeps local proof with the route notes. New attachments are tagged as {targetPlatformLabel}.
       </Text>
       {evidence.length ? (
         <View style={s.attachedList}>
@@ -1120,6 +1183,9 @@ function EvidenceCapture({
               <Ionicons name="image-outline" size={14} color={colors.sage} />
               <Text style={[s.attachedName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]} numberOfLines={1}>
                 {item.fileName}
+              </Text>
+              <Text style={[s.attachedPlatform, { color: colors.mutedForeground, fontFamily: "Inter_800ExtraBold" }]}>
+                {qaScreenshotEvidencePlatformLabel(item.targetPlatform)}
               </Text>
             </View>
           ))}
@@ -1240,6 +1306,48 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     lineHeight: 17,
+  },
+  betaRunPlatformPanel: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
+  betaRunPlatformHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  betaRunPlatformCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  betaRunPlatformTitle: {
+    fontSize: 12,
+    letterSpacing: 0,
+  },
+  betaRunPlatformHelp: {
+    marginTop: 3,
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  betaRunPlatformOptions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  betaRunPlatformOption: {
+    minHeight: 44,
+    minWidth: 82,
+    borderRadius: 9,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  betaRunPlatformOptionText: {
+    fontSize: 12,
   },
   betaRunActions: {
     flexDirection: "row",
@@ -1445,6 +1553,11 @@ const s = StyleSheet.create({
   attachedName: {
     flex: 1,
     fontSize: 12,
+  },
+  attachedPlatform: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
   evidenceActions: {
     flexDirection: "row",
