@@ -480,3 +480,15 @@ behavior/readiness tests, mobile TypeScript, syntax checks, PixelLab asset
 verification at 149 files, and package-local Expo export. Applying cleanup,
 Supabase migration/RLS, retention/export/deletion policy, invite delivery/UI,
 legal/privacy approval, and native iOS/Android screenshots remain launch gates.
+
+Current evidence, 2026-06-25: The release packet now separates two-day internal
+beta readiness from public App Store / Play Store readiness. More's Launch
+Readiness board shows a 48-hour beta card backed by `betaShipStatus`,
+`betaVerdictLabel`, `betaSummary`, and `betaNextActions`; share text includes a
+48-hour beta target while preserving "not ready for public launch" when provider,
+payment, legal, native QA, or store gates are open. Targeted release/readiness
+verification passed 81 tests, the broader focused behavior/readiness suite passed
+at 386 tests, mobile TypeScript passed, PixelLab verified 149 assets, and
+package-local Expo web export emitted HTML/JavaScript output. Native iOS/Android
+screenshots and human visual approval remain required before the beta goes
+outside the owner/builder loop.

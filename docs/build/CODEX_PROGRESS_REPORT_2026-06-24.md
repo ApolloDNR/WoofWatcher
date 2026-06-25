@@ -159,3 +159,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Applying cleanup remains intentionally unimplemented until owner approval, Supabase migration/RLS, retention/export/deletion policy, legal/privacy review, and destructive access-change rules are approved.
 - Invite notification/email delivery, provider-backed invite UI wiring, and real iOS/Android screenshot QA remain launch gates.
+
+## Completed - Two-Day Beta Ship Path
+
+- Added a concrete two-day beta ship plan at `docs/release/TWO_DAY_BETA_SHIP_PLAN.md`.
+- Updated `releasePacket.ts` so internal beta readiness is separate from public App Store / Play Store readiness.
+- Added `betaShipStatus`, `betaVerdictLabel`, `betaSummary`, and `betaNextActions` to the release packet.
+- Updated More's Launch Readiness board with a visible 48-hour beta card.
+- Preserved the public-launch boundary: provider sync, payments, AI, storage, legal/privacy, native QA, and store submission still stay gated until actually approved.
+
+## Verification - Two-Day Beta Ship Path
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\releasePacket.test.ts artifacts\woofwatcher-mobile\lib\launchReadiness.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 81 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 386 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `node --experimental-strip-types --check lib\releasePacket.ts` from `artifacts/woofwatcher-mobile` - passing.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, and verified HTML/JavaScript output before cleanup. PowerShell traversal hit generated long-path warnings during cleanup, so the generated folder was removed with a scoped Node cleanup after confirming the path was inside the mobile app directory.
+
+## Still Not Done - Two-Day Beta Ship Path
+
+- `git diff --check` still needs to be rerun before committing this slice.
+- Real iOS and Android screenshots still need to be captured in `/care-twin-qa` before the beta should go outside the owner/builder loop.

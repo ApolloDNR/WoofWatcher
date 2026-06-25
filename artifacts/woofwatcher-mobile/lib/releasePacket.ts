@@ -10,6 +10,8 @@ export interface ReleasePacketOptions {
   generatedAtIso?: string;
 }
 
+export type ReleasePacketBetaShipStatus = "ready" | "qa-first" | "blocked";
+
 export interface ReleasePacketGateRow {
   label: string;
   value: string;
@@ -26,6 +28,10 @@ export interface ReleasePacket {
   readinessScore: number;
   statusBadge: string;
   storeLaunchReady: boolean;
+  betaShipStatus: ReleasePacketBetaShipStatus;
+  betaVerdictLabel: string;
+  betaSummary: string;
+  betaNextActions: string[];
   verdictLabel: string;
   ownerSummary: string;
   gateRows: ReleasePacketGateRow[];
@@ -82,6 +88,78 @@ function estimateReadinessScore(plan: LaunchReadinessPlan): number {
   const weighted = plan.tiles.reduce((sum, tile) => sum + tileScore(tile.status), 0) / plan.tiles.length;
   const blockerPenalty = Math.min(18, Math.max(0, plan.blockers.length - 3) * 2);
   return Math.max(5, Math.min(94, Math.round(weighted * 100) - blockerPenalty));
+}
+
+function blockerMatches(plan: LaunchReadinessPlan, pattern: RegExp): boolean {
+  return plan.blockers.some((blocker) => pattern.test(blocker));
+}
+
+function betaBlockingFoundations(plan: LaunchReadinessPlan): string[] {
+  return plan.blockers.filter((blocker) => /Core care|EAS|PixelLab|Privacy export|Care sync/i.test(blocker));
+}
+
+function betaShipStatus(plan: LaunchReadinessPlan): ReleasePacketBetaShipStatus {
+  if (betaBlockingFoundations(plan).length) return "blocked";
+  if (blockerMatches(plan, /Native iOS\/Android/i)) return "qa-first";
+  return "ready";
+}
+
+function betaVerdictLabel(status: ReleasePacketBetaShipStatus, plan: LaunchReadinessPlan): string {
+  if (plan.storeLaunchReady) return "Ready for release submission";
+  switch (status) {
+    case "ready":
+      return "Ready for internal beta";
+    case "qa-first":
+      return "Beta candidate - capture device proof";
+    default:
+      return "Beta blocked by local release gates";
+  }
+}
+
+function betaSummary(status: ReleasePacketBetaShipStatus, plan: LaunchReadinessPlan): string {
+  if (plan.storeLaunchReady) {
+    return "All current gates are closed. Prepare store submission only after final owner sign-off.";
+  }
+
+  if (status === "ready") {
+    return "WoofWatcher can be shared as an internal Expo/PWA beta while provider-backed sync, payments, AI, storage, and store submission stay gated.";
+  }
+
+  if (status === "qa-first") {
+    return "WoofWatcher is usable as a beta candidate, but capture real iOS and Android proof before sending it beyond the builder/owner review loop.";
+  }
+
+  const foundations = betaBlockingFoundations(plan);
+  return foundations.length
+    ? `Internal beta is blocked until this local foundation is fixed: ${foundations[0]}`
+    : "Internal beta is blocked until the local release foundation is verified.";
+}
+
+function betaNextActions(status: ReleasePacketBetaShipStatus, plan: LaunchReadinessPlan): string[] {
+  if (plan.storeLaunchReady) {
+    return ["Prepare store submission packet.", "Complete final owner sign-off.", "Upload only after Apple/Google credentials are confirmed."];
+  }
+
+  if (status === "ready") {
+    return [
+      "Share the Expo/PWA beta with the owner/tester group.",
+      "Collect feedback on Home, Log, Plans, Health, More, Care Pass, Avatar Studio, and WoofGuide.",
+      "Keep public store, provider sync, payments, AI, and storage claims gated until approved.",
+    ];
+  }
+
+  if (status === "qa-first") {
+    return [
+      "Capture one iOS and one Android pass in Care Twin QA.",
+      "Share the release packet and QA capture plan with testers.",
+      "Use the beta for owner/internal review only until platform proof is attached.",
+    ];
+  }
+
+  const foundations = betaBlockingFoundations(plan);
+  return foundations.length
+    ? foundations.slice(0, 3).map((blocker) => `Fix beta gate: ${blocker}`)
+    : ["Fix the local release foundation before beta sharing."];
 }
 
 function toGateRow(tile: LaunchReadinessTile): ReleasePacketGateRow {
@@ -146,6 +224,7 @@ export function buildReleasePacket(
   const appName = options.appName?.trim() || "WoofWatcher";
   const buildName = options.buildName?.trim() || "local mobile preview";
   const generatedAtIso = normalizeGeneratedAt(options.generatedAtIso);
+  const internalBetaStatus = betaShipStatus(plan);
   const verdictLabel = plan.storeLaunchReady ? "Ready for release submission" : "Not ready for public launch";
   const ownerSummary = plan.storeLaunchReady
     ? `${appName} has cleared the current launch-readiness gates. Prepare the store submission packet and complete final owner sign-off.`
@@ -159,6 +238,10 @@ export function buildReleasePacket(
     readinessScore: estimateReadinessScore(plan),
     statusBadge: plan.badgeLabel,
     storeLaunchReady: plan.storeLaunchReady,
+    betaShipStatus: internalBetaStatus,
+    betaVerdictLabel: betaVerdictLabel(internalBetaStatus, plan),
+    betaSummary: betaSummary(internalBetaStatus, plan),
+    betaNextActions: betaNextActions(internalBetaStatus, plan),
     verdictLabel,
     ownerSummary,
     gateRows: plan.tiles.map(toGateRow),
@@ -184,6 +267,10 @@ export function buildReleasePacketShareText(packet: ReleasePacket): string {
     `Verdict: ${packet.verdictLabel}`,
     `Readiness score: ${packet.readinessScore}%`,
     "",
+    "48-hour beta target:",
+    `- ${packet.betaVerdictLabel}`,
+    `- ${packet.betaSummary}`,
+    "",
     packet.ownerSummary,
     "",
     "Launch gates:",
@@ -194,6 +281,9 @@ export function buildReleasePacketShareText(packet: ReleasePacket): string {
     "",
     "Next actions:",
     formatList(packet.nextActions, "Prepare App Store and Play Store release submission packet."),
+    "",
+    "Beta next actions:",
+    formatList(packet.betaNextActions, "Share beta build after final owner sign-off."),
     "",
     "Owner approvals:",
     formatList(packet.ownerApprovalChecklist, "Final owner sign-off required."),

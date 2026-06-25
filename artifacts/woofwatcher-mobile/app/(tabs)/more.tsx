@@ -935,6 +935,12 @@ export default function MoreScreen() {
     [launchReleasePacket],
   );
   const storeSubmissionTone = launchStoreSubmissionPacket.submissionReady ? colors.sage : colors.amber;
+  const betaShipTone =
+    launchReleasePacket.betaShipStatus === "ready"
+      ? colors.sage
+      : launchReleasePacket.betaShipStatus === "qa-first"
+        ? colors.amber
+        : colors.rose;
   const providerSetupTone =
     launchProviderSetupPlan.status === "provider-approved"
       ? colors.sage
@@ -1501,6 +1507,22 @@ export default function MoreScreen() {
                 ))}
               </View>
             ) : null}
+            <View style={[s.launchPacket, { backgroundColor: betaShipTone + "10", borderColor: betaShipTone + "33" }]}>
+              <View style={[s.launchScore, { backgroundColor: betaShipTone + "18" }]}>
+                <Text style={[s.launchScoreValue, { color: betaShipTone, fontFamily: DISPLAY_SEMI }]}>48h</Text>
+                <Text style={[s.launchScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  beta
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.launchPacketTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                  {launchReleasePacket.betaVerdictLabel}
+                </Text>
+                <Text style={[s.launchPacketCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {launchReleasePacket.betaSummary}
+                </Text>
+              </View>
+            </View>
             <View style={[s.launchPacket, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <View style={[s.launchScore, { backgroundColor: readinessBadgeTone + "16" }]}>
                 <Text style={[s.launchScoreValue, { color: readinessBadgeTone, fontFamily: DISPLAY_SEMI }]}>

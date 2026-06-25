@@ -469,3 +469,13 @@ Latest local evidence, 2026-06-24:
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
 - Syntax checks passed for the new cleanup helper, edited household route, generated Zod API file, generated React client, generated React schemas, and new cleanup generated type files.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, verified HTML/JavaScript output, and removed the generated folder after verification.
+
+Latest local evidence, 2026-06-25:
+
+- Release packet tests now cover two-day beta readiness separately from public launch readiness: beta candidate pending device proof, internal beta ready while provider/store gates remain blocked, local beta gates blocked, and fully store-ready.
+- Static mobile readiness tests now protect More's Launch Readiness wiring for `betaShipStatus`, `betaVerdictLabel`, and `betaSummary`.
+- `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/releasePacket.test.ts artifacts/woofwatcher-mobile/lib/launchReadiness.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts` - 81 passing.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 386 passing after the two-day beta ship-path slice.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules/typescript/bin/tsc -p tsconfig.json --noEmit` - passing.
+- `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
+- Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, verified HTML/JavaScript output, and removed the generated folder after verification.
