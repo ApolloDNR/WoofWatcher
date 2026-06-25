@@ -821,6 +821,20 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.doesNotMatch(log, /\{ label: "Poo", type: "potty"/);
   assert.match(log, /Undo/);
   assert.match(log, /Add details/);
+  for (const styleName of [
+    "outboxButton",
+    "launcherTab",
+    "quickFeedbackButton",
+    "returnOutcomeButton",
+    "walkFinishButton",
+    "trustProofAttachButton",
+    "trustActionButton",
+    "mealOutcomeButton",
+    "pottyOptionButton",
+    "pottySaveButton",
+  ]) {
+    assertStyleUsesSharedTouchTarget(log, styleName);
+  }
 });
 
 test("keeps Quick Log search and timeline on shared board card anatomy", () => {

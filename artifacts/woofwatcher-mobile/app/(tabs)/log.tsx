@@ -42,6 +42,7 @@ import {
   getCenteredModalBackdropPadding,
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
 } from "@/lib/mobileLayout";
@@ -4173,7 +4174,7 @@ const s = StyleSheet.create({
   outboxTitle: { fontSize: 15.5, marginTop: 2 },
   outboxMessage: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
   outboxButton: {
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
@@ -4199,7 +4200,7 @@ const s = StyleSheet.create({
   },
   launcherTab: {
     flex: 1,
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
     alignItems: "center",
@@ -4295,7 +4296,7 @@ const s = StyleSheet.create({
   },
   quickFeedbackButton: {
     flex: 1,
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
@@ -4357,7 +4358,7 @@ const s = StyleSheet.create({
   returnOutcomeButton: {
     flexGrow: 1,
     flexBasis: "31%",
-    minHeight: 38,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 9,
     alignItems: "center",
@@ -4383,7 +4384,7 @@ const s = StyleSheet.create({
     flex: 1,
   },
   walkFinishButton: {
-    minHeight: 44,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 9,
     flexDirection: "row",
@@ -4702,7 +4703,7 @@ const s = StyleSheet.create({
   trustProofText: { fontSize: 12.5, lineHeight: 17 },
   trustProofMeta: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
   trustProofAttachButton: {
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
     flexDirection: "row",
@@ -4722,7 +4723,7 @@ const s = StyleSheet.create({
   trustActionButton: {
     flexGrow: 1,
     flexBasis: "47%",
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
     flexDirection: "row",
@@ -4769,7 +4770,7 @@ const s = StyleSheet.create({
   mealOutcomeButton: {
     flexGrow: 1,
     flexBasis: "47%",
-    minHeight: 38,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
     alignItems: "center",
@@ -4803,7 +4804,7 @@ const s = StyleSheet.create({
   pottyOptionButton: {
     flexGrow: 1,
     flexBasis: "30%",
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
     alignItems: "center",
@@ -4816,7 +4817,7 @@ const s = StyleSheet.create({
     textAlign: "center",
   },
   pottySaveButton: {
-    minHeight: 44,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 12,
     flexDirection: "row",

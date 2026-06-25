@@ -646,3 +646,15 @@ QA/readiness verification passed 88 tests, focused behavior/readiness
 verification passed 389 tests, mobile TypeScript passed, PixelLab verification
 passed at 149 files, `git diff --check` passed, and package-local Expo web
 export emitted HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: Quick Log's owner-preview actions now share the
+same mobile touch-target contract. The Log route uses `MIN_MOBILE_TOUCH_TARGET`
+for retry/sync recovery, care-type tabs, quick-feedback Undo/Add details,
+alone-time return outcomes, active-walk finish, trust proof attachment,
+trust-review actions, meal outcome updates, potty outcome options, and potty
+detail save. Static readiness now protects those named style blocks. Red/green
+mobile readiness passed after first failing on the 36px `outboxButton`,
+targeted QA/readiness verification passed 88 tests, focused behavior/readiness
+verification passed 389 tests, mobile TypeScript passed, PixelLab verification
+passed at 149 files, `git diff --check` passed, and package-local Expo web
+export emitted HTML/JavaScript output that was verified and cleaned.

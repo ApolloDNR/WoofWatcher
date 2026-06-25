@@ -330,6 +330,13 @@ evidence attach/clear, per-surface Open Surface, and Pass/Needs tune review
 controls. Static readiness parses those style blocks by name so the two-day
 beta cockpit cannot quietly regress to cramped route-local controls.
 
+The Quick Log touch-target pass hardened the highest-frequency owner action.
+The Log route now applies the shared 48px target to retry, care-type tabs,
+Undo/Add details, alone-time return outcomes, active-walk finish, trust proof
+attachment, trust review, meal outcome, potty outcome, and potty save controls.
+This keeps the under-five-second logging flow more phone-native while still
+preserving the neo-retro board layout.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
