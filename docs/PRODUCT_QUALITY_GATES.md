@@ -61,6 +61,7 @@ Passing evidence:
 - API active-household switching is membership-scoped, so `PATCH /me/active-household` can move care-state and care-entry routes between a caregiver's existing packs without accepting arbitrary household ids.
 - Mobile More exposes active-household switching from the Care Team surface. `/me` returns the authenticated user's existing household list, invite-code visibility stays owner/admin gated for each pack, and successful switches refresh care state so later routines and logs use the selected household.
 - API household audit review is owner/admin scoped. `GET /household/audit-events` lists durable household-scoped audit rows with bounded `limit`, `action`, and `lifecycleState` filters before final provider-backed retention and account audit policy exists.
+- Sensitive API household actions now write durable audit rows before final provider-backed account audit policy exists. Default household creation, household rename, active-household switching, and invite acceptance produce owner/admin-reviewable `household.created`, `household.renamed`, `household.active_changed`, and `household.member_joined` events.
 - Care Pass reports can be previewed by audience before sharing.
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
 - Records show expired, due-soon, current, and reference status for saved record rows.
@@ -100,7 +101,7 @@ Passing evidence:
 
 Current gaps:
 
-- Need live integration tests for authenticated household-scoped routes against a test database/provider-auth harness, including the care-entry delete audit retention path and household audit review list path.
+- Need live integration tests for authenticated household-scoped routes against a test database/provider-auth harness, including the care-entry delete audit retention path, household audit review list path, and sensitive household audit event producers.
 - Need storage for record documents and generated reports.
 - Need role-aware permissions, broader audit trail policy for documents/accounts/roles, and provider-backed data export/delete paths.
 - Need deeper multi-device conflict policy, final server-backed delete/edit restore and retention rules, and native offline recovery QA.
@@ -204,7 +205,7 @@ Current gaps:
 - API care-state optimistic write conflict safety is covered by focused readiness so concurrent household document writes use the version predicate in the update itself before live database integration tests are available.
 - API household profile update scoping is covered by focused readiness so member display-name writes stay constrained to the active household before provider-backed role enforcement exists.
 - API household rename role gating is covered by focused readiness so only active-household owner/admin members can rename the shared pack before provider-backed role enforcement exists.
-- API household invite join provisioning, active-household persistence, active-household switching, `/me.households`, invite-code visibility, owner/admin audit review, and the mobile More switcher are covered by focused readiness so first-time invite accepts join the intended shared household, later care sync routes stay pointed at the selected pack, ordinary members cannot share the invite code, and audit review stays restricted before provider-backed admin tools exist.
+- API household invite join provisioning, active-household persistence, active-household switching, `/me.households`, invite-code visibility, owner/admin audit review, sensitive household audit event producers, and the mobile More switcher are covered by focused readiness so first-time invite accepts join the intended shared household, later care sync routes stay pointed at the selected pack, ordinary members cannot share the invite code, and audit review contains real household trust events while staying restricted before provider-backed admin tools exist.
 - Need report/export tests.
 - Need release smoke checklist.
 

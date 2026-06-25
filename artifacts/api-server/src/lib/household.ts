@@ -6,6 +6,7 @@ import {
   usersTable,
   householdsTable,
   householdMembersTable,
+  householdAuditEventsTable,
   careStateTable,
   type User,
 } from "@workspace/db";
@@ -31,6 +32,26 @@ async function uniqueInviteCode(): Promise<string> {
     if (!existing) return code;
   }
   return `${generateInviteCode()}${generateInviteCode()}`;
+}
+
+export async function logHouseholdAuditEvent(input: {
+  householdId: string;
+  actorUserId: string;
+  action: string;
+  targetType?: string;
+  targetId?: string;
+  details?: Record<string, unknown>;
+  lifecycleState?: string;
+}): Promise<void> {
+  await db.insert(householdAuditEventsTable).values({
+    householdId: input.householdId,
+    actorUserId: input.actorUserId,
+    action: input.action,
+    targetType: input.targetType ?? null,
+    targetId: input.targetId ?? null,
+    lifecycleState: input.lifecycleState ?? "active",
+    details: input.details ?? {},
+  });
 }
 
 export async function ensureUser(userId: string): Promise<User> {
@@ -116,6 +137,14 @@ export async function ensureUserAndHousehold(
     .set({ activeHouseholdId: household.id })
     .where(eq(usersTable.id, userId));
   await ensureCareState(household.id, userId);
+  await logHouseholdAuditEvent({
+    householdId: household.id,
+    actorUserId: userId,
+    action: "household.created",
+    targetType: "household",
+    targetId: household.id,
+    details: { name },
+  });
   return { user, householdId: household.id };
 }
 

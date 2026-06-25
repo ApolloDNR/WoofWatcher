@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-24: Sensitive Household Actions Produce Audit Events
+
+Decision: Default household creation, household rename, active-household switching, and invite acceptance should write durable `household_audit_events` rows with bounded action names: `household.created`, `household.renamed`, `household.active_changed`, and `household.member_joined`.
+
+Reason: The owner/admin audit review endpoint should show real household trust transitions, not only a query contract. These actions affect shared pack identity, membership, or care-sync target, so they need a durable review trail before provider-backed invite approval, caregiver editing, role changes, and final retention/export/deletion policy are complete.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed invite approval, caregiver editing, role changes, account deletion/export policy, retention lifecycle changes, or live API integration tests become active release work.
+
 ### 2026-06-24: Household Audit Review Is Owner/Admin Scoped
 
 Decision: Household audit review should use a durable `household_audit_events` table and an owner/admin-only `GET /household/audit-events` route. The route lists newest events first, supports bounded `limit`, `action`, and `lifecycleState` filters, and is documented across OpenAPI, zod, and the generated React client before final provider-backed retention policy exists.

@@ -23,6 +23,7 @@ Latest local evidence, 2026-06-22:
 - PASS: API readiness now protects `PATCH /me/active-household` so explicit household switching is limited to memberships the authenticated user already has, ensures the selected household has care state, updates `users.activeHouseholdId`, and stays documented across OpenAPI, zod, and the generated React client.
 - PASS: Mobile readiness now protects the More active-household switcher. `/me` exposes the authenticated user's household list, generated contracts include `Me.households`, and the More Care Team surface uses `useSetActiveHousehold`, accessible selected/disabled state, pending/error copy, and care-state refresh after switching.
 - PASS: API readiness now protects owner/admin household audit review. `household_audit_events` is exported from the DB schema, `GET /household/audit-events` is owner/admin gated, list queries normalize `limit`, `action`, and `lifecycleState`, and OpenAPI/zod/generated React client contracts expose the review endpoint.
+- PASS: API readiness now protects sensitive household audit producers. Default household creation, household rename, active-household switching, and invite acceptance write durable `household_audit_events` rows with bounded action names and target details before final provider-backed account audit policy exists.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -82,7 +83,7 @@ Latest local evidence, 2026-06-22:
 - Care-state optimistic writes across the API, including atomic household-and-version update predicates and refreshed 409 conflict responses when concurrent writes race.
 - Household profile and shared pack updates across the API, including active-household scoping for member display-name writes when a caregiver belongs to multiple households and owner/admin gating for household rename.
 - Household invite joins, active-household persistence, active-household switching, and invite-code visibility across the API and mobile More UI, including direct user provisioning, invited-household care-state readiness, duplicate membership avoidance, default-pack avoidance for first-time invite accepts, joined-pack activation for later care sync routes, membership-scoped household switching, owner/admin-only invite-code exposure, `/me.households`, and accessible active-pack selection.
-- Household audit review across the API, including durable household-scoped audit rows, owner/admin-only list access, safe query normalization, lifecycle/action filtering, newest-first ordering, and OpenAPI/zod/generated React client coverage before final retention policy exists.
+- Household audit review across the API, including durable household-scoped audit rows, sensitive household action producers, owner/admin-only list access, safe query normalization, lifecycle/action filtering, newest-first ordering, and OpenAPI/zod/generated React client coverage before final retention policy exists.
 - Care-entry delete retention across the API and mobile Log, including server-created non-health audit notes with deleted-entry snapshots for synced deletes and local/offline deletion audits without duplicate notes after server retention.
 - Household Responsibility derivation for care-team routine ownership, open/overdue/unassigned routines, visible today log counts, next household action copy, and Calendar/More mobile wiring.
 - Household Access derivation for synced members, local-only caregivers, routine-only owners, invite readiness, permission labels, next-step copy, and More mobile wiring.
@@ -190,7 +191,7 @@ Latest local evidence, 2026-06-22:
 ## Missing QA
 
 - Simulator/device runtime smoke. CI web export smoke exists, but it does not replace native runtime rendering.
-- Live API integration tests against a test database and provider-auth harness. Focused API contract readiness now covers route scoping/concurrency/query/invite-code/active-household switching/audit-review wiring without requiring `DATABASE_URL`, Clerk, or installed Express/Drizzle dependencies in this Codex checkout.
+- Live API integration tests against a test database and provider-auth harness. Focused API contract readiness now covers route scoping/concurrency/query/invite-code/active-household switching/audit-review wiring and sensitive household audit producers without requiring `DATABASE_URL`, Clerk, or installed Express/Drizzle dependencies in this Codex checkout.
 - Auth onboarding smoke.
 - Visual regression or screenshot review.
 - Rive/Lottie/Reanimated avatar asset runtime checks.

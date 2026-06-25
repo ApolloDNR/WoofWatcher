@@ -23,6 +23,7 @@ import {
   ensureCareState,
   buildMe,
   requireActiveHouseholdRole,
+  logHouseholdAuditEvent,
 } from "../lib/household";
 
 const router: IRouter = Router();
@@ -89,6 +90,14 @@ router.patch("/me/active-household", requireAuth, async (req, res): Promise<void
     .update(usersTable)
     .set({ activeHouseholdId: parsed.data.householdId })
     .where(eq(usersTable.id, userId));
+  await logHouseholdAuditEvent({
+    householdId: parsed.data.householdId,
+    actorUserId: userId,
+    action: "household.active_changed",
+    targetType: "household",
+    targetId: parsed.data.householdId,
+    details: { selectedHouseholdId: parsed.data.householdId },
+  });
 
   res.json(GetMeResponse.parse(await buildMe(userId, parsed.data.householdId)));
 });
@@ -100,7 +109,7 @@ router.patch("/household", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { householdId, allowed } = await requireActiveHouseholdRole(userId, ["owner", "admin"]);
+  const { householdId, role, allowed } = await requireActiveHouseholdRole(userId, ["owner", "admin"]);
   if (!allowed) {
     res.status(403).json({ error: "Only household owners can rename this pack" });
     return;
@@ -109,6 +118,14 @@ router.patch("/household", requireAuth, async (req, res): Promise<void> => {
     .update(householdsTable)
     .set({ name: parsed.data.name })
     .where(eq(householdsTable.id, householdId));
+  await logHouseholdAuditEvent({
+    householdId,
+    actorUserId: userId,
+    action: "household.renamed",
+    targetType: "household",
+    targetId: householdId,
+    details: { newName: parsed.data.name, role },
+  });
   res.json(GetMeResponse.parse(await buildMe(userId, householdId)));
 });
 
@@ -187,6 +204,14 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
     .update(usersTable)
     .set({ activeHouseholdId: household.id })
     .where(eq(usersTable.id, userId));
+  await logHouseholdAuditEvent({
+    householdId: household.id,
+    actorUserId: userId,
+    action: "household.member_joined",
+    targetType: "member",
+    targetId: userId,
+    details: { membershipCreated: !inThisHousehold, role: "member" },
+  });
 
   res.json(GetMeResponse.parse(await buildMe(userId, household.id)));
 });

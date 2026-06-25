@@ -185,6 +185,31 @@ test("keeps household audit review owner scoped and client documented", () => {
   assert.match(reactSchemas, /export type ListHouseholdAuditEventsParams/);
 });
 
+test("keeps sensitive household actions writing durable audit events", () => {
+  const householdRoute = readApiFile(join("routes", "household.ts"));
+  const householdLib = readApiFile(join("lib", "household.ts"));
+
+  assert.match(householdLib, /export async function logHouseholdAuditEvent/);
+  assert.match(householdLib, /householdAuditEventsTable/);
+  assert.match(householdLib, /\.insert\(householdAuditEventsTable\)/);
+  assert.match(householdLib, /action: "household\.created"/);
+
+  assert.match(householdRoute, /logHouseholdAuditEvent/);
+  assert.match(householdRoute, /action: "household\.renamed"/);
+  assert.match(householdRoute, /targetType: "household"/);
+  assert.match(householdRoute, /targetId: householdId/);
+  assert.match(householdRoute, /newName: parsed\.data\.name/);
+
+  assert.match(householdRoute, /action: "household\.active_changed"/);
+  assert.match(householdRoute, /targetId: parsed\.data\.householdId/);
+  assert.match(householdRoute, /selectedHouseholdId: parsed\.data\.householdId/);
+
+  assert.match(householdRoute, /action: "household\.member_joined"/);
+  assert.match(householdRoute, /targetType: "member"/);
+  assert.match(householdRoute, /targetId: userId/);
+  assert.match(householdRoute, /membershipCreated: !inThisHousehold/);
+});
+
 test("keeps care-state writes optimistic and conflict recoverable", () => {
   const careState = readApiFile(join("routes", "care-state.ts"));
   const mobileContext = readFileSync(

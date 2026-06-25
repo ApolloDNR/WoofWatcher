@@ -98,6 +98,8 @@ Current evidence, 2026-06-24: Mobile More now exposes the active-household switc
 
 Current evidence, 2026-06-24: API household audit review now has an owner/admin-scoped contract. `household_audit_events` stores durable household audit rows, and `GET /household/audit-events` returns newest-first events with bounded `limit`, `action`, and `lifecycleState` filters before final provider-backed audit retention policy exists.
 
+Current evidence, 2026-06-24: Sensitive household actions now produce durable audit rows for owner/admin review. Default household creation, household rename, active-household switching, and invite acceptance insert `household.created`, `household.renamed`, `household.active_changed`, and `household.member_joined` events into `household_audit_events` before final provider-backed account audit policy exists.
+
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
 Current evidence, 2026-06-11: Reminder Center now combines routine-board status, medication follow-ups, record reminders, and grooming due dates into one Calendar action list with urgent/watch/total counts, private-log exclusion through the underlying domain helpers, and explicit notification-readiness copy before real push delivery exists.
@@ -332,4 +334,4 @@ Current evidence, 2026-06-23: Focused API readiness now also protects the care-s
 
 Current evidence, 2026-06-24: Focused API readiness protects household invite joins from creating a throwaway default household before accepting an invite. `POST /household/join` now provisions the user directly, ensures invited-household care state, and keeps new invitees at the `member` role unless provider-backed administration later changes the policy. Focused readiness also protects membership-scoped active-household switching, the OpenAPI/zod/generated React client contract for `PATCH /me/active-household`, and the `/me.households` list used by the mobile switcher.
 
-Current evidence, 2026-06-24: Focused API readiness protects owner/admin household audit review, including the durable audit-row schema, route-level role gate, safe list-query normalization, newest-first ordering, and OpenAPI/zod/generated React client contract for `GET /household/audit-events`.
+Current evidence, 2026-06-24: Focused API readiness protects owner/admin household audit review, including the durable audit-row schema, sensitive household action producers, route-level role gate, safe list-query normalization, newest-first ordering, and OpenAPI/zod/generated React client contract for `GET /household/audit-events`.
