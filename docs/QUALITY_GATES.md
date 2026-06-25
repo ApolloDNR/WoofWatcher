@@ -100,6 +100,8 @@ Current evidence, 2026-06-24: API household audit review now has an owner/admin-
 
 Current evidence, 2026-06-24: Sensitive household actions now produce durable audit rows for owner/admin review. Default household creation, household rename, active-household switching, and invite acceptance insert `household.created`, `household.renamed`, `household.active_changed`, and `household.member_joined` events into `household_audit_events` before final provider-backed account audit policy exists.
 
+Current evidence, 2026-06-25: API household member role updates now require owner/admin membership, stay scoped to existing active-household members, refuse owner demotion, return the refreshed `/me` household context, and write durable `household.member_role_changed` audit events before full provider-backed caregiver administration exists.
+
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
 Current evidence, 2026-06-11: Reminder Center now combines routine-board status, medication follow-ups, record reminders, and grooming due dates into one Calendar action list with urgent/watch/total counts, private-log exclusion through the underlying domain helpers, and explicit notification-readiness copy before real push delivery exists.

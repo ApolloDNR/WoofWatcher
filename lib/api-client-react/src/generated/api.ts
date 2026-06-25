@@ -38,7 +38,8 @@ import type {
   ListCareEntriesParams,
   Me,
   MeUpdate,
-  SetActiveHouseholdBody
+  SetActiveHouseholdBody,
+  UpdateHouseholdMemberBody
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -569,6 +570,79 @@ export const useUpdateHousehold = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateHouseholdMutationOptions(options));
+    }
+
+export const getUpdateHouseholdMemberUrl = (memberId: string,) => {
+
+
+
+
+  return `/api/household/members/${memberId}`
+}
+
+/**
+ * Lets owner/admin members change an existing active-household member's role before richer provider-backed caregiver administration exists. Owner memberships cannot be demoted through this endpoint.
+ * @summary Update a household member role
+ */
+export const updateHouseholdMember = async (memberId: string,
+    updateHouseholdMemberBody: UpdateHouseholdMemberBody, options?: RequestInit): Promise<Me> => {
+
+  return customFetch<Me>(getUpdateHouseholdMemberUrl(memberId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateHouseholdMemberBody,)
+  }
+);}
+
+
+
+
+export const getUpdateHouseholdMemberMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHouseholdMember>>, TError,{memberId: string;data: BodyType<UpdateHouseholdMemberBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateHouseholdMember>>, TError,{memberId: string;data: BodyType<UpdateHouseholdMemberBody>}, TContext> => {
+
+const mutationKey = ['updateHouseholdMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateHouseholdMember>>, {memberId: string;data: BodyType<UpdateHouseholdMemberBody>}> = (props) => {
+          const {memberId,data} = props ?? {};
+
+          return  updateHouseholdMember(memberId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateHouseholdMemberMutationResult = NonNullable<Awaited<ReturnType<typeof updateHouseholdMember>>>
+    export type UpdateHouseholdMemberMutationBody = BodyType<UpdateHouseholdMemberBody>
+    export type UpdateHouseholdMemberMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update a household member role
+ */
+export const useUpdateHouseholdMember = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHouseholdMember>>, TError,{memberId: string;data: BodyType<UpdateHouseholdMemberBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateHouseholdMember>>,
+        TError,
+        {memberId: string;data: BodyType<UpdateHouseholdMemberBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateHouseholdMemberMutationOptions(options));
     }
 
 export const getListHouseholdAuditEventsUrl = (params?: ListHouseholdAuditEventsParams,) => {

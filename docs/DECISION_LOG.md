@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-25: Household Member Role Updates Are Owner/Admin Scoped
+
+Decision: API `PATCH /household/members/{memberId}` should let owner/admin members update existing active-household memberships to `admin`, `member`, `sitter`, `trainer`, or `vet_viewer`. The route should refuse owner demotion, return the refreshed `/me` household context, and write a durable `household.member_role_changed` audit event with previous role, new role, target member, and actor role details. The endpoint is documented across OpenAPI, zod, and the generated React client, but no full caregiver editing UI, invite approval, lifecycle controls, or provider-backed final role policy is implied yet.
+
+Reason: Household Access already shows who can sync care and who needs invite/admin attention, but owners also need a bounded backend contract for managing existing member roles before broader provider-backed caregiver administration is available. Scoping the update to the active household and auditing the role change improves household trust without allowing arbitrary membership edits or owner demotion.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed caregiver administration, invite approval, owner transfer, member removal, document access policy, role-specific permission enforcement, or a mobile admin UI becomes active release work.
+
 ### 2026-06-25: Mobile Pack Audit Shows Owner-Readable Event Context
 
 Decision: Mobile More's Pack Audit rows should summarize stored audit event details in owner-readable language for pack creation, rename, active-household switching, and invite membership events. Row accessibility labels should include the same readable detail. The UI should not expose raw JSON, raw audit detail dumps, lifecycle mutation controls, deletion, export, or retention actions before provider-backed account audit policy exists.

@@ -11,6 +11,8 @@ import {
   GetMeResponse,
   UpdateMeBody,
   UpdateHouseholdBody,
+  UpdateHouseholdMemberBody,
+  UpdateHouseholdMemberParams,
   JoinHouseholdBody,
   SetActiveHouseholdBody,
   ListHouseholdAuditEventsQueryParams,
@@ -160,6 +162,75 @@ router.get("/household/audit-events", requireAuth, async (req, res): Promise<voi
     .limit(limit);
 
   res.json(ListHouseholdAuditEventsResponse.parse(rows));
+});
+
+router.patch("/household/members/:memberId", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const params = UpdateHouseholdMemberParams.safeParse(req.params);
+  const parsed = UpdateHouseholdMemberBody.safeParse(req.body);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { householdId, role, allowed } = await requireActiveHouseholdRole(userId, ["owner", "admin"]);
+  if (!allowed) {
+    res.status(403).json({ error: "Only household owners can update member roles" });
+    return;
+  }
+
+  const [member] = await db
+    .select({
+      id: householdMembersTable.id,
+      userId: householdMembersTable.userId,
+      role: householdMembersTable.role,
+    })
+    .from(householdMembersTable)
+    .where(
+      and(
+        eq(householdMembersTable.id, params.data.memberId),
+        eq(householdMembersTable.householdId, householdId),
+      ),
+    )
+    .limit(1);
+
+  if (!member) {
+    res.status(404).json({ error: "Household member not found" });
+    return;
+  }
+  if (member.role.toLowerCase() === "owner") {
+    res.status(400).json({ error: "Owners cannot be demoted from the pack" });
+    return;
+  }
+
+  await db
+    .update(householdMembersTable)
+    .set({ role: parsed.data.role })
+    .where(
+      and(
+        eq(householdMembersTable.id, params.data.memberId),
+        eq(householdMembersTable.householdId, householdId),
+      ),
+    );
+  await logHouseholdAuditEvent({
+    householdId,
+    actorUserId: userId,
+    action: "household.member_role_changed",
+    targetType: "member",
+    targetId: member.id,
+    details: {
+      previousRole: member.role,
+      newRole: parsed.data.role,
+      memberUserId: member.userId,
+      actorRole: role,
+    },
+  });
+
+  res.json(GetMeResponse.parse(await buildMe(userId, householdId)));
 });
 
 router.post("/household/join", requireAuth, async (req, res): Promise<void> => {

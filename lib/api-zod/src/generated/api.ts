@@ -188,6 +188,48 @@ export const UpdateHouseholdResponse = zod.object({
 
 
 /**
+ * Lets owner/admin members change an existing active-household member's role before richer provider-backed caregiver administration exists. Owner memberships cannot be demoted through this endpoint.
+ * @summary Update a household member role
+ */
+export const UpdateHouseholdMemberParams = zod.object({
+  "memberId": zod.coerce.string()
+})
+
+
+
+
+export const UpdateHouseholdMemberBody = zod.object({
+  "role": zod.enum(["admin", "member", "sitter", "trainer", "vet_viewer"])
+})
+
+export const UpdateHouseholdMemberResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "displayName": zod.string().nullish()
+}),
+  "household": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+}),
+  "households": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string()
+})),
+  "members": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "role": zod.string(),
+  "displayName": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "isSelf": zod.boolean()
+}))
+})
+
+
+/**
  * Returns durable household audit events for owner/admin review. This is a review surface only; lifecycle changes and retention policy remain provider-gated.
  * @summary List household audit events
  */

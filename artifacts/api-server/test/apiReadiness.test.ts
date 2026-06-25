@@ -185,6 +185,46 @@ test("keeps household audit review owner scoped and client documented", () => {
   assert.match(reactSchemas, /export type ListHouseholdAuditEventsParams/);
 });
 
+test("keeps household member role updates owner scoped and audited", () => {
+  const householdRoute = readApiFile(join("routes", "household.ts"));
+  const openapi = readFileSync(join(root, "lib", "api-spec", "openapi.yaml"), "utf8");
+  const zodApi = readFileSync(join(root, "lib", "api-zod", "src", "generated", "api.ts"), "utf8");
+  const reactClient = readFileSync(join(root, "lib", "api-client-react", "src", "generated", "api.ts"), "utf8");
+  const reactSchemas = readFileSync(
+    join(root, "lib", "api-client-react", "src", "generated", "api.schemas.ts"),
+    "utf8",
+  );
+
+  assert.match(householdRoute, /UpdateHouseholdMemberParams\.safeParse\(req\.params\)/);
+  assert.match(householdRoute, /UpdateHouseholdMemberBody\.safeParse\(req\.body\)/);
+  assert.match(householdRoute, /router\.patch\("\/household\/members\/:memberId"/);
+  assert.match(householdRoute, /requireActiveHouseholdRole\(userId, \["owner", "admin"\]\)/);
+  assert.match(householdRoute, /res\.status\(403\)\.json\(\{ error: "Only household owners can update member roles" \}\)/);
+  assert.match(
+    householdRoute,
+    /eq\(householdMembersTable\.id, params\.data\.memberId\)[\s\S]*eq\(householdMembersTable\.householdId, householdId\)/,
+  );
+  assert.match(householdRoute, /res\.status\(404\)\.json\(\{ error: "Household member not found" \}\)/);
+  assert.match(householdRoute, /res\.status\(400\)\.json\(\{ error: "Owners cannot be demoted from the pack" \}\)/);
+  assert.match(householdRoute, /\.update\(householdMembersTable\)[\s\S]*role: parsed\.data\.role/);
+  assert.match(householdRoute, /action: "household\.member_role_changed"/);
+  assert.match(householdRoute, /previousRole: member\.role/);
+  assert.match(householdRoute, /newRole: parsed\.data\.role/);
+  assert.match(householdRoute, /targetId: member\.id/);
+
+  assert.match(openapi, /\/household\/members\/\{memberId\}:/);
+  assert.match(openapi, /operationId: updateHouseholdMember/);
+  assert.match(openapi, /HouseholdMemberUpdate/);
+  assert.match(openapi, /enum: \[admin, member, sitter, trainer, vet_viewer\]/);
+  assert.match(zodApi, /export const UpdateHouseholdMemberParams/);
+  assert.match(zodApi, /export const UpdateHouseholdMemberBody/);
+  assert.match(zodApi, /zod\.enum\(\["admin", "member", "sitter", "trainer", "vet_viewer"\]\)/);
+  assert.match(reactClient, /getUpdateHouseholdMemberUrl/);
+  assert.match(reactClient, /updateHouseholdMember/);
+  assert.match(reactSchemas, /export interface UpdateHouseholdMemberBody/);
+  assert.match(reactSchemas, /role: 'admin' \| 'member' \| 'sitter' \| 'trainer' \| 'vet_viewer'/);
+});
+
 test("keeps sensitive household actions writing durable audit events", () => {
   const householdRoute = readApiFile(join("routes", "household.ts"));
   const householdLib = readApiFile(join("lib", "household.ts"));

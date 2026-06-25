@@ -109,6 +109,10 @@ export interface HouseholdUpdate {
   name: string;
 }
 
+export interface UpdateHouseholdMemberBody {
+  role: 'admin' | 'member' | 'sitter' | 'trainer' | 'vet_viewer';
+}
+
 export interface JoinHouseholdInput {
   /** @minLength 1 */
   inviteCode: string;

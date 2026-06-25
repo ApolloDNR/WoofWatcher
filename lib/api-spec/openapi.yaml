@@ -185,6 +185,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /household/members/{memberId}:
+    patch:
+      operationId: updateHouseholdMember
+      tags: [household]
+      summary: Update a household member role
+      description: >-
+        Lets owner/admin members change an existing active-household member's
+        role before richer provider-backed caregiver administration exists.
+        Owner memberships cannot be demoted through this endpoint.
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HouseholdMemberUpdate"
+      responses:
+        "200":
+          description: Updated household context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "400":
+          description: Invalid role change
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Owner or admin membership required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Household member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /household/join:
     post:
       operationId: joinHousehold
@@ -519,6 +565,14 @@ components:
           minLength: 1
       required:
         - name
+    HouseholdMemberUpdate:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [admin, member, sitter, trainer, vet_viewer]
+      required:
+        - role
     JoinHouseholdInput:
       type: object
       properties:
