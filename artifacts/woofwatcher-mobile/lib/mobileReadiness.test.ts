@@ -1522,6 +1522,8 @@ test("keeps household access readiness visible from More", () => {
   assert.match(more, /localOnlyCaregivers/);
   assert.match(more, /routineOnlyOwners/);
   assert.match(more, /accessibilityLabel="Share household invite"/);
+  assert.match(more, /person\.permissions\.slice\(0, 3\)\.join\(" - "\)/);
+  assert.match(more, /teamPermissions/);
   assert.match(householdLib, /households:/);
   assert.match(reactSchemas, /households: Household\[\]/);
   assert.match(reactClient, /useSetActiveHousehold/);

@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-25: Household Access Shows Role Permission Boundaries
+
+Decision: Household Access should label the launch caregiver role set as Owner, Admin, Caregiver, Sitter, Trainer, and Vet viewer, and each role should carry a short owner-readable permission summary. Mobile More should show that summary under each Care Team person, but final enforcement, invite approval, owner transfer, removal, document access rules, and broader provider-backed policy remain gated.
+
+Reason: The API and mobile controls can now update existing caregiver roles, but a household still needs to understand what those roles mean without seeing internal ids such as `vet_viewer` or assuming final provider-backed permissions are complete. Shared domain copy keeps More, future handoffs, and tests aligned around the same truthful boundary.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed role enforcement, document access rules, invite approval, owner transfer, member removal, or final caregiver administration becomes active release work.
+
 ### 2026-06-25: Mobile Care Team Role Management Is Bounded
 
 Decision: Mobile More should expose role chips for existing synced non-owner household members using the generated `useUpdateHouseholdMember` hook. Owners/admins can assign admin, member, sitter, trainer, or vet viewer roles from the Care Team surface, then `/me` refreshes and Pack Audit refetches role-change events. The UI must keep owner transfer, member removal, invite approval, arbitrary member lookup, lifecycle actions, and final permission policy provider-gated.

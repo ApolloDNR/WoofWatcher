@@ -1129,6 +1129,9 @@ export default function MoreScreen() {
                       <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                         {person.role} - {person.needsInvite ? "Invite needed" : "Synced"}
                       </Text>
+                      <Text style={[s.teamPermissions, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {person.permissions.slice(0, 3).join(" - ")}
+                      </Text>
                     </View>
                     <View style={[s.logBadge, { backgroundColor: person.needsInvite ? colors.amber + "18" : colors.background }]}>
                       <Text style={[s.logBadgeText, { color: person.needsInvite ? colors.amber : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
@@ -2121,6 +2124,7 @@ const s = StyleSheet.create({
   teamNameLine: { flexDirection: "row", alignItems: "center", gap: 8 },
   teamName: { fontSize: 15.5 },
   teamRole: { fontSize: 13, marginTop: 2 },
+  teamPermissions: { fontSize: 11, lineHeight: 15, marginTop: 3 },
   youBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
   youBadgeText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
   logBadge: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 11 },

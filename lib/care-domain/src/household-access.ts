@@ -75,17 +75,21 @@ function roleLabel(role: unknown, fallback = "Caregiver"): string {
   const cleaned = clean(role);
   if (!cleaned) return fallback;
   const lower = cleaned.toLowerCase();
-  if (lower === "owner" || lower === "admin") return "Owner";
+  if (lower === "owner") return "Owner";
+  if (lower === "admin") return "Admin";
   if (lower === "member") return "Caregiver";
+  if (lower === "vet_viewer") return "Vet viewer";
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
 
 function permissionsFor(role: string): string[] {
   const lower = role.toLowerCase();
   if (lower.includes("owner")) return ["Manage household", "Edit care plan", "Log care", "View reports"];
+  if (lower.includes("admin")) return ["Manage caregiver roles", "Edit care plan", "Log care", "View reports"];
   if (lower.includes("walker")) return ["Log walks", "View assigned routines", "Add walk notes"];
-  if (lower.includes("sitter")) return ["Log care", "View routines", "Preview handoffs"];
+  if (lower.includes("sitter")) return ["Log care", "View routines", "Preview sitter handoffs"];
   if (lower.includes("trainer")) return ["Log training", "View behavior notes", "Preview trainer reports"];
+  if (lower.includes("vet viewer")) return ["View reports", "Review health context", "No care-log edits"];
   return ["Log care", "View routines", "View reports"];
 }
 
