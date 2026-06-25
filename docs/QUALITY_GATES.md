@@ -590,3 +590,15 @@ verification passed 389 tests, mobile TypeScript passed, PixelLab verification
 passed at 149 files, `git diff --check` passed, and package-local Expo web
 export emitted HTML/JavaScript output that was verified and cleaned. Real
 iOS/Android screenshots and human visual approval remain the next beta gate.
+
+Current evidence, 2026-06-25: `/care-twin-qa` now includes the live native
+capture plan inside its own `Share QA` packet. The shared text starts with
+`buildMobileLaunchQaCaptureShareText(betaCapturePlan, reviewedAtIso)` before the
+full mobile release QA, store submission packet, and care-twin state report, so
+the actual cockpit handoff carries the same next target, missing evidence,
+Owner route loop, Mission note requirement, and done condition shown in the
+48-hour beta run card. Targeted QA/readiness verification passed 88 tests,
+focused behavior/readiness verification passed 389 tests, mobile TypeScript
+passed, PixelLab verification passed at 149 files, `git diff --check` passed,
+and package-local Expo web export emitted HTML/JavaScript output that was
+verified and cleaned.

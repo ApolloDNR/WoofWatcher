@@ -41,7 +41,10 @@ import {
   MOBILE_QA_SESSION_STORAGE_KEY,
   parseMobileQaSessionSnapshot,
 } from "@/lib/mobileQaSession";
-import { buildMobileLaunchQaCapturePlan } from "@/lib/mobileLaunchQaEvidence";
+import {
+  buildMobileLaunchQaCapturePlan,
+  buildMobileLaunchQaCaptureShareText,
+} from "@/lib/mobileLaunchQaEvidence";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
 import { deriveLaunchReadiness } from "@/lib/launchReadiness";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
@@ -459,6 +462,7 @@ export default function CareTwinQaScreen() {
   const shareQaSummary = async () => {
     const reviewedAtIso = new Date().toISOString();
     const message = [
+      buildMobileLaunchQaCaptureShareText(betaCapturePlan, reviewedAtIso),
       buildMobileReleaseQaShareText(releaseQaSurfaces, releaseReviews, reviewedAtIso),
       buildStoreSubmissionPacketShareText(storeSubmissionPacket),
       buildCareTwinQaShareText(scenarios, qaReviews, reviewedAtIso),

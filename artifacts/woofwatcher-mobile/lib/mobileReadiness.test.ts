@@ -1810,6 +1810,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
 
 test("feeds saved native QA session proof into More launch readiness", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
+  const careTwinQaRoute = readAppFile("care-twin-qa.tsx");
   const qaEvidence = readMobileLibFile("mobileLaunchQaEvidence.ts");
 
   assert.match(more, /AsyncStorage/);
@@ -1829,6 +1830,10 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /nativeQa:\s*savedNativeQaSummary/);
   assert.doesNotMatch(more, /nativeQa:\s*null/);
   assert.match(more, /router\.push\("\/care-twin-qa" as never\)/);
+
+  assert.match(careTwinQaRoute, /buildMobileLaunchQaCaptureShareText/);
+  assert.match(careTwinQaRoute, /buildMobileLaunchQaCaptureShareText\(betaCapturePlan,\s*reviewedAtIso\)/);
+  assert.match(careTwinQaRoute, /buildMobileReleaseQaShareText\(releaseQaSurfaces,\s*releaseReviews,\s*reviewedAtIso\)/);
 
   assert.match(qaEvidence, /buildMobileLaunchQaCapturePlan/);
   assert.match(qaEvidence, /buildMobileLaunchQaCaptureShareText/);

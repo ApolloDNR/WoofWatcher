@@ -294,6 +294,14 @@ that `Mission note` in the top 48-hour beta run card and labels it Required
 when the active target needs note proof. This helps Apollo capture the no-dead-
 ends owner journey in one place.
 
+The QA cockpit share-packet pass made the same owner-preview mission portable
+from the screen where proof is captured. `/care-twin-qa`'s `Share QA` action now
+starts with the live native capture plan, then appends the full mobile release
+QA, store submission packet, and care-twin state report. This keeps the next
+target, missing evidence, Owner route loop, Mission note requirement, and done
+condition aligned between the cockpit UI and the handoff text Apollo can send to
+a phone tester or design-polish tool.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness and Native QA Next Captures update from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
