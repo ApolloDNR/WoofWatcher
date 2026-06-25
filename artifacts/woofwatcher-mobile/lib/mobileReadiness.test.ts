@@ -300,6 +300,7 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /buildCareTwinQaShareText/);
   assert.match(qaRoute, /listMobileReleaseQaSurfaces/);
   assert.match(qaRoute, /buildMobileReleaseQaShareText/);
+  assert.match(qaRoute, /buildMobileLaunchQaCapturePlan/);
   assert.match(qaRoute, /buildStoreSubmissionScreenshotQaSurfaces/);
   assert.match(qaRoute, /buildStoreSubmissionPacket/);
   assert.match(qaRoute, /buildStoreSubmissionPacketShareText/);
@@ -332,6 +333,10 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /mobileReleaseQaScreenshotEvidenceComplete/);
   assert.match(qaRoute, /Native proof open/);
   assert.match(qaRoute, /Platform proof:/);
+  assert.match(qaRoute, /48-hour beta run/);
+  assert.match(qaRoute, /nextBetaTarget/);
+  assert.match(qaRoute, /Open Next Surface/);
+  assert.match(qaRoute, /accessibilityLabel=\{[\s\S]*Open next beta QA surface:/);
   assert.doesNotMatch(qaRoute, /releaseSummary\.missingScreenshots === 0 \? colors\.sage : colors\.amber/);
   assert.match(qaSession, /careTwinEvidenceById/);
   assert.match(qaSession, /surfaceEvidenceById/);

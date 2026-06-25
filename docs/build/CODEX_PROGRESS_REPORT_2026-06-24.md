@@ -202,3 +202,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Real iOS and Android screenshots still need to be captured in `/care-twin-qa` before the beta should go outside the owner/builder loop.
 - Any route marked Needs tune during real phone QA should be fixed before wider beta sharing.
+
+## Completed - Care Twin QA Beta Run Card
+
+- Added a focused `48-hour beta run` card to the top of `/care-twin-qa`.
+- The card uses the same native QA capture-plan model that feeds More's Launch Readiness panel, so the QA cockpit now shows the next beta capture surface, missing proof, complete/open count, and a direct `Open Next Surface` route action.
+- Added a compact `Share QA` path beside the next-surface action so device testers can send the combined QA report after capture.
+- Kept screenshot proof truthful: testers still need to capture real iOS/Android screenshots and attach them from Photos before native QA is considered complete.
+- Added static mobile readiness coverage for the new capture-plan import, `48-hour beta run`, `nextBetaTarget`, `Open Next Surface`, and the accessible next-surface CTA.
+
+## Verification - Care Twin QA Beta Run Card
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts` - 85 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 386 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with only expected Windows line-ending warnings.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - Care Twin QA Beta Run Card
+
+- The 48-hour beta run card is ready for device testers, but it does not replace real native capture.
+- The next release task is still: capture iOS and Android proof, attach screenshots, mark Pass or Needs tune, and fix the first Needs tune route.

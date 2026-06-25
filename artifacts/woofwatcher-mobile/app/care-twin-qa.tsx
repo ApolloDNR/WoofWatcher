@@ -41,6 +41,7 @@ import {
   MOBILE_QA_SESSION_STORAGE_KEY,
   parseMobileQaSessionSnapshot,
 } from "@/lib/mobileQaSession";
+import { buildMobileLaunchQaCapturePlan } from "@/lib/mobileLaunchQaEvidence";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
 import { deriveLaunchReadiness } from "@/lib/launchReadiness";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
@@ -282,6 +283,22 @@ export default function CareTwinQaScreen() {
     () => summarizeMobileReleaseQaReviews(releaseQaSurfaces, releaseReviews),
     [releaseQaSurfaces, releaseReviews],
   );
+  const betaCapturePlan = useMemo(
+    () =>
+      buildMobileLaunchQaCapturePlan(
+        {
+          careTwinStatusById: qaStatusById,
+          careTwinNotes: qaNotes,
+          careTwinEvidenceById: qaEvidenceById,
+          surfaceStatusById,
+          surfaceNotes,
+          surfaceEvidenceById,
+        },
+        releaseQaSurfaces,
+      ),
+    [qaEvidenceById, qaNotes, qaStatusById, releaseQaSurfaces, surfaceEvidenceById, surfaceNotes, surfaceStatusById],
+  );
+  const nextBetaTarget = betaCapturePlan.nextTargets[0];
   const releaseScreenshotEvidenceComplete = mobileReleaseQaScreenshotEvidenceComplete(releaseSummary);
   const releasePlatformEvidenceLabel = formatMobileReleaseQaPlatformEvidence(releaseSummary);
   const releaseMissingEvidenceLabel = formatMobileReleaseQaMissingEvidence(releaseSummary);
@@ -458,6 +475,74 @@ export default function CareTwinQaScreen() {
           back
           onBack={() => router.back()}
         />
+
+        <BoardCard style={s.betaRunCard}>
+          <View style={s.betaRunHeader}>
+            <View style={[s.betaRunIcon, { backgroundColor: `${colors.copper}18` }]}>
+              <Ionicons name="rocket-outline" size={20} color={colors.copper} />
+            </View>
+            <View style={s.betaRunCopy}>
+              <Text style={[s.betaRunTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                48-hour beta run
+              </Text>
+              <Text style={[s.betaRunText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                {nextBetaTarget
+                  ? `Start with ${nextBetaTarget.title}.`
+                  : "All listed launch surfaces have local QA evidence."}
+              </Text>
+            </View>
+            <QaBadge
+              label={`${betaCapturePlan.completeSurfaces}/${betaCapturePlan.totalSurfaces}`}
+              tone={betaCapturePlan.openSurfaces === 0 ? colors.sage : colors.amber}
+            />
+          </View>
+          <View style={[s.betaRunChecklist, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            {(nextBetaTarget?.missingEvidence.length
+              ? nextBetaTarget.missingEvidence.slice(0, 3)
+              : ["Share the QA summary and keep public store approval separate from local beta proof."]).map((item, index) => (
+              <View key={`${index}-${item}`} style={s.betaRunStep}>
+                <View style={[s.betaRunStepDot, { backgroundColor: nextBetaTarget ? colors.amber : colors.sage }]} />
+                <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  {item}
+                </Text>
+              </View>
+            ))}
+          </View>
+          <View style={s.betaRunActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                nextBetaTarget ? `Open next beta QA surface: ${nextBetaTarget.title}` : "Share completed beta QA summary"
+              }
+              onPress={nextBetaTarget ? () => router.push(nextBetaTarget.route as never) : shareQaSummary}
+              style={({ pressed }) => [
+                s.betaRunPrimary,
+                { backgroundColor: pressed ? colors.secondary : colors.brandNavy },
+              ]}
+            >
+              <Ionicons name={nextBetaTarget ? "navigate-outline" : "share-outline"} size={17} color="#FFF9EF" />
+              <Text style={[s.betaRunPrimaryText, { fontFamily: "Inter_800ExtraBold" }]}>
+                {nextBetaTarget ? "Open Next Surface" : "Share QA Summary"}
+              </Text>
+            </Pressable>
+            {nextBetaTarget ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Share beta QA summary from cockpit"
+                onPress={shareQaSummary}
+                style={({ pressed }) => [
+                  s.betaRunSecondary,
+                  { backgroundColor: pressed ? `${colors.sage}18` : colors.background, borderColor: colors.border },
+                ]}
+              >
+                <Ionicons name="share-outline" size={16} color={colors.brandNavy} />
+                <Text style={[s.betaRunSecondaryText, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                  Share QA
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </BoardCard>
 
         <BoardCard style={s.summaryCard}>
           <View style={s.summaryTop}>
@@ -1105,6 +1190,86 @@ const s = StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     gap: 14,
+  },
+  betaRunCard: {
+    gap: 12,
+  },
+  betaRunHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+  },
+  betaRunIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  betaRunCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  betaRunTitle: {
+    fontSize: 18,
+    letterSpacing: 0,
+  },
+  betaRunText: {
+    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  betaRunChecklist: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 8,
+  },
+  betaRunStep: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  betaRunStepDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    marginTop: 5,
+  },
+  betaRunStepText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  betaRunActions: {
+    flexDirection: "row",
+    gap: 9,
+  },
+  betaRunPrimary: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  betaRunPrimaryText: {
+    color: "#FFF9EF",
+    fontSize: 12.5,
+  },
+  betaRunSecondary: {
+    minHeight: 46,
+    borderRadius: 9,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  betaRunSecondaryText: {
+    fontSize: 12,
   },
   summaryCard: {
     gap: 14,

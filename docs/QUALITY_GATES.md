@@ -502,3 +502,12 @@ release/readiness tests, 386 focused behavior/readiness tests, mobile
 TypeScript, PixelLab verification at 149 files, `git diff --check`, and
 package-local Expo web export with HTML/JavaScript output verified and cleaned.
 Real iOS/Android screenshot proof remains the next quality gate.
+
+Current evidence, 2026-06-25: `/care-twin-qa` now begins with a 48-hour beta
+run card that derives the next native capture target from saved QA evidence,
+shows the missing proof, complete/open count, and direct `Open Next Surface`
+plus `Share QA` actions. Local verification passed 85 targeted QA/readiness
+tests, 386 focused behavior/readiness tests, mobile TypeScript, PixelLab
+verification at 149 files, `git diff --check`, and package-local Expo web export
+with HTML/JavaScript output verified and cleaned. The card reduces device-test
+friction but does not replace real iOS/Android screenshot capture.

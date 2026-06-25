@@ -491,3 +491,15 @@ Latest local evidence, 2026-06-25:
 - `node scripts/verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing with expected Windows line-ending warnings only.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, verified HTML/JavaScript output, and removed the generated folder after verification.
+
+Latest local evidence, 2026-06-25:
+
+- `/care-twin-qa` now starts with a focused `48-hour beta run` card before the longer release and store QA checklist.
+- The card derives the next surface from `buildMobileLaunchQaCapturePlan`, shows missing proof, displays complete/open count, and lets testers jump with `Open Next Surface` or send the combined report with `Share QA`.
+- Static mobile readiness tests protect `48-hour beta run`, `nextBetaTarget`, `Open Next Surface`, and the accessible `Open next beta QA surface` label.
+- `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts artifacts/woofwatcher-mobile/lib/mobileLaunchQaEvidence.test.ts artifacts/woofwatcher-mobile/lib/mobileReleaseQa.test.ts` - 85 passing.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 386 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules/typescript/bin/tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts/verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, verified HTML/JavaScript output, and removed the generated folder after verification.
