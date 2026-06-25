@@ -179,5 +179,26 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 ## Still Not Done - Two-Day Beta Ship Path
 
-- `git diff --check` still needs to be rerun before committing this slice.
 - Real iOS and Android screenshots still need to be captured in `/care-twin-qa` before the beta should go outside the owner/builder loop.
+
+## Completed - Two-Day Beta Action Path
+
+- Upgraded More's Launch Readiness beta card from a passive summary into an actionable two-day ship path.
+- The card now renders the release packet's first three `betaNextActions` directly in the app so Apollo, testers, or future builders can see the next deadline move without opening docs.
+- Added an accessible primary beta action: `Open QA Cockpit` when the beta is waiting on native device proof, or `Share Beta Packet` once the internal beta is ready to circulate.
+- Kept the public-launch boundary intact: the app still separates owner/internal beta readiness from App Store / Play Store approval, provider sync, payments, AI, storage, legal/privacy, and native QA gates.
+- Added static mobile readiness coverage to protect the visible beta action rows and QA/share CTAs.
+
+## Verification - Two-Day Beta Action Path
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\releasePacket.test.ts artifacts\woofwatcher-mobile\lib\launchReadiness.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 81 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 386 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with only expected Windows line-ending warnings.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - Two-Day Beta Action Path
+
+- Real iOS and Android screenshots still need to be captured in `/care-twin-qa` before the beta should go outside the owner/builder loop.
+- Any route marked Needs tune during real phone QA should be fixed before wider beta sharing.

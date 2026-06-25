@@ -1714,6 +1714,10 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /launchReleasePacket\.betaShipStatus/);
   assert.match(more, /launchReleasePacket\.betaVerdictLabel/);
   assert.match(more, /launchReleasePacket\.betaSummary/);
+  assert.match(more, /launchReleasePacket\.betaNextActions\.slice\(0, 3\)\.map/);
+  assert.match(more, /accessibilityLabel=\{[\s\S]*Open beta device QA cockpit/);
+  assert.match(more, /Open QA Cockpit/);
+  assert.match(more, /Share Beta Packet/);
   assert.match(more, /launchReleasePacket\.readinessScore/);
   assert.match(more, /launchStoreSubmissionPacket\.verdictLabel/);
   assert.match(more, /Store Submission/);

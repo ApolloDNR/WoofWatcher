@@ -479,3 +479,15 @@ Latest local evidence, 2026-06-25:
 - From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules/typescript/bin/tsc -p tsconfig.json --noEmit` - passing.
 - `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` - 149 assets valid, 0 missing, 0 invalid.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, verified HTML/JavaScript output, and removed the generated folder after verification.
+
+Latest local evidence, 2026-06-25:
+
+- More's Launch Readiness beta card now renders visible `betaNextActions` so the two-day ship path is testable from the app, not only from docs or share text.
+- The beta card CTA opens `/care-twin-qa` while native proof is the blocker and falls back to sharing the beta packet when internal beta circulation is ready.
+- Static mobile readiness tests now protect visible beta action rows, the accessible `Open beta device QA cockpit` label, `Open QA Cockpit`, and `Share Beta Packet`.
+- `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/releasePacket.test.ts artifacts/woofwatcher-mobile/lib/launchReadiness.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts` - 81 passing.
+- `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts` - 386 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules/typescript/bin/tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts/verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, verified HTML/JavaScript output, and removed the generated folder after verification.

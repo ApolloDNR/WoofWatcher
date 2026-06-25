@@ -45,10 +45,13 @@ The beta must not claim:
 - Open the Expo/PWA beta on phone-size viewport.
 - Visit Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass.
 - From More, open Launch Readiness.
+- Read the 48-hour beta card's next actions.
+- Tap `Open QA Cockpit` if the card says device proof is still needed.
 - Share the Launch Packet.
 - Open `/care-twin-qa`.
 - Capture at least one iOS screenshot and one Android screenshot when devices/simulators are available.
 - Mark any visual route that feels below App Store quality as Needs tune.
+- Tap `Share Beta Packet` only after local verification and owner sign-off are still truthful for an internal beta.
 
 ## Current Gates
 

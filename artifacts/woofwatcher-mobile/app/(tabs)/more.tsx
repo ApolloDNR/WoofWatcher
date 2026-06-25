@@ -1514,13 +1514,49 @@ export default function MoreScreen() {
                   beta
                 </Text>
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={s.launchPacketBody}>
                 <Text style={[s.launchPacketTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
                   {launchReleasePacket.betaVerdictLabel}
                 </Text>
                 <Text style={[s.launchPacketCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   {launchReleasePacket.betaSummary}
                 </Text>
+                <View style={s.betaNextActions}>
+                  {launchReleasePacket.betaNextActions.slice(0, 3).map((action, index) => (
+                    <View key={`${index}-${action}`} style={s.betaNextActionRow}>
+                      <View style={[s.betaNextActionDot, { backgroundColor: betaShipTone }]} />
+                      <Text style={[s.betaNextActionText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                        {action}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    launchReleasePacket.betaShipStatus === "qa-first"
+                      ? "Open beta device QA cockpit"
+                      : "Share WoofWatcher beta release packet"
+                  }
+                  onPress={
+                    launchReleasePacket.betaShipStatus === "qa-first"
+                      ? () => router.push("/care-twin-qa" as never)
+                      : shareLaunchPacket
+                  }
+                  style={({ pressed }) => [
+                    s.betaNextActionButton,
+                    { backgroundColor: betaShipTone, opacity: pressed ? 0.86 : 1 },
+                  ]}
+                >
+                  <Ionicons
+                    name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
+                    size={15}
+                    color="#FFFFFF"
+                  />
+                  <Text style={[s.betaNextActionButtonText, { fontFamily: "Inter_800ExtraBold" }]}>
+                    {launchReleasePacket.betaShipStatus === "qa-first" ? "Open QA Cockpit" : "Share Beta Packet"}
+                  </Text>
+                </Pressable>
               </View>
             </View>
             <View style={[s.launchPacket, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -2946,6 +2982,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  launchPacketBody: { flex: 1, minWidth: 0 },
   launchScore: {
     width: 78,
     borderRadius: 8,
@@ -2957,6 +2994,20 @@ const s = StyleSheet.create({
   launchScoreLabel: { fontSize: 9, lineHeight: 12, textTransform: "uppercase", marginTop: 2 },
   launchPacketTitle: { fontSize: 13.5, lineHeight: 18 },
   launchPacketCopy: { fontSize: 11.5, lineHeight: 16, marginTop: 3 },
+  betaNextActions: { marginTop: 8, gap: 6 },
+  betaNextActionRow: { flexDirection: "row", alignItems: "flex-start", gap: 7 },
+  betaNextActionDot: { width: 6, height: 6, borderRadius: 3, marginTop: 5 },
+  betaNextActionText: { flex: 1, fontSize: 10.5, lineHeight: 15 },
+  betaNextActionButton: {
+    marginTop: 10,
+    minHeight: 44,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  betaNextActionButtonText: { color: "#FFFFFF", fontSize: 12.5 },
   launchShare: {
     marginTop: 12,
     minHeight: 44,

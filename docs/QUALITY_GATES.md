@@ -492,3 +492,13 @@ at 386 tests, mobile TypeScript passed, PixelLab verified 149 assets, and
 package-local Expo web export emitted HTML/JavaScript output. Native iOS/Android
 screenshots and human visual approval remain required before the beta goes
 outside the owner/builder loop.
+
+Current evidence, 2026-06-25: More's Launch Readiness board now makes the
+two-day beta path actionable in-app. The 48-hour beta card renders the release
+packet's first three `betaNextActions` and provides an accessible CTA that opens
+`/care-twin-qa` when device proof is still needed or shares the beta packet when
+internal circulation is ready. Local verification passed 81 targeted
+release/readiness tests, 386 focused behavior/readiness tests, mobile
+TypeScript, PixelLab verification at 149 files, `git diff --check`, and
+package-local Expo web export with HTML/JavaScript output verified and cleaned.
+Real iOS/Android screenshot proof remains the next quality gate.
