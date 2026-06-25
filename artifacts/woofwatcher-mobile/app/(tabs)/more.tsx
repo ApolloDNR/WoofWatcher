@@ -63,6 +63,7 @@ import {
   buildMobileLaunchQaCapturePlan,
   buildMobileLaunchQaCaptureShareText,
   deriveNativeQaSummaryFromMobileQaSession,
+  mobileLaunchQaCaptureTargetStatusLabel,
   type MobileLaunchQaCapturePlan,
 } from "@/lib/mobileLaunchQaEvidence";
 import {
@@ -1433,78 +1434,98 @@ export default function MoreScreen() {
                   <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
                   <Text style={[s.nativeQaCaptureShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share QA Plan</Text>
                 </Pressable>
-                {nativeQaCapturePlan.nextTargets.map((target) => (
-                  <Pressable
-                    key={target.surfaceId}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Open ${target.title} QA capture. ${target.missingEvidence.join(" ")} ${target.setupSteps[0] ?? ""} ${target.verificationSteps[0] ?? ""} ${target.acceptanceCriteria[0] ?? ""} ${target.failureEscalation}`}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      router.push(target.route as never);
-                    }}
-                    style={({ pressed }) => [
-                      s.nativeQaCaptureRow,
-                      { borderTopColor: colors.border, opacity: pressed ? 0.72 : 1 },
-                    ]}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.nativeQaCaptureRowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {target.title}
-                      </Text>
-                      <Text
-                        numberOfLines={2}
-                        style={[s.nativeQaCaptureRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                      >
-                        {target.missingEvidence.join(" ")}
-                      </Text>
-                      {target.setupSteps[0] ? (
-                        <Text
-                          numberOfLines={2}
-                          style={[s.nativeQaCaptureRowPrep, { color: colors.copper, fontFamily: "Inter_700Bold" }]}
-                        >
-                          Prep: {target.setupSteps[0]}
-                        </Text>
-                      ) : null}
-                      {target.verificationSteps[0] ? (
-                        <Text
-                          numberOfLines={2}
-                          style={[s.nativeQaCaptureRowStep, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
-                        >
-                          Step: {target.verificationSteps[0]}
-                        </Text>
-                      ) : null}
-                      {target.acceptanceCriteria[0] ? (
-                        <Text
-                          numberOfLines={2}
-                          style={[s.nativeQaCaptureRowCriteria, { color: colors.sage, fontFamily: "Inter_700Bold" }]}
-                        >
-                          Pass: {target.acceptanceCriteria[0]}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <View
-                      style={[
-                        s.nativeQaCapturePill,
-                        {
-                          backgroundColor: (target.priority === "launch-critical" ? colors.rose : colors.copper) + "14",
-                        },
+                {nativeQaCapturePlan.nextTargets.map((target) => {
+                  const targetStatusLabel = mobileLaunchQaCaptureTargetStatusLabel(target);
+                  const targetStatusTone =
+                    targetStatusLabel === "Pass pending proof"
+                      ? colors.amber
+                      : target.status === "needs-review"
+                        ? colors.amber
+                        : target.status === "pass"
+                          ? colors.sage
+                          : colors.mutedForeground;
+
+                  return (
+                    <Pressable
+                      key={target.surfaceId}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open ${target.title} QA capture. Status: ${targetStatusLabel}. ${target.missingEvidence.join(" ")} ${target.setupSteps[0] ?? ""} ${target.verificationSteps[0] ?? ""} ${target.acceptanceCriteria[0] ?? ""} ${target.failureEscalation}`}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        router.push(target.route as never);
+                      }}
+                      style={({ pressed }) => [
+                        s.nativeQaCaptureRow,
+                        { borderTopColor: colors.border, opacity: pressed ? 0.72 : 1 },
                       ]}
                     >
-                      <Text
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.nativeQaCaptureRowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {target.title}
+                        </Text>
+                        <View style={s.nativeQaCaptureStatusLine}>
+                          <Text style={[s.nativeQaCaptureStatusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                            Proof status
+                          </Text>
+                          <Text style={[s.nativeQaCaptureStatusValue, { color: targetStatusTone, fontFamily: "Inter_800ExtraBold" }]}>
+                            {targetStatusLabel}
+                          </Text>
+                        </View>
+                        <Text
+                          numberOfLines={2}
+                          style={[s.nativeQaCaptureRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                        >
+                          {target.missingEvidence.join(" ")}
+                        </Text>
+                        {target.setupSteps[0] ? (
+                          <Text
+                            numberOfLines={2}
+                            style={[s.nativeQaCaptureRowPrep, { color: colors.copper, fontFamily: "Inter_700Bold" }]}
+                          >
+                            Prep: {target.setupSteps[0]}
+                          </Text>
+                        ) : null}
+                        {target.verificationSteps[0] ? (
+                          <Text
+                            numberOfLines={2}
+                            style={[s.nativeQaCaptureRowStep, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                          >
+                            Step: {target.verificationSteps[0]}
+                          </Text>
+                        ) : null}
+                        {target.acceptanceCriteria[0] ? (
+                          <Text
+                            numberOfLines={2}
+                            style={[s.nativeQaCaptureRowCriteria, { color: colors.sage, fontFamily: "Inter_700Bold" }]}
+                          >
+                            Pass: {target.acceptanceCriteria[0]}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View
                         style={[
-                          s.nativeQaCapturePillText,
+                          s.nativeQaCapturePill,
                           {
-                            color: target.priority === "launch-critical" ? colors.rose : colors.copper,
-                            fontFamily: "Inter_800ExtraBold",
+                            backgroundColor: (target.priority === "launch-critical" ? colors.rose : colors.copper) + "14",
                           },
                         ]}
                       >
-                        {target.priority === "launch-critical" ? "Critical" : "Polish"}
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-                  </Pressable>
-                ))}
+                        <Text
+                          style={[
+                            s.nativeQaCapturePillText,
+                            {
+                              color: target.priority === "launch-critical" ? colors.rose : colors.copper,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          {target.priority === "launch-critical" ? "Critical" : "Polish"}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                    </Pressable>
+                  );
+                })}
               </View>
             ) : null}
             <View style={[s.launchPacket, { backgroundColor: betaShipTone + "10", borderColor: betaShipTone + "33" }]}>
@@ -2961,6 +2982,20 @@ const s = StyleSheet.create({
     paddingVertical: 10,
   },
   nativeQaCaptureRowTitle: { fontSize: 12.5, lineHeight: 17 },
+  nativeQaCaptureStatusLine: {
+    marginTop: 3,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 5,
+  },
+  nativeQaCaptureStatusLabel: {
+    fontSize: 9.5,
+    lineHeight: 13,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
+  nativeQaCaptureStatusValue: { fontSize: 11, lineHeight: 14 },
   nativeQaCaptureRowSub: { fontSize: 11, lineHeight: 15, marginTop: 2 },
   nativeQaCaptureRowPrep: { fontSize: 11, lineHeight: 15, marginTop: 4 },
   nativeQaCaptureRowStep: { fontSize: 11, lineHeight: 15, marginTop: 4 },

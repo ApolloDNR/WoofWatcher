@@ -36,6 +36,16 @@ export interface MobileLaunchQaCapturePlan {
   nextTargets: MobileLaunchQaCaptureTarget[];
 }
 
+export function mobileLaunchQaCaptureTargetStatusLabel(
+  target: MobileLaunchQaCaptureTarget | null | undefined,
+): string {
+  if (!target) return "No active target";
+  if (target.status === "pass" && target.missingEvidence.length > 0) return "Pass pending proof";
+  if (target.status === "pass") return "Pass";
+  if (target.status === "needs-review") return "Needs tune";
+  return "Not reviewed";
+}
+
 function buildScreenshotCandidateStoreSurfaces(): readonly MobileReleaseQaSurface[] {
   const launchReadinessPlan = deriveLaunchReadiness({
     nativeQa: null,
@@ -210,7 +220,7 @@ export function buildMobileLaunchQaCaptureShareText(
   plan.nextTargets.forEach((target, index) => {
     lines.push(`${index + 1}. ${target.title} (${target.route})`);
     lines.push(`   Priority: ${target.priority}`);
-    lines.push(`   Status: ${target.status}`);
+    lines.push(`   Status: ${mobileLaunchQaCaptureTargetStatusLabel(target)}`);
     lines.push(`   Missing: ${target.missingEvidence.join(" ") || "No missing evidence."}`);
     lines.push(`   Setup: ${target.setupSteps.join(" ")}`);
     lines.push(`   Steps: ${target.verificationSteps.join(" ")}`);

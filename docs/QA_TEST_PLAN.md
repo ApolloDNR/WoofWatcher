@@ -586,6 +586,21 @@ Latest local evidence, 2026-06-25:
 
 Latest local evidence, 2026-06-25:
 
+- More's Launch Readiness board now renders `Proof status` inside Native QA Next Captures.
+- Pass rows that still have required missing screenshots or Mission note evidence display `Pass pending proof` instead of looking complete.
+- `buildMobileLaunchQaCaptureShareText` now uses the same owner-readable status label, so the shared QA plan does not leak raw internal status strings or hide pending proof.
+- Static readiness protects `mobileLaunchQaCaptureTargetStatusLabel(target)` and visible `Pass pending proof` copy in More.
+- Red/green evidence: the targeted launch-QA/readiness tests failed before `mobileLaunchQaCaptureTargetStatusLabel` existed and before More called it, then passed after wiring.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 80 passing.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 88 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 389 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+Latest local evidence, 2026-06-25:
+
 - The native QA capture plan now treats required `Note ...` evidence as a real missing item, not just descriptive copy.
 - The Owner Preview Core Loop stays open when screenshots are attached and the surface is marked Pass but the required no-dead-ends QA note is missing.
 - `/care-twin-qa` now shows a `Mission note` input inside the 48-hour beta run card and marks it `Required` when the active target still needs QA-note proof.

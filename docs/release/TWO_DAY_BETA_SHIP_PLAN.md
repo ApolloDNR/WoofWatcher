@@ -65,6 +65,7 @@ The beta must not claim:
 - Confirm the attached file shows the expected counted platform label.
 - Mark the current mission `Pass` or `Needs tune` from the 48-hour beta card before moving on.
 - If the card shows `Pass pending proof`, the mission is not complete yet; attach the missing screenshots or save the required Mission note until that gate clears.
+- In More's Launch Readiness panel, check Native QA Next Captures before sharing: if `Proof status` says `Pass pending proof`, return to `/care-twin-qa`, attach proof or save the Mission note, and recheck before moving on.
 - Use `/care-twin-qa`'s `Share QA` action after writing mission notes or attaching proof; it now includes the live native capture plan before the full release QA, store packet, and care-twin state report.
 - Mark any visual route that feels below App Store quality as Needs tune.
 - Tap `Share Beta Packet` only after local verification and owner sign-off are still truthful for an internal beta.

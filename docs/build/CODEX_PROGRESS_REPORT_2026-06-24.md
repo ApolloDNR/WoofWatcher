@@ -420,3 +420,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
 - The first route marked Needs tune during the owner-preview capture run should be fixed before wider beta sharing.
+
+## Completed - Launch Readiness Proof Status
+
+- Carried the `Pass pending proof` status from the QA cockpit into More's Native QA Next Captures panel.
+- Added a reusable `mobileLaunchQaCaptureTargetStatusLabel` helper so the UI and share packet use the same owner-readable status.
+- More now shows a visible `Proof status` row for each next capture target and includes that status in the accessible target label.
+- The shareable QA capture script now says `Status: Pass pending proof` when a marked-Pass target still needs required screenshots or Mission note proof.
+
+## Verification - Launch Readiness Proof Status
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - failed red before the status helper/UI wiring existed, then passed with 80 tests after wiring.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 88 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 389 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - Launch Readiness Proof Status
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- Apollo or a helper still needs to visually approve the owner-preview route loop before sharing the beta beyond the builder loop.

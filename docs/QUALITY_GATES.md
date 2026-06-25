@@ -613,3 +613,13 @@ tests, focused behavior/readiness verification passed 389 tests, mobile
 TypeScript passed, PixelLab verification passed at 149 files, `git diff --check`
 passed, and package-local Expo web export emitted HTML/JavaScript output that
 was verified and cleaned.
+
+Current evidence, 2026-06-25: More's Launch Readiness board now preserves that
+same proof truth. The Native QA Next Captures panel renders a `Proof status`
+row for each target, labels proof-incomplete Pass rows as `Pass pending proof`,
+uses that label in the accessibility description, and the shareable QA capture
+script now exports the same owner-readable status. Targeted QA/readiness
+verification passed 88 tests, focused behavior/readiness verification passed
+389 tests, mobile TypeScript passed, PixelLab verification passed at 149 files,
+`git diff --check` passed, and package-local Expo web export emitted
+HTML/JavaScript output that was verified and cleaned.

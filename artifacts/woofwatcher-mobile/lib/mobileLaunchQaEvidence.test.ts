@@ -6,6 +6,7 @@ import {
   buildMobileLaunchQaCapturePlan,
   deriveNativeQaSummaryFromMobileQaSession,
   listMobileLaunchQaSurfaces,
+  mobileLaunchQaCaptureTargetStatusLabel,
 } from "./mobileLaunchQaEvidence.ts";
 import type { MobileQaSessionState } from "./mobileQaSession.ts";
 import type { MobileReleaseQaSurface } from "./mobileReleaseQa.ts";
@@ -347,6 +348,10 @@ test("keeps note-required owner preview evidence open until the QA note is writt
   assert.equal(openPlan.openSurfaces, 1);
   assert.equal(openPlan.nextTargets[0]?.surfaceId, "owner-preview-core-loop");
   assert.match(openPlan.nextTargets[0]?.missingEvidence.join(" ") ?? "", /Add QA note for Owner Preview Core Loop/);
+  assert.equal(mobileLaunchQaCaptureTargetStatusLabel(openPlan.nextTargets[0]), "Pass pending proof");
+
+  const openShareText = buildMobileLaunchQaCaptureShareText(openPlan, "2026-06-25T09:30:00.000Z");
+  assert.match(openShareText, /Status: Pass pending proof/);
 
   const sessionWithNote: MobileQaSessionState = {
     ...sessionWithoutNote,
