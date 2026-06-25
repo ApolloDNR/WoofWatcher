@@ -881,6 +881,14 @@ test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
   assert.doesNotMatch(guide, /actionRow: \{[^\n]*shadowOpacity/);
 });
 
+test("keeps WoofGuide prompt, send, and owner-review actions on shared mobile touch targets", () => {
+  const guide = readAppFile("woofguide.tsx");
+
+  for (const styleName of ["quickChip", "actionRow", "sendBtn", "reviewCancel", "reviewApply"]) {
+    assertStyleReferencesSharedTouchTarget(guide, styleName);
+  }
+});
+
 test("keeps Premium value, plan, and entitlement surfaces on shared board anatomy", () => {
   const premium = readAppFile("premium.tsx");
 

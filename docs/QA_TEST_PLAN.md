@@ -774,3 +774,15 @@ Latest local evidence, 2026-06-25:
 - `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing with expected Windows line-ending warnings only.
 - Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+Latest local evidence, 2026-06-25:
+
+- WoofGuide now keeps its prompt, send, and owner-review actions on the shared 48px mobile touch-target contract.
+- The hardened controls include quick question chips, suggested action rows, the composer send button, and the owner-review Cancel/Apply draft controls.
+- Static readiness now extracts the named WoofGuide style blocks and asserts each references `MIN_MOBILE_TOUCH_TARGET`.
+- Red/green evidence: `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` failed first on `quickChip`, then passed with 78 tests after WoofGuide used the shared target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 95 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 396 passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Mobile TypeScript is currently blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export should be re-run from Git Bash, WSL, CI, or a preinstalled dependency layer with `sh` available.

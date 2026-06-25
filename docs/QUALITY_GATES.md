@@ -766,3 +766,20 @@ currently dependency-blocked in this cleaned Windows shell because the
 Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found). Package
 export should be re-run from Git Bash, WSL, CI, or a preinstalled dependency
 layer before treating this slice as export-proven.
+
+Current evidence, 2026-06-25: WoofGuide's prompt, send, and owner-review
+actions now share the same mobile touch-target contract. WoofGuide imports
+`MIN_MOBILE_TOUCH_TARGET` and uses it for `quickChip`, `actionRow`, `sendBtn`,
+`reviewCancel`, and `reviewApply`, covering quick questions, suggested
+owner-reviewed actions, the chat composer send control, and the draft review
+modal's Cancel/Apply controls. Static readiness protects those named style
+blocks so the beta's assistant route cannot quietly return to cramped prompt or
+review controls. Red/green mobile readiness passed after first failing on
+`quickChip`, targeted QA/readiness verification passed 95 tests, focused
+behavior/readiness verification passed 396 tests, PixelLab verification passed
+at 149 files, and `git diff --check` passed with expected Windows line-ending
+warnings only. Mobile TypeScript is currently dependency-blocked in this cleaned
+Windows shell because the Expo/mobile dependency layer is absent
+(`expo/tsconfig.base` not found). Package export should be re-run from Git Bash,
+WSL, CI, or a preinstalled dependency layer before treating this slice as
+export-proven.

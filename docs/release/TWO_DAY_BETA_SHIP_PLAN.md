@@ -62,6 +62,7 @@ The beta must not claim:
 - On Records, confirm Dog ID share/print, medication search/filter, Care Pass preview, report resend/print, record add/delete, attachment, and sheet save/cancel controls feel phone-sized and easy to tap.
 - On Avatar Studio, confirm Scan/Template/Customize/Emotes tabs, Gallery, Take photo, template tiles, coat swatches, face options, accessories, mood previews, Reset, and Save Avatar controls feel phone-sized and easy to tap.
 - On Adventure, confirm quest cards, private memory capture, `Save Memory`, and `Share Adventure` feel phone-sized, useful, and aligned with the real-care RPG promise instead of decorative game fluff.
+- On WoofGuide, confirm quick questions, suggested actions, the send button, and owner-review Cancel/Apply draft controls feel phone-sized, useful, and clearly non-diagnostic.
 - Write the `Mission note` in the 48-hour beta card before marking the owner-preview mission Pass; this note is required proof for the no-dead-ends route loop.
 - Read the `Next device mission` panel before leaving the cockpit: it shows route, setup steps, pass criteria, evidence count, and the Needs tune rule for that screen.
 - Tap `Open Next Surface`, test the route, capture proof, then return to `/care-twin-qa`.
@@ -91,7 +92,7 @@ Shippable for internal beta after local verification passes:
 
 Current environment note:
 
-- The latest Home owner-preview hardening slice passed the targeted 94-test QA/readiness suite, the 395-test focused behavior/readiness suite, PixelLab verification at 149 assets, and `git diff --check`. Mobile TypeScript is currently dependency-blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export smoke did not complete because the bundled-pnpm path reached the registry and then failed before export when the root preinstall script called missing `sh`. Re-run TypeScript/export from Git Bash, WSL, CI, or a preinstalled dependency layer before treating the latest slice as dependency/export-proven.
+- The latest WoofGuide touch-target hardening slice passed the targeted 95-test QA/readiness suite, the 396-test focused behavior/readiness suite, PixelLab verification at 149 assets, and `git diff --check`. Mobile TypeScript is currently dependency-blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export smoke did not complete because the bundled-pnpm path reached the registry and then failed before export when the root preinstall script called missing `sh`. Re-run TypeScript/export from Git Bash, WSL, CI, or a preinstalled dependency layer before treating the latest slice as dependency/export-proven.
 
 Still blocked for public launch:
 
