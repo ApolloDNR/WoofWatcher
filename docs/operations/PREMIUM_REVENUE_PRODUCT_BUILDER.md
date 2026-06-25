@@ -267,9 +267,19 @@ labels and shared 48px touch targets. This still does not replace real
 iOS/Android screenshots or human approval; it reduces the taps needed to collect
 that proof under the two-day beta deadline.
 
+The owner-preview QA loop pass adds the real first-user journey as its own
+launch-critical surface. Mobile Release QA now requires testers to prove Home,
+Log, Plans, Health, More, Records, Avatar Studio, and Care Pass are reachable
+without dead ends; quick-log one safe care event or open the detail sheet; inspect
+Plans and Health Watch/Bile Watch; open Launch Readiness from More; and attach
+platform-specific evidence for iOS Quick Log/Log plus Android Launch Readiness.
+This is the strongest remaining internal-beta proof path before wider sharing,
+while provider setup, legal/privacy, store approval, and public launch remain
+separate gates.
+
 Next highest-impact work:
 
-1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete the Mobile Release QA checklist, Store Screenshot QA checklist, and 12-state care-twin matrix, attach screenshots through the 48-hour mission card or lower platform-aware evidence controls, confirm More's Launch Readiness and Native QA Next Captures update from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
+1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: complete Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness and Native QA Next Captures update from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
 2. Fill the Provider Launch Setup sheet only as real providers are configured: Clerk, Supabase/Postgres, storage buckets/rules, AI key/model policy, app-store payments, push, Apple/Google accounts, and self-serve deletion. Share the provider plan for Apollo/Fable/Replit handoff, but do not treat it as store approval.
 3. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 4. Continue screen-by-screen polish, accessibility traversal, and visual regression.

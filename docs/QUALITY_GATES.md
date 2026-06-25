@@ -556,3 +556,17 @@ behavior/readiness tests, mobile TypeScript, PixelLab verification at 149 files,
 `git diff --check`, and package-local Expo web export with HTML/JavaScript
 output verified and cleaned. This improves the internal beta capture loop but
 does not replace real device screenshots or human approval.
+
+Current evidence, 2026-06-25: Mobile Release QA now includes a launch-critical
+`Owner Preview Core Loop` surface so the two-day beta does not pass on isolated
+screen polish alone. The surface requires Home, Log, Plans, Health, More,
+Records, Avatar Studio, and Care Pass to be reachable without dead ends; asks
+testers to quick-log one safe care event or open the detail sheet; checks Plans
+reachability, Health Watch/Bile Watch non-diagnostic language, and More's Launch
+Readiness truth boundaries; and requires iOS Quick Log/Log evidence plus Android
+Launch Readiness evidence. Local verification passed 86 targeted QA/readiness
+tests, 387 focused behavior/readiness tests, mobile TypeScript, PixelLab
+verification at 149 files, `git diff --check`, and package-local Expo web export
+with HTML/JavaScript output verified and cleaned. Real iOS/Android screenshots,
+human visual approval, provider setup, legal/privacy review, and store approval
+remain launch gates.

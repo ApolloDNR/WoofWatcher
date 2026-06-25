@@ -311,3 +311,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Real iOS and Android screenshots still need to be captured and attached through the mission controls.
 - Any screen marked Needs tune during that capture pass should be fixed before wider beta sharing.
+
+## Completed - Owner Preview Core Loop QA Surface
+
+- Added `Owner Preview Core Loop` as a launch-critical Mobile Release QA surface for the two-day beta.
+- The new surface protects the real owner path through Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass instead of letting isolated screen checks stand in for a usable beta.
+- The device mission asks testers to quick-log one safe care event or open the detail sheet, inspect Plans, review Health Watch/Bile Watch copy, open Launch Readiness from More, and confirm no key route is a dead end.
+- Required evidence is explicit: iOS screenshot of Quick Log or Log, Android screenshot of More's Launch Readiness, and a note that the full owner loop was reachable.
+- The surface keeps provider, payment, storage, AI, and store gates truthful while improving the internal beta path.
+
+## Verification - Owner Preview Core Loop QA Surface
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 86 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 387 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - Owner Preview Core Loop QA Surface
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- Any owner-loop route marked Needs tune during that capture pass should be fixed before wider beta sharing.

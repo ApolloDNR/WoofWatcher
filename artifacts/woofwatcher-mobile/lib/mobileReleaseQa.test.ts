@@ -21,6 +21,7 @@ test("lists the launch-critical mobile QA surfaces for the next native pass", ()
 
   assert.ok(ids.includes("phoenix-home"));
   assert.ok(ids.includes("home-mission-deck"));
+  assert.ok(ids.includes("owner-preview-core-loop"));
   assert.ok(ids.includes("care-twin-state-lab"));
   assert.ok(ids.includes("avatar-studio"));
   assert.ok(ids.includes("incident-composer"));
@@ -68,6 +69,32 @@ test("keeps the Home mission deck as a launch-critical device QA target", () => 
   assert.match(surface.requiredEvidence.join("\n"), /pending meal routes to Meal Log/);
   assert.match(surface.requiredEvidence.join("\n"), /Care Pass routes to Records/);
   assert.match(surface.launchRisk, /dead ends/);
+});
+
+test("keeps the owner preview core loop as a launch-critical beta QA target", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const surface = surfaces.find((item) => item.id === "owner-preview-core-loop");
+
+  assert.ok(surface);
+  assert.equal(surface.route, "/");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /main beta loop/);
+  assert.match(surface.goal, /Home, Log, Plans, Health, More/);
+  assert.match(surface.devicePrompt, /bottom-nav owner preview/);
+  assert.match(surface.devicePrompt, /Launch Readiness/);
+  assert.match(surface.setupSteps.join("\n"), /provider, payment, storage, AI, and store gates/);
+  assert.match(surface.verificationSteps.join("\n"), /Open Home, Log, Plans, Health, and More in order/);
+  assert.match(surface.verificationSteps.join("\n"), /quick-log one safe care event/);
+  assert.match(surface.verificationSteps.join("\n"), /Health Watch and Bile Watch/);
+  assert.match(surface.verificationSteps.join("\n"), /Records, Avatar Studio, and Care Pass/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /bottom-nav loop never hides the active action/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /provider setup, store approval, payments, AI, and storage boundaries/);
+  assert.match(surface.failureEscalation, /keyboard\/modal overlap/);
+  assert.match(surface.failureEscalation, /claims provider\/store\/payment\/AI\/storage readiness/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Quick Log or Log/);
+  assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Launch Readiness/);
+  assert.match(surface.requiredEvidence.join("\n"), /without dead ends/);
+  assert.match(surface.launchRisk, /real owner beta journey/);
 });
 
 test("summarizes mobile release QA review status and screenshot evidence", () => {

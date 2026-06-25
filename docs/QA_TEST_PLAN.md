@@ -556,3 +556,17 @@ Latest local evidence, 2026-06-25:
 - `node scripts/verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing with expected Windows line-ending warnings only.
 - Direct Expo export via package-local CLI - passing, emitted `.expo-smoke`, verified HTML/JavaScript output, and removed the generated folder after verification.
+
+Latest local evidence, 2026-06-25:
+
+- Mobile Release QA now includes a launch-critical `Owner Preview Core Loop` surface, aimed at the real internal-beta journey instead of isolated screenshots.
+- The required owner-preview route sequence is Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass.
+- The surface requires a safe quick-log/detail-sheet check, Plans add/edit reachability, non-diagnostic Health Watch/Bile Watch language, Launch Readiness review, and no dead-end routes.
+- Required proof is an iOS Quick Log or Log screenshot, an Android Launch Readiness screenshot from More, and a note confirming the core loop was reachable without dead ends.
+- The surface preserves truthful provider, payment, storage, AI, and store gates instead of treating internal beta polish as public launch readiness.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 86 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 387 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.

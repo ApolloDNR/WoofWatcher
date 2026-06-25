@@ -116,6 +116,41 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If the mission deck overflows, hides behind the paw nav, or routes to dead ends, the flagship Home screen loses the planned premium care-command feel.",
   },
   {
+    id: "owner-preview-core-loop",
+    title: "Owner Preview Core Loop",
+    route: "/",
+    priority: "launch-critical",
+    goal: "Prove a real owner can move through the main beta loop without dead ends: Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass.",
+    devicePrompt:
+      "Run the bottom-nav owner preview on iOS and Android: log one safe care event, inspect tomorrow's plan, review Health Watch, open Launch Readiness from More, and confirm records/Care Pass/Avatar Studio remain reachable.",
+    setupSteps: [
+      "Use local preview data with no private real household details visible.",
+      "Start on Home with the floating paw navigation visible.",
+      "Keep provider, payment, storage, AI, and store gates in their truthful blocked or staged state.",
+    ],
+    verificationSteps: [
+      "Open Home, Log, Plans, Health, and More in order from the bottom navigation.",
+      "In Log, quick-log one safe care event or open the detail sheet, then undo or leave a QA note if you do not want to persist it.",
+      "In Plans, confirm upcoming care rows are readable and the add/edit flow is reachable without covering the paw nav.",
+      "In Health, confirm Health Watch and Bile Watch language stays non-diagnostic and readable on the phone.",
+      "In More, open Launch Readiness, Records, Avatar Studio, and Care Pass/Reports paths and confirm no route is a dead end.",
+    ],
+    acceptanceCriteria: [
+      "The bottom-nav loop never hides the active action, gets stuck behind a modal, or routes to a blank screen.",
+      "Quick Log, Plans, Health, More, Records, Avatar Studio, and Care Pass each expose a clear next action.",
+      "Launch Readiness keeps internal beta, provider setup, store approval, payments, AI, and storage boundaries truthful.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if any core route is confusing, clipped by the paw nav, blocked by keyboard/modal overlap, missing a next action, or claims provider/store/payment/AI/storage readiness that is not actually configured.",
+    requiredEvidence: [
+      "iOS screenshot of Quick Log or Log after opening the owner preview loop.",
+      "Android screenshot of Launch Readiness from More after completing the owner preview loop.",
+      "Note confirming Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass were reachable without dead ends.",
+    ],
+    launchRisk:
+      "If this loop is not proven, WoofWatcher may look polished in isolated screens while still failing the real owner beta journey.",
+  },
+  {
     id: "care-twin-state-lab",
     title: "Care Twin State Lab",
     route: "/care-twin-qa",
