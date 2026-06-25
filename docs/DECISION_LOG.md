@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-25: Mobile Care Team Role Management Is Bounded
+
+Decision: Mobile More should expose role chips for existing synced non-owner household members using the generated `useUpdateHouseholdMember` hook. Owners/admins can assign admin, member, sitter, trainer, or vet viewer roles from the Care Team surface, then `/me` refreshes and Pack Audit refetches role-change events. The UI must keep owner transfer, member removal, invite approval, arbitrary member lookup, lifecycle actions, and final permission policy provider-gated.
+
+Reason: The API role-update contract exists, but household owners need a visible way to adjust existing caregiver roles from the shared care surface. Limiting the UI to current synced non-owner members preserves the same active-household boundary and avoids pretending full provider-backed caregiver administration is complete.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed caregiver administration, invite approval, member removal, owner transfer, document access rules, final role-specific permissions, or live API integration tests become active release work.
+
 ### 2026-06-25: Household Member Role Updates Are Owner/Admin Scoped
 
 Decision: API `PATCH /household/members/{memberId}` should let owner/admin members update existing active-household memberships to `admin`, `member`, `sitter`, `trainer`, or `vet_viewer`. The route should refuse owner demotion, return the refreshed `/me` household context, and write a durable `household.member_role_changed` audit event with previous role, new role, target member, and actor role details. The endpoint is documented across OpenAPI, zod, and the generated React client, but no full caregiver editing UI, invite approval, lifecycle controls, or provider-backed final role policy is implied yet.

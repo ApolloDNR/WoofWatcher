@@ -26,9 +26,12 @@ import {
   useJoinHousehold,
   useListHouseholdAuditEvents,
   useSetActiveHousehold,
+  useUpdateHouseholdMember,
   useUpdateMe,
   getGetMeQueryKey,
   type HouseholdAuditEvent,
+  type Member,
+  type UpdateHouseholdMemberBody,
 } from "@workspace/api-client-react";
 import {
   deriveCareIntelligence,
@@ -62,7 +65,16 @@ const AUDIT_ACTION_FILTERS = [
   { label: "Renamed", value: "household.renamed" },
   { label: "Active", value: "household.active_changed" },
   { label: "Joined", value: "household.member_joined" },
+  { label: "Roles", value: "household.member_role_changed" },
 ] as const;
+
+const ROLE_UPDATE_OPTIONS: Array<{ label: string; role: UpdateHouseholdMemberBody["role"] }> = [
+  { label: "Admin", role: "admin" },
+  { label: "Member", role: "member" },
+  { label: "Sitter", role: "sitter" },
+  { label: "Trainer", role: "trainer" },
+  { label: "Vet viewer", role: "vet_viewer" },
+];
 
 const AUDIT_LIFECYCLE_FILTERS = [
   { label: "All states", value: "all" },
@@ -122,9 +134,17 @@ function auditEventDetail(event: HouseholdAuditEvent): string {
       if (membershipCreated === false) return `Existing caregiver rejoined - ${state}`;
       return state;
     }
+    case "household.member_role_changed": {
+      const role = getAuditDetailValue(event, "newRole");
+      return role ? `Role changed to ${role} - ${state}` : state;
+    }
     default:
       return state;
   }
+}
+
+function memberDisplayName(member: Member): string {
+  return member.displayName?.trim() || member.email?.split("@")[0]?.trim() || "Caregiver";
 }
 
 function formatAuditEventTime(value: string): string {
@@ -155,6 +175,7 @@ export default function MoreScreen() {
   const updateHousehold = useUpdateHousehold();
   const joinHousehold = useJoinHousehold();
   const setActiveHousehold = useSetActiveHousehold();
+  const updateHouseholdMember = useUpdateHouseholdMember();
   const updateMe = useUpdateMe();
 
   const household = me.data?.household;
@@ -299,6 +320,17 @@ export default function MoreScreen() {
         })),
     [households, household?.id],
   );
+  const roleUpdateTargets = useMemo(
+    () =>
+      members
+        .filter((member) => member.id && member.role.toLowerCase() !== "owner")
+        .map((member) => ({
+          member,
+          name: memberDisplayName(member),
+          role: member.role.toLowerCase(),
+        })),
+    [members],
+  );
   const auditEvents = householdAudit.data ?? [];
   const responsibilityTone =
     householdResponsibility.status === "needs-care"
@@ -405,6 +437,26 @@ export default function MoreScreen() {
           Alert.alert(
             "Couldn't switch household",
             "WoofWatcher only switches to packs where your account is already a member.",
+          ),
+      },
+    );
+  };
+
+  const updateMemberRole = (target: (typeof roleUpdateTargets)[number], role: UpdateHouseholdMemberBody["role"]) => {
+    if (!target.member.id || target.role === role || updateHouseholdMember.isPending) return;
+    updateHouseholdMember.mutate(
+      { memberId: target.member.id, data: { role } },
+      {
+        onSuccess: () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          Alert.alert("Role update saved", `${target.name}'s pack role is now ${role.replace(/_/g, " ")}.`);
+          refreshMe();
+          householdAudit.refetch();
+        },
+        onError: () =>
+          Alert.alert(
+            "Couldn't update role",
+            "Only pack owners and admins can update existing caregiver roles.",
           ),
       },
     );
@@ -1087,6 +1139,77 @@ export default function MoreScreen() {
                 );
               })
             )}
+            <View style={[s.boardDivider, { borderTopColor: colors.border }]} />
+            <View style={s.roleAdmin}>
+              <View style={s.roleAdminHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.roleAdminLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    Manage roles
+                  </Text>
+                  <Text style={[s.roleAdminCopy, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                    Owners and admins can adjust existing synced caregivers. Owner transfer, removal, and invite approval stay provider-gated.
+                  </Text>
+                </View>
+                {updateHouseholdMember.isPending && (
+                  <Text style={[s.roleUpdatingText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                    Saving
+                  </Text>
+                )}
+              </View>
+              {roleUpdateTargets.length === 0 ? (
+                <View style={[s.roleEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[s.roleEmptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Add synced caregivers before assigning sitter, trainer, vet viewer, member, or admin roles.
+                  </Text>
+                </View>
+              ) : (
+                <View style={s.roleTargetList}>
+                  {roleUpdateTargets.slice(0, 4).map((target) => (
+                    <View key={`role-${target.member.id}`} style={[s.roleTarget, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <View style={s.roleTargetHeader}>
+                        <Text style={[s.roleTargetName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{target.name}</Text>
+                        <Text style={[s.roleTargetMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Current: {target.role.replace(/_/g, " ")}
+                        </Text>
+                      </View>
+                      <View style={s.roleChipRow}>
+                        {ROLE_UPDATE_OPTIONS.map((option) => {
+                          const selected = target.role === option.role;
+                          const disabled = selected || updateHouseholdMember.isPending;
+                          return (
+                            <Pressable
+                              key={`${target.member.id}-${option.role}`}
+                              onPress={() => updateMemberRole(target, option.role)}
+                              disabled={disabled}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Set ${target.name} role to ${option.label}`}
+                              accessibilityState={{ selected, disabled }}
+                              style={({ pressed }) => [
+                                s.roleChip,
+                                {
+                                  backgroundColor: selected ? colors.primary : colors.card,
+                                  borderColor: selected ? colors.primary : colors.border,
+                                  opacity: pressed ? 0.76 : disabled && !selected ? 0.55 : 1,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  s.roleChipText,
+                                  { color: selected ? "#FFFFFF" : colors.foreground, fontFamily: "Inter_700Bold" },
+                                ]}
+                              >
+                                {option.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
           </BoardCard>
 
           <BoardCard style={[s.moreBoardCard, { borderColor: accessTone + "44" }]}>
@@ -2063,6 +2186,28 @@ const s = StyleSheet.create({
   householdChoiceIcon: { width: 32, height: 32, borderRadius: 9, alignItems: "center", justifyContent: "center" },
   householdChoiceName: { fontSize: 13.5 },
   householdChoiceMeta: { fontSize: 11.5, marginTop: 2 },
+  roleAdmin: { paddingTop: 14, gap: 10 },
+  roleAdminHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+  roleAdminLabel: { fontSize: 10.5, letterSpacing: 0.6, textTransform: "uppercase" },
+  roleAdminCopy: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
+  roleUpdatingText: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 },
+  roleEmpty: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, borderWidth: 1, padding: 11, justifyContent: "center" },
+  roleEmptyText: { fontSize: 12, lineHeight: 17 },
+  roleTargetList: { gap: 9 },
+  roleTarget: { borderRadius: 8, borderWidth: 1, padding: 10, gap: 9 },
+  roleTargetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 10 },
+  roleTargetName: { flex: 1, fontSize: 13.5 },
+  roleTargetMeta: { fontSize: 11.5, textTransform: "capitalize" },
+  roleChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  roleChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roleChipText: { fontSize: 11.5 },
 
   auditAccessLabel: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0.5 },
   auditTop: { flexDirection: "row", alignItems: "center", gap: 12 },

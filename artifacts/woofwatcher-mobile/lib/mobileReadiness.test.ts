@@ -1525,12 +1525,24 @@ test("keeps household access readiness visible from More", () => {
   assert.match(householdLib, /households:/);
   assert.match(reactSchemas, /households: Household\[\]/);
   assert.match(reactClient, /useSetActiveHousehold/);
+  assert.match(reactClient, /useUpdateHouseholdMember/);
   assert.match(more, /useSetActiveHousehold/);
+  assert.match(more, /useUpdateHouseholdMember/);
   assert.match(more, /householdChoices/);
   assert.match(more, /Switch household/);
   assert.match(more, /setActiveHousehold\.mutate/);
   assert.match(more, /accessibilityLabel=\{`Switch to \$\{choice\.name\}`\}/);
   assert.match(more, /accessibilityState=\{\{ selected: choice\.isActive, disabled: choice\.isActive \|\| setActiveHousehold\.isPending \}\}/);
+  assert.match(more, /ROLE_UPDATE_OPTIONS/);
+  assert.match(more, /roleUpdateTargets/);
+  assert.match(more, /updateMemberRole/);
+  assert.match(more, /updateHouseholdMember\.mutate/);
+  assert.match(more, /memberId: target\.member\.id/);
+  assert.match(more, /data: \{ role \}/);
+  assert.match(more, /accessibilityLabel=\{`Set \$\{target\.name\} role to \$\{option\.label\}`\}/);
+  assert.match(more, /accessibilityState=\{\{ selected, disabled \}\}/);
+  assert.match(more, /Role update saved/);
+  assert.match(more, /Couldn't update role/);
   assert.match(more, /refresh\(\)/);
   assert.match(more, /Couldn't switch household/);
 });
@@ -1552,6 +1564,7 @@ test("keeps household audit review visible from More", () => {
   assert.match(more, /getAuditDetailBoolean/);
   assert.match(more, /formatAuditEventTime/);
   assert.match(more, /AUDIT_ACTION_FILTERS/);
+  assert.match(more, /household\.member_role_changed/);
   assert.match(more, /AUDIT_LIFECYCLE_FILTERS/);
   assert.match(more, /selectedAuditAction/);
   assert.match(more, /selectedAuditLifecycle/);
@@ -1568,6 +1581,7 @@ test("keeps household audit review visible from More", () => {
   assert.match(more, /Renamed to \$\{newName\}/);
   assert.match(more, /New caregiver membership/);
   assert.match(more, /Existing caregiver rejoined/);
+  assert.match(more, /Role changed to \$\{role\}/);
   assert.match(more, /accessibilityLabel=\{`Household audit event: \$\{auditEventLabel\(event\)\}\. \$\{detail\}`\}/);
 });
 
