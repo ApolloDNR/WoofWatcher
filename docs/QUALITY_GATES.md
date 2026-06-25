@@ -570,3 +570,13 @@ verification at 149 files, `git diff --check`, and package-local Expo web export
 with HTML/JavaScript output verified and cleaned. Real iOS/Android screenshots,
 human visual approval, provider setup, legal/privacy review, and store approval
 remain launch gates.
+
+Current evidence, 2026-06-25: The owner-preview path is now guided inside the
+QA cockpit instead of living only in docs. `/care-twin-qa` renders an `Owner
+route loop` panel for the Owner Preview Core Loop, and the launch capture model
+exports the same Home, Log, Plans, Health, More, Records, Avatar Studio, and Care
+Pass checklist into the share script. Local verification passed 87 targeted
+QA/readiness tests, 388 focused behavior/readiness tests, mobile TypeScript,
+PixelLab verification at 149 files, `git diff --check`, and package-local Expo
+web export with HTML/JavaScript output verified and cleaned. Real iOS/Android
+screenshots and human visual approval remain the next beta gate.

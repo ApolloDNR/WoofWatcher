@@ -94,6 +94,13 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Quick Log or Log/);
   assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Launch Readiness/);
   assert.match(surface.requiredEvidence.join("\n"), /without dead ends/);
+  assert.deepEqual(
+    surface.routeChecklist?.map((item) => item.label),
+    ["Home", "Log", "Plans", "Health", "More", "Records", "Avatar Studio", "Care Pass"],
+  );
+  assert.match(surface.routeChecklist?.[1]?.expected ?? "", /Quick-log one safe care event/);
+  assert.match(surface.routeChecklist?.[4]?.proof ?? "", /Launch Readiness/);
+  assert.match(surface.routeChecklist?.[7]?.expected ?? "", /sitter\/vet\/trainer handoff/);
   assert.match(surface.launchRisk, /real owner beta journey/);
 });
 

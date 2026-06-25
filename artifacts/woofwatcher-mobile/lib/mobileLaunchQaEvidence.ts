@@ -26,6 +26,7 @@ export interface MobileLaunchQaCaptureTarget {
   failureEscalation: string;
   evidenceAttached: number;
   note?: string;
+  routeChecklist?: MobileReleaseQaSurface["routeChecklist"];
 }
 
 export interface MobileLaunchQaCapturePlan {
@@ -149,6 +150,7 @@ export function buildMobileLaunchQaCapturePlan(
       const missingEvidence = missingEvidenceForSurface(surface, review);
       const complete = review.status === "pass" && missingEvidence.length === 0;
       if (complete) return null;
+      const routeChecklist = surface.routeChecklist?.length ? { routeChecklist: surface.routeChecklist } : {};
       return {
         surfaceId: surface.id,
         title: surface.title,
@@ -162,6 +164,7 @@ export function buildMobileLaunchQaCapturePlan(
         failureEscalation: surface.failureEscalation,
         evidenceAttached: review.screenshotEvidence?.length ?? 0,
         note: review.note,
+        ...routeChecklist,
       };
     })
     .filter((target): target is MobileLaunchQaCaptureTarget => !!target)
@@ -203,6 +206,16 @@ export function buildMobileLaunchQaCaptureShareText(
     lines.push(`   Missing: ${target.missingEvidence.join(" ") || "No missing evidence."}`);
     lines.push(`   Setup: ${target.setupSteps.join(" ")}`);
     lines.push(`   Steps: ${target.verificationSteps.join(" ")}`);
+    if (target.routeChecklist?.length) {
+      lines.push("   Route loop:");
+      target.routeChecklist.forEach((routeCheck, routeIndex) => {
+        lines.push(
+          `   ${routeIndex + 1}. ${routeCheck.label} (${routeCheck.route}): ${routeCheck.expected}${
+            routeCheck.proof ? ` Proof: ${routeCheck.proof}` : ""
+          }`,
+        );
+      });
+    }
     lines.push(`   Pass criteria: ${target.acceptanceCriteria.join(" ")}`);
     lines.push(`   Needs tune if: ${target.failureEscalation}`);
     lines.push(`   Evidence attached: ${target.evidenceAttached}`);

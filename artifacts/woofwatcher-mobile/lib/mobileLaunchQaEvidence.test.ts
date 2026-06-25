@@ -272,3 +272,38 @@ test("builds a shareable native QA capture script for Apollo and device testers"
   assert.match(text, /2\. Care Pass \(\/records\)/);
   assert.match(text, /Done condition: capture iOS and Android proof in \/care-twin-qa/);
 });
+
+test("preserves owner preview route-loop details in the capture plan and share script", () => {
+  const surfaces = listMobileLaunchQaSurfaces();
+  const ownerLoop = surfaces.find((surface) => surface.id === "owner-preview-core-loop");
+
+  assert.ok(ownerLoop);
+
+  const plan = buildMobileLaunchQaCapturePlan(null, [ownerLoop]);
+  const target = plan.nextTargets[0];
+
+  assert.equal(target?.surfaceId, "owner-preview-core-loop");
+  assert.deepEqual(
+    target?.routeChecklist?.map((item) => `${item.label}:${item.route}`),
+    [
+      "Home:/",
+      "Log:/log",
+      "Plans:/calendar",
+      "Health:/health",
+      "More:/more",
+      "Records:/records",
+      "Avatar Studio:/portrait",
+      "Care Pass:/records",
+    ],
+  );
+  assert.match(target?.routeChecklist?.[1]?.expected ?? "", /Quick-log one safe care event/);
+  assert.match(target?.routeChecklist?.[4]?.proof ?? "", /Android Launch Readiness screenshot/);
+
+  const text = buildMobileLaunchQaCaptureShareText(plan, "2026-06-25T09:30:00.000Z");
+
+  assert.match(text, /Route loop:/);
+  assert.match(text, /Home \(\/\): Confirm Phoenix status/);
+  assert.match(text, /Log \(\/log\): Quick-log one safe care event/);
+  assert.match(text, /More \(\/more\): Open Launch Readiness/);
+  assert.match(text, /Care Pass \(\/records\): Confirm sitter\/vet\/trainer handoff/);
+});

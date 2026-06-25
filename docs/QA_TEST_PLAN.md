@@ -570,3 +570,16 @@ Latest local evidence, 2026-06-25:
 - `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing with expected Windows line-ending warnings only.
 - Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+Latest local evidence, 2026-06-25:
+
+- `/care-twin-qa` now shows an `Owner route loop` panel inside the 48-hour beta run card when the active target is `Owner Preview Core Loop`.
+- The panel gives device testers the exact route order and expected outcome for Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass before they mark the mission Pass.
+- `mobileLaunchQaEvidence.ts` now carries the same `routeChecklist` into the capture plan and the shareable QA script, so the route loop can be sent to Apollo, a helper, or a design polish tool without drift.
+- Static mobile readiness protects `Owner route loop`, `nextBetaTarget.routeChecklist`, `routeCheck.expected`, and `routeCheck.proof`.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 87 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 388 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.

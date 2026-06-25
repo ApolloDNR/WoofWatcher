@@ -50,6 +50,7 @@ The beta must not claim:
 - Share the Launch Packet.
 - Open `/care-twin-qa`.
 - Use the `48-hour beta run` card to start with the next required launch-critical surface.
+- If the card shows `Owner route loop`, follow that ordered checklist before marking the mission Pass; it is the beta's real owner journey, not an optional note.
 - When the current mission is `Owner Preview Core Loop`, use the bottom nav to open Home, Log, Plans, Health, and More in order, then confirm Records, Avatar Studio, and Care Pass are reachable from More without dead ends.
 - In the owner-preview loop, quick-log one safe care event or open the detail sheet, then undo it or leave a QA note if you do not want the test log to stay in local preview data.
 - Read the `Next device mission` panel before leaving the cockpit: it shows route, setup steps, pass criteria, evidence count, and the Needs tune rule for that screen.
@@ -57,6 +58,7 @@ The beta must not claim:
 - If the target screen shows `Return to QA Cockpit`, use that banner after capture instead of manually hunting for the QA route.
 - Capture at least one iOS screenshot and one Android screenshot when devices/simulators are available.
 - For the owner-preview loop, capture the iOS screenshot on Quick Log or Log and the Android screenshot on More's Launch Readiness panel.
+- The shareable QA script should include the same route loop: Home, Log, Plans, Health, More, Records, Avatar Studio, Care Pass.
 - In `/care-twin-qa`, set `Tag screenshot evidence` to iOS or Android before attaching the screenshot from Photos.
 - Attach screenshots from Photos to the current mission through the 48-hour beta card's `Attach proof` control, or to the matching QA surface farther down the cockpit.
 - Confirm the attached file shows the expected counted platform label.

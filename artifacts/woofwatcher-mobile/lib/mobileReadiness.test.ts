@@ -353,6 +353,10 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /nextBetaTarget/);
   assert.match(qaRoute, /nextBetaSurface/);
   assert.match(qaRoute, /Next device mission/);
+  assert.match(qaRoute, /Owner route loop/);
+  assert.match(qaRoute, /nextBetaTarget\.routeChecklist/);
+  assert.match(qaRoute, /routeCheck\.expected/);
+  assert.match(qaRoute, /routeCheck\.proof/);
   assert.match(qaRoute, /Before capture/);
   assert.match(qaRoute, /Pass when/);
   assert.match(qaRoute, /Needs tune if/);

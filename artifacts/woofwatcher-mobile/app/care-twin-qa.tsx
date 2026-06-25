@@ -578,6 +578,48 @@ export default function CareTwinQaScreen() {
                   </Text>
                 </View>
               </View>
+              {nextBetaTarget.routeChecklist?.length ? (
+                <View style={[s.betaRunRouteLoop, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={s.betaRunRouteLoopHeader}>
+                    <Ionicons name="git-branch-outline" size={16} color={colors.copper} />
+                    <View style={s.betaRunRouteLoopCopy}>
+                      <Text style={[s.betaRunRouteLoopTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                        Owner route loop
+                      </Text>
+                      <Text style={[s.betaRunRouteLoopHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        Walk this in order before marking the beta mission Pass.
+                      </Text>
+                    </View>
+                  </View>
+                  {nextBetaTarget.routeChecklist.map((routeCheck, index) => (
+                    <View key={`${routeCheck.label}-${routeCheck.route}`} style={s.betaRunRouteLoopRow}>
+                      <View style={[s.betaRunRouteLoopIndex, { backgroundColor: `${colors.copper}18` }]}>
+                        <Text style={[s.betaRunRouteLoopIndexText, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                          {index + 1}
+                        </Text>
+                      </View>
+                      <View style={s.betaRunRouteLoopBody}>
+                        <View style={s.betaRunRouteLoopNameLine}>
+                          <Text style={[s.betaRunRouteLoopName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {routeCheck.label}
+                          </Text>
+                          <Text style={[s.betaRunRouteLoopRoute, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                            {routeCheck.route}
+                          </Text>
+                        </View>
+                        <Text style={[s.betaRunRouteLoopExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {routeCheck.expected}
+                        </Text>
+                        {routeCheck.proof ? (
+                          <Text style={[s.betaRunRouteLoopProof, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                            Proof: {routeCheck.proof}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
               <VerificationStepList colors={colors} label="Before capture" steps={nextBetaTarget.setupSteps.slice(0, 2)} />
               <VerificationStepList colors={colors} label="Pass when" steps={nextBetaTarget.acceptanceCriteria.slice(0, 2)} />
               <View style={[s.betaRunEscalation, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
@@ -1519,6 +1561,73 @@ const s = StyleSheet.create({
   },
   betaRunMissionMetaValue: {
     fontSize: 11.5,
+  },
+  betaRunRouteLoop: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
+  betaRunRouteLoopHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  betaRunRouteLoopCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  betaRunRouteLoopTitle: {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  betaRunRouteLoopHelp: {
+    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  betaRunRouteLoopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+  },
+  betaRunRouteLoopIndex: {
+    width: 24,
+    minHeight: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  betaRunRouteLoopIndexText: {
+    fontSize: 11,
+  },
+  betaRunRouteLoopBody: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  betaRunRouteLoopNameLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  betaRunRouteLoopName: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 12,
+  },
+  betaRunRouteLoopRoute: {
+    fontSize: 10.5,
+  },
+  betaRunRouteLoopExpected: {
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  betaRunRouteLoopProof: {
+    fontSize: 11,
+    lineHeight: 15,
   },
   betaRunEscalation: {
     borderRadius: 10,

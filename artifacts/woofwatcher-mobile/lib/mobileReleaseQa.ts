@@ -4,6 +4,13 @@ import type { StoreSubmissionPacket, StoreScreenshotChecklistItem } from "./stor
 
 export type MobileReleaseQaReviewStatus = "unreviewed" | "pass" | "needs-review";
 
+export interface MobileReleaseQaRouteCheck {
+  label: string;
+  route: string;
+  expected: string;
+  proof?: string;
+}
+
 export interface MobileReleaseQaSurface {
   id: string;
   title: string;
@@ -17,6 +24,7 @@ export interface MobileReleaseQaSurface {
   failureEscalation: string;
   requiredEvidence: readonly string[];
   launchRisk: string;
+  routeChecklist?: readonly MobileReleaseQaRouteCheck[];
 }
 
 export interface MobileReleaseQaReview {
@@ -146,6 +154,50 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "iOS screenshot of Quick Log or Log after opening the owner preview loop.",
       "Android screenshot of Launch Readiness from More after completing the owner preview loop.",
       "Note confirming Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass were reachable without dead ends.",
+    ],
+    routeChecklist: [
+      {
+        label: "Home",
+        route: "/",
+        expected: "Confirm Phoenix status, next care, quick actions, and floating paw navigation are readable.",
+      },
+      {
+        label: "Log",
+        route: "/log",
+        expected: "Quick-log one safe care event or open the detail sheet without keyboard or modal blocking.",
+        proof: "iOS Quick Log or Log screenshot.",
+      },
+      {
+        label: "Plans",
+        route: "/calendar",
+        expected: "Inspect upcoming care rows and confirm add/edit plan controls stay reachable.",
+      },
+      {
+        label: "Health",
+        route: "/health",
+        expected: "Review Health Watch and Bile Watch copy for readable, non-diagnostic language.",
+      },
+      {
+        label: "More",
+        route: "/more",
+        expected: "Open Launch Readiness and confirm beta/public launch boundaries stay truthful.",
+        proof: "Android Launch Readiness screenshot.",
+      },
+      {
+        label: "Records",
+        route: "/records",
+        expected: "Confirm records, dog ID, trend sections, and report history expose clear next actions.",
+      },
+      {
+        label: "Avatar Studio",
+        route: "/portrait",
+        expected: "Confirm the PixelLab-backed care twin path is reachable and labeled truthfully.",
+      },
+      {
+        label: "Care Pass",
+        route: "/records",
+        expected: "Confirm sitter/vet/trainer handoff previews are reachable from Records or More.",
+      },
     ],
     launchRisk:
       "If this loop is not proven, WoofWatcher may look polished in isolated screens while still failing the real owner beta journey.",
