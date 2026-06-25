@@ -322,6 +322,9 @@ export default function CareTwinQaScreen() {
     [qaEvidenceById, qaNotes, qaStatusById, releaseQaSurfaces, surfaceEvidenceById, surfaceNotes, surfaceStatusById],
   );
   const nextBetaTarget = betaCapturePlan.nextTargets[0];
+  const nextBetaTargetMissingEvidence = nextBetaTarget?.missingEvidence ?? [];
+  const nextBetaTargetHasMissingEvidence = nextBetaTargetMissingEvidence.length > 0;
+  const nextBetaTargetPassPendingProof = nextBetaTarget?.status === "pass" && nextBetaTargetHasMissingEvidence;
   const nextBetaSurface = useMemo(
     () => (nextBetaTarget ? releaseQaSurfaces.find((surface) => surface.id === nextBetaTarget.surfaceId) : undefined),
     [nextBetaTarget, releaseQaSurfaces],
@@ -526,8 +529,8 @@ export default function CareTwinQaScreen() {
             />
           </View>
           <View style={[s.betaRunChecklist, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            {(nextBetaTarget?.missingEvidence.length
-              ? nextBetaTarget.missingEvidence.slice(0, 3)
+            {(nextBetaTargetMissingEvidence.length
+              ? nextBetaTargetMissingEvidence.slice(0, 3)
               : ["Share the QA summary and keep public store approval separate from local beta proof."]).map((item, index) => (
               <View key={`${index}-${item}`} style={s.betaRunStep}>
                 <View style={[s.betaRunStepDot, { backgroundColor: nextBetaTarget ? colors.amber : colors.sage }]} />
@@ -582,6 +585,25 @@ export default function CareTwinQaScreen() {
                   </Text>
                 </View>
               </View>
+              {nextBetaTargetPassPendingProof ? (
+                <View style={[s.betaRunProofGate, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}66` }]}>
+                  <View style={s.betaRunProofGateHeader}>
+                    <Ionicons name="lock-closed-outline" size={16} color={colors.amber} />
+                    <Text style={[s.betaRunProofGateTitle, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                      Pass pending proof
+                    </Text>
+                  </View>
+                  <Text style={[s.betaRunProofGateText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    This mission is marked Pass, but it stays open until the missing proof is attached and the Mission note is saved.
+                  </Text>
+                  {nextBetaTargetMissingEvidence.slice(0, 2).map((item) => (
+                    <View key={`proof-gate-${item}`} style={s.betaRunProofGateRow}>
+                      <View style={[s.betaRunProofGateDot, { backgroundColor: colors.amber }]} />
+                      <Text style={[s.betaRunProofGateItem, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
               {nextBetaTarget.routeChecklist?.length ? (
                 <View style={[s.betaRunRouteLoop, { backgroundColor: colors.background, borderColor: colors.border }]}>
                   <View style={s.betaRunRouteLoopHeader}>
@@ -629,7 +651,7 @@ export default function CareTwinQaScreen() {
                   <Text style={[s.betaRunMissionNoteLabel, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
                     Mission note
                   </Text>
-                  {nextBetaTarget.missingEvidence.some((item) => item.includes("QA note")) ? (
+                  {nextBetaTargetMissingEvidence.some((item) => item.includes("QA note")) ? (
                     <QaBadge label="Required" tone={colors.amber} />
                   ) : null}
                 </View>
@@ -1663,6 +1685,42 @@ const s = StyleSheet.create({
     lineHeight: 16,
   },
   betaRunRouteLoopProof: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  betaRunProofGate: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 8,
+  },
+  betaRunProofGateHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  betaRunProofGateTitle: {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  betaRunProofGateText: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  betaRunProofGateRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  betaRunProofGateDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 5,
+  },
+  betaRunProofGateItem: {
+    flex: 1,
     fontSize: 11,
     lineHeight: 15,
   },

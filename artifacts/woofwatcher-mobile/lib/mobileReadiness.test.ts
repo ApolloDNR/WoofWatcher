@@ -361,7 +361,12 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Mission note for \$\{nextBetaTarget\.title\}/);
   assert.match(qaRoute, /surfaceNotes\[nextBetaTarget\.surfaceId\]/);
   assert.match(qaRoute, /setSurfaceNotes/);
-  assert.match(qaRoute, /nextBetaTarget\.missingEvidence\.some\(\(item\) => item\.includes\("QA note"\)\)/);
+  assert.match(qaRoute, /nextBetaTargetMissingEvidence\.some\(\(item\) => item\.includes\("QA note"\)\)/);
+  assert.match(qaRoute, /nextBetaTargetMissingEvidence/);
+  assert.match(qaRoute, /nextBetaTargetPassPendingProof/);
+  assert.match(qaRoute, /Pass pending proof/);
+  assert.match(qaRoute, /This mission is marked Pass, but it stays open/);
+  assert.match(qaRoute, /nextBetaTargetMissingEvidence\.slice\(0, 2\)/);
   assert.match(qaRoute, /Before capture/);
   assert.match(qaRoute, /Pass when/);
   assert.match(qaRoute, /Needs tune if/);

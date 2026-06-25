@@ -602,3 +602,14 @@ focused behavior/readiness verification passed 389 tests, mobile TypeScript
 passed, PixelLab verification passed at 149 files, `git diff --check` passed,
 and package-local Expo web export emitted HTML/JavaScript output that was
 verified and cleaned.
+
+Current evidence, 2026-06-25: `/care-twin-qa` now guards against a false Pass
+state in the 48-hour beta run card. When the next mission is marked Pass but
+required screenshots or Mission note proof are still missing, the cockpit shows
+`Pass pending proof`, explains that the mission stays open until proof is
+attached and the Mission note is saved, and lists the first missing evidence
+items in the same mission card. Targeted QA/readiness verification passed 88
+tests, focused behavior/readiness verification passed 389 tests, mobile
+TypeScript passed, PixelLab verification passed at 149 files, `git diff --check`
+passed, and package-local Expo web export emitted HTML/JavaScript output that
+was verified and cleaned.

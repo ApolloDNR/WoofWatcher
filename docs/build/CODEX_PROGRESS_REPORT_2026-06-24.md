@@ -397,3 +397,26 @@ If device QA remains unavailable, continue provider readiness with invite approv
 ## Still Not Done - QA Cockpit Share Packet
 
 - Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+
+## Completed - QA Pass Pending Proof Gate
+
+- Added a `Pass pending proof` gate to the `/care-twin-qa` 48-hour beta run card.
+- The gate appears when the active beta mission is marked Pass but required screenshots or Mission note proof are still missing.
+- The cockpit now derives `nextBetaTargetMissingEvidence` once and reuses it for the missing-evidence checklist, required Mission note badge, and proof-gate rows.
+- The gate explains that the mission remains open until missing proof is attached and the Mission note is saved.
+- Static readiness coverage protects the proof-gate state, copy, and the first missing-proof rows.
+
+## Verification - QA Pass Pending Proof Gate
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - failed red before the proof gate existed, then passed with 71 tests after wiring.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 88 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 389 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - QA Pass Pending Proof Gate
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- The first route marked Needs tune during the owner-preview capture run should be fixed before wider beta sharing.
