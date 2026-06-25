@@ -620,6 +620,39 @@ export default function CareTwinQaScreen() {
                   ))}
                 </View>
               ) : null}
+              <View style={[s.betaRunMissionNote, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View style={s.betaRunMissionNoteHeader}>
+                  <Text style={[s.betaRunMissionNoteLabel, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                    Mission note
+                  </Text>
+                  {nextBetaTarget.missingEvidence.some((item) => item.includes("QA note")) ? (
+                    <QaBadge label="Required" tone={colors.amber} />
+                  ) : null}
+                </View>
+                <TextInput
+                  accessibilityLabel={`Mission note for ${nextBetaTarget.title}`}
+                  multiline
+                  textAlignVertical="top"
+                  placeholder="Confirm what passed, what felt off, or that the route loop had no dead ends."
+                  placeholderTextColor={colors.mutedForeground}
+                  value={surfaceNotes[nextBetaTarget.surfaceId] ?? ""}
+                  onChangeText={(value) =>
+                    setSurfaceNotes((current) => ({
+                      ...current,
+                      [nextBetaTarget.surfaceId]: value,
+                    }))
+                  }
+                  style={[
+                    s.betaRunMissionNoteInput,
+                    {
+                      color: colors.foreground,
+                      borderColor: colors.border,
+                      backgroundColor: colors.card,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                />
+              </View>
               <VerificationStepList colors={colors} label="Before capture" steps={nextBetaTarget.setupSteps.slice(0, 2)} />
               <VerificationStepList colors={colors} label="Pass when" steps={nextBetaTarget.acceptanceCriteria.slice(0, 2)} />
               <View style={[s.betaRunEscalation, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
@@ -1628,6 +1661,32 @@ const s = StyleSheet.create({
   betaRunRouteLoopProof: {
     fontSize: 11,
     lineHeight: 15,
+  },
+  betaRunMissionNote: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 8,
+  },
+  betaRunMissionNoteHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  betaRunMissionNoteLabel: {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  betaRunMissionNoteInput: {
+    minHeight: 74,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    fontSize: 12,
+    lineHeight: 17,
   },
   betaRunEscalation: {
     borderRadius: 10,

@@ -89,6 +89,11 @@ function screenshotRequirementPlatform(value: string): "ios" | "android" | "any"
   return "any";
 }
 
+function evidenceRequiresNote(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return normalized.startsWith("note ") || normalized.startsWith("note:") || normalized.includes("note confirming");
+}
+
 function pluralLabel(value: number, label: string): string {
   return `${value} ${label}${value === 1 ? "" : "s"}`;
 }
@@ -104,6 +109,8 @@ function missingEvidenceForSurface(
   const requiredAndroid = requiredPlatforms.filter((platform) => platform === "android").length;
   const requiredAny = requiredPlatforms.filter((platform) => platform === "any").length;
   const evidence = review.screenshotEvidence ?? [];
+  const requiresNote = surface.requiredEvidence.some(evidenceRequiresNote);
+  const hasNote = Boolean(review.note?.trim());
   const attachedIos = evidence.filter((item) => item.targetPlatform === "ios").length;
   const attachedAndroid = evidence.filter((item) => item.targetPlatform === "android").length;
   const platformSpecificUsed = Math.min(requiredIos, attachedIos) + Math.min(requiredAndroid, attachedAndroid);
@@ -116,6 +123,7 @@ function missingEvidenceForSurface(
   if (missingIos > 0) missing.push(`Attach ${pluralLabel(missingIos, "iOS screenshot")} for ${surface.title}.`);
   if (missingAndroid > 0) missing.push(`Attach ${pluralLabel(missingAndroid, "Android screenshot")} for ${surface.title}.`);
   if (missingAny > 0) missing.push(`Attach ${pluralLabel(missingAny, "screenshot")} for ${surface.title}.`);
+  if (requiresNote && !hasNote) missing.push(`Add QA note for ${surface.title}.`);
 
   if (!missing.length && review.status === "unreviewed") {
     missing.push(`Mark Pass or Needs tune for ${surface.title}.`);

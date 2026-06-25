@@ -307,3 +307,57 @@ test("preserves owner preview route-loop details in the capture plan and share s
   assert.match(text, /More \(\/more\): Open Launch Readiness/);
   assert.match(text, /Care Pass \(\/records\): Confirm sitter\/vet\/trainer handoff/);
 });
+
+test("keeps note-required owner preview evidence open until the QA note is written", () => {
+  const surfaces = listMobileLaunchQaSurfaces();
+  const ownerLoop = surfaces.find((surface) => surface.id === "owner-preview-core-loop");
+
+  assert.ok(ownerLoop);
+
+  const sessionWithoutNote: MobileQaSessionState = {
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {
+      "owner-preview-core-loop": "pass",
+    },
+    surfaceNotes: {},
+    surfaceEvidenceById: {
+      "owner-preview-core-loop": [
+        {
+          uri: "file:///qa/ios-owner-log.png",
+          fileName: "ios-owner-log.png",
+          source: "library",
+          targetPlatform: "ios",
+          capturedAtIso: "2026-06-25T09:00:00.000Z",
+        },
+        {
+          uri: "file:///qa/android-launch-readiness.png",
+          fileName: "android-launch-readiness.png",
+          source: "library",
+          targetPlatform: "android",
+          capturedAtIso: "2026-06-25T09:02:00.000Z",
+        },
+      ],
+    },
+  };
+
+  const openPlan = buildMobileLaunchQaCapturePlan(sessionWithoutNote, [ownerLoop]);
+
+  assert.equal(openPlan.openSurfaces, 1);
+  assert.equal(openPlan.nextTargets[0]?.surfaceId, "owner-preview-core-loop");
+  assert.match(openPlan.nextTargets[0]?.missingEvidence.join(" ") ?? "", /Add QA note for Owner Preview Core Loop/);
+
+  const sessionWithNote: MobileQaSessionState = {
+    ...sessionWithoutNote,
+    surfaceNotes: {
+      "owner-preview-core-loop": "Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass were reachable without dead ends.",
+    },
+  };
+
+  const completePlan = buildMobileLaunchQaCapturePlan(sessionWithNote, [ownerLoop]);
+
+  assert.equal(completePlan.openSurfaces, 0);
+  assert.equal(completePlan.completeSurfaces, 1);
+  assert.deepEqual(completePlan.nextTargets, []);
+});

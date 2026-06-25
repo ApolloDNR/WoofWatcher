@@ -580,3 +580,13 @@ QA/readiness tests, 388 focused behavior/readiness tests, mobile TypeScript,
 PixelLab verification at 149 files, `git diff --check`, and package-local Expo
 web export with HTML/JavaScript output verified and cleaned. Real iOS/Android
 screenshots and human visual approval remain the next beta gate.
+
+Current evidence, 2026-06-25: Required owner-preview QA notes are now enforced by
+the capture plan. Required `Note ...` evidence keeps a surface open until a
+surface note exists, and `/care-twin-qa` exposes a top-card `Mission note` input
+that is labeled Required when the active beta target needs note proof. Targeted
+QA/readiness verification passed 88 tests, focused behavior/readiness
+verification passed 389 tests, mobile TypeScript passed, PixelLab verification
+passed at 149 files, `git diff --check` passed, and package-local Expo web
+export emitted HTML/JavaScript output that was verified and cleaned. Real
+iOS/Android screenshots and human visual approval remain the next beta gate.
