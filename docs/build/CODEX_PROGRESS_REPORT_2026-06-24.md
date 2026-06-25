@@ -507,3 +507,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
 - Apollo or a helper still needs to visually approve the Quick Log / Log owner-preview route before sharing the beta beyond the builder loop.
+
+## Completed - Health Watch Touch Target Hardening
+
+- Hardened the Health route for the owner-preview loop and non-diagnostic Health Watch/Bile Watch review.
+- Imported `MIN_MOBILE_TOUCH_TARGET` into Health and applied it to the Health/Bile segmented tabs, `Log health note`, and `Records` hero actions.
+- Extended static mobile readiness so those named Health style blocks must keep the shared target instead of falling back to route-local 36-42px controls.
+- Left decorative pixel health meters, score badges, and card dimensions alone so the route stays visually aligned with the neo-retro board system.
+
+## Verification - Health Watch Touch Target Hardening
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - failed red on the 36px `tabPill`, then passed with 71 tests after the Health route used the shared target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 88 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 389 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - Health Watch Touch Target Hardening
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- Apollo or a helper still needs to visually approve the Health Watch/Bile Watch owner-preview route before sharing the beta beyond the builder loop.

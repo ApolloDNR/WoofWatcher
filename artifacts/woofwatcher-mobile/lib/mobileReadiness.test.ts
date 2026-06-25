@@ -680,6 +680,10 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
 test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () => {
   const health = readAppFile(join("(tabs)", "health.tsx"));
 
+  for (const styleName of ["tabPill", "heroActionPrimary", "heroActionSecondary"]) {
+    assertStyleUsesSharedTouchTarget(health, styleName);
+  }
+
   assert.match(health, /deriveHealthWatch/);
   assert.match(health, /Health Watch/);
   assert.match(health, /Bile Watch/);

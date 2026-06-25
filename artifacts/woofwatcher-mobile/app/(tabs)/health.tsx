@@ -14,7 +14,7 @@ import {
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getTabbedRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -555,7 +555,7 @@ const s = StyleSheet.create({
   },
   tabPill: {
     flex: 1,
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
@@ -618,7 +618,7 @@ const s = StyleSheet.create({
   },
   heroActionPrimary: {
     flex: 1,
-    minHeight: 42,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -626,7 +626,7 @@ const s = StyleSheet.create({
   heroActionPrimaryText: { color: "#FFFFFF", fontSize: 13 },
   heroActionSecondary: {
     minWidth: 92,
-    minHeight: 42,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",

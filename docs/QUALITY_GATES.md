@@ -658,3 +658,16 @@ targeted QA/readiness verification passed 88 tests, focused behavior/readiness
 verification passed 389 tests, mobile TypeScript passed, PixelLab verification
 passed at 149 files, `git diff --check` passed, and package-local Expo web
 export emitted HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: Health Watch's owner-preview controls now share
+the same mobile touch-target contract. The Health route uses
+`MIN_MOBILE_TOUCH_TARGET` for the Health/Bile segmented tabs plus the `Log
+health note` and `Records` hero actions, while decorative pixel health meters
+remain visual-only. Static readiness now protects those named style blocks so
+Health Watch and Bile Watch stay tappable during the two-day beta route loop.
+Red/green mobile readiness passed after first failing on the 36px `tabPill`,
+targeted QA/readiness verification passed 88 tests, focused behavior/readiness
+verification passed 389 tests, mobile TypeScript passed, PixelLab verification
+passed at 149 files, `git diff --check` passed with expected Windows
+line-ending warnings only, and package-local Expo web export emitted
+HTML/JavaScript output that was verified and cleaned.

@@ -337,6 +337,13 @@ attachment, trust review, meal outcome, potty outcome, and potty save controls.
 This keeps the under-five-second logging flow more phone-native while still
 preserving the neo-retro board layout.
 
+The Health Watch touch-target pass hardened the route that needs to feel calm,
+trustworthy, and easy under pressure. Health now applies the shared 48px target
+to the Health/Bile segmented tabs plus the `Log health note` and `Records` hero
+actions, while leaving visual meters and pixel health cards untouched. This
+keeps the non-diagnostic Health Watch/Bile Watch owner-preview path more usable
+on phones without turning the screen into generic utility UI.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

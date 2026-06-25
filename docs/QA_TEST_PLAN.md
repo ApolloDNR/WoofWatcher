@@ -626,6 +626,19 @@ Latest local evidence, 2026-06-25:
 
 Latest local evidence, 2026-06-25:
 
+- Health Watch now keeps its core owner-preview controls on the shared 48px mobile touch-target contract.
+- The hardened controls include the Health/Bile segmented tabs, `Log health note`, and `Records` hero actions.
+- Static readiness now extracts those named Health style blocks and asserts each uses `MIN_MOBILE_TOUCH_TARGET`.
+- Red/green evidence: `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` failed first on the 36px `tabPill`, then passed with 71 tests after the Health route used the shared target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 88 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 389 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+Latest local evidence, 2026-06-25:
+
 - More's Launch Readiness board now renders `Proof status` inside Native QA Next Captures.
 - Pass rows that still have required missing screenshots or Mission note evidence display `Pass pending proof` instead of looking complete.
 - `buildMobileLaunchQaCaptureShareText` now uses the same owner-readable status label, so the shared QA plan does not leak raw internal status strings or hide pending proof.
