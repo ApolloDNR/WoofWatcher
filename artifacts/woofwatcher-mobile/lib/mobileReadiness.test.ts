@@ -1921,6 +1921,30 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(qaEvidence, /hasMobileQaSessionReviewData/);
 });
 
+test("keeps More launch and household gateway actions on shared mobile touch targets", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  for (const styleName of [
+    "profileEditBtn",
+    "intelligenceAction",
+    "providerSetupButton",
+    "nativeQaCaptureShare",
+    "nativeQaCaptureCockpitAction",
+    "betaNextActionButton",
+    "launchShare",
+    "passAction",
+    "passKind",
+    "shareBtn",
+    "modalCancel",
+    "modalConfirm",
+    "providerStatusPill",
+    "unitPill",
+    "profSaveBtn",
+  ]) {
+    assertStyleUsesSharedTouchTarget(more, styleName);
+  }
+});
+
 test("keeps care document refresh conflict-safe in CareContext", () => {
   const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
 

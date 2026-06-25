@@ -551,3 +551,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
 - Apollo or a helper still needs to visually approve the Plans owner-preview route before sharing the beta beyond the builder loop.
+
+## Completed - More Gateway Touch Target Hardening
+
+- Hardened the More route for the owner-preview loop, Launch Readiness, and household handoff gateway.
+- Imported `MIN_MOBILE_TOUCH_TARGET` into More and applied it to profile edit, Care Intelligence action, provider setup actions, native QA share/cockpit actions, beta next action, Launch/Store packet share actions, Access Pass share and role chips, household invite, prompt modal actions, provider status chips, weight-unit chips, and profile/diet/provider save buttons.
+- Extended static mobile readiness so those named More style blocks must keep the shared target instead of falling back to route-local 32-46px controls.
+- Left decorative icons, pixel badges, and board content density alone so More stays aligned with the premium neo-retro operating surface.
+
+## Verification - More Gateway Touch Target Hardening
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - failed red on the 32px `profileEditBtn`, then passed with 73 tests after the More route used the shared target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 90 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 391 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - More Gateway Touch Target Hardening
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- Apollo or a helper still needs to visually approve More's Launch Readiness, Records, Avatar Studio, and Care Pass gateway path before sharing the beta beyond the builder loop.

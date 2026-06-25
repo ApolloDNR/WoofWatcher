@@ -352,6 +352,16 @@ Static readiness guards those named style blocks, so the route cannot quietly
 fall back to cramped 28-42px controls while Apollo or a helper is trying to
 prove the beta journey under the two-day deadline.
 
+The More gateway touch-target pass hardened the route that connects Launch
+Readiness, Records, Care Pass, Avatar Studio, provider setup, household invite,
+and profile/diet editing. More now applies the shared 48px target to profile
+edit, Care Intelligence action, provider setup actions, native QA share/cockpit
+actions, beta next action, Launch/Store packet share actions, Access Pass share
+and role chips, household invite, prompt modal actions, provider status chips,
+weight-unit chips, and profile/diet/provider save buttons. This makes the beta
+handoff and owner-preview route loop easier to run on phones without pretending
+public store or provider gates are closed.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

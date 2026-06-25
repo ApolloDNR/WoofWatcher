@@ -77,6 +77,7 @@ import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
@@ -2907,7 +2908,7 @@ const s = StyleSheet.create({
   intelligenceMetricLabel: { fontSize: 10.5, lineHeight: 13, marginTop: 2, textTransform: "uppercase" },
   intelligenceMetricDetail: { fontSize: 11, lineHeight: 15, marginTop: 3 },
   intelligenceAction: {
-    minHeight: 46,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -2976,7 +2977,7 @@ const s = StyleSheet.create({
   providerSetupActions: { flexDirection: "row", gap: 8, marginTop: 10 },
   providerSetupButton: {
     flex: 1,
-    minHeight: 42,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -3014,7 +3015,7 @@ const s = StyleSheet.create({
   },
   nativeQaCaptureShare: {
     flex: 1,
-    minHeight: 48,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -3024,7 +3025,7 @@ const s = StyleSheet.create({
   nativeQaCaptureShareText: { color: "#FFFFFF", fontSize: 12.5 },
   nativeQaCaptureCockpitAction: {
     flex: 1,
-    minHeight: 48,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
@@ -3096,7 +3097,7 @@ const s = StyleSheet.create({
   betaNextActionText: { flex: 1, fontSize: 10.5, lineHeight: 15 },
   betaNextActionButton: {
     marginTop: 10,
-    minHeight: 44,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -3106,7 +3107,7 @@ const s = StyleSheet.create({
   betaNextActionButtonText: { color: "#FFFFFF", fontSize: 12.5 },
   launchShare: {
     marginTop: 12,
-    minHeight: 44,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -3156,10 +3157,10 @@ const s = StyleSheet.create({
   passMeta: { fontSize: 12, lineHeight: 16, marginTop: 1 },
   passStatus: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
   passStatusText: { fontSize: 10.5, textTransform: "capitalize" },
-  passAction: { minHeight: 46, borderRadius: 8, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, marginTop: 13 },
+  passAction: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, marginTop: 13 },
   passActionText: { color: "#FFFFFF", fontSize: 13.5 },
   passKindGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8, marginBottom: 4 },
-  passKind: { flexGrow: 1, flexBasis: "47%", minHeight: 44, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
+  passKind: { flexGrow: 1, flexBasis: "47%", minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
   passKindText: { fontSize: 12.5 },
   careTodayList: { borderTopWidth: 1, marginTop: 12, paddingTop: 10, gap: 8 },
   careTodayRow: { flexDirection: "row", alignItems: "center", gap: 8 },
@@ -3192,7 +3193,7 @@ const s = StyleSheet.create({
   },
   codeLabel: { fontSize: 10.5, letterSpacing: 0.6 },
   codeValue: { fontSize: 21, letterSpacing: 1, marginTop: 3 },
-  shareBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, height: 40, borderRadius: 13 },
+  shareBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13 },
   shareBtnText: { color: "#fff", fontSize: 14 },
 
   signOut: {
@@ -3222,9 +3223,9 @@ const s = StyleSheet.create({
   modalSub: { fontSize: 14, marginTop: 4, lineHeight: 20 },
   modalInput: { borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 13, fontSize: 16, marginTop: 16 },
   modalActions: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
-  modalCancel: { flex: 1, height: 48, alignItems: "center", justifyContent: "center" },
+  modalCancel: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   modalCancelText: { fontSize: 15 },
-  modalConfirm: { flex: 2, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  modalConfirm: { flex: 2, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   modalConfirmText: { color: "#fff", fontSize: 15 },
 
   linkRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 15 },
@@ -3271,8 +3272,8 @@ const s = StyleSheet.create({
     position: "absolute",
     top: 12,
     right: 12,
-    width: 32,
-    height: 32,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
@@ -3289,7 +3290,7 @@ const s = StyleSheet.create({
   providerStatusGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2 },
   providerStatusPill: {
     flexGrow: 1,
-    minHeight: 42,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
@@ -3312,8 +3313,8 @@ const s = StyleSheet.create({
   profField: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   profWeightRow: { flexDirection: "row", alignItems: "flex-end", gap: 12 },
   unitRow: { flexDirection: "row", gap: 8, paddingBottom: 1 },
-  unitPill: { paddingHorizontal: 16, paddingVertical: 11, borderRadius: 13, borderWidth: 1 },
+  unitPill: { minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 16, paddingVertical: 11, borderRadius: 13, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   unitText: { fontSize: 14 },
-  profSaveBtn: { marginTop: 24, borderRadius: 15, paddingVertical: 15, alignItems: "center" },
+  profSaveBtn: { marginTop: 24, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
   profSaveBtnText: { color: "#fff", fontSize: 15.5 },
 });
