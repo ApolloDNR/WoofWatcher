@@ -573,6 +573,18 @@ Latest local evidence, 2026-06-25:
 
 Latest local evidence, 2026-06-25:
 
+- Phoenix Home now keeps its owner-preview first-screen actions on the shared 48px mobile touch-target contract.
+- The hardened controls include the header/menu action, Avatar Studio hero entry, household presence panel, and Adventure inline action.
+- Static readiness now extracts the named Home style blocks and asserts each uses `MIN_MOBILE_TOUCH_TARGET`.
+- Red/green evidence: `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` failed first on the 42px `headerButton`, then passed with 77 tests after Home used the shared target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 94 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 395 passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Mobile TypeScript is currently blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export should be re-run from Git Bash, WSL, CI, or a preinstalled dependency layer with `sh` available.
+
+Latest local evidence, 2026-06-25:
+
 - Adventure Mode now keeps its owner-preview memory actions on the shared 48px mobile touch-target contract.
 - The hardened controls are the `Save Memory` primary action and `Share Adventure` secondary action.
 - Static readiness now extracts `primaryBtn` and `secondaryBtn` from the Adventure route and asserts each uses `MIN_MOBILE_TOUCH_TARGET`.

@@ -640,3 +640,26 @@ If device QA remains unavailable, continue provider readiness with invite approv
 - Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
 - Apollo or a helper still needs to visually approve the Adventure route's quest list, memory capture, Save Memory, Share Adventure, and private/safety copy before sharing the beta beyond the builder loop.
 - Expo web export should be re-run from Git Bash, WSL, CI, or another dependency environment with `sh` available before this slice is treated as export-proven.
+
+## Completed - Phoenix Home Owner Preview Touch Target Hardening
+
+- Hardened Phoenix Home for the owner-preview first impression and two-day beta route loop.
+- Imported `MIN_MOBILE_TOUCH_TARGET` into Home and applied it to the header/menu action, Avatar Studio hero entry, household presence panel, and Adventure inline action.
+- Extended static mobile readiness so `headerButton`, `heroStudioButton`, `presencePanel`, and `adventureInline` must keep the shared mobile target instead of route-local 39-42px sizing.
+- Preserved the pixel-room hero, care status, presence, and care-RPG framing while making the first-screen actions easier to tap on phones.
+
+## Verification - Phoenix Home Owner Preview Touch Target Hardening
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - failed red on the 42px `headerButton`, then passed with 77 tests after Home used the shared target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 94 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 395 passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts\woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Mobile TypeScript remains blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found).
+- Expo web export smoke should be re-run from Git Bash, WSL, CI, or another dependency environment with `sh` available.
+
+## Still Not Done - Phoenix Home Owner Preview Touch Target Hardening
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- Apollo or a helper still needs to visually approve Home's first-screen menu/header action, Avatar Studio hero entry, presence panel, Adventure inline entry, pixel-room crop, and bottom-nav fit before sharing the beta beyond the builder loop.
+- TypeScript/export should be re-run from a shell-compatible dependency environment before this slice is treated as dependency/export-proven.

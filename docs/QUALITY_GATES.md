@@ -750,3 +750,19 @@ reached the registry but failed before export because the root preinstall script
 calls `sh`, which is unavailable in this shell. Re-run export from a
 shell-compatible environment or preinstalled dependency layer before treating
 this slice as export-proven.
+
+Current evidence, 2026-06-25: Phoenix Home's owner-preview first screen now
+shares the same mobile touch-target contract. Home imports
+`MIN_MOBILE_TOUCH_TARGET` and uses it for `headerButton`, `heroStudioButton`,
+`presencePanel`, and `adventureInline`, covering the menu/header action, Avatar
+Studio hero entry, household presence card, and Adventure inline entry. Static
+readiness protects those named style blocks so the beta's opening route cannot
+quietly return to cramped 39-42px controls. Red/green mobile readiness passed
+after first failing on the 42px `headerButton`, targeted QA/readiness
+verification passed 94 tests, focused behavior/readiness verification passed
+395 tests, PixelLab verification passed at 149 files, and `git diff --check`
+passed with expected Windows line-ending warnings only. Mobile TypeScript is
+currently dependency-blocked in this cleaned Windows shell because the
+Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found). Package
+export should be re-run from Git Bash, WSL, CI, or a preinstalled dependency
+layer before treating this slice as export-proven.

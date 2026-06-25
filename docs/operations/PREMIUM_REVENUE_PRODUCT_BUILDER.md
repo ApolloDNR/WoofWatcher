@@ -391,6 +391,17 @@ shell-compatible environment because the current Windows bundled-pnpm attempt
 reached the registry but failed before export when the root preinstall script
 called missing `sh`.
 
+The Phoenix Home owner-preview touch-target pass hardened the first impression
+for the two-day beta. Home now applies the shared 48px target to the
+header/menu action, Avatar Studio hero entry, household presence panel, and
+Adventure inline action. Static readiness guards `headerButton`,
+`heroStudioButton`, `presencePanel`, and `adventureInline`, after first failing
+on the route-local 42px `headerButton`. Local verification passed targeted
+QA/readiness, broad behavior/readiness, PixelLab verification, and `git diff
+--check`. Mobile TypeScript and Expo web export remain dependency/shell
+environment gates in this cleaned Windows shell and should be rerun from Git
+Bash, WSL, CI, or a preinstalled dependency layer.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, Care Pass, and Adventure without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

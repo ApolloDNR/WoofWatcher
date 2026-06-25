@@ -661,6 +661,14 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(releaseQa, /floating paw nav/);
 });
 
+test("keeps Phoenix Home owner-preview actions on shared mobile touch targets", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  for (const styleName of ["headerButton", "heroStudioButton", "presencePanel", "adventureInline"]) {
+    assertStyleUsesSharedTouchTarget(home, styleName);
+  }
+});
+
 test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {
   const domain = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-intelligence.ts"), "utf8");
   const home = readAppFile(join("(tabs)", "index.tsx"));

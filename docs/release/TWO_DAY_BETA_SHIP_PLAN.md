@@ -53,6 +53,7 @@ The beta must not claim:
 - Use the large cockpit actions first: platform tag, `Open Next Surface`, `Attach proof`, `Pass`, `Needs tune`, `Share QA`, and per-surface `Open surface` are all intended to be phone-sized beta controls.
 - If the card shows `Owner route loop`, follow that ordered checklist before marking the mission Pass; it is the beta's real owner journey, not an optional note.
 - When the current mission is `Owner Preview Core Loop`, use the bottom nav to open Home, Log, Plans, Health, and More in order, then confirm Records, Avatar Studio, and Care Pass are reachable from More without dead ends.
+- On Home, confirm the header/menu action, Avatar Studio hero entry, household presence panel, Adventure inline action, pixel-room crop, and bottom-nav fit feel phone-sized, useful, and aligned with the premium neo-retro care-twin promise.
 - In the owner-preview loop, quick-log one safe care event or open the detail sheet, then undo it or leave a QA note if you do not want the test log to stay in local preview data.
 - On Log, confirm the care-type tabs, Undo/Add details, meal outcome, potty outcome, trust review, walk finish, and alone-time return controls feel phone-sized and easy to tap.
 - On Plans, confirm schedule tabs, Add plan, Find event, suggestion add, routine done, owner chips, save, and delete controls feel phone-sized and easy to tap.
@@ -90,7 +91,7 @@ Shippable for internal beta after local verification passes:
 
 Current environment note:
 
-- The Adventure hardening slice passed focused/readiness tests, PixelLab verification, and `git diff --check`. Mobile TypeScript is currently dependency-blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export smoke did not complete because the bundled-pnpm path reached the registry and then failed before export when the root preinstall script called missing `sh`. Re-run TypeScript/export from Git Bash, WSL, CI, or a preinstalled dependency layer before treating the latest slice as dependency/export-proven.
+- The latest Home owner-preview hardening slice passed the targeted 94-test QA/readiness suite, the 395-test focused behavior/readiness suite, PixelLab verification at 149 assets, and `git diff --check`. Mobile TypeScript is currently dependency-blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export smoke did not complete because the bundled-pnpm path reached the registry and then failed before export when the root preinstall script called missing `sh`. Re-run TypeScript/export from Git Bash, WSL, CI, or a preinstalled dependency layer before treating the latest slice as dependency/export-proven.
 
 Still blocked for public launch:
 

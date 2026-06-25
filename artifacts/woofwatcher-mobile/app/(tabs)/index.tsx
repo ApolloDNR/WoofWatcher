@@ -39,7 +39,12 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
-import { getRouteTopPadding, getTabbedRouteBottomPadding, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
+import {
+  getRouteTopPadding,
+  getTabbedRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import { deriveCareTwinScene, type CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
@@ -1132,8 +1137,8 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   headerButton: {
-    width: 42,
-    height: 42,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
@@ -1195,7 +1200,7 @@ const s = StyleSheet.create({
   },
   heroStudioButton: {
     width: 116,
-    minHeight: 39,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 7,
     borderWidth: 1,
     paddingHorizontal: 9,
@@ -1218,6 +1223,7 @@ const s = StyleSheet.create({
   },
   presencePanel: {
     width: "84%",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     alignSelf: "flex-start",
     marginTop: -30,
     marginLeft: 12,
@@ -1503,6 +1509,7 @@ const s = StyleSheet.create({
   },
   adventureInline: {
     marginTop: 13,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,
