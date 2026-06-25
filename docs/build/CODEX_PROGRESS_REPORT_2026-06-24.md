@@ -595,3 +595,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
 - Apollo or a helper still needs to visually approve Records, Dog ID, Care Pass, saved report actions, and record-edit sheets before sharing the beta beyond the builder loop.
+
+## Completed - Avatar Studio Touch Target Hardening
+
+- Hardened Avatar Studio for the owner-preview loop and scan-assisted care-twin creator review.
+- Imported `MIN_MOBILE_TOUCH_TARGET` into Avatar Studio and applied it to creator tabs, gallery/take-photo/reset/save buttons, coat swatches, face-marking options, mood preview chips, and shared-constant-backed large template/accessory tiles.
+- Extended static mobile readiness so those named Avatar Studio style blocks must keep or reference the shared target instead of falling back to route-local 36-42px controls.
+- Preserved the larger mockup-like template and accessory tiles by using the shared target as a floor rather than flattening the art-heavy creator surface into generic buttons.
+
+## Verification - Avatar Studio Touch Target Hardening
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - failed red on the 40px `tab`, then passed with 75 tests after Avatar Studio used the shared target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 92 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 393 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - Avatar Studio Touch Target Hardening
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- Apollo or a helper still needs to visually approve Avatar Studio's scan, template, customize, emote, and save flows before sharing the beta beyond the builder loop.

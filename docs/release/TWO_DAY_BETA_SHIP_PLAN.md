@@ -59,6 +59,7 @@ The beta must not claim:
 - On Health, confirm the Health/Bile tabs plus `Log health note` and `Records` actions feel phone-sized, calm, and clearly non-diagnostic.
 - On More, confirm Launch Readiness, Native QA Next Captures, provider setup, household invite, Access Pass, profile edit, and save/share actions feel phone-sized and easy to tap.
 - On Records, confirm Dog ID share/print, medication search/filter, Care Pass preview, report resend/print, record add/delete, attachment, and sheet save/cancel controls feel phone-sized and easy to tap.
+- On Avatar Studio, confirm Scan/Template/Customize/Emotes tabs, Gallery, Take photo, template tiles, coat swatches, face options, accessories, mood previews, Reset, and Save Avatar controls feel phone-sized and easy to tap.
 - Write the `Mission note` in the 48-hour beta card before marking the owner-preview mission Pass; this note is required proof for the no-dead-ends route loop.
 - Read the `Next device mission` panel before leaving the cockpit: it shows route, setup steps, pass criteria, evidence count, and the Needs tune rule for that screen.
 - Tap `Open Next Surface`, test the route, capture proof, then return to `/care-twin-qa`.

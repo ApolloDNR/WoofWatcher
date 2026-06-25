@@ -30,6 +30,12 @@ function assertStyleUsesSharedTouchTarget(source: string, styleName: string): vo
   assert.doesNotMatch(block, /minHeight:\s*(?:3\d|4[0-7])\b/, `${styleName} should not keep a route-local undersized height`);
 }
 
+function assertStyleReferencesSharedTouchTarget(source: string, styleName: string): void {
+  const block = getStyleBlock(source, styleName);
+  assert.match(block, /MIN_MOBILE_TOUCH_TARGET/, `${styleName} should reference the shared mobile touch target`);
+  assert.doesNotMatch(block, /\b(?:minHeight|height):\s*(?:3\d|4[0-7])\b/, `${styleName} should not keep a route-local undersized height`);
+}
+
 function listAppFiles(dir = APP_DIR): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = join(dir, entry.name);
@@ -1230,6 +1236,18 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.doesNotMatch(avatarStudio, /headerTitle:/);
   assert.doesNotMatch(avatarStudio, /heroPreview: \{[^\n]*(shadowOpacity|elevation)/);
   assert.doesNotMatch(avatarStudio, /canvasCard: \{[^\n]*(shadowOpacity|elevation)/);
+});
+
+test("keeps Avatar Studio creator actions on shared mobile touch targets", () => {
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  for (const styleName of ["tab", "secondaryBtn", "primaryBtn", "swatch", "optionPill", "moodChip"]) {
+    assertStyleUsesSharedTouchTarget(avatarStudio, styleName);
+  }
+
+  for (const styleName of ["templateTile", "accessoryTile"]) {
+    assertStyleReferencesSharedTouchTarget(avatarStudio, styleName);
+  }
 });
 
 test("documents PixelLab as the secure Phoenix asset production path", () => {

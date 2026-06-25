@@ -371,6 +371,14 @@ record delete, empty add, record type chips, attachment, and sheet cancel/save
 controls. Static readiness guards those named style blocks so the report and
 handoff workflows stay phone-sized during the owner-preview route loop.
 
+The Avatar Studio touch-target pass hardened the creator route that sells the
+care-twin promise. Avatar Studio now applies the shared 48px target to creator
+tabs, gallery/take-photo/reset/save buttons, coat swatches, face-marking
+options, mood preview chips, and shared-constant-backed template/accessory
+tiles. The larger art tiles remain visually rich, but the route is now guarded
+against cramped mobile controls during the scan, template, customize, emote,
+and save portions of the owner-preview route loop.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

@@ -716,3 +716,17 @@ TypeScript passed, PixelLab verification passed at 149 files, `git diff
 --check` passed with expected Windows line-ending warnings only, and
 package-local Expo web export emitted HTML/JavaScript output that was verified
 and cleaned.
+
+Current evidence, 2026-06-25: Avatar Studio creator actions now share the same
+mobile touch-target contract. The Avatar Studio route uses
+`MIN_MOBILE_TOUCH_TARGET` for creator tabs, gallery/take-photo/reset/save
+buttons, coat swatches, face-marking options, mood preview chips, and
+shared-constant-backed large template/accessory tiles. Static readiness protects
+those named style blocks so the scan-assisted creator stays tappable during the
+two-day beta route loop without shrinking the larger pixel-art template tiles.
+Red/green mobile readiness passed after first failing on the 40px `tab`,
+targeted QA/readiness verification passed 92 tests, focused behavior/readiness
+verification passed 393 tests, mobile TypeScript passed, PixelLab verification
+passed at 149 files, `git diff --check` passed with expected Windows
+line-ending warnings only, and package-local Expo web export emitted
+HTML/JavaScript output that was verified and cleaned.

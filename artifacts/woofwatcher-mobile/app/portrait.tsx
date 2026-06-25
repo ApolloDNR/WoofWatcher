@@ -61,7 +61,7 @@ import {
 } from "@/lib/avatarTemplateSpriteAssets";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getStandaloneRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
@@ -1354,7 +1354,7 @@ const s = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
@@ -1377,7 +1377,7 @@ const s = StyleSheet.create({
   actionRow: { flexDirection: "row", gap: 10, marginTop: 4, marginBottom: 12 },
   secondaryBtn: {
     flex: 1,
-    minHeight: 48,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
     alignItems: "center",
@@ -1388,7 +1388,7 @@ const s = StyleSheet.create({
   secondaryBtnText: { fontSize: 14 },
   primaryBtn: {
     flex: 1,
-    minHeight: 48,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -1400,7 +1400,7 @@ const s = StyleSheet.create({
   templateTile: {
     flexBasis: "48%",
     flexGrow: 1,
-    minHeight: 178,
+    minHeight: Math.max(178, MIN_MOBILE_TOUCH_TARGET),
     borderRadius: 8,
     borderWidth: 1,
     padding: 10,
@@ -1452,13 +1452,13 @@ const s = StyleSheet.create({
   templateSpriteNote: { fontSize: 10.5, lineHeight: 14, marginTop: "auto" },
   swatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   swatch: {
-    width: 42,
-    height: 42,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
   },
   optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   optionPill: {
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 12,
@@ -1470,7 +1470,7 @@ const s = StyleSheet.create({
   accessoryTile: {
     flexBasis: "47.5%",
     flexGrow: 1,
-    minHeight: 82,
+    minHeight: Math.max(82, MIN_MOBILE_TOUCH_TARGET),
     borderRadius: 8,
     borderWidth: 1,
     padding: 10,
@@ -1481,7 +1481,7 @@ const s = StyleSheet.create({
   accessoryLabel: { fontSize: 12.5 },
   accessorySlot: { fontSize: 10, textTransform: "uppercase" },
   moodGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
-  moodChip: { width: "30.9%", alignItems: "center" },
+  moodChip: { width: "30.9%", minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   moodThumbWrap: {
     width: "100%",
     aspectRatio: 1,
