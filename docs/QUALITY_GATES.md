@@ -634,3 +634,15 @@ the guard caught the missing action, targeted QA/readiness verification passed
 TypeScript passed, PixelLab verification passed at 149 files, `git diff
 --check` passed, and package-local Expo web export emitted HTML/JavaScript
 output that was verified and cleaned.
+
+Current evidence, 2026-06-25: `/care-twin-qa` now uses the shared mobile touch
+target contract for the cockpit controls a tester must hit during the two-day
+beta run: screenshot platform tags, Open Next Surface, Share QA, Share QA
+Summary, evidence attach/clear, per-surface Open Surface, and Pass/Needs tune
+review buttons. The readiness test now parses named style blocks and fails when
+those controls drift back to route-local undersized heights. Red/green mobile
+readiness passed after first failing on the 44px platform picker, targeted
+QA/readiness verification passed 88 tests, focused behavior/readiness
+verification passed 389 tests, mobile TypeScript passed, PixelLab verification
+passed at 149 files, `git diff --check` passed, and package-local Expo web
+export emitted HTML/JavaScript output that was verified and cleaned.

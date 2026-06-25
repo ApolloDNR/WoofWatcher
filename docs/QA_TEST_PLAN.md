@@ -600,6 +600,19 @@ Latest local evidence, 2026-06-25:
 
 Latest local evidence, 2026-06-25:
 
+- `/care-twin-qa` now keeps critical tester controls on the shared 48px mobile touch-target contract.
+- The hardened controls include screenshot platform tags, Open Next Surface, Share QA, Share QA Summary, evidence attach/clear, per-surface Open Surface, and Pass/Needs tune review buttons.
+- Static readiness now extracts named style blocks and asserts those controls use `MIN_MOBILE_TOUCH_TARGET` instead of route-local 40-46px heights.
+- Red/green evidence: `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` failed first on the 44px `betaRunPlatformOption`, then passed with 71 tests after the QA route used the shared touch target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 88 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 389 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+Latest local evidence, 2026-06-25:
+
 - More's Launch Readiness board now renders `Proof status` inside Native QA Next Captures.
 - Pass rows that still have required missing screenshots or Mission note evidence display `Pass pending proof` instead of looking complete.
 - `buildMobileLaunchQaCaptureShareText` now uses the same owner-readable status label, so the shared QA plan does not leak raw internal status strings or hide pending proof.

@@ -1842,7 +1842,7 @@ const s = StyleSheet.create({
     gap: 8,
   },
   betaRunPlatformOption: {
-    minHeight: 44,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     minWidth: 82,
     borderRadius: 9,
     borderWidth: 1,
@@ -1859,7 +1859,7 @@ const s = StyleSheet.create({
   },
   betaRunPrimary: {
     flex: 1,
-    minHeight: 46,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 9,
     flexDirection: "row",
     alignItems: "center",
@@ -1871,7 +1871,7 @@ const s = StyleSheet.create({
     fontSize: 12.5,
   },
   betaRunSecondary: {
-    minHeight: 46,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 9,
     borderWidth: 1,
     paddingHorizontal: 12,
@@ -1924,7 +1924,7 @@ const s = StyleSheet.create({
     lineHeight: 17,
   },
   shareButton: {
-    minHeight: 46,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 9,
     borderWidth: 1,
     flexDirection: "row",
@@ -2069,7 +2069,7 @@ const s = StyleSheet.create({
   },
   attachButton: {
     flex: 1,
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 9,
     borderWidth: 1,
     flexDirection: "row",
@@ -2081,7 +2081,7 @@ const s = StyleSheet.create({
     fontSize: 12,
   },
   clearEvidenceButton: {
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 9,
     borderWidth: 1,
     paddingHorizontal: 14,
@@ -2096,7 +2096,7 @@ const s = StyleSheet.create({
     lineHeight: 17,
   },
   openSurfaceButton: {
-    minHeight: 42,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 9,
     borderWidth: 1,
     flexDirection: "row",
@@ -2205,7 +2205,7 @@ const s = StyleSheet.create({
   },
   reviewButton: {
     flex: 1,
-    minHeight: 43,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 9,
     borderWidth: 1,
     flexDirection: "row",

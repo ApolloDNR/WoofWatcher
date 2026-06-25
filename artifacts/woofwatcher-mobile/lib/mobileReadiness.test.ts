@@ -14,6 +14,22 @@ function readMobileLibFile(path: string): string {
   return readFileSync(join(MOBILE_LIB_DIR, path), "utf8");
 }
 
+function getStyleBlock(source: string, styleName: string): string {
+  const marker = `  ${styleName}: {`;
+  const start = source.indexOf(marker);
+  assert.notEqual(start, -1, `${styleName} style should exist`);
+
+  const remaining = source.slice(start + marker.length);
+  const nextStyle = remaining.search(/\n  [A-Za-z0-9_]+: \{/);
+  return nextStyle === -1 ? remaining : remaining.slice(0, nextStyle);
+}
+
+function assertStyleUsesSharedTouchTarget(source: string, styleName: string): void {
+  const block = getStyleBlock(source, styleName);
+  assert.match(block, /minHeight:\s*MIN_MOBILE_TOUCH_TARGET/, `${styleName} should use the shared mobile touch target`);
+  assert.doesNotMatch(block, /minHeight:\s*(?:3\d|4[0-7])\b/, `${styleName} should not keep a route-local undersized height`);
+}
+
 function listAppFiles(dir = APP_DIR): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = join(dir, entry.name);
@@ -384,6 +400,18 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Mark next beta mission needs tune:/);
   assert.match(qaRoute, /markSurface\(nextBetaTarget\.surfaceId, "needs-review"\)/);
   assert.match(qaRoute, /minHeight: MIN_MOBILE_TOUCH_TARGET/);
+  for (const styleName of [
+    "betaRunPlatformOption",
+    "betaRunPrimary",
+    "betaRunSecondary",
+    "shareButton",
+    "attachButton",
+    "clearEvidenceButton",
+    "openSurfaceButton",
+    "reviewButton",
+  ]) {
+    assertStyleUsesSharedTouchTarget(qaRoute, styleName);
+  }
   assert.match(qaRoute, /Open Next Surface/);
   assert.match(qaRoute, /buildQaReturnRoute/);
   assert.match(qaRoute, /qaReturn=care-twin-qa/);
