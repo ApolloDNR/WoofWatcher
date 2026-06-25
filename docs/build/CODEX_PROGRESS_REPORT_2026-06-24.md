@@ -709,3 +709,27 @@ If device QA remains unavailable, continue provider readiness with invite approv
 - Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
 - The `Share Beta Handoff` packet should be sent after the Mission note and proof state are updated on-device so it reflects live saved QA progress.
 - Mobile TypeScript and Expo export should be re-run from Git Bash, WSL, CI, or another dependency environment with `sh` available before this slice is treated as dependency/export-proven.
+
+## Completed - Native QA Needs Tune Fix Brief
+
+- Added a focused fix handoff for the first route marked `Needs tune` during the two-day beta QA run.
+- `mobileLaunchQaEvidence.ts` now carries `firstNeedsTuneTarget` across the full open capture list, even when the first Needs tune route is outside the visible next-four capture rows.
+- Added `buildMobileLaunchQaFixBriefShareText` to produce a shareable repair packet with route, priority, QA note, proof gaps, setup and repro steps, optional Owner route loop, done condition, Needs tune rule, and return-to-`/care-twin-qa` instructions.
+- Wired More's Native QA Next Captures panel to show `Share Fix Brief` only when a Needs tune route exists.
+- Kept the new action on the shared 48px mobile touch target through `nativeQaCaptureFixBrief`.
+
+## Verification - Native QA Needs Tune Fix Brief
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts` - failed red because `buildMobileLaunchQaFixBriefShareText` was not exported, then passed with 12 tests after implementation.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - failed red because More lacked the fix brief import/action/style, then passed with 78 tests after wiring.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\betaHandoffPacket.test.ts artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 100 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 401 passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts\woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- `node node_modules\typescript\bin\tsc -p artifacts\woofwatcher-mobile\tsconfig.json --noEmit` - blocked in this cleaned Windows shell by the missing Expo/mobile dependency layer and `expo/tsconfig.base`.
+
+## Still Not Done - Native QA Needs Tune Fix Brief
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- A device run still needs to mark the first below-beta route as Needs tune, share the fix brief, repair the route, attach proof, save the Mission note, and re-mark Pass.
+- Mobile TypeScript and Expo export need to be rerun from Git Bash, WSL, CI, or another dependency-complete environment before dependency/export sign-off.

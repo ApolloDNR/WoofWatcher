@@ -63,6 +63,7 @@ import {
 import {
   buildMobileLaunchQaCapturePlan,
   buildMobileLaunchQaCaptureShareText,
+  buildMobileLaunchQaFixBriefShareText,
   deriveNativeQaSummaryFromMobileQaSession,
   mobileLaunchQaCaptureTargetStatusLabel,
   type MobileLaunchQaCapturePlan,
@@ -1024,6 +1025,16 @@ export default function MoreScreen() {
     );
   };
 
+  const shareNativeQaFixBrief = () => {
+    const message = buildMobileLaunchQaFixBriefShareText(nativeQaCapturePlan, new Date(now).toISOString());
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Share.share({
+      message,
+      title: "WoofWatcher Needs Tune Fix Brief",
+    }).catch(() => Alert.alert("Needs Tune Fix Brief", message));
+  };
+
+  const nativeQaCaptureNeedsTuneTarget = nativeQaCapturePlan.firstNeedsTuneTarget;
   const nativeQaCaptureHasProofPending = nativeQaCapturePlan.nextTargets.some(
     (target) => mobileLaunchQaCaptureTargetStatusLabel(target) === "Pass pending proof",
   );
@@ -1451,6 +1462,25 @@ export default function MoreScreen() {
                     <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
                     <Text style={[s.nativeQaCaptureShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share QA Plan</Text>
                   </Pressable>
+                  {nativeQaCaptureNeedsTuneTarget ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Share first Native QA Needs tune fix brief"
+                      onPress={shareNativeQaFixBrief}
+                      style={({ pressed }) => [
+                        s.nativeQaCaptureFixBrief,
+                        {
+                          borderColor: colors.amber + "66",
+                          backgroundColor: pressed ? colors.amber + "21" : colors.amber + "14",
+                        },
+                      ]}
+                    >
+                      <Ionicons name="construct-outline" size={15} color={colors.amber} />
+                      <Text style={[s.nativeQaCaptureCockpitActionText, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                        Share Fix Brief
+                      </Text>
+                    </Pressable>
+                  ) : null}
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={
@@ -3040,11 +3070,13 @@ const s = StyleSheet.create({
   nativeQaCaptureSub: { fontSize: 11, lineHeight: 15, marginTop: 2 },
   nativeQaCaptureActions: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     marginBottom: 2,
   },
   nativeQaCaptureShare: {
     flex: 1,
+    minWidth: 132,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     alignItems: "center",
@@ -3053,8 +3085,21 @@ const s = StyleSheet.create({
     gap: 8,
   },
   nativeQaCaptureShareText: { color: "#FFFFFF", fontSize: 12.5 },
+  nativeQaCaptureFixBrief: {
+    flex: 1,
+    minWidth: 132,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 8,
+  },
   nativeQaCaptureCockpitAction: {
     flex: 1,
+    minWidth: 132,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,

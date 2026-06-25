@@ -585,6 +585,20 @@ Latest local evidence, 2026-06-25:
 
 Latest local evidence, 2026-06-25:
 
+- Native QA now produces a focused `WoofWatcher Needs Tune Fix Brief` for the first target marked `Needs tune`.
+- `mobileLaunchQaEvidence.ts` tracks `firstNeedsTuneTarget` across the full open capture list, even when the target is outside the visible next-four captures.
+- The fix brief includes route, priority, QA note, proof gaps, setup and repro steps, optional Owner route loop, done condition, Needs tune rule, and return-to-`/care-twin-qa` instructions.
+- More's Native QA Next Captures panel now exposes `Share Fix Brief` only when a Needs tune target exists, with static readiness guarding the import, copy, accessibility label, and shared 48px touch target.
+- Red/green evidence: `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts` first failed on the missing `buildMobileLaunchQaFixBriefShareText` export, then passed with 12 tests after the helper landed.
+- Red/green evidence: `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` first failed because More lacked the fix-brief import/action/style, then passed with 78 tests after wiring.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\betaHandoffPacket.test.ts artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 100 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 401 passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts\woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passed with expected Windows line-ending warnings only.
+- `node node_modules\typescript\bin\tsc -p artifacts\woofwatcher-mobile\tsconfig.json --noEmit` - blocked in this cleaned Windows shell by missing Expo/mobile dependencies and config (`expo/tsconfig.base` not found, plus missing React Native/Expo module types). Re-run from the dependency-complete mobile environment before dependency/export sign-off.
+
+Latest local evidence, 2026-06-25:
+
 - Adventure Mode now keeps its owner-preview memory actions on the shared 48px mobile touch-target contract.
 - The hardened controls are the `Save Memory` primary action and `Share Adventure` secondary action.
 - Static readiness now extracts `primaryBtn` and `secondaryBtn` from the Adventure route and asserts each uses `MIN_MOBILE_TOUCH_TARGET`.

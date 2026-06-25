@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildMobileLaunchQaFixBriefShareText,
   buildMobileLaunchQaCaptureShareText,
   buildMobileLaunchQaCapturePlan,
   deriveNativeQaSummaryFromMobileQaSession,
@@ -365,4 +366,100 @@ test("keeps note-required owner preview evidence open until the QA note is writt
   assert.equal(completePlan.openSurfaces, 0);
   assert.equal(completePlan.completeSurfaces, 1);
   assert.deepEqual(completePlan.nextTargets, []);
+});
+
+test("finds the first Needs tune route even when it is outside the visible next captures", () => {
+  const surfaces: readonly MobileReleaseQaSurface[] = [
+    {
+      ...focusedSurfaces[0],
+      id: "home-one",
+      title: "Home One",
+    },
+    {
+      ...focusedSurfaces[0],
+      id: "home-two",
+      title: "Home Two",
+    },
+    {
+      ...focusedSurfaces[0],
+      id: "home-three",
+      title: "Home Three",
+    },
+    {
+      ...focusedSurfaces[0],
+      id: "home-four",
+      title: "Home Four",
+    },
+    {
+      ...focusedSurfaces[1],
+      id: "care-pass",
+      title: "Care Pass",
+    },
+  ];
+  const session: MobileQaSessionState = {
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {
+      "care-pass": "needs-review",
+    },
+    surfaceNotes: {
+      "care-pass": "Care Pass share button is too low behind the paw nav on Android.",
+    },
+    surfaceEvidenceById: {},
+  };
+
+  const plan = buildMobileLaunchQaCapturePlan(session, surfaces);
+
+  assert.deepEqual(
+    plan.nextTargets.map((target) => target.surfaceId),
+    ["home-one", "home-two", "home-three", "home-four"],
+  );
+  assert.equal(plan.firstNeedsTuneTarget?.surfaceId, "care-pass");
+  assert.equal(plan.firstNeedsTuneTarget?.note, "Care Pass share button is too low behind the paw nav on Android.");
+});
+
+test("builds a focused fix brief for the first Needs tune target", () => {
+  const session: MobileQaSessionState = {
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {
+      "care-pass": "needs-review",
+    },
+    surfaceNotes: {
+      "care-pass": "Care Pass share button clips under the floating paw nav.",
+    },
+    surfaceEvidenceById: {
+      "care-pass": [
+        {
+          uri: "file:///qa/android-care-pass.png",
+          fileName: "android-care-pass.png",
+          source: "library",
+          targetPlatform: "android",
+          capturedAtIso: "2026-06-25T12:00:00.000Z",
+        },
+      ],
+    },
+  };
+  const plan = buildMobileLaunchQaCapturePlan(session, focusedSurfaces);
+
+  const text = buildMobileLaunchQaFixBriefShareText(plan, "2026-06-25T12:30:00.000Z");
+
+  assert.match(text, /WoofWatcher Needs Tune Fix Brief/);
+  assert.match(text, /Generated: 2026-06-25T12:30:00.000Z/);
+  assert.match(text, /Fix first: Care Pass/);
+  assert.match(text, /Route: \/records/);
+  assert.match(text, /QA note: Care Pass share button clips under the floating paw nav\./);
+  assert.match(text, /Missing proof: No required proof is missing/);
+  assert.match(text, /Done when: Care Pass preview is readable and shareable\./);
+  assert.match(text, /After fix: return to \/care-twin-qa/);
+});
+
+test("fix brief stays truthful when no Needs tune target is marked", () => {
+  const plan = buildMobileLaunchQaCapturePlan(null, focusedSurfaces);
+  const text = buildMobileLaunchQaFixBriefShareText(plan, "2026-06-25T12:30:00.000Z");
+
+  assert.match(text, /No Needs tune route is currently marked/);
+  assert.match(text, /Continue with the next QA capture in \/care-twin-qa/);
 });

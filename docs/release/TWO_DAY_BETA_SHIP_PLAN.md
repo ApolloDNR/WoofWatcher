@@ -48,6 +48,7 @@ The beta must not claim:
 - Read the 48-hour beta card's next actions.
 - Tap `Open QA Cockpit` if the card says device proof is still needed.
 - Tap `Share Beta Handoff` when you need one owner-readable packet for Apollo, a helper, Fable, Replit, or a design-polish pass.
+- If any target is marked `Needs tune`, tap `Share Fix Brief` from More's Native QA Next Captures before editing so the first route issue has a focused repair packet.
 - Share the Launch Packet.
 - Open `/care-twin-qa`.
 - Use the `48-hour beta run` card to start with the next required launch-critical surface.
@@ -80,6 +81,7 @@ The beta must not claim:
 - Use `/care-twin-qa`'s `Share QA` action after writing mission notes or attaching proof; it now includes the live native capture plan before the full release QA, store packet, and care-twin state report.
 - Use More's `Share Beta Handoff` action after the saved proof state is current; it combines the beta verdict, public-launch boundary, next device mission, missing proof, route loop, and truth boundaries in one packet.
 - Mark any visual route that feels below App Store quality as Needs tune.
+- When a visual route is marked Needs tune, use More's `Share Fix Brief` action to send the exact route, QA note, proof gaps, setup/repro steps, done condition, and return-to-`/care-twin-qa` instructions before repairing it.
 - Tap `Share Beta Packet` only after local verification and owner sign-off are still truthful for an internal beta.
 
 ## Current Gates
@@ -94,7 +96,7 @@ Shippable for internal beta after local verification passes:
 
 Current environment note:
 
-- The latest 48-hour beta handoff slice passed the targeted 97-test beta QA/readiness suite, the 398-test focused behavior/readiness suite, PixelLab verification at 149 assets, and `git diff --check`. Mobile TypeScript is currently dependency-blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export smoke did not complete because this shell lacks `sh`/package-manager support. Re-run TypeScript/export from Git Bash, WSL, CI, or a preinstalled dependency layer before treating the latest slice as dependency/export-proven.
+- The latest Native QA Needs Tune fix-brief slice passed the red/green helper/readiness tests, the 100-test targeted beta QA/readiness suite, the 401-test focused behavior/readiness suite, PixelLab verification at 149 assets, and `git diff --check`. Mobile TypeScript remains blocked in this cleaned Windows shell by the missing Expo/mobile dependency layer and config (`expo/tsconfig.base` not found), Expo export still needs a shell-compatible package-manager environment with `sh` available or preinstalled dependencies, and no local iOS/Android simulator/tooling is visible here. Re-run TypeScript/export and actual device capture from Git Bash, WSL, CI, or a native-device environment before treating this as dependency/export/device-proven.
 
 Still blocked for public launch:
 

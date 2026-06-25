@@ -427,9 +427,26 @@ verification, and `git diff --check`. Mobile TypeScript and Expo web export
 remain dependency/shell environment gates in this cleaned Windows shell and
 should be rerun from Git Bash, WSL, CI, or a preinstalled dependency layer.
 
+The Native QA Needs Tune fix-brief pass tightened the two-day beta repair loop.
+`mobileLaunchQaEvidence.ts` now carries `firstNeedsTuneTarget` for the first
+route marked Needs tune, even if that route is outside the visible next-four
+capture rows, and `buildMobileLaunchQaFixBriefShareText` turns it into a
+focused repair packet with route, QA note, proof gaps, setup/repro steps,
+optional route loop, done condition, and return-to-`/care-twin-qa`
+instructions. More's Native QA Next Captures panel now shows `Share Fix Brief`
+only when a Needs tune target exists, and the new button uses the shared 48px
+touch target. Red/green local verification passed after the helper and More
+wiring were absent: `mobileLaunchQaEvidence.test.ts` passed 12 tests and
+`mobileReadiness.test.ts` passed 78 tests. Follow-up local verification passed
+the 100-test targeted beta QA/readiness suite, the 401-test focused
+behavior/readiness suite, PixelLab verification at 149 files, and `git diff
+--check` with expected Windows line-ending warnings only. Mobile TypeScript and
+Expo export remain dependency/shell-gated in this cleaned Windows shell. Real
+iOS/Android capture is still the deadline gate.
+
 Next highest-impact work:
 
-1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, Care Pass, and Adventure without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, use More's `Share Beta Handoff` action after saved proof is current, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
+1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, Care Pass, and Adventure without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, use More's `Share Beta Handoff` action after saved proof is current, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, mark the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue as Needs tune, use More's `Share Fix Brief`, and fix that first route before moving on.
 2. Fill the Provider Launch Setup sheet only as real providers are configured: Clerk, Supabase/Postgres, storage buckets/rules, AI key/model policy, app-store payments, push, Apple/Google accounts, and self-serve deletion. Share the provider plan for Apollo/Fable/Replit handoff, but do not treat it as store approval.
 3. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 4. Continue screen-by-screen polish, accessibility traversal, and visual regression.

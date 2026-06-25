@@ -34,6 +34,7 @@ export interface MobileLaunchQaCapturePlan {
   openSurfaces: number;
   completeSurfaces: number;
   nextTargets: MobileLaunchQaCaptureTarget[];
+  firstNeedsTuneTarget: MobileLaunchQaCaptureTarget | null;
 }
 
 export function mobileLaunchQaCaptureTargetStatusLabel(
@@ -198,7 +199,68 @@ export function buildMobileLaunchQaCapturePlan(
     openSurfaces: targets.length,
     completeSurfaces: Math.max(0, surfaces.length - targets.length),
     nextTargets: targets.slice(0, 4),
+    firstNeedsTuneTarget: targets.find((target) => target.status === "needs-review") ?? null,
   };
+}
+
+export function buildMobileLaunchQaFixBriefShareText(
+  plan: MobileLaunchQaCapturePlan,
+  generatedAtIso = new Date().toISOString(),
+): string {
+  const target = plan.firstNeedsTuneTarget;
+  const lines = ["WoofWatcher Needs Tune Fix Brief", `Generated: ${generatedAtIso}`];
+
+  if (!target) {
+    lines.push(
+      "",
+      "No Needs tune route is currently marked.",
+      "Continue with the next QA capture in /care-twin-qa, attach required proof, and mark any below-beta route as Needs tune.",
+    );
+    return lines.join("\n");
+  }
+
+  const tuneBlockers = target.missingEvidence.filter((item) => item.startsWith("Resolve Needs tune notes"));
+  const proofGaps = target.missingEvidence.filter((item) => !item.startsWith("Resolve Needs tune notes"));
+
+  lines.push(
+    "",
+    `Fix first: ${target.title}`,
+    `Route: ${target.route}`,
+    `Priority: ${target.priority}`,
+    `Status: ${mobileLaunchQaCaptureTargetStatusLabel(target)}`,
+    `QA note: ${target.note?.trim() || "No route note saved yet. Add the first visible issue in /care-twin-qa before handing this off."}`,
+    `Missing proof: ${
+      proofGaps.length
+        ? proofGaps.join(" ")
+        : "No required proof is missing; fix the noted UX issue and attach confirmation proof."
+    }`,
+    `Setup: ${target.setupSteps.join(" ") || "Open the route from the current local beta state."}`,
+    `Reproduce: ${target.verificationSteps.join(" ") || "Re-open the route on a phone-sized iOS or Android surface."}`,
+  );
+
+  if (tuneBlockers.length) {
+    lines.push(`Fix blocker: ${tuneBlockers.join(" ")}`);
+  }
+
+  if (target.routeChecklist?.length) {
+    lines.push("", "Owner route loop:");
+    target.routeChecklist.forEach((routeCheck, index) => {
+      lines.push(
+        `${index + 1}. ${routeCheck.label} (${routeCheck.route}): ${routeCheck.expected}${
+          routeCheck.proof ? ` Proof: ${routeCheck.proof}` : ""
+        }`,
+      );
+    });
+  }
+
+  lines.push(
+    "",
+    `Done when: ${target.acceptanceCriteria.join(" ") || "The route passes its original acceptance criteria."}`,
+    `Needs tune rule: ${target.failureEscalation}`,
+    "After fix: return to /care-twin-qa, attach iOS/Android proof if required, update the Mission note, mark Pass, and confirm More no longer shows Needs tune for this route.",
+  );
+
+  return lines.join("\n");
 }
 
 export function buildMobileLaunchQaCaptureShareText(

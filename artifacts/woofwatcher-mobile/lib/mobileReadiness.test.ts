@@ -1956,6 +1956,7 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /MOBILE_QA_SESSION_STORAGE_KEY/);
   assert.match(more, /parseMobileQaSessionSnapshot/);
   assert.match(more, /buildMobileLaunchQaCaptureShareText/);
+  assert.match(more, /buildMobileLaunchQaFixBriefShareText/);
   assert.match(more, /buildMobileLaunchQaCapturePlan/);
   assert.match(more, /deriveNativeQaSummaryFromMobileQaSession/);
   assert.match(more, /savedNativeQaSummary/);
@@ -1965,6 +1966,9 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /Native QA Next Captures/);
   assert.match(more, /Share QA Plan/);
   assert.match(more, /nativeQaCapturePlan\.nextTargets/);
+  assert.match(more, /nativeQaCaptureNeedsTuneTarget/);
+  assert.match(more, /Share Fix Brief/);
+  assert.match(more, /accessibilityLabel="Share first Native QA Needs tune fix brief"/);
   assert.match(more, /mobileLaunchQaCaptureTargetStatusLabel\(target\)/);
   assert.match(more, /Pass pending proof/);
   assert.match(more, /nativeQaCaptureHasProofPending/);
@@ -1981,6 +1985,7 @@ test("feeds saved native QA session proof into More launch readiness", () => {
 
   assert.match(qaEvidence, /buildMobileLaunchQaCapturePlan/);
   assert.match(qaEvidence, /buildMobileLaunchQaCaptureShareText/);
+  assert.match(qaEvidence, /buildMobileLaunchQaFixBriefShareText/);
   assert.match(qaEvidence, /listMobileLaunchQaSurfaces/);
   assert.match(qaEvidence, /buildStoreSubmissionScreenshotQaSurfaces/);
   assert.match(qaEvidence, /summarizeMobileReleaseQaReviews/);
@@ -1996,6 +2001,7 @@ test("keeps More launch and household gateway actions on shared mobile touch tar
     "intelligenceAction",
     "providerSetupButton",
     "nativeQaCaptureShare",
+    "nativeQaCaptureFixBrief",
     "nativeQaCaptureCockpitAction",
     "betaNextActionButton",
     "betaHandoffShareButton",

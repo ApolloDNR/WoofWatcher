@@ -800,3 +800,23 @@ PixelLab verification passed at 149 files, and `git diff --check` passed with
 expected Windows line-ending warnings only. Mobile TypeScript and Expo export
 remain dependency/shell-gated in this cleaned Windows shell and should be rerun
 from Git Bash, WSL, CI, or a preinstalled dependency layer.
+
+Current evidence, 2026-06-25: Native QA now has a focused Needs Tune repair
+packet for the two-day beta run. `mobileLaunchQaEvidence.ts` stores
+`firstNeedsTuneTarget` on the capture plan even when the first Needs tune route
+is outside the visible next-four capture rows, and
+`buildMobileLaunchQaFixBriefShareText` produces an owner-readable fix brief with
+route, priority, QA note, proof gaps, setup/repro steps, optional Owner route
+loop, done condition, Needs tune rule, and return-to-`/care-twin-qa`
+instructions. More's Native QA Next Captures panel shows `Share Fix Brief` only
+when a Needs tune target exists, and the button uses the shared
+`MIN_MOBILE_TOUCH_TARGET` contract through `nativeQaCaptureFixBrief`.
+Red/green verification passed after the helper export and More wiring were
+absent: `mobileLaunchQaEvidence.test.ts` passed 12 tests and
+`mobileReadiness.test.ts` passed 78 tests. Follow-up local verification passed
+the 100-test targeted beta QA/readiness suite, the 401-test focused
+behavior/readiness suite, PixelLab verification at 149 files, and `git diff
+--check` with expected Windows line-ending warnings only. Real iOS/Android
+capture remains the external gate; mobile TypeScript and Expo export remain
+dependency/shell-gated in this cleaned Windows shell and should be rerun from
+Git Bash, WSL, CI, or a preinstalled dependency layer with Expo/mobile deps.
