@@ -1721,6 +1721,27 @@ test("keeps Plans reminder and routine sections on shared board card anatomy", (
   assert.doesNotMatch(calendar, /reminderCard:/);
 });
 
+test("keeps Plans owner-preview controls on shared mobile touch targets", () => {
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+
+  for (const styleName of [
+    "addBtn",
+    "discoverGo",
+    "sugAdd",
+    "scheduleTab",
+    "scheduleStatus",
+    "sectionAddBtn",
+    "removeBtn",
+    "routineDoneBtn",
+    "typeChip",
+    "ownerQuickChip",
+    "saveBtn",
+    "deleteBtn",
+  ]) {
+    assertStyleUsesSharedTouchTarget(calendar, styleName);
+  }
+});
+
 test("keeps Log search wired across text query and type filters", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 

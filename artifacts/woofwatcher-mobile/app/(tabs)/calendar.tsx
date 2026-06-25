@@ -35,6 +35,7 @@ import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
@@ -1185,7 +1186,7 @@ const s = StyleSheet.create({
   headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
-  addBtn: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  addBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
 
   discoverCard: {
     flexDirection: "row",
@@ -1205,7 +1206,7 @@ const s = StyleSheet.create({
   discoverPanel: { borderRadius: 20, padding: 14, marginTop: 10, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
   discoverInputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   discoverInput: { flex: 1, fontSize: 15, paddingVertical: 8 },
-  discoverGo: { paddingHorizontal: 18, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", minWidth: 64 },
+  discoverGo: { paddingHorizontal: 18, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, alignItems: "center", justifyContent: "center", minWidth: 64 },
   discoverGoText: { color: "#fff", fontSize: 14 },
   discoverHint: { fontSize: 12, lineHeight: 17, marginTop: 10, marginBottom: 4 },
 
@@ -1214,7 +1215,7 @@ const s = StyleSheet.create({
   sugTitle: { fontSize: 14.5 },
   sugMeta: { fontSize: 12, marginTop: 2 },
   sugNote: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
-  sugAdd: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  sugAdd: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 11, alignItems: "center", justifyContent: "center" },
 
   scheduleCard: { marginBottom: 14 },
   scheduleTabs: {
@@ -1224,7 +1225,7 @@ const s = StyleSheet.create({
   },
   scheduleTab: {
     flex: 1,
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 10,
     borderWidth: 1,
     alignItems: "center",
@@ -1250,9 +1251,9 @@ const s = StyleSheet.create({
   scheduleTitle: { fontSize: 13.5 },
   scheduleDetail: { fontSize: 11.5, marginTop: 2 },
   scheduleStatus: {
-    width: 21,
-    height: 21,
-    borderRadius: 11,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 13,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
@@ -1270,7 +1271,7 @@ const s = StyleSheet.create({
 
   plansBoardCard: { marginTop: 14 },
   routineHeaderAccessory: { flexDirection: "row", alignItems: "center", gap: 10 },
-  sectionAddBtn: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  sectionAddBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   routineProgress: { fontSize: 12, marginTop: 1 },
 
   emptyPanel: { borderRadius: 14, padding: 24, alignItems: "center", gap: 12 },
@@ -1294,7 +1295,7 @@ const s = StyleSheet.create({
   tagText: { fontSize: 9, letterSpacing: 0.3 },
   eventMeta: { fontSize: 12.5, marginTop: 3 },
   eventNote: { fontSize: 12.5, lineHeight: 17, marginTop: 4 },
-  removeBtn: { width: 28, height: 28, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  removeBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 
   reminderList: { marginTop: 8 },
   reminderRow: { flexDirection: "row", gap: 11, paddingVertical: 11 },
@@ -1373,7 +1374,7 @@ const s = StyleSheet.create({
   routineStatusPill: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
   routineStatusText: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
   routineTime: { fontSize: 13 },
-  routineDoneBtn: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  routineDoneBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
@@ -1382,13 +1383,13 @@ const s = StyleSheet.create({
   fieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
   field: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   fieldRow: { flexDirection: "row", gap: 12 },
-  typeChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 12, borderWidth: 1 },
+  typeChip: { flexDirection: "row", alignItems: "center", gap: 5, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 12, borderWidth: 1 },
   typeChipText: { fontSize: 13 },
   ownerQuickRow: { gap: 8, paddingTop: 10, paddingRight: 20 },
-  ownerQuickChip: { borderWidth: 1, borderRadius: 11, paddingHorizontal: 12, paddingVertical: 8 },
+  ownerQuickChip: { borderWidth: 1, borderRadius: 11, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 12, paddingVertical: 8 },
   ownerQuickText: { fontSize: 12.5 },
-  saveBtn: { marginTop: 24, borderRadius: 15, paddingVertical: 15, alignItems: "center" },
+  saveBtn: { marginTop: 24, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
   saveBtnText: { color: "#fff", fontSize: 15.5 },
-  deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, paddingVertical: 10 },
+  deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingVertical: 10 },
   deleteBtnText: { fontSize: 14 },
 });

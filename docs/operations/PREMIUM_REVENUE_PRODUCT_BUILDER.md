@@ -344,6 +344,14 @@ actions, while leaving visual meters and pixel health cards untouched. This
 keeps the non-diagnostic Health Watch/Bile Watch owner-preview path more usable
 on phones without turning the screen into generic utility UI.
 
+The Plans touch-target pass hardened the schedule/routine route for the same
+owner-preview loop. Plans now applies the shared 48px target to Add plan, Find
+event, suggestion add, schedule tabs, schedule completion, routine add, event
+remove, routine done, modal type chips, owner chips, save, and delete controls.
+Static readiness guards those named style blocks, so the route cannot quietly
+fall back to cramped 28-42px controls while Apollo or a helper is trying to
+prove the beta journey under the two-day deadline.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

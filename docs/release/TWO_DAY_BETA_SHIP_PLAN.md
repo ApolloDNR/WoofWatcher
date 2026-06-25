@@ -55,6 +55,7 @@ The beta must not claim:
 - When the current mission is `Owner Preview Core Loop`, use the bottom nav to open Home, Log, Plans, Health, and More in order, then confirm Records, Avatar Studio, and Care Pass are reachable from More without dead ends.
 - In the owner-preview loop, quick-log one safe care event or open the detail sheet, then undo it or leave a QA note if you do not want the test log to stay in local preview data.
 - On Log, confirm the care-type tabs, Undo/Add details, meal outcome, potty outcome, trust review, walk finish, and alone-time return controls feel phone-sized and easy to tap.
+- On Plans, confirm schedule tabs, Add plan, Find event, suggestion add, routine done, owner chips, save, and delete controls feel phone-sized and easy to tap.
 - On Health, confirm the Health/Bile tabs plus `Log health note` and `Records` actions feel phone-sized, calm, and clearly non-diagnostic.
 - Write the `Mission note` in the 48-hour beta card before marking the owner-preview mission Pass; this note is required proof for the no-dead-ends route loop.
 - Read the `Next device mission` panel before leaving the cockpit: it shows route, setup steps, pass criteria, evidence count, and the Needs tune rule for that screen.

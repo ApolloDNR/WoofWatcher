@@ -529,3 +529,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
 - Apollo or a helper still needs to visually approve the Health Watch/Bile Watch owner-preview route before sharing the beta beyond the builder loop.
+
+## Completed - Plans Touch Target Hardening
+
+- Hardened the Plans route for the owner-preview loop and schedule/routine review.
+- Imported `MIN_MOBILE_TOUCH_TARGET` into Plans and applied it to Add plan, Find event, suggestion add, schedule tabs, schedule completion, routine add, event remove, routine done, modal type chips, owner chips, save, and delete controls.
+- Extended static mobile readiness so those named Plans style blocks must keep the shared target instead of falling back to route-local 28-42px controls.
+- Left decorative pixel art, card framing, and content density alone so the route remains aligned with the premium neo-retro board system.
+
+## Verification - Plans Touch Target Hardening
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - failed red on the 40px `addBtn`, then passed with 72 tests after the Plans route used the shared target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 89 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 390 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - Plans Touch Target Hardening
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- Apollo or a helper still needs to visually approve the Plans owner-preview route before sharing the beta beyond the builder loop.

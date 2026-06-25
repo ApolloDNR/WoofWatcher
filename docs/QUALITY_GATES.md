@@ -671,3 +671,17 @@ verification passed 389 tests, mobile TypeScript passed, PixelLab verification
 passed at 149 files, `git diff --check` passed with expected Windows
 line-ending warnings only, and package-local Expo web export emitted
 HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: Plans' owner-preview controls now share the same
+mobile touch-target contract. The Plans route uses `MIN_MOBILE_TOUCH_TARGET` for
+Add plan, Find event, suggestion add, schedule tabs, schedule completion,
+routine add, event remove, routine done, modal type chips, owner chips, save,
+and delete controls. Static readiness now protects those named Plans style
+blocks so schedule and routine work cannot regress to cramped route-local
+28-42px controls during beta review. Red/green mobile readiness passed after
+first failing on the 40px `addBtn`, targeted QA/readiness verification passed
+89 tests, focused behavior/readiness verification passed 390 tests, mobile
+TypeScript passed, PixelLab verification passed at 149 files, `git diff
+--check` passed with expected Windows line-ending warnings only, and
+package-local Expo web export emitted HTML/JavaScript output that was verified
+and cleaned.
