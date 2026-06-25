@@ -1330,6 +1330,27 @@ test("keeps Records Care Pass and reports on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Progress Report"/);
 });
 
+test("keeps Records and Care Pass actions on shared mobile touch targets", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  for (const styleName of [
+    "shareInline",
+    "medSearchClear",
+    "medFilterPill",
+    "carePassRow",
+    "artifactIconButton",
+    "segPill",
+    "deleteRecordBtn",
+    "emptyAddBtn",
+    "recordTypePill",
+    "attachmentBtn",
+    "sheetCancel",
+    "sheetSave",
+  ]) {
+    assertStyleUsesSharedTouchTarget(records, styleName);
+  }
+});
+
 test("keeps Records vault, diet, and cabinet on shared board card anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 

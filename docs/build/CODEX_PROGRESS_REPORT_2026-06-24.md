@@ -573,3 +573,25 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
 - Apollo or a helper still needs to visually approve More's Launch Readiness, Records, Avatar Studio, and Care Pass gateway path before sharing the beta beyond the builder loop.
+
+## Completed - Records/Care Pass Touch Target Hardening
+
+- Hardened the Records route for the owner-preview loop, report export, Dog ID credential, medication history, and Care Pass review.
+- Imported `MIN_MOBILE_TOUCH_TARGET` into Records and applied it to Dog ID share/print actions, medication search clear and filter chips, Care Pass preview rows, saved report artifact resend/print actions, progress report period tabs, record delete, empty add, record type chips, attachment, and sheet cancel/save controls.
+- Extended static mobile readiness so those named Records style blocks must keep the shared target instead of falling back to route-local 26-48px controls.
+- Left decorative pixel badges, vault icons, report cells, and chart/card density alone so Records stays aligned with the premium neo-retro board system.
+
+## Verification - Records/Care Pass Touch Target Hardening
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - failed red on `shareInline`, then passed with 74 tests after the Records route used the shared target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 91 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 392 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+## Still Not Done - Records/Care Pass Touch Target Hardening
+
+- Real iOS and Android screenshots still need to be captured and attached through `/care-twin-qa`.
+- Apollo or a helper still needs to visually approve Records, Dog ID, Care Pass, saved report actions, and record-edit sheets before sharing the beta beyond the builder loop.

@@ -717,3 +717,16 @@ Latest local evidence, 2026-06-25:
 - `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing with expected Windows line-ending warnings only.
 - Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+
+Latest local evidence, 2026-06-25:
+
+- Records and Care Pass now keep their owner-preview report, credential, medication, and vault actions on the shared 48px mobile touch-target contract.
+- The hardened controls include Dog ID share/print, medication search clear, medication filter chips, Care Pass preview rows, report artifact resend/print, progress report period tabs, record delete, empty add, record type chips, attachment, and sheet cancel/save.
+- Static readiness now extracts those named Records style blocks and asserts each uses `MIN_MOBILE_TOUCH_TARGET`.
+- Red/green evidence: `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` failed first on `shareInline`, then passed with 74 tests after the Records route used the shared target.
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts` - 91 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 392 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.

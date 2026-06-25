@@ -362,6 +362,15 @@ weight-unit chips, and profile/diet/provider save buttons. This makes the beta
 handoff and owner-preview route loop easier to run on phones without pretending
 public store or provider gates are closed.
 
+The Records/Care Pass touch-target pass hardened the route where beta testers
+show the serious value of the app: Dog ID, medication history, records, saved
+reports, and Care Pass export. Records now applies the shared 48px target to
+Dog ID share/print actions, medication search clear and filter chips, Care Pass
+preview rows, saved report artifact resend/print actions, progress report tabs,
+record delete, empty add, record type chips, attachment, and sheet cancel/save
+controls. Static readiness guards those named style blocks so the report and
+handoff workflows stay phone-sized during the owner-preview route loop.
+
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with the `Owner Preview Core Loop`: read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the 48-hour mission card or lower platform-aware evidence controls, write the required `Mission note`, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.

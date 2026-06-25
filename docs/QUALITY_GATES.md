@@ -701,3 +701,18 @@ behavior/readiness verification passed 391 tests, mobile TypeScript passed,
 PixelLab verification passed at 149 files, `git diff --check` passed with
 expected Windows line-ending warnings only, and package-local Expo web export
 emitted HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: Records and Care Pass actions now share the same
+mobile touch-target contract. The Records route uses `MIN_MOBILE_TOUCH_TARGET`
+for Dog ID share/print actions, medication search clear and filter chips, Care
+Pass preview rows, saved report artifact resend/print actions, progress report
+period tabs, record delete, empty add, record type chips, attachment, and sheet
+cancel/save controls. Static readiness now protects those named Records style
+blocks so report, credential, medication, and vault handoff actions stay
+tappable during the two-day beta route loop. Red/green mobile readiness passed
+after first failing on `shareInline`, targeted QA/readiness verification passed
+91 tests, focused behavior/readiness verification passed 392 tests, mobile
+TypeScript passed, PixelLab verification passed at 149 files, `git diff
+--check` passed with expected Windows line-ending warnings only, and
+package-local Expo web export emitted HTML/JavaScript output that was verified
+and cleaned.
