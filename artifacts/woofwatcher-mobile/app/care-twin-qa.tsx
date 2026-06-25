@@ -44,7 +44,7 @@ import {
 import { buildMobileLaunchQaCapturePlan } from "@/lib/mobileLaunchQaEvidence";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
 import { deriveLaunchReadiness } from "@/lib/launchReadiness";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { getRouteTopPadding, getStandaloneRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 import {
   buildQaScreenshotEvidence,
   qaScreenshotEvidencePlatformLabel,
@@ -319,6 +319,10 @@ export default function CareTwinQaScreen() {
     [qaEvidenceById, qaNotes, qaStatusById, releaseQaSurfaces, surfaceEvidenceById, surfaceNotes, surfaceStatusById],
   );
   const nextBetaTarget = betaCapturePlan.nextTargets[0];
+  const nextBetaSurface = useMemo(
+    () => (nextBetaTarget ? releaseQaSurfaces.find((surface) => surface.id === nextBetaTarget.surfaceId) : undefined),
+    [nextBetaTarget, releaseQaSurfaces],
+  );
   const releaseScreenshotEvidenceComplete = mobileReleaseQaScreenshotEvidenceComplete(releaseSummary);
   const releasePlatformEvidenceLabel = formatMobileReleaseQaPlatformEvidence(releaseSummary);
   const releaseMissingEvidenceLabel = formatMobileReleaseQaMissingEvidence(releaseSummary);
@@ -583,6 +587,78 @@ export default function CareTwinQaScreen() {
                 <Text style={[s.betaRunEscalationText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                   {nextBetaTarget.failureEscalation}
                 </Text>
+              </View>
+              <View style={s.betaRunMissionActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Attach proof for next beta mission: ${nextBetaTarget.title}`}
+                  disabled={!nextBetaSurface}
+                  onPress={() => {
+                    if (nextBetaSurface) attachSurfaceScreenshot(nextBetaSurface);
+                  }}
+                  style={({ pressed }) => [
+                    s.betaRunMissionAttach,
+                    {
+                      backgroundColor: pressed ? `${colors.copper}22` : `${colors.copper}12`,
+                      borderColor: `${colors.copper}55`,
+                      opacity: nextBetaSurface ? 1 : 0.55,
+                    },
+                  ]}
+                >
+                  <Ionicons name="camera-outline" size={17} color={colors.copper} />
+                  <View style={s.betaRunMissionActionCopy}>
+                    <Text style={[s.betaRunMissionAttachText, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                      Attach proof
+                    </Text>
+                    <Text style={[s.betaRunMissionActionHint, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      Tagged as {selectedEvidencePlatformLabel}
+                    </Text>
+                  </View>
+                </Pressable>
+                <View style={s.betaRunMissionReviewRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: nextBetaTarget.status === "pass" }}
+                    accessibilityLabel={`Mark next beta mission pass: ${nextBetaTarget.title}`}
+                    onPress={() => markSurface(nextBetaTarget.surfaceId, "pass")}
+                    style={({ pressed }) => [
+                      s.betaRunMissionReviewButton,
+                      {
+                        backgroundColor: nextBetaTarget.status === "pass" ? `${colors.sage}1F` : pressed ? `${colors.sage}14` : colors.background,
+                        borderColor: nextBetaTarget.status === "pass" ? colors.sage : colors.border,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="checkmark-circle" size={17} color={colors.sage} />
+                    <Text style={[s.betaRunMissionReviewText, { color: nextBetaTarget.status === "pass" ? colors.sage : colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                      Pass
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: nextBetaTarget.status === "needs-review" }}
+                    accessibilityLabel={`Mark next beta mission needs tune: ${nextBetaTarget.title}`}
+                    onPress={() => markSurface(nextBetaTarget.surfaceId, "needs-review")}
+                    style={({ pressed }) => [
+                      s.betaRunMissionReviewButton,
+                      {
+                        backgroundColor:
+                          nextBetaTarget.status === "needs-review" ? `${colors.amber}1F` : pressed ? `${colors.amber}14` : colors.background,
+                        borderColor: nextBetaTarget.status === "needs-review" ? colors.amber : colors.border,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="build" size={17} color={colors.amber} />
+                    <Text
+                      style={[
+                        s.betaRunMissionReviewText,
+                        { color: nextBetaTarget.status === "needs-review" ? colors.amber : colors.foreground, fontFamily: "Inter_800ExtraBold" },
+                      ]}
+                    >
+                      Needs tune
+                    </Text>
+                  </Pressable>
+                </View>
               </View>
             </View>
           ) : (
@@ -1458,6 +1534,48 @@ const s = StyleSheet.create({
   betaRunEscalationText: {
     fontSize: 12,
     lineHeight: 17,
+  },
+  betaRunMissionActions: {
+    gap: 8,
+  },
+  betaRunMissionAttach: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  betaRunMissionActionCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  betaRunMissionAttachText: {
+    fontSize: 12.5,
+  },
+  betaRunMissionActionHint: {
+    marginTop: 1,
+    fontSize: 10.5,
+  },
+  betaRunMissionReviewRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  betaRunMissionReviewButton: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  betaRunMissionReviewText: {
+    fontSize: 12,
   },
   betaRunMissionDoneText: {
     fontSize: 12,

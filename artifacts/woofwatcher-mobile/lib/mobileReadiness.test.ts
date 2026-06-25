@@ -351,6 +351,7 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Platform proof:/);
   assert.match(qaRoute, /48-hour beta run/);
   assert.match(qaRoute, /nextBetaTarget/);
+  assert.match(qaRoute, /nextBetaSurface/);
   assert.match(qaRoute, /Next device mission/);
   assert.match(qaRoute, /Before capture/);
   assert.match(qaRoute, /Pass when/);
@@ -361,6 +362,14 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /nextBetaTarget\.setupSteps\.slice\(0, 2\)/);
   assert.match(qaRoute, /nextBetaTarget\.acceptanceCriteria\.slice\(0, 2\)/);
   assert.match(qaRoute, /nextBetaTarget\.failureEscalation/);
+  assert.match(qaRoute, /Attach proof for next beta mission:/);
+  assert.match(qaRoute, /attachSurfaceScreenshot\(nextBetaSurface\)/);
+  assert.match(qaRoute, /Tagged as \{selectedEvidencePlatformLabel\}/);
+  assert.match(qaRoute, /Mark next beta mission pass:/);
+  assert.match(qaRoute, /markSurface\(nextBetaTarget\.surfaceId, "pass"\)/);
+  assert.match(qaRoute, /Mark next beta mission needs tune:/);
+  assert.match(qaRoute, /markSurface\(nextBetaTarget\.surfaceId, "needs-review"\)/);
+  assert.match(qaRoute, /minHeight: MIN_MOBILE_TOUCH_TARGET/);
   assert.match(qaRoute, /Open Next Surface/);
   assert.match(qaRoute, /buildQaReturnRoute/);
   assert.match(qaRoute, /qaReturn=care-twin-qa/);

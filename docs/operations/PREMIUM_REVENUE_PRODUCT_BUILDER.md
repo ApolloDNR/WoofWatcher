@@ -258,9 +258,18 @@ screenshots remain the next gate. Local verification passed the targeted QA
 suite, full focused behavior/readiness suite, mobile TypeScript, PixelLab asset
 verification, `git diff --check`, and package-local Expo web export.
 
+The mission action rail pass made the 48-hour QA card faster for real testers.
+`/care-twin-qa` now resolves the active `nextBetaSurface` and exposes top-card
+controls to attach proof, mark the mission Pass, or mark it Needs tune using
+the selected iOS/Android/Web evidence tag. Those actions feed the same local QA
+evidence and surface-review state as the full checklist below, with accessible
+labels and shared 48px touch targets. This still does not replace real
+iOS/Android screenshots or human approval; it reduces the taps needed to collect
+that proof under the two-day beta deadline.
+
 Next highest-impact work:
 
-1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete the Mobile Release QA checklist, Store Screenshot QA checklist, and 12-state care-twin matrix, attach screenshots through the platform-aware in-app evidence controls, confirm More's Launch Readiness and Native QA Next Captures update from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
+1. Run native iOS/Android simulator or device QA with `/care-twin-qa` and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, complete the Mobile Release QA checklist, Store Screenshot QA checklist, and 12-state care-twin matrix, attach screenshots through the 48-hour mission card or lower platform-aware evidence controls, confirm More's Launch Readiness and Native QA Next Captures update from the saved proof, share/export the QA report, and fix the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue.
 2. Fill the Provider Launch Setup sheet only as real providers are configured: Clerk, Supabase/Postgres, storage buckets/rules, AI key/model policy, app-store payments, push, Apple/Google accounts, and self-serve deletion. Share the provider plan for Apollo/Fable/Replit handoff, but do not treat it as store approval.
 3. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 4. Continue screen-by-screen polish, accessibility traversal, and visual regression.

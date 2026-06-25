@@ -544,3 +544,15 @@ verification at 149 files, `git diff --check`, and package-local Expo web export
 with HTML/JavaScript output verified and cleaned. This reduces two-day beta
 capture friction, but it is still preparation only; native iOS/Android
 screenshots and human approval remain required before wider beta circulation.
+
+Current evidence, 2026-06-25: The `/care-twin-qa` 48-hour beta run now keeps the
+active mission's evidence and review actions in the top card. The card resolves
+the active QA surface from `nextBetaTarget`, lets testers attach proof using the
+selected iOS/Android/Web evidence tag, and lets them mark the current mission
+Pass or Needs tune without scrolling to the long checklist. Static mobile
+readiness protects those accessible mission controls and shared 48px touch
+targets. Local verification passed 85 targeted QA/readiness tests, 386 focused
+behavior/readiness tests, mobile TypeScript, PixelLab verification at 149 files,
+`git diff --check`, and package-local Expo web export with HTML/JavaScript
+output verified and cleaned. This improves the internal beta capture loop but
+does not replace real device screenshots or human approval.

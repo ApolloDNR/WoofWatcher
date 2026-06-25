@@ -55,8 +55,9 @@ The beta must not claim:
 - If the target screen shows `Return to QA Cockpit`, use that banner after capture instead of manually hunting for the QA route.
 - Capture at least one iOS screenshot and one Android screenshot when devices/simulators are available.
 - In `/care-twin-qa`, set `Tag screenshot evidence` to iOS or Android before attaching the screenshot from Photos.
-- Attach screenshots from Photos to the matching QA surface.
+- Attach screenshots from Photos to the current mission through the 48-hour beta card's `Attach proof` control, or to the matching QA surface farther down the cockpit.
 - Confirm the attached file shows the expected counted platform label.
+- Mark the current mission `Pass` or `Needs tune` from the 48-hour beta card before moving on.
 - Mark any visual route that feels below App Store quality as Needs tune.
 - Tap `Share Beta Packet` only after local verification and owner sign-off are still truthful for an internal beta.
 

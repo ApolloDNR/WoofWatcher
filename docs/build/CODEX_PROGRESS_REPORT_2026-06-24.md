@@ -241,6 +241,7 @@ If device QA remains unavailable, continue provider readiness with invite approv
 - `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing with expected Windows line-ending warnings only.
 - Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
+- Direct package-local Expo web export passed, emitted `.expo-smoke`, verified HTML and JavaScript output, and removed the generated folder with a scoped Node cleanup.
 
 ## Still Not Done - Care Twin QA Platform Evidence Tagging
 
@@ -289,3 +290,24 @@ If device QA remains unavailable, continue provider readiness with invite approv
 
 - Real iOS and Android screenshots still need to be captured and attached from `/care-twin-qa`.
 - The first route marked Needs tune during that device pass should be fixed before wider beta sharing.
+
+## Completed - Care Twin QA Mission Action Rail
+
+- Added mission-level `Attach proof`, `Pass`, and `Needs tune` controls inside the `/care-twin-qa` 48-hour beta run card.
+- The top card now resolves the active `nextBetaSurface` from the current beta target and attaches proof through the same saved local QA evidence model as the lower checklist.
+- The proof action uses the selected iOS/Android/Web evidence tag, and the Pass/Needs tune buttons write to the active surface status so testers can complete the next mission without scrolling.
+- The new controls use shared 48px touch targets and mission-specific accessibility labels.
+- Static mobile readiness coverage now protects `nextBetaSurface`, proof attachment, selected-platform helper copy, mission review labels, status writes, and the shared mobile touch target contract.
+
+## Verification - Care Twin QA Mission Action Rail
+
+- `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts artifacts\woofwatcher-mobile\lib\mobileLaunchQaEvidence.test.ts artifacts\woofwatcher-mobile\lib\mobileReleaseQa.test.ts` - 85 passing.
+- `node --experimental-strip-types --test artifacts\api-server\test\*.test.ts artifacts\woofwatcher-mobile\lib\*.test.ts artifacts\woofwatcher\src\vanilla\*.test.js lib\care-domain\test\*.test.ts` - 386 passing.
+- From `artifacts/woofwatcher-mobile`: `NODE_PATH=node_modules node_modules\typescript\bin\tsc -p tsconfig.json --noEmit` - passing.
+- `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
+- `git diff --check` - passing with expected Windows line-ending warnings only.
+
+## Still Not Done - Care Twin QA Mission Action Rail
+
+- Real iOS and Android screenshots still need to be captured and attached through the mission controls.
+- Any screen marked Needs tune during that capture pass should be fixed before wider beta sharing.
