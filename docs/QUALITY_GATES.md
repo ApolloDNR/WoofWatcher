@@ -849,3 +849,14 @@ and now stops at the dependency-layer blocker: `Cannot determine the project's
 Expo SDK version because the module 'expo' is not installed`. Do not mark Expo
 export proven until a dependency-complete mobile environment runs the smoke
 export and verifies emitted HTML/JavaScript output.
+
+Current evidence, 2026-06-25: The two-day beta now has a root environment
+doctor before export. `pnpm run doctor:mobile-beta` runs
+`scripts/mobile-beta-doctor.mjs`, which checks pnpm availability, the
+Windows-friendly install guard, mobile `smoke:web`, Expo iOS/Android/web +
+Metro config, mobile Expo dependency resolution, PixelLab verifier presence,
+and the required `/care-twin-qa` owner-preview proof steps. Static mobile
+readiness protects the command and its QA proof language. The doctor currently
+exits blocked in this cleaned Windows shell because `pnpm` is unavailable and
+the mobile package cannot resolve `expo`; those must clear before package-local
+Expo export can count as proven.

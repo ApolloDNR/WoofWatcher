@@ -831,3 +831,11 @@ Latest local evidence, 2026-06-25:
 - A direct package-local Expo CLI export attempt advanced past the previous `No platforms are configured to use the Metro bundler` error.
 - The remaining direct-export stop is the dependency layer: `Cannot determine the project's Expo SDK version because the module 'expo' is not installed`.
 - Expo web export is therefore config-ready but not dependency/export-proven in this cleaned Windows shell; rerun the smoke from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or any environment where the mobile package can resolve Expo.
+
+Latest local evidence, 2026-06-25:
+
+- Root `doctor:mobile-beta` now runs `scripts/mobile-beta-doctor.mjs` as the first two-day beta environment check.
+- The doctor checks pnpm, the root install guard, mobile `smoke:web`, Expo iOS/Android/web + Metro config, mobile Expo dependency resolution, PixelLab verifier presence, and the `/care-twin-qa` owner-preview proof steps.
+- Static mobile readiness protects the command plus proof language for `/care-twin-qa`, iOS/Android evidence, Mission note, and GitHub Actions boundaries.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on the missing doctor script, then passed with 80 tests after the command and script were wired.
+- Direct doctor run in this cleaned Windows shell exits blocked with the expected current issues: missing local `pnpm` and missing mobile `expo` dependency resolution.

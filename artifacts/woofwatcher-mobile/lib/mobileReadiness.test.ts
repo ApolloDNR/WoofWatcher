@@ -2047,3 +2047,19 @@ test("keeps the root install guard cross-platform for deadline beta exports", ()
   assert.match(guardSource, /yarn\.lock/);
   assert.doesNotMatch(guardSource, /\bsh\b|-c/);
 });
+
+test("keeps a deadline beta doctor command for mobile export handoff", () => {
+  const rootPackageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as {
+    scripts?: Record<string, string>;
+  };
+  const doctorSource = readFileSync(join(process.cwd(), "scripts", "mobile-beta-doctor.mjs"), "utf8");
+
+  assert.equal(rootPackageJson.scripts?.["doctor:mobile-beta"], "node scripts/mobile-beta-doctor.mjs");
+  assert.match(doctorSource, /WoofWatcher mobile beta doctor/);
+  assert.match(doctorSource, /pnpm/);
+  assert.match(doctorSource, /expo/);
+  assert.match(doctorSource, /smoke:web/);
+  assert.match(doctorSource, /care-twin-qa/);
+  assert.match(doctorSource, /Mission note/);
+  assert.match(doctorSource, /GitHub Actions/);
+});

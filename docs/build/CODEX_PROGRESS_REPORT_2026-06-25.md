@@ -25,6 +25,18 @@
   `Cannot determine the project's Expo SDK version because the module 'expo' is
   not installed`.
 
+## Mobile Beta Doctor
+
+- Two-day beta risk addressed: the repo now has one root command that tells
+  Apollo, Replit, or a device helper what blocks mobile beta export.
+- `package.json` now exposes `doctor:mobile-beta`.
+- `scripts/mobile-beta-doctor.mjs` checks `pnpm`, the root install guard, the
+  mobile `smoke:web` command, Expo iOS/Android/web + Metro config, mobile Expo
+  dependency resolution, PixelLab verifier presence, and `/care-twin-qa` owner
+  proof steps.
+- In this cleaned Windows shell, the doctor truthfully exits blocked on two
+  issues: `pnpm` is not on PATH, and the mobile package cannot resolve `expo`.
+
 ## Verification
 
 - Red/green readiness: `mobileReadiness.test.ts` first failed on the missing
@@ -32,6 +44,8 @@
 - Red/green export-config readiness: `mobileReadiness.test.ts` first failed on
   missing `expo.platforms` / `expo.web.bundler` expectations, then passed after
   wiring.
+- Red/green doctor readiness: `mobileReadiness.test.ts` first failed on the
+  missing doctor script, then passed after the command and script were wired.
 - Direct guard check with `npm_config_user_agent=pnpm/9.0.0`: passed.
 - Direct guard check with `npm_config_user_agent=npm/10.0.0`: failed as
   expected with the pnpm-only warning.

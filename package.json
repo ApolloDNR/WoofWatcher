@@ -4,6 +4,7 @@
   "license": "MIT",
   "scripts": {
     "preinstall": "node scripts/enforce-pnpm-install.mjs",
+    "doctor:mobile-beta": "node scripts/mobile-beta-doctor.mjs",
     "test:focused": "node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts",
     "build:ci": "pnpm run typecheck && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/woofwatcher run build && pnpm --filter @workspace/mockup-sandbox run build && pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
