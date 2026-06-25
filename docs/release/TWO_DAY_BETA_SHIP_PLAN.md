@@ -96,7 +96,7 @@ Shippable for internal beta after local verification passes:
 
 Current environment note:
 
-- The latest Native QA Needs Tune fix-brief slice passed the red/green helper/readiness tests, the 100-test targeted beta QA/readiness suite, the 401-test focused behavior/readiness suite, PixelLab verification at 149 assets, and `git diff --check`. Mobile TypeScript remains blocked in this cleaned Windows shell by the missing Expo/mobile dependency layer and config (`expo/tsconfig.base` not found), Expo export still needs a shell-compatible package-manager environment with `sh` available or preinstalled dependencies, and no local iOS/Android simulator/tooling is visible here. Re-run TypeScript/export and actual device capture from Git Bash, WSL, CI, or a native-device environment before treating this as dependency/export/device-proven.
+- The latest cross-platform install-guard slice removed the root `sh -c` preinstall dependency that was blocking Windows package/export attempts before Expo could run. `preinstall` now calls `node scripts/enforce-pnpm-install.mjs`, which still removes forbidden npm/yarn lockfiles and rejects npm/yarn user agents while running in a Windows-friendly Node process. Mobile TypeScript remains blocked in this cleaned Windows shell by the missing Expo/mobile dependency layer and config (`expo/tsconfig.base` not found), local `pnpm` is still not on PATH here, and no local iOS/Android simulator/tooling is visible here. Re-run install, TypeScript/export, and actual device capture from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or a native-device environment before treating this as dependency/export/device-proven.
 
 Still blocked for public launch:
 

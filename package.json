@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "preinstall": "node scripts/enforce-pnpm-install.mjs",
     "test:focused": "node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts",
     "build:ci": "pnpm run typecheck && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/woofwatcher run build && pnpm --filter @workspace/mockup-sandbox run build && pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",

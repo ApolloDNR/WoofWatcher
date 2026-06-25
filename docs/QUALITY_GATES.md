@@ -820,3 +820,19 @@ behavior/readiness suite, PixelLab verification at 149 files, and `git diff
 capture remains the external gate; mobile TypeScript and Expo export remain
 dependency/shell-gated in this cleaned Windows shell and should be rerun from
 Git Bash, WSL, CI, or a preinstalled dependency layer with Expo/mobile deps.
+
+Current evidence, 2026-06-25: The root install guard no longer depends on a
+Unix shell before package install/export can start. `package.json` now calls
+`node scripts/enforce-pnpm-install.mjs` for `preinstall`; the Node guard still
+removes forbidden `package-lock.json` and `yarn.lock` files and still rejects
+npm/yarn user agents, but it runs in Windows-friendly Node instead of `sh -c`.
+Static mobile readiness protects the root command and guard behavior because
+this directly affects the two-day mobile beta export path. Red/green readiness
+passed after first failing on the missing guard script. Direct guard checks
+passed with `npm_config_user_agent=pnpm/9.0.0` and failed as expected with
+`npm_config_user_agent=npm/10.0.0`. Follow-up verification passed the 101-test
+targeted beta QA/readiness suite, the 402-test focused behavior/readiness
+suite, PixelLab verification at 149 files, and `git diff --check` with expected
+Windows line-ending warnings only. Real Expo export still requires pnpm and the
+Expo/mobile dependency layer in the execution environment; real iOS/Android
+capture remains the external beta gate.

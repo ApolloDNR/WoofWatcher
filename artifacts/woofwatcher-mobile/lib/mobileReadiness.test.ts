@@ -2026,3 +2026,19 @@ test("keeps care document refresh conflict-safe in CareContext", () => {
   assert.match(careContext, /shouldPushLocal/);
   assert.match(careContext, /putCareState\(\{\s*version: plan\.version/);
 });
+
+test("keeps the root install guard cross-platform for deadline beta exports", () => {
+  const rootPackageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as {
+    scripts?: Record<string, string>;
+  };
+  const preinstall = rootPackageJson.scripts?.preinstall ?? "";
+  const guardSource = readFileSync(join(process.cwd(), "scripts", "enforce-pnpm-install.mjs"), "utf8");
+
+  assert.equal(preinstall, "node scripts/enforce-pnpm-install.mjs");
+  assert.doesNotMatch(preinstall, /\bsh\b|-c/);
+  assert.match(guardSource, /npm_config_user_agent/);
+  assert.match(guardSource, /pnpm\//);
+  assert.match(guardSource, /package-lock\.json/);
+  assert.match(guardSource, /yarn\.lock/);
+  assert.doesNotMatch(guardSource, /\bsh\b|-c/);
+});

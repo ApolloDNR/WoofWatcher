@@ -812,3 +812,13 @@ Latest local evidence, 2026-06-25:
 - `node scripts\verify-pixellab-assets.js` from `artifacts/woofwatcher-mobile` - 149 assets valid, 0 missing, 0 invalid.
 - `git diff --check` - passing with expected Windows line-ending warnings only.
 - Mobile TypeScript is currently blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), and Expo web export should be re-run from Git Bash, WSL, CI, or a preinstalled dependency layer with `sh` available.
+
+Latest local evidence, 2026-06-25:
+
+- Root `preinstall` now uses the cross-platform Node guard `scripts/enforce-pnpm-install.mjs` instead of `sh -c`, so Windows package/export attempts are no longer stopped by a missing Unix shell before Expo can run.
+- The guard still removes forbidden `package-lock.json` and `yarn.lock` files and still rejects npm/yarn installs by checking `npm_config_user_agent`.
+- Static mobile readiness now protects this package/export prerequisite because the two-day beta depends on another environment being able to install and export the mobile app.
+- Red/green evidence: `mobileReadiness.test.ts` first failed because `scripts/enforce-pnpm-install.mjs` did not exist, then passed with 79 tests after the guard and package script were wired.
+- Direct guard verification passed with `npm_config_user_agent=pnpm/9.0.0` and failed as expected with `npm_config_user_agent=npm/10.0.0`.
+- Follow-up verification passed the 101-test targeted beta QA/readiness suite, the 402-test focused behavior/readiness suite, PixelLab verification at 149 files, and `git diff --check` with expected Windows line-ending warnings only.
+- Mobile TypeScript remains blocked in this cleaned Windows shell because the Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found), local `pnpm` is still not on PATH here, and actual Expo export plus iOS/Android capture should be re-run from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or a native-device environment.
