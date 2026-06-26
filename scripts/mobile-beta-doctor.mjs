@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const mobileRoot = join(root, "artifacts", "woofwatcher-mobile");
-const expectedPackageManager = "pnpm@10.24.0";
+const expectedPnpmVersion = "10.24.0";
+const expectedPackageManager = `pnpm@${expectedPnpmVersion}`;
 const issues = [];
 const warnings = [];
 
@@ -57,6 +58,13 @@ check(
     ? pnpm.stdout.trim()
     : "install pnpm 10.24.0 directly, or run Corepack bootstrap: corepack prepare pnpm@10.24.0 --activate",
 );
+if (pnpm.status === 0) {
+  check(
+    "pnpm CLI matches pinned version",
+    pnpm.stdout.trim() === expectedPnpmVersion,
+    `${pnpm.stdout.trim()} detected; expected ${expectedPnpmVersion}`,
+  );
+}
 
 const rootPackage = readJson(join(root, "package.json"));
 const verifyWorkflow = readFileSync(join(root, ".github", "workflows", "verify.yml"), "utf8");

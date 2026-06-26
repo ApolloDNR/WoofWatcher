@@ -889,3 +889,11 @@ dependency resolution until a dependency-complete environment runs install and
 export proof. Follow-up verification passed 102 targeted beta QA/readiness
 tests, 403 focused behavior/readiness tests, PixelLab verification at 149 files,
 and `git diff --check` with expected Windows line-ending warnings only.
+
+Current evidence, 2026-06-25: The beta doctor now enforces exact pnpm CLI
+alignment. `scripts/mobile-beta-doctor.mjs` derives `expectedPackageManager`
+from `expectedPnpmVersion` and blocks any available pnpm command whose
+`pnpm --version` output is not `10.24.0`. Static readiness protects the exact
+version comparison. The default doctor run still blocks this shell on missing
+pnpm and missing mobile Expo dependency resolution; a bundled pnpm 11.x library
+does not count as export-ready.

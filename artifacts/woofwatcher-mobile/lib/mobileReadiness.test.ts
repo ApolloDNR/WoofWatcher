@@ -2062,6 +2062,8 @@ test("keeps a deadline beta doctor command for mobile export handoff", () => {
   assert.match(doctorSource, /WoofWatcher mobile beta doctor/);
   assert.match(doctorSource, /packageManager/);
   assert.match(doctorSource, /10\.24\.0/);
+  assert.match(doctorSource, /expectedPnpmVersion/);
+  assert.match(doctorSource, /pnpm\.stdout\.trim\(\) === expectedPnpmVersion/);
   assert.match(doctorSource, /Corepack/);
   assert.match(doctorSource, /corepack prepare pnpm@10\.24\.0 --activate/);
   assert.match(doctorSource, /Node 24 runtime/);

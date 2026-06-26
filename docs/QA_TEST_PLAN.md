@@ -864,3 +864,11 @@ Latest local evidence, 2026-06-25:
 - Red/green evidence: `mobileReadiness.test.ts` first failed on missing `Node 24 runtime`, then passed with 80 tests after the doctor checks were added.
 - Direct doctor run now passes Node 24 and EAS profile coverage, while still returning blocked for the two real local export issues: no `pnpm` on PATH and no mobile `expo` dependency resolution.
 - Follow-up verification passed the 102-test targeted beta QA/readiness suite, the 403-test focused behavior/readiness suite, PixelLab verification at 149 files, and `git diff --check` with expected Windows line-ending warnings only.
+
+Latest local evidence, 2026-06-25:
+
+- `scripts/mobile-beta-doctor.mjs` now enforces the actual pnpm CLI version when a `pnpm` command is available.
+- The doctor derives `expectedPackageManager` from `expectedPnpmVersion` so package-manager pinning and runtime CLI checks stay aligned.
+- Static mobile readiness protects `expectedPnpmVersion` and the exact `pnpm.stdout.trim() === expectedPnpmVersion` comparison.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on missing exact pnpm version enforcement, then passed with 80 tests after the doctor check was added.
+- The normal direct doctor run still reports the two true blockers in this shell: no `pnpm` command on PATH and no mobile `expo` dependency resolution.

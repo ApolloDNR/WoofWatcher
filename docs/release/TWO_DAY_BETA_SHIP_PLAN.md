@@ -97,6 +97,8 @@ Shippable for internal beta after local verification passes:
 - `pnpm run doctor:mobile-beta` reports no install/export blockers.
 - The mobile beta doctor passes the Node 24 runtime check and confirms EAS
   preview/production build profiles cover both iOS and Android.
+- If `pnpm` is present, the mobile beta doctor confirms the actual CLI version
+  is exactly `10.24.0`.
 
 Current environment note:
 
@@ -106,6 +108,7 @@ Current environment note:
 - The root package now pins `packageManager: pnpm@10.24.0`, matching the GitHub Actions verify workflow. The doctor checks that alignment so Replit, Corepack, local shells, and CI use the same pnpm target before export proof.
 - The doctor now gives explicit bootstrap guidance for the missing-pnpm case: if Corepack is available, run `corepack prepare pnpm@10.24.0 --activate`; if Corepack is not on PATH, install pnpm 10.24.0 directly or run the proof path in Replit/WSL.
 - The doctor now also verifies the current Node runtime is Node 24 and that `artifacts/woofwatcher-mobile/eas.json` includes both iOS and Android build profiles for preview and production. Those checks currently pass in this shell.
+- The doctor now enforces the actual `pnpm --version` output when pnpm is present, so a stray pnpm 11.x helper install cannot be mistaken for the pinned `pnpm@10.24.0` beta export path.
 - Mobile TypeScript/export remain blocked in this cleaned Windows shell by the missing Expo/mobile dependency layer, and no local iOS/Android simulator/tooling is visible here. Re-run the doctor, install, TypeScript/export, and actual device capture from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or a native-device environment before treating this as dependency/export/device-proven.
 
 Still blocked for public launch:

@@ -77,6 +77,18 @@
   EAS profile coverage, then still truthfully blocks on the two real local
   export issues: no `pnpm` on PATH and no mobile `expo` dependency resolution.
 
+## Exact pnpm CLI Enforcement
+
+- Two-day beta risk addressed: a helper can no longer run the export path with
+  a stray pnpm version while the repo and CI are pinned to `pnpm@10.24.0`.
+- `scripts/mobile-beta-doctor.mjs` now defines `expectedPnpmVersion` as
+  `10.24.0` and derives `expectedPackageManager` from it.
+- When a `pnpm` command is available, the doctor now blocks if
+  `pnpm --version` does not exactly match `10.24.0`.
+- This matters in this Codex shell because the bundled runtime contains pnpm
+  11.7.0 as a library, but no valid `pnpm` command is on PATH. That bundled
+  library should not count as beta export proof.
+
 ## Verification
 
 - Red/green readiness: `mobileReadiness.test.ts` first failed on the missing
@@ -95,6 +107,9 @@
 - Red/green Node/EAS doctor readiness: `mobileReadiness.test.ts` first failed
   on missing `Node 24 runtime` and `EAS build profiles include iOS and Android`
   doctor contracts, then passed after the checks were wired.
+- Red/green pnpm CLI readiness: `mobileReadiness.test.ts` first failed on
+  missing exact pnpm CLI version enforcement, then passed after the doctor
+  checked `pnpm.stdout.trim() === expectedPnpmVersion`.
 - Direct guard check with `npm_config_user_agent=pnpm/9.0.0`: passed.
 - Direct guard check with `npm_config_user_agent=npm/10.0.0`: failed as
   expected with the pnpm-only warning.
