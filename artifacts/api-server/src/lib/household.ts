@@ -12,8 +12,11 @@ import {
 } from "@workspace/db";
 
 const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-export const CARE_WRITE_ROLES = ["owner", "admin", "member", "sitter", "trainer"] as const;
-export const CARE_WRITE_FORBIDDEN_ERROR =
+export const CARE_PLAN_WRITE_ROLES = ["owner", "admin", "member"] as const;
+export const CARE_LOG_WRITE_ROLES = ["owner", "admin", "member", "sitter", "trainer"] as const;
+export const CARE_PLAN_WRITE_FORBIDDEN_ERROR =
+  "Only owners, admins, and caregivers can change the shared care plan";
+export const CARE_LOG_WRITE_FORBIDDEN_ERROR =
   "Vet viewers can review shared care, but cannot change logs or care plans";
 
 function generateInviteCode(): string {
@@ -179,10 +182,16 @@ export async function requireActiveHouseholdRole(
   };
 }
 
-export async function requireActiveHouseholdCareWrite(
+export async function requireActiveHouseholdCarePlanWrite(
   userId: string,
 ): Promise<{ householdId: string; role: string; allowed: boolean }> {
-  return requireActiveHouseholdRole(userId, CARE_WRITE_ROLES);
+  return requireActiveHouseholdRole(userId, CARE_PLAN_WRITE_ROLES);
+}
+
+export async function requireActiveHouseholdCareLogWrite(
+  userId: string,
+): Promise<{ householdId: string; role: string; allowed: boolean }> {
+  return requireActiveHouseholdRole(userId, CARE_LOG_WRITE_ROLES);
 }
 
 export async function getCaregiverName(

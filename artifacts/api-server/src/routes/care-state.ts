@@ -4,9 +4,9 @@ import { db, careStateTable } from "@workspace/db";
 import { GetCareStateResponse, PutCareStateBody } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
 import {
-  CARE_WRITE_FORBIDDEN_ERROR,
+  CARE_PLAN_WRITE_FORBIDDEN_ERROR,
   getActiveHouseholdId,
-  requireActiveHouseholdCareWrite,
+  requireActiveHouseholdCarePlanWrite,
 } from "../lib/household";
 
 const router: IRouter = Router();
@@ -39,9 +39,9 @@ router.put("/care-state", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { householdId, allowed } = await requireActiveHouseholdCareWrite(userId);
+  const { householdId, allowed } = await requireActiveHouseholdCarePlanWrite(userId);
   if (!allowed) {
-    res.status(403).json({ error: CARE_WRITE_FORBIDDEN_ERROR });
+    res.status(403).json({ error: CARE_PLAN_WRITE_FORBIDDEN_ERROR });
     return;
   }
 

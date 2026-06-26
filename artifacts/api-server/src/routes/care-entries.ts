@@ -16,10 +16,10 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth, getUserId } from "../lib/auth";
 import {
-  CARE_WRITE_FORBIDDEN_ERROR,
+  CARE_LOG_WRITE_FORBIDDEN_ERROR,
   getActiveHouseholdId,
   getCaregiverName,
-  requireActiveHouseholdCareWrite,
+  requireActiveHouseholdCareLogWrite,
 } from "../lib/household";
 
 const router: IRouter = Router();
@@ -66,9 +66,9 @@ router.post("/care-entries", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { householdId, allowed } = await requireActiveHouseholdCareWrite(userId);
+  const { householdId, allowed } = await requireActiveHouseholdCareLogWrite(userId);
   if (!allowed) {
-    res.status(403).json({ error: CARE_WRITE_FORBIDDEN_ERROR });
+    res.status(403).json({ error: CARE_LOG_WRITE_FORBIDDEN_ERROR });
     return;
   }
   const caregiverName = await getCaregiverName(householdId, userId);
@@ -104,9 +104,9 @@ router.patch("/care-entries/:id", requireAuth, async (req, res): Promise<void> =
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { householdId, allowed } = await requireActiveHouseholdCareWrite(userId);
+  const { householdId, allowed } = await requireActiveHouseholdCareLogWrite(userId);
   if (!allowed) {
-    res.status(403).json({ error: CARE_WRITE_FORBIDDEN_ERROR });
+    res.status(403).json({ error: CARE_LOG_WRITE_FORBIDDEN_ERROR });
     return;
   }
 
@@ -154,9 +154,9 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    const { householdId, allowed } = await requireActiveHouseholdCareWrite(userId);
+    const { householdId, allowed } = await requireActiveHouseholdCareLogWrite(userId);
     if (!allowed) {
-      res.status(403).json({ error: CARE_WRITE_FORBIDDEN_ERROR });
+      res.status(403).json({ error: CARE_LOG_WRITE_FORBIDDEN_ERROR });
       return;
     }
     const caregiverName = await getCaregiverName(householdId, userId);

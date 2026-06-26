@@ -12,9 +12,19 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-26: Care Plan Writes Are Stricter Than Care Log Writes
+
+Decision: API care-plan writes should use a stricter role guard than care-log writes. `PUT /care-state` is limited to owner, admin, and member roles because it changes the shared Dog Profile, routines, records, reports, and other care-document state. `POST/PATCH/DELETE /care-entries` remains available to owner, admin, member, sitter, and trainer roles so invited care helpers can log and correct care evidence. Vet viewers stay read-only for both surfaces.
+
+Reason: Household Access presents sitters and trainers as logging/report roles, not shared care-plan editors. Allowing those roles to mutate the full care document would contradict the owner-readable permission boundary and make sitter/trainer access broader than the launch role model promises.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed role enforcement, document/report access controls, final caregiver administration policy, or a formal sitter/trainer care-plan collaboration workflow becomes active release work.
+
 ### 2026-06-25: Vet Viewers Are Read-Only For Shared Care Writes
 
-Decision: API care-write routes should allow owner, admin, member, sitter, and trainer roles to mutate shared care, but `vet_viewer` memberships should remain read-only. `PUT /care-state` and `POST/PATCH/DELETE /care-entries` return a clear 403 for read-only active household roles, while read routes remain available for review.
+Decision: API care-write routes should keep `vet_viewer` memberships read-only. `PUT /care-state` and `POST/PATCH/DELETE /care-entries` return a clear 403 for read-only active household roles, while read routes remain available for review.
 
 Reason: Mobile can now assign a vet viewer role and Household Access explains it as report/context review. Letting that role change logs or care plans would contradict the owner-readable permission boundary and weaken household trust before final provider-backed permission policy exists.
 

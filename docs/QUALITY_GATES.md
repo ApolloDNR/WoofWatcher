@@ -344,4 +344,6 @@ Current evidence, 2026-06-25: Mobile More now surfaces household audit review fo
 
 Current evidence, 2026-06-25: Household Access now maps the launch caregiver role set to truthful owner-readable labels and permission summaries. Owner, admin, sitter, trainer, and vet viewer roles no longer collapse into generic owner/caregiver copy or leak internal role ids, and Mobile More shows the scoped permission summary under each Care Team person before provider-backed role enforcement exists.
 
-Current evidence, 2026-06-25: API shared care writes now honor the launch role boundary for vet viewers before final provider-backed permission policy. `PUT /care-state` and `POST/PATCH/DELETE /care-entries` use a shared care-write role allowlist, so vet viewers can review household care context but cannot change care plans or logs.
+Current evidence, 2026-06-25: API shared care writes now honor the launch role boundary for vet viewers before final provider-backed permission policy. Vet viewers can review household care context but cannot change care plans or logs.
+
+Current evidence, 2026-06-26: API care-plan writes now use a stricter role boundary than care-log writes before final provider-backed permission policy. `PUT /care-state` is limited to owner/admin/member roles so sitters and trainers cannot change the shared Dog Profile, routines, records, or reports document, while `POST/PATCH/DELETE /care-entries` still allows owner/admin/member/sitter/trainer roles to log and correct care evidence.
