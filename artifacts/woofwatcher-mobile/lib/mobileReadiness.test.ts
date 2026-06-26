@@ -2128,6 +2128,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(payload.checks?.some((check) => check.label === "care-twin QA route proof flow is source-backed" && check.status === "PASS"));
   assert.ok(payload.checks?.some((check) => check.label === "native QA Needs tune fix brief is source-backed" && check.status === "PASS"));
   assert.ok(payload.checks?.some((check) => check.label === "provider-aware Care Pass storage is source-backed" && check.status === "PASS"));
+  assert.ok(payload.checks?.some((check) => check.label === "owner-preview Care Pass storage proof is source-backed" && check.status === "PASS"));
   assert.ok(payload.checks?.some((check) => check.label === "unsupported bundled pnpm candidate" && check.detail?.includes("pnpm")));
   assert.ok(payload.issues?.includes("pnpm available"));
   assert.ok(payload.issues?.includes("mobile package can resolve expo"));

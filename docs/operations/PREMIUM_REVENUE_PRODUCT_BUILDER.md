@@ -688,6 +688,15 @@ stays `Saved on this device` or `Ready to upload` without implying provider
 upload, and the proof stays a required Mission note rather than an extra
 screenshot slot.
 
+The owner-preview storage-proof doctor pass made that phone-loop requirement
+source-backed for handoff environments. `scripts/mobile-beta-doctor.mjs --json`
+now reports `owner-preview Care Pass storage proof is source-backed` only when
+the release QA matrix still includes the Care Pass Report History storage-status
+proof, the native QA capture share text still carries route-check `Proof:`
+lines, and `/care-twin-qa` still renders the Owner route-loop proof text. This
+keeps Apollo, Replit, Fable, or a native helper from losing the storage-truth
+Mission note while the dependency/export gate remains external.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

@@ -888,3 +888,23 @@ Latest local evidence, 2026-06-26:
 - Direct JSON doctor run in this cleaned Windows shell exits blocked as
   intended and reports the same two true issues: `pnpm available` and
   `mobile package can resolve expo`.
+
+Latest local evidence, 2026-06-26:
+
+- `scripts/mobile-beta-doctor.mjs --json` now source-validates the Owner
+  Preview Care Pass storage proof chain.
+- The JSON doctor reports `owner-preview Care Pass storage proof is
+  source-backed` only when the release QA matrix still requires the Care Pass
+  Report History storage-status proof, the native QA capture share text still
+  carries route-check `Proof:` lines, and `/care-twin-qa` still renders the
+  Owner route-loop proof text.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on the missing
+  doctor check, then passed with 81 tests after the source-backed check was
+  added.
+- Direct JSON doctor run in this cleaned Windows shell still exits blocked on
+  the two real export issues: missing `pnpm available` and missing
+  `mobile package can resolve expo`.
+- Follow-up verification passed the 102-test release QA/native capture/readiness
+  suite, the 420-test zero-dependency behavior/readiness suite, PixelLab
+  verification at 149 files, and `git diff --check` with expected Windows
+  line-ending warnings only.

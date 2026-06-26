@@ -95,3 +95,20 @@
   mobile package can resolve Expo.
 - Capture the real `/care-twin-qa` iOS/Android screenshots and Mission note
   proof before claiming internal beta proof.
+
+## Owner Preview Storage-Proof Doctor Guard
+
+- `scripts/mobile-beta-doctor.mjs --json` now source-validates the Owner
+  Preview Care Pass storage proof chain.
+- The guard only passes when the release QA matrix still asks for the Care Pass
+  Report History storage-status proof, the native QA share script still carries
+  route-loop proof lines, and `/care-twin-qa` still renders the Owner route-loop
+  proof text.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on the missing
+  doctor check, then passed after the source-backed contract was added.
+- Verification passed: 81-test mobile readiness, 102-test release QA/native
+  capture readiness, 420-test zero-dependency behavior/readiness suite,
+  PixelLab asset verification at 149 files, and `git diff --check` with
+  expected Windows line-ending warnings only.
+- Direct JSON doctor still reports `BLOCKED` on the real local export issues:
+  missing pnpm and missing mobile Expo dependency resolution.

@@ -305,6 +305,29 @@ check(
     : "keep Care Pass storage status wired through Provider Launch Setup, Records, and the shared care-domain helper",
 );
 
+const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileReleaseQaSource, [
+  "Care Pass Report History storage status",
+  "Saved on this device or Ready to upload",
+  "QA note confirming Care Pass Report History storage status stayed truthful.",
+  'proof: "Care Pass Report History storage status note or screenshot."',
+])
+  && includesAll(mobileLaunchQaEvidenceSource, [
+    "Route loop:",
+    "routeCheck.proof",
+    "Proof:",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "Owner route loop",
+    "Proof: {routeCheck.proof}",
+  ]);
+check(
+  "owner-preview Care Pass storage proof is source-backed",
+  ownerPreviewCarePassStorageProofIsSourceBacked,
+  ownerPreviewCarePassStorageProofIsSourceBacked
+    ? "Owner Preview route loop carries Care Pass storage proof from QA matrix through share text and /care-twin-qa"
+    : "keep Owner Preview Care Pass storage proof in release QA, share text, and /care-twin-qa route loop",
+);
+
 if (!jsonMode) {
   console.log("\nDependency proof commands:");
   for (const command of proofCommands) console.log(`- ${command}`);

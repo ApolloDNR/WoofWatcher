@@ -979,3 +979,16 @@ verify run `28238656796` for commit `35b4735` failed before job execution with
 job `83659654553`, `steps: []`, and `log not found: 83659654553`, matching the
 standing GitHub billing/spending-limit blocker rather than a local code
 regression.
+
+Current evidence, 2026-06-26: The mobile beta doctor now source-validates the
+Owner Preview Care Pass storage proof chain. Its JSON payload includes
+`owner-preview Care Pass storage proof is source-backed` only when
+`mobileReleaseQa.ts` still requires the Care Pass Report History storage-status
+proof, `mobileLaunchQaEvidence.ts` still carries route-check `Proof:` lines into
+the shareable Native QA script, and `/care-twin-qa` still renders the Owner
+route-loop proof text. Local verification passed mobile readiness, release
+QA/native capture readiness, the 420-test zero-dependency behavior/readiness
+suite, PixelLab asset verification at 149 files, and `git diff --check` with
+expected Windows line-ending warnings only. Direct JSON doctor output remains
+truthfully blocked on missing pnpm and missing mobile Expo dependency
+resolution.
