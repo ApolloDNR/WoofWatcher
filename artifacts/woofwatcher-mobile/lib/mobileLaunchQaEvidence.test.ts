@@ -357,7 +357,8 @@ test("keeps note-required owner preview evidence open until the QA note is writt
   const sessionWithNote: MobileQaSessionState = {
     ...sessionWithoutNote,
     surfaceNotes: {
-      "owner-preview-core-loop": "Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass were reachable without dead ends.",
+      "owner-preview-core-loop":
+        "Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass were reachable without dead ends. Care Pass Report History storage status stayed truthful.",
     },
   };
 

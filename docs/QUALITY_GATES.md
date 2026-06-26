@@ -965,3 +965,13 @@ line-ending warnings only. Remote verify run `28237677413` for commit `64c4968`
 failed before job execution with job `83656402075`, `steps: []`, and
 `log not found: 83656402075`, matching the standing GitHub
 billing/spending-limit blocker rather than a local code regression.
+
+Current evidence, 2026-06-26: The Owner Preview Core Loop native QA surface now
+requires a real tester note for Care Pass Report History storage truth. The
+route loop asks testers to confirm Records/Care Pass shows `Saved on this
+device` or `Ready to upload` without implying provider-backed upload, includes
+that as pass criteria, and keeps the proof as a QA note so it does not add a
+third screenshot requirement to the owner loop. Local verification passed
+release QA tests, native capture-plan tests, the 420-test zero-dependency
+behavior/readiness suite, PixelLab asset verification at 149 files, and
+`git diff --check` with expected Windows line-ending warnings only.

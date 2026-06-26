@@ -142,11 +142,13 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "In Plans, confirm upcoming care rows are readable and the add/edit flow is reachable without covering the paw nav.",
       "In Health, confirm Health Watch and Bile Watch language stays non-diagnostic and readable on the phone.",
       "In More, open Launch Readiness, Records, Avatar Studio, and Care Pass/Reports paths and confirm no route is a dead end.",
+      "In Records, confirm Care Pass Report History storage status says Saved on this device or Ready to upload, not provider-backed upload unless the provider gate is actually closed.",
     ],
     acceptanceCriteria: [
       "The bottom-nav loop never hides the active action, gets stuck behind a modal, or routes to a blank screen.",
       "Quick Log, Plans, Health, More, Records, Avatar Studio, and Care Pass each expose a clear next action.",
       "Launch Readiness keeps internal beta, provider setup, store approval, payments, AI, and storage boundaries truthful.",
+      "Care Pass Report History shows Saved on this device or Ready to upload without implying cloud-backed storage before upload rules exist.",
     ],
     failureEscalation:
       "Mark Needs tune if any core route is confusing, clipped by the paw nav, blocked by keyboard/modal overlap, missing a next action, or claims provider/store/payment/AI/storage readiness that is not actually configured.",
@@ -154,6 +156,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "iOS screenshot of Quick Log or Log after opening the owner preview loop.",
       "Android screenshot of Launch Readiness from More after completing the owner preview loop.",
       "Note confirming Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass were reachable without dead ends.",
+      "QA note confirming Care Pass Report History storage status stayed truthful.",
     ],
     routeChecklist: [
       {
@@ -196,7 +199,8 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       {
         label: "Care Pass",
         route: "/records",
-        expected: "Confirm sitter/vet/trainer handoff previews are reachable from Records or More.",
+        expected: "Confirm sitter/vet/trainer handoff previews are reachable from Records or More and Report History storage status stays truthful.",
+        proof: "Care Pass Report History storage status note or screenshot.",
       },
     ],
     launchRisk:
