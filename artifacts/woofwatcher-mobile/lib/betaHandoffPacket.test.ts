@@ -99,6 +99,8 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Generated: 2026-06-25T12:05:00.000Z/);
   assert.match(text, /Beta verdict: Beta candidate - capture device proof/);
   assert.match(text, /Public launch verdict: Not ready for public launch/);
+  assert.match(text, /Owner preview proof: Not reviewed/);
+  assert.match(text, /Owner preview missing: Attach 1 iOS screenshot for Owner Preview Core Loop\./);
   assert.match(text, /Next device mission: Owner Preview Core Loop \(\/care-twin-qa\)/);
   assert.match(text, /Status: Not reviewed/);
   assert.match(text, /Missing proof: Attach 1 iOS screenshot for Owner Preview Core Loop\. Attach 1 Android screenshot/);
@@ -165,6 +167,8 @@ test("keeps the beta handoff focused when the current mission is pass pending pr
   const text = buildBetaHandoffPacketShareText(releasePacket, qaPlan, "2026-06-25T12:05:00.000Z");
 
   assert.match(text, /Status: Pass pending proof/);
+  assert.match(text, /Owner preview proof: Pass pending proof/);
+  assert.match(text, /Owner preview missing: Add QA note for Owner Preview Core Loop\./);
   assert.match(text, /Missing proof: Add QA note for Owner Preview Core Loop\./);
   assert.match(text, /Tester instruction: finish the missing proof before treating this beta mission as complete\./);
 });

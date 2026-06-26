@@ -1038,9 +1038,13 @@ export default function MoreScreen() {
   };
 
   const nativeQaCaptureNeedsTuneTarget = nativeQaCapturePlan.firstNeedsTuneTarget;
+  const ownerPreviewProofStatus = nativeQaCapturePlan.ownerPreviewProofStatus;
+  const ownerPreviewProofHasPending = ownerPreviewProofStatus.statusLabel === "Pass pending proof";
+  const ownerPreviewProofSummary =
+    ownerPreviewProofStatus.missingEvidence[0] ?? "Owner preview proof is complete for the saved QA session.";
   const nativeQaCaptureHasProofPending = nativeQaCapturePlan.nextTargets.some(
     (target) => mobileLaunchQaCaptureTargetStatusLabel(target) === "Pass pending proof",
-  );
+  ) || ownerPreviewProofHasPending;
   const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "Open QA Cockpit";
 
   const H_PAD = 20;
@@ -1457,6 +1461,43 @@ export default function MoreScreen() {
                       {nativeQaCapturePlan.openSurfaces} still open.
                     </Text>
                   </View>
+                </View>
+                <View
+                  style={[
+                    s.nativeQaOwnerProofRow,
+                    {
+                      borderColor: ownerPreviewProofHasPending ? colors.amber + "66" : colors.border,
+                      backgroundColor: ownerPreviewProofHasPending ? colors.amber + "12" : colors.card,
+                    },
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.nativeQaOwnerProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      Owner preview proof
+                    </Text>
+                    <Text
+                      style={[
+                        s.nativeQaOwnerProofTitle,
+                        {
+                          color: ownerPreviewProofHasPending ? colors.amber : colors.foreground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {ownerPreviewProofStatus.statusLabel}
+                    </Text>
+                    <Text
+                      numberOfLines={2}
+                      style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                    >
+                      {ownerPreviewProofStatus.evidenceAttached} attached. {ownerPreviewProofSummary}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={ownerPreviewProofHasPending ? "lock-closed-outline" : "shield-checkmark-outline"}
+                    size={17}
+                    color={ownerPreviewProofHasPending ? colors.amber : colors.sage}
+                  />
                 </View>
                 <View style={s.nativeQaCaptureActions}>
                   <Pressable
@@ -3078,6 +3119,20 @@ const s = StyleSheet.create({
   },
   nativeQaCaptureTitle: { fontSize: 13.5, lineHeight: 18 },
   nativeQaCaptureSub: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  nativeQaOwnerProofRow: {
+    minHeight: 56,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  nativeQaOwnerProofLabel: { fontSize: 9.5, lineHeight: 13, textTransform: "uppercase" },
+  nativeQaOwnerProofTitle: { fontSize: 13, lineHeight: 17, marginTop: 1 },
+  nativeQaOwnerProofDetail: { fontSize: 10.8, lineHeight: 15, marginTop: 2 },
   nativeQaCaptureActions: {
     flexDirection: "row",
     flexWrap: "wrap",

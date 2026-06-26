@@ -560,6 +560,18 @@ Handoff`, and `providerSetupPlan: launchProviderSetupPlan` wiring. This keeps
 the one-tap handoff, provider setup, and machine-readable doctor aligned under
 the two-day beta deadline.
 
+The owner-preview proof-status pass keeps the most important beta loop visible
+even when other QA surfaces appear earlier in the next-capture list.
+`buildMobileLaunchQaCapturePlan` now always derives `ownerPreviewProofStatus`
+for `Owner Preview Core Loop`, including whether it is complete, Pass pending
+proof, Needs tune, not reviewed, or missing from the QA plan. More's Native QA
+panel shows that status as an `Owner preview proof` row and keeps the cockpit
+CTA at `Finish Proof` whenever the owner loop is marked Pass but still lacks
+the Mission note. The Native QA share text and `Share Beta Handoff` packet also
+print the owner-preview proof status and missing proof so Apollo, Replit,
+Fable, or a device helper cannot claim owner-preview beta proof from partial
+screenshots alone.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

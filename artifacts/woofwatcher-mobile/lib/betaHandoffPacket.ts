@@ -86,6 +86,18 @@ function formatCurrentMission(target: MobileLaunchQaCaptureTarget | undefined): 
   return lines;
 }
 
+function formatOwnerPreviewProof(plan: MobileLaunchQaCapturePlan): string[] {
+  const proof = plan.ownerPreviewProofStatus;
+
+  return [
+    `Owner preview proof: ${proof.statusLabel}`,
+    `Owner preview missing: ${
+      proof.missingEvidence.length ? proof.missingEvidence.join(" ") : "No owner-preview proof is missing."
+    }`,
+    `Owner preview evidence: ${proof.evidenceAttached} attached`,
+  ];
+}
+
 export function buildBetaHandoffPacketShareText(
   releasePacket: ReleasePacket,
   capturePlan: MobileLaunchQaCapturePlan,
@@ -102,6 +114,7 @@ export function buildBetaHandoffPacketShareText(
     `Public launch verdict: ${releasePacket.verdictLabel}`,
     `Readiness score: ${releasePacket.readinessScore}%`,
     `QA progress: ${capturePlan.completeSurfaces}/${capturePlan.totalSurfaces} surfaces complete, ${capturePlan.openSurfaces} open.`,
+    ...formatOwnerPreviewProof(capturePlan),
     "",
     releasePacket.betaSummary,
     "",

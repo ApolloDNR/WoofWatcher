@@ -1983,6 +1983,8 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /mobileLaunchQaCaptureTargetStatusLabel\(target\)/);
   assert.match(more, /Pass pending proof/);
   assert.match(more, /nativeQaCaptureHasProofPending/);
+  assert.match(more, /ownerPreviewProofStatus/);
+  assert.match(more, /Owner preview proof/);
   assert.match(more, /Finish Proof/);
   assert.match(more, /nativeQaCaptureCockpitAction/);
   assert.match(more, /Share\.share\(\{[\s\S]*message:\s*buildMobileLaunchQaCaptureShareText\(nativeQaCapturePlan/);
@@ -1995,6 +1997,8 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(careTwinQaRoute, /buildMobileReleaseQaShareText\(releaseQaSurfaces,\s*releaseReviews,\s*reviewedAtIso\)/);
 
   assert.match(qaEvidence, /buildMobileLaunchQaCapturePlan/);
+  assert.match(qaEvidence, /ownerPreviewProofStatus/);
+  assert.match(qaEvidence, /Owner preview proof:/);
   assert.match(qaEvidence, /buildMobileLaunchQaCaptureShareText/);
   assert.match(qaEvidence, /buildMobileLaunchQaFixBriefShareText/);
   assert.match(qaEvidence, /listMobileLaunchQaSurfaces/);

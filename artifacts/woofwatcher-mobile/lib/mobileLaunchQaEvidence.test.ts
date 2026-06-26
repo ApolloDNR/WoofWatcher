@@ -419,6 +419,93 @@ test("finds the first Needs tune route even when it is outside the visible next 
   assert.equal(plan.firstNeedsTuneTarget?.note, "Care Pass share button is too low behind the paw nav on Android.");
 });
 
+test("keeps owner preview beta proof visible even when it is outside the visible next captures", () => {
+  const surfaces: readonly MobileReleaseQaSurface[] = [
+    {
+      ...focusedSurfaces[0],
+      id: "home-one",
+      title: "Home One",
+    },
+    {
+      ...focusedSurfaces[0],
+      id: "home-two",
+      title: "Home Two",
+    },
+    {
+      ...focusedSurfaces[0],
+      id: "home-three",
+      title: "Home Three",
+    },
+    {
+      ...focusedSurfaces[0],
+      id: "home-four",
+      title: "Home Four",
+    },
+    {
+      id: "owner-preview-core-loop",
+      title: "Owner Preview Core Loop",
+      route: "/care-twin-qa",
+      priority: "launch-critical",
+      goal: "Verify the real owner journey before beta sharing.",
+      devicePrompt: "Run the owner route loop and attach proof.",
+      setupSteps: ["Use Phoenix demo care data."],
+      verificationSteps: ["Open Home.", "Open Log.", "Open More Launch Readiness."],
+      acceptanceCriteria: ["No route dead-ends."],
+      failureEscalation: "Mark Needs tune if any route clips or dead-ends.",
+      requiredEvidence: [
+        "iOS screenshot of Quick Log or Log.",
+        "Android screenshot of More Launch Readiness.",
+        "Note confirming Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass had no dead ends.",
+      ],
+      launchRisk: "This is the beta's real owner path.",
+    },
+  ];
+  const session: MobileQaSessionState = {
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {
+      "owner-preview-core-loop": "pass",
+    },
+    surfaceNotes: {},
+    surfaceEvidenceById: {
+      "owner-preview-core-loop": [
+        {
+          uri: "file:///qa/ios-log.png",
+          fileName: "ios-log.png",
+          source: "library",
+          targetPlatform: "ios",
+          capturedAtIso: "2026-06-26T09:00:00.000Z",
+        },
+        {
+          uri: "file:///qa/android-launch-readiness.png",
+          fileName: "android-launch-readiness.png",
+          source: "library",
+          targetPlatform: "android",
+          capturedAtIso: "2026-06-26T09:02:00.000Z",
+        },
+      ],
+    },
+  };
+
+  const plan = buildMobileLaunchQaCapturePlan(session, surfaces);
+
+  assert.deepEqual(
+    plan.nextTargets.map((target) => target.surfaceId),
+    ["home-one", "home-two", "home-three", "home-four"],
+  );
+  assert.equal(plan.ownerPreviewProofStatus.surfaceId, "owner-preview-core-loop");
+  assert.equal(plan.ownerPreviewProofStatus.statusLabel, "Pass pending proof");
+  assert.equal(plan.ownerPreviewProofStatus.complete, false);
+  assert.equal(plan.ownerPreviewProofStatus.evidenceAttached, 2);
+  assert.deepEqual(plan.ownerPreviewProofStatus.missingEvidence, ["Add QA note for Owner Preview Core Loop."]);
+
+  const text = buildMobileLaunchQaCaptureShareText(plan, "2026-06-26T09:30:00.000Z");
+
+  assert.match(text, /Owner preview proof: Pass pending proof/);
+  assert.match(text, /Owner preview missing: Add QA note for Owner Preview Core Loop\./);
+});
+
 test("builds a focused fix brief for the first Needs tune target", () => {
   const session: MobileQaSessionState = {
     careTwinStatusById: {},

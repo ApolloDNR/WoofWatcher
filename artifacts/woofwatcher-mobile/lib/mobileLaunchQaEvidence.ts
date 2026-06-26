@@ -29,13 +29,28 @@ export interface MobileLaunchQaCaptureTarget {
   routeChecklist?: MobileReleaseQaSurface["routeChecklist"];
 }
 
+export interface MobileLaunchQaOwnerPreviewProofStatus {
+  surfaceId: string;
+  title: string;
+  route: string;
+  status: MobileReleaseQaReview["status"] | "missing";
+  statusLabel: string;
+  complete: boolean;
+  missingEvidence: string[];
+  evidenceAttached: number;
+  note?: string;
+}
+
 export interface MobileLaunchQaCapturePlan {
   totalSurfaces: number;
   openSurfaces: number;
   completeSurfaces: number;
   nextTargets: MobileLaunchQaCaptureTarget[];
   firstNeedsTuneTarget: MobileLaunchQaCaptureTarget | null;
+  ownerPreviewProofStatus: MobileLaunchQaOwnerPreviewProofStatus;
 }
+
+const OWNER_PREVIEW_CORE_LOOP_ID = "owner-preview-core-loop";
 
 export function mobileLaunchQaCaptureTargetStatusLabel(
   target: MobileLaunchQaCaptureTarget | null | undefined,
@@ -158,33 +173,79 @@ function reviewForSessionSurface(
   };
 }
 
+function captureTargetForSurface(
+  surface: MobileReleaseQaSurface,
+  review: MobileReleaseQaReview,
+  missingEvidence: string[],
+): MobileLaunchQaCaptureTarget {
+  const routeChecklist = surface.routeChecklist?.length ? { routeChecklist: surface.routeChecklist } : {};
+  return {
+    surfaceId: surface.id,
+    title: surface.title,
+    route: surface.route,
+    priority: surface.priority,
+    status: review.status,
+    missingEvidence,
+    setupSteps: surface.setupSteps,
+    verificationSteps: surface.verificationSteps,
+    acceptanceCriteria: surface.acceptanceCriteria,
+    failureEscalation: surface.failureEscalation,
+    evidenceAttached: review.screenshotEvidence?.length ?? 0,
+    note: review.note,
+    ...routeChecklist,
+  };
+}
+
+function ownerPreviewProofStatusFor(
+  session: MobileQaSessionState | null | undefined,
+  surfaces: readonly MobileReleaseQaSurface[],
+): MobileLaunchQaOwnerPreviewProofStatus {
+  const surface = surfaces.find((item) => item.id === OWNER_PREVIEW_CORE_LOOP_ID);
+
+  if (!surface) {
+    return {
+      surfaceId: OWNER_PREVIEW_CORE_LOOP_ID,
+      title: "Owner Preview Core Loop",
+      route: "/care-twin-qa",
+      status: "missing",
+      statusLabel: "Missing from QA plan",
+      complete: false,
+      missingEvidence: ["Add Owner Preview Core Loop to the native QA plan."],
+      evidenceAttached: 0,
+    };
+  }
+
+  const review = reviewForSessionSurface(session, surface);
+  const missingEvidence = missingEvidenceForSurface(surface, review);
+  const complete = review.status === "pass" && missingEvidence.length === 0;
+  const target = captureTargetForSurface(surface, review, missingEvidence);
+
+  return {
+    surfaceId: surface.id,
+    title: surface.title,
+    route: surface.route,
+    status: review.status,
+    statusLabel: complete ? "Pass" : mobileLaunchQaCaptureTargetStatusLabel(target),
+    complete,
+    missingEvidence,
+    evidenceAttached: review.screenshotEvidence?.length ?? 0,
+    note: review.note,
+  };
+}
+
 export function buildMobileLaunchQaCapturePlan(
   session: MobileQaSessionState | null | undefined,
   surfaces: readonly MobileReleaseQaSurface[] = listMobileLaunchQaSurfaces(),
 ): MobileLaunchQaCapturePlan {
   const surfaceOrder = new Map(surfaces.map((surface, index) => [surface.id, index]));
+  const ownerPreviewProofStatus = ownerPreviewProofStatusFor(session, surfaces);
   const targets = surfaces
     .map<MobileLaunchQaCaptureTarget | null>((surface) => {
       const review = reviewForSessionSurface(session, surface);
       const missingEvidence = missingEvidenceForSurface(surface, review);
       const complete = review.status === "pass" && missingEvidence.length === 0;
       if (complete) return null;
-      const routeChecklist = surface.routeChecklist?.length ? { routeChecklist: surface.routeChecklist } : {};
-      return {
-        surfaceId: surface.id,
-        title: surface.title,
-        route: surface.route,
-        priority: surface.priority,
-        status: review.status,
-        missingEvidence,
-        setupSteps: surface.setupSteps,
-        verificationSteps: surface.verificationSteps,
-        acceptanceCriteria: surface.acceptanceCriteria,
-        failureEscalation: surface.failureEscalation,
-        evidenceAttached: review.screenshotEvidence?.length ?? 0,
-        note: review.note,
-        ...routeChecklist,
-      };
+      return captureTargetForSurface(surface, review, missingEvidence);
     })
     .filter((target): target is MobileLaunchQaCaptureTarget => !!target)
     .sort((first, second) => {
@@ -200,6 +261,7 @@ export function buildMobileLaunchQaCapturePlan(
     completeSurfaces: Math.max(0, surfaces.length - targets.length),
     nextTargets: targets.slice(0, 4),
     firstNeedsTuneTarget: targets.find((target) => target.status === "needs-review") ?? null,
+    ownerPreviewProofStatus,
   };
 }
 
@@ -271,6 +333,13 @@ export function buildMobileLaunchQaCaptureShareText(
     "WoofWatcher Native QA Capture Plan",
     `Generated: ${generatedAtIso}`,
     `Progress: ${plan.completeSurfaces}/${plan.totalSurfaces} complete, ${plan.openSurfaces} open.`,
+    `Owner preview proof: ${plan.ownerPreviewProofStatus.statusLabel}.`,
+    `Owner preview missing: ${
+      plan.ownerPreviewProofStatus.missingEvidence.length
+        ? plan.ownerPreviewProofStatus.missingEvidence.join(" ")
+        : "No owner-preview proof is missing."
+    }`,
+    `Owner preview evidence: ${plan.ownerPreviewProofStatus.evidenceAttached} attached.`,
     "",
     "Next captures:",
   ];
