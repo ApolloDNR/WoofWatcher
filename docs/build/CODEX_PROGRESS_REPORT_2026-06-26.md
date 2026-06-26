@@ -179,3 +179,21 @@
 - Remote verify run `28258738261` for commit `82850d8` failed before job
   execution with job `83728433081`, `steps: []`, and `log not found:
   83728433081`, matching the standing GitHub billing/spending-limit blocker.
+
+## Beta Handoff Export-Manifest Proof
+
+- `buildBetaHandoffPacketShareText` now includes the Care Pass export manifest
+  proof in `Required beta proof after export`.
+- The packet tells helpers to confirm Report History shows `Printable HTML`,
+  file size, and `PDF pending` before claiming PDF readiness.
+- `scripts/mobile-beta-doctor.mjs --json` now requires that line in the beta
+  handoff source before the source-backed handoff/storage guards pass.
+- Red/green evidence: `betaHandoffPacket.test.ts` first failed on the missing
+  manifest proof line, then passed after the packet and doctor guards were
+  aligned.
+- Verification passed: beta handoff packet test, 81-test mobile readiness,
+  direct JSON doctor source checks, 421-test zero-dependency behavior/readiness
+  suite, PixelLab asset verification at 149 files, and `git diff --check` with
+  expected Windows line-ending warnings only.
+- Direct JSON doctor still reports `BLOCKED` on missing pnpm and missing mobile
+  Expo dependency resolution.

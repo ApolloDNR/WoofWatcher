@@ -134,6 +134,7 @@ export function buildBetaHandoffPacketShareText(
     "- Open /care-twin-qa on iOS and Android before sharing beta proof.",
     "- Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
     "- Confirm Care Pass Report History storage status says Saved on this device or Ready to upload.",
+    "- Confirm Care Pass export manifest shows Printable HTML, file size, and PDF pending before claiming PDF readiness.",
     "- Save the Mission note and clear Pass pending proof in both /care-twin-qa and More.",
     "",
     "Native QA Needs tune fix brief:",

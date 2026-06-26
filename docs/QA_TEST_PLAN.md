@@ -965,3 +965,21 @@ Latest local evidence, 2026-06-26:
   Windows line-ending warnings only.
 - Direct JSON doctor still reports `BLOCKED` on the real local export issues:
   missing pnpm and missing mobile Expo dependency resolution.
+
+Latest local evidence, 2026-06-26:
+
+- The one-tap 48-hour Beta Handoff packet now includes the Care Pass export
+  manifest proof line.
+- The packet tells helpers to confirm Report History shows `Printable HTML`,
+  file size, and `PDF pending` before claiming PDF readiness.
+- The mobile beta doctor source-backed handoff and Owner Preview storage-proof
+  checks now require that same proof line in `betaHandoffPacket.ts`.
+- Red/green evidence: `betaHandoffPacket.test.ts` first failed on the missing
+  manifest proof line, then passed after the packet and doctor guards were
+  updated.
+- Verification passed the beta handoff packet test, 81-test mobile readiness,
+  direct JSON doctor source checks, the 421-test zero-dependency
+  behavior/readiness suite, PixelLab verification at 149 files, and `git diff
+  --check` with expected Windows line-ending warnings only.
+- Direct JSON doctor still reports `BLOCKED` on the real local export issues:
+  missing pnpm and missing mobile Expo dependency resolution.

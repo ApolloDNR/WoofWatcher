@@ -206,6 +206,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Dependency proof requires a real PATH pnpm at 10.24.0; do not use a bundled pnpm 11.x candidate.",
   "Required beta proof after export:",
   "Native QA Needs tune fix brief:",
+  "Confirm Care Pass export manifest shows Printable HTML, file size, and PDF pending before claiming PDF readiness.",
   "Provider proof needed:",
   "Truth boundaries:",
 ])
@@ -316,6 +317,7 @@ const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileRelease
 ])
   && includesAll(betaHandoffPacketSource, [
     "Confirm Care Pass Report History storage status says Saved on this device or Ready to upload.",
+    "Confirm Care Pass export manifest shows Printable HTML, file size, and PDF pending before claiming PDF readiness.",
 ])
   && includesAll(mobileLaunchQaEvidenceSource, [
     "Route loop:",

@@ -718,6 +718,12 @@ provider-backed generation. Records Report History renders that manifest beside
 the existing resend and printable-source actions, and the mobile beta doctor now
 source-validates the new export-helper route through `exportView.storage`.
 
+The beta handoff export-manifest proof pass makes the same boundary visible in
+the one-tap helper packet. `buildBetaHandoffPacketShareText` now tells helpers
+to confirm Report History shows `Printable HTML`, file size, and `PDF pending`
+before claiming PDF readiness, and the mobile beta doctor requires that line in
+the handoff source before its source-backed guards pass.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
