@@ -1058,3 +1058,19 @@ Latest local evidence, 2026-06-26:
 - Focused proof passed through `quickLogEntry.test.ts` and
   `mobileReadiness.test.ts`; broader local proof passed the 383-test
   behavior/readiness suite and PixelLab verification at 149 files.
+
+Latest local evidence, 2026-06-26:
+
+- Phoenix Home QA must confirm quick care actions animate the main care twin,
+  not a second dog or disconnected overlay.
+- Care-event reactions are now source-backed by `careTwinReactionPolicy.ts`:
+  meal served -> eat loop with outcome-pending copy, potty -> ear-perk bathroom
+  attempt copy, water -> drink loop, walk -> walk loop, training/treat ->
+  earned celebration, and vomit/symptom/incident -> calm review-oriented health
+  reactions.
+- Screen review should confirm the reaction bubble copy stays tied to real care
+  value and does not introduce medical certainty.
+- Focused proof passed through `careTwinReactionPolicy.test.ts` and
+  `mobileReadiness.test.ts`.
+- Broader local proof passed the `386`-test behavior/readiness suite and
+  PixelLab verification at `ok=149 missing=0 invalid=0`.

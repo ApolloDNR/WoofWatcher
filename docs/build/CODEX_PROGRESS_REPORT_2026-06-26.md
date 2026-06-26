@@ -324,3 +324,28 @@ Latest local evidence, 2026-06-26:
 - `where pnpm` still found no global `pnpm` command in this shell, so full
   workspace package-manager commands and native/export proof still need a
   dependency-complete environment.
+
+## Phoenix Home Main-Sprite Reaction Policy
+
+Latest local evidence, 2026-06-26:
+
+- Added `careTwinReactionPolicy.ts` so real care events drive the main Phoenix
+  sprite reaction through one shared policy instead of scattered per-tile
+  guesses.
+- Home quick logs and walk-start actions now use that policy for reaction icon,
+  label, detail copy, tone, and sprite action.
+- The policy preserves real-care semantics: meal served keeps the outcome open,
+  potty remains a parent bathroom attempt, water maps to the drinking loop,
+  walks map to the walking loop, training/treats map to earned celebration, and
+  vomit/symptom/incident reactions stay calm and owner/vet-review oriented.
+- Static readiness protects the Home import/wiring and the policy copy so the
+  care-twin reaction layer cannot drift back into generic bubbles or duplicate
+  avatar behavior.
+- Verification passed:
+  - `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\careTwinReactionPolicy.test.ts`
+  - `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts`
+  - `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\*.test.ts lib\care-domain\test\*.test.ts`
+  - `node artifacts\woofwatcher-mobile\scripts\verify-pixellab-assets.js`
+  - `git diff --check` with expected Windows line-ending warnings only.
+- Broad local proof passed `386` tests, and PixelLab verification reported
+  `ok=149 missing=0 invalid=0`.

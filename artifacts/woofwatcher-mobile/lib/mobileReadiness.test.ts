@@ -548,11 +548,17 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "careTwinAssets.ts"),
     "utf8",
   );
+  const reactionPolicy = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "careTwinReactionPolicy.ts"),
+    "utf8",
+  );
 
   assert.match(home, /LivingPhoenixRoom/);
   assert.match(home, /deriveAvatarMotion/);
   assert.match(home, /avatarMotion\.speech/);
   assert.match(home, /setRoomReaction/);
+  assert.match(home, /describeCareTwinReactionForLog/);
+  assert.match(home, /reactionToneColor/);
   assert.match(home, /roomTapChoreography/);
   assert.match(home, /tapReaction\.action/);
   assert.match(home, /deriveCareTwinChoreography\(deriveCareTwinScene\(avatarMotion\)\)/);
@@ -609,6 +615,13 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(choreography, /return "ear-perk"/);
   assert.match(choreography, /return "comfort-loop"/);
   assert.match(choreography, /return "bark-loop"/);
+  assert.match(reactionPolicy, /export function describeCareTwinReactionForLog/);
+  assert.match(reactionPolicy, /Outcome stays open so the household can update what Phoenix actually ate/);
+  assert.match(reactionPolicy, /Bathroom attempt logged without pretending pee or poop happened/);
+  assert.match(reactionPolicy, /Activity progress updates without spawning a second avatar/);
+  assert.match(reactionPolicy, /Health Watch records the pattern calmly for owner or vet review/);
+  assert.match(reactionPolicy, /spriteAction: "health-watch"/);
+  assert.doesNotMatch(reactionPolicy, /spawn a second dog/);
   assert.match(careTwinAssets, /CARE_TWIN_SPRITE_ASSETS/);
   assert.match(careTwinAssets, /CARE_TWIN_DOGLESS_ROOM_ASSETS/);
   assert.match(careTwinAssets, /dogless-room-layer/);

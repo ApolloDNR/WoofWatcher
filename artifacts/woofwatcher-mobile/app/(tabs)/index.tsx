@@ -46,8 +46,12 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
-import { deriveCareTwinScene, type CareTwinSpriteAction } from "@/lib/avatarLifeEngine";
+import { deriveCareTwinScene } from "@/lib/avatarLifeEngine";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
+import {
+  describeCareTwinReactionForLog,
+  type CareTwinReactionToneRole,
+} from "@/lib/careTwinReactionPolicy";
 import { buildHomeMissionDeck, type HomeMissionTone } from "@/lib/homeMissionDeck";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
@@ -66,17 +70,16 @@ interface QuickItem {
   mood?: string;
   severity?: string;
   route?: "/log";
-  spriteAction?: CareTwinSpriteAction;
 }
 
 const HOME_QUICK_LOG: QuickItem[] = [
-  { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal", spriteAction: "eat-loop" },
-  { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk", spriteAction: "walk-loop" },
-  { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty", spriteAction: "ear-perk" },
-  { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water", spriteAction: "drink-loop" },
-  { key: "training", icon: "training", label: "Training", type: "training", title: "Training win", spriteAction: "celebrate-hop" },
-  { key: "treat", icon: "treat", label: "Treat", type: "treat", title: "Treat", spriteAction: "celebrate-hop" },
-  { key: "play", icon: "play", label: "Play", type: "play", title: "Play session", spriteAction: "tail-wag" },
+  { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
+  { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
+  { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty" },
+  { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water" },
+  { key: "training", icon: "training", label: "Training", type: "training", title: "Training win" },
+  { key: "treat", icon: "treat", label: "Treat", type: "treat", title: "Treat" },
+  { key: "play", icon: "play", label: "Play", type: "play", title: "Play session" },
   { key: "more", icon: "note", label: "More", type: "note", title: "Open quick log", route: "/log" },
 ];
 
@@ -524,6 +527,13 @@ export default function HomeScreen() {
     if (tone === "navy") return colors.blueSignal;
     return colors.sage;
   };
+  const reactionToneColor = (tone: CareTwinReactionToneRole) => {
+    if (tone === "health") return colors.rose;
+    if (tone === "reward") return colors.copper;
+    if (tone === "hydration") return colors.blueSignal;
+    if (tone === "soft") return colors.sage;
+    return colors.brandNavy;
+  };
 
   const [toast, setToast] = useState<string | null>(null);
   const [roomReaction, setRoomReaction] = useState<PhoenixRoomReaction | null>(null);
@@ -577,13 +587,19 @@ export default function HomeScreen() {
       }
       const entry = buildWalkSessionStartEntry({ caregiver, now });
       addEntry(entry as Omit<Entry, "id">);
+      const reactionPlan = describeCareTwinReactionForLog({
+        type: "walk",
+        label: "Walk",
+        title: "Walk started",
+        details: entry.details,
+      });
       setRoomReaction({
         id: Date.now(),
-        icon: item.icon,
-        label: "Walk started",
-        detail: "Finish in Log with route, distance, and social notes.",
-        tone: colors.brandNavy,
-        spriteAction: "walk-loop",
+        icon: reactionPlan.icon,
+        label: reactionPlan.label,
+        detail: reactionPlan.detail,
+        tone: reactionToneColor(reactionPlan.toneRole),
+        spriteAction: reactionPlan.spriteAction,
       });
       showToast("Walk started");
       return;
@@ -600,13 +616,23 @@ export default function HomeScreen() {
       { caregiver, caregiverRole: role, now },
     );
     addEntry(entry);
+    const reactionPlan = describeCareTwinReactionForLog({
+      type: entry.type,
+      label: item.label,
+      title: entry.title,
+      mood: entry.mood,
+      severity: entry.severity,
+      details: entry.details,
+    });
     setRoomReaction({
       id: Date.now(),
-      icon: item.icon,
-      label: `${item.label} logged`,
-      detail: avatarMotion.cue === "health-watch" ? "Health context updated." : "Phoenix reacts in the room.",
-      tone: item.type === "vomit" || item.severity === "alert" ? colors.rose : colors.brandNavy,
-      spriteAction: item.spriteAction,
+      icon: reactionPlan.icon,
+      label: reactionPlan.label,
+      detail: avatarMotion.cue === "health-watch" && reactionPlan.toneRole !== "health"
+        ? "Main Phoenix stays gentle while health context remains visible."
+        : reactionPlan.detail,
+      tone: reactionToneColor(reactionPlan.toneRole),
+      spriteAction: reactionPlan.spriteAction,
     });
     showToast(`${item.title} logged`);
   };
