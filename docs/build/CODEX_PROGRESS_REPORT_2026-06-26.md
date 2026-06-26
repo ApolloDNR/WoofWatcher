@@ -112,3 +112,6 @@
   expected Windows line-ending warnings only.
 - Direct JSON doctor still reports `BLOCKED` on the real local export issues:
   missing pnpm and missing mobile Expo dependency resolution.
+- Remote verify run `28240015482` for commit `2f23753` failed before job
+  execution with job `83664251661`, `steps: []`, and `log not found:
+  83664251661`, matching the standing GitHub billing/spending-limit blocker.
