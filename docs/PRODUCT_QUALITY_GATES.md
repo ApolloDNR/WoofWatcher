@@ -43,6 +43,7 @@ Passing evidence:
 - Records Weight Trend now uses shared care-domain logic for visible weigh-ins, profile fallback, goal distance, and chart inputs, and Care Pass reports include the same Weight Trend context.
 - The Log composer captures Grooming Care type, duration, coat/skin notes, products/groomer context, next due date, sticky notes, and household visibility, and Records includes Grooming Care derived from visible grooming logs.
 - Dedicated Setup route can save dog profile, diet baseline, starter routine, and household caregiver basics in one flow.
+- Setup shows a truthful post-save confirmation that summarizes the saved care foundation and routes the owner back to Today, while pointing provider-backed household invite/sync controls to More instead of implying onboarding has completed cloud administration.
 - Log entries have a detail sheet with sticky notes, audit trail history, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Server-backed care-entry deletes create a retained non-health household audit note with the deleted-entry snapshot, and mobile Log avoids duplicate local audit notes when the server already retained the delete audit.
 - Log exposes a durable Offline Outbox banner for local, pending, and failed care-entry changes with retryable create/update counts and a Retry sync action.
@@ -77,7 +78,7 @@ Passing evidence:
 
 Current gaps:
 
-- Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning, invite approval, richer multi-household management, and post-setup confirmation remain incomplete.
+- Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists and now confirms saved setup context before returning to Today, but auth-connected account provisioning, invite approval, and richer multi-household management remain incomplete.
 - Multiple dogs, broader provider-backed role enforcement, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
 - Runtime smoke has not been added.
 
@@ -192,6 +193,7 @@ Current gaps:
 - Static mobile readiness now protects the living Phoenix room pressable and visible status/next-action cue chips with `MOBILE_INLINE_HIT_SLOP` and `MIN_MOBILE_TOUCH_TARGET`.
 - Static mobile readiness now protects remaining high-frequency route actions from reverting to sub-48px or padding-only tap areas, including Quick Log launcher tabs/outbox retry, Records empty-add/delete, More Care Intelligence/tool/premium/profile-edit actions, and Privacy export/delete controls.
 - Static mobile readiness now protects onboarding and Avatar Studio creation actions from regressing to unlabeled/text-only tappables, including auth primary/Google buttons, Setup starter-routine/save/finish-later actions, and Avatar Studio reset/save controls.
+- Static mobile readiness now protects the Setup post-save confirmation path so a completed care foundation does not silently redirect before telling the owner what was saved and where household invite/sync controls remain available.
 - Static mobile readiness now protects Avatar Studio owner-input controls from regressing below the shared mobile target floor, including scan gallery/camera actions, template tiles, accessory tiles, and mood preview chips. Face-marking options also have explicit labels before native screen-reader traversal is available.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.
 - Water quick-log defaults, hydration summary logic, Care Pass hydration language, and Records hydration wiring are covered by focused tests.

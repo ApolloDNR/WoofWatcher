@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/mobileLayout";
 import {
   applySetupWizardDraft,
+  buildSetupConfirmation,
   createSetupWizardDraft,
   type SetupWizardDraft,
 } from "@/lib/setupWizard";
@@ -75,8 +77,12 @@ export default function SetupScreen() {
   const saveSetup = () => {
     if (!canSave) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
-    router.replace("/(tabs)");
+    const savedDoc = applySetupWizardDraft(state, draft);
+    const confirmation = buildSetupConfirmation(savedDoc);
+    updateCareDoc(() => savedDoc);
+    Alert.alert(confirmation.title, `${confirmation.body}\n\n${confirmation.nextStep}`, [
+      { text: "Go to Today", onPress: () => router.replace("/(tabs)") },
+    ]);
   };
 
   const finishLater = () => {

@@ -134,6 +134,7 @@ Latest completed local runtime/accessibility hardening:
 - Mobile Pack Audit role-change rows now keep the trust trail owner-readable. Role-change audit details use launch role labels and previous-to-new copy instead of exposing internal ids such as `vet_viewer`, with mobile readiness coverage for rows and accessibility labels.
 - Pack Audit role-change rows now name the affected caregiver. The API stores `targetDisplayName` and `targetEmail` in durable role-change audit details, and Mobile More renders caregiver-specific trust rows while preserving fallback copy for older audit events.
 - Mobile Care Team role-management copy now uses the same launch role labels as Pack Audit and Household Access. Current-role rows and role-update success confirmations render owner-readable labels such as `Vet viewer`, with mobile readiness coverage so raw role ids do not drift back into the management surface.
+- Mobile first-run Setup now confirms the saved care foundation before returning to Today. The confirmation summarizes the saved dog, starter routine, caregiver, and diet baseline, explains that Today, Log, Records, reports, and WoofGuide will use it, and keeps household invite/sync controls truthfully in More while provider-backed onboarding remains open.
 
 Next highest-impact work:
 

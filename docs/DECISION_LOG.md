@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-26: Setup Confirms The Saved Care Foundation
+
+Decision: Mobile first-run Setup should show a post-save confirmation before returning to Today. The confirmation should summarize the saved dog, starter routine, caregiver, and diet baseline, explain that Today, Log, Records, reports, and WoofGuide will use that context, and keep household invite/sync controls explicitly in More.
+
+Reason: The setup route already writes the care foundation, but a silent redirect makes the owner guess whether the real care loop changed. Confirmation improves trust without pretending provider-backed account provisioning, invite approval, cloud sync administration, or multi-household onboarding is complete.
+
+Owner: Codex.
+
+Revisit trigger: Auth-connected onboarding, invite approval, multi-household setup, provider-backed sync administration, or a native onboarding completion screen becomes active release work.
+
 ### 2026-06-26: Care Team Role Management Uses Launch Role Labels
 
 Decision: Mobile Care Team role-management rows and role-update success confirmations should format current and newly assigned roles through the same owner-readable launch labels used by Household Access and Pack Audit.

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { applySetupWizardDraft, createSetupWizardDraft } from "./setupWizard.ts";
+import { applySetupWizardDraft, buildSetupConfirmation, createSetupWizardDraft } from "./setupWizard.ts";
 
 const NOW = "2026-06-08T06:00:00.000Z";
 
@@ -105,4 +105,35 @@ test("creates an editable setup draft from current care state", () => {
   assert.equal(draft.routineType, "walk");
   assert.equal(draft.routineLabel, "Morning walk");
   assert.equal(draft.routineTime, "8:30 AM");
+});
+
+test("builds a truthful post-setup confirmation from the saved care foundation", () => {
+  const next = applySetupWizardDraft(
+    defaultDoc(),
+    {
+      dogName: "Phoenix",
+      breed: "German Shepherd mix",
+      weight: "68",
+      weightUnit: "lb",
+      careFocus: "Support anxious eating and steady routines.",
+      caregiverName: "Apollo",
+      caregiverRole: "Primary caregiver",
+      primaryFood: "Sensitive kibble",
+      normalPortion: "1 cup",
+      mealSchedule: "7 AM and 6 PM",
+      routineType: "meal",
+      routineLabel: "Breakfast",
+      routineTime: "7:30 AM",
+    },
+    NOW,
+  );
+
+  const confirmation = buildSetupConfirmation(next);
+
+  assert.equal(confirmation.title, "Phoenix's care foundation is ready");
+  assert.match(confirmation.body, /Breakfast at 7:30 AM/);
+  assert.match(confirmation.body, /Apollo/);
+  assert.match(confirmation.body, /Sensitive kibble/);
+  assert.match(confirmation.body, /Today, Log, Records, reports, and WoofGuide/);
+  assert.match(confirmation.nextStep, /household invite and sync controls stay in More/i);
 });

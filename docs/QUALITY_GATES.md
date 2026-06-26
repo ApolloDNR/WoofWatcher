@@ -200,6 +200,8 @@ Current evidence, 2026-06-22: The living Phoenix room now shares the mobile tap 
 
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
 
+Current evidence, 2026-06-26: Mobile Setup now shows a post-save care-foundation confirmation before returning to Today. The confirmation summarizes the saved dog, starter routine, caregiver, and diet baseline, states that Today, Log, Records, reports, and WoofGuide will use the context, and keeps household invite/sync controls truthfully in More instead of implying provider-backed onboarding is complete.
+
 ## Gate 5: Health Safety
 
 Passing means health features organize patterns without diagnosis. Urgent red flags direct users to veterinary care. WoofGuide stays bounded.

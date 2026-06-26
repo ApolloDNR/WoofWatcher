@@ -58,6 +58,12 @@ export interface SetupWizardDraft {
   routineTime: string;
 }
 
+export interface SetupWizardConfirmation {
+  title: string;
+  body: string;
+  nextStep: string;
+}
+
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
@@ -151,4 +157,30 @@ export function applySetupWizardDraft<TDoc extends SetupWizardCareDoc>(
     },
     routines: nextRoutines,
   } as TDoc;
+}
+
+export function buildSetupConfirmation(doc: SetupWizardCareDoc): SetupWizardConfirmation {
+  const dogName = clean(doc.profile.name) || "Your dog";
+  const caregiver = doc.caregivers.find((item) => clean(item.name)) ?? null;
+  const routine = doc.routines.find((item) => clean(item.label) && clean(item.time)) ?? null;
+  const food = clean(doc.dietProfile.primaryFood);
+  const portion = clean(doc.dietProfile.normalPortion);
+  const schedule = clean(doc.dietProfile.mealSchedule);
+
+  const routineLine = routine
+    ? `${clean(routine.label)} at ${clean(routine.time)}`
+    : "A starter routine is ready";
+  const caregiverLine = caregiver
+    ? `${clean(caregiver.name)} is listed as ${clean(caregiver.role) || "caregiver"}`
+    : "A household caregiver is listed";
+  const dietLine =
+    food && portion && schedule
+      ? `${food}, ${portion}, ${schedule}`
+      : "The diet baseline is saved";
+
+  return {
+    title: `${dogName}'s care foundation is ready`,
+    body: `${routineLine}. ${caregiverLine}. Diet baseline: ${dietLine}. WoofWatcher will use this for Today, Log, Records, reports, and WoofGuide.`,
+    nextStep: "Household invite and sync controls stay in More when you are ready to coordinate the pack.",
+  };
 }
