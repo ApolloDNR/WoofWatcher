@@ -925,3 +925,18 @@ Latest local evidence, 2026-06-26:
   behavior/readiness suite, PixelLab verification at 149 files, and the direct
   JSON doctor still blocks only on missing pnpm and missing mobile Expo
   dependency resolution.
+
+Latest local evidence, 2026-06-26:
+
+- The one-tap 48-hour Beta Handoff packet now warns that dependency proof
+  requires a real PATH `pnpm` at `10.24.0` and must not use a bundled
+  `pnpm 11.x` candidate.
+- The mobile beta doctor source-backed handoff check now requires that same
+  warning before reporting `beta handoff source includes proof sections`.
+- Red/green evidence: `betaHandoffPacket.test.ts` first failed on the missing
+  bundled-pnpm warning, then passed after the packet and doctor guard were
+  updated.
+- Follow-up verification passed mobile readiness, the 420-test zero-dependency
+  behavior/readiness suite, PixelLab verification at 149 files, `git diff
+  --check`, and the direct JSON doctor still blocks only on missing pnpm and
+  missing mobile Expo dependency resolution.

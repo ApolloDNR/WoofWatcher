@@ -203,6 +203,7 @@ const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRo
 const carePassDomainSource = existsSync(carePassDomainPath) ? readFileSync(carePassDomainPath, "utf8") : "";
 const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Dependency proof commands:",
+  "Dependency proof requires a real PATH pnpm at 10.24.0; do not use a bundled pnpm 11.x candidate.",
   "Required beta proof after export:",
   "Native QA Needs tune fix brief:",
   "Provider proof needed:",

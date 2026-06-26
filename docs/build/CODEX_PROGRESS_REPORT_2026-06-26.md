@@ -135,3 +135,18 @@
 - Remote verify run `28256289432` for commit `941d4f0` failed before job
   execution with job `83720072278`, `steps: []`, and `log not found:
   83720072278`, matching the standing GitHub billing/spending-limit blocker.
+
+## Beta Handoff Bundled-pnpm Guard
+
+- `buildBetaHandoffPacketShareText` now explicitly tells helpers that
+  dependency proof requires a real PATH `pnpm` at `10.24.0` and must not use a
+  bundled `pnpm 11.x` candidate.
+- `scripts/mobile-beta-doctor.mjs --json` now requires that same line in the
+  beta handoff source before the source-backed proof-section check can pass.
+- Red/green evidence: `betaHandoffPacket.test.ts` first failed on the missing
+  bundled-pnpm warning, then passed after the packet and doctor guard were
+  updated.
+- Verification passed: beta handoff packet test, 81-test mobile readiness,
+  direct JSON doctor source check, 420-test zero-dependency behavior/readiness
+  suite, PixelLab asset verification at 149 files, and `git diff --check` with
+  expected Windows line-ending warnings only.

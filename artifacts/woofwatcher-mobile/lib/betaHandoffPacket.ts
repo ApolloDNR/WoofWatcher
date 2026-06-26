@@ -127,6 +127,7 @@ export function buildBetaHandoffPacketShareText(
     "Dependency proof commands:",
     formatList(dependencyProofCommands, "Run the mobile beta doctor before sharing."),
     "- Dependency proof only counts when both doctor commands report no blockers.",
+    "- Dependency proof requires a real PATH pnpm at 10.24.0; do not use a bundled pnpm 11.x candidate.",
     "- If JSON doctor reports BLOCKED, attach the JSON output to the handoff instead of claiming readiness.",
     "",
     "Required beta proof after export:",
