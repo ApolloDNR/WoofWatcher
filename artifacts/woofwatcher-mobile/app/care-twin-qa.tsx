@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -494,7 +494,6 @@ export default function CareTwinQaScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         style={[s.screen, { backgroundColor: colors.background }]}
         contentContainerStyle={[s.content, { paddingTop: topPadding, paddingBottom: bottomPadding }]}

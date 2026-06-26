@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -27,16 +27,36 @@ function readJson(path) {
 }
 
 function quoteWindowsArg(value) {
-  return `"${String(value).replace(/"/g, '\\"')}"`;
+  const text = String(value);
+  if (!/[\s&()^|<>"]/.test(text)) return text;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function resolvePathCommand(command) {
+  if (isAbsolute(command) || command.includes("/") || command.includes("\\")) {
+    return command;
+  }
+
+  const pathEntries = (process.env.PATH ?? "").split(delimiter).filter(Boolean);
+  for (const entry of pathEntries) {
+    const candidate = join(entry, command);
+    if (existsSync(candidate)) return candidate;
+  }
+
+  return command;
 }
 
 function runCli(command, args) {
-  if (process.platform === "win32" && command.endsWith(".cmd")) {
-    const commandLine = [quoteWindowsArg(command), ...args.map(quoteWindowsArg)].join(" ");
-    return spawnSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", commandLine], { encoding: "utf8" });
+  const resolvedCommand = process.platform === "win32" ? resolvePathCommand(command) : command;
+  if (process.platform === "win32") {
+    const commandLine = [quoteWindowsArg(resolvedCommand), ...args.map(quoteWindowsArg)].join(" ");
+    return spawnSync(commandLine, {
+      encoding: "utf8",
+      shell: true,
+    });
   }
 
-  return spawnSync(command, args, {
+  return spawnSync(resolvedCommand, args, {
     encoding: "utf8",
   });
 }

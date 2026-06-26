@@ -265,3 +265,39 @@
   because recent account payments failed or the spending limit needs to be
   increased, and `gh run view --log-failed` returned `log not found:
   83745430354`.
+
+## Local Preview Runtime Unlock
+
+Latest local evidence, 2026-06-26:
+
+- The Expo web preview crash is fixed for the premium revenue builder worktree.
+  Metro now forces React, Expo, Expo Router, and React Navigation runtime imports
+  through single physical package roots, including package subpaths, so route
+  context no longer splits across duplicate module copies.
+- Root route registrations are restored in `artifacts/woofwatcher-mobile/app/_layout.tsx`
+  for the tab shell, onboarding/setup, portrait, WoofGuide, premium, privacy,
+  adventure, Care Twin QA, and not-found routes.
+- Public error fallbacks no longer expose development stack details outside
+  `__DEV__`.
+- Current local preview: `http://127.0.0.1:4194/`.
+- Browser DOM proof rendered Phoenix Home, Quick Log, Adventure, and Care Pass
+  content with no fallback error.
+- Latest verified web export bundle:
+  `/_expo/static/js/web/entry-67d2df999d1f1f2cba427b4861abcbc6.js`.
+- `pnpm run doctor:mobile-beta:json` now reports `READY_FOR_EXPORT` in this
+  worktree when the temporary local `pnpm@10.24.0` wrapper is on `PATH`. The
+  doctor still preserves truth boundaries: export readiness is not App Store,
+  Play Store, provider, legal, AI, payments, push, storage, or Apollo launch
+  approval.
+- Verification passed:
+  - `pnpm --filter @workspace/woofwatcher-mobile run smoke:web`
+  - `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts`
+  - `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\*.test.ts lib\care-domain\test\*.test.ts`
+  - `node artifacts\woofwatcher-mobile\scripts\verify-pixellab-assets.js`
+  - `pnpm run doctor:mobile-beta:json`
+  - Browser DOM smoke against `http://127.0.0.1:4194/`
+  - `git diff --check` with expected Windows line-ending warnings only.
+- Remaining launch gates are native iOS/Android device evidence, provider-backed
+  accounts/storage/AI/payments/push configuration, app-store accounts,
+  privacy/legal/support approval, final Apollo visual sign-off, and remote CI
+  after GitHub billing/spending-limit execution is restored.

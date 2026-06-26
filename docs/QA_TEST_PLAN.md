@@ -1031,3 +1031,18 @@ Latest local evidence, 2026-06-26:
   warnings only.
 - Direct JSON doctor still reports `BLOCKED` on the real local export issues:
   missing pnpm and missing mobile Expo dependency resolution.
+
+Latest local evidence, 2026-06-26:
+
+- Local preview/export runtime is now a required QA gate before any Fable,
+  Replit, device, or Apollo review handoff. The exported app must render at
+  `http://127.0.0.1:4194/` without `ErrorFallback`, and DOM smoke must confirm
+  Phoenix Home, Quick Log, Adventure, and Care Pass content.
+- `pnpm --filter @workspace/woofwatcher-mobile run smoke:web` must pass after
+  the Metro single-instance resolver patch.
+- `pnpm run doctor:mobile-beta:json` may report `READY_FOR_EXPORT` only when the
+  exact `pnpm@10.24.0` proof path is active. That status remains limited to
+  dependency install and web export gates.
+- Launch QA still requires native iOS and Android screenshots/evidence from
+  `/care-twin-qa`, provider-backed configuration proof, store-account proof,
+  legal/privacy/support approval, and Apollo sign-off before public release.

@@ -30,6 +30,9 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, info: { componentStack: string }): void {
+    if (__DEV__) {
+      console.error("WoofWatcher app boundary caught an error:", error, info.componentStack);
+    }
     if (typeof this.props.onError === "function") {
       this.props.onError(error, info.componentStack);
     }

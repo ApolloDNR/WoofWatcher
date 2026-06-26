@@ -18,6 +18,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ClerkProvider, ClerkLoaded } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { Stack, useRouter, useSegments } from "expo-router";
+import { LinkPreviewContextProvider } from "expo-router/build/link/preview/LinkPreviewContext";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
@@ -134,6 +135,7 @@ function RootLayoutNav() {
           headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
+      <Stack.Screen name="+not-found" />
     </Stack>
   );
 }
@@ -173,23 +175,25 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   const app = (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <AuthBridge />
-          <CareProvider>
-            <AvatarProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <KeyboardProvider>
-                  <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
-                  <AppFrame />
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </AvatarProvider>
-          </CareProvider>
-        </QueryClientProvider>
-      </ErrorBoundary>
-    </SafeAreaProvider>
+    <LinkPreviewContextProvider>
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <AuthBridge />
+            <CareProvider>
+              <AvatarProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <KeyboardProvider>
+                    <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
+                    <AppFrame />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </AvatarProvider>
+            </CareProvider>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </SafeAreaProvider>
+    </LinkPreviewContextProvider>
   );
 
   if (!isClerkConfigured || !clerkPublishableKey) return app;

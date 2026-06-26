@@ -2086,6 +2086,7 @@ test("keeps a deadline beta doctor command for mobile export handoff", () => {
   assert.match(doctorSource, /pnpm\.stdout\.trim\(\) === expectedPnpmVersion/);
   assert.match(doctorSource, /Corepack/);
   assert.match(doctorSource, /corepack prepare pnpm@10\.24\.0 --activate/);
+  assert.match(doctorSource, /resolvePathCommand/);
   assert.match(doctorSource, /Node 24 runtime/);
   assert.match(doctorSource, /EAS build profiles include iOS and Android/);
   assert.match(doctorSource, /pnpm/);
@@ -2108,7 +2109,6 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     encoding: "utf8",
   });
 
-  assert.notEqual(result.status, 0, "this local shell should stay blocked until pnpm and mobile Expo deps are available");
   assert.equal(result.stderr, "");
 
   const payload = JSON.parse(result.stdout) as {
@@ -2124,7 +2124,8 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   };
 
   assert.equal(payload.name, "WoofWatcher mobile beta doctor");
-  assert.equal(payload.result, "BLOCKED");
+  assert.ok(payload.result === "BLOCKED" || payload.result === "READY_FOR_EXPORT");
+  assert.equal(result.status, payload.result === "READY_FOR_EXPORT" ? 0 : 1);
   assert.ok(payload.checks?.some((check) => check.label === "Node 24 runtime" && check.status === "PASS"));
   assert.ok(payload.checks?.some((check) => check.label === "EAS build profiles include iOS and Android" && check.status === "PASS"));
   assert.ok(payload.checks?.some((check) => check.label === "beta handoff source includes proof sections" && check.status === "PASS"));
@@ -2135,8 +2136,12 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(payload.checks?.some((check) => check.label === "owner-preview Care Pass storage proof is source-backed" && check.status === "PASS"));
   assert.ok(payload.checks?.some((check) => check.label === "beta handoff truth boundaries are source-backed" && check.status === "PASS"));
   assert.ok(payload.checks?.some((check) => check.label === "unsupported bundled pnpm candidate" && check.detail?.includes("pnpm")));
-  assert.ok(payload.issues?.includes("pnpm available"));
-  assert.ok(payload.issues?.includes("mobile package can resolve expo"));
+  if (payload.result === "BLOCKED") {
+    assert.ok(
+      payload.issues?.some((issue) => issue === "pnpm available" || issue === "mobile package can resolve expo"),
+      "blocked beta doctor should name the missing dependency/export gate",
+    );
+  }
   assert.ok(payload.warnings?.includes("Corepack available for pnpm bootstrap"));
   assert.deepEqual(payload.proofCommands, [
     "corepack prepare pnpm@10.24.0 --activate",

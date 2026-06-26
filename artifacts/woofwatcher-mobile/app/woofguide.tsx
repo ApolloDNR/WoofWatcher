@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useWoofAuth } from "@/lib/auth";
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -280,7 +280,6 @@ export default function WoofGuideScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "WoofGuide", headerBackTitle: "More" }} />
       <KeyboardAvoidingView
         style={[s.container, { backgroundColor: colors.background }]}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

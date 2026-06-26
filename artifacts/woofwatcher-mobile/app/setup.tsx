@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -138,7 +138,6 @@ export default function SetupScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Setup", headerBackTitle: "Today" }} />
       <KeyboardAvoidingView
         style={[s.root, { backgroundColor: colors.background }]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}

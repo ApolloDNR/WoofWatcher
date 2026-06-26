@@ -22,6 +22,46 @@ const linkedMobileNodeModules = realpathIfExists(path.join(projectRoot, "node_mo
 const linkedWorkspaceNodeModules = linkedMobileNodeModules
   ? realpathIfExists(path.resolve(linkedMobileNodeModules, "..", "..", "..", "node_modules"))
   : null;
+const singleInstancePackages = [
+  "react",
+  "react-dom",
+  "react-native",
+  "expo",
+  "expo-router",
+  "@react-navigation/native",
+  "@react-navigation/native-stack",
+  "@react-navigation/bottom-tabs",
+  "react-native-safe-area-context",
+  "react-native-gesture-handler",
+  "react-native-screens",
+];
+
+function resolvePackageRoot(packageName) {
+  try {
+    const packageJson = require.resolve(path.join(packageName, "package.json"), {
+      paths: [projectRoot],
+    });
+    return fs.realpathSync(path.dirname(packageJson));
+  } catch {
+    return null;
+  }
+}
+
+const runtimeAliases = Object.fromEntries(
+  singleInstancePackages
+    .map((packageName) => [packageName, resolvePackageRoot(packageName)])
+    .filter(([, packageRoot]) => Boolean(packageRoot)),
+);
+function resolveRuntimeAlias(moduleName) {
+  for (const [packageName, packageRoot] of Object.entries(runtimeAliases)) {
+    if (moduleName === packageName) return packageRoot;
+    if (moduleName.startsWith(`${packageName}/`)) {
+      return path.join(packageRoot, moduleName.slice(packageName.length + 1));
+    }
+  }
+  return null;
+}
+
 const workspaceAliases = {
   "@workspace/api-client-react": path.join(workspaceRoot, "lib", "api-client-react"),
   "@workspace/care-domain": path.join(workspaceRoot, "lib", "care-domain"),
@@ -39,7 +79,15 @@ config.watchFolders = uniq([
 
 config.resolver.extraNodeModules = {
   ...(config.resolver.extraNodeModules ?? {}),
+  ...runtimeAliases,
   ...workspaceAliases,
+};
+
+const metroResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  const aliasedModuleName = resolveRuntimeAlias(moduleName) ?? moduleName;
+  const resolveRequest = metroResolveRequest ?? context.resolveRequest;
+  return resolveRequest(context, aliasedModuleName, platform);
 };
 
 config.resolver.nodeModulesPaths = uniq([

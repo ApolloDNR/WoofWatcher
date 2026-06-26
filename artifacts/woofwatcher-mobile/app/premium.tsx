@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef } from "react";
 import {
   Alert,
@@ -101,7 +101,6 @@ export default function PremiumScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title: "WoofWatcher Plus" }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
