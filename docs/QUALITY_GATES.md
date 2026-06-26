@@ -974,4 +974,8 @@ that as pass criteria, and keeps the proof as a QA note so it does not add a
 third screenshot requirement to the owner loop. Local verification passed
 release QA tests, native capture-plan tests, the 420-test zero-dependency
 behavior/readiness suite, PixelLab asset verification at 149 files, and
-`git diff --check` with expected Windows line-ending warnings only.
+`git diff --check` with expected Windows line-ending warnings only. Remote
+verify run `28238656796` for commit `35b4735` failed before job execution with
+job `83659654553`, `steps: []`, and `log not found: 83659654553`, matching the
+standing GitHub billing/spending-limit blocker rather than a local code
+regression.
