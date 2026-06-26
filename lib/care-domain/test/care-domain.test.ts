@@ -70,7 +70,7 @@ test("derives day status from normalized care entries", () => {
     NOW,
   );
 
-  assert.deepEqual(status.counts.meals, { done: 1, target: 2 });
+  assert.deepEqual(status.counts.meals, { done: 1, target: 2, pending: 0 });
   assert.deepEqual(status.counts.walks, { done: 1, target: 1 });
   assert.deepEqual(status.counts.potty, { done: 1, target: 3 });
   assert.equal(status.counts.training, 0);
@@ -79,4 +79,65 @@ test("derives day status from normalized care entries", () => {
   assert.equal(status.counts.anxiety, 1);
   assert.equal(status.counts.walkMinutes, 30);
   assert.equal(status.healthAlert, true);
+});
+
+test("keeps served meal outcomes open until the household records what was eaten", () => {
+  const status = deriveCareDayStatus(
+    [
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T07:00:00.000Z",
+        details: {
+          routineId: "breakfast",
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T12:00:00.000Z",
+        details: {
+          routineId: "snack",
+          mealCompletion: "grazing",
+          servedAmount: 0.25,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T14:00:00.000Z",
+        details: {
+          routineId: "lunch",
+          mealCompletion: "ate most",
+          servedAmount: 1,
+          eatenAmount: 0.8,
+          householdVisible: true,
+        },
+      },
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T18:00:00.000Z",
+        details: {
+          routineId: "dinner",
+          mealCompletion: "skipped",
+          servedAmount: 1,
+          eatenAmount: 0,
+          householdVisible: true,
+        },
+      },
+    ],
+    [
+      { type: "meal" },
+      { type: "meal" },
+      { type: "meal" },
+      { type: "meal" },
+    ],
+    NOW,
+  );
+
+  assert.deepEqual(status.counts.meals, { done: 2, target: 4, pending: 2 });
 });

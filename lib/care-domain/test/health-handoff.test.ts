@@ -221,3 +221,58 @@ test("builds a caregiver handoff with done, watch, next, and load", () => {
   assert.equal(handoff.caregiverLoad[0].todayLogs, 2);
   assert.match(handoff.message, /Emma logged 2/i);
 });
+
+test("keeps pending meal outcomes in caregiver handoff needs-attention", () => {
+  const handoff = deriveCareHandoff({
+    now: NOW,
+    caregivers: [
+      { name: "Emma", role: "Primary" },
+      { name: "Apollo", role: "Caregiver" },
+    ],
+    routines: [
+      { id: "breakfast", type: "meal", label: "Breakfast", time: "7:00 AM", owner: "Emma" },
+      { id: "dinner", type: "meal", label: "Dinner", time: "6:00 PM", owner: "Apollo" },
+    ],
+    entries: [
+      {
+        id: "breakfast-served",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T14:00:00.000Z",
+        details: {
+          routineId: "breakfast",
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "dinner-finished",
+        type: "meal",
+        title: "Dinner",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T18:00:00.000Z",
+        details: {
+          routineId: "dinner",
+          mealCompletion: "ate most",
+          servedAmount: 1,
+          eatenAmount: 0.8,
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  assert.match(handoff.sections.done.find((item) => item.kind === "meal")?.detail ?? "", /1\/2 meals resolved/i);
+  assert.ok(
+    handoff.sections.needsAttention.some(
+      (item) =>
+        item.kind === "meal" &&
+        /outcome pending/i.test(item.label) &&
+        /confirm/i.test(item.detail),
+    ),
+  );
+});

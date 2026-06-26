@@ -33,6 +33,7 @@ export type TodayCommandIcon =
 export type TodayCommandActionKind =
   | "sync"
   | "health"
+  | "update-meal-outcome"
   | "log-meal"
   | "log-walk"
   | "log-potty"
@@ -238,6 +239,46 @@ function describeLastEntry(entry: TodayCommandEntry | undefined, now: number): s
   return `${caregiver} logged ${title} ${when}.`;
 }
 
+function detailRecord(entry: TodayCommandEntry): Record<string, unknown> {
+  return entry.details != null && typeof entry.details === "object" && !Array.isArray(entry.details)
+    ? entry.details
+    : {};
+}
+
+function clean(value: unknown): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function lower(value: unknown): string {
+  return clean(value).toLowerCase();
+}
+
+function isHouseholdVisible(entry: TodayCommandEntry): boolean {
+  return detailRecord(entry).householdVisible !== false;
+}
+
+function isPendingMealOutcome(entry: TodayCommandEntry): boolean {
+  if (normalizeCareEventType(entry.type, entry.details) !== "meal") return false;
+  const details = detailRecord(entry);
+  const completion = lower(details.mealCompletion ?? details.completion ?? details.outcome);
+  const lifecycle = lower(details.mealLifecycle);
+  return ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(completion) ||
+    ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(lifecycle);
+}
+
+function oldestPendingMeal(todays: readonly TodayCommandEntry[]): TodayCommandEntry | null {
+  return (
+    todays
+      .filter((entry) => isHouseholdVisible(entry) && isPendingMealOutcome(entry))
+      .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime())[0] ?? null
+  );
+}
+
+function pendingMealTitle(entry: TodayCommandEntry): string {
+  const details = detailRecord(entry);
+  return clean(entry.title) || clean(details.routineLabel) || "Meal";
+}
+
 export function deriveTodayCommand(
   state: TodayCommandState,
   now: number = Date.now(),
@@ -326,6 +367,24 @@ export function deriveTodayCommand(
         route: "/records",
         urgency: health.urgency,
         icon: "vomit",
+      },
+      health,
+      handoff,
+      sync,
+    };
+  }
+
+  const pendingMeal = oldestPendingMeal(todays);
+  if (pendingMeal) {
+    const title = pendingMealTitle(pendingMeal);
+    return {
+      primaryAction: {
+        kind: "update-meal-outcome",
+        label: `Update ${title.toLowerCase()} outcome`,
+        detail: `${title} was served. Confirm whether Phoenix ate all, ate some, refused, or is still grazing.`,
+        route: "/log",
+        urgency: "normal",
+        icon: "bowl",
       },
       health,
       handoff,

@@ -117,12 +117,19 @@ export function deriveCareHandoff(input: CareHandoffInput): CareHandoffSummary {
   const todays = entries.filter((entry) => isSameLocalDay(entry.occurredAt, now));
   const status = deriveCareDayStatus(entries, routines, now);
   const health = deriveHealthWatch({ entries, routines, now });
+  const pendingMealOutcomes = status.counts.meals.pending ?? 0;
+  const missingMealLogs = Math.max(
+    status.counts.meals.target - status.counts.meals.done - pendingMealOutcomes,
+    0,
+  );
 
   const done = [
     doneItem(
       "meal",
       "Meals",
-      `${status.counts.meals.done}/${status.counts.meals.target} meals logged.`,
+      pendingMealOutcomes
+        ? `${status.counts.meals.done}/${status.counts.meals.target} meals resolved. ${pendingMealOutcomes} outcome pending.`
+        : `${status.counts.meals.done}/${status.counts.meals.target} meals logged.`,
       idsForType(todays, "meal"),
     ),
     doneItem(
@@ -159,11 +166,20 @@ export function deriveCareHandoff(input: CareHandoffInput): CareHandoffSummary {
         ];
 
   const needsAttention: CareHandoffItem[] = [];
-  if (status.counts.meals.done < status.counts.meals.target) {
+  if (pendingMealOutcomes > 0) {
+    needsAttention.push({
+      kind: "meal",
+      label: "Meal outcome pending",
+      detail: `${pendingMealOutcomes} meal outcome${pendingMealOutcomes === 1 ? "" : "s"} need confirmation: ate all, ate some, refused, or still grazing.`,
+      urgency: "watch",
+      entryIds: [],
+    });
+  }
+  if (missingMealLogs > 0) {
     needsAttention.push({
       kind: "meal",
       label: "Meal remaining",
-      detail: `${status.counts.meals.target - status.counts.meals.done} meal log still open.`,
+      detail: `${missingMealLogs} meal log${missingMealLogs === 1 ? "" : "s"} still open.`,
       urgency: "watch",
       entryIds: [],
     });

@@ -62,6 +62,38 @@ test("partial meal log satisfies the meal routine and moves command to the next 
   assert.match(command.primaryAction.detail, /Walk/i);
 });
 
+test("served meal with pending outcome becomes the primary update action", () => {
+  const command = deriveTodayCommand(
+    state({
+      entries: [
+        {
+          id: "meal_served",
+          type: "meal",
+          title: "Breakfast",
+          caregiver: "Emma",
+          occurredAt: "2026-06-06T07:38:00-07:00",
+          details: {
+            routineId: "breakfast",
+            mealCompletion: "served",
+            mealLifecycle: "outcome-pending",
+            servedAmount: 1,
+            servedUnit: "cup",
+            householdVisible: true,
+          },
+        },
+      ],
+    }),
+    MORNING,
+  );
+
+  assert.equal(command.primaryAction.kind, "update-meal-outcome");
+  assert.equal(command.primaryAction.route, "/log");
+  assert.equal(command.primaryAction.icon, "bowl");
+  assert.match(command.primaryAction.label, /Update breakfast outcome/i);
+  assert.match(command.primaryAction.detail, /served/i);
+  assert.match(command.primaryAction.detail, /ate all|some|refused|grazing/i);
+});
+
 test("vomit watch event creates health watch urgency", () => {
   const command = deriveTodayCommand(
     state({

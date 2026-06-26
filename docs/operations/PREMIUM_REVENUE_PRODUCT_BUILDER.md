@@ -610,6 +610,15 @@ proof, and update the Mission note. `scripts/mobile-beta-doctor.mjs --json`
 lists the same section in `handoffProofSections`, so automation can check for
 the repair handoff without scraping packet prose.
 
+The pending-meal formula pass hardened the core routines/logs relationship while
+the dependency-complete native beta path remains external. A meal that is only
+`served`, `outcome-pending`, or `grazing` now stays open in shared day status as
+a `pending` meal outcome instead of being counted as fully resolved. Today
+Command now prioritizes `Update [meal] outcome` for the oldest household-visible
+pending meal before moving on to the walk/routine queue, and caregiver handoff
+now separates "meals resolved" from "outcome pending" so sitters, owners, and
+reports do not mistake a bowl on the floor for a completed meal.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
