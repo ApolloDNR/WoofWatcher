@@ -932,4 +932,6 @@ actions. This keeps internal beta users from mistaking local print-ready HTML
 for cloud-backed PDF storage. Local verification passed focused Care Pass tests,
 mobile readiness, the 419-test zero-dependency behavior/readiness suite,
 PixelLab asset verification at 149 files, and `git diff --check` with expected
-Windows line-ending warnings only.
+Windows line-ending warnings only. Remote verify run `28235628241` failed
+before job execution with zero steps and no logs, matching the standing GitHub
+billing/spending-limit blocker rather than a local code regression.
