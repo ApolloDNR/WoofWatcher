@@ -1536,6 +1536,7 @@ test("keeps household access readiness visible from More", () => {
   assert.match(more, /accessibilityLabel=\{`Switch to \$\{choice\.name\}`\}/);
   assert.match(more, /accessibilityState=\{\{ selected: choice\.isActive, disabled: choice\.isActive \|\| setActiveHousehold\.isPending \}\}/);
   assert.match(more, /ROLE_UPDATE_OPTIONS/);
+  assert.match(more, /Current: \{formatHouseholdRoleLabel\(target\.role\)\}/);
   assert.match(more, /roleUpdateTargets/);
   assert.match(more, /updateMemberRole/);
   assert.match(more, /updateHouseholdMember\.mutate/);
@@ -1544,6 +1545,7 @@ test("keeps household access readiness visible from More", () => {
   assert.match(more, /accessibilityLabel=\{`Set \$\{target\.name\} role to \$\{option\.label\}`\}/);
   assert.match(more, /accessibilityState=\{\{ selected, disabled \}\}/);
   assert.match(more, /Role update saved/);
+  assert.match(more, /\$\{target\.name\}'s pack role is now \$\{formatHouseholdRoleLabel\(role\)\}\./);
   assert.match(more, /Couldn't update role/);
   assert.match(more, /refresh\(\)/);
   assert.match(more, /Couldn't switch household/);

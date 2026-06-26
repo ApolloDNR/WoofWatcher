@@ -469,7 +469,7 @@ export default function MoreScreen() {
       {
         onSuccess: () => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert("Role update saved", `${target.name}'s pack role is now ${role.replace(/_/g, " ")}.`);
+          Alert.alert("Role update saved", `${target.name}'s pack role is now ${formatHouseholdRoleLabel(role)}.`);
           refreshMe();
           householdAudit.refetch();
         },
@@ -1192,7 +1192,7 @@ export default function MoreScreen() {
                       <View style={s.roleTargetHeader}>
                         <Text style={[s.roleTargetName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{target.name}</Text>
                         <Text style={[s.roleTargetMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                          Current: {target.role.replace(/_/g, " ")}
+                          Current: {formatHouseholdRoleLabel(target.role)}
                         </Text>
                       </View>
                       <View style={s.roleChipRow}>

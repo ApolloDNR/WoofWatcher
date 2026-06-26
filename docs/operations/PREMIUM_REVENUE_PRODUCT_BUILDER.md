@@ -133,6 +133,7 @@ Latest completed local runtime/accessibility hardening:
 - Sitter and trainer API log corrections are now scoped to their own care-entry evidence. `POST /care-entries` remains available to those helper roles, but `PATCH` and `DELETE` add `caregiverUserId` matching for sitter/trainer members so they cannot alter another caregiver's log before final provider-backed permission policy exists.
 - Mobile Pack Audit role-change rows now keep the trust trail owner-readable. Role-change audit details use launch role labels and previous-to-new copy instead of exposing internal ids such as `vet_viewer`, with mobile readiness coverage for rows and accessibility labels.
 - Pack Audit role-change rows now name the affected caregiver. The API stores `targetDisplayName` and `targetEmail` in durable role-change audit details, and Mobile More renders caregiver-specific trust rows while preserving fallback copy for older audit events.
+- Mobile Care Team role-management copy now uses the same launch role labels as Pack Audit and Household Access. Current-role rows and role-update success confirmations render owner-readable labels such as `Vet viewer`, with mobile readiness coverage so raw role ids do not drift back into the management surface.
 
 Next highest-impact work:
 

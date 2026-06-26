@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-26: Care Team Role Management Uses Launch Role Labels
+
+Decision: Mobile Care Team role-management rows and role-update success confirmations should format current and newly assigned roles through the same owner-readable launch labels used by Household Access and Pack Audit.
+
+Reason: The role-management surface is where owners/admins make trust decisions. Showing raw or ad hoc role formatting there can drift from the permission summaries and audit trail, especially for `vet_viewer`. Reusing the launch labels keeps the UI understandable without expanding caregiver administration into owner transfer, member removal, invite approval, or final provider-backed role policy.
+
+Owner: Codex.
+
+Revisit trigger: A shared role-label component, provider-backed caregiver administration, final role policy, member removal, owner transfer, invite approval, or audit export/delete becomes active release work.
+
 ### 2026-06-26: Pack Audit Role Changes Identify The Caregiver
 
 Decision: API role-change audit events should include the affected member's display name and email when available, and Mobile Pack Audit should render caregiver-specific copy such as `Emma: Sitter to Trainer`. Older audit rows without target identity should continue using the generic role-change fallback.

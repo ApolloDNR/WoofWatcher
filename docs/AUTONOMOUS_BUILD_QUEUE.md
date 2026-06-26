@@ -143,6 +143,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 135. DONE 2026-06-26: Sitter and trainer API care-log corrections are now limited to their own evidence before final provider-backed permission policy. `PATCH /care-entries/:id` and `DELETE /care-entries/:id` add `caregiverUserId` scoping for sitter/trainer roles, while owners/admins/members retain household-wide correction authority and vet viewers stay read-only.
 136. DONE 2026-06-26: Mobile Pack Audit role-change rows now use owner-readable role labels before final provider-backed audit policy. Role-change events render as previous-to-new transitions such as `Sitter to Vet viewer` instead of leaking internal ids like `vet_viewer`, with mobile readiness coverage protecting the detail and screen-reader copy.
 137. DONE 2026-06-26: Pack Audit role-change rows now identify the affected caregiver before final provider-backed audit policy. The API stores `targetDisplayName` and `targetEmail` on durable `household.member_role_changed` audit details, and Mobile More renders rows such as `Emma: Sitter to Trainer` with fallback copy for older audit rows that only have role values.
+138. DONE 2026-06-26: Mobile Care Team role-management copy now reuses the owner-readable launch role labels before final provider-backed caregiver administration. The current-role line and post-save confirmation render labels such as `Vet viewer` instead of formatting raw implementation ids, with mobile readiness coverage protecting the role-management surface.
 
 ## Cadence
 
