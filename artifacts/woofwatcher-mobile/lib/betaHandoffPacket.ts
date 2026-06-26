@@ -5,6 +5,14 @@ import {
 } from "./mobileLaunchQaEvidence.ts";
 import type { ReleasePacket } from "./releasePacket.ts";
 
+const dependencyProofCommands = [
+  "corepack prepare pnpm@10.24.0 --activate (if pnpm is missing and Corepack is available)",
+  "pnpm install",
+  "pnpm run doctor:mobile-beta",
+  "pnpm run doctor:mobile-beta:json",
+  "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+] as const;
+
 function formatList(items: readonly string[], fallback: string): string {
   if (!items.length) return `- ${fallback}`;
   return items.map((item) => `- ${item}`).join("\n");
@@ -71,6 +79,11 @@ export function buildBetaHandoffPacketShareText(
     "",
     "Beta next actions:",
     formatList(releasePacket.betaNextActions, "Share beta build after final owner sign-off."),
+    "",
+    "Dependency proof commands:",
+    formatList(dependencyProofCommands, "Run the mobile beta doctor before sharing."),
+    "- Dependency proof only counts when both doctor commands report no blockers.",
+    "- If JSON doctor reports BLOCKED, attach the JSON output to the handoff instead of claiming readiness.",
     "",
     "Truth boundaries:",
     "- No App Store or Play Store submission is approved by this packet.",

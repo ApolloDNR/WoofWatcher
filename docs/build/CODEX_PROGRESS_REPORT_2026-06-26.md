@@ -18,11 +18,27 @@
   presence, Expo iOS/Android/web + Metro config, EAS preview/production
   iOS/Android build profile coverage, and PixelLab verifier presence.
 
+## Beta Handoff Dependency Proof
+
+- `Share Beta Handoff` now carries the dependency/export proof commands inside
+  the generated packet instead of requiring Apollo, Replit, Fable, or a device
+  helper to cross-reference release docs.
+- The packet lists `corepack prepare pnpm@10.24.0 --activate`,
+  `pnpm install`, `pnpm run doctor:mobile-beta`,
+  `pnpm run doctor:mobile-beta:json`, and
+  `pnpm --filter @workspace/woofwatcher-mobile run smoke:web`.
+- The handoff states that dependency proof only counts when both doctor
+  commands report no blockers, and that a blocked JSON payload should be
+  attached to the handoff instead of being treated as readiness.
+
 ## Verification
 
 - Red/green JSON doctor readiness: `mobileReadiness.test.ts` first failed on
   the missing `doctor:mobile-beta:json` root script, then passed with 81 tests
   after the script and JSON mode were wired.
+- Red/green beta handoff readiness: `betaHandoffPacket.test.ts` first failed on
+  the missing dependency proof command section, then passed after the share text
+  was updated.
 - Direct text doctor: exits blocked with the expected two issues, missing pnpm
   and missing mobile `expo` dependency resolution.
 - Direct JSON doctor: exits blocked with valid JSON and the same two issues.

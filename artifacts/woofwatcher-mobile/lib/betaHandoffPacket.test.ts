@@ -90,6 +90,12 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Run order:/);
   assert.match(text, /1\. Home \(\/\): Confirm Phoenix status/);
   assert.match(text, /2\. Log \(\/log\): Quick-log one safe care event/);
+  assert.match(text, /Dependency proof commands:/);
+  assert.match(text, /corepack prepare pnpm@10\.24\.0 --activate/);
+  assert.match(text, /pnpm run doctor:mobile-beta/);
+  assert.match(text, /pnpm run doctor:mobile-beta:json/);
+  assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run smoke:web/);
+  assert.match(text, /Dependency proof only counts when both doctor commands report no blockers/);
   assert.match(text, /Done condition: capture required iOS\/Android proof, save the Mission note, clear Pass pending proof, then share the QA summary/);
   assert.match(text, /Truth boundaries:/);
   assert.match(text, /No App Store or Play Store submission is approved by this packet/);
