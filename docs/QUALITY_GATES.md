@@ -946,4 +946,7 @@ signed access, retention, export, and deletion rules must be approved before
 cloud storage can be treated as real. Local verification passed focused Care
 Pass tests, mobile readiness, the 420-test zero-dependency behavior/readiness
 suite, PixelLab asset verification at 149 files, and `git diff --check` with
-expected Windows line-ending warnings only.
+expected Windows line-ending warnings only. Remote verify run `28236929754` for
+commit `2636b04` failed before job execution with job `83653949111`,
+`steps: []`, and `log not found: 83653949111`, matching the standing GitHub
+billing/spending-limit blocker rather than a local code regression.
