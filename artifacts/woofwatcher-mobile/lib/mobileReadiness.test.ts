@@ -2112,6 +2112,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.equal(payload.result, "BLOCKED");
   assert.ok(payload.checks?.some((check) => check.label === "Node 24 runtime" && check.status === "PASS"));
   assert.ok(payload.checks?.some((check) => check.label === "EAS build profiles include iOS and Android" && check.status === "PASS"));
+  assert.ok(payload.checks?.some((check) => check.label === "beta handoff source includes proof sections" && check.status === "PASS"));
   assert.ok(payload.issues?.includes("pnpm available"));
   assert.ok(payload.issues?.includes("mobile package can resolve expo"));
   assert.ok(payload.warnings?.includes("Corepack available for pnpm bootstrap"));

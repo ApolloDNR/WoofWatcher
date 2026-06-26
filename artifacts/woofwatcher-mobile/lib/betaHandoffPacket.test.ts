@@ -111,6 +111,10 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /pnpm run doctor:mobile-beta:json/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run smoke:web/);
   assert.match(text, /Dependency proof only counts when both doctor commands report no blockers/);
+  assert.match(text, /Required beta proof after export:/);
+  assert.match(text, /Open \/care-twin-qa on iOS and Android before sharing beta proof/);
+  assert.match(text, /Attach iOS Quick Log\/Log proof and Android Launch Readiness proof/);
+  assert.match(text, /Save the Mission note and clear Pass pending proof in both \/care-twin-qa and More/);
   assert.match(text, /Provider proof needed:/);
   assert.match(text, /Production auth: Clerk production app id/);
   assert.match(text, /Household database sync: Supabase project id/);

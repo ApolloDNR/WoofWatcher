@@ -34,6 +34,10 @@ function runFirstAvailable(commands, args) {
   return { status: 1, stdout: "", stderr: "" };
 }
 
+function includesAll(source, values) {
+  return values.every((value) => source.includes(value));
+}
+
 const doctorName = "WoofWatcher mobile beta doctor";
 const doctorPurpose = "confirm the two-day beta export path before device QA.";
 const proofCommands = [
@@ -143,6 +147,26 @@ check(
 
 const pixellabVerifier = join(mobileRoot, "scripts", "verify-pixellab-assets.js");
 check("PixelLab verifier exists", existsSync(pixellabVerifier), "run pnpm --filter @workspace/woofwatcher-mobile run verify:pixellab-assets");
+
+const betaHandoffPacketPath = join(mobileRoot, "lib", "betaHandoffPacket.ts");
+const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
+const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
+const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
+const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
+  "Dependency proof commands:",
+  "Required beta proof after export:",
+  "Provider proof needed:",
+  "Truth boundaries:",
+])
+  && /providerSetupPlan:\s*launchProviderSetupPlan/.test(moreRouteSource)
+  && /Share Beta Handoff/.test(moreRouteSource);
+check(
+  "beta handoff source includes proof sections",
+  betaHandoffProofSectionsPresent,
+  betaHandoffProofSectionsPresent
+    ? "handoff packet has dependency, device, provider, and truth-boundary sections"
+    : "keep Share Beta Handoff wired to dependency, device, provider, and truth-boundary proof sections",
+);
 
 if (!jsonMode) {
   console.log("\nDependency proof commands:");

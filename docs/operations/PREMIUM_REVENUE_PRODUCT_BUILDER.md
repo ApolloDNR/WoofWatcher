@@ -540,6 +540,17 @@ device, provider, or public-launch proof. In this cleaned Windows shell the
 doctor remains correctly blocked on missing pnpm and missing mobile `expo`
 dependency resolution.
 
+The beta doctor source-validation pass made that proof-section checklist harder
+to drift. `buildBetaHandoffPacketShareText` now has a literal `Required beta
+proof after export` section for `/care-twin-qa`, iOS/Android screenshot proof,
+Mission note, and Pass pending proof requirements. The doctor now reads the
+actual beta handoff packet source plus the More route and passes `beta handoff
+source includes proof sections` only when the packet still contains dependency
+proof, required beta proof, provider proof, truth boundaries, `Share Beta
+Handoff`, and `providerSetupPlan: launchProviderSetupPlan` wiring. This keeps
+the one-tap handoff, provider setup, and machine-readable doctor aligned under
+the two-day beta deadline.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
