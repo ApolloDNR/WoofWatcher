@@ -20,7 +20,8 @@ experience until it is intentionally brought into parity.
 This repo is a pnpm workspace.
 
 1. Install Node 24.
-2. Enable pnpm with Corepack or install pnpm directly.
+2. Enable pnpm with Corepack or install pnpm 10.24.0 directly. The root
+   `packageManager` pin is `pnpm@10.24.0`.
 3. Copy `.env.example` to `.env.local` and fill required values.
 4. Install dependencies with `pnpm install`.
 5. Run typecheck with `pnpm run typecheck`.
@@ -31,6 +32,7 @@ This repo is a pnpm workspace.
 - `pnpm run test:focused` runs the zero-dependency mobile/domain behavior tests.
 - `pnpm run build:ci` runs TypeScript plus CI-safe API/web builds.
 - `pnpm run build` typechecks and builds packages with build scripts.
+- `pnpm run doctor:mobile-beta` checks the two-day mobile beta export handoff.
 - `pnpm --filter @workspace/api-server run dev` starts the API server.
 - `pnpm --filter @workspace/woofwatcher-mobile run dev` starts Expo.
 - `pnpm --filter @workspace/care-domain test` runs zero-dependency domain tests.

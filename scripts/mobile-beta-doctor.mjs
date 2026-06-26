@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const mobileRoot = join(root, "artifacts", "woofwatcher-mobile");
+const expectedPackageManager = "pnpm@10.24.0";
 const issues = [];
 const warnings = [];
 
@@ -36,6 +37,12 @@ const pnpm = runFirstAvailable(process.platform === "win32" ? ["pnpm.cmd", "pnpm
 check("pnpm available", pnpm.status === 0, pnpm.status === 0 ? pnpm.stdout.trim() : "install pnpm or run from Replit/WSL/Git Bash with pnpm");
 
 const rootPackage = readJson(join(root, "package.json"));
+const verifyWorkflow = readFileSync(join(root, ".github", "workflows", "verify.yml"), "utf8");
+check(
+  "packageManager matches CI pnpm",
+  rootPackage.packageManager === expectedPackageManager && /version:\s*10\.24\.0/.test(verifyWorkflow),
+  rootPackage.packageManager ? `${rootPackage.packageManager} pinned` : "missing packageManager",
+);
 check(
   "root install guard is Windows-friendly",
   rootPackage.scripts?.preinstall === "node scripts/enforce-pnpm-install.mjs",

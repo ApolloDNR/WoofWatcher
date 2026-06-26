@@ -860,3 +860,12 @@ readiness protects the command and its QA proof language. The doctor currently
 exits blocked in this cleaned Windows shell because `pnpm` is unavailable and
 the mobile package cannot resolve `expo`; those must clear before package-local
 Expo export can count as proven.
+
+Current evidence, 2026-06-25: The root package manager is now pinned to the
+same pnpm version used by the verify workflow. `package.json` declares
+`packageManager: pnpm@10.24.0`, `.github/workflows/verify.yml` configures pnpm
+`10.24.0`, and `scripts/mobile-beta-doctor.mjs` checks those two values before
+handoff. Static mobile readiness protects the root package-manager pin, the CI
+workflow version, and the doctor check. The doctor now passes this gate while
+still reporting the truthful local blockers: no `pnpm` on PATH and no mobile
+`expo` dependency resolution in this cleaned Windows shell.

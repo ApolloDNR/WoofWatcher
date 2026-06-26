@@ -10,12 +10,13 @@ patterns, records, caregiver handoff, and AI-assisted care.
 - `pnpm --filter @workspace/care-domain test` - run shared care-domain tests.
 - `pnpm run typecheck` - full TypeScript check across referenced packages.
 - `pnpm run build` - typecheck and build packages with build scripts.
+- `pnpm run doctor:mobile-beta` - check the two-day mobile beta export handoff.
 - `pnpm --filter @workspace/api-spec run codegen` - regenerate API hooks and Zod schemas.
 - `pnpm --filter @workspace/db run push` - push DB schema changes in development.
 
 ## Stack
 
-- Workspace: pnpm, Node 24, TypeScript 5.9.
+- Workspace: pnpm 10.24.0, Node 24, TypeScript 5.9.
 - Mobile: Expo, Expo Router, React Native, Clerk, React Query.
 - API: Express 5, Clerk auth, Gemini integration.
 - DB: PostgreSQL and Drizzle ORM.
@@ -65,6 +66,6 @@ care action, explanation, handoff, record, insight, or assistant workflow.
 
 - Production API deployments must set `ALLOWED_ORIGINS`.
 - Missing Clerk publishable key breaks the mobile auth flow.
-- This repo currently requires pnpm; npm install is intentionally blocked.
+- This repo currently requires pnpm 10.24.0; npm install is intentionally blocked.
 - The local Codex environment may have Node available without pnpm/npm.
 - Do not paste secrets into chat or commit env files.

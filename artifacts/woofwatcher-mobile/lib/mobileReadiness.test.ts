@@ -2050,12 +2050,18 @@ test("keeps the root install guard cross-platform for deadline beta exports", ()
 
 test("keeps a deadline beta doctor command for mobile export handoff", () => {
   const rootPackageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as {
+    packageManager?: string;
     scripts?: Record<string, string>;
   };
   const doctorSource = readFileSync(join(process.cwd(), "scripts", "mobile-beta-doctor.mjs"), "utf8");
+  const verifyWorkflow = readFileSync(join(process.cwd(), ".github", "workflows", "verify.yml"), "utf8");
 
+  assert.equal(rootPackageJson.packageManager, "pnpm@10.24.0");
+  assert.match(verifyWorkflow, /version:\s*10\.24\.0/);
   assert.equal(rootPackageJson.scripts?.["doctor:mobile-beta"], "node scripts/mobile-beta-doctor.mjs");
   assert.match(doctorSource, /WoofWatcher mobile beta doctor/);
+  assert.match(doctorSource, /packageManager/);
+  assert.match(doctorSource, /10\.24\.0/);
   assert.match(doctorSource, /pnpm/);
   assert.match(doctorSource, /expo/);
   assert.match(doctorSource, /smoke:web/);

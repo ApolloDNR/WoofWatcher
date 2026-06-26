@@ -839,3 +839,11 @@ Latest local evidence, 2026-06-25:
 - Static mobile readiness protects the command plus proof language for `/care-twin-qa`, iOS/Android evidence, Mission note, and GitHub Actions boundaries.
 - Red/green evidence: `mobileReadiness.test.ts` first failed on the missing doctor script, then passed with 80 tests after the command and script were wired.
 - Direct doctor run in this cleaned Windows shell exits blocked with the expected current issues: missing local `pnpm` and missing mobile `expo` dependency resolution.
+
+Latest local evidence, 2026-06-25:
+
+- Root `package.json` now pins `packageManager: pnpm@10.24.0`, matching the pnpm version configured in `.github/workflows/verify.yml`.
+- `scripts/mobile-beta-doctor.mjs` checks the root package-manager pin against the CI workflow before export handoff, so Replit, Corepack, local shells, and CI converge on the same pnpm target.
+- Static mobile readiness protects the root `packageManager`, the workflow pnpm version, and the doctor source check.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on the missing root package-manager pin, then passed with 80 tests after the pin and doctor alignment check were wired.
+- Direct doctor run in this cleaned Windows shell now passes `packageManager matches CI pnpm - pnpm@10.24.0 pinned`, while still blocking on the expected local environment issues: missing `pnpm` on PATH and missing mobile `expo` dependency resolution.

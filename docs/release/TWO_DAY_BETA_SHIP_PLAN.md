@@ -93,6 +93,7 @@ Shippable for internal beta after local verification passes:
 - PixelLab asset verification.
 - Package-local Expo web export.
 - `git diff --check`.
+- Root `packageManager` and GitHub Actions pnpm setup agree on `pnpm@10.24.0`.
 - `pnpm run doctor:mobile-beta` reports no install/export blockers.
 
 Current environment note:
@@ -100,6 +101,7 @@ Current environment note:
 - The latest cross-platform install-guard slice removed the root `sh -c` preinstall dependency that was blocking Windows package/export attempts before Expo could run. `preinstall` now calls `node scripts/enforce-pnpm-install.mjs`, which still removes forbidden npm/yarn lockfiles and rejects npm/yarn user agents while running in a Windows-friendly Node process.
 - The latest Expo config slice also declares `ios`, `android`, and `web` platforms in `artifacts/woofwatcher-mobile/app.json` and sets `expo.web.bundler` to `metro`, matching the committed `smoke:web` export path. A direct package-local Expo CLI export attempt now advances past the earlier Metro-platform configuration error and stops at the current dependency-layer blocker: `Cannot determine the project's Expo SDK version because the module 'expo' is not installed`.
 - The new root `doctor:mobile-beta` command summarizes this state for Apollo, Replit, or a device helper. In this cleaned Windows shell it exits blocked on the same two actionable issues: local `pnpm` is not on PATH, and the mobile package cannot resolve `expo`.
+- The root package now pins `packageManager: pnpm@10.24.0`, matching the GitHub Actions verify workflow. The doctor checks that alignment so Replit, Corepack, local shells, and CI use the same pnpm target before export proof.
 - Mobile TypeScript/export remain blocked in this cleaned Windows shell by the missing Expo/mobile dependency layer, and no local iOS/Android simulator/tooling is visible here. Re-run the doctor, install, TypeScript/export, and actual device capture from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or a native-device environment before treating this as dependency/export/device-proven.
 
 Still blocked for public launch:

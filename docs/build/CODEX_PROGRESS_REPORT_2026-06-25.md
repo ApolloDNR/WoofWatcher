@@ -37,6 +37,20 @@
 - In this cleaned Windows shell, the doctor truthfully exits blocked on two
   issues: `pnpm` is not on PATH, and the mobile package cannot resolve `expo`.
 
+## Package Manager Pin
+
+- Two-day beta risk addressed: local, Replit, Corepack, and CI runners now have
+  one pnpm version to converge on instead of guessing.
+- `package.json` declares `packageManager: pnpm@10.24.0`, matching
+  `.github/workflows/verify.yml`.
+- `scripts/mobile-beta-doctor.mjs` now checks the root package-manager pin
+  against the GitHub Actions pnpm setup version before export handoff.
+- Mobile readiness protects the package-manager pin, the CI workflow version,
+  and the doctor alignment check.
+- The doctor now passes the package-manager gate and still truthfully blocks
+  this cleaned Windows shell on missing local `pnpm` plus missing mobile `expo`
+  dependency resolution.
+
 ## Verification
 
 - Red/green readiness: `mobileReadiness.test.ts` first failed on the missing
@@ -46,6 +60,9 @@
   wiring.
 - Red/green doctor readiness: `mobileReadiness.test.ts` first failed on the
   missing doctor script, then passed after the command and script were wired.
+- Red/green package-manager readiness: `mobileReadiness.test.ts` first failed
+  on the missing root `packageManager`, then passed after `pnpm@10.24.0` and
+  the doctor check were wired.
 - Direct guard check with `npm_config_user_agent=pnpm/9.0.0`: passed.
 - Direct guard check with `npm_config_user_agent=npm/10.0.0`: failed as
   expected with the pnpm-only warning.
