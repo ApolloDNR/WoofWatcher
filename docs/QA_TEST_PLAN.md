@@ -855,3 +855,12 @@ Latest local evidence, 2026-06-25:
 - Static mobile readiness protects `Corepack` and the exact `corepack prepare pnpm@10.24.0 --activate` command.
 - Red/green evidence: `mobileReadiness.test.ts` first failed on missing Corepack guidance, then passed with 80 tests after the doctor was updated.
 - Direct doctor run in this cleaned Windows shell now reports one Corepack warning, no change to the two true export blockers, and the exact pnpm activation command for helper environments where Corepack is available.
+
+Latest local evidence, 2026-06-25:
+
+- `scripts/mobile-beta-doctor.mjs` now checks the active runtime as `Node 24 runtime`.
+- The doctor now reads `artifacts/woofwatcher-mobile/eas.json` and checks that preview and production EAS build profiles cover both iOS and Android.
+- Static mobile readiness protects the Node 24 and EAS iOS/Android doctor contracts.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on missing `Node 24 runtime`, then passed with 80 tests after the doctor checks were added.
+- Direct doctor run now passes Node 24 and EAS profile coverage, while still returning blocked for the two real local export issues: no `pnpm` on PATH and no mobile `expo` dependency resolution.
+- Follow-up verification passed the 102-test targeted beta QA/readiness suite, the 403-test focused behavior/readiness suite, PixelLab verification at 149 files, and `git diff --check` with expected Windows line-ending warnings only.

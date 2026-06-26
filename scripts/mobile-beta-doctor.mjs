@@ -33,6 +33,13 @@ function runFirstAvailable(commands, args) {
 console.log("WoofWatcher mobile beta doctor");
 console.log("Purpose: confirm the two-day beta export path before device QA.\n");
 
+const nodeMajor = Number.parseInt(process.versions.node.split(".")[0] ?? "0", 10);
+check(
+  "Node 24 runtime",
+  nodeMajor >= 24,
+  nodeMajor >= 24 ? `node ${process.versions.node}` : `node ${process.versions.node}; install Node 24 before mobile beta export`,
+);
+
 const pnpm = runFirstAvailable(process.platform === "win32" ? ["pnpm.cmd", "pnpm"] : ["pnpm"], ["--version"]);
 const corepack = runFirstAvailable(process.platform === "win32" ? ["corepack.cmd", "corepack"] : ["corepack"], ["--version"]);
 check(
@@ -77,6 +84,19 @@ check("smoke:web export command exists", mobilePackage.scripts?.["smoke:web"] ==
 const appJson = readJson(join(mobileRoot, "app.json")).expo;
 check("Expo platforms include iOS, Android, and web", JSON.stringify(appJson.platforms) === JSON.stringify(["ios", "android", "web"]), JSON.stringify(appJson.platforms));
 check("Expo web export uses Metro", appJson.web?.bundler === "metro", appJson.web?.bundler ?? "missing expo.web.bundler");
+
+const easJsonPath = join(mobileRoot, "eas.json");
+const easJson = existsSync(easJsonPath) ? readJson(easJsonPath) : {};
+const easBuildProfiles = easJson.build ?? {};
+const hasIosAndAndroidBuildProfiles = Boolean(easBuildProfiles.preview?.ios)
+  && Boolean(easBuildProfiles.preview?.android)
+  && Boolean(easBuildProfiles.production?.ios)
+  && Boolean(easBuildProfiles.production?.android);
+check(
+  "EAS build profiles include iOS and Android",
+  existsSync(easJsonPath) && hasIosAndAndroidBuildProfiles,
+  existsSync(easJsonPath) ? "preview and production profiles cover iOS/Android" : "missing artifacts/woofwatcher-mobile/eas.json",
+);
 
 const mobileExpoPackage = join(mobileRoot, "node_modules", "expo", "package.json");
 check(

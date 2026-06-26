@@ -878,3 +878,14 @@ readiness protects the Corepack copy and exact activation command. In this
 cleaned Windows shell Corepack is not on PATH, so the warning correctly tells a
 helper to install pnpm 10.24.0 directly or use Replit/WSL; the true export
 blockers remain missing pnpm and missing mobile Expo dependency resolution.
+
+Current evidence, 2026-06-25: The beta doctor now verifies native environment
+readiness before handoff. `scripts/mobile-beta-doctor.mjs` blocks below Node 24
+and checks `artifacts/woofwatcher-mobile/eas.json` for preview and production
+iOS/Android build profile coverage. Static mobile readiness protects both
+doctor contracts. In this cleaned Windows shell those new checks pass, while
+the doctor still correctly blocks on missing pnpm and missing mobile Expo
+dependency resolution until a dependency-complete environment runs install and
+export proof. Follow-up verification passed 102 targeted beta QA/readiness
+tests, 403 focused behavior/readiness tests, PixelLab verification at 149 files,
+and `git diff --check` with expected Windows line-ending warnings only.

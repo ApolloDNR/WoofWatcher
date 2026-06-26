@@ -2064,6 +2064,8 @@ test("keeps a deadline beta doctor command for mobile export handoff", () => {
   assert.match(doctorSource, /10\.24\.0/);
   assert.match(doctorSource, /Corepack/);
   assert.match(doctorSource, /corepack prepare pnpm@10\.24\.0 --activate/);
+  assert.match(doctorSource, /Node 24 runtime/);
+  assert.match(doctorSource, /EAS build profiles include iOS and Android/);
   assert.match(doctorSource, /pnpm/);
   assert.match(doctorSource, /expo/);
   assert.match(doctorSource, /smoke:web/);

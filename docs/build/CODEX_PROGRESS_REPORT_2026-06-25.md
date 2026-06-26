@@ -64,6 +64,19 @@
   warning and the same two true blockers: no `pnpm` on PATH and no mobile
   `expo` dependency resolution.
 
+## Node And EAS Doctor Gates
+
+- Two-day beta risk addressed: helpers now get a hard stop if they try to
+  export the native beta from a non-Node-24 runtime or with incomplete EAS
+  native build profiles.
+- `scripts/mobile-beta-doctor.mjs` now checks `Node 24 runtime` directly from
+  `process.versions.node`.
+- The doctor now reads `artifacts/woofwatcher-mobile/eas.json` and verifies the
+  preview and production build profiles both include iOS and Android paths.
+- The direct doctor run in this cleaned Windows shell now passes Node 24 and
+  EAS profile coverage, then still truthfully blocks on the two real local
+  export issues: no `pnpm` on PATH and no mobile `expo` dependency resolution.
+
 ## Verification
 
 - Red/green readiness: `mobileReadiness.test.ts` first failed on the missing
@@ -79,11 +92,14 @@
 - Red/green Corepack guidance readiness: `mobileReadiness.test.ts` first failed
   on missing `Corepack` guidance, then passed after the doctor printed the
   pnpm 10.24.0 Corepack activation command.
+- Red/green Node/EAS doctor readiness: `mobileReadiness.test.ts` first failed
+  on missing `Node 24 runtime` and `EAS build profiles include iOS and Android`
+  doctor contracts, then passed after the checks were wired.
 - Direct guard check with `npm_config_user_agent=pnpm/9.0.0`: passed.
 - Direct guard check with `npm_config_user_agent=npm/10.0.0`: failed as
   expected with the pnpm-only warning.
-- Targeted beta QA/readiness suite: 101 passing.
-- Focused behavior/readiness suite: 402 passing.
+- Targeted beta QA/readiness suite: 102 passing.
+- Focused behavior/readiness suite: 403 passing.
 - PixelLab asset verification: 149 valid files, 0 missing, 0 invalid.
 - `git diff --check`: passed with expected Windows line-ending warnings only.
 
