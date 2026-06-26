@@ -118,6 +118,14 @@ function formatHouseholdRoleLabel(role: string): string {
   return ROLE_UPDATE_OPTIONS.find((option) => option.role === normalized)?.label ?? role.replace(/_/g, " ");
 }
 
+function getAuditTargetName(event: HouseholdAuditEvent): string {
+  const displayName = getAuditDetailValue(event, "targetDisplayName");
+  if (displayName) return displayName;
+  const email = getAuditDetailValue(event, "targetEmail");
+  if (email) return email.split("@")[0]?.trim() || email;
+  return "";
+}
+
 function auditEventDetail(event: HouseholdAuditEvent): string {
   const target = event.targetType ? event.targetType.replace(/_/g, " ") : "household";
   const lifecycle = event.lifecycleState.replace(/_/g, " ");
@@ -144,6 +152,9 @@ function auditEventDetail(event: HouseholdAuditEvent): string {
     case "household.member_role_changed": {
       const previousRole = formatHouseholdRoleLabel(getAuditDetailValue(event, "previousRole"));
       const newRole = formatHouseholdRoleLabel(getAuditDetailValue(event, "newRole"));
+      const targetName = getAuditTargetName(event);
+      if (targetName && previousRole && newRole) return `${targetName}: ${previousRole} to ${newRole} - ${state}`;
+      if (targetName && newRole) return `${targetName}: role changed to ${newRole} - ${state}`;
       if (previousRole && newRole) return `Role changed from ${previousRole} to ${newRole} - ${state}`;
       return newRole ? `Role changed to ${newRole} - ${state}` : state;
     }

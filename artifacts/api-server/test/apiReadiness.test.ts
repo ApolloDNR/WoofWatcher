@@ -204,12 +204,15 @@ test("keeps household member role updates owner scoped and audited", () => {
     householdRoute,
     /eq\(householdMembersTable\.id, params\.data\.memberId\)[\s\S]*eq\(householdMembersTable\.householdId, householdId\)/,
   );
+  assert.match(householdRoute, /leftJoin\(usersTable, eq\(usersTable\.id, householdMembersTable\.userId\)\)/);
   assert.match(householdRoute, /res\.status\(404\)\.json\(\{ error: "Household member not found" \}\)/);
   assert.match(householdRoute, /res\.status\(400\)\.json\(\{ error: "Owners cannot be demoted from the pack" \}\)/);
   assert.match(householdRoute, /\.update\(householdMembersTable\)[\s\S]*role: parsed\.data\.role/);
   assert.match(householdRoute, /action: "household\.member_role_changed"/);
   assert.match(householdRoute, /previousRole: member\.role/);
   assert.match(householdRoute, /newRole: parsed\.data\.role/);
+  assert.match(householdRoute, /targetDisplayName: member\.displayName/);
+  assert.match(householdRoute, /targetEmail: member\.email/);
   assert.match(householdRoute, /targetId: member\.id/);
 
   assert.match(openapi, /\/household\/members\/\{memberId\}:/);

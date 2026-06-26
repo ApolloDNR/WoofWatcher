@@ -188,8 +188,11 @@ router.patch("/household/members/:memberId", requireAuth, async (req, res): Prom
       id: householdMembersTable.id,
       userId: householdMembersTable.userId,
       role: householdMembersTable.role,
+      displayName: householdMembersTable.displayName,
+      email: usersTable.email,
     })
     .from(householdMembersTable)
+    .leftJoin(usersTable, eq(usersTable.id, householdMembersTable.userId))
     .where(
       and(
         eq(householdMembersTable.id, params.data.memberId),
@@ -226,6 +229,8 @@ router.patch("/household/members/:memberId", requireAuth, async (req, res): Prom
       previousRole: member.role,
       newRole: parsed.data.role,
       memberUserId: member.userId,
+      targetDisplayName: member.displayName,
+      targetEmail: member.email,
       actorRole: role,
     },
   });

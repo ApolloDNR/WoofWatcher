@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-26: Pack Audit Role Changes Identify The Caregiver
+
+Decision: API role-change audit events should include the affected member's display name and email when available, and Mobile Pack Audit should render caregiver-specific copy such as `Emma: Sitter to Trainer`. Older audit rows without target identity should continue using the generic role-change fallback.
+
+Reason: Owner/admin audit review needs to answer who changed roles, not only what role transition happened. Adding target identity to the existing durable audit details improves household trust without adding member removal, owner transfer, invite approval, audit lifecycle actions, or broader provider-backed administration.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed caregiver administration, audit export/delete, final role policy, or richer member profile privacy rules become active release work.
+
 ### 2026-06-26: Pack Audit Role Changes Use Owner-Readable Labels
 
 Decision: Mobile Pack Audit role-change rows should format stored `previousRole` and `newRole` values through the launch role labels and render previous-to-new transition copy when both values exist. Older audit rows with only `newRole` still get a readable fallback. Visible rows and accessibility labels should not expose internal role ids such as `vet_viewer`.

@@ -348,6 +348,8 @@ Current evidence, 2026-06-25: Household Access now maps the launch caregiver rol
 
 Current evidence, 2026-06-26: Pack Audit role-change details now reuse the launch role labels in mobile review rows and accessibility labels, preserving owner-readable household trust evidence after role updates without adding lifecycle actions or provider-backed audit export/delete controls.
 
+Current evidence, 2026-06-26: Pack Audit role-change details now include the affected caregiver's display name or email-derived name when the API writes a role-change audit event, so owner/admin review can show who changed roles, not only the previous-to-new role transition. Older audit rows still fall back to the generic role-change copy.
+
 Current evidence, 2026-06-25: API shared care writes now honor the launch role boundary for vet viewers before final provider-backed permission policy. Vet viewers can review household care context but cannot change care plans or logs.
 
 Current evidence, 2026-06-26: API care-plan writes now use a stricter role boundary than care-log writes before final provider-backed permission policy. `PUT /care-state` is limited to owner/admin/member roles so sitters and trainers cannot change the shared Dog Profile, routines, records, or reports document, while `POST/PATCH/DELETE /care-entries` still allows owner/admin/member/sitter/trainer roles to log and correct care evidence.

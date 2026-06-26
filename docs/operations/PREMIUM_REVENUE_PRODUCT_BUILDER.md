@@ -132,6 +132,7 @@ Latest completed local runtime/accessibility hardening:
 - Vet viewer API memberships are now read-only for shared care writes before final provider-backed permission policy. Care-plan writes and care-log writes have separate role guards so `PUT /care-state` is limited to owner/admin/member roles, `POST/PATCH/DELETE /care-entries` remains open to owner/admin/member/sitter/trainer roles, and vet viewers receive a clear 403 on both mutation surfaces.
 - Sitter and trainer API log corrections are now scoped to their own care-entry evidence. `POST /care-entries` remains available to those helper roles, but `PATCH` and `DELETE` add `caregiverUserId` matching for sitter/trainer members so they cannot alter another caregiver's log before final provider-backed permission policy exists.
 - Mobile Pack Audit role-change rows now keep the trust trail owner-readable. Role-change audit details use launch role labels and previous-to-new copy instead of exposing internal ids such as `vet_viewer`, with mobile readiness coverage for rows and accessibility labels.
+- Pack Audit role-change rows now name the affected caregiver. The API stores `targetDisplayName` and `targetEmail` in durable role-change audit details, and Mobile More renders caregiver-specific trust rows while preserving fallback copy for older audit events.
 
 Next highest-impact work:
 
