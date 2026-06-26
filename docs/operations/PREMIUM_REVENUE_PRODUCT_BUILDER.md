@@ -709,6 +709,15 @@ dependency proof requires a real PATH `pnpm` at `10.24.0` and not a bundled
 `pnpm 11.x` candidate, and the doctor source-backed handoff check requires that
 line before it passes.
 
+The Care Pass export manifest pass makes saved report artifacts clearer for
+owners, device testers, and future PDF/provider work. `describeCarePassArtifactExport`
+now describes the actual artifact available today as `Printable HTML`, includes
+the filename, MIME type, byte size, source status, storage readiness, and
+provider-backed truth flag, and explicitly says PDF export still needs native or
+provider-backed generation. Records Report History renders that manifest beside
+the existing resend and printable-source actions, and the mobile beta doctor now
+source-validates the new export-helper route through `exportView.storage`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

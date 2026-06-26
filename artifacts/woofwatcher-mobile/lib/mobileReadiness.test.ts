@@ -1347,8 +1347,11 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
   assert.match(records, /getCarePassArtifactPrintView/);
-  assert.match(records, /describeCarePassArtifactStorage/);
+  assert.match(records, /describeCarePassArtifactExport/);
+  assert.match(records, /const storage = exportView\.storage/);
   assert.match(records, /storageProviderConfigured: Boolean\(state\.launchProviderProfile\?\.storageProviderConfigured\)/);
+  assert.match(records, /exportView\.formatLabel/);
+  assert.match(records, /exportView\.pdfDetail/);
   assert.match(records, /sharePrintableReportArtifact/);
   assert.match(records, /Print-ready/);
   assert.match(records, /storage\.label/);

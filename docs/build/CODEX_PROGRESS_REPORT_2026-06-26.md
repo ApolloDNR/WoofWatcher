@@ -153,3 +153,26 @@
 - Remote verify run `28257100651` for commit `9e74abc` failed before job
   execution with job `83722840126`, `steps: []`, and `log not found:
   83722840126`, matching the standing GitHub billing/spending-limit blocker.
+
+## Care Pass Export Manifest
+
+- Saved Care Pass report artifacts now have a source-of-truth export manifest.
+- `describeCarePassArtifactExport` returns printable HTML filename, MIME type,
+  format label, byte size, source status, storage state, provider-backed truth,
+  and explicit copy that PDF export still needs native or provider-backed
+  generation.
+- Records Report History renders the manifest as `Printable HTML`, calculated
+  KB, `PDF pending`, the provider/local storage pill, and the PDF boundary copy
+  beside the existing resend and printable-source actions.
+- `scripts/mobile-beta-doctor.mjs --json` now source-validates the new
+  export-helper route through Records and `exportView.storage`.
+- Red/green evidence: `care-pass.test.ts` first failed on the missing export
+  helper, and `mobileReadiness.test.ts` first failed on missing Records export
+  manifest wiring, then both passed after the domain/UI/doctor contract was
+  aligned.
+- Verification passed: Care Pass tests, 81-test mobile readiness, 421-test
+  zero-dependency behavior/readiness suite, PixelLab asset verification at 149
+  files, direct JSON doctor source checks, and `git diff --check` with expected
+  Windows line-ending warnings only.
+- Direct JSON doctor still reports `BLOCKED` on missing pnpm and missing mobile
+  Expo dependency resolution.

@@ -103,6 +103,18 @@ export interface CarePassArtifactPrintView {
   status: "ready" | "restored";
 }
 
+export interface CarePassArtifactExportView {
+  fileName: string;
+  mimeType: "text/html";
+  formatLabel: "Printable HTML";
+  sourceStatus: CarePassArtifactPrintView["status"];
+  byteSize: number;
+  pdfStatus: "not-generated";
+  pdfDetail: string;
+  storage: CarePassArtifactStorageView;
+  providerBacked: boolean;
+}
+
 export type CarePassArtifactStorageStatus = "local-only" | "upload-ready" | "uploaded" | "failed";
 
 export interface CarePassArtifactStorageView {
@@ -174,6 +186,18 @@ function printDateStamp(createdAt: string): string {
   const parsed = new Date(createdAt);
   if (Number.isNaN(parsed.getTime())) return "saved";
   return parsed.toISOString().slice(0, 10);
+}
+
+function utf8ByteLength(value: string): number {
+  let bytes = 0;
+  for (const char of value) {
+    const codePoint = char.codePointAt(0) ?? 0;
+    if (codePoint <= 0x7f) bytes += 1;
+    else if (codePoint <= 0x7ff) bytes += 2;
+    else if (codePoint <= 0xffff) bytes += 3;
+    else bytes += 4;
+  }
+  return bytes;
 }
 
 function entryLabel(entry: CareHealthEntry): string {
@@ -641,6 +665,25 @@ export function describeCarePassArtifactStorage(
     label: "Saved locally",
     detail: "Cloud storage pending - saved on this device as text and print-ready HTML source.",
     providerBacked: false,
+  };
+}
+
+export function describeCarePassArtifactExport(
+  artifact: CarePassArtifact,
+  options: CarePassArtifactStorageOptions = {},
+): CarePassArtifactExportView {
+  const printable = getCarePassArtifactPrintView(artifact);
+  const storage = describeCarePassArtifactStorage(artifact, options);
+  return {
+    fileName: printable.fileName,
+    mimeType: "text/html",
+    formatLabel: "Printable HTML",
+    sourceStatus: printable.status,
+    byteSize: utf8ByteLength(printable.html),
+    pdfStatus: "not-generated",
+    pdfDetail: "PDF export still needs native or provider-backed generation; share the printable HTML source until that is configured.",
+    storage,
+    providerBacked: storage.providerBacked,
   };
 }
 

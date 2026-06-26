@@ -287,13 +287,15 @@ check(
 
 const providerAwareCarePassStorageIsSourceBacked = includesAll(carePassDomainSource, [
   "CarePassArtifactStorageOptions",
+  "describeCarePassArtifactExport",
   "storageProviderConfigured?: boolean",
   "Ready to upload",
   "providerBacked: false",
 ])
   && /baseStatus === "local-only" && options\.storageProviderConfigured/.test(carePassDomainSource)
   && includesAll(recordsRouteSource, [
-    "describeCarePassArtifactStorage(artifact",
+    "describeCarePassArtifactExport(artifact",
+    "const storage = exportView.storage",
     "storageProviderConfigured: Boolean(state.launchProviderProfile?.storageProviderConfigured)",
     "storage.label",
     "storage.detail",

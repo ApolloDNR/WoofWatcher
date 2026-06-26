@@ -940,3 +940,28 @@ Latest local evidence, 2026-06-26:
   behavior/readiness suite, PixelLab verification at 149 files, `git diff
   --check`, and the direct JSON doctor still blocks only on missing pnpm and
   missing mobile Expo dependency resolution.
+
+Latest local evidence, 2026-06-26:
+
+- Saved Care Pass report artifacts now expose a dedicated export manifest for
+  launch handoff and Records Report History.
+- `describeCarePassArtifactExport` returns the printable HTML file name, MIME
+  type, format label, byte size, source status, storage view, provider-backed
+  truth flag, and an explicit `PDF export still needs native or
+  provider-backed generation` detail.
+- Records Report History now renders `Printable HTML`, calculated KB,
+  `PDF pending`, provider/local storage state, and the PDF/native-provider
+  boundary beside the existing resend and printable-source actions.
+- The mobile beta doctor source-backed provider-storage check now validates the
+  new export-helper route and `exportView.storage` wiring instead of the old
+  direct storage-helper call.
+- Red/green evidence: `care-pass.test.ts` first failed on the missing export
+  helper, and `mobileReadiness.test.ts` first failed on missing Records export
+  manifest wiring, then both passed after the domain/UI/doctor contract was
+  aligned.
+- Verification passed Care Pass tests, 81-test mobile readiness, the 421-test
+  zero-dependency behavior/readiness suite, PixelLab verification at 149 files,
+  direct JSON doctor source checks, and `git diff --check` with expected
+  Windows line-ending warnings only.
+- Direct JSON doctor still reports `BLOCKED` on the real local export issues:
+  missing pnpm and missing mobile Expo dependency resolution.

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildCarePass,
   createCarePassArtifact,
+  describeCarePassArtifactExport,
   describeCarePassArtifactStorage,
   getCarePassArtifactPrintView,
   renderCarePassPrintHtml,
@@ -709,6 +710,22 @@ test("returns stored print source for current care pass artifacts", () => {
   assert.equal(printable.status, "ready");
   assert.equal(printable.fileName, "phoenix-sitter-care-pass-2026-06-08.html");
   assert.equal(printable.html, artifact.printHtml);
+});
+
+test("describes Care Pass artifact export readiness without claiming PDF generation", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "vet" });
+  const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
+  const exportView = describeCarePassArtifactExport(artifact, { storageProviderConfigured: true });
+
+  assert.equal(exportView.fileName, "phoenix-vet-care-pass-2026-06-08.html");
+  assert.equal(exportView.mimeType, "text/html");
+  assert.equal(exportView.formatLabel, "Printable HTML");
+  assert.equal(exportView.sourceStatus, "ready");
+  assert.ok(exportView.byteSize > 500);
+  assert.equal(exportView.pdfStatus, "not-generated");
+  assert.match(exportView.pdfDetail, /PDF export still needs native or provider-backed generation/);
+  assert.equal(exportView.storage.label, "Ready to upload");
+  assert.equal(exportView.providerBacked, false);
 });
 
 test("restores escaped print source for older care pass artifacts", () => {

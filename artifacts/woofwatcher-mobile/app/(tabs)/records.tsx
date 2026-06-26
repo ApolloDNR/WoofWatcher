@@ -32,7 +32,7 @@ import {
   buildPetCredential,
   buildCarePass,
   createCarePassArtifact,
-  describeCarePassArtifactStorage,
+  describeCarePassArtifactExport,
   deriveAloneTime,
   deriveCareTrends,
   deriveGroomingCare,
@@ -1812,10 +1812,11 @@ export default function RecordsScreen() {
               </Text>
             ) : (
               reportArtifacts.map((artifact, index) => {
-                const printable = getCarePassArtifactPrintView(artifact);
-                const storage = describeCarePassArtifactStorage(artifact, {
+                const exportView = describeCarePassArtifactExport(artifact, {
                   storageProviderConfigured: Boolean(state.launchProviderProfile?.storageProviderConfigured),
                 });
+                const storage = exportView.storage;
+                const exportSizeKb = Math.max(1, Math.ceil(exportView.byteSize / 1024));
                 const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
                 return (
                   <View
@@ -1833,10 +1834,13 @@ export default function RecordsScreen() {
                         {artifact.title}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {shortDate(artifact.createdAt)} - {sectionCount} sections - {printable.status === "ready" ? "Print-ready" : "Print restored"}
+                        {shortDate(artifact.createdAt)} - {sectionCount} sections - {exportView.sourceStatus === "ready" ? "Print-ready" : "Print restored"}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-                        {printable.fileName}
+                        {exportView.fileName}
+                      </Text>
+                      <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {exportView.formatLabel} - {exportSizeKb} KB - PDF pending
                       </Text>
                       <View style={s.artifactStorageRow}>
                         <View
@@ -1866,6 +1870,9 @@ export default function RecordsScreen() {
                       </View>
                       <Text numberOfLines={2} style={[s.artifactStorageDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                         {storage.detail}
+                      </Text>
+                      <Text numberOfLines={2} style={[s.artifactStorageDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                        {exportView.pdfDetail}
                       </Text>
                     </View>
                     <View style={s.reportArtifactActions}>
