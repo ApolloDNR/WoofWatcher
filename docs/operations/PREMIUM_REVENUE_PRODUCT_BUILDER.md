@@ -601,6 +601,15 @@ the builder, detects `nativeQaCaptureNeedsTuneTarget`, and exposes the `Share
 Fix Brief` recovery action. This keeps the first below-beta route actionable
 without pretending native proof is complete.
 
+The beta handoff section pass made that recovery loop part of the required
+48-hour packet. `buildBetaHandoffPacketShareText` now prints a dedicated
+`Native QA Needs tune fix brief` section telling helpers to use More's `Share
+Fix Brief` before claiming beta proof when any route is marked Needs tune, then
+fix the first below-beta route, return to `/care-twin-qa`, attach confirmation
+proof, and update the Mission note. `scripts/mobile-beta-doctor.mjs --json`
+lists the same section in `handoffProofSections`, so automation can check for
+the repair handoff without scraping packet prose.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

@@ -65,6 +65,7 @@ const proofCommands = [
 const handoffProofSections = [
   "Dependency proof commands",
   "Required beta proof after export",
+  "Native QA Needs tune fix brief",
   "Provider proof needed",
   "Truth boundaries",
 ];
@@ -199,6 +200,7 @@ const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, 
 const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Dependency proof commands:",
   "Required beta proof after export:",
+  "Native QA Needs tune fix brief:",
   "Provider proof needed:",
   "Truth boundaries:",
 ])

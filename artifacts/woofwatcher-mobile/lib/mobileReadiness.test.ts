@@ -2134,6 +2134,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.deepEqual(payload.handoffProofSections, [
     "Dependency proof commands",
     "Required beta proof after export",
+    "Native QA Needs tune fix brief",
     "Provider proof needed",
     "Truth boundaries",
   ]);
