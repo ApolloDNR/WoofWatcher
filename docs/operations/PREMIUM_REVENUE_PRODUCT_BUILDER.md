@@ -626,6 +626,15 @@ open, preserves who served them, and surfaces them as the next routine until the
 household records the outcome. Partial, skipped/refused, and completed meal
 outcomes still satisfy the matching routine.
 
+The pending meal outcome edit pass made the correction path reusable and more
+complete. `mealOutcomeUpdate.ts` now owns the shared Log detail update formula
+for `Ate all`, `Ate most`, `Ate some`, `Refused`, and `Still grazing`, while
+preserving household visibility, routine ids, expected/served portions, eaten
+amounts, trust state, and audit history. Log's detail sheet now uses that helper
+instead of a local inline formula, so Timeline/Recent Activity meal outcome
+updates include `Ate some`, keep grazing meals open as pending, mark refused and
+partial outcomes as watch items, and write a correction trail for owner review.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

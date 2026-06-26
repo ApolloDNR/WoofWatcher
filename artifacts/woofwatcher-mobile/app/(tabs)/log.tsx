@@ -74,6 +74,11 @@ import {
   type PottyPeeDetail,
   type PottyStoolCondition,
 } from "@/lib/pottyLogDetail";
+import {
+  buildMealOutcomeUpdatePatch,
+  MEAL_OUTCOME_UPDATE_OPTIONS,
+  type MealOutcomeUpdate,
+} from "@/lib/mealOutcomeUpdate";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
@@ -737,14 +742,9 @@ function formatAloneDuration(minutes: number): string {
   return remaining ? `${hours}h ${remaining}m` : `${hours}h`;
 }
 
-type DetailMealOutcome = "complete" | "most" | "skipped" | "grazing";
+type DetailMealOutcome = MealOutcomeUpdate;
 
-const DETAIL_MEAL_OUTCOMES: { id: DetailMealOutcome; label: string }[] = [
-  { id: "complete", label: "Ate all" },
-  { id: "most", label: "Ate most" },
-  { id: "skipped", label: "Refused" },
-  { id: "grazing", label: "Still grazing" },
-];
+const DETAIL_MEAL_OUTCOMES = MEAL_OUTCOME_UPDATE_OPTIONS;
 
 type PottyDraftContext = PottyContext | "none";
 
@@ -794,13 +794,6 @@ function pottyDraftFromEntry(entry: Entry | null): PottyDetailDraft {
     stoolColor: optionId(details.stoolColor, POTTY_STOOL_COLOR_OPTIONS, "not-logged"),
     context: optionId(details.pottyContext, POTTY_CONTEXT_DRAFT_OPTIONS, "none"),
   };
-}
-
-function detailNumber(details: Record<string, unknown>, key: string): number | null {
-  const value = details[key];
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") return parseNonNegativeNumber(value);
-  return null;
 }
 
 function isPendingMealEntry(entry: Entry): boolean {
@@ -1534,58 +1527,14 @@ export default function LogScreen() {
 
   const updateMealOutcomeFromDetail = useCallback(
     (entry: Entry, outcome: DetailMealOutcome) => {
-      const existing = isDetailRecord(entry.details) ? entry.details : {};
-      const nowIso = new Date().toISOString();
-      const servedAmount = detailNumber(existing, "servedAmount") ?? detailNumber(existing, "servingAmount");
-      const servedUnit =
-        typeof existing.servedUnit === "string"
-          ? existing.servedUnit
-          : typeof existing.servingUnit === "string"
-            ? existing.servingUnit
-            : "cup";
-      const eatenAmount =
-        outcome === "complete"
-          ? servedAmount
-          : outcome === "most" && servedAmount != null
-            ? Math.round(servedAmount * 80) / 100
-            : outcome === "skipped"
-              ? 0
-              : null;
-      const label = DETAIL_MEAL_OUTCOMES.find((item) => item.id === outcome)?.label ?? mealCompletionLabel(outcome);
-      const baseTitle = entry.title.split(" - ")[0] || entry.title || "Meal";
-      const nextDetails = appendCareAuditEvent(
-        {
-          ...existing,
-          mealCompletion: outcome,
-          mealLifecycle: outcome === "grazing" ? "outcome-pending" : "outcome-recorded",
-          outcomeAt: nowIso,
-          outcomeBy: caregiver,
-          trustState: "confirmed",
-          confirmationRequired: false,
-          ...(eatenAmount != null
-            ? {
-                eatenAmount,
-                eatenUnit: servedUnit,
-              }
-            : {}),
-        },
-        {
-          id: auditId(),
-          action: "updated",
-          caregiver,
-          occurredAt: nowIso,
-          summary: `${caregiver} updated meal outcome on "${entry.title}" to ${label}.`,
-          changes: ["mealCompletion", "mealLifecycle", "outcomeAt"],
-        },
-      );
+      const patch = buildMealOutcomeUpdatePatch(entry, {
+        caregiver,
+        now: new Date().toISOString(),
+        outcome,
+      });
 
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(entry.id, {
-        title: `${baseTitle} - ${label}`,
-        details: nextDetails,
-        ...(eatenAmount != null ? { amount: String(eatenAmount) } : {}),
-        ...(outcome === "skipped" ? { severity: "watch" } : {}),
-      });
+      updateEntry(entry.id, patch);
     },
     [caregiver, updateEntry],
   );
