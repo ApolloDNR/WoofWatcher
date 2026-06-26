@@ -20,8 +20,9 @@ experience until it is intentionally brought into parity.
 This repo is a pnpm workspace.
 
 1. Install Node 24.
-2. Enable pnpm with Corepack or install pnpm 10.24.0 directly. The root
-   `packageManager` pin is `pnpm@10.24.0`.
+2. Enable pnpm with Corepack (`corepack prepare pnpm@10.24.0 --activate`) or
+   install pnpm 10.24.0 directly. The root `packageManager` pin is
+   `pnpm@10.24.0`.
 3. Copy `.env.example` to `.env.local` and fill required values.
 4. Install dependencies with `pnpm install`.
 5. Run typecheck with `pnpm run typecheck`.

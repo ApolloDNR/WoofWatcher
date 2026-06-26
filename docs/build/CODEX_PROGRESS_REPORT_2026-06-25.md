@@ -51,6 +51,19 @@
   this cleaned Windows shell on missing local `pnpm` plus missing mobile `expo`
   dependency resolution.
 
+## Corepack Bootstrap Guidance
+
+- Two-day beta risk addressed: a helper no longer has to infer how to recover
+  from the missing-pnpm blocker.
+- `scripts/mobile-beta-doctor.mjs` now checks Corepack as a warning-level
+  bootstrap helper and prints the exact activation command:
+  `corepack prepare pnpm@10.24.0 --activate`.
+- If Corepack is absent, the doctor says to install pnpm 10.24.0 directly or
+  use Replit/WSL.
+- The direct doctor run in this cleaned Windows shell now reports one Corepack
+  warning and the same two true blockers: no `pnpm` on PATH and no mobile
+  `expo` dependency resolution.
+
 ## Verification
 
 - Red/green readiness: `mobileReadiness.test.ts` first failed on the missing
@@ -63,6 +76,9 @@
 - Red/green package-manager readiness: `mobileReadiness.test.ts` first failed
   on the missing root `packageManager`, then passed after `pnpm@10.24.0` and
   the doctor check were wired.
+- Red/green Corepack guidance readiness: `mobileReadiness.test.ts` first failed
+  on missing `Corepack` guidance, then passed after the doctor printed the
+  pnpm 10.24.0 Corepack activation command.
 - Direct guard check with `npm_config_user_agent=pnpm/9.0.0`: passed.
 - Direct guard check with `npm_config_user_agent=npm/10.0.0`: failed as
   expected with the pnpm-only warning.

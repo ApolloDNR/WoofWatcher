@@ -34,7 +34,22 @@ console.log("WoofWatcher mobile beta doctor");
 console.log("Purpose: confirm the two-day beta export path before device QA.\n");
 
 const pnpm = runFirstAvailable(process.platform === "win32" ? ["pnpm.cmd", "pnpm"] : ["pnpm"], ["--version"]);
-check("pnpm available", pnpm.status === 0, pnpm.status === 0 ? pnpm.stdout.trim() : "install pnpm or run from Replit/WSL/Git Bash with pnpm");
+const corepack = runFirstAvailable(process.platform === "win32" ? ["corepack.cmd", "corepack"] : ["corepack"], ["--version"]);
+check(
+  "Corepack available for pnpm bootstrap",
+  corepack.status === 0,
+  corepack.status === 0
+    ? `${corepack.stdout.trim()} available; run corepack prepare pnpm@10.24.0 --activate if pnpm is missing`
+    : "Corepack is not on PATH; install pnpm 10.24.0 directly or use Replit/WSL",
+  "warning",
+);
+check(
+  "pnpm available",
+  pnpm.status === 0,
+  pnpm.status === 0
+    ? pnpm.stdout.trim()
+    : "install pnpm 10.24.0 directly, or run Corepack bootstrap: corepack prepare pnpm@10.24.0 --activate",
+);
 
 const rootPackage = readJson(join(root, "package.json"));
 const verifyWorkflow = readFileSync(join(root, ".github", "workflows", "verify.yml"), "utf8");

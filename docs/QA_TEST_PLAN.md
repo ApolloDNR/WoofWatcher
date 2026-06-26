@@ -847,3 +847,11 @@ Latest local evidence, 2026-06-25:
 - Static mobile readiness protects the root `packageManager`, the workflow pnpm version, and the doctor source check.
 - Red/green evidence: `mobileReadiness.test.ts` first failed on the missing root package-manager pin, then passed with 80 tests after the pin and doctor alignment check were wired.
 - Direct doctor run in this cleaned Windows shell now passes `packageManager matches CI pnpm - pnpm@10.24.0 pinned`, while still blocking on the expected local environment issues: missing `pnpm` on PATH and missing mobile `expo` dependency resolution.
+
+Latest local evidence, 2026-06-25:
+
+- `scripts/mobile-beta-doctor.mjs` now prints Corepack-specific recovery guidance for the missing-pnpm blocker.
+- The doctor treats Corepack as a warning-level bootstrap helper, not as a replacement for actual pnpm/export proof.
+- Static mobile readiness protects `Corepack` and the exact `corepack prepare pnpm@10.24.0 --activate` command.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on missing Corepack guidance, then passed with 80 tests after the doctor was updated.
+- Direct doctor run in this cleaned Windows shell now reports one Corepack warning, no change to the two true export blockers, and the exact pnpm activation command for helper environments where Corepack is available.

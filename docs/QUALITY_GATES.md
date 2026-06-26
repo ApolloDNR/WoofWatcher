@@ -869,3 +869,12 @@ handoff. Static mobile readiness protects the root package-manager pin, the CI
 workflow version, and the doctor check. The doctor now passes this gate while
 still reporting the truthful local blockers: no `pnpm` on PATH and no mobile
 `expo` dependency resolution in this cleaned Windows shell.
+
+Current evidence, 2026-06-25: The beta doctor now gives a deterministic
+bootstrap path for the missing-pnpm gate. `scripts/mobile-beta-doctor.mjs`
+checks Corepack as a warning-level helper and prints
+`corepack prepare pnpm@10.24.0 --activate` when pnpm is missing. Static mobile
+readiness protects the Corepack copy and exact activation command. In this
+cleaned Windows shell Corepack is not on PATH, so the warning correctly tells a
+helper to install pnpm 10.24.0 directly or use Replit/WSL; the true export
+blockers remain missing pnpm and missing mobile Expo dependency resolution.

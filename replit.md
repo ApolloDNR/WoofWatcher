@@ -67,5 +67,6 @@ care action, explanation, handoff, record, insight, or assistant workflow.
 - Production API deployments must set `ALLOWED_ORIGINS`.
 - Missing Clerk publishable key breaks the mobile auth flow.
 - This repo currently requires pnpm 10.24.0; npm install is intentionally blocked.
+  If pnpm is missing and Corepack is available, run `corepack prepare pnpm@10.24.0 --activate`.
 - The local Codex environment may have Node available without pnpm/npm.
 - Do not paste secrets into chat or commit env files.
