@@ -872,3 +872,19 @@ Latest local evidence, 2026-06-25:
 - Static mobile readiness protects `expectedPnpmVersion` and the exact `pnpm.stdout.trim() === expectedPnpmVersion` comparison.
 - Red/green evidence: `mobileReadiness.test.ts` first failed on missing exact pnpm version enforcement, then passed with 80 tests after the doctor check was added.
 - The normal direct doctor run still reports the two true blockers in this shell: no `pnpm` command on PATH and no mobile `expo` dependency resolution.
+
+Latest local evidence, 2026-06-26:
+
+- `package.json` now exposes `doctor:mobile-beta:json` as
+  `node scripts/mobile-beta-doctor.mjs --json`.
+- The mobile beta doctor now suppresses human console rows in JSON mode and
+  emits one parseable payload with `name`, `purpose`, `result`, `checks`,
+  `issues`, `warnings`, and `nextActions`.
+- Static mobile readiness protects the root script and executes the JSON doctor
+  directly, then parses the output and verifies the current blocked state,
+  Node 24 pass, EAS profile pass, Corepack warning, and next actions.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on the missing
+  root JSON script, then passed with 81 tests after JSON mode was wired.
+- Direct JSON doctor run in this cleaned Windows shell exits blocked as
+  intended and reports the same two true issues: `pnpm available` and
+  `mobile package can resolve expo`.

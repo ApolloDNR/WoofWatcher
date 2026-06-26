@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join, relative } from "node:path";
 
 const APP_DIR = join(process.cwd(), "artifacts", "woofwatcher-mobile", "app");
@@ -2074,4 +2075,39 @@ test("keeps a deadline beta doctor command for mobile export handoff", () => {
   assert.match(doctorSource, /care-twin-qa/);
   assert.match(doctorSource, /Mission note/);
   assert.match(doctorSource, /GitHub Actions/);
+});
+
+test("emits machine-readable mobile beta doctor status for Replit and native helpers", () => {
+  const rootPackageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as {
+    scripts?: Record<string, string>;
+  };
+
+  assert.equal(rootPackageJson.scripts?.["doctor:mobile-beta:json"], "node scripts/mobile-beta-doctor.mjs --json");
+
+  const result = spawnSync(process.execPath, ["scripts/mobile-beta-doctor.mjs", "--json"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+
+  assert.notEqual(result.status, 0, "this local shell should stay blocked until pnpm and mobile Expo deps are available");
+  assert.equal(result.stderr, "");
+
+  const payload = JSON.parse(result.stdout) as {
+    name?: string;
+    result?: string;
+    checks?: Array<{ label: string; status: string; detail?: string }>;
+    issues?: string[];
+    warnings?: string[];
+    nextActions?: string[];
+  };
+
+  assert.equal(payload.name, "WoofWatcher mobile beta doctor");
+  assert.equal(payload.result, "BLOCKED");
+  assert.ok(payload.checks?.some((check) => check.label === "Node 24 runtime" && check.status === "PASS"));
+  assert.ok(payload.checks?.some((check) => check.label === "EAS build profiles include iOS and Android" && check.status === "PASS"));
+  assert.ok(payload.issues?.includes("pnpm available"));
+  assert.ok(payload.issues?.includes("mobile package can resolve expo"));
+  assert.ok(payload.warnings?.includes("Corepack available for pnpm bootstrap"));
+  assert.ok(payload.nextActions?.some((action) => action.includes("pnpm --filter @workspace/woofwatcher-mobile run smoke:web")));
+  assert.ok(payload.nextActions?.some((action) => action.includes("/care-twin-qa")));
 });

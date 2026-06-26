@@ -9,12 +9,15 @@ const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const mobileRoot = join(root, "artifacts", "woofwatcher-mobile");
 const expectedPnpmVersion = "10.24.0";
 const expectedPackageManager = `pnpm@${expectedPnpmVersion}`;
+const jsonMode = process.argv.includes("--json");
+const checks = [];
 const issues = [];
 const warnings = [];
 
 function check(label, ok, detail, severity = "issue") {
   const status = ok ? "PASS" : severity === "warning" ? "WARN" : "BLOCKED";
-  console.log(`[${status}] ${label}${detail ? ` - ${detail}` : ""}`);
+  checks.push({ label, status, detail: detail ?? "", severity });
+  if (!jsonMode) console.log(`[${status}] ${label}${detail ? ` - ${detail}` : ""}`);
   if (!ok && severity === "warning") warnings.push(label);
   if (!ok && severity !== "warning") issues.push(label);
 }
@@ -31,8 +34,20 @@ function runFirstAvailable(commands, args) {
   return { status: 1, stdout: "", stderr: "" };
 }
 
-console.log("WoofWatcher mobile beta doctor");
-console.log("Purpose: confirm the two-day beta export path before device QA.\n");
+const doctorName = "WoofWatcher mobile beta doctor";
+const doctorPurpose = "confirm the two-day beta export path before device QA.";
+const nextActions = [
+  "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:web.",
+  "Open /care-twin-qa on a real device or simulator.",
+  "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
+  "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
+  "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
+];
+
+if (!jsonMode) {
+  console.log(doctorName);
+  console.log(`Purpose: ${doctorPurpose}\n`);
+}
 
 const nodeMajor = Number.parseInt(process.versions.node.split(".")[0] ?? "0", 10);
 check(
@@ -116,17 +131,39 @@ check(
 const pixellabVerifier = join(mobileRoot, "scripts", "verify-pixellab-assets.js");
 check("PixelLab verifier exists", existsSync(pixellabVerifier), "run pnpm --filter @workspace/woofwatcher-mobile run verify:pixellab-assets");
 
-console.log("\nRequired beta proof after export:");
-console.log("- Run pnpm --filter @workspace/woofwatcher-mobile run smoke:web.");
-console.log("- Open /care-twin-qa on a real device or simulator.");
-console.log("- Attach iOS Quick Log/Log proof and Android Launch Readiness proof.");
-console.log("- Save the required Mission note before marking Owner Preview Core Loop as Pass.");
-console.log("- Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.");
+if (!jsonMode) {
+  console.log("\nRequired beta proof after export:");
+  for (const action of nextActions) console.log(`- ${action}`);
+}
 
 if (issues.length > 0) {
-  console.log(`\nMobile beta doctor result: BLOCKED (${issues.length} issue${issues.length === 1 ? "" : "s"})`);
+  if (jsonMode) {
+    console.log(JSON.stringify({
+      name: doctorName,
+      purpose: doctorPurpose,
+      result: "BLOCKED",
+      checks,
+      issues,
+      warnings,
+      nextActions,
+    }, null, 2));
+  } else {
+    console.log(`\nMobile beta doctor result: BLOCKED (${issues.length} issue${issues.length === 1 ? "" : "s"})`);
+  }
   process.exitCode = 1;
 } else {
   const suffix = warnings.length > 0 ? ` with ${warnings.length} warning${warnings.length === 1 ? "" : "s"}` : "";
-  console.log(`\nMobile beta doctor result: READY FOR EXPORT${suffix}`);
+  if (jsonMode) {
+    console.log(JSON.stringify({
+      name: doctorName,
+      purpose: doctorPurpose,
+      result: "READY_FOR_EXPORT",
+      checks,
+      issues,
+      warnings,
+      nextActions,
+    }, null, 2));
+  } else {
+    console.log(`\nMobile beta doctor result: READY FOR EXPORT${suffix}`);
+  }
 }

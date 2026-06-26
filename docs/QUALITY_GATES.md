@@ -897,3 +897,12 @@ from `expectedPnpmVersion` and blocks any available pnpm command whose
 version comparison. The default doctor run still blocks this shell on missing
 pnpm and missing mobile Expo dependency resolution; a bundled pnpm 11.x library
 does not count as export-ready.
+
+Current evidence, 2026-06-26: The beta doctor now has a machine-readable mode
+for helper environments. `pnpm run doctor:mobile-beta:json` calls
+`scripts/mobile-beta-doctor.mjs --json` and emits a parseable payload with the
+doctor result, all pass/warn/blocked checks, issues, warnings, and next actions.
+Static mobile readiness executes that command, parses the JSON, and protects the
+current truthful `BLOCKED` result along with the Node 24 and EAS pass checks.
+The JSON gate is ready for Replit/native helpers, but it still correctly blocks
+this shell until pnpm 10.24.0 and the mobile Expo dependency layer are present.

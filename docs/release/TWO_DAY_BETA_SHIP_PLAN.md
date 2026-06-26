@@ -95,6 +95,8 @@ Shippable for internal beta after local verification passes:
 - `git diff --check`.
 - Root `packageManager` and GitHub Actions pnpm setup agree on `pnpm@10.24.0`.
 - `pnpm run doctor:mobile-beta` reports no install/export blockers.
+- `pnpm run doctor:mobile-beta:json` reports the same status as parseable JSON
+  for Replit, native helpers, or automation.
 - The mobile beta doctor passes the Node 24 runtime check and confirms EAS
   preview/production build profiles cover both iOS and Android.
 - If `pnpm` is present, the mobile beta doctor confirms the actual CLI version
@@ -109,6 +111,11 @@ Current environment note:
 - The doctor now gives explicit bootstrap guidance for the missing-pnpm case: if Corepack is available, run `corepack prepare pnpm@10.24.0 --activate`; if Corepack is not on PATH, install pnpm 10.24.0 directly or run the proof path in Replit/WSL.
 - The doctor now also verifies the current Node runtime is Node 24 and that `artifacts/woofwatcher-mobile/eas.json` includes both iOS and Android build profiles for preview and production. Those checks currently pass in this shell.
 - The doctor now enforces the actual `pnpm --version` output when pnpm is present, so a stray pnpm 11.x helper install cannot be mistaken for the pinned `pnpm@10.24.0` beta export path.
+- The doctor now also supports `--json` through `pnpm run doctor:mobile-beta:json`.
+  In this cleaned Windows shell the JSON payload is valid, reports
+  `result: BLOCKED`, includes pass/warn/blocked checks, and lists the same two
+  true issues: missing local `pnpm` and missing mobile `expo` dependency
+  resolution.
 - Mobile TypeScript/export remain blocked in this cleaned Windows shell by the missing Expo/mobile dependency layer, and no local iOS/Android simulator/tooling is visible here. Re-run the doctor, install, TypeScript/export, and actual device capture from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or a native-device environment before treating this as dependency/export/device-proven.
 
 Still blocked for public launch:

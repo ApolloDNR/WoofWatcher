@@ -11,6 +11,7 @@ patterns, records, caregiver handoff, and AI-assisted care.
 - `pnpm run typecheck` - full TypeScript check across referenced packages.
 - `pnpm run build` - typecheck and build packages with build scripts.
 - `pnpm run doctor:mobile-beta` - check the two-day mobile beta export handoff.
+- `pnpm run doctor:mobile-beta:json` - emit machine-readable beta readiness for helpers.
 - `pnpm --filter @workspace/api-spec run codegen` - regenerate API hooks and Zod schemas.
 - `pnpm --filter @workspace/db run push` - push DB schema changes in development.
 
