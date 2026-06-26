@@ -150,3 +150,6 @@
   direct JSON doctor source check, 420-test zero-dependency behavior/readiness
   suite, PixelLab asset verification at 149 files, and `git diff --check` with
   expected Windows line-ending warnings only.
+- Remote verify run `28257100651` for commit `9e74abc` failed before job
+  execution with job `83722840126`, `steps: []`, and `log not found:
+  83722840126`, matching the standing GitHub billing/spending-limit blocker.
