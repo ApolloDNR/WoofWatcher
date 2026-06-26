@@ -96,7 +96,8 @@ Shippable for internal beta after local verification passes:
 - Root `packageManager` and GitHub Actions pnpm setup agree on `pnpm@10.24.0`.
 - `pnpm run doctor:mobile-beta` reports no install/export blockers.
 - `pnpm run doctor:mobile-beta:json` reports the same status as parseable JSON
-  for Replit, native helpers, or automation.
+  for Replit, native helpers, or automation, including structured
+  `proofCommands` for the dependency/export proof sequence.
 - The mobile beta doctor passes the Node 24 runtime check and confirms EAS
   preview/production build profiles cover both iOS and Android.
 - If `pnpm` is present, the mobile beta doctor confirms the actual CLI version
@@ -116,6 +117,9 @@ Current environment note:
   `result: BLOCKED`, includes pass/warn/blocked checks, and lists the same two
   true issues: missing local `pnpm` and missing mobile `expo` dependency
   resolution.
+- The JSON payload also includes `proofCommands`, so automation can read the
+  exact `corepack`, `pnpm install`, doctor, JSON doctor, and `smoke:web` command
+  order without parsing prose.
 - The in-app `Share Beta Handoff` packet now repeats the exact dependency proof
   commands and warns that dependency proof only counts when both doctor commands
   report no blockers.

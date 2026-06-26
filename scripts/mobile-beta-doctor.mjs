@@ -36,6 +36,13 @@ function runFirstAvailable(commands, args) {
 
 const doctorName = "WoofWatcher mobile beta doctor";
 const doctorPurpose = "confirm the two-day beta export path before device QA.";
+const proofCommands = [
+  "corepack prepare pnpm@10.24.0 --activate",
+  "pnpm install",
+  "pnpm run doctor:mobile-beta",
+  "pnpm run doctor:mobile-beta:json",
+  "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+];
 const nextActions = [
   "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:web.",
   "Open /care-twin-qa on a real device or simulator.",
@@ -132,6 +139,8 @@ const pixellabVerifier = join(mobileRoot, "scripts", "verify-pixellab-assets.js"
 check("PixelLab verifier exists", existsSync(pixellabVerifier), "run pnpm --filter @workspace/woofwatcher-mobile run verify:pixellab-assets");
 
 if (!jsonMode) {
+  console.log("\nDependency proof commands:");
+  for (const command of proofCommands) console.log(`- ${command}`);
   console.log("\nRequired beta proof after export:");
   for (const action of nextActions) console.log(`- ${action}`);
 }
@@ -145,6 +154,7 @@ if (issues.length > 0) {
       checks,
       issues,
       warnings,
+      proofCommands,
       nextActions,
     }, null, 2));
   } else {
@@ -161,6 +171,7 @@ if (issues.length > 0) {
       checks,
       issues,
       warnings,
+      proofCommands,
       nextActions,
     }, null, 2));
   } else {

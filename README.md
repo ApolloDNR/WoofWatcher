@@ -34,8 +34,9 @@ This repo is a pnpm workspace.
 - `pnpm run build:ci` runs TypeScript plus CI-safe API/web builds.
 - `pnpm run build` typechecks and builds packages with build scripts.
 - `pnpm run doctor:mobile-beta` checks the two-day mobile beta export handoff.
-- `pnpm run doctor:mobile-beta:json` emits the same beta handoff status as
-  machine-readable JSON for Replit/native helpers.
+- `pnpm run doctor:mobile-beta:json` emits the same beta handoff status,
+  structured proof commands, and next actions as machine-readable JSON for
+  Replit/native helpers.
 - `pnpm --filter @workspace/api-server run dev` starts the API server.
 - `pnpm --filter @workspace/woofwatcher-mobile run dev` starts Expo.
 - `pnpm --filter @workspace/care-domain test` runs zero-dependency domain tests.

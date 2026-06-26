@@ -7,7 +7,8 @@
   is ready.
 - `package.json` now exposes `doctor:mobile-beta:json`.
 - `scripts/mobile-beta-doctor.mjs --json` emits one JSON payload with `name`,
-  `purpose`, `result`, `checks`, `issues`, `warnings`, and `nextActions`.
+  `purpose`, `result`, `checks`, `issues`, `warnings`, `proofCommands`, and
+  `nextActions`.
 - The human `pnpm run doctor:mobile-beta` output remains available for Apollo
   and manual helpers.
 - In this cleaned Windows shell, the JSON doctor truthfully reports
@@ -30,6 +31,8 @@
 - The handoff states that dependency proof only counts when both doctor
   commands report no blockers, and that a blocked JSON payload should be
   attached to the handoff instead of being treated as readiness.
+- The JSON doctor now exposes the same sequence as structured `proofCommands`
+  for helpers that need a machine-readable run order.
 
 ## Verification
 
@@ -39,6 +42,9 @@
 - Red/green beta handoff readiness: `betaHandoffPacket.test.ts` first failed on
   the missing dependency proof command section, then passed after the share text
   was updated.
+- Red/green structured doctor proof: `mobileReadiness.test.ts` first failed on
+  missing `proofCommands`, then passed after the doctor JSON emitted the exact
+  command sequence.
 - Direct text doctor: exits blocked with the expected two issues, missing pnpm
   and missing mobile `expo` dependency resolution.
 - Direct JSON doctor: exits blocked with valid JSON and the same two issues.

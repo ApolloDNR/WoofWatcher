@@ -497,12 +497,12 @@ from being mistaken for the pinned beta export path.
 The machine-readable doctor pass made the same gate usable by Replit, native
 helpers, or automation. `pnpm run doctor:mobile-beta:json` now calls
 `scripts/mobile-beta-doctor.mjs --json` and emits a single JSON payload with the
-doctor name, purpose, `result`, individual `checks`, `issues`, `warnings`, and
-`nextActions`. In this cleaned Windows shell the JSON output is parseable and
-truthfully reports `BLOCKED` for the same two real export issues: missing pnpm
-and missing mobile `expo` dependency resolution. Use the text command for
-humans and the JSON command for any helper that needs to decide whether the beta
-environment is ready without scraping console prose.
+doctor name, purpose, `result`, individual `checks`, `issues`, `warnings`,
+`proofCommands`, and `nextActions`. In this cleaned Windows shell the JSON
+output is parseable and truthfully reports `BLOCKED` for the same two real
+export issues: missing pnpm and missing mobile `expo` dependency resolution.
+Use the text command for humans and the JSON command for any helper that needs
+to decide whether the beta environment is ready without scraping console prose.
 
 The beta handoff dependency-proof pass moved that same command sequence into
 the owner-readable `Share Beta Handoff` packet. Helpers now see

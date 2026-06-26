@@ -2099,6 +2099,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     issues?: string[];
     warnings?: string[];
     nextActions?: string[];
+    proofCommands?: string[];
   };
 
   assert.equal(payload.name, "WoofWatcher mobile beta doctor");
@@ -2108,6 +2109,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(payload.issues?.includes("pnpm available"));
   assert.ok(payload.issues?.includes("mobile package can resolve expo"));
   assert.ok(payload.warnings?.includes("Corepack available for pnpm bootstrap"));
+  assert.deepEqual(payload.proofCommands, [
+    "corepack prepare pnpm@10.24.0 --activate",
+    "pnpm install",
+    "pnpm run doctor:mobile-beta",
+    "pnpm run doctor:mobile-beta:json",
+    "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+  ]);
   assert.ok(payload.nextActions?.some((action) => action.includes("pnpm --filter @workspace/woofwatcher-mobile run smoke:web")));
   assert.ok(payload.nextActions?.some((action) => action.includes("/care-twin-qa")));
 });
