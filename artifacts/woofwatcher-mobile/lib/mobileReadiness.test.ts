@@ -1533,6 +1533,9 @@ test("keeps weekly care trends visible in Records", () => {
   assert.match(records, /trendSignals/);
   assert.match(records, /walkMinutes/);
   assert.match(records, /mealCompletion/);
+  assert.match(records, /mealPendingOutcomes/);
+  assert.match(records, /careTrends\.current\.meals\.pending/);
+  assert.match(records, /Meal open/);
 });
 
 test("keeps training progress visible from Log composer to Records", () => {

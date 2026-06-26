@@ -80,6 +80,8 @@ Current evidence, 2026-06-11: Care document refresh now reconciles local and ser
 
 Current evidence, 2026-06-11: Weekly Care Trends derives a household-visible 7-day care picture, including current-versus-previous comparison, top caregivers, meal completion, walk minutes, water refill equivalents, and review signals while excluding private logs.
 
+Current evidence, 2026-06-26: Weekly Care Trends now keeps pending meal outcomes separate from complete, partial, and skipped meals. Served, outcome-pending, and grazing meals appear as pending in trend summaries, highlights, watch signals, Care Pass trend lines, and the Records Care Trends `Meal open` metric instead of silently reading as resolved weekly progress.
+
 Current evidence, 2026-06-11: Training logs now capture skill/cue, win/practice/struggle outcome, duration, next-practice notes, sticky notes, and household visibility, and Training Progress derives visible 30-day sessions, minutes, wins, struggles, skills, caregivers, and latest context.
 
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.

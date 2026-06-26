@@ -666,7 +666,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
       `${careTrends.windowDays}-day trends`,
       careTrends.summary,
       careTrends.current.meals.total
-        ? `Meals: ${careTrends.current.meals.complete} complete, ${careTrends.current.meals.partial} partial, ${careTrends.current.meals.skipped} skipped`
+        ? `Meals: ${careTrends.current.meals.complete} complete, ${careTrends.current.meals.partial} partial, ${careTrends.current.meals.skipped} skipped${careTrends.current.meals.pending ? `, ${careTrends.current.meals.pending} pending outcome${careTrends.current.meals.pending === 1 ? "" : "s"}` : ""}`
         : "",
       careTrends.current.walks.count
         ? `Walks: ${careTrends.current.walks.totalMinutes} min${careTrends.deltas.walkMinutes ? ` (${careTrends.deltas.walkMinutes > 0 ? "+" : ""}${careTrends.deltas.walkMinutes} vs prior window)` : ""}`

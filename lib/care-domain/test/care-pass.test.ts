@@ -365,6 +365,20 @@ test("care pass includes weekly care trend context", () => {
         details: { mealCompletion: "partial", householdVisible: true },
       },
       {
+        id: "meal-served",
+        type: "meal",
+        title: "Bedtime snack",
+        caregiver: "Emma",
+        occurredAt: "2026-06-07T21:00:00-07:00",
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 0.25,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
         id: "walk",
         type: "walk",
         title: "Neighborhood walk",
@@ -386,8 +400,10 @@ test("care pass includes weekly care trend context", () => {
 
   assert.ok(pass.sections.some((section) => section.title === "Care Trends"));
   assert.match(pass.message, /7-day trends/);
-  assert.match(pass.message, /4 visible care logs over 2 days/);
-  assert.match(pass.message, /Meals: 1 complete, 1 partial, 0 skipped/);
+  assert.match(pass.message, /5 visible care logs over 2 days/);
+  assert.match(pass.message, /Meals: 1 complete, 1 partial, 0 skipped, 1 pending outcome/);
+  assert.match(pass.message, /Watch: Meal follow-up/);
+  assert.match(pass.message, /1 partial, 0 skipped, and 1 outcome pending/);
   assert.match(pass.message, /Walks: 35 min/);
   assert.match(pass.message, /Watch: Potty watch/);
 });

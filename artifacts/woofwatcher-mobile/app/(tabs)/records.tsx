@@ -627,6 +627,7 @@ export default function RecordsScreen() {
   const trendSignals = careTrends.signals.slice(0, 3);
   const walkMinutes = careTrends.current.walks.totalMinutes;
   const mealCompletion = careTrends.current.meals.completionPercent;
+  const mealPendingOutcomes = careTrends.current.meals.pending;
 
   const recordSections = recordVault.sections.filter((section) =>
     ["vaccine", "vet", "receipt", "insurance", "microchip", "document"].includes(section.kind),
@@ -682,6 +683,7 @@ export default function RecordsScreen() {
               {[
                 { label: "Logs", value: String(careTrends.current.totalLogs), color: colors.primary },
                 { label: "Meal %", value: careTrends.current.meals.total ? `${mealCompletion}%` : "--", color: colors.copper },
+                { label: "Meal open", value: mealPendingOutcomes ? String(mealPendingOutcomes) : "--", color: mealPendingOutcomes ? colors.amber : colors.sage },
                 { label: "Walk min", value: String(walkMinutes), color: colors.sage },
               ].map((item) => (
                 <View key={item.label} style={s.trendStatCell}>
