@@ -961,4 +961,7 @@ helpers from missing a regression in Records/Care Pass provider truth while
 native beta proof remains the external gate. Local verification passed mobile
 readiness, the 420-test zero-dependency behavior/readiness suite, PixelLab asset
 verification at 149 files, and `git diff --check` with expected Windows
-line-ending warnings only.
+line-ending warnings only. Remote verify run `28237677413` for commit `64c4968`
+failed before job execution with job `83656402075`, `steps: []`, and
+`log not found: 83656402075`, matching the standing GitHub
+billing/spending-limit blocker rather than a local code regression.
