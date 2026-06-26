@@ -61,6 +61,7 @@ test("applies first-run setup draft while preserving existing care document data
       routineType: "meal",
       routineLabel: "Breakfast",
       routineTime: "7:30 AM",
+      householdSetupIntent: "decide_later",
     },
     NOW,
   );
@@ -105,6 +106,7 @@ test("creates an editable setup draft from current care state", () => {
   assert.equal(draft.routineType, "walk");
   assert.equal(draft.routineLabel, "Morning walk");
   assert.equal(draft.routineTime, "8:30 AM");
+  assert.equal(draft.householdSetupIntent, "decide_later");
 });
 
 test("builds a truthful post-setup confirmation from the saved care foundation", () => {
@@ -124,6 +126,7 @@ test("builds a truthful post-setup confirmation from the saved care foundation",
       routineType: "meal",
       routineLabel: "Breakfast",
       routineTime: "7:30 AM",
+      householdSetupIntent: "decide_later",
     },
     NOW,
   );
@@ -155,6 +158,7 @@ test("names the active household in setup confirmation without claiming onboardi
       routineType: "walk",
       routineLabel: "Morning walk",
       routineTime: "8:30 AM",
+      householdSetupIntent: "decide_later",
     },
     NOW,
   );
@@ -168,4 +172,48 @@ test("names the active household in setup confirmation without claiming onboardi
   assert.match(confirmation.nextStep, /2 packs in More/);
   assert.match(confirmation.nextStep, /setup only saved the care foundation/i);
   assert.doesNotMatch(confirmation.nextStep, /sync is complete/i);
+});
+
+test("keeps household setup intent truthful and routed to More after saving the foundation", () => {
+  const next = applySetupWizardDraft(
+    defaultDoc(),
+    {
+      dogName: "Phoenix",
+      breed: "German Shepherd mix",
+      weight: "68",
+      weightUnit: "lb",
+      careFocus: "Support anxious eating and steady routines.",
+      caregiverName: "Apollo",
+      caregiverRole: "Owner",
+      primaryFood: "Sensitive kibble",
+      normalPortion: "1 cup",
+      mealSchedule: "7 AM and 6 PM",
+      routineType: "meal",
+      routineLabel: "Breakfast",
+      routineTime: "7:30 AM",
+      householdSetupIntent: "start_pack",
+    },
+    NOW,
+  );
+
+  const startPack = buildSetupConfirmation(next, {
+    activeHouseholdName: "Phoenix Family Pack",
+    householdCount: 1,
+    householdSetupIntent: "start_pack",
+  });
+  const joinPack = buildSetupConfirmation(next, {
+    householdSetupIntent: "join_pack",
+  });
+  const decideLater = buildSetupConfirmation(next, {
+    householdSetupIntent: "decide_later",
+  });
+
+  assert.match(startPack.nextStep, /share the owner\/admin invite code/i);
+  assert.match(startPack.nextStep, /review Household Access/i);
+  assert.match(joinPack.nextStep, /Join another household/i);
+  assert.match(joinPack.nextStep, /invite code from the pack owner/i);
+  assert.match(decideLater.nextStep, /keep using Today/i);
+  assert.match(decideLater.nextStep, /invite, join, sync health, and switching controls/i);
+  assert.doesNotMatch(startPack.nextStep, /invite approval is complete/i);
+  assert.doesNotMatch(joinPack.nextStep, /joined/i);
 });

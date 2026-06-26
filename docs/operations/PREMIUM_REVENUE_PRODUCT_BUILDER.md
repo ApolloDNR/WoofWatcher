@@ -136,6 +136,7 @@ Latest completed local runtime/accessibility hardening:
 - Mobile Care Team role-management copy now uses the same launch role labels as Pack Audit and Household Access. Current-role rows and role-update success confirmations render owner-readable labels such as `Vet viewer`, with mobile readiness coverage so raw role ids do not drift back into the management surface.
 - Mobile first-run Setup now confirms the saved care foundation before returning to Today. The confirmation summarizes the saved dog, starter routine, caregiver, and diet baseline, explains that Today, Log, Records, reports, and WoofGuide will use it, and keeps household invite/sync controls truthfully in More while provider-backed onboarding remains open.
 - Mobile first-run Setup confirmation now includes active household context from `/me` when available. It names the selected pack and tells multi-household caregivers to manage invite, sync, and switching for their packs in More while clarifying setup only saved the care foundation.
+- Mobile first-run Setup now captures household sync intent before provider-backed onboarding is complete. Share invite, Join pack, and Decide later choices keep actual invite/join/sync/switching work routed to More, and the post-save alert only offers Open More when the chosen next step needs those real household tools.
 
 Next highest-impact work:
 

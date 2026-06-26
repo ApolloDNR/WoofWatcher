@@ -36,7 +36,9 @@ Latest local evidence, 2026-06-22:
 - PASS: Mobile readiness now protects Care Team role-management copy from drifting away from launch role labels. Current-role text and the role-update success confirmation use the same owner-readable labels as Pack Audit, so roles such as vet viewer stay readable without exposing implementation ids.
 - PASS: Setup wizard tests now protect a truthful post-save confirmation for the first-run care foundation. The confirmation names the saved dog, starter routine, caregiver, and diet baseline, explains that Today, Log, Records, reports, and WoofGuide will use the data, and keeps household invite/sync controls pointed to More instead of implying provider-backed onboarding is complete.
 - PASS: Setup wizard tests now also protect active household context in the post-save confirmation. When `/me` has an active pack and multiple memberships, confirmation names the active household, points invite/sync/switching management to More, and says setup only saved the care foundation instead of claiming cloud onboarding is complete.
+- PASS: Setup wizard tests now protect household sync intent in the post-save confirmation. Share invite, Join pack, and Decide later each keep actual invite/join/sync/switching work routed to More without claiming invite approval, membership join, or cloud onboarding completion.
 - PASS: Mobile readiness now protects Setup from regressing to a silent redirect or context-free confirmation after save by requiring the `/me` household context, expanded `buildSetupConfirmation(savedDoc, ...)`, and `Alert.alert(...)` path before the owner returns to Today.
+- PASS: Mobile readiness now protects Setup's accessible household sync choice section, the `householdSetupIntent` confirmation context, and the Open More route for invite/join next steps.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -124,6 +126,7 @@ Latest local evidence, 2026-06-22:
 - Sticky notes.
 - WoofGuide deterministic actions and owner-reviewed draft payloads for meal logs, record reminders, vet notes, and Care Pass review.
 - Setup wizard.
+- Setup household sync intent routing for Share invite, Join pack, and Decide later, including truthful More handoff copy before provider-backed onboarding is complete.
 - Premium plan packaging and checkout-disabled guard.
 - Premium entitlement policy for Free, Plus, and Family feature gates before checkout is enabled.
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.

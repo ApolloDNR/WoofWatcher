@@ -30,6 +30,7 @@ import {
   buildSetupConfirmation,
   createSetupWizardDraft,
   type SetupWizardDraft,
+  type SetupWizardHouseholdSetupIntent,
 } from "@/lib/setupWizard";
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -41,6 +42,32 @@ const ROUTINE_TYPES: { label: string; value: string; icon: IoniconName }[] = [
   { label: "Walk", value: "walk", icon: "paw-outline" },
   { label: "Medication", value: "medication", icon: "medical-outline" },
   { label: "Care", value: "care", icon: "heart-outline" },
+];
+
+const HOUSEHOLD_SETUP_OPTIONS: {
+  label: string;
+  value: SetupWizardHouseholdSetupIntent;
+  icon: IoniconName;
+  copy: string;
+}[] = [
+  {
+    label: "Share invite",
+    value: "start_pack",
+    icon: "person-add-outline",
+    copy: "After saving, open More to share the owner/admin invite code and review Household Access.",
+  },
+  {
+    label: "Join pack",
+    value: "join_pack",
+    icon: "enter-outline",
+    copy: "After saving, open More and use Join another household with the invite code from the pack owner.",
+  },
+  {
+    label: "Decide later",
+    value: "decide_later",
+    icon: "time-outline",
+    copy: "Save the care foundation now. More keeps invite, join, sync health, and switching controls ready.",
+  },
 ];
 
 export default function SetupScreen() {
@@ -69,7 +96,7 @@ export default function SetupScreen() {
     [preview],
   );
 
-  const setField = (key: keyof SetupWizardDraft, value: string) => {
+  const setField = <K extends keyof SetupWizardDraft>(key: K, value: SetupWizardDraft[K]) => {
     setDirty(true);
     setDraft((prev) => ({ ...prev, [key]: value }));
   };
@@ -84,11 +111,17 @@ export default function SetupScreen() {
     const confirmation = buildSetupConfirmation(savedDoc, {
       activeHouseholdName: me.data?.household?.name,
       householdCount,
+      householdSetupIntent: draft.householdSetupIntent,
     });
+    const alertActions =
+      draft.householdSetupIntent === "decide_later"
+        ? [{ text: "Go to Today", onPress: () => router.replace("/(tabs)") }]
+        : [
+            { text: "Go to Today", style: "cancel" as const, onPress: () => router.replace("/(tabs)") },
+            { text: "Open More", onPress: () => router.replace("/more") },
+          ];
     updateCareDoc(() => savedDoc);
-    Alert.alert(confirmation.title, `${confirmation.body}\n\n${confirmation.nextStep}`, [
-      { text: "Go to Today", onPress: () => router.replace("/(tabs)") },
-    ]);
+    Alert.alert(confirmation.title, `${confirmation.body}\n\n${confirmation.nextStep}`, alertActions);
   };
 
   const finishLater = () => {
@@ -216,6 +249,46 @@ export default function SetupScreen() {
             <Field label="Role" value={draft.caregiverRole} placeholder="Primary caregiver" onChangeText={(value) => setField("caregiverRole", value)} />
           </Section>
 
+          <Section title="Household sync choice" icon="git-branch-outline">
+            <Text style={[s.householdChoiceIntro, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              Setup saves the dog care foundation first. Invite sharing, joining another pack, sync health, and switching stay in More where the real household tools live.
+            </Text>
+            <View style={s.householdIntentList}>
+              {HOUSEHOLD_SETUP_OPTIONS.map((option) => {
+                const selected = draft.householdSetupIntent === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setField("householdSetupIntent", option.value);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Household setup choice: ${option.label}`}
+                    accessibilityState={{ selected }}
+                    style={({ pressed }) => [
+                      s.householdIntent,
+                      {
+                        backgroundColor: selected ? colors.primary + "16" : colors.background,
+                        borderColor: selected ? colors.primary : colors.border,
+                        opacity: pressed ? 0.76 : 1,
+                      },
+                    ]}
+                  >
+                    <View style={[s.householdIntentIcon, { backgroundColor: selected ? colors.primary : colors.sage + "1A" }]}>
+                      <Ionicons name={option.icon} size={16} color={selected ? "#fff" : colors.sage} />
+                    </View>
+                    <View style={s.householdIntentCopy}>
+                      <Text style={[s.householdIntentLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{option.label}</Text>
+                      <Text style={[s.householdIntentText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{option.copy}</Text>
+                    </View>
+                    <Ionicons name={selected ? "checkmark-circle" : "ellipse-outline"} size={18} color={selected ? colors.primary : colors.mutedForeground} />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Section>
+
           <View style={s.actions}>
             <Pressable
               onPress={saveSetup}
@@ -336,6 +409,22 @@ const s = StyleSheet.create({
   typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 2 },
   typePill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, borderWidth: 1 },
   typeText: { fontSize: 12.5 },
+  householdChoiceIntro: { fontSize: 13, lineHeight: 19 },
+  householdIntentList: { gap: 9 },
+  householdIntent: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  householdIntentIcon: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  householdIntentCopy: { flex: 1 },
+  householdIntentLabel: { fontSize: 13.5 },
+  householdIntentText: { fontSize: 12, lineHeight: 17, marginTop: 2 },
   actions: { gap: 12, marginTop: 8 },
   saveBtn: { height: 54, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   saveText: { color: "#fff", fontSize: 15.5 },

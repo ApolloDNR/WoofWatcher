@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-26: Setup Captures Household Sync Intent Without Completing Admin Work
+
+Decision: Mobile first-run Setup should let the owner choose Share invite, Join pack, or Decide later after entering the dog care foundation. The choice should shape the post-save confirmation and whether the alert offers Open More, but actual invite sharing, invite-code joining, sync health, and household switching remain in More.
+
+Reason: Auth-connected onboarding is still incomplete, but owners need a clear next step for household coordination at first setup. Capturing intent reduces confusion while preserving the truthful boundary that setup only saves Dog Profile, diet, routine, and caregiver context and does not complete provider-backed invite approval, cloud sync administration, or arbitrary household membership changes.
+
+Owner: Codex.
+
+Revisit trigger: Full auth-connected onboarding, invite approval, multi-household setup, provider-backed sync administration, or a native onboarding completion flow becomes active release work.
+
 ### 2026-06-26: Setup Confirmation Names The Active Household
 
 Decision: Mobile first-run Setup should pass `/me` household context into the post-save confirmation. When an active household is known, the confirmation should name that pack; when multiple memberships exist, it should point invite, sync, and switching management to More and clarify that setup only saved the care foundation.

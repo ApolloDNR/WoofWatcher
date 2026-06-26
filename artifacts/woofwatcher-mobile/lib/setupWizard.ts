@@ -56,6 +56,7 @@ export interface SetupWizardDraft {
   routineType: string;
   routineLabel: string;
   routineTime: string;
+  householdSetupIntent: SetupWizardHouseholdSetupIntent;
 }
 
 export interface SetupWizardConfirmation {
@@ -67,7 +68,10 @@ export interface SetupWizardConfirmation {
 export interface SetupWizardHouseholdContext {
   activeHouseholdName?: string | null;
   householdCount?: number | null;
+  householdSetupIntent?: SetupWizardHouseholdSetupIntent | null;
 }
+
+export type SetupWizardHouseholdSetupIntent = "start_pack" | "join_pack" | "decide_later";
 
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
@@ -101,6 +105,7 @@ export function createSetupWizardDraft(doc: SetupWizardCareDoc): SetupWizardDraf
     routineType: clean(routine?.type) || "meal",
     routineLabel: clean(routine?.label),
     routineTime: clean(routine?.time),
+    householdSetupIntent: "decide_later",
   };
 }
 
@@ -176,6 +181,7 @@ export function buildSetupConfirmation(
   const schedule = clean(doc.dietProfile.mealSchedule);
   const activeHouseholdName = clean(householdContext.activeHouseholdName);
   const householdCount = Math.max(0, Math.floor(householdContext.householdCount ?? 0));
+  const householdSetupIntent = householdContext.householdSetupIntent ?? "decide_later";
 
   const routineLine = routine
     ? `${clean(routine.label)} at ${clean(routine.time)}`
@@ -187,11 +193,18 @@ export function buildSetupConfirmation(
     food && portion && schedule
       ? `${food}, ${portion}, ${schedule}`
       : "The diet baseline is saved";
-  const householdStep = activeHouseholdName
+  const baseHouseholdStep = activeHouseholdName
     ? householdCount > 1
       ? `Active household: ${activeHouseholdName}. Manage invite, sync, and switching for your ${householdCount} packs in More; setup only saved the care foundation.`
       : `Active household: ${activeHouseholdName}. Household invite and sync controls stay in More when you are ready to coordinate the pack.`
     : "Household invite and sync controls stay in More when you are ready to coordinate the pack.";
+  const intentStep =
+    householdSetupIntent === "start_pack"
+      ? "Next: open More to share the owner/admin invite code and review Household Access before anyone else logs care."
+      : householdSetupIntent === "join_pack"
+        ? "Next: open More and use Join another household with the invite code from the pack owner."
+        : "Next: keep using Today now; More has invite, join, sync health, and switching controls when the household is ready.";
+  const householdStep = `${baseHouseholdStep} ${intentStep}`;
 
   return {
     title: `${dogName}'s care foundation is ready`,
