@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-26: Pack Audit Role Changes Use Owner-Readable Labels
+
+Decision: Mobile Pack Audit role-change rows should format stored `previousRole` and `newRole` values through the launch role labels and render previous-to-new transition copy when both values exist. Older audit rows with only `newRole` still get a readable fallback. Visible rows and accessibility labels should not expose internal role ids such as `vet_viewer`.
+
+Reason: Household owners use Pack Audit to understand trust changes. Showing raw implementation ids undermines the owner-readable permission model that Household Access already presents, especially after role updates to vet viewer, sitter, or trainer. The audit surface should stay review-only and provider-gated while making the stored evidence understandable.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed audit export/delete, final role policy, richer caregiver administration, or a shared role-label component replaces the local More formatter.
+
 ### 2026-06-26: Sitter And Trainer Corrections Are Own-Entry Scoped
 
 Decision: API sitter and trainer roles may create care-entry evidence, but `PATCH /care-entries/:id` and `DELETE /care-entries/:id` should add `caregiverUserId` scoping for those roles. Owner, admin, and member roles retain household-wide log correction authority, and vet viewers remain read-only.

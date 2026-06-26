@@ -92,6 +92,8 @@ function auditEventLabel(event: HouseholdAuditEvent): string {
       return "Active pack changed";
     case "household.member_joined":
       return "Caregiver joined";
+    case "household.member_role_changed":
+      return "Role changed";
     default:
       return event.action
         .split(".")
@@ -109,6 +111,11 @@ function getAuditDetailValue(event: HouseholdAuditEvent, key: string): string {
 function getAuditDetailBoolean(event: HouseholdAuditEvent, key: string): boolean | null {
   const value = event.details?.[key];
   return typeof value === "boolean" ? value : null;
+}
+
+function formatHouseholdRoleLabel(role: string): string {
+  const normalized = role.trim().toLowerCase();
+  return ROLE_UPDATE_OPTIONS.find((option) => option.role === normalized)?.label ?? role.replace(/_/g, " ");
 }
 
 function auditEventDetail(event: HouseholdAuditEvent): string {
@@ -135,8 +142,10 @@ function auditEventDetail(event: HouseholdAuditEvent): string {
       return state;
     }
     case "household.member_role_changed": {
-      const role = getAuditDetailValue(event, "newRole");
-      return role ? `Role changed to ${role} - ${state}` : state;
+      const previousRole = formatHouseholdRoleLabel(getAuditDetailValue(event, "previousRole"));
+      const newRole = formatHouseholdRoleLabel(getAuditDetailValue(event, "newRole"));
+      if (previousRole && newRole) return `Role changed from ${previousRole} to ${newRole} - ${state}`;
+      return newRole ? `Role changed to ${newRole} - ${state}` : state;
     }
     default:
       return state;

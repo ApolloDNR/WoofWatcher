@@ -104,6 +104,8 @@ Current evidence, 2026-06-25: API household member role updates now require owne
 
 Current evidence, 2026-06-25: Mobile More now exposes bounded Care Team role management for existing synced non-owner members. The surface calls the generated member-role update hook, shows accessible admin/member/sitter/trainer/vet viewer chips with selected/disabled state, refreshes `/me`, refetches Pack Audit on success, and keeps owner transfer, member removal, invite approval, and final role policy provider-gated.
 
+Current evidence, 2026-06-26: Mobile Pack Audit now renders role-change audit details with owner-readable role labels and previous-to-new context, so rows and screen-reader labels say transitions such as Sitter to Vet viewer instead of exposing internal role ids before final audit retention/export policy exists.
+
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
 Current evidence, 2026-06-11: Reminder Center now combines routine-board status, medication follow-ups, record reminders, and grooming due dates into one Calendar action list with urgent/watch/total counts, private-log exclusion through the underlying domain helpers, and explicit notification-readiness copy before real push delivery exists.
@@ -343,6 +345,8 @@ Current evidence, 2026-06-24: Focused API readiness protects owner/admin househo
 Current evidence, 2026-06-25: Mobile More now surfaces household audit review for owner/admin trust inspection. The Pack Audit board reads the generated household audit-events hook, lists recent pack creation, rename, active-household switching, invite-join, and role-change events, supports event-type and lifecycle filters through the existing `action` and `lifecycleState` query contract, summarizes stored audit details in owner-readable rows and screen-reader labels, and shows truthful loading/empty/offline states without exposing lifecycle actions before provider-backed retention policy exists.
 
 Current evidence, 2026-06-25: Household Access now maps the launch caregiver role set to truthful owner-readable labels and permission summaries. Owner, admin, sitter, trainer, and vet viewer roles no longer collapse into generic owner/caregiver copy or leak internal role ids, and Mobile More shows the scoped permission summary under each Care Team person before provider-backed role enforcement exists.
+
+Current evidence, 2026-06-26: Pack Audit role-change details now reuse the launch role labels in mobile review rows and accessibility labels, preserving owner-readable household trust evidence after role updates without adding lifecycle actions or provider-backed audit export/delete controls.
 
 Current evidence, 2026-06-25: API shared care writes now honor the launch role boundary for vet viewers before final provider-backed permission policy. Vet viewers can review household care context but cannot change care plans or logs.
 

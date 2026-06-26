@@ -141,6 +141,7 @@ Every autonomous run should improve at least one of: care workflow, household us
 133. DONE 2026-06-25: Vet viewer API memberships are now read-only for shared care writes before final provider-backed permission policy. The API centralizes care-write role guards, returns a clear 403 for vet viewers on `PUT /care-state` plus `POST/PATCH/DELETE /care-entries`, and preserves read access for review.
 134. DONE 2026-06-26: Care-plan writes now use a stricter role guard than care-log writes before final provider-backed permission policy. `PUT /care-state` is limited to owner/admin/member roles so sitters and trainers cannot change the shared Dog Profile, routines, records, or reports document, while `POST/PATCH/DELETE /care-entries` still allows owner/admin/member/sitter/trainer roles to log and correct care evidence.
 135. DONE 2026-06-26: Sitter and trainer API care-log corrections are now limited to their own evidence before final provider-backed permission policy. `PATCH /care-entries/:id` and `DELETE /care-entries/:id` add `caregiverUserId` scoping for sitter/trainer roles, while owners/admins/members retain household-wide correction authority and vet viewers stay read-only.
+136. DONE 2026-06-26: Mobile Pack Audit role-change rows now use owner-readable role labels before final provider-backed audit policy. Role-change events render as previous-to-new transitions such as `Sitter to Vet viewer` instead of leaking internal ids like `vet_viewer`, with mobile readiness coverage protecting the detail and screen-reader copy.
 
 ## Cadence
 

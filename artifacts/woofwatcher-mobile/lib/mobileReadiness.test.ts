@@ -1583,7 +1583,9 @@ test("keeps household audit review visible from More", () => {
   assert.match(more, /Renamed to \$\{newName\}/);
   assert.match(more, /New caregiver membership/);
   assert.match(more, /Existing caregiver rejoined/);
-  assert.match(more, /Role changed to \$\{role\}/);
+  assert.match(more, /formatHouseholdRoleLabel/);
+  assert.match(more, /Role changed from \$\{previousRole\} to \$\{newRole\}/);
+  assert.match(more, /Role changed to \$\{newRole\}/);
   assert.match(more, /accessibilityLabel=\{`Household audit event: \$\{auditEventLabel\(event\)\}\. \$\{detail\}`\}/);
 });
 
