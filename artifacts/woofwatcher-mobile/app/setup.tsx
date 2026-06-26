@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useGetMe } from "@workspace/api-client-react";
 import { deriveOnboardingStatus } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -47,6 +48,7 @@ export default function SetupScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, updateCareDoc, isLoaded } = useCare();
+  const me = useGetMe();
   const [draft, setDraft] = useState<SetupWizardDraft>(() => createSetupWizardDraft(state));
   const [dirty, setDirty] = useState(false);
 
@@ -78,7 +80,11 @@ export default function SetupScreen() {
     if (!canSave) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const savedDoc = applySetupWizardDraft(state, draft);
-    const confirmation = buildSetupConfirmation(savedDoc);
+    const householdCount = me.data?.households?.length ?? (me.data?.household ? 1 : 0);
+    const confirmation = buildSetupConfirmation(savedDoc, {
+      activeHouseholdName: me.data?.household?.name,
+      householdCount,
+    });
     updateCareDoc(() => savedDoc);
     Alert.alert(confirmation.title, `${confirmation.body}\n\n${confirmation.nextStep}`, [
       { text: "Go to Today", onPress: () => router.replace("/(tabs)") },

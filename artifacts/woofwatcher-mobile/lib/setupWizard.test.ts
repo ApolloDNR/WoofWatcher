@@ -137,3 +137,35 @@ test("builds a truthful post-setup confirmation from the saved care foundation",
   assert.match(confirmation.body, /Today, Log, Records, reports, and WoofGuide/);
   assert.match(confirmation.nextStep, /household invite and sync controls stay in More/i);
 });
+
+test("names the active household in setup confirmation without claiming onboarding sync is complete", () => {
+  const next = applySetupWizardDraft(
+    defaultDoc(),
+    {
+      dogName: "Phoenix",
+      breed: "German Shepherd mix",
+      weight: "68",
+      weightUnit: "lb",
+      careFocus: "Support anxious eating and steady routines.",
+      caregiverName: "Emma",
+      caregiverRole: "Sitter",
+      primaryFood: "Sensitive kibble",
+      normalPortion: "1 cup",
+      mealSchedule: "7 AM and 6 PM",
+      routineType: "walk",
+      routineLabel: "Morning walk",
+      routineTime: "8:30 AM",
+    },
+    NOW,
+  );
+
+  const confirmation = buildSetupConfirmation(next, {
+    activeHouseholdName: "Phoenix Family Pack",
+    householdCount: 2,
+  });
+
+  assert.match(confirmation.nextStep, /Active household: Phoenix Family Pack/);
+  assert.match(confirmation.nextStep, /2 packs in More/);
+  assert.match(confirmation.nextStep, /setup only saved the care foundation/i);
+  assert.doesNotMatch(confirmation.nextStep, /sync is complete/i);
+});

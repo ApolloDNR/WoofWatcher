@@ -160,7 +160,10 @@ test("keeps onboarding and avatar creation actions accessible to screen readers"
   assert.match(setup, /accessibilityState=\{\{ selected \}\}/);
   assert.match(setup, /accessibilityLabel="Save care foundation"/);
   assert.match(setup, /accessibilityState=\{\{ disabled: !canSave \}\}/);
-  assert.match(setup, /buildSetupConfirmation\(savedDoc\)/);
+  assert.match(setup, /useGetMe\(\)/);
+  assert.match(setup, /const householdCount = me\.data\?\.households\?\.length/);
+  assert.match(setup, /buildSetupConfirmation\(savedDoc, \{/);
+  assert.match(setup, /activeHouseholdName: me\.data\?\.household\?\.name/);
   assert.match(setup, /Alert\.alert\(confirmation\.title/);
   assert.match(setup, /Go to Today/);
   assert.match(setup, /accessibilityLabel="Finish setup later"/);

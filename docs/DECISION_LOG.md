@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-26: Setup Confirmation Names The Active Household
+
+Decision: Mobile first-run Setup should pass `/me` household context into the post-save confirmation. When an active household is known, the confirmation should name that pack; when multiple memberships exist, it should point invite, sync, and switching management to More and clarify that setup only saved the care foundation.
+
+Reason: Auth-connected onboarding is still incomplete, but caregivers with existing memberships need to know which pack their saved dog profile, diet, and routine context belongs to. Naming the active household improves trust without pretending provider-backed invite approval, cloud administration, or multi-household setup is complete.
+
+Owner: Codex.
+
+Revisit trigger: Full auth-connected onboarding, invite approval, multi-household setup, provider-backed sync administration, or a native onboarding completion flow becomes active release work.
+
 ### 2026-06-26: Setup Confirms The Saved Care Foundation
 
 Decision: Mobile first-run Setup should show a post-save confirmation before returning to Today. The confirmation should summarize the saved dog, starter routine, caregiver, and diet baseline, explain that Today, Log, Records, reports, and WoofGuide will use that context, and keep household invite/sync controls explicitly in More.
