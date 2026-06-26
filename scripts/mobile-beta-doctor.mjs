@@ -43,6 +43,12 @@ const proofCommands = [
   "pnpm run doctor:mobile-beta:json",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
 ];
+const handoffProofSections = [
+  "Dependency proof commands",
+  "Required beta proof after export",
+  "Provider proof needed",
+  "Truth boundaries",
+];
 const nextActions = [
   "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:web.",
   "Open /care-twin-qa on a real device or simulator.",
@@ -143,6 +149,8 @@ if (!jsonMode) {
   for (const command of proofCommands) console.log(`- ${command}`);
   console.log("\nRequired beta proof after export:");
   for (const action of nextActions) console.log(`- ${action}`);
+  console.log("\n48-hour beta handoff must include:");
+  for (const section of handoffProofSections) console.log(`- ${section}`);
 }
 
 if (issues.length > 0) {
@@ -155,6 +163,7 @@ if (issues.length > 0) {
       issues,
       warnings,
       proofCommands,
+      handoffProofSections,
       nextActions,
     }, null, 2));
   } else {
@@ -172,6 +181,7 @@ if (issues.length > 0) {
       issues,
       warnings,
       proofCommands,
+      handoffProofSections,
       nextActions,
     }, null, 2));
   } else {

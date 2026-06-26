@@ -2105,6 +2105,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     warnings?: string[];
     nextActions?: string[];
     proofCommands?: string[];
+    handoffProofSections?: string[];
   };
 
   assert.equal(payload.name, "WoofWatcher mobile beta doctor");
@@ -2120,6 +2121,12 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     "pnpm run doctor:mobile-beta",
     "pnpm run doctor:mobile-beta:json",
     "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+  ]);
+  assert.deepEqual(payload.handoffProofSections, [
+    "Dependency proof commands",
+    "Required beta proof after export",
+    "Provider proof needed",
+    "Truth boundaries",
   ]);
   assert.ok(payload.nextActions?.some((action) => action.includes("pnpm --filter @workspace/woofwatcher-mobile run smoke:web")));
   assert.ok(payload.nextActions?.some((action) => action.includes("/care-twin-qa")));

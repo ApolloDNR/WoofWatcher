@@ -529,6 +529,17 @@ live `launchProviderSetupPlan` into `Share Beta Handoff`, so the deadline packet
 now carries dependency proof, device proof, provider proof, and truth boundaries
 without requiring helpers to cross-reference a second provider share artifact.
 
+The beta doctor proof-section pass made the same expectation machine-readable.
+`scripts/mobile-beta-doctor.mjs --json` now emits `handoffProofSections` with
+the required 48-hour packet sections: `Dependency proof commands`, `Required
+beta proof after export`, `Provider proof needed`, and `Truth boundaries`. The
+human doctor output prints the same checklist after the proof commands and
+device proof list. This lets Replit, Fable, Apollo, or a native QA helper verify
+that the one-tap handoff packet is complete before anyone claims dependency,
+device, provider, or public-launch proof. In this cleaned Windows shell the
+doctor remains correctly blocked on missing pnpm and missing mobile `expo`
+dependency resolution.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
