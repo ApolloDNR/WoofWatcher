@@ -126,3 +126,12 @@
   the beta handoff packet for that line too.
 - Red/green evidence: `betaHandoffPacket.test.ts` first failed on the missing
   line, then passed after the packet and doctor guard were updated.
+- Verification passed: beta handoff packet test, 81-test mobile readiness,
+  420-test zero-dependency behavior/readiness suite, PixelLab asset
+  verification at 149 files, and `git diff --check` with expected Windows
+  line-ending warnings only.
+- Direct JSON doctor still reports `BLOCKED` on the real local export issues:
+  missing pnpm and missing mobile Expo dependency resolution.
+- Remote verify run `28256289432` for commit `941d4f0` failed before job
+  execution with job `83720072278`, `steps: []`, and `log not found:
+  83720072278`, matching the standing GitHub billing/spending-limit blocker.
