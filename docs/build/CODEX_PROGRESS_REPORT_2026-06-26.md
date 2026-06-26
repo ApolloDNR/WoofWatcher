@@ -200,3 +200,19 @@
   expected Windows line-ending warnings only.
 - Direct JSON doctor still reports `BLOCKED` on missing pnpm and missing mobile
   Expo dependency resolution.
+
+## Beta Doctor Export-Manifest Next Action
+
+- `scripts/mobile-beta-doctor.mjs --json` now includes the Care Pass export
+  manifest proof in `nextActions`.
+- Machine-readable helpers now see the instruction to confirm Records/Care Pass
+  Report History shows `Printable HTML`, file size, and `PDF pending` before
+  claiming PDF readiness.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on the missing
+  JSON next action, then passed after the doctor action list was updated.
+- Verification passed: 81-test mobile readiness, direct JSON doctor source
+  check, 421-test zero-dependency behavior/readiness suite, PixelLab asset
+  verification at 149 files, and `git diff --check` with expected Windows
+  line-ending warnings only.
+- Direct JSON doctor still reports `BLOCKED` on missing pnpm and missing mobile
+  Expo dependency resolution.

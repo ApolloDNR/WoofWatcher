@@ -2152,4 +2152,5 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   ]);
   assert.ok(payload.nextActions?.some((action) => action.includes("pnpm --filter @workspace/woofwatcher-mobile run smoke:web")));
   assert.ok(payload.nextActions?.some((action) => action.includes("/care-twin-qa")));
+  assert.ok(payload.nextActions?.some((action) => action.includes("Printable HTML") && action.includes("PDF pending")));
 });

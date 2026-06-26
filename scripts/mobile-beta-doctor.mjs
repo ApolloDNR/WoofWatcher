@@ -73,6 +73,7 @@ const nextActions = [
   "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:web.",
   "Open /care-twin-qa on a real device or simulator.",
   "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
+  "Verify Records/Care Pass Report History shows Printable HTML, file size, and PDF pending.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
 ];
