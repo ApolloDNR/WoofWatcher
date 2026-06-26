@@ -92,6 +92,67 @@ test("sitter care pass includes a practical handoff checklist", () => {
   assert.match(pass.message, /Health Watch/i);
 });
 
+test("care pass diet section labels pending and estimated meal amounts", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    dietProfile: {
+      ...baseInput().dietProfile,
+      normalPortion: "1 cup twice daily",
+      mealSchedule: "Breakfast and dinner",
+    },
+    entries: [
+      {
+        id: "breakfast-served",
+        type: "meal",
+        title: "Breakfast - outcome pending",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T07:00:00-07:00",
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "lunch-partial",
+        type: "meal",
+        title: "Lunch - Ate some",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T12:00:00-07:00",
+        details: {
+          mealCompletion: "partial",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "dinner-complete",
+        type: "meal",
+        title: "Dinner - Ate all",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T14:00:00-07:00",
+        details: {
+          mealCompletion: "complete",
+          servedAmount: 1,
+          servedUnit: "cup",
+          eatenAmount: 1,
+          eatenUnit: "cup",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  const diet = pass.sections.find((section) => section.title === "Diet");
+  assert.ok(diet);
+  assert.match(pass.message, /Daily food: 1.5 of 2 cups today; 1 outcome pending; 1 estimated partial amount/);
+  assert.match(pass.message, /Meal amount note: 1 outcome pending; 1 estimated partial amount/);
+});
+
 test("builds a vet care pass with health signals and records", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
 

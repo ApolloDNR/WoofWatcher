@@ -1,6 +1,7 @@
 import { normalizeCareEventType } from "./events.ts";
 import { deriveAloneTime, type AloneTimeItem } from "./alone-time.ts";
 import { deriveCareTrends, type CareTrendSignal } from "./care-trends.ts";
+import { deriveDietProgress } from "./diet-progress.ts";
 import { deriveCareHandoff, type CareHandoffCaregiver, type CareHandoffRoutine } from "./handoff.ts";
 import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveIncidentWatch, type IncidentWatchItem } from "./incident-watch.ts";
@@ -557,6 +558,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const walkRouteTemplates = deriveWalkRouteTemplates({ entries, now, limit: 3 });
   const pottyHealth = derivePottyHealth({ entries, now });
   const careTrends = deriveCareTrends({ entries, now, windowDays: 7 });
+  const dietProgress = deriveDietProgress({ dietProfile: diet, entries, now });
   const trainingProgress = deriveTrainingProgress({ entries, now, lookbackDays: 30 });
   const aloneTime = deriveAloneTime({ entries, now, lookbackDays: 30 });
   const weightTrend = deriveWeightTrend({ entries, profile, goals: input.goals ?? [], now, lookbackDays: 90 });
@@ -580,7 +582,15 @@ export function buildCarePass(input: CarePassInput): CarePass {
       ? `${name} health and care context for veterinarian review.`
       : input.audience === "trainer"
         ? `${name} behavior, routine, and activity context for training.`
-        : `${name} care handoff for ${audienceLabel.toLowerCase()} support.`;
+      : `${name} care handoff for ${audienceLabel.toLowerCase()} support.`;
+  const mealAmountNotes = [
+    dietProgress.pendingMealCount
+      ? `${dietProgress.pendingMealCount} outcome${dietProgress.pendingMealCount === 1 ? "" : "s"} pending`
+      : "",
+    dietProgress.estimatedMealCount
+      ? `${dietProgress.estimatedMealCount} estimated partial amount${dietProgress.estimatedMealCount === 1 ? "" : "s"}`
+      : "",
+  ].filter(notEmpty).join("; ");
 
   const sections = [
     section("Dog", [
@@ -612,6 +622,10 @@ export function buildCarePass(input: CarePassInput): CarePass {
       diet.primaryFood ? `Food: ${diet.primaryFood}` : "",
       diet.normalPortion ? `Portion: ${diet.normalPortion}` : "",
       diet.mealSchedule ? `Schedule: ${diet.mealSchedule}` : "",
+      dietProgress.targetAmount != null || dietProgress.mealCount
+        ? `Daily food: ${dietProgress.summary}`
+        : "",
+      mealAmountNotes ? `Meal amount note: ${mealAmountNotes}` : "",
       diet.bedtimeSnack ? `Bedtime snack: ${diet.bedtimeSnack}` : "",
       diet.avoid ? `Avoid: ${diet.avoid}` : "",
       diet.sensitivities ? `Sensitivities: ${diet.sensitivities}` : "",

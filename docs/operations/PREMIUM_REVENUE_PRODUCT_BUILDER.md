@@ -635,6 +635,15 @@ instead of a local inline formula, so Timeline/Recent Activity meal outcome
 updates include `Ate some`, keep grazing meals open as pending, mark refused and
 partial outcomes as watch items, and write a correction trail for owner review.
 
+The diet/report truth pass made downstream outputs respect the same lifecycle.
+`deriveDietProgress` no longer counts a `served`, `grazing`, or
+`outcome-pending` bowl as eaten food, now counts pending meal outcomes and
+estimated partial amounts separately, and only estimates partial intake when an
+exact eaten amount was not supplied. Care Pass Diet sections now include the
+Daily food summary and a Meal amount note when outcomes are pending or estimated,
+so sitter/vet exports stay honest about what is confirmed versus still waiting
+for household follow-up.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
