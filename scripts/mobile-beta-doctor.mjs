@@ -256,6 +256,28 @@ check(
     : "keep /care-twin-qa and the release QA matrix wired to owner-loop device proof",
 );
 
+const nativeQaNeedsTuneFixBriefIsSourceBacked = includesAll(mobileLaunchQaEvidenceSource, [
+  "buildMobileLaunchQaFixBriefShareText",
+  "firstNeedsTuneTarget",
+  "WoofWatcher Needs Tune Fix Brief",
+  "No Needs tune route is currently marked.",
+  "Continue with the next QA capture in /care-twin-qa",
+  "After fix: return to /care-twin-qa",
+])
+  && includesAll(moreRouteSource, [
+    "buildMobileLaunchQaFixBriefShareText",
+    "nativeQaCaptureNeedsTuneTarget",
+    "Share Fix Brief",
+    "Share first Native QA Needs tune fix brief",
+  ]);
+check(
+  "native QA Needs tune fix brief is source-backed",
+  nativeQaNeedsTuneFixBriefIsSourceBacked,
+  nativeQaNeedsTuneFixBriefIsSourceBacked
+    ? "Needs tune recovery can generate a focused fix brief from More after device QA"
+    : "keep the first Needs tune target, fix brief builder, and More Share Fix Brief action wired",
+);
+
 if (!jsonMode) {
   console.log("\nDependency proof commands:");
   for (const command of proofCommands) console.log(`- ${command}`);

@@ -591,6 +591,16 @@ iOS Quick Log/Log screenshot proof, the Android Launch Readiness screenshot
 proof, and `/care-twin-qa` route. This keeps the doctor tied to the real screen
 Apollo or a helper will use, not just to handoff prose.
 
+The Native QA Needs tune recovery pass now protects the repair loop after the
+device mission finds an issue. `scripts/mobile-beta-doctor.mjs --json` emits
+`native QA Needs tune fix brief is source-backed` only when the QA evidence
+builder still creates a `WoofWatcher Needs Tune Fix Brief`, tracks
+`firstNeedsTuneTarget`, includes the truthful no-needs-tune fallback, and tells
+the helper to return to `/care-twin-qa` after the fix, while More still imports
+the builder, detects `nativeQaCaptureNeedsTuneTarget`, and exposes the `Share
+Fix Brief` recovery action. This keeps the first below-beta route actionable
+without pretending native proof is complete.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
