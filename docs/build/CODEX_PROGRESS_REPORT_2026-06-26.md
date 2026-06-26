@@ -260,3 +260,8 @@
   warnings only.
 - Direct JSON doctor still reports `BLOCKED` on the real local export issues:
   missing pnpm and missing mobile Expo dependency resolution.
+- Remote verify run `28263774240` for commit `93dd154` failed before job
+  execution with job `83745430354`; GitHub reported the job was not started
+  because recent account payments failed or the spending limit needs to be
+  increased, and `gh run view --log-failed` returned `log not found:
+  83745430354`.
