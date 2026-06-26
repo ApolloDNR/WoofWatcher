@@ -667,6 +667,17 @@ test("describes Care Pass artifact storage without claiming provider upload", ()
   assert.equal(storage.providerBacked, false);
 });
 
+test("marks local Care Pass artifacts upload-ready only after storage rules are configured", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "sitter" });
+  const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
+  const storage = describeCarePassArtifactStorage(artifact, { storageProviderConfigured: true });
+
+  assert.equal(storage.status, "upload-ready");
+  assert.equal(storage.label, "Ready to upload");
+  assert.match(storage.detail, /signed access/);
+  assert.equal(storage.providerBacked, false);
+});
+
 test("renders a print-ready care pass document with escaped care content", () => {
   const pass = buildCarePass({
     ...baseInput(),

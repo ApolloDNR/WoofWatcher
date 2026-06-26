@@ -112,6 +112,10 @@ export interface CarePassArtifactStorageView {
   providerBacked: boolean;
 }
 
+export interface CarePassArtifactStorageOptions {
+  storageProviderConfigured?: boolean;
+}
+
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
   caregiver: "Caregiver",
   sitter: "Sitter",
@@ -602,8 +606,12 @@ export function getCarePassArtifactPrintView(artifact: CarePassArtifact): CarePa
   };
 }
 
-export function describeCarePassArtifactStorage(artifact: Pick<CarePassArtifact, "storageStatus">): CarePassArtifactStorageView {
-  const status = artifact.storageStatus ?? "local-only";
+export function describeCarePassArtifactStorage(
+  artifact: Pick<CarePassArtifact, "storageStatus">,
+  options: CarePassArtifactStorageOptions = {},
+): CarePassArtifactStorageView {
+  const baseStatus = artifact.storageStatus ?? "local-only";
+  const status = baseStatus === "local-only" && options.storageProviderConfigured ? "upload-ready" : baseStatus;
   if (status === "uploaded") {
     return {
       status,
@@ -616,7 +624,7 @@ export function describeCarePassArtifactStorage(artifact: Pick<CarePassArtifact,
     return {
       status,
       label: "Ready to upload",
-      detail: "Print source is saved locally and ready for provider storage once connected.",
+      detail: "Print source is saved locally and ready for provider storage once signed access, retention, export, and deletion rules are approved.",
       providerBacked: false,
     };
   }

@@ -935,3 +935,15 @@ PixelLab asset verification at 149 files, and `git diff --check` with expected
 Windows line-ending warnings only. Remote verify run `28235628241` failed
 before job execution with zero steps and no logs, matching the standing GitHub
 billing/spending-limit blocker rather than a local code regression.
+
+Current evidence, 2026-06-26: Care Pass report storage truth is now
+provider-aware while still blocking fake provider-backed claims. Local report
+artifacts remain `Saved on this device` until Provider Launch Setup marks
+storage rules configured. Once `launchProviderProfile.storageProviderConfigured`
+is true, the shared care-domain helper and Records Report History show
+`Ready to upload`, but `providerBacked` stays false and the detail still says
+signed access, retention, export, and deletion rules must be approved before
+cloud storage can be treated as real. Local verification passed focused Care
+Pass tests, mobile readiness, the 420-test zero-dependency behavior/readiness
+suite, PixelLab asset verification at 149 files, and `git diff --check` with
+expected Windows line-ending warnings only.

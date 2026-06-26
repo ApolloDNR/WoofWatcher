@@ -1813,7 +1813,9 @@ export default function RecordsScreen() {
             ) : (
               reportArtifacts.map((artifact, index) => {
                 const printable = getCarePassArtifactPrintView(artifact);
-                const storage = describeCarePassArtifactStorage(artifact);
+                const storage = describeCarePassArtifactStorage(artifact, {
+                  storageProviderConfigured: Boolean(state.launchProviderProfile?.storageProviderConfigured),
+                });
                 const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
                 return (
                   <View

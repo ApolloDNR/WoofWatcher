@@ -1166,3 +1166,23 @@ Design intent:
   trainers, and Apollo's beta helpers.
 - Preserve the premium app-store polish while clearly separating local artifacts
   from future cloud/PDF storage.
+
+## 2026-06-26 Provider-Aware Report Storage Status
+
+Records now uses the Provider Launch Setup storage state when describing saved
+Care Pass report history:
+
+- If storage provider setup is not configured, saved Care Passes still show as
+  device-local print sources.
+- If storage provider setup is configured, the same local print source shows as
+  ready to upload instead of pretending it has already uploaded.
+- The storage detail keeps the product boundary visible: signed access,
+  retention, export, and deletion rules are still required before cloud storage
+  can be treated as provider-backed.
+
+Design intent:
+
+- Give beta helpers a clearer production-readiness signal inside the app.
+- Keep the UI polished and useful while preventing false cloud/PDF claims.
+- Connect Records, Care Pass, and Provider Launch Setup into one coherent
+  handoff story for Replit/Fable/native implementation work.
