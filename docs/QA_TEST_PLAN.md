@@ -908,3 +908,20 @@ Latest local evidence, 2026-06-26:
   suite, the 420-test zero-dependency behavior/readiness suite, PixelLab
   verification at 149 files, and `git diff --check` with expected Windows
   line-ending warnings only.
+
+Latest local evidence, 2026-06-26:
+
+- The one-tap 48-hour Beta Handoff packet now explicitly includes the Care Pass
+  Report History storage-status proof in `Required beta proof after export`.
+- The packet tells helpers to confirm Report History says `Saved on this
+  device` or `Ready to upload`, so the storage truth check is visible even if a
+  tester reads only the handoff packet and not the route-loop details.
+- The mobile beta doctor's source-backed Owner Preview storage-proof guard now
+  also checks `betaHandoffPacket.ts` for that required proof line.
+- Red/green evidence: `betaHandoffPacket.test.ts` first failed on the missing
+  handoff proof line, then passed after the packet and doctor guard were
+  updated.
+- Follow-up verification passed mobile readiness, the 420-test zero-dependency
+  behavior/readiness suite, PixelLab verification at 149 files, and the direct
+  JSON doctor still blocks only on missing pnpm and missing mobile Expo
+  dependency resolution.

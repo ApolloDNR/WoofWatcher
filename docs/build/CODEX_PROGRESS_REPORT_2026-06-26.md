@@ -115,3 +115,14 @@
 - Remote verify run `28240015482` for commit `2f23753` failed before job
   execution with job `83664251661`, `steps: []`, and `log not found:
   83664251661`, matching the standing GitHub billing/spending-limit blocker.
+
+## Beta Handoff Storage-Proof Line
+
+- `buildBetaHandoffPacketShareText` now explicitly includes the Care Pass Report
+  History storage-status proof under `Required beta proof after export`.
+- The packet tells helpers to confirm Report History says `Saved on this device`
+  or `Ready to upload` before claiming beta proof.
+- The mobile beta doctor's Owner Preview storage-proof source guard now checks
+  the beta handoff packet for that line too.
+- Red/green evidence: `betaHandoffPacket.test.ts` first failed on the missing
+  line, then passed after the packet and doctor guard were updated.

@@ -311,6 +311,9 @@ const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileRelease
   "QA note confirming Care Pass Report History storage status stayed truthful.",
   'proof: "Care Pass Report History storage status note or screenshot."',
 ])
+  && includesAll(betaHandoffPacketSource, [
+    "Confirm Care Pass Report History storage status says Saved on this device or Ready to upload.",
+])
   && includesAll(mobileLaunchQaEvidenceSource, [
     "Route loop:",
     "routeCheck.proof",
