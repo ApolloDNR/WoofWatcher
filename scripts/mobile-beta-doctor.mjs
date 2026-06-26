@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -26,9 +26,24 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+function quoteWindowsArg(value) {
+  return `"${String(value).replace(/"/g, '\\"')}"`;
+}
+
+function runCli(command, args) {
+  if (process.platform === "win32" && command.endsWith(".cmd")) {
+    const commandLine = [quoteWindowsArg(command), ...args.map(quoteWindowsArg)].join(" ");
+    return spawnSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", commandLine], { encoding: "utf8" });
+  }
+
+  return spawnSync(command, args, {
+    encoding: "utf8",
+  });
+}
+
 function runFirstAvailable(commands, args) {
   for (const command of commands) {
-    const result = spawnSync(command, args, { encoding: "utf8" });
+    const result = runCli(command, args);
     if (result.status === 0) return result;
   }
   return { status: 1, stdout: "", stderr: "" };
@@ -75,6 +90,21 @@ check(
 
 const pnpm = runFirstAvailable(process.platform === "win32" ? ["pnpm.cmd", "pnpm"] : ["pnpm"], ["--version"]);
 const corepack = runFirstAvailable(process.platform === "win32" ? ["corepack.cmd", "corepack"] : ["corepack"], ["--version"]);
+const bundledPnpmPath = join(
+  resolve(dirname(process.execPath), "..", ".."),
+  "bin",
+  process.platform === "win32" ? "pnpm.cmd" : "pnpm",
+);
+const bundledPnpmPackagePath = join(
+  resolve(dirname(process.execPath), ".."),
+  "node_modules",
+  "pnpm",
+  "package.json",
+);
+const bundledPnpmVersion = existsSync(bundledPnpmPackagePath)
+  ? readJson(bundledPnpmPackagePath).version
+  : "";
+const bundledPnpmIsUnsupported = Boolean(bundledPnpmVersion && bundledPnpmVersion !== expectedPnpmVersion);
 check(
   "Corepack available for pnpm bootstrap",
   corepack.status === 0,
@@ -97,6 +127,14 @@ if (pnpm.status === 0) {
     `${pnpm.stdout.trim()} detected; expected ${expectedPnpmVersion}`,
   );
 }
+check(
+  "unsupported bundled pnpm candidate",
+  !bundledPnpmIsUnsupported,
+  bundledPnpmVersion
+    ? `bundled pnpm ${bundledPnpmVersion} at ${bundledPnpmPath}; beta export requires pnpm ${expectedPnpmVersion}`
+    : `no bundled pnpm candidate found; beta export requires pnpm ${expectedPnpmVersion}`,
+  "warning",
+);
 
 const rootPackage = readJson(join(root, "package.json"));
 const verifyWorkflow = readFileSync(join(root, ".github", "workflows", "verify.yml"), "utf8");

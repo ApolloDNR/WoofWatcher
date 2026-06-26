@@ -540,6 +540,15 @@ device, provider, or public-launch proof. In this cleaned Windows shell the
 doctor remains correctly blocked on missing pnpm and missing mobile `expo`
 dependency resolution.
 
+The bundled-pnpm guard closes another beta handoff false-positive. The Codex
+runtime can expose a bundled pnpm package that is not the release-required
+`pnpm 10.24.0`; in this shell that bundled candidate is `pnpm 11.7.0`. The
+doctor JSON now emits `unsupported bundled pnpm candidate` as a warning-level
+check with the exact candidate path and version, while still blocking only on
+the true export blockers. Treat any dependency proof that uses the bundled
+candidate as invalid until a real PATH pnpm at `10.24.0` and the mobile Expo
+dependencies are present.
+
 The beta doctor source-validation pass made that proof-section checklist harder
 to drift. `buildBetaHandoffPacketShareText` now has a literal `Required beta
 proof after export` section for `/care-twin-qa`, iOS/Android screenshot proof,
