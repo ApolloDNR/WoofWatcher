@@ -94,12 +94,22 @@ export interface CarePassArtifact {
   message: string;
   printFileName?: string;
   printHtml?: string;
+  storageStatus?: CarePassArtifactStorageStatus;
 }
 
 export interface CarePassArtifactPrintView {
   fileName: string;
   html: string;
   status: "ready" | "restored";
+}
+
+export type CarePassArtifactStorageStatus = "local-only" | "upload-ready" | "uploaded" | "failed";
+
+export interface CarePassArtifactStorageView {
+  status: CarePassArtifactStorageStatus;
+  label: string;
+  detail: string;
+  providerBacked: boolean;
 }
 
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
@@ -592,6 +602,40 @@ export function getCarePassArtifactPrintView(artifact: CarePassArtifact): CarePa
   };
 }
 
+export function describeCarePassArtifactStorage(artifact: Pick<CarePassArtifact, "storageStatus">): CarePassArtifactStorageView {
+  const status = artifact.storageStatus ?? "local-only";
+  if (status === "uploaded") {
+    return {
+      status,
+      label: "Provider stored",
+      detail: "Uploaded to provider storage for account-backed resend.",
+      providerBacked: true,
+    };
+  }
+  if (status === "upload-ready") {
+    return {
+      status,
+      label: "Ready to upload",
+      detail: "Print source is saved locally and ready for provider storage once connected.",
+      providerBacked: false,
+    };
+  }
+  if (status === "failed") {
+    return {
+      status,
+      label: "Upload needs retry",
+      detail: "Local report copy is safe; provider upload needs a retry.",
+      providerBacked: false,
+    };
+  }
+  return {
+    status: "local-only",
+    label: "Saved locally",
+    detail: "Cloud storage pending - saved on this device as text and print-ready HTML source.",
+    providerBacked: false,
+  };
+}
+
 export function buildCarePass(input: CarePassInput): CarePass {
   const now = input.now ?? Date.now();
   const profile = input.profile ?? {};
@@ -851,5 +895,6 @@ export function createCarePassArtifact(
     message: pass.message,
     printFileName: `${slugify(pass.title)}-${dateStamp}.html`,
     printHtml: renderCarePassPrintHtml(pass),
+    storageStatus: "local-only",
   };
 }

@@ -32,6 +32,7 @@ import {
   buildPetCredential,
   buildCarePass,
   createCarePassArtifact,
+  describeCarePassArtifactStorage,
   deriveAloneTime,
   deriveCareTrends,
   deriveGroomingCare,
@@ -1812,6 +1813,7 @@ export default function RecordsScreen() {
             ) : (
               reportArtifacts.map((artifact, index) => {
                 const printable = getCarePassArtifactPrintView(artifact);
+                const storage = describeCarePassArtifactStorage(artifact);
                 const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
                 return (
                   <View
@@ -1833,6 +1835,35 @@ export default function RecordsScreen() {
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
                         {printable.fileName}
+                      </Text>
+                      <View style={s.artifactStorageRow}>
+                        <View
+                          style={[
+                            s.artifactStoragePill,
+                            { backgroundColor: (storage.providerBacked ? colors.sage : colors.amber) + "18" },
+                          ]}
+                        >
+                          <Ionicons
+                            name={storage.providerBacked ? "cloud-done-outline" : "phone-portrait-outline"}
+                            size={12}
+                            color={storage.providerBacked ? colors.sage : colors.amber}
+                          />
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              s.artifactStorageText,
+                              {
+                                color: storage.providerBacked ? colors.sage : colors.amber,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            {storage.label}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text numberOfLines={2} style={[s.artifactStorageDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                        {storage.detail}
                       </Text>
                     </View>
                     <View style={s.reportArtifactActions}>
@@ -2388,6 +2419,10 @@ const s = StyleSheet.create({
   reportArtifactRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13 },
   reportArtifactActions: { alignItems: "flex-end", gap: 8 },
   reportArtifactButtonRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  artifactStorageRow: { flexDirection: "row", alignItems: "center", marginTop: 7 },
+  artifactStoragePill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 10, maxWidth: 170 },
+  artifactStorageText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4, flexShrink: 1 },
+  artifactStorageDetail: { fontSize: 11.5, lineHeight: 15, marginTop: 5 },
   artifactIconButton: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,

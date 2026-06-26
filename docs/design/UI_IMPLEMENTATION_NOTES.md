@@ -1146,3 +1146,23 @@ Design intent:
   when it is actually a launch-critical care workflow surface.
 - Keep the QA script aligned with the app's hierarchy: first prove the emotional
   Home experience, then the care-command layer, then the supporting surfaces.
+
+## 2026-06-26 Care Pass Report History Storage Truth
+
+Records now treats saved Care Passes as serious handoff artifacts without
+pretending provider storage is already connected:
+
+- Care Pass artifacts default to `local-only` storage state.
+- The shared care-domain helper returns owner-readable storage labels/details
+  for local-only, upload-ready, uploaded, and failed provider states.
+- Records shows the storage label and `Cloud storage pending` detail directly in
+  Report History, beside resend and printable-source share actions.
+- Mobile readiness protects the storage helper import and UI wiring so later
+  visual polish cannot hide the local/provider boundary.
+
+Design intent:
+
+- Make the report history feel more professional and honest for sitters, vets,
+  trainers, and Apollo's beta helpers.
+- Preserve the premium app-store polish while clearly separating local artifacts
+  from future cloud/PDF storage.

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildCarePass,
   createCarePassArtifact,
+  describeCarePassArtifactStorage,
   getCarePassArtifactPrintView,
   renderCarePassPrintHtml,
 } from "../src/index.ts";
@@ -647,11 +648,23 @@ test("creates a stable report artifact snapshot from a care pass", () => {
 
   assert.equal(artifact.id, "care_pass_vet_2026-06-08T06-30-00-000Z");
   assert.equal(artifact.audience, "vet");
+  assert.equal(artifact.storageStatus, "local-only");
   assert.equal(artifact.title, pass.title);
   assert.equal(artifact.createdAt, "2026-06-08T06:30:00.000Z");
   assert.equal(artifact.summary, pass.summary);
   assert.equal(artifact.message, pass.message);
   assert.deepEqual(artifact.sectionTitles, pass.sections.map((section) => section.title));
+});
+
+test("describes Care Pass artifact storage without claiming provider upload", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "trainer" });
+  const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
+  const storage = describeCarePassArtifactStorage(artifact);
+
+  assert.equal(storage.status, "local-only");
+  assert.equal(storage.label, "Saved locally");
+  assert.match(storage.detail, /Cloud storage pending/);
+  assert.equal(storage.providerBacked, false);
 });
 
 test("renders a print-ready care pass document with escaped care content", () => {

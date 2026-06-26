@@ -922,3 +922,14 @@ behavior/readiness suite, PixelLab asset verification at 149 files, and
 verify run `28234625027` failed before job execution with zero steps and no
 logs, matching the standing GitHub billing/spending-limit blocker rather than a
 local code regression.
+
+Current evidence, 2026-06-26: Care Pass report history now carries explicit
+local/provider storage truth. New Care Pass artifacts are marked `local-only`
+by default, `describeCarePassArtifactStorage` exposes owner-readable local,
+upload-ready, uploaded, and failed labels, and Records shows the storage label
+plus `Cloud storage pending` detail beside saved report resend and print-source
+actions. This keeps internal beta users from mistaking local print-ready HTML
+for cloud-backed PDF storage. Local verification passed focused Care Pass tests,
+mobile readiness, the 419-test zero-dependency behavior/readiness suite,
+PixelLab asset verification at 149 files, and `git diff --check` with expected
+Windows line-ending warnings only.
