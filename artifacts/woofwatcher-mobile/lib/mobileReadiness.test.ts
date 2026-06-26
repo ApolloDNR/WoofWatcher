@@ -1924,6 +1924,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /launchStoreSubmissionPacket\.verdictLabel/);
   assert.match(more, /Store Submission/);
   assert.match(more, /Provider Launch Setup/);
+  assert.match(more, /row\.proofRequired/);
+  assert.match(more, /Proof needed/);
   assert.match(more, /Edit Provider Plan/);
   assert.match(more, /Share Provider Plan/);
   assert.match(more, /PROVIDER_SETUP_FIELDS\.every\(\(field\) => normalized\[field\.key\]\)/);

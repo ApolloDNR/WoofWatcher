@@ -27,6 +27,8 @@ test("builds a truthful provider setup plan from a local launch profile", async 
   assert.match(plan.summary, /production providers/i);
   assert.ok(plan.rows.some((row) => row.key === "auth" && row.status === "ready"));
   assert.ok(plan.rows.some((row) => row.key === "database" && /Supabase/i.test(row.nextAction)));
+  assert.ok(plan.rows.some((row) => row.key === "database" && /RLS/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "storage" && /signed upload/i.test(row.proofRequired)));
   assert.ok(plan.blockers.some((blocker) => /household database/i.test(blocker)));
   assert.equal(plan.providerInput.authConfigured, true);
   assert.equal(plan.providerInput.databaseConfigured, false);
@@ -86,6 +88,9 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /Progress: 3\/8 ready \(38%\)/);
   assert.match(text, /Ready/);
   assert.match(text, /Open/);
+  assert.match(text, /Proof Needed/);
+  assert.match(text, /Household database sync: Supabase project id/);
+  assert.match(text, /Records and media storage: Storage bucket names/);
   assert.match(text, /WoofGuide AI/);
   assert.match(text, /No App Store or Play Store submission is approved by this checklist/);
 });

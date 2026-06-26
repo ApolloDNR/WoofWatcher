@@ -123,6 +123,10 @@ Current environment note:
 - The in-app `Share Beta Handoff` packet now repeats the exact dependency proof
   commands and warns that dependency proof only counts when both doctor commands
   report no blockers.
+- Provider Launch Setup now also shows a proof-needed checklist for every
+  production provider gate in More and in the share packet: Clerk, Supabase/RLS,
+  storage signed uploads, WoofGuide AI policy, payments, push, Apple/Google
+  store accounts, and account deletion evidence.
 - Mobile TypeScript/export remain blocked in this cleaned Windows shell by the missing Expo/mobile dependency layer, and no local iOS/Android simulator/tooling is visible here. Re-run the doctor, install, TypeScript/export, and actual device capture from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or a native-device environment before treating this as dependency/export/device-proven.
 
 Still blocked for public launch:

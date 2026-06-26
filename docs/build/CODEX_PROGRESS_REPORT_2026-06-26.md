@@ -34,6 +34,18 @@
 - The JSON doctor now exposes the same sequence as structured `proofCommands`
   for helpers that need a machine-readable run order.
 
+## Provider Setup Proof
+
+- Provider Launch Setup now names the proof needed for every production gate
+  instead of only saying ready/open.
+- `launchProviderSetup.ts` adds `proofRequired` to production auth, household
+  database sync, records/media storage, WoofGuide AI, Plus payments, push
+  notifications, Apple/Google store accounts, and account deletion.
+- More renders `Proof needed:` under each provider row, and the native Share
+  Provider Plan packet now includes a `Proof Needed` section.
+- This remains a launch-prep checklist only. It does not claim Clerk, Supabase,
+  storage, AI, payments, push, store, or deletion approval.
+
 ## Verification
 
 - Red/green JSON doctor readiness: `mobileReadiness.test.ts` first failed on
@@ -45,6 +57,10 @@
 - Red/green structured doctor proof: `mobileReadiness.test.ts` first failed on
   missing `proofCommands`, then passed after the doctor JSON emitted the exact
   command sequence.
+- Red/green provider setup proof: `launchProviderSetup.test.ts` first failed on
+  missing `proofRequired` and `Proof Needed` output, then passed after the
+  model/share text were updated; `mobileReadiness.test.ts` protects More's
+  visible `Proof needed:` row copy.
 - Direct text doctor: exits blocked with the expected two issues, missing pnpm
   and missing mobile `expo` dependency resolution.
 - Direct JSON doctor: exits blocked with valid JSON and the same two issues.

@@ -36,6 +36,7 @@ export interface LaunchProviderSetupRow {
   statusLabel: string;
   detail: string;
   nextAction: string;
+  proofRequired: string;
 }
 
 export interface LaunchProviderSetupPlan {
@@ -123,6 +124,7 @@ const ROW_DEFINITIONS: Array<{
   readyDetail: string;
   blockedDetail: string;
   nextAction: string;
+  proofRequired: string;
 }> = [
   {
     key: "auth",
@@ -132,6 +134,7 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Production sign-in, household membership, and deep-link sign-in are configured for review.",
     blockedDetail: "Launch still needs production auth, sign-in URLs, household membership rules, and account session policy.",
     nextAction: "Configure Clerk production keys, redirect URLs, OAuth/deep links, and household membership policy.",
+    proofRequired: "Clerk production app id, redirect URL list, OAuth/deep-link test screenshot, and household membership policy notes.",
   },
   {
     key: "database",
@@ -141,6 +144,7 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Production household care documents, logs, and sync rules are configured for review.",
     blockedDetail: "Household logs remain local or preview-only until production database sync and permissions are approved.",
     nextAction: "Approve Supabase/Postgres schema, RLS rules, backups, migrations, and per-household care document scoping.",
+    proofRequired: "Supabase project id, applied migration list, RLS policy review, backup policy, and per-household care document scoping proof.",
   },
   {
     key: "storage",
@@ -150,6 +154,7 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Document, proof-photo, report, and QA evidence storage rules are ready for migration testing.",
     blockedDetail: "Receipts, proof photos, reports, and QA screenshots stay local until signed storage rules exist.",
     nextAction: "Create storage buckets, signed upload/download rules, retention, export, deletion, and household scope policy.",
+    proofRequired: "Storage bucket names, signed upload/download policy, retention/export/deletion rules, and household access test evidence.",
   },
   {
     key: "ai",
@@ -159,6 +164,7 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "WoofGuide can call the approved AI provider with owner review and veterinary boundary copy.",
     blockedDetail: "WoofGuide must stay deterministic/fallback until keys, model policy, disclosures, and review rules are approved.",
     nextAction: "Approve OpenAI key handling, model policy, source/citation behavior, owner-review writes, and vet-boundary language.",
+    proofRequired: "AI provider key location, approved model policy, citation/source rules, owner-review write gate, and veterinary-boundary copy review.",
   },
   {
     key: "payments",
@@ -168,6 +174,7 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Subscription checkout is staged under approved product, support, refund, and store obligations.",
     blockedDetail: "Paid checkout must stay disabled until subscription packaging, refund policy, and store rules are approved.",
     nextAction: "Finalize Plus tiers, App Store/Play billing path, refund/support policy, receipts, and entitlement checks.",
+    proofRequired: "Plus/Family product ids, sandbox receipt test, refund/support policy, entitlement mapping, and store billing decision record.",
   },
   {
     key: "push",
@@ -177,6 +184,7 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Reminder notifications are configured for production QA and store privacy disclosures.",
     blockedDetail: "Reminder Center can run in-app, but production push reminders are not configured.",
     nextAction: "Configure Expo push, Apple APNs, Firebase/FCM, permissions copy, quiet hours, and opt-out behavior.",
+    proofRequired: "Expo push project config, APNs/FCM credentials, permission prompt copy, quiet-hours setting, and opt-out QA evidence.",
   },
   {
     key: "storeAccounts",
@@ -186,6 +194,7 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Apple Developer and Google Play Console access are ready for submission prep.",
     blockedDetail: "Public mobile launch cannot proceed until store accounts, bundle ids, and submission roles are confirmed.",
     nextAction: "Confirm Apple Developer, App Store Connect, Google Play Console, bundle identifiers, screenshots, and review access.",
+    proofRequired: "Apple Developer team id, App Store Connect app record, Google Play package record, bundle ids, and reviewer access notes.",
   },
   {
     key: "accountDeletion",
@@ -195,6 +204,7 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Account deletion has a provider-backed destructive path, export warning, and audit receipt.",
     blockedDetail: "Deletion is still manual/non-destructive until provider-backed deletion and audit receipts are approved.",
     nextAction: "Implement and approve account deletion, export-before-delete flow, object deletion, audit receipts, and recovery window.",
+    proofRequired: "Self-serve deletion route, export-before-delete warning, data/object deletion receipt, audit trail, and recovery-window policy.",
   },
 ];
 
@@ -216,6 +226,7 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
       statusLabel: ready ? "Ready" : "Open",
       detail: ready ? definition.readyDetail : definition.blockedDetail,
       nextAction: definition.nextAction,
+      proofRequired: definition.proofRequired,
     };
   });
 
@@ -266,6 +277,10 @@ function formatRows(rows: readonly LaunchProviderSetupRow[]): string[] {
   return rows.map((row) => `- ${row.label}: ${row.statusLabel}. ${row.nextAction}`);
 }
 
+function formatProofRows(rows: readonly LaunchProviderSetupRow[]): string[] {
+  return rows.map((row) => `- ${row.label}: ${row.proofRequired}`);
+}
+
 export function buildLaunchProviderSetupShareText(
   plan: LaunchProviderSetupPlan,
   generatedAtIso = new Date().toISOString(),
@@ -287,6 +302,9 @@ export function buildLaunchProviderSetupShareText(
     "",
     "Open",
     ...(openRows.length ? formatRows(openRows) : ["- No provider gates are open."]),
+    "",
+    "Proof Needed",
+    ...formatProofRows(plan.rows),
     "",
     "Done condition: provider setup is not launch approval. Run native QA, confirm legal/support/store approvals, then submit through Apple App Store Connect and Google Play Console.",
     "No App Store or Play Store submission is approved by this checklist.",

@@ -239,6 +239,14 @@ sheet, and a native Share Provider Plan action. `CareContext` persists
 consumes those saved gates while still refusing to claim public launch until
 native QA, legal/support/store approval, and Apollo sign-off are complete.
 
+The Provider Launch Setup proof pass made those gates more operator-ready for
+the two-day beta handoff. Each provider row now includes a `proofRequired`
+checklist, More shows `Proof needed:` under the row detail, and the shared
+provider packet includes a `Proof Needed` section. This gives Apollo, Replit, or
+a native helper concrete evidence to collect for Clerk, Supabase/RLS, storage,
+AI policy, payments, push, store accounts, and account deletion without
+pretending those external approvals are complete.
+
 The two-day beta QA cockpit pass made device capture less fragile. `/care-twin-qa`
 now tags attached screenshot evidence explicitly as iOS, Android, or Web instead
 of relying on the runtime platform, and target routes opened from the cockpit

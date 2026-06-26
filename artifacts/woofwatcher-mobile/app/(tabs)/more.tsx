@@ -1400,6 +1400,12 @@ export default function MoreScreen() {
                         >
                           {row.status === "ready" ? row.detail : row.nextAction}
                         </Text>
+                        <Text
+                          numberOfLines={2}
+                          style={[s.providerSetupRowProof, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                        >
+                          Proof needed: {row.proofRequired}
+                        </Text>
                       </View>
                     </View>
                   );
@@ -3034,6 +3040,7 @@ const s = StyleSheet.create({
   },
   providerSetupRowTitle: { fontSize: 12.4, lineHeight: 16 },
   providerSetupRowSub: { fontSize: 10.8, lineHeight: 15, marginTop: 2 },
+  providerSetupRowProof: { fontSize: 10, lineHeight: 14, marginTop: 3 },
   providerSetupActions: { flexDirection: "row", gap: 8, marginTop: 10 },
   providerSetupButton: {
     flex: 1,
