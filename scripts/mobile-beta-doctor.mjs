@@ -188,9 +188,13 @@ check("PixelLab verifier exists", existsSync(pixellabVerifier), "run pnpm --filt
 
 const betaHandoffPacketPath = join(mobileRoot, "lib", "betaHandoffPacket.ts");
 const mobileLaunchQaEvidencePath = join(mobileRoot, "lib", "mobileLaunchQaEvidence.ts");
+const mobileReleaseQaPath = join(mobileRoot, "lib", "mobileReleaseQa.ts");
+const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
 const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
 const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath) ? readFileSync(mobileLaunchQaEvidencePath, "utf8") : "";
+const mobileReleaseQaSource = existsSync(mobileReleaseQaPath) ? readFileSync(mobileReleaseQaPath, "utf8") : "";
+const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
 const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Dependency proof commands:",
@@ -229,6 +233,27 @@ check(
   ownerPreviewProofWiringIsSourceBacked
     ? "owner-preview proof status is wired through QA plan, More, and beta handoff"
     : "keep Owner Preview Core Loop proof visible in QA plan, More, and Share Beta Handoff",
+);
+
+const careTwinQaRouteProofFlowIsSourceBacked = includesAll(careTwinQaRouteSource, [
+  "Mission note",
+  "Pass pending proof",
+  "Attach proof",
+  "care-twin-qa-stage-",
+  "qaReturn=care-twin-qa",
+])
+  && includesAll(mobileReleaseQaSource, [
+    "Owner Preview Core Loop",
+    "iOS Quick Log or Log screenshot.",
+    "Android Launch Readiness screenshot.",
+    'route: "/care-twin-qa"',
+  ]);
+check(
+  "care-twin QA route proof flow is source-backed",
+  careTwinQaRouteProofFlowIsSourceBacked,
+  careTwinQaRouteProofFlowIsSourceBacked
+    ? "/care-twin-qa still carries mission note, attach-proof, owner-loop, and iOS/Android proof contracts"
+    : "keep /care-twin-qa and the release QA matrix wired to owner-loop device proof",
 );
 
 if (!jsonMode) {
