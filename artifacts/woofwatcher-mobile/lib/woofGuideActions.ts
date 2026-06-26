@@ -147,8 +147,8 @@ function mealLogDraft(
   const caregiver = caregiverName(state);
   return {
     kind: "log_entry",
-    title: "Review meal log draft",
-    body: `Create a reviewed meal log for ${name}. Expected portion: ${expectedPortion}. Adjust served/eaten amounts before saving if this was partial or skipped.`,
+    title: "Review meal served draft",
+    body: `Create a reviewed served-meal log for ${name}. Expected portion: ${expectedPortion}. Save it with outcome pending, then update whether ${name} ate all, ate some, refused, or kept grazing.`,
     cta: "Add reviewed log",
     entry: {
       type: "meal",
@@ -157,7 +157,9 @@ function mealLogDraft(
       occurredAt: new Date(now).toISOString(),
       details: {
         expectedPortion,
-        mealCompletion: "complete",
+        mealCompletion: "served",
+        mealLifecycle: "outcome-pending",
+        requiresOutcomeUpdate: true,
         householdVisible: true,
       },
     },

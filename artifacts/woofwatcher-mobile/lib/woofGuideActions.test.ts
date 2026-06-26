@@ -108,8 +108,12 @@ test("creates an owner-reviewed meal log draft when the first meal is missing", 
 
   const mealAction = actions.find((action) => action.id === "log-meal");
   assert.equal(mealAction?.draft?.kind, "log_entry");
+  assert.equal(mealAction?.draft?.title, "Review meal served draft");
+  assert.match(mealAction?.draft?.body ?? "", /outcome pending/i);
   assert.equal(mealAction?.draft?.entry?.type, "meal");
   assert.equal(mealAction?.draft?.entry?.details?.expectedPortion, "1 cup");
-  assert.equal(mealAction?.draft?.entry?.details?.mealCompletion, "complete");
+  assert.equal(mealAction?.draft?.entry?.details?.mealCompletion, "served");
+  assert.equal(mealAction?.draft?.entry?.details?.mealLifecycle, "outcome-pending");
+  assert.equal(mealAction?.draft?.entry?.details?.requiresOutcomeUpdate, true);
   assert.equal(mealAction?.draft?.entry?.details?.householdVisible, true);
 });

@@ -236,6 +236,9 @@ function describeLastEntry(entry: TodayCommandEntry | undefined, now: number): s
       ? `${minutes} min ago`
       : `${Math.round(minutes / 60)} hr ago`;
   const caregiver = entry.caregiver || "Someone";
+  if (isPendingMealOutcome(entry)) {
+    return `${caregiver} served ${title} ${when}; outcome pending.`;
+  }
   return `${caregiver} logged ${title} ${when}.`;
 }
 

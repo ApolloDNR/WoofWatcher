@@ -92,6 +92,9 @@ test("served meal with pending outcome becomes the primary update action", () =>
   assert.match(command.primaryAction.label, /Update breakfast outcome/i);
   assert.match(command.primaryAction.detail, /served/i);
   assert.match(command.primaryAction.detail, /ate all|some|refused|grazing/i);
+  assert.match(command.handoff.detail, /Emma served Breakfast/i);
+  assert.match(command.handoff.detail, /outcome pending/i);
+  assert.doesNotMatch(command.handoff.detail, /logged Breakfast/i);
 });
 
 test("vomit watch event creates health watch urgency", () => {
