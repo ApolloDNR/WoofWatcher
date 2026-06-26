@@ -23,6 +23,13 @@ import {
 } from "../lib/household";
 
 const router: IRouter = Router();
+const CARE_LOG_SELF_CORRECTION_ROLES = ["sitter", "trainer"] as const;
+
+function isCareLogSelfCorrectionRole(role: string): boolean {
+  return CARE_LOG_SELF_CORRECTION_ROLES.includes(
+    role.toLowerCase() as (typeof CARE_LOG_SELF_CORRECTION_ROLES)[number],
+  );
+}
 
 function toIso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value;
@@ -104,11 +111,12 @@ router.patch("/care-entries/:id", requireAuth, async (req, res): Promise<void> =
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { householdId, allowed } = await requireActiveHouseholdCareLogWrite(userId);
+  const { householdId, role, allowed } = await requireActiveHouseholdCareLogWrite(userId);
   if (!allowed) {
     res.status(403).json({ error: CARE_LOG_WRITE_FORBIDDEN_ERROR });
     return;
   }
+  const patchOwnEntryOnly = isCareLogSelfCorrectionRole(role);
 
   const [updated] = await db
     .update(careEntriesTable)
@@ -132,6 +140,9 @@ router.patch("/care-entries/:id", requireAuth, async (req, res): Promise<void> =
       and(
         eq(careEntriesTable.id, params.data.id),
         eq(careEntriesTable.householdId, householdId),
+        ...(patchOwnEntryOnly
+          ? [eq(careEntriesTable.caregiverUserId, userId)]
+          : []),
       ),
     )
     .returning();
@@ -154,11 +165,12 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    const { householdId, allowed } = await requireActiveHouseholdCareLogWrite(userId);
+    const { householdId, role, allowed } = await requireActiveHouseholdCareLogWrite(userId);
     if (!allowed) {
       res.status(403).json({ error: CARE_LOG_WRITE_FORBIDDEN_ERROR });
       return;
     }
+    const deleteOwnEntryOnly = isCareLogSelfCorrectionRole(role);
     const caregiverName = await getCaregiverName(householdId, userId);
 
     const [deleted] = await db
@@ -167,6 +179,9 @@ router.delete(
         and(
           eq(careEntriesTable.id, params.data.id),
           eq(careEntriesTable.householdId, householdId),
+          ...(deleteOwnEntryOnly
+            ? [eq(careEntriesTable.caregiverUserId, userId)]
+            : []),
         ),
       )
       .returning();

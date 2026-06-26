@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-26: Sitter And Trainer Corrections Are Own-Entry Scoped
+
+Decision: API sitter and trainer roles may create care-entry evidence, but `PATCH /care-entries/:id` and `DELETE /care-entries/:id` should add `caregiverUserId` scoping for those roles. Owner, admin, and member roles retain household-wide log correction authority, and vet viewers remain read-only.
+
+Reason: Household Access describes sitters and trainers as logging/report helpers, not full household log administrators. They should be able to correct their own visit evidence without altering another caregiver's log before final provider-backed permission policy, invite approval, member removal, audit retention, and live integration tests exist.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed caregiver administration, final role-specific permission policy, live API integration tests, or a formal delegated log-review workflow becomes active release work.
+
 ### 2026-06-26: Care Plan Writes Are Stricter Than Care Log Writes
 
 Decision: API care-plan writes should use a stricter role guard than care-log writes. `PUT /care-state` is limited to owner, admin, and member roles because it changes the shared Dog Profile, routines, records, reports, and other care-document state. `POST/PATCH/DELETE /care-entries` remains available to owner, admin, member, sitter, and trainer roles so invited care helpers can log and correct care evidence. Vet viewers stay read-only for both surfaces.

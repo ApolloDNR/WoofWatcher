@@ -334,6 +334,25 @@ test("keeps care-plan writes stricter than caregiver log writes", () => {
   assert.match(careEntries, /CARE_LOG_WRITE_FORBIDDEN_ERROR/);
 });
 
+test("keeps sitter and trainer log corrections limited to their own entries", () => {
+  const careEntries = readApiFile(join("routes", "care-entries.ts"));
+
+  assert.match(careEntries, /const CARE_LOG_SELF_CORRECTION_ROLES = \["sitter", "trainer"\] as const/);
+  assert.match(careEntries, /function isCareLogSelfCorrectionRole\(role: string\): boolean/);
+  assert.match(careEntries, /CARE_LOG_SELF_CORRECTION_ROLES\.includes\([\s\S]*role\.toLowerCase\(\) as/);
+  assert.match(careEntries, /const patchOwnEntryOnly = isCareLogSelfCorrectionRole\(role\)/);
+  assert.match(careEntries, /const deleteOwnEntryOnly = isCareLogSelfCorrectionRole\(role\)/);
+  assert.match(careEntries, /eq\(careEntriesTable\.caregiverUserId, userId\)/);
+  assert.match(
+    careEntries,
+    /and\([\s\S]*eq\(careEntriesTable\.id, params\.data\.id\),[\s\S]*eq\(careEntriesTable\.householdId, householdId\),[\s\S]*\.\.\.\(patchOwnEntryOnly[\s\S]*eq\(careEntriesTable\.caregiverUserId, userId\)/,
+  );
+  assert.match(
+    careEntries,
+    /and\([\s\S]*eq\(careEntriesTable\.id, params\.data\.id\),[\s\S]*eq\(careEntriesTable\.householdId, householdId\),[\s\S]*\.\.\.\(deleteOwnEntryOnly[\s\S]*eq\(careEntriesTable\.caregiverUserId, userId\)/,
+  );
+});
+
 test("keeps care-entry deletes retained as household audit notes", () => {
   const careEntries = readApiFile(join("routes", "care-entries.ts"));
   const mobileContext = readFileSync(
