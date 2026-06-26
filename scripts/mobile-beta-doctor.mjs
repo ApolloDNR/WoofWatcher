@@ -69,6 +69,11 @@ const handoffProofSections = [
   "Provider proof needed",
   "Truth boundaries",
 ];
+const truthBoundaries = [
+  "READY_FOR_EXPORT only means dependency install and web export gates are ready to verify.",
+  "READY_FOR_EXPORT does not approve App Store, Play Store, native device QA, provider sync, storage, AI, payments, legal, privacy, support, or Apollo launch sign-off.",
+  "BLOCKED means do not claim beta export readiness until the listed issues are fixed and the proof commands pass.",
+];
 const nextActions = [
   "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:web.",
   "Open /care-twin-qa on a real device or simulator.",
@@ -344,6 +349,8 @@ if (!jsonMode) {
   for (const action of nextActions) console.log(`- ${action}`);
   console.log("\n48-hour beta handoff must include:");
   for (const section of handoffProofSections) console.log(`- ${section}`);
+  console.log("\nTruth boundaries:");
+  for (const boundary of truthBoundaries) console.log(`- ${boundary}`);
 }
 
 if (issues.length > 0) {
@@ -358,6 +365,7 @@ if (issues.length > 0) {
       proofCommands,
       handoffProofSections,
       nextActions,
+      truthBoundaries,
     }, null, 2));
   } else {
     console.log(`\nMobile beta doctor result: BLOCKED (${issues.length} issue${issues.length === 1 ? "" : "s"})`);
@@ -376,6 +384,7 @@ if (issues.length > 0) {
       proofCommands,
       handoffProofSections,
       nextActions,
+      truthBoundaries,
     }, null, 2));
   } else {
     console.log(`\nMobile beta doctor result: READY FOR EXPORT${suffix}`);

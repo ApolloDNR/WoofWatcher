@@ -999,3 +999,21 @@ Latest local evidence, 2026-06-26:
   line-ending warnings only.
 - Direct JSON doctor still reports `BLOCKED` on the real local export issues:
   missing pnpm and missing mobile Expo dependency resolution.
+
+Latest local evidence, 2026-06-26:
+
+- The mobile beta doctor now emits explicit `truthBoundaries` in JSON mode and
+  prints the same boundaries in human mode.
+- The boundaries say `READY_FOR_EXPORT` covers dependency install/web export
+  gates only, does not approve App Store, Play Store, native device QA, provider
+  sync, storage, AI, payments, legal/privacy/support, or Apollo launch sign-off,
+  and that `BLOCKED` means do not claim beta export readiness.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on the missing
+  `truthBoundaries` payload, then passed after `scripts/mobile-beta-doctor.mjs`
+  was updated.
+- Verification passed 81-test mobile readiness, the direct JSON doctor output,
+  the 421-test zero-dependency behavior/readiness suite, PixelLab verification
+  at 149 files, and `git diff --check` with expected Windows line-ending
+  warnings only.
+- Direct JSON doctor still reports `BLOCKED` on the real local export issues:
+  missing pnpm and missing mobile Expo dependency resolution.

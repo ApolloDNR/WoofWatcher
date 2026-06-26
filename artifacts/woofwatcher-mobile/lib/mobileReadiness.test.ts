@@ -2120,6 +2120,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     nextActions?: string[];
     proofCommands?: string[];
     handoffProofSections?: string[];
+    truthBoundaries?: string[];
   };
 
   assert.equal(payload.name, "WoofWatcher mobile beta doctor");
@@ -2153,4 +2154,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(payload.nextActions?.some((action) => action.includes("pnpm --filter @workspace/woofwatcher-mobile run smoke:web")));
   assert.ok(payload.nextActions?.some((action) => action.includes("/care-twin-qa")));
   assert.ok(payload.nextActions?.some((action) => action.includes("Printable HTML") && action.includes("PDF pending")));
+  assert.ok(payload.truthBoundaries?.some((boundary) => boundary.includes("READY_FOR_EXPORT only")));
+  assert.ok(payload.truthBoundaries?.some((boundary) => boundary.includes("does not approve App Store")));
+  assert.ok(payload.truthBoundaries?.some((boundary) => boundary.includes("BLOCKED means do not claim")));
 });

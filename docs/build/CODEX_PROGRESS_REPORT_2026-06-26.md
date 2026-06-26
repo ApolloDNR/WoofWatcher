@@ -219,3 +219,21 @@
 - Remote verify run `28260679123` for commit `5c1f9fd` failed before job
   execution with job `83735044753`, `steps: []`, and `log not found:
   83735044753`, matching the standing GitHub billing/spending-limit blocker.
+
+## Beta Doctor Truth Boundaries
+
+- `scripts/mobile-beta-doctor.mjs --json` now emits explicit
+  `truthBoundaries`, and human mode prints the same boundary list.
+- The boundaries say `READY_FOR_EXPORT` only covers dependency install and web
+  export gates, does not approve App Store, Play Store, native device QA,
+  provider sync, storage, AI, payments, legal/privacy/support, or Apollo launch
+  sign-off, and that `BLOCKED` means helpers must not claim beta export
+  readiness.
+- Red/green evidence: `mobileReadiness.test.ts` first failed on the missing
+  `truthBoundaries` payload, then passed after the doctor output was wired.
+- Verification passed: 81-test mobile readiness, direct JSON doctor output,
+  421-test zero-dependency behavior/readiness suite, PixelLab asset verification
+  at 149 files, and `git diff --check` with expected Windows line-ending
+  warnings only.
+- Direct JSON doctor still reports `BLOCKED` on missing pnpm and missing mobile
+  Expo dependency resolution.

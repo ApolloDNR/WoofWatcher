@@ -732,6 +732,15 @@ claiming PDF readiness. This keeps Replit, Fable, Apollo, or a native QA helper
 from reading the JSON doctor as export-complete while the real artifact is still
 printable HTML with PDF generation pending.
 
+The beta doctor truth-boundary pass makes the JSON doctor harder to misuse as a
+launch approval artifact. `scripts/mobile-beta-doctor.mjs --json` now emits
+`truthBoundaries`, and human mode prints the same list: `READY_FOR_EXPORT` only
+means dependency install and web export gates are ready to verify, it does not
+approve App Store, Play Store, native device QA, provider sync, storage, AI,
+payments, legal/privacy/support, or Apollo launch sign-off, and `BLOCKED` means
+helpers must not claim beta export readiness until the listed issues and proof
+commands pass.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
