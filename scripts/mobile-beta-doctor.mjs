@@ -187,8 +187,10 @@ const pixellabVerifier = join(mobileRoot, "scripts", "verify-pixellab-assets.js"
 check("PixelLab verifier exists", existsSync(pixellabVerifier), "run pnpm --filter @workspace/woofwatcher-mobile run verify:pixellab-assets");
 
 const betaHandoffPacketPath = join(mobileRoot, "lib", "betaHandoffPacket.ts");
+const mobileLaunchQaEvidencePath = join(mobileRoot, "lib", "mobileLaunchQaEvidence.ts");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
 const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
+const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath) ? readFileSync(mobileLaunchQaEvidencePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
 const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Dependency proof commands:",
@@ -204,6 +206,29 @@ check(
   betaHandoffProofSectionsPresent
     ? "handoff packet has dependency, device, provider, and truth-boundary sections"
     : "keep Share Beta Handoff wired to dependency, device, provider, and truth-boundary proof sections",
+);
+
+const ownerPreviewProofWiringIsSourceBacked = includesAll(mobileLaunchQaEvidenceSource, [
+  "ownerPreviewProofStatus",
+  "OWNER_PREVIEW_CORE_LOOP_ID",
+  "Owner preview proof:",
+])
+  && includesAll(betaHandoffPacketSource, [
+    "ownerPreviewProofStatus",
+    "Owner preview proof:",
+    "Owner preview missing:",
+  ])
+  && includesAll(moreRouteSource, [
+    "ownerPreviewProofStatus",
+    "Owner preview proof",
+    "Finish Proof",
+  ]);
+check(
+  "owner preview proof wiring is source-backed",
+  ownerPreviewProofWiringIsSourceBacked,
+  ownerPreviewProofWiringIsSourceBacked
+    ? "owner-preview proof status is wired through QA plan, More, and beta handoff"
+    : "keep Owner Preview Core Loop proof visible in QA plan, More, and Share Beta Handoff",
 );
 
 if (!jsonMode) {

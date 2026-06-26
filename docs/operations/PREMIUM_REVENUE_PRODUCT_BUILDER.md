@@ -572,6 +572,16 @@ print the owner-preview proof status and missing proof so Apollo, Replit,
 Fable, or a device helper cannot claim owner-preview beta proof from partial
 screenshots alone.
 
+The owner-preview doctor source-validation pass now protects that wiring from
+drift. `scripts/mobile-beta-doctor.mjs --json` emits `owner preview proof
+wiring is source-backed` only when the QA evidence model still derives
+`ownerPreviewProofStatus` from `OWNER_PREVIEW_CORE_LOOP_ID`, the beta handoff
+packet still prints `Owner preview proof` plus `Owner preview missing`, and
+More still displays `Owner preview proof` with the `Finish Proof` recovery CTA.
+This gives Apollo, Replit, Fable, or a native helper one machine-readable check
+that the owner-preview beta proof row is still wired before anyone spends time
+on device screenshots.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
