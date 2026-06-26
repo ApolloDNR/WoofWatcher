@@ -619,6 +619,13 @@ pending meal before moving on to the walk/routine queue, and caregiver handoff
 now separates "meals resolved" from "outcome pending" so sitters, owners, and
 reports do not mistake a bowl on the floor for a completed meal.
 
+The Routine Board pending-state pass made the same lifecycle visible in Plans
+and assigned routine views. `deriveRoutineBoard` now has a `pending` status and
+`Outcome pending` completion label for served/grazing meals, keeps those routines
+open, preserves who served them, and surfaces them as the next routine until the
+household records the outcome. Partial, skipped/refused, and completed meal
+outcomes still satisfy the matching routine.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

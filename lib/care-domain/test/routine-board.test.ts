@@ -167,6 +167,51 @@ test("meal logs record partial and skipped completion while satisfying the match
   assert.equal(dinner?.completionLabel, "Skipped");
 });
 
+test("served meal keeps the matching routine open until the outcome is updated", () => {
+  const board = deriveRoutineBoard({
+    now: NOW,
+    routines: [
+      { id: "breakfast", label: "Breakfast", type: "meal", time: "7:30 AM", owner: "Emma" },
+      { id: "walk", label: "Morning walk", type: "walk", time: "8:30 AM", owner: "Apollo" },
+    ],
+    entries: [
+      {
+        id: "meal_served",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T07:38:00-07:00",
+        details: {
+          routineId: "breakfast",
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "walk_done",
+        type: "walk",
+        title: "Morning walk",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T08:45:00-07:00",
+        details: { routineId: "walk", householdVisible: true },
+      },
+    ],
+  });
+
+  const breakfast = board.items.find((item) => item.id === "breakfast");
+
+  assert.equal(board.doneCount, 1);
+  assert.equal(board.openCount, 1);
+  assert.equal(board.next?.id, "breakfast");
+  assert.equal(breakfast?.status, "pending");
+  assert.equal(breakfast?.completion, "pending");
+  assert.equal(breakfast?.completionLabel, "Outcome pending");
+  assert.equal(breakfast?.completedBy, "Emma");
+});
+
 test("private logs do not satisfy household routines", () => {
   const board = deriveRoutineBoard({
     now: NOW,
