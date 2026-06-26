@@ -908,3 +908,17 @@ Static mobile readiness executes that command, parses the JSON, and protects the
 current truthful `BLOCKED` result along with the Node 24 and EAS pass checks.
 The JSON gate is ready for Replit/native helpers, but it still correctly blocks
 this shell until pnpm 10.24.0 and the mobile Expo dependency layer are present.
+
+Current evidence, 2026-06-26: Weekly Care Trends, Records, and Care Pass now
+keep open meal outcomes visible instead of treating served-only meals as
+resolved care. `deriveCareTrends` separates pending outcomes from complete,
+partial, and skipped meal counts; report highlights and Meal Watch signals tell
+the household to update served meal outcomes before treating the week as
+resolved; Records exposes a `Meal open` metric; and Care Pass trend copy
+includes pending outcome counts. Local verification passed focused Care
+Trends/Care Pass tests, mobile readiness, the 418-test zero-dependency
+behavior/readiness suite, PixelLab asset verification at 149 files, and
+`git diff --check` with expected Windows line-ending warnings only. Remote
+verify run `28234625027` failed before job execution with zero steps and no
+logs, matching the standing GitHub billing/spending-limit blocker rather than a
+local code regression.
