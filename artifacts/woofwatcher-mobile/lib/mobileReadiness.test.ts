@@ -1936,7 +1936,10 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /accessibilityLabel="Share WoofWatcher release packet"/);
   assert.match(more, /accessibilityLabel="Share WoofWatcher store submission packet"/);
   assert.match(more, /Share\.share\(\{[\s\S]*message:\s*buildLaunchProviderSetupShareText\(launchProviderSetupPlan/);
-  assert.match(more, /const message = buildBetaHandoffPacketShareText\(launchReleasePacket,\s*nativeQaCapturePlan/);
+  assert.match(
+    more,
+    /const message = buildBetaHandoffPacketShareText\(launchReleasePacket,\s*nativeQaCapturePlan,\s*\{[\s\S]*providerSetupPlan:\s*launchProviderSetupPlan/,
+  );
   assert.match(more, /Share\.share\(\{ message,\s*title:\s*"WoofWatcher 48-Hour Beta Handoff" \}/);
   assert.match(more, /Share\.share\(\{ message: buildReleasePacketShareText\(launchReleasePacket\)/);
   assert.match(more, /Share\.share\(\{ message: buildStoreSubmissionPacketShareText\(launchStoreSubmissionPacket\)/);

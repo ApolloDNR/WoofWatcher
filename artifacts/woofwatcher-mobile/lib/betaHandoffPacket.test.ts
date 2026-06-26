@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { buildBetaHandoffPacketShareText } from "./betaHandoffPacket.ts";
+import { deriveLaunchProviderSetup } from "./launchProviderSetup.ts";
 import { deriveLaunchReadiness, type LaunchReadinessInput } from "./launchReadiness.ts";
 import { buildMobileLaunchQaCapturePlan } from "./mobileLaunchQaEvidence.ts";
 import type { MobileQaSessionState } from "./mobileQaSession.ts";
@@ -77,8 +78,22 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
     generatedAtIso: "2026-06-25T12:00:00.000Z",
   });
   const qaPlan = buildMobileLaunchQaCapturePlan(null, [ownerLoopSurface]);
+  const providerSetupPlan = deriveLaunchProviderSetup({
+    authConfigured: false,
+    databaseConfigured: false,
+    storageProviderConfigured: false,
+    aiProviderConfigured: false,
+    paymentsEnabled: false,
+    accountDeletionEnabled: false,
+    pushNotificationsConfigured: false,
+    appStoreAccountsReady: false,
+    providerStatus: "local-draft",
+  });
 
-  const text = buildBetaHandoffPacketShareText(releasePacket, qaPlan, "2026-06-25T12:05:00.000Z");
+  const text = buildBetaHandoffPacketShareText(releasePacket, qaPlan, {
+    generatedAtIso: "2026-06-25T12:05:00.000Z",
+    providerSetupPlan,
+  });
 
   assert.match(text, /WoofWatcher 48-Hour Beta Handoff/);
   assert.match(text, /Generated: 2026-06-25T12:05:00.000Z/);
@@ -96,6 +111,11 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /pnpm run doctor:mobile-beta:json/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run smoke:web/);
   assert.match(text, /Dependency proof only counts when both doctor commands report no blockers/);
+  assert.match(text, /Provider proof needed:/);
+  assert.match(text, /Production auth: Clerk production app id/);
+  assert.match(text, /Household database sync: Supabase project id/);
+  assert.match(text, /Records and media storage: Storage bucket names/);
+  assert.match(text, /Provider proof does not approve App Store, Play Store, payment, AI, storage, or database readiness/);
   assert.match(text, /Done condition: capture required iOS\/Android proof, save the Mission note, clear Pass pending proof, then share the QA summary/);
   assert.match(text, /Truth boundaries:/);
   assert.match(text, /No App Store or Play Store submission is approved by this packet/);

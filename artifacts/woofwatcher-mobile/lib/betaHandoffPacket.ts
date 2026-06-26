@@ -3,6 +3,7 @@ import {
   type MobileLaunchQaCapturePlan,
   type MobileLaunchQaCaptureTarget,
 } from "./mobileLaunchQaEvidence.ts";
+import type { LaunchProviderSetupPlan } from "./launchProviderSetup.ts";
 import type { ReleasePacket } from "./releasePacket.ts";
 
 const dependencyProofCommands = [
@@ -13,9 +14,38 @@ const dependencyProofCommands = [
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
 ] as const;
 
+export type BetaHandoffPacketOptions =
+  | string
+  | {
+      generatedAtIso?: string;
+      providerSetupPlan?: LaunchProviderSetupPlan;
+    };
+
 function formatList(items: readonly string[], fallback: string): string {
   if (!items.length) return `- ${fallback}`;
   return items.map((item) => `- ${item}`).join("\n");
+}
+
+function normalizeOptions(input: BetaHandoffPacketOptions | undefined): {
+  generatedAtIso: string;
+  providerSetupPlan?: LaunchProviderSetupPlan;
+} {
+  if (typeof input === "string") return { generatedAtIso: input };
+  return {
+    generatedAtIso: input?.generatedAtIso ?? new Date().toISOString(),
+    providerSetupPlan: input?.providerSetupPlan,
+  };
+}
+
+function formatProviderProof(plan: LaunchProviderSetupPlan | undefined): string[] {
+  if (!plan) return [];
+
+  return [
+    "",
+    "Provider proof needed:",
+    ...plan.rows.map((row) => `- ${row.label}: ${row.proofRequired}`),
+    "- Provider proof does not approve App Store, Play Store, payment, AI, storage, or database readiness.",
+  ];
 }
 
 function formatCurrentMission(target: MobileLaunchQaCaptureTarget | undefined): string[] {
@@ -59,8 +89,9 @@ function formatCurrentMission(target: MobileLaunchQaCaptureTarget | undefined): 
 export function buildBetaHandoffPacketShareText(
   releasePacket: ReleasePacket,
   capturePlan: MobileLaunchQaCapturePlan,
-  generatedAtIso = new Date().toISOString(),
+  optionsOrGeneratedAt?: BetaHandoffPacketOptions,
 ): string {
+  const { generatedAtIso, providerSetupPlan } = normalizeOptions(optionsOrGeneratedAt);
   const currentMission = capturePlan.nextTargets[0];
 
   return [
@@ -84,6 +115,7 @@ export function buildBetaHandoffPacketShareText(
     formatList(dependencyProofCommands, "Run the mobile beta doctor before sharing."),
     "- Dependency proof only counts when both doctor commands report no blockers.",
     "- If JSON doctor reports BLOCKED, attach the JSON output to the handoff instead of claiming readiness.",
+    ...formatProviderProof(providerSetupPlan),
     "",
     "Truth boundaries:",
     "- No App Store or Play Store submission is approved by this packet.",

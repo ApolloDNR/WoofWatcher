@@ -1001,7 +1001,10 @@ export default function MoreScreen() {
 
   const shareBetaHandoffPacket = () => {
     const generatedAtIso = new Date(now).toISOString();
-    const message = buildBetaHandoffPacketShareText(launchReleasePacket, nativeQaCapturePlan, generatedAtIso);
+    const message = buildBetaHandoffPacketShareText(launchReleasePacket, nativeQaCapturePlan, {
+      generatedAtIso,
+      providerSetupPlan: launchProviderSetupPlan,
+    });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Share.share({ message, title: "WoofWatcher 48-Hour Beta Handoff" }).catch(() =>
       Alert.alert("Beta Handoff", message),

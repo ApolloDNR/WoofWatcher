@@ -520,6 +520,15 @@ the owner-readable `Share Beta Handoff` packet. Helpers now see
 handoff, alongside explicit copy that dependency proof only counts when both
 doctor commands report no blockers.
 
+The beta handoff provider-proof pass merged the Provider Launch Setup evidence
+map into that same owner-readable packet. `buildBetaHandoffPacketShareText` now
+accepts a provider setup plan, keeps backward-compatible timestamp calls, and
+adds a `Provider proof needed` section for Clerk, Supabase/RLS, storage, AI
+policy, payments, push, store accounts, and account deletion. More passes the
+live `launchProviderSetupPlan` into `Share Beta Handoff`, so the deadline packet
+now carries dependency proof, device proof, provider proof, and truth boundaries
+without requiring helpers to cross-reference a second provider share artifact.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

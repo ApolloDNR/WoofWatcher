@@ -46,6 +46,18 @@
 - This remains a launch-prep checklist only. It does not claim Clerk, Supabase,
   storage, AI, payments, push, store, or deletion approval.
 
+## Beta Handoff Provider Proof
+
+- `Share Beta Handoff` now accepts the live Provider Launch Setup plan from
+  More and includes the same `Provider proof needed` checklist.
+- The packet now carries dependency proof, current device mission/proof gaps,
+  provider evidence, and launch truth boundaries in one owner-readable handoff
+  for Apollo, Replit, Fable, or a native helper.
+- The beta handoff function keeps its old timestamp-only call form while adding
+  a structured options form for the provider plan.
+- Provider proof collection remains evidence only; it does not approve stores,
+  payments, AI, storage, database, or public launch.
+
 ## Verification
 
 - Red/green JSON doctor readiness: `mobileReadiness.test.ts` first failed on
@@ -61,6 +73,11 @@
   missing `proofRequired` and `Proof Needed` output, then passed after the
   model/share text were updated; `mobileReadiness.test.ts` protects More's
   visible `Proof needed:` row copy.
+- Red/green beta handoff provider proof: `betaHandoffPacket.test.ts` first
+  failed because the new options object was rendered as `[object Object]` and
+  no provider proof existed in the packet, then passed after
+  `buildBetaHandoffPacketShareText` accepted provider setup options and More
+  passed `launchProviderSetupPlan`.
 - Direct text doctor: exits blocked with the expected two issues, missing pnpm
   and missing mobile `expo` dependency resolution.
 - Direct JSON doctor: exits blocked with valid JSON and the same two issues.
