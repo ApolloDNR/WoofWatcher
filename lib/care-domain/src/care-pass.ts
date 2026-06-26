@@ -185,6 +185,64 @@ function latestEntries(
     .slice(0, limit);
 }
 
+function detailRecord(entry: CareHealthEntry): Record<string, unknown> {
+  return entry.details != null && typeof entry.details === "object" && !Array.isArray(entry.details)
+    ? entry.details
+    : {};
+}
+
+function lower(value: unknown): string {
+  return clean(value).toLowerCase();
+}
+
+function isHouseholdVisible(entry: CareHealthEntry): boolean {
+  return detailRecord(entry).householdVisible !== false;
+}
+
+function isPendingMeal(entry: CareHealthEntry): boolean {
+  const details = detailRecord(entry);
+  const completion = lower(details.mealCompletion ?? details.completion ?? details.outcome);
+  const lifecycle = lower(details.mealLifecycle);
+  return ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(completion) ||
+    ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(lifecycle);
+}
+
+function hasExactEatenAmount(details: Record<string, unknown>): boolean {
+  return Number.isFinite(Number(details.eatenAmount ?? details.amountEaten ?? details.eatenQuantity));
+}
+
+function isEstimatedMeal(entry: CareHealthEntry): boolean {
+  const details = detailRecord(entry);
+  const completion = lower(details.mealCompletion ?? details.completion ?? details.outcome);
+  if (details.eatenAmountEstimated === true) return true;
+  return ["partial", "ate some", "some"].includes(completion) && !hasExactEatenAmount(details);
+}
+
+function hasCorrectionAudit(entry: CareHealthEntry): boolean {
+  const details = detailRecord(entry);
+  if (lower(details.trustState) === "corrected") return true;
+  const auditTrail = Array.isArray(details.auditTrail) ? details.auditTrail : [];
+  return auditTrail.some((event) => {
+    if (event == null || typeof event !== "object" || Array.isArray(event)) return false;
+    const record = event as Record<string, unknown>;
+    return lower(record.action) === "corrected" || lower(record.summary).includes("corrected");
+  });
+}
+
+function mealFollowUpLines(entries: readonly CareHealthEntry[], limit = 6): string[] {
+  return entries
+    .filter((entry) => normalizeCareEventType(entry.type, entry.details) === "meal" && isHouseholdVisible(entry))
+    .flatMap((entry) => {
+      const label = entryLabel(entry);
+      return [
+        isPendingMeal(entry) ? `Outcome pending: ${label} - update eaten amount before sharing.` : "",
+        isEstimatedMeal(entry) ? `Estimated amount: ${label} - confirm exact eaten amount if possible.` : "",
+        hasCorrectionAudit(entry) ? `Corrected outcome: ${label} - review audit history before sharing.` : "",
+      ].filter(notEmpty);
+    })
+    .slice(0, limit);
+}
+
 function section(title: string, lines: string[]): CarePassSection | null {
   const cleaned = lines.map(clean).filter(notEmpty);
   return cleaned.length ? { title, lines: cleaned } : null;
@@ -631,6 +689,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
       diet.sensitivities ? `Sensitivities: ${diet.sensitivities}` : "",
       diet.appetiteQuirks ? `Appetite notes: ${diet.appetiteQuirks}` : "",
     ]),
+    section("Meal Follow-ups", mealFollowUpLines(entries)),
     section("Weight Trend", [
       weightTrend.summary,
       weightTrend.goalWeight ? `Goal: ${weightTrend.goalWeight} ${weightTrend.unit}` : "",

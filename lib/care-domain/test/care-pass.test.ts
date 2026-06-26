@@ -153,6 +153,71 @@ test("care pass diet section labels pending and estimated meal amounts", () => {
   assert.match(pass.message, /Meal amount note: 1 outcome pending; 1 estimated partial amount/);
 });
 
+test("care pass includes meal follow-up rows for pending estimated and corrected outcomes", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    entries: [
+      {
+        id: "breakfast-served",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T07:00:00-07:00",
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "lunch-partial",
+        type: "meal",
+        title: "Lunch",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T12:00:00-07:00",
+        details: {
+          mealCompletion: "partial",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "dinner-corrected",
+        type: "meal",
+        title: "Dinner",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T14:00:00-07:00",
+        details: {
+          mealCompletion: "partial",
+          eatenAmount: 0.5,
+          eatenUnit: "cup",
+          householdVisible: true,
+          trustState: "corrected",
+          auditTrail: [
+            {
+              id: "audit-1",
+              action: "corrected",
+              createdAt: "2026-06-06T14:30:00-07:00",
+              caregiver: "Apollo",
+              summary: "Apollo corrected Dinner from ate all to ate some.",
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  const followUps = pass.sections.find((section) => section.title === "Meal Follow-ups");
+  assert.ok(followUps);
+  assert.match(pass.message, /Outcome pending: Breakfast \(Emma, 7:00 AM\) - update eaten amount before sharing/);
+  assert.match(pass.message, /Estimated amount: Lunch \(Apollo, 12:00 PM\) - confirm exact eaten amount if possible/);
+  assert.match(pass.message, /Corrected outcome: Dinner \(Emma, 2:00 PM\) - review audit history before sharing/);
+});
+
 test("builds a vet care pass with health signals and records", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
 
