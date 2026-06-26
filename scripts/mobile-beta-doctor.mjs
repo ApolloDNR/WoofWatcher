@@ -342,6 +342,22 @@ check(
     : "keep Owner Preview Care Pass storage proof in release QA, share text, and /care-twin-qa route loop",
 );
 
+const betaHandoffTruthBoundariesAreSourceBacked = includesAll(betaHandoffPacketSource, [
+  "Truth boundaries:",
+  "No App Store or Play Store submission is approved by this packet.",
+  "Provider-backed auth, database, storage, AI, push, and payments must stay gated until credentials and policies are configured.",
+  "WoofGuide stays non-diagnostic and owner-reviewed.",
+  "Public launch remains separate from local beta evidence.",
+])
+  && truthBoundaries.every((boundary) => boundary.includes("READY_FOR_EXPORT") || boundary.includes("does not approve") || boundary.includes("BLOCKED"));
+check(
+  "beta handoff truth boundaries are source-backed",
+  betaHandoffTruthBoundariesAreSourceBacked,
+  betaHandoffTruthBoundariesAreSourceBacked
+    ? "Beta Handoff and JSON doctor both separate beta export proof from public launch/provider approval"
+    : "keep Beta Handoff truth boundaries aligned with the JSON doctor before helpers claim readiness",
+);
+
 if (!jsonMode) {
   console.log("\nDependency proof commands:");
   for (const command of proofCommands) console.log(`- ${command}`);

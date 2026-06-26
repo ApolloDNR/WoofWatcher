@@ -1017,3 +1017,17 @@ Latest local evidence, 2026-06-26:
   warnings only.
 - Direct JSON doctor still reports `BLOCKED` on the real local export issues:
   missing pnpm and missing mobile Expo dependency resolution.
+
+Latest local evidence, 2026-06-26:
+
+- The mobile beta doctor now source-validates the owner-readable Beta Handoff
+  truth-boundary section before passing the machine-readable handoff guard.
+- The protected chain requires the packet to keep the no-store-submission,
+  provider-gated, non-diagnostic WoofGuide, and public-launch-separate-from-beta
+  evidence boundaries aligned with the JSON `truthBoundaries` payload.
+- Verification passed 81-test mobile readiness, direct JSON doctor output, the
+  382-test zero-dependency behavior/readiness suite, PixelLab asset verification
+  at 149 files, and `git diff --check` with expected Windows line-ending
+  warnings only.
+- Direct JSON doctor still reports `BLOCKED` on the real local export issues:
+  missing pnpm and missing mobile Expo dependency resolution.

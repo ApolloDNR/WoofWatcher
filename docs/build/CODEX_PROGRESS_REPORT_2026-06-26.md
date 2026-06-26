@@ -240,3 +240,23 @@
 - Remote verify run `28261499997` for commit `9078035` failed before job
   execution with job `83737811594`, `steps: []`, and `log not found:
   83737811594`, matching the standing GitHub billing/spending-limit blocker.
+
+## Beta Handoff Truth-Boundary Source Guard
+
+- `scripts/mobile-beta-doctor.mjs --json` now source-validates that the
+  one-tap Beta Handoff packet still carries the same public-launch and provider
+  truth boundaries as the machine-readable doctor.
+- The new `beta handoff truth boundaries are source-backed` check only passes
+  when the packet still says no App Store or Play Store submission is approved,
+  provider-backed auth/database/storage/AI/push/payments remain gated, WoofGuide
+  stays non-diagnostic and owner-reviewed, and public launch remains separate
+  from local beta evidence.
+- Static readiness now protects the new doctor check, so helpers cannot treat a
+  JSON doctor payload as launch approval if the owner-readable handoff packet
+  drifts.
+- Verification passed 81-test mobile readiness, direct JSON doctor output, the
+  382-test zero-dependency behavior/readiness suite, PixelLab asset verification
+  at 149 files, and `git diff --check` with expected Windows line-ending
+  warnings only.
+- Direct JSON doctor still reports `BLOCKED` on the real local export issues:
+  missing pnpm and missing mobile Expo dependency resolution.

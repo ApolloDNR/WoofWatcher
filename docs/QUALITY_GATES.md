@@ -992,3 +992,15 @@ suite, PixelLab asset verification at 149 files, and `git diff --check` with
 expected Windows line-ending warnings only. Direct JSON doctor output remains
 truthfully blocked on missing pnpm and missing mobile Expo dependency
 resolution.
+
+Current evidence, 2026-06-26: The mobile beta doctor now source-validates the
+Beta Handoff packet's truth-boundary section. Its JSON payload includes
+`beta handoff truth boundaries are source-backed` only when the owner-readable
+handoff packet still separates local beta evidence from App Store/Play Store
+approval, provider-backed auth/database/storage/AI/push/payments, and
+non-diagnostic WoofGuide boundaries. Local verification passed mobile
+readiness, direct JSON doctor output, the 382-test zero-dependency
+behavior/readiness suite, PixelLab asset verification at 149 files, and
+`git diff --check` with expected Windows line-ending warnings only. Direct JSON
+doctor output remains truthfully blocked on missing pnpm and missing mobile
+Expo dependency resolution.
