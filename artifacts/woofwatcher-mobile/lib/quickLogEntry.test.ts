@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildQuickLogEntry, getQuickLogPolicy, type QuickLogState } from "./quickLogEntry.ts";
+import {
+  buildQuickLogEntry,
+  describeQuickLogLauncherAction,
+  getQuickLogPolicy,
+  type QuickLogState,
+} from "./quickLogEntry.ts";
 
 process.env.TZ = "America/Los_Angeles";
 
@@ -268,4 +273,23 @@ test("quick log policy keeps safety-critical logs in the detail sheet", () => {
   assert.equal(getQuickLogPolicy("altercation").type, "incident");
   assert.equal(getQuickLogPolicy("incident").quickLabel, "incident detail");
   assert.equal(getQuickLogPolicy("potty").detailContract, "parent-outcome");
+});
+
+test("launcher presentation distinguishes quick tap logs from detail-first logs", () => {
+  assert.deepEqual(describeQuickLogLauncherAction("meal", "Meal"), {
+    modeLabel: "Tap log",
+    detailRequired: false,
+    accessibilityLabel: "Quick log Meal. Long press for details.",
+    feedbackHint: "Tap saves the usual log. Long press opens more fields.",
+  });
+
+  assert.deepEqual(describeQuickLogLauncherAction("medication", "Medication"), {
+    modeLabel: "Details",
+    detailRequired: true,
+    accessibilityLabel: "Open Medication details. This log needs context before saving.",
+    feedbackHint: "Details first for health, medication, and incident logs.",
+  });
+
+  assert.equal(describeQuickLogLauncherAction("vomit", "Vomit").modeLabel, "Details");
+  assert.equal(describeQuickLogLauncherAction("incident", "Incident").detailRequired, true);
 });

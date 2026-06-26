@@ -836,10 +836,15 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.match(log, /moodTone/);
   assert.match(log, /flexBasis: "47\.5%"/);
   assert.match(log, /buildQuickLogEntry/);
+  assert.match(log, /describeQuickLogLauncherAction/);
   assert.match(log, /getQuickLogPolicy/);
   assert.match(log, /handleQuickLauncherAction/);
   assert.match(log, /openDetailedLauncherAction/);
   assert.match(log, /onLongPress=\{\(\) => openDetailedLauncherAction\(action\)\}/);
+  assert.match(log, /launcherPresentation\.accessibilityLabel/);
+  assert.match(log, /launcherPresentation\.feedbackHint/);
+  assert.match(log, /launcherPresentation\.modeLabel/);
+  assert.match(log, /launcherTileMode/);
   assert.match(log, /\{ label: "Potty", type: "potty"/);
   assert.doesNotMatch(log, /\{ label: "Pee", type: "potty"/);
   assert.doesNotMatch(log, /\{ label: "Poo", type: "potty"/);

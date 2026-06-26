@@ -301,3 +301,26 @@ Latest local evidence, 2026-06-26:
   accounts/storage/AI/payments/push configuration, app-store accounts,
   privacy/legal/support approval, final Apollo visual sign-off, and remote CI
   after GitHub billing/spending-limit execution is restored.
+
+## Quick Log Launcher Policy Polish
+
+Latest local evidence, 2026-06-26:
+
+- Quick Log launcher tiles now expose the shared quick-log policy in the UI.
+  Safe casual actions show `Tap log`, while detail-required actions such as
+  medication, vomit/health context, and incident-style logs show `Details`.
+- Screen-reader labels and hints now match the actual tap behavior, so a
+  medication-style tile says it opens details instead of sounding like a casual
+  instant log.
+- The post-log feedback copy now comes from the same shared launcher policy,
+  keeping the undo/add-details moment aligned with the tap versus detail-first
+  contract.
+- Verification passed:
+  - `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\quickLogEntry.test.ts`
+  - `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\mobileReadiness.test.ts`
+  - `node --experimental-strip-types --test artifacts\woofwatcher-mobile\lib\*.test.ts lib\care-domain\test\*.test.ts`
+  - `node artifacts\woofwatcher-mobile\scripts\verify-pixellab-assets.js`
+  - `git diff --check` with expected Windows line-ending warnings only.
+- `where pnpm` still found no global `pnpm` command in this shell, so full
+  workspace package-manager commands and native/export proof still need a
+  dependency-complete environment.

@@ -89,6 +89,13 @@ export interface QuickLogPolicy {
   requiresConfirmation: boolean;
 }
 
+export interface QuickLogLauncherPresentation {
+  modeLabel: "Tap log" | "Details";
+  accessibilityLabel: string;
+  feedbackHint: string;
+  detailRequired: boolean;
+}
+
 function statusRank(routine: RoutineBoardItem): number {
   if (routine.status === "overdue") return 0;
   if (routine.status === "due") return 1;
@@ -212,6 +219,29 @@ export function getQuickLogPolicy(type: string | null | undefined): QuickLogPoli
     detailContract: "simple",
     quickLabel: "quick log",
     requiresConfirmation: false,
+  };
+}
+
+export function describeQuickLogLauncherAction(
+  type: string | null | undefined,
+  label: string,
+): QuickLogLauncherPresentation {
+  const policy = getQuickLogPolicy(type);
+  const safeLabel = clean(label) || policy.type;
+  if (policy.tapBehavior === "detail-required") {
+    return {
+      modeLabel: "Details",
+      detailRequired: true,
+      accessibilityLabel: `Open ${safeLabel} details. This log needs context before saving.`,
+      feedbackHint: "Details first for health, medication, and incident logs.",
+    };
+  }
+
+  return {
+    modeLabel: "Tap log",
+    detailRequired: false,
+    accessibilityLabel: `Quick log ${safeLabel}. Long press for details.`,
+    feedbackHint: "Tap saves the usual log. Long press opens more fields.",
   };
 }
 

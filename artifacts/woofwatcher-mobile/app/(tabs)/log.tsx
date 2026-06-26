@@ -79,7 +79,11 @@ import {
   MEAL_OUTCOME_UPDATE_OPTIONS,
   type MealOutcomeUpdate,
 } from "@/lib/mealOutcomeUpdate";
-import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
+import {
+  buildQuickLogEntry,
+  describeQuickLogLauncherAction,
+  getQuickLogPolicy,
+} from "@/lib/quickLogEntry";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
 import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
@@ -2033,11 +2037,13 @@ export default function LogScreen() {
             <View style={s.launcherGrid}>
               {launcherActions.map((action) => {
                 const active = selectedLauncherKey === launcherActionKey(action);
+                const launcherPresentation = describeQuickLogLauncherAction(action.type, action.label);
                 return (
                   <Pressable
                     key={`${action.label}-${action.type}`}
                     accessibilityRole="button"
-                    accessibilityLabel={`Quick log ${action.label}. Long press for details.`}
+                    accessibilityLabel={launcherPresentation.accessibilityLabel}
+                    accessibilityHint={launcherPresentation.feedbackHint}
                     accessibilityState={{ selected: active }}
                     onPress={() => handleQuickLauncherAction(action)}
                     onLongPress={() => openDetailedLauncherAction(action)}
@@ -2045,8 +2051,12 @@ export default function LogScreen() {
                       s.launcherTile,
                       {
                         backgroundColor: active ? colors.ivory : colors.background,
-                        borderColor: active ? colors.copper : colors.border,
-                        shadowColor: active ? colors.copper : colors.navy,
+                        borderColor: launcherPresentation.detailRequired
+                          ? colors.amber + "88"
+                          : active
+                            ? colors.copper
+                            : colors.border,
+                        shadowColor: launcherPresentation.detailRequired ? colors.amber : active ? colors.copper : colors.navy,
                         shadowOpacity: active ? 0.13 : 0,
                         shadowRadius: active ? 10 : 0,
                         shadowOffset: { width: 0, height: active ? 5 : 0 },
@@ -2078,6 +2088,29 @@ export default function LogScreen() {
                     >
                       {action.label}
                     </Text>
+                    <View
+                      style={[
+                        s.launcherTileMode,
+                        {
+                          backgroundColor: launcherPresentation.detailRequired ? colors.amber + "18" : colors.sage + "16",
+                          borderColor: launcherPresentation.detailRequired ? colors.amber + "55" : colors.sage + "44",
+                        },
+                      ]}
+                    >
+                      <Text
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        style={[
+                          s.launcherTileModeText,
+                          {
+                            color: launcherPresentation.detailRequired ? colors.copper : colors.sage,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        {launcherPresentation.modeLabel}
+                      </Text>
+                    </View>
                   </Pressable>
                 );
               })}
@@ -2090,7 +2123,7 @@ export default function LogScreen() {
                     {lastQuickLog.title} logged
                   </Text>
                   <Text style={[s.quickFeedbackSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    Quick tap saved it. Add details when this care moment needs proof.
+                    {describeQuickLogLauncherAction(state.entries.find((item) => item.id === lastQuickLog.id)?.type, lastQuickLog.title).feedbackHint}
                   </Text>
                 </View>
                 <View style={s.quickFeedbackActions}>
@@ -4195,6 +4228,20 @@ const s = StyleSheet.create({
   launcherTileText: {
     fontSize: 11,
     textAlign: "center",
+  },
+  launcherTileMode: {
+    minHeight: 18,
+    maxWidth: "100%",
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launcherTileModeText: {
+    fontSize: 8.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   moodPanel: {
     borderWidth: 1,

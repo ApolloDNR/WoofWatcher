@@ -1046,3 +1046,15 @@ Latest local evidence, 2026-06-26:
 - Launch QA still requires native iOS and Android screenshots/evidence from
   `/care-twin-qa`, provider-backed configuration proof, store-account proof,
   legal/privacy/support approval, and Apollo sign-off before public release.
+
+Latest local evidence, 2026-06-26:
+
+- Quick Log QA must confirm launcher tiles communicate the action mode before
+  a tester taps: routine/casual care tiles show `Tap log`, and medication,
+  vomit/health context, and incident-style tiles show `Details`.
+- Screen-reader traversal must hear labels and hints that match the real tap
+  result. Detail-first tiles should say they open details and need context
+  before saving.
+- Focused proof passed through `quickLogEntry.test.ts` and
+  `mobileReadiness.test.ts`; broader local proof passed the 383-test
+  behavior/readiness suite and PixelLab verification at 149 files.
