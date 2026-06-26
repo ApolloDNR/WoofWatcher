@@ -950,3 +950,15 @@ expected Windows line-ending warnings only. Remote verify run `28236929754` for
 commit `2636b04` failed before job execution with job `83653949111`,
 `steps: []`, and `log not found: 83653949111`, matching the standing GitHub
 billing/spending-limit blocker rather than a local code regression.
+
+Current evidence, 2026-06-26: The mobile beta doctor now source-validates the
+provider-aware Care Pass report storage chain. Its JSON payload includes
+`provider-aware Care Pass storage is source-backed` only when `care-pass.ts`
+still exposes the storage-provider option and local false-provider-backed
+boundary, and `records.tsx` still feeds `launchProviderProfile` storage setup
+into the report-history status helper. This keeps dependency-complete export
+helpers from missing a regression in Records/Care Pass provider truth while
+native beta proof remains the external gate. Local verification passed mobile
+readiness, the 420-test zero-dependency behavior/readiness suite, PixelLab asset
+verification at 149 files, and `git diff --check` with expected Windows
+line-ending warnings only.

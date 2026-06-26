@@ -192,11 +192,15 @@ const mobileLaunchQaEvidencePath = join(mobileRoot, "lib", "mobileLaunchQaEviden
 const mobileReleaseQaPath = join(mobileRoot, "lib", "mobileReleaseQa.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
+const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
+const carePassDomainPath = join(root, "lib", "care-domain", "src", "care-pass.ts");
 const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
 const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath) ? readFileSync(mobileLaunchQaEvidencePath, "utf8") : "";
 const mobileReleaseQaSource = existsSync(mobileReleaseQaPath) ? readFileSync(mobileReleaseQaPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
+const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
+const carePassDomainSource = existsSync(carePassDomainPath) ? readFileSync(carePassDomainPath, "utf8") : "";
 const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Dependency proof commands:",
   "Required beta proof after export:",
@@ -278,6 +282,27 @@ check(
   nativeQaNeedsTuneFixBriefIsSourceBacked
     ? "Needs tune recovery can generate a focused fix brief from More after device QA"
     : "keep the first Needs tune target, fix brief builder, and More Share Fix Brief action wired",
+);
+
+const providerAwareCarePassStorageIsSourceBacked = includesAll(carePassDomainSource, [
+  "CarePassArtifactStorageOptions",
+  "storageProviderConfigured?: boolean",
+  "Ready to upload",
+  "providerBacked: false",
+])
+  && /baseStatus === "local-only" && options\.storageProviderConfigured/.test(carePassDomainSource)
+  && includesAll(recordsRouteSource, [
+    "describeCarePassArtifactStorage(artifact",
+    "storageProviderConfigured: Boolean(state.launchProviderProfile?.storageProviderConfigured)",
+    "storage.label",
+    "storage.detail",
+  ]);
+check(
+  "provider-aware Care Pass storage is source-backed",
+  providerAwareCarePassStorageIsSourceBacked,
+  providerAwareCarePassStorageIsSourceBacked
+    ? "Records report history follows Provider Launch Setup storage readiness without claiming provider-backed upload"
+    : "keep Care Pass storage status wired through Provider Launch Setup, Records, and the shared care-domain helper",
 );
 
 if (!jsonMode) {
