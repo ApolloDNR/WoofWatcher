@@ -1401,6 +1401,13 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
   - Browser console: no captured errors.
   - Limitation: browser screenshot capture timed out, so this is not a
     substitute for native iOS/Android screenshot proof.
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: remote run `28282997631` failed before job execution with job
+    `83802116271`; `gh run view` reported `steps: []`, and
+    `gh run view --log-failed` returned `log not found: 83802116271`.
+  - Interpretation: matches the standing billing/spending-limit pre-job
+    blocker, not a local Health Watch regression.
 
 ### Remaining Work
 
