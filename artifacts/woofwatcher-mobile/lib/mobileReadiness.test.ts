@@ -871,6 +871,14 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.match(log, /handleQuickLauncherAction/);
   assert.match(log, /launcherDetailAction/);
   assert.match(log, /launcherDetailPresentation/);
+  assert.match(log, /launcherDoctrineRail/);
+  assert.match(log, /Tap/);
+  assert.match(log, /Hold/);
+  assert.match(log, /Edit later/);
+  assert.match(log, /launcherDetailModeRail/);
+  assert.match(log, /launcherDetailPresentation\.interactionRail/);
+  assert.match(log, /launcherDetailEditLater/);
+  assert.match(log, /launcherDetailPresentation\.editLaterCopy/);
   assert.match(log, /openLauncherDetailSheet/);
   assert.match(log, /focusFullComposerForLauncherAction/);
   assert.match(log, /onLongPress=\{\(\) => openLauncherDetailSheet\(action\)\}/);

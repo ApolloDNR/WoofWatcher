@@ -757,6 +757,14 @@ visible boundary `Health observations, not diagnosis`. This keeps Health calm,
 premium, non-diagnostic, and more App Store-ready while still grounded in real
 care data.
 
+The Quick Log workflow literacy polish pass made the locked logging doctrine
+visible in the actual product. The Log launcher now shows `Tap`, `Hold`, and
+`Edit later` as compact workflow chips before the action grid, and launcher
+detail sheets render the same interaction rail from `describeQuickLogDetailSheet`
+alongside an editable-Timeline reminder. Routine care stays fast, medication and
+health/safety logs still open details first, and the UI now explains that saved
+logs can be updated, corrected, confirmed, or given sticky notes later.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

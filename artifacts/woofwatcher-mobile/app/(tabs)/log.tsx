@@ -91,6 +91,18 @@ import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/bo
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+const QUICK_LOG_DOCTRINE: Array<{
+  label: string;
+  detail: string;
+  icon: IoniconName;
+  tone: "quick" | "detail" | "edit";
+}> = [
+  { label: "Tap", detail: "quick log", icon: "flash-outline", tone: "quick" },
+  { label: "Hold", detail: "details", icon: "finger-print-outline", tone: "detail" },
+  { label: "Edit later", detail: "Timeline", icon: "create-outline", tone: "edit" },
+];
 
 type Severity = "normal" | "watch" | "alert";
 
@@ -2050,6 +2062,34 @@ export default function LogScreen() {
               })}
             </View>
 
+            <View style={s.launcherDoctrineRail}>
+              {QUICK_LOG_DOCTRINE.map((item) => {
+                const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.brandNavy;
+                return (
+                  <View
+                    key={item.label}
+                    style={[
+                      s.launcherDoctrineCard,
+                      {
+                        backgroundColor: toneColor + "0F",
+                        borderColor: toneColor + "33",
+                      },
+                    ]}
+                  >
+                    <Ionicons name={item.icon} size={14} color={toneColor} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text numberOfLines={1} style={[s.launcherDoctrineLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                        {item.label}
+                      </Text>
+                      <Text numberOfLines={1} style={[s.launcherDoctrineDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        {item.detail}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+
             <View style={s.launcherGrid}>
               {launcherActions.map((action) => {
                 const active = selectedLauncherKey === launcherActionKey(action);
@@ -3480,6 +3520,31 @@ export default function LogScreen() {
                   </Text>
                 </View>
 
+                <View style={s.launcherDetailModeRail}>
+                  {launcherDetailPresentation.interactionRail.map((item) => {
+                    const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.brandNavy;
+                    return (
+                      <View
+                        key={item.label}
+                        style={[
+                          s.launcherDetailModeCard,
+                          {
+                            backgroundColor: toneColor + "0F",
+                            borderColor: toneColor + "33",
+                          },
+                        ]}
+                      >
+                        <Text numberOfLines={1} style={[s.launcherDetailModeLabel, { color: toneColor, fontFamily: "Inter_800ExtraBold" }]}>
+                          {item.label}
+                        </Text>
+                        <Text numberOfLines={1} style={[s.launcherDetailModeDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          {item.detail}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+
                 <View style={s.launcherDetailChecklist}>
                   {launcherDetailPresentation.detailChecklist.map((item) => (
                     <View key={item} style={s.launcherDetailChecklistRow}>
@@ -3489,6 +3554,13 @@ export default function LogScreen() {
                       </Text>
                     </View>
                   ))}
+                </View>
+
+                <View style={[s.launcherDetailEditLater, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Ionicons name="create-outline" size={16} color={colors.brandNavy} />
+                  <Text style={[s.launcherDetailEditLaterText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    {launcherDetailPresentation.editLaterCopy}
+                  </Text>
                 </View>
 
                 {launcherDetailPresentation.safetyBoundary ? (
@@ -4321,6 +4393,30 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   launcherTabText: { fontSize: 12 },
+  launcherDoctrineRail: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  launcherDoctrineCard: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  launcherDoctrineLabel: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.35,
+  },
+  launcherDoctrineDetail: {
+    fontSize: 10,
+    marginTop: 1,
+  },
   launcherGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -4784,10 +4880,41 @@ const s = StyleSheet.create({
   launcherDetailSubtitle: { fontSize: 13, lineHeight: 18, marginTop: 3 },
   launcherDetailSummary: { borderWidth: 1, borderRadius: 17, padding: 13, flexDirection: "row", gap: 10, alignItems: "flex-start" },
   launcherDetailSummaryText: { flex: 1, fontSize: 13.5, lineHeight: 19 },
+  launcherDetailModeRail: {
+    flexDirection: "row",
+    gap: 7,
+  },
+  launcherDetailModeCard: {
+    flex: 1,
+    minHeight: 54,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    justifyContent: "center",
+  },
+  launcherDetailModeLabel: {
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  launcherDetailModeDetail: {
+    fontSize: 10.5,
+    marginTop: 3,
+  },
   launcherDetailChecklist: { gap: 9 },
   launcherDetailChecklistRow: { flexDirection: "row", gap: 9, alignItems: "flex-start" },
   launcherDetailBullet: { width: 7, height: 7, borderRadius: 2, marginTop: 6 },
   launcherDetailChecklistText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
+  launcherDetailEditLater: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 11,
+    flexDirection: "row",
+    gap: 9,
+    alignItems: "flex-start",
+  },
+  launcherDetailEditLaterText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
   launcherDetailBoundary: { borderWidth: 1, borderRadius: 16, padding: 12, flexDirection: "row", gap: 9, alignItems: "flex-start" },
   launcherDetailBoundaryText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
   launcherDetailActions: { gap: 10, marginTop: 2 },

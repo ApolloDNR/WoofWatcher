@@ -1354,6 +1354,57 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Continue local launch-hardening while the recurring GitHub Actions
   billing/spending-limit blocker prevents remote CI from executing jobs.
 
+## 2026-06-27 Quick Log Workflow Literacy Polish
+
+### Summary
+
+- Added the visible `Tap / Hold / Edit later` doctrine rail to the mobile Quick
+  Log launcher so the fastest workflow is discoverable.
+- Extended `describeQuickLogDetailSheet` with an interaction rail and
+  editable-Timeline reminder, then rendered those in the launcher detail sheet.
+- Preserved the safety split: routine care can quick-log with owner-safe
+  defaults, while medication/health/incident logs open details first.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/log.tsx`
+- `artifacts/woofwatcher-mobile/lib/quickLogEntry.ts`
+- `artifacts/woofwatcher-mobile/lib/quickLogEntry.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Red/green focused tests first failed on the missing Quick Log rail/model
+  fields, then passed:
+  `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/quickLogEntry.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  with 91 tests passing.
+- Broad behavior/readiness:
+  `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  passed 390 tests.
+- Mobile TypeScript:
+  `tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit` passed.
+- PixelLab asset verification:
+  `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+  passed with `ok=149 missing=0 invalid=0`.
+- Expo web export:
+  `expo export --platform web --output-dir .expo-smoke --clear` passed.
+- Preview/browser smoke:
+  `http://127.0.0.1:4194/` returned `200`, and `/log` browser console smoke
+  reported no errors.
+- Diff whitespace:
+  `git diff --check` passed with expected Windows CRLF warnings only.
+
+### Remaining Work
+
+- Native iOS/Android route proof is still the external launch gate.
+- Next local polish should target Log/Timeline edit-detail scanability, Avatar
+  Studio template scan truth, Care Pass/Records export clarity, or Care Twin QA
+  proof collection.
+
 ## 2026-06-27 Health Watch Care Status Polish
 
 ### What Changed

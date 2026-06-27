@@ -1237,3 +1237,27 @@ Design intent:
 - Bring the Health/Bile screen closer to the saved Option B boards and App
   Store-quality mobile hierarchy.
 - Keep playful pixel meters connected to real care logs, not fake game chores.
+
+## 2026-06-27 Quick Log Workflow Polish
+
+Quick Log now teaches the core interaction model directly in the interface:
+
+- A compact rail above the launcher grid says `Tap`, `Hold`, and `Edit later`,
+  matching Apollo's locked logging doctrine.
+- Launcher detail sheets now show the same mode rail from the shared
+  `describeQuickLogDetailSheet` model, so safe quick logs and detail-first
+  safety logs explain themselves consistently.
+- The detail sheet now reminds owners that Timeline stays editable, so a fast
+  meal, potty, walk, or training log can be corrected, confirmed, updated, or
+  given sticky notes later.
+- Safety-critical logs still route to full details first, while routine care
+  keeps the quick-log path fast.
+
+Design intent:
+
+- Make the Log screen feel like a planned product workflow, not a grid of
+  disconnected buttons.
+- Preserve the under-five-second quick-log loop while making long-press detail
+  and later edits discoverable.
+- Keep the UI close to the premium neo-retro boards: compact, useful, playful,
+  and trustworthy.

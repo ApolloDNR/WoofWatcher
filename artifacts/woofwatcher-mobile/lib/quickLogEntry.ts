@@ -96,10 +96,18 @@ export interface QuickLogLauncherPresentation {
   detailRequired: boolean;
 }
 
+export interface QuickLogInteractionRailItem {
+  label: "Tap" | "Details first" | "Hold" | "Edit later";
+  detail: string;
+  tone: "quick" | "detail" | "edit";
+}
+
 export interface QuickLogDetailSheetPresentation {
   title: string;
   subtitle: string;
   quickSummary: string;
+  interactionRail: QuickLogInteractionRailItem[];
+  editLaterCopy: string;
   detailChecklist: string[];
   canQuickLog: boolean;
   primaryActionLabel: "Quick log now" | "Open full details";
@@ -263,11 +271,24 @@ export function describeQuickLogDetailSheet(
   const policy = getQuickLogPolicy(type);
   const safeLabel = clean(label) || policy.type;
   const title = `${safeLabel} details`;
+  const canQuickLog = policy.tapBehavior === "quick-log";
+  const interactionRail: QuickLogInteractionRailItem[] = [
+    {
+      label: canQuickLog ? "Tap" : "Details first",
+      detail: canQuickLog ? "safe default" : "context before save",
+      tone: canQuickLog ? "quick" : "detail",
+    },
+    { label: "Hold", detail: "add context", tone: "detail" },
+    { label: "Edit later", detail: "Timeline", tone: "edit" },
+  ];
   const base = {
     title,
-    canQuickLog: policy.tapBehavior === "quick-log",
-    primaryActionLabel: policy.tapBehavior === "quick-log" ? ("Quick log now" as const) : ("Open full details" as const),
-    secondaryActionLabel: policy.tapBehavior === "quick-log" ? ("Open full details" as const) : ("Cancel" as const),
+    canQuickLog,
+    interactionRail,
+    editLaterCopy:
+      "Timeline stays editable, so a fast log can be updated, corrected, confirmed, or given sticky notes later.",
+    primaryActionLabel: canQuickLog ? ("Quick log now" as const) : ("Open full details" as const),
+    secondaryActionLabel: canQuickLog ? ("Open full details" as const) : ("Cancel" as const),
   };
 
   if (policy.detailContract === "served-outcome") {

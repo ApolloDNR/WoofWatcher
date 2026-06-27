@@ -302,6 +302,11 @@ test("detail sheet presentation explains quick logging, details, and safety boun
   assert.equal(meal.primaryActionLabel, "Quick log now");
   assert.equal(meal.secondaryActionLabel, "Open full details");
   assert.match(meal.quickSummary, /serves the usual meal/i);
+  assert.deepEqual(
+    meal.interactionRail.map((item) => item.label),
+    ["Tap", "Hold", "Edit later"],
+  );
+  assert.match(meal.editLaterCopy, /Timeline stays editable/i);
   assert.ok(meal.detailChecklist.some((item) => item.includes("served -> outcome")));
   assert.ok(meal.detailChecklist.some((item) => item.includes("Ate all")));
 
@@ -315,6 +320,10 @@ test("detail sheet presentation explains quick logging, details, and safety boun
   assert.equal(medication.canQuickLog, false);
   assert.equal(medication.primaryActionLabel, "Open full details");
   assert.equal(medication.secondaryActionLabel, "Cancel");
+  assert.deepEqual(
+    medication.interactionRail.map((item) => item.label),
+    ["Details first", "Hold", "Edit later"],
+  );
   assert.match(medication.safetyBoundary ?? "", /requires context/i);
   assert.ok(medication.detailChecklist.some((item) => item.includes("dose")));
 });
