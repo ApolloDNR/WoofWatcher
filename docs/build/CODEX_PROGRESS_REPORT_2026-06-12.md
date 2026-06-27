@@ -39,6 +39,15 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
   - Command: `tsc --build --pretty false`
   - Result: passed.
 
+### Remote Verification
+
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: run `28286143588` failed before job execution; job `83810329982`
+    had `steps: []`, `gh run view --log-failed` returned `log not found:
+    83810329982`, and the check-run annotation reported the standing
+    billing/spending-limit blocker.
+
 ### Remaining Work
 
 - Native iOS/Android device or simulator QA remains the external launch gate.
