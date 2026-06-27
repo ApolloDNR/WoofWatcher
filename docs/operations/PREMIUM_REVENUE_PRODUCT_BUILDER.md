@@ -765,6 +765,15 @@ alongside an editable-Timeline reminder. Routine care stays fast, medication and
 health/safety logs still open details first, and the UI now explains that saved
 logs can be updated, corrected, confirmed, or given sticky notes later.
 
+The Log detail control polish pass made saved care entries feel more like
+durable product records. Detail sheets now show a `Review / Edit / Sticky /
+Audit` command rail, live audit event counts when available, a labeled `Record
+controls` action cluster, accessible handoff/sticky/edit/delete actions, and
+48px mobile touch targets. Local verification passed mobile readiness, the
+390-test behavior/readiness suite, TypeScript, PixelLab verification at 149
+files, Expo web export, preview `HEAD 200`, `/log` browser console smoke, and
+`git diff --check` with expected Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

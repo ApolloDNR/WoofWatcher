@@ -1261,3 +1261,24 @@ Design intent:
   and later edits discoverable.
 - Keep the UI close to the premium neo-retro boards: compact, useful, playful,
   and trustworthy.
+
+## 2026-06-27 Log Detail Control Polish
+
+Log detail sheets now read more like durable care records:
+
+- A compact `Review / Edit / Sticky / Audit` command rail appears near the top
+  of each record so the owner immediately sees the available workflow.
+- The Audit chip switches from generic guidance to the live event count when
+  audit history exists.
+- The bottom action cluster is labeled `Record controls`, then exposes handoff,
+  sticky note, edit, and delete buttons with accessible labels.
+- Primary and icon record controls now use the shared 48px mobile touch-target
+  contract and tighter board-style 8px radius.
+
+Design intent:
+
+- Make every log feel editable, trustworthy, and navigable after the quick tap.
+- Reinforce Apollo's doctrine that fast logging is safe because details,
+  corrections, sticky notes, and audit history remain available afterward.
+- Keep the Log/Timeline surface closer to an established App Store product:
+  readable hierarchy, clear controls, no mystery icons, no dead ends.

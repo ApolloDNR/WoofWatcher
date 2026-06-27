@@ -4,6 +4,63 @@
 
 WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 
+## 2026-06-27 Log Detail Record Controls
+
+### What Changed
+
+- Added a `Review / Edit / Sticky / Audit` command rail to Log detail sheets.
+- Made the Audit rail item show the real audit event count when a record has
+  history.
+- Added a visible `Record controls` label above the handoff/sticky/edit/delete
+  action cluster.
+- Added accessible labels for share handoff, sticky note, edit, and delete log
+  actions.
+- Tightened the record-control buttons to the shared mobile 48px touch-target
+  contract with board-style 8px radius.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/log.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 81 tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 390 tests.
+- Mobile TypeScript:
+  - Command: `tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Expo web export:
+  - Command: `expo export --platform web --output-dir .expo-smoke --clear`
+  - Result: passed; bundle `entry-8fa0714da271f0afc4b5e4a56af4e400.js`.
+- Local preview:
+  - Command: `HEAD http://127.0.0.1:4194/`
+  - Result: `200`.
+- Browser console smoke:
+  - Route: `http://127.0.0.1:4194/log`
+  - Result: no console errors.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with expected Windows CRLF warnings only.
+
+### Remaining Work
+
+- Native iOS/Android device or simulator QA remains the external launch gate.
+- Continue owner-preview polish on Avatar Studio scan truth, Care Pass/Records
+  export clarity, Phoenix room sprite crop after real device review, and
+  `/care-twin-qa` proof collection.
+
 ## Completed In This Pass
 
 - Confirmed the repo source-of-truth docs and current CI state.

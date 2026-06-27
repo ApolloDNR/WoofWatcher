@@ -104,6 +104,18 @@ const QUICK_LOG_DOCTRINE: Array<{
   { label: "Edit later", detail: "Timeline", icon: "create-outline", tone: "edit" },
 ];
 
+const DETAIL_WORKFLOW_RAIL: Array<{
+  label: string;
+  detail: string;
+  icon: IoniconName;
+  tone: "quick" | "detail" | "edit";
+}> = [
+  { label: "Review", detail: "full record", icon: "reader-outline", tone: "quick" },
+  { label: "Edit", detail: "correct later", icon: "pencil-outline", tone: "detail" },
+  { label: "Sticky", detail: "add context", icon: "document-text-outline", tone: "edit" },
+  { label: "Audit", detail: "trace changes", icon: "git-commit-outline", tone: "detail" },
+];
+
 type Severity = "normal" | "watch" | "alert";
 
 interface Choice {
@@ -3649,6 +3661,38 @@ export default function LogScreen() {
                   </View>
                 </View>
 
+                <View style={s.detailCommandRail}>
+                  {DETAIL_WORKFLOW_RAIL.map((item) => {
+                    const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.brandNavy;
+                    const detail =
+                      item.label === "Audit" && detailAuditTrail.length > 0
+                        ? `${detailAuditTrail.length} event${detailAuditTrail.length === 1 ? "" : "s"}`
+                        : item.detail;
+                    return (
+                      <View
+                        key={item.label}
+                        style={[
+                          s.detailCommandCard,
+                          {
+                            backgroundColor: toneColor + "0F",
+                            borderColor: toneColor + "33",
+                          },
+                        ]}
+                      >
+                        <Ionicons name={item.icon} size={15} color={toneColor} />
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text numberOfLines={1} style={[s.detailCommandLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {item.label}
+                          </Text>
+                          <Text numberOfLines={1} style={[s.detailCommandDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                            {detail}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+
                 {detailEntry.syncStatus === "failed" && detailEntry.syncError ? (
                   <View style={[s.detailNotice, { backgroundColor: colors.rose + "12", borderColor: colors.rose + "44" }]}>
                     <Ionicons name="warning-outline" size={16} color={colors.rose} />
@@ -4172,8 +4216,13 @@ export default function LogScreen() {
                   </View>
                 )}
 
+                <Text style={[s.detailSectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold", marginTop: 18 }]}>
+                  Record controls
+                </Text>
                 <View style={s.detailActions}>
                   <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Share care handoff"
                     onPress={() => shareEntryHandoff(detailEntry)}
                     style={({ pressed }) => [s.detailPrimaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                   >
@@ -4182,6 +4231,8 @@ export default function LogScreen() {
                   </Pressable>
                   <View style={s.detailIconActions}>
                     <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Add sticky note to care log"
                       onPress={() => {
                         setDetailEntryId(null);
                         openStickyPrompt(detailEntry);
@@ -4191,6 +4242,8 @@ export default function LogScreen() {
                       <Ionicons name="document-text-outline" size={17} color={colors.primary} />
                     </Pressable>
                     <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit care log"
                       onPress={() => {
                         setDetailEntryId(null);
                         openEditEntry(detailEntry);
@@ -4200,6 +4253,8 @@ export default function LogScreen() {
                       <Ionicons name="pencil-outline" size={17} color={colors.primary} />
                     </Pressable>
                     <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Delete care log"
                       onPress={() => handleDelete(detailEntry.id, detailEntry.title, () => setDetailEntryId(null))}
                       style={[s.detailIconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
                     >
@@ -4942,6 +4997,32 @@ const s = StyleSheet.create({
   detailType: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 },
   detailTitle: { fontSize: 21, marginTop: 2 },
   detailMeta: { fontSize: 12.5, marginTop: 3 },
+  detailCommandRail: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  detailCommandCard: {
+    width: "48%",
+    minHeight: 52,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  detailCommandLabel: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.35,
+  },
+  detailCommandDetail: {
+    fontSize: 10.5,
+    marginTop: 2,
+  },
   detailNotice: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 15, padding: 11, marginBottom: 12 },
   detailNoticeText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
   trustReviewPanel: {
@@ -5145,10 +5226,25 @@ const s = StyleSheet.create({
   auditMeta: { fontSize: 11.5, marginTop: 3 },
   auditChanges: { fontSize: 12, marginTop: 4, lineHeight: 17 },
   detailActions: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 18 },
-  detailPrimaryBtn: { flex: 1, height: 48, borderRadius: 15, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
+  detailPrimaryBtn: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
   detailPrimaryText: { color: "#fff", fontSize: 14.5 },
   detailIconActions: { flexDirection: "row", gap: 7 },
-  detailIconBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  detailIconBtn: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   editSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
   editHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   editSheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },

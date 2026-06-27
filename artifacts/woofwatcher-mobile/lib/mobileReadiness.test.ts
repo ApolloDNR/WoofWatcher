@@ -899,6 +899,14 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.doesNotMatch(log, /\{ label: "Poo", type: "potty"/);
   assert.match(log, /Undo/);
   assert.match(log, /Add details/);
+  assert.match(log, /DETAIL_WORKFLOW_RAIL/);
+  assert.match(log, /detailCommandRail/);
+  assert.match(log, /detailCommandCard/);
+  assert.match(log, /Record controls/);
+  assert.match(log, /accessibilityLabel="Share care handoff"/);
+  assert.match(log, /accessibilityLabel="Add sticky note to care log"/);
+  assert.match(log, /accessibilityLabel="Edit care log"/);
+  assert.match(log, /accessibilityLabel="Delete care log"/);
   for (const styleName of [
     "outboxButton",
     "launcherTab",
@@ -910,6 +918,8 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
     "mealOutcomeButton",
     "pottyOptionButton",
     "pottySaveButton",
+    "detailPrimaryBtn",
+    "detailIconBtn",
     "launcherDetailPrimary",
     "launcherDetailSecondary",
   ]) {
