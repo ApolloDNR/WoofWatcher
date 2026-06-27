@@ -738,11 +738,18 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   }
 
   assert.match(health, /deriveHealthWatch/);
+  assert.match(health, /deriveHealthReviewPacket/);
   assert.match(health, /Health Watch/);
   assert.match(health, /Bile Watch/);
   assert.match(health, /Health score/);
   assert.match(health, /Health Snapshot/);
   assert.match(health, /Pattern Board/);
+  assert.match(health, /Review packet/);
+  assert.match(health, /healthReviewPacket\.languagePill/);
+  assert.match(health, /healthReviewPacket\.prompts/);
+  assert.match(health, /healthReviewPacket\.vetShareChecklist/);
+  assert.match(health, /healthReviewPacket\.boundary/);
+  assert.match(health, /Draft vet questions/);
   assert.match(health, /CARE STATUS/);
   assert.match(health, /StatusMeter/);
   assert.match(health, /statusScoreTrack/);

@@ -15,6 +15,7 @@ import {
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { deriveHealthReviewPacket, type HealthReviewPacketAction } from "@/lib/healthReviewPacket";
 import { getRouteTopPadding, getTabbedRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -295,6 +296,35 @@ export default function HealthScreen() {
     },
   ];
 
+  const healthReviewPacket = deriveHealthReviewPacket({
+    dogName: state.profile.name || "Phoenix",
+    healthStatus: healthWatch.status,
+    healthSummary: healthWatch.summary,
+    healthCounts: {
+      vomit7: healthWatch.counts.vomit7,
+      appetiteWatch7: healthWatch.counts.appetiteWatch7,
+      stoolWatch7: healthWatch.counts.stoolWatch7,
+      anxiety7: healthWatch.counts.anxiety7,
+    },
+    redFlagCount: healthWatch.redFlags.length,
+    bileStatus,
+    lastYellowBileLabel: formatDateTime(bileEntries[0]?.occurredAt),
+    longestFoodGapLabel: mealGaps ? `${mealGaps.toFixed(1)} hours` : "Needs more meal logs",
+    bedtimeSnackLabel: state.dietProfile.bedtimeSnack || "Not set",
+  });
+
+  function openHealthReviewAction(action: HealthReviewPacketAction): void {
+    if (action.route === "/log") {
+      router.push({ pathname: "/log", params: action.params ?? {} });
+      return;
+    }
+    if (action.route === "/woofguide") {
+      router.push({ pathname: "/woofguide", params: action.params ?? {} } as never);
+      return;
+    }
+    router.push(action.route);
+  }
+
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -484,6 +514,98 @@ export default function HealthScreen() {
             />
           ))}
         </View>
+
+        <BoardCard style={s.sectionCard}>
+          <View style={s.reviewPacketTop}>
+            <View style={s.reviewPacketTitleStack}>
+              <BoardSectionHeader title="Review packet" style={s.boardSectionTop} />
+              <Text style={[s.reviewPacketStatus, { color: scoreTone, fontFamily: DISPLAY_SEMI }]}>
+                {healthReviewPacket.statusLabel}
+              </Text>
+            </View>
+            <BoardPill
+              label={healthReviewPacket.languagePill}
+              icon="medkit-outline"
+              tone={
+                healthReviewPacket.languagePill === "Review"
+                  ? colors.rose
+                  : healthReviewPacket.languagePill === "Pattern noticed"
+                    ? colors.amber
+                    : colors.sage
+              }
+            />
+          </View>
+
+          <Text style={[s.reviewPacketSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            {healthReviewPacket.summary}
+          </Text>
+
+          <View style={s.reviewPromptStack}>
+            {healthReviewPacket.prompts.slice(0, 3).map((prompt) => (
+              <View key={prompt} style={[s.reviewPromptRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View style={[s.reviewPromptBullet, { backgroundColor: colors.sage + "22", borderColor: colors.sage + "55" }]}>
+                  <PixelIcon name="health" size={15} />
+                </View>
+                <Text style={[s.reviewPromptText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  {prompt}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={[s.reviewChecklistPanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Text style={[s.reviewChecklistTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+              Vet-share checklist
+            </Text>
+            {healthReviewPacket.vetShareChecklist.slice(0, 5).map((item) => (
+              <View key={item} style={s.reviewChecklistRow}>
+                <Text style={[s.reviewChecklistMark, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>+</Text>
+                <Text style={[s.reviewChecklistText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {item}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={[s.reviewPacketBoundary, { backgroundColor: colors.background, borderColor: colors.sage + "55" }]}>
+            <PixelIcon name="health" size={20} />
+            <Text style={[s.reviewPacketBoundaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              {healthReviewPacket.boundary}
+            </Text>
+          </View>
+
+          <View style={s.reviewPacketActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={healthReviewPacket.primaryAction.label}
+              onPress={() => openHealthReviewAction(healthReviewPacket.primaryAction)}
+              style={({ pressed }) => [
+                s.reviewPacketPrimary,
+                { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+              ]}
+            >
+              <Text style={[s.reviewPacketPrimaryText, { fontFamily: "Inter_700Bold" }]}>
+                {healthReviewPacket.primaryAction.label}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Draft vet questions"
+              onPress={() => openHealthReviewAction(healthReviewPacket.secondaryAction)}
+              style={({ pressed }) => [
+                s.reviewPacketSecondary,
+                {
+                  backgroundColor: pressed ? colors.secondary : colors.background,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text style={[s.reviewPacketSecondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                Draft vet questions
+              </Text>
+            </Pressable>
+          </View>
+        </BoardCard>
 
         {activeTab === "bile" ? (
           <BoardCard style={s.sectionCard}>
@@ -874,6 +996,133 @@ const s = StyleSheet.create({
   sectionCard: { marginTop: 14 },
   sectionTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 2 },
   boardSectionTop: { flex: 1, marginBottom: 0 },
+  reviewPacketTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  reviewPacketTitleStack: {
+    flex: 1,
+    minWidth: 0,
+  },
+  reviewPacketStatus: {
+    fontSize: 17,
+    lineHeight: 21,
+    marginTop: -4,
+  },
+  reviewPacketSummary: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginTop: 9,
+  },
+  reviewPromptStack: {
+    gap: 7,
+    marginTop: 11,
+  },
+  reviewPromptRow: {
+    minHeight: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  reviewPromptBullet: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reviewPromptText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  reviewChecklistPanel: {
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    marginTop: 11,
+  },
+  reviewChecklistTitle: {
+    fontSize: 13,
+    lineHeight: 17,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: 5,
+  },
+  reviewChecklistRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 7,
+    paddingVertical: 3,
+  },
+  reviewChecklistMark: {
+    width: 14,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
+  },
+  reviewChecklistText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 11.8,
+    lineHeight: 17,
+  },
+  reviewPacketBoundary: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 11,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  reviewPacketBoundaryText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  reviewPacketActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+  },
+  reviewPacketPrimary: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  reviewPacketPrimaryText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  reviewPacketSecondary: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  reviewPacketSecondaryText: {
+    fontSize: 13,
+    textAlign: "center",
+  },
   metricGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
