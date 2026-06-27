@@ -75,6 +75,7 @@ Latest local evidence, 2026-06-22:
 - Latest remote check, 2026-06-22: Run `27991396683` for commit `2df98bf` failed in 5 seconds with the same pre-execution shape; job `82844390957` had `steps: []` and `gh run view --log-failed` returned `log not found: 82844390957`.
 - Latest remote check, 2026-06-26: Run `28251050379` for commit `47ae567` failed in 4 seconds with the same pre-execution shape; job `83702366430` had `steps: []` and `gh run view --log-failed` returned `log not found: 83702366430`.
 - Latest remote check, 2026-06-26: Run `28260444136` for commit `5056c8a` failed in 4 seconds with the same pre-execution shape; job `83734239942` had `steps: []` and `gh run view --log-failed` returned `log not found: 83734239942`.
+- Latest remote check, 2026-06-27: Run `28274571802` for commit `0e13338` failed in 3 seconds with the same pre-execution shape; job `83778625241` had `steps: []` and `gh run view --log-failed` returned `log not found: 83778625241`.
 
 ## Required Automated Coverage
 
