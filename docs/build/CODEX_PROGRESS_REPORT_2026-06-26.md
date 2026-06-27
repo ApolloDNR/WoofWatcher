@@ -349,3 +349,8 @@ Latest local evidence, 2026-06-26:
   - `git diff --check` with expected Windows line-ending warnings only.
 - Broad local proof passed `386` tests, and PixelLab verification reported
   `ok=149 missing=0 invalid=0`.
+- Remote `WoofWatcher Verify` was manually dispatched for commit `834d8df` as
+  run `28272011652`, but it failed before job execution with job `83771107991`,
+  `steps: []`, and `gh run view --log-failed` returned `log not found:
+  83771107991`. This matches the standing GitHub billing/spending-limit blocker,
+  not a local product-test failure.
