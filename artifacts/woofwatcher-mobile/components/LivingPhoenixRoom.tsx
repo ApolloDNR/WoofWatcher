@@ -32,7 +32,7 @@ import {
   getCareTwinSpriteAsset,
 } from "@/lib/careTwinAssets";
 import { zoneForSpriteAction } from "@/lib/careTwinStage";
-import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
+import { deriveCareTwinChoreography, motionRecipeForSpriteAction } from "@/lib/careTwinChoreography";
 import {
   CARE_TWIN_SPRITE_MANIFEST,
   deriveCareTwinScene,
@@ -256,6 +256,7 @@ export function LivingPhoenixRoom({
   );
   const activeSpriteTrack = CARE_TWIN_SPRITE_MANIFEST[activeSpriteAction] ?? plan.spriteTrack;
   const activeSpriteAsset = getCareTwinSpriteAsset(activeSpriteAction) ?? spriteAsset;
+  const motionRecipe = useMemo(() => motionRecipeForSpriteAction(activeSpriteAction), [activeSpriteAction]);
 
   const breath = useSharedValue(0);
   const walkCycle = useSharedValue(0);
@@ -347,7 +348,8 @@ export function LivingPhoenixRoom({
 
   const sceneMotionStyle = useAnimatedStyle(() => {
     const wave = Math.sin(walkCycle.value * Math.PI * 2);
-    const step = isWalking ? wave : 0;
+    const travel = wave * motionRecipe.bodySwayPx * 0.34;
+    const bob = Math.abs(wave) * motionRecipe.bodyBobPx * 0.28;
     const chew = isEating ? Math.sin(walkCycle.value * Math.PI * 4) : 0;
     const celebration = isCelebrate ? Math.abs(wave) : 0;
     const comfortTilt = isComfort ? -0.45 : 0;
@@ -355,17 +357,18 @@ export function LivingPhoenixRoom({
 
     return {
       transform: [
-        { translateX: zoneX.value * 0.1 + step * 3 },
-        { translateY: zoneY.value * 0.08 - breath.value * plan.breathLift * 0.22 - celebration * 1.5 + chew * 0.8 + sleepDrift - tap.value * 3 },
-        { scale: zoneScale.value * (1.018 + breath.value * plan.breathScale * 0.62 + tap.value * 0.01) },
-        { rotate: `${step * 0.55 + chew * 0.18 + comfortTilt + tap.value * -0.55}deg` },
+        { translateX: zoneX.value * 0.1 + travel },
+        { translateY: zoneY.value * 0.08 - breath.value * plan.breathLift * (0.18 + motionRecipe.scalePulse * 0.08) - bob - celebration * 1.5 + chew * 0.8 + sleepDrift - tap.value * 3 },
+        { scale: zoneScale.value * (1.018 + breath.value * plan.breathScale * (0.52 + motionRecipe.scalePulse * 0.16) + tap.value * 0.01) },
+        { rotate: `${wave * motionRecipe.tiltDeg * 0.32 + chew * 0.18 + comfortTilt + tap.value * -0.55}deg` },
       ],
     };
-  }, [isCelebrate, isComfort, isEating, isSleeping, isWalking, plan.breathLift, plan.breathScale]);
+  }, [isCelebrate, isComfort, isEating, isSleeping, motionRecipe.bodyBobPx, motionRecipe.bodySwayPx, motionRecipe.scalePulse, motionRecipe.tiltDeg, plan.breathLift, plan.breathScale]);
 
   const spriteRigStyle = useAnimatedStyle(() => {
     const wave = Math.sin(walkCycle.value * Math.PI * 2);
-    const step = isWalking ? wave : 0;
+    const travel = wave * motionRecipe.bodySwayPx;
+    const bob = Math.abs(wave) * motionRecipe.bodyBobPx;
     const chew = isEating ? Math.sin(walkCycle.value * Math.PI * 4) : 0;
     const celebration = isCelebrate ? Math.abs(wave) : 0;
     const comfortTilt = isComfort ? -1.2 : 0;
@@ -373,13 +376,21 @@ export function LivingPhoenixRoom({
 
     return {
       transform: [
-        { translateX: zoneX.value * 0.55 + step * 8 },
-        { translateY: zoneY.value * 0.32 - breath.value * plan.breathLift - celebration * 6 + chew * 2 + sleepDrift - tap.value * 8 },
-        { scale: zoneScale.value * (1 + breath.value * plan.breathScale + tap.value * 0.025) },
-        { rotate: `${step * 1.4 + chew * 0.6 + comfortTilt + tap.value * -1.4}deg` },
+        { translateX: zoneX.value * 0.55 + travel },
+        { translateY: zoneY.value * 0.32 - breath.value * plan.breathLift * (0.78 + motionRecipe.scalePulse * 0.32) - bob - celebration * 4 + chew * 2 + sleepDrift - tap.value * 8 },
+        { scale: zoneScale.value * (1 + breath.value * plan.breathScale * (0.82 + motionRecipe.scalePulse * 0.28) + tap.value * 0.025) },
+        { rotate: `${wave * motionRecipe.tiltDeg + chew * 0.6 + comfortTilt + tap.value * -1.4}deg` },
       ],
     };
-  }, [isCelebrate, isComfort, isEating, isSleeping, isWalking, plan.breathLift, plan.breathScale]);
+  }, [isCelebrate, isComfort, isEating, isSleeping, motionRecipe.bodyBobPx, motionRecipe.bodySwayPx, motionRecipe.scalePulse, motionRecipe.tiltDeg, plan.breathLift, plan.breathScale]);
+
+  const spriteShadowStyle = useAnimatedStyle(() => ({
+    opacity: 0.28 + breath.value * motionRecipe.shadowOpacityPulse,
+    transform: [
+      { scaleX: 1.16 + breath.value * motionRecipe.shadowScalePulse },
+      { scaleY: 1 - breath.value * 0.05 },
+    ],
+  }), [motionRecipe.shadowOpacityPulse, motionRecipe.shadowScalePulse]);
 
   const dogFocusGlow = useAnimatedStyle(() => ({
     opacity: interpolate(breath.value, [0, 0.5, 1], [0.16, plan.showCareAura ? 0.46 : 0.28, 0.16]),
@@ -475,7 +486,7 @@ export function LivingPhoenixRoom({
           ]}
           testID="care-twin-layered-sprite-rig"
         >
-          <View style={[styles.spriteGroundShadow, { backgroundColor: theme.glow }]} />
+          <Animated.View style={[styles.spriteGroundShadow, { backgroundColor: theme.glow }, spriteShadowStyle]} />
           <SpriteSheetPlayer
             key={activeReaction?.spriteAction ? `${activeReaction.id}-${activeReaction.spriteAction}` : activeSpriteTrack.key}
             asset={activeSpriteAsset}
@@ -501,7 +512,7 @@ export function LivingPhoenixRoom({
           ]}
           testID="care-twin-fallback-avatar-rig"
         >
-          <View style={[styles.spriteGroundShadow, { backgroundColor: theme.glow }]} />
+          <Animated.View style={[styles.spriteGroundShadow, { backgroundColor: theme.glow }, spriteShadowStyle]} />
           <Animated.Image
             source={fallbackAvatarSource}
             resizeMode="contain"

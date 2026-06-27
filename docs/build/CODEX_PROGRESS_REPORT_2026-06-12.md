@@ -4,6 +4,52 @@
 
 WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 
+## 2026-06-27 Living Care Twin Motion Recipe Polish
+
+### What Changed
+
+- Added `motionRecipeForSpriteAction` for every care-twin sprite action:
+  `idle-breathe`, `tail-wag`, `ear-perk`, `walk-loop`, `eat-loop`,
+  `drink-loop`, `sleep-loop`, `comfort-loop`, `celebrate-hop`, `health-watch`,
+  and `bark-loop`.
+- Each recipe defines body bob, sway, tilt, scale pulse, shadow pulse, and a QA
+  hint so the living dog motion is state-specific instead of generic.
+- Updated `LivingPhoenixRoom` to apply the active recipe to the single layered
+  Phoenix sprite rig and animated ground shadow.
+- Preserved the one-dog rule: tap reactions animate the main Phoenix sprite
+  instead of adding a second avatar or detached overlay.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/components/LivingPhoenixRoom.tsx`
+- `artifacts/woofwatcher-mobile/lib/careTwinChoreography.ts`
+- `artifacts/woofwatcher-mobile/lib/careTwinChoreography.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused care-twin/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/careTwinChoreography.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 85 tests.
+- Mobile TypeScript:
+  - Command: `tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Expo web export:
+  - Command: `expo export --platform web --output-dir .expo-smoke --clear`
+  - Result: passed; bundle `entry-61845be865258355eeb426d42907dd5e.js`.
+
+### Remaining Work
+
+- Real iOS/Android device review must still confirm the motion reads well at
+  phone size and does not crop, jitter, or distract from care actions.
+- Continue `/care-twin-qa` proof collection and route-by-route visual polish.
+
 ## 2026-06-27 API Zod Barrel Typecheck Cleanup
 
 ### What Changed

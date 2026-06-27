@@ -831,6 +831,17 @@ no failed log. The check-run annotation reports the standing account
 billing/spending-limit blocker, so this remains an external CI gate rather than
 a product regression.
 
+The living care-twin motion recipe polish pass made the existing single-sprite
+room renderer more game-like. `motionRecipeForSpriteAction` now gives each
+runtime sprite action its own bob, sway, tilt, scale pulse, and shadow pulse,
+and `LivingPhoenixRoom` applies the recipe to the main layered Phoenix rig plus
+the ground shadow. This strengthens the Tamagotchi/video-game feel without
+adding a duplicate dog avatar. Local verification passed care-twin
+choreography/mobile readiness, mobile TypeScript, PixelLab verification at 149
+files, Expo web export, and `git diff --check` with expected Windows CRLF
+warnings only. Real device QA still needs to confirm phone-size crop, jitter,
+and motion readability through `/care-twin-qa`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

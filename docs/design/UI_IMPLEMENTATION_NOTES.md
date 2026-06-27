@@ -1327,3 +1327,24 @@ Design intent:
   provider upload remain pending until real services are configured.
 - Improve scanability for App Store-quality Records without adding fake cloud
   or fake PDF claims.
+
+## 2026-06-27 Living Care Twin Motion Recipe Polish
+
+Phoenix's room now has a stronger one-dog animation contract:
+
+- `motionRecipeForSpriteAction` defines action-specific body motion for every
+  runtime sprite action: bob, sway, tilt, scale pulse, and shadow pulse.
+- `LivingPhoenixRoom` applies that recipe to the single layered sprite rig,
+  making happy idle, walking, eating, drinking, sleeping, comfort, health watch,
+  celebration, and tap bark states feel different in motion.
+- The ground shadow now pulses with the same recipe so Phoenix feels grounded
+  in the room instead of pasted over the background.
+
+Design intent:
+
+- Move closer to the video-game/Tamagotchi feel Apollo wants without adding a
+  second dog avatar or fake decorative mascot.
+- Keep the real care twin as the main character: all reactions happen on
+  Phoenix's primary sprite rig.
+- Leave native `/care-twin-qa` as the final proof path for phone-size crop,
+  jitter, and motion readability.

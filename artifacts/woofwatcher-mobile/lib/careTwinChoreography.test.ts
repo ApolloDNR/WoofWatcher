@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { deriveCareTwinChoreography } from "./careTwinChoreography.ts";
+import { deriveCareTwinChoreography, motionRecipeForSpriteAction } from "./careTwinChoreography.ts";
 import { deriveCareTwinScene } from "./avatarLifeEngine.ts";
 import type { AvatarMotionModel } from "./avatarMotion.ts";
 
@@ -56,4 +56,17 @@ test("keeps Health Watch reactions calm and non-diagnostic", () => {
   assert.match(choreography.tapReaction.label, /comfort/i);
   assert.match(choreography.qaSummary, /Health Watch/i);
   assert.doesNotMatch(choreography.qaSummary, /diagnos/i);
+});
+
+test("gives each sprite action a single-dog motion recipe", () => {
+  const walk = motionRecipeForSpriteAction("walk-loop");
+  const sleep = motionRecipeForSpriteAction("sleep-loop");
+  const celebrate = motionRecipeForSpriteAction("celebrate-hop");
+  const bark = motionRecipeForSpriteAction("bark-loop");
+
+  assert.ok(walk.bodySwayPx > sleep.bodySwayPx, "walk should visibly travel more than sleep");
+  assert.ok(celebrate.bodyBobPx > walk.bodyBobPx, "care-win hops should have the strongest bob");
+  assert.ok(sleep.scalePulse < walk.scalePulse, "sleep should have a calmer breathing pulse");
+  assert.match(bark.qaHint, /same Phoenix sprite|another avatar/i);
+  assert.doesNotMatch(bark.qaHint, /second dog/i);
 });
