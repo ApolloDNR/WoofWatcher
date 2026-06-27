@@ -1062,6 +1062,15 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Mood set"/);
   assert.match(avatarStudio, /<BoardCard style=\{s\.tipBoard\} tone="soft"/);
   assert.match(avatarStudio, /Upload photos to help us suggest your dog's pixel care twin/);
+  assert.match(avatarStudio, /AVATAR_SCAN_WORKFLOW_STEPS/);
+  assert.match(avatarStudio, /scanPipelineGrid/);
+  assert.match(avatarStudio, /scanPipelineCard/);
+  assert.match(avatarStudio, /Photo reference/);
+  assert.match(avatarStudio, /Template match/);
+  assert.match(avatarStudio, /Pixel twin/);
+  assert.match(avatarStudio, /Owner approval/);
+  assert.match(avatarStudio, /PixelLab-backed template catalog/);
+  assert.match(avatarStudio, /Not a photo filter/);
   assert.match(avatarStudio, /Choose base template/);
   assert.match(avatarStudio, /Accessories/);
   assert.match(avatarStudio, /Save Avatar/);
@@ -1307,6 +1316,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);
   assert.match(avatarModel, /buildMockScanSuggestion/);
+  assert.match(avatarModel, /AVATAR_SCAN_WORKFLOW_STEPS/);
   assert.match(avatarModel, /You always approve the match/);
   assert.doesNotMatch(avatarModel, /perfectly scan/i);
   assert.match(avatarContext, /AVATAR_CONFIG_KEY/);

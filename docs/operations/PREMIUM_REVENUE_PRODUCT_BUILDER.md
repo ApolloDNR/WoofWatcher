@@ -780,6 +780,16 @@ no logs. The check-run annotation reports the standing account
 billing/spending-limit blocker, so this remains an external CI gate rather than
 a product regression.
 
+The Avatar Studio scan-truth polish pass made the product hook clearer and more
+honest. `AVATAR_SCAN_WORKFLOW_STEPS` now locks the route to `Photo reference ->
+Template match -> Pixel twin -> Owner approval`, `/portrait` shows
+PixelLab-backed/not-a-photo-filter truth chips, and the Scan tab renders the
+four-step pipeline before Gallery/Take Photo. Local verification passed the
+intentional red/green Avatar Studio guard, the 391-test behavior/readiness
+suite, TypeScript, PixelLab verification at 149 files, Expo web export, preview
+`HEAD 200`, `/portrait` browser console smoke, and `git diff --check` with
+expected Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

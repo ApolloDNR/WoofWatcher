@@ -1282,3 +1282,26 @@ Design intent:
   corrections, sticky notes, and audit history remain available afterward.
 - Keep the Log/Timeline surface closer to an established App Store product:
   readable hierarchy, clear controls, no mystery icons, no dead ends.
+
+## 2026-06-27 Avatar Studio Scan Truth Polish
+
+Avatar Studio now explains the real scan-to-pixel pipeline directly in the UI:
+
+- `AVATAR_SCAN_WORKFLOW_STEPS` locks the route to `Photo reference`, `Template
+  match`, `Pixel twin`, and `Owner approval`.
+- The Scan tab now shows truth chips for `PixelLab-backed template catalog` and
+  `Not a photo filter`.
+- A compact four-card pipeline appears before Gallery/Take Photo so owners know
+  exactly what happens before they upload a reference photo.
+- Scan suggestion copy now says photos guide a PixelLab template suggestion,
+  then the owner approves the match before it becomes the live avatar.
+
+Design intent:
+
+- Make the avatar hook feel premium, magical, and honest: real dog photos
+  guide a pixel care twin, but the current mobile app does not claim live AI
+  generation.
+- Keep the route strongly aligned to the saved mockups: pixel assets, live
+  sprite packs, clear owner approval, and no blurry photo-as-avatar shortcut.
+- Give Fable/Replit/native polish a durable product contract for later scan UI
+  animation and PixelLab production work.

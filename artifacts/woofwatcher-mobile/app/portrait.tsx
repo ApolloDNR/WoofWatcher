@@ -38,6 +38,7 @@ import {
 import {
   AVATAR_ACCESSORIES,
   AVATAR_EMOTE_STATES,
+  AVATAR_SCAN_WORKFLOW_STEPS,
   AVATAR_TEMPLATES,
   buildMockScanSuggestion,
   createDefaultAvatarConfig,
@@ -80,6 +81,7 @@ const SCAN_LINES = [
   "Preparing owner review...",
 ];
 
+const SCAN_WORKFLOW_ACCESSIBILITY_SUMMARY = "Photo reference, Template match, Pixel twin, Owner approval";
 const HERO_TEMPLATE_SPRITE_SIZE = 286;
 
 const COAT_SWATCHES = [
@@ -676,6 +678,28 @@ export default function PortraitScreen() {
             <Text style={[s.copy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               Add 1-3 clear photos. WoofWatcher will suggest a base template and traits, then you can edit every choice before saving.
             </Text>
+            <View style={s.scanTruthRail}>
+              <BoardPill label="PixelLab-backed template catalog" icon="sparkles-outline" tone={colors.sage} active />
+              <BoardPill label="Not a photo filter" icon="shield-checkmark-outline" tone={colors.copper} active />
+            </View>
+            <View
+              accessibilityLabel={SCAN_WORKFLOW_ACCESSIBILITY_SUMMARY}
+              style={s.scanPipelineGrid}
+            >
+              {AVATAR_SCAN_WORKFLOW_STEPS.map((step, index) => (
+                <View key={step.id} style={[s.scanPipelineCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={[s.scanPipelineNumber, { backgroundColor: colors.brandNavy }]}>
+                    <Text style={[s.scanPipelineNumberText, { fontFamily: "Inter_800ExtraBold" }]}>{index + 1}</Text>
+                  </View>
+                  <Text style={[s.scanPipelineLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                    {step.label}
+                  </Text>
+                  <Text style={[s.scanPipelineDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {step.detail}
+                  </Text>
+                </View>
+              ))}
+            </View>
             <View style={s.actionRow}>
               <Pressable
                 accessibilityRole="button"
@@ -1363,6 +1387,37 @@ const s = StyleSheet.create({
   tabText: { fontSize: 11.5 },
   avatarBoard: { marginBottom: 12 },
   copy: { fontSize: 13, lineHeight: 19 },
+  scanTruthRail: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  scanPipelineGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  scanPipelineCard: {
+    flexBasis: "48%",
+    flexGrow: 1,
+    minHeight: 108,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    gap: 6,
+  },
+  scanPipelineNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scanPipelineNumberText: { color: "#FFF9EF", fontSize: 11 },
+  scanPipelineLabel: { fontSize: 12.5 },
+  scanPipelineDetail: { fontSize: 11.5, lineHeight: 16 },
   traitGrid: { gap: 8, marginTop: 12 },
   traitChip: {
     minHeight: 38,

@@ -4,6 +4,66 @@
 
 WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 
+## 2026-06-27 Avatar Studio Scan Truth Polish
+
+### What Changed
+
+- Added `AVATAR_SCAN_WORKFLOW_STEPS` as a shared model for the locked
+  scan-to-pixel flow: photo reference, template match, pixel twin, and owner
+  approval.
+- Updated scan suggestion copy to say photos guide a PixelLab template
+  suggestion and the owner approves the match before it becomes the live avatar.
+- Added Scan tab truth chips for `PixelLab-backed template catalog` and `Not a
+  photo filter`.
+- Added a four-card pipeline before Gallery/Take Photo so owners understand
+  that uploaded photos remain references and the saved avatar is an editable
+  pixel care twin.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/portrait.tsx`
+- `artifacts/woofwatcher-mobile/lib/avatarStudio.ts`
+- `artifacts/woofwatcher-mobile/lib/avatarStudio.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused Avatar Studio/mobile readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/avatarStudio.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 88 tests after the intentional red failure on missing scan workflow exports/UI.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 391 tests.
+- Mobile TypeScript:
+  - Command: `tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Expo web export:
+  - Command: `expo export --platform web --output-dir .expo-smoke --clear`
+  - Result: passed; bundle `entry-2da0db9a246e55d4f71cfe0cfeae786b.js`.
+- Local preview:
+  - Command: `HEAD http://127.0.0.1:4194/`
+  - Result: `200`.
+- Browser console smoke:
+  - Route: `http://127.0.0.1:4194/portrait`
+  - Result: no console errors.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with expected Windows CRLF warnings only.
+
+### Remaining Work
+
+- Native iOS/Android device or simulator QA remains the external launch gate.
+- Continue screen-by-screen polish on Records/Care Pass export clarity,
+  Phoenix room sprite/crop proof, `/care-twin-qa` evidence, and provider-proof
+  truth.
+
 ## 2026-06-27 Log Detail Record Controls
 
 ### What Changed

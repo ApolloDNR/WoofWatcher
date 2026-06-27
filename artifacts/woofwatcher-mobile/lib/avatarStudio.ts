@@ -93,6 +93,14 @@ export interface AvatarScanSuggestion {
   copy: string;
 }
 
+export type AvatarScanWorkflowStepId = "photo-reference" | "template-match" | "pixel-twin" | "owner-approval";
+
+export interface AvatarScanWorkflowStep {
+  id: AvatarScanWorkflowStepId;
+  label: string;
+  detail: string;
+}
+
 export const AVATAR_EMOTE_STATES: AvatarEmoteState[] = [
   "happy",
   "calm",
@@ -104,6 +112,29 @@ export const AVATAR_EMOTE_STATES: AvatarEmoteState[] = [
   "proud",
   "home_alone",
   "not_feeling_well",
+];
+
+export const AVATAR_SCAN_WORKFLOW_STEPS: AvatarScanWorkflowStep[] = [
+  {
+    id: "photo-reference",
+    label: "Photo reference",
+    detail: "Use 1-3 clear photos as reference only; the saved avatar stays an editable pixel character.",
+  },
+  {
+    id: "template-match",
+    label: "Template match",
+    detail: "Match visible traits to the PixelLab-backed template catalog and body-class anchors.",
+  },
+  {
+    id: "pixel-twin",
+    label: "Pixel twin",
+    detail: "Preview the bundled PixelLab stills, emotes, and live sprite packs before saving.",
+  },
+  {
+    id: "owner-approval",
+    label: "Owner approval",
+    detail: "Owner approval is required before the suggested care twin becomes the active avatar.",
+  },
 ];
 
 export const AVATAR_TEMPLATES: AvatarTemplate[] = [
@@ -331,7 +362,7 @@ export function buildMockScanSuggestion(petName = "Phoenix", now = new Date().to
       "Green bandana or collar detail",
     ],
     suggestedConfig,
-    copy: "Upload photos to help us suggest your dog's pixel care twin. You always approve the match before it becomes the live avatar.",
+    copy: "Photos guide a PixelLab template suggestion for your dog's pixel care twin. You always approve the match before it becomes the live avatar.",
   };
 }
 

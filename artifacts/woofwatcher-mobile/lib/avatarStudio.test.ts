@@ -6,6 +6,7 @@ import { join } from "node:path";
 import {
   AVATAR_ACCESSORIES,
   AVATAR_EMOTE_STATES,
+  AVATAR_SCAN_WORKFLOW_STEPS,
   AVATAR_TEMPLATES,
   buildMockScanSuggestion,
   createDefaultAvatarConfig,
@@ -88,6 +89,18 @@ test("keeps scan-assisted copy truthful and owner-approved", () => {
   assert.match(suggestion.copy, /approve/i);
   assert.doesNotMatch(suggestion.copy, /perfect/i);
   assert.doesNotMatch(suggestion.copy, /instantly/i);
+});
+
+test("documents the scan-to-pixel workflow as owner-approved template matching", () => {
+  assert.deepEqual(
+    AVATAR_SCAN_WORKFLOW_STEPS.map((step) => step.id),
+    ["photo-reference", "template-match", "pixel-twin", "owner-approval"],
+  );
+  assert.ok(AVATAR_SCAN_WORKFLOW_STEPS.every((step) => step.label && step.detail));
+  assert.match(AVATAR_SCAN_WORKFLOW_STEPS.map((step) => step.detail).join(" "), /PixelLab/i);
+  assert.match(AVATAR_SCAN_WORKFLOW_STEPS.map((step) => step.detail).join(" "), /owner approval/i);
+  assert.doesNotMatch(AVATAR_SCAN_WORKFLOW_STEPS.map((step) => step.detail).join(" "), /live AI/i);
+  assert.doesNotMatch(AVATAR_SCAN_WORKFLOW_STEPS.map((step) => step.detail).join(" "), /photo filter/i);
 });
 
 test("documents the first emote state set for the living care twin", () => {
