@@ -65,6 +65,15 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
   exports in `lib/api-zod/src/index.ts` for household invitation/cleanup types.
   This is unrelated to the Records manifest polish and remains a cleanup item.
 
+### Remote Verification
+
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: run `28285718091` failed before job execution; job `83809213051`
+    had `steps: []`, `gh run view --log-failed` returned `log not found:
+    83809213051`, and the check-run annotation reported the standing
+    billing/spending-limit blocker.
+
 ### Remaining Work
 
 - Native iOS/Android device or simulator QA remains the external launch gate.
