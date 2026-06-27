@@ -189,6 +189,10 @@ test("keeps onboarding and avatar creation actions accessible to screen readers"
   assert.match(more, /completeSetupHandoff\("join_pack"\)/);
   assert.match(more, /accessibilityLabel="Share invite from setup handoff"/);
   assert.match(more, /accessibilityLabel="Enter invite code from setup handoff"/);
+  assert.match(more, /onSuccess: \(joinedMe\) =>/);
+  assert.match(more, /joinedPackName/);
+  assert.match(more, /Alert\.alert\(\s*"Pack joined"/);
+  assert.match(more, /provider-backed invite approval is still gated/);
   assert.match(setup, /accessibilityLabel="Finish setup later"/);
   assert.match(avatarStudio, /accessibilityLabel="Reset avatar draft"/);
   assert.match(avatarStudio, /accessibilityLabel="Save avatar configuration"/);

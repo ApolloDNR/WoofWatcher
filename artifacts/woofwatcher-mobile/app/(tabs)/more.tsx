@@ -444,10 +444,15 @@ export default function MoreScreen() {
     joinHousehold.mutate(
       { data: { inviteCode: code } },
       {
-        onSuccess: () => {
+        onSuccess: (joinedMe) => {
+          const joinedPackName = joinedMe.household?.name?.trim() || "The joined pack";
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setJoinOpen(false);
           setJoinCode("");
+          Alert.alert(
+            "Pack joined",
+            `${joinedPackName} is now the active care sync pack. More keeps switching, Household Access, and Sync Health here while provider-backed invite approval is still gated.`,
+          );
           refreshMe();
           refresh();
         },

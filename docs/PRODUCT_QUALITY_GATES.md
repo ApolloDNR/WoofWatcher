@@ -48,6 +48,7 @@ Passing evidence:
 - Setup now captures household sync intent as Share invite, Join pack, or Decide later before saving the care foundation, and routes invite/join/sync/switching next steps to the real More household tools instead of pretending setup itself completed provider-backed household administration.
 - Setup-to-More handoff is now intent-aware. Share invite and Join pack setup choices land in More with a visible next-step card and accessible actions for the existing invite share or invite-code join modal, while provider-backed invite approval, arbitrary membership changes, and cloud onboarding remain gated.
 - The setup-to-More handoff now clears after the owner takes the handoff action, so Share invite and Join pack prompts do not linger as stale onboarding tasks after the existing invite share or invite-code modal is opened.
+- Successful invite-code joins now show a confirmation that names the joined pack as the active care sync pack, refreshes `/me` and care state, and keeps household switching, Household Access, Sync Health, and provider-backed invite approval boundaries in More.
 - More display-name copy now names the active pack in the row, edit modal, and save confirmation, matching the active-household member update boundary instead of implying a global all-households identity change.
 - Log entries have a detail sheet with sticky notes, audit trail history, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Server-backed care-entry deletes create a retained non-health household audit note with the deleted-entry snapshot, and mobile Log avoids duplicate local audit notes when the server already retained the delete audit.
@@ -83,7 +84,7 @@ Passing evidence:
 
 Current gaps:
 
-- Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists and now confirms saved setup context plus household sync intent before returning to Today or More, and the More handoff clears once the owner opens the real invite/join tool, but auth-connected account provisioning, invite approval, and richer multi-household management remain incomplete.
+- Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists and now confirms saved setup context plus household sync intent before returning to Today or More, the More handoff clears once the owner opens the real invite/join tool, and successful invite-code joins name the active care sync pack, but auth-connected account provisioning, invite approval, and richer multi-household management remain incomplete.
 - Multiple dogs, broader provider-backed role enforcement, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
 - Runtime smoke has not been added.
 
@@ -201,6 +202,7 @@ Current gaps:
 - Static mobile readiness now protects the Setup post-save confirmation path so a completed care foundation does not silently redirect before telling the owner what was saved, which active household is selected when `/me` provides one, and where household invite/sync/switching controls remain available.
 - Static mobile readiness now protects the Setup household sync choice, including Share invite, Join pack, Decide later, the More route for invite/join tools, and the confirmation context passed into `buildSetupConfirmation`.
 - Static mobile readiness now protects the setup-to-More handoff route param and the More setup next-step card, including accessible Share invite and Enter invite code actions.
+- Static mobile readiness now protects successful invite-code join confirmation in More, including the generated `/household/join` response, joined-pack name, and provider-backed invite approval boundary copy.
 - Static mobile readiness now protects More's active-pack display-name copy, including the row text, edit modal, and save confirmation for multi-household caregivers.
 - Static mobile readiness now protects Avatar Studio owner-input controls from regressing below the shared mobile target floor, including scan gallery/camera actions, template tiles, accessory tiles, and mood preview chips. Face-marking options also have explicit labels before native screen-reader traversal is available.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.

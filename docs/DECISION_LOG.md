@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-27: Invite-Code Join Success Names The Active Pack
+
+Decision: Mobile More should show a post-join confirmation when an invite code is accepted. The confirmation should use the generated `/household/join` response to name the joined household as the active care sync pack, then keep switching, Household Access, and Sync Health in More while stating that provider-backed invite approval remains gated.
+
+Reason: First-run Setup can hand a caregiver into the real invite-code modal, but silently closing after a successful join makes the owner guess whether the care sync target changed. Naming the joined pack improves multi-household trust without claiming arbitrary membership lookup, invite approval, cloud onboarding, or final provider administration is complete.
+
+Owner: Codex.
+
+Revisit trigger: Full auth-connected onboarding, provider-backed invite approval, multi-household setup, native onboarding completion, or final caregiver administration becomes active release work.
+
 ### 2026-06-27: Display Name Copy Names The Active Pack
 
 Decision: Mobile More should describe display-name edits as applying to the active pack's care logs, and the save confirmation should name that selected household context.
