@@ -1024,6 +1024,20 @@ style so the urgent issue route stays thumb-safe on mobile. Red/green
 verification first failed on the missing action/style, then passed
 `mobileReadiness.test.ts` with 81/81 tests.
 
+Remote verification for Needs Tune focused target commit `eb9986e` was manually
+dispatched as GitHub Actions run `28292935016`, but the job failed before
+executing any steps. Job/check-run `83827915264` reported `steps: []`,
+`gh run view --log-failed` returned `log not found: 83827915264`, and the
+check-run annotation said the job was not started because recent account
+payments failed or the spending limit needs to be increased. This is the
+standing GitHub billing/spending-limit blocker, not a local regression. Local
+verification passed the red/green mobile readiness check, the 440-test focused
+contract suite, mobile TypeScript, PixelLab asset verification at 149 files,
+Expo web export to `.expo-smoke`, root route `HEAD 200`, focused QA route
+`HEAD 200`, and `git diff --check`. Direct `/more` `HEAD` returned `404` from
+the current local server, while the app root and focused QA route served
+successfully.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
