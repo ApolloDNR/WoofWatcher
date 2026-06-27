@@ -14,11 +14,11 @@ test("derives layered preview accessories from configured slots", () => {
   const layers = deriveAvatarPreviewAccessories(config);
 
   assert.deepEqual(
-    layers.map((layer) => [layer.id, layer.kind, layer.slot]),
+    layers.map((layer) => [layer.id, layer.kind, layer.slot, layer.fitStatus]),
     [
-      ["forest-bandana", "bandana", "neck"],
-      ["cozy-bed", "bed", "room"],
-      ["heart-sparkles", "sparkles", "fx"],
+      ["forest-bandana", "bandana", "neck", "template-fitted"],
+      ["cozy-bed", "bed", "room", "template-fitted"],
+      ["heart-sparkles", "sparkles", "fx", "template-fitted"],
     ],
   );
 });
@@ -37,14 +37,36 @@ test("maps accessory ids to visual overlay kinds", () => {
   const layers = deriveAvatarPreviewAccessories(config);
 
   assert.deepEqual(
-    layers.map((layer) => [layer.id, layer.kind]),
+    layers.map((layer) => [layer.id, layer.kind, layer.fitLabel]),
     [
-      ["navy-collar", "collar"],
-      ["birthday-hat", "hat"],
-      ["sleepy-mask", "mask"],
-      ["training-vest", "vest"],
+      ["navy-collar", "collar", "Template-fitted"],
+      ["birthday-hat", "hat", "Template-fitted"],
+      ["sleepy-mask", "mask", "Template-fitted"],
+      ["training-vest", "vest", "Template-fitted"],
     ],
   );
+});
+
+test("marks accessories without a template overlay as inventory-ready for non-shepherd templates", () => {
+  const config = {
+    ...createDefaultAvatarConfig("Scout"),
+    templateId: "retriever" as const,
+    accessorySlots: {
+      neck: "forest-bandana",
+      head: "birthday-hat",
+    },
+  };
+
+  const layers = deriveAvatarPreviewAccessories(config);
+
+  assert.deepEqual(
+    layers.map((layer) => [layer.id, layer.fitStatus, layer.fitLabel]),
+    [
+      ["forest-bandana", "inventory-ready", "Pack pending"],
+      ["birthday-hat", "inventory-ready", "Pack pending"],
+    ],
+  );
+  assert.match(layers[0]?.fitDetail ?? "", /shared inventory icon/);
 });
 
 test("derives preview mood copy and colors", () => {

@@ -1183,6 +1183,14 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   }
   assert.match(avatarStudio, /getAvatarTemplateAccessorySource\(draft\.templateId, layer\.id\)/);
   assert.match(avatarStudio, /getAvatarTemplateEmoteSource\(draft\.templateId, previewEmote\)/);
+  assert.match(avatarStudio, /summarizeAvatarAccessoryFits\(draft\.templateId\)/);
+  assert.match(avatarStudio, /deriveAvatarAccessoryFit\(draft\.templateId, item\)/);
+  assert.match(avatarStudio, /Template overlay readiness/);
+  assert.match(avatarStudio, /accessoryFitPanel/);
+  assert.match(avatarStudio, /fit\.label/);
+  assert.match(avatarStudio, /fit\.placementHint/);
+  assert.match(avatarPreviewModel, /fitStatus/);
+  assert.match(avatarPreviewModel, /deriveAvatarAccessoryFit\(config\.templateId, item\)/);
   assert.match(avatarStudio, /templateBandana/);
   assert.match(avatarStudio, /templateVest/);
   assert.match(avatarStudio, /templateAccessoryLayer/);

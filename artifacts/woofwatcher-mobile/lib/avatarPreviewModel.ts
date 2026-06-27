@@ -2,9 +2,11 @@ import {
   AVATAR_ACCESSORIES,
   type AvatarTemplateId,
   type AvatarAccessoryOption,
+  type AvatarAccessoryFitStatus,
   type AvatarAccessorySlots,
   type AvatarEmoteState,
   type PetAvatarConfig,
+  deriveAvatarAccessoryFit,
 } from "./avatarStudio.ts";
 import type { CareTwinSpriteAction } from "./avatarLifeEngine.ts";
 
@@ -30,6 +32,11 @@ export interface AvatarPreviewAccessoryLayer {
   tone: string;
   slot: keyof AvatarAccessorySlots;
   kind: AvatarPreviewLayerKind;
+  fitStatus: AvatarAccessoryFitStatus;
+  fitLabel: string;
+  fitDetail: string;
+  placementHint: string;
+  needsDeviceQa: boolean;
 }
 
 export interface AvatarPreviewMoodModel {
@@ -47,13 +54,22 @@ export interface AvatarPreviewMotionModel {
 export function deriveAvatarPreviewAccessories(config: PetAvatarConfig): AvatarPreviewAccessoryLayer[] {
   const activeAccessoryIds = new Set(Object.values(config.accessorySlots).filter(Boolean));
 
-  return AVATAR_ACCESSORIES.filter((item) => activeAccessoryIds.has(item.id)).map((item) => ({
-    id: item.id,
-    label: item.label,
-    tone: item.tone,
-    slot: item.slot,
-    kind: deriveAccessoryLayerKind(item),
-  }));
+  return AVATAR_ACCESSORIES.filter((item) => activeAccessoryIds.has(item.id)).map((item) => {
+    const fit = deriveAvatarAccessoryFit(config.templateId, item);
+
+    return {
+      id: item.id,
+      label: item.label,
+      tone: item.tone,
+      slot: item.slot,
+      kind: deriveAccessoryLayerKind(item),
+      fitStatus: fit.status,
+      fitLabel: fit.label,
+      fitDetail: fit.detail,
+      placementHint: fit.placementHint,
+      needsDeviceQa: fit.needsDeviceQa,
+    };
+  });
 }
 
 export function deriveAvatarPreviewMood(emote: AvatarEmoteState): AvatarPreviewMoodModel {

@@ -42,8 +42,10 @@ import {
   AVATAR_TEMPLATES,
   buildMockScanSuggestion,
   createDefaultAvatarConfig,
+  deriveAvatarAccessoryFit,
   describeAvatarConfig,
   getAvatarTemplate,
+  summarizeAvatarAccessoryFits,
   type AvatarAccessoryOption,
   type AvatarEmoteState,
   type AvatarFaceMarkingId,
@@ -281,6 +283,8 @@ export default function PortraitScreen() {
   const selectedTemplateStillSource = selectedTemplateEmote ?? selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
   const selectedTemplateCardSource = selectedTemplateEmote ?? selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
   const previewAccessories = useMemo(() => deriveAvatarPreviewAccessories(draft), [draft]);
+  const accessoryFitSummary = useMemo(() => summarizeAvatarAccessoryFits(draft.templateId), [draft.templateId]);
+  const accessoryFitBadge = accessoryFitSummary.split(";")[0] ?? accessoryFitSummary;
   const previewAccessoryLayers = useMemo(
     () =>
       previewAccessories.map((layer) => ({
@@ -574,6 +578,9 @@ export default function PortraitScreen() {
                     <Text style={[s.templateHeroMood, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       {emoteLabel(previewEmote)}
                       {previewAccessories.length ? ` | ${previewAccessories.length} chosen style${previewAccessories.length === 1 ? "" : "s"}` : ""}
+                    </Text>
+                    <Text style={[s.templateHeroFit, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      {accessoryFitBadge}
                     </Text>
                   </View>
                 </View>
@@ -876,10 +883,19 @@ export default function PortraitScreen() {
             </BoardCard>
 
             <BoardCard style={s.avatarBoard}>
-              <BoardSectionHeader title="Accessories" action="Slots" />
+              <BoardSectionHeader title="Accessories" action="Fit map" />
+              <View style={[s.accessoryFitPanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                <Text style={[s.accessoryFitTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                  Template overlay readiness
+                </Text>
+                <Text style={[s.accessoryFitSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {accessoryFitSummary}
+                </Text>
+              </View>
               <View style={s.accessoryGrid}>
                 {AVATAR_ACCESSORIES.map((item) => {
                   const active = Object.values(draft.accessorySlots).includes(item.id);
+                  const fit = deriveAvatarAccessoryFit(draft.templateId, item);
                   return (
                     <Pressable
                       key={item.id}
@@ -901,6 +917,20 @@ export default function PortraitScreen() {
                       </Text>
                       <Text style={[s.accessorySlot, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                         {item.slot}
+                      </Text>
+                      <Text
+                        style={[
+                          s.accessoryFitLabel,
+                          {
+                            color: fit.status === "template-fitted" ? colors.sage : colors.copper,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        {fit.label}
+                      </Text>
+                      <Text style={[s.accessoryFitHint, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        {fit.placementHint}
                       </Text>
                     </Pressable>
                   );
@@ -1319,6 +1349,7 @@ const s = StyleSheet.create({
   templateHeroKicker: { fontSize: 8.5, letterSpacing: 0.8, textTransform: "uppercase" },
   templateHeroTitle: { fontSize: 17, lineHeight: 20 },
   templateHeroMood: { fontSize: 11, lineHeight: 14 },
+  templateHeroFit: { fontSize: 9.5, lineHeight: 12, maxWidth: 148 },
   pixelFrameOverlay: {
     position: "absolute",
     left: 14,
@@ -1521,20 +1552,31 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   optionText: { fontSize: 12 },
+  accessoryFitPanel: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  accessoryFitTitle: { fontSize: 11.5, textTransform: "uppercase" },
+  accessoryFitSummary: { fontSize: 12, lineHeight: 17 },
   accessoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   accessoryTile: {
     flexBasis: "47.5%",
     flexGrow: 1,
-    minHeight: Math.max(82, MIN_MOBILE_TOUCH_TARGET),
+    minHeight: Math.max(126, MIN_MOBILE_TOUCH_TARGET),
     borderRadius: 8,
     borderWidth: 1,
     padding: 10,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     gap: 5,
   },
   accessoryDot: { width: 18, height: 18, borderRadius: 5 },
   accessoryLabel: { fontSize: 12.5 },
   accessorySlot: { fontSize: 10, textTransform: "uppercase" },
+  accessoryFitLabel: { fontSize: 9.5, textTransform: "uppercase" },
+  accessoryFitHint: { fontSize: 10.5, lineHeight: 14 },
   moodGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   moodChip: { width: "30.9%", minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   moodThumbWrap: {

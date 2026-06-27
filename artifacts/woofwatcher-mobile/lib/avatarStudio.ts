@@ -85,6 +85,16 @@ export interface AvatarAccessoryOption {
   launchTier: "free" | "plus-ready";
 }
 
+export type AvatarAccessoryFitStatus = "template-fitted" | "inventory-ready";
+
+export interface AvatarAccessoryFitModel {
+  status: AvatarAccessoryFitStatus;
+  label: "Template-fitted" | "Pack pending";
+  detail: string;
+  placementHint: string;
+  needsDeviceQa: boolean;
+}
+
 export interface AvatarScanSuggestion {
   templateId: AvatarTemplateId;
   confidence: "high" | "medium" | "low";
@@ -273,8 +283,67 @@ export const AVATAR_ACCESSORIES: AvatarAccessoryOption[] = [
   { id: "heart-sparkles", label: "Heart sparkles", slot: "fx", tone: "#C96358", launchTier: "plus-ready" },
 ];
 
+const SHEPHERD_TEMPLATE_FITTED_ACCESSORY_IDS = new Set([
+  "forest-bandana",
+  "navy-collar",
+  "birthday-hat",
+  "sleepy-mask",
+  "training-vest",
+  "cozy-bed",
+  "heart-sparkles",
+]);
+
+const TEMPLATE_FITTED_ACCESSORY_IDS: Partial<Record<AvatarTemplateId, Set<string>>> = {
+  shepherd: SHEPHERD_TEMPLATE_FITTED_ACCESSORY_IDS,
+};
+
+const ACCESSORY_SLOT_COPY: Record<keyof AvatarAccessorySlots, string> = {
+  head: "head slot above ears",
+  face: "face slot across eyes and muzzle",
+  neck: "neck slot under the jaw and above the chest",
+  body: "body slot over shoulders and chest",
+  room: "room slot behind or beneath the avatar",
+  fx: "effect slot around the avatar silhouette",
+};
+
 export function getAvatarTemplate(templateId: AvatarTemplateId): AvatarTemplate {
   return AVATAR_TEMPLATES.find((template) => template.id === templateId) ?? AVATAR_TEMPLATES[0];
+}
+
+export function deriveAvatarAccessoryFit(
+  templateId: AvatarTemplateId,
+  accessory: AvatarAccessoryOption,
+): AvatarAccessoryFitModel {
+  const template = getAvatarTemplate(templateId);
+  const placementHint = ACCESSORY_SLOT_COPY[accessory.slot];
+  const hasTemplateOverlay = TEMPLATE_FITTED_ACCESSORY_IDS[templateId]?.has(accessory.id) ?? false;
+
+  if (hasTemplateOverlay) {
+    return {
+      status: "template-fitted",
+      label: "Template-fitted",
+      detail: `${accessory.label} has a PixelLab ${template.label} overlay for the ${placementHint}. Confirm crop and motion on a real device before store screenshots.`,
+      placementHint,
+      needsDeviceQa: true,
+    };
+  }
+
+  return {
+    status: "inventory-ready",
+    label: "Pack pending",
+    detail: `${accessory.label} uses the shared inventory icon and procedural preview for ${template.label} until its template overlay pack ships.`,
+    placementHint,
+    needsDeviceQa: false,
+  };
+}
+
+export function summarizeAvatarAccessoryFits(templateId: AvatarTemplateId): string {
+  const template = getAvatarTemplate(templateId);
+  const fittedCount = AVATAR_ACCESSORIES.filter((item) => deriveAvatarAccessoryFit(templateId, item).status === "template-fitted").length;
+  const pendingCount = AVATAR_ACCESSORIES.length - fittedCount;
+  const pendingCopy = pendingCount === 1 ? "1 stays" : `${pendingCount} stay`;
+
+  return `${fittedCount}/${AVATAR_ACCESSORIES.length} accessories template-fitted for ${template.label}; ${pendingCopy} inventory-ready until their template overlay pack ships.`;
 }
 
 export function createDefaultAvatarConfig(petName = "Phoenix", now = new Date().toISOString()): PetAvatarConfig {

@@ -10,8 +10,10 @@ import {
   AVATAR_TEMPLATES,
   buildMockScanSuggestion,
   createDefaultAvatarConfig,
+  deriveAvatarAccessoryFit,
   describeAvatarConfig,
   normalizeAvatarConfig,
+  summarizeAvatarAccessoryFits,
 } from "./avatarStudio.ts";
 
 test("defines the launch template library for scan-assisted dog avatars", () => {
@@ -89,6 +91,37 @@ test("keeps scan-assisted copy truthful and owner-approved", () => {
   assert.match(suggestion.copy, /approve/i);
   assert.doesNotMatch(suggestion.copy, /perfect/i);
   assert.doesNotMatch(suggestion.copy, /instantly/i);
+});
+
+test("tracks which accessories are template-fitted versus inventory-ready", () => {
+  const forestBandana = AVATAR_ACCESSORIES.find((item) => item.id === "forest-bandana");
+  const copperCollar = AVATAR_ACCESSORIES.find((item) => item.id === "copper-collar");
+
+  assert.ok(forestBandana);
+  assert.ok(copperCollar);
+
+  const fitted = deriveAvatarAccessoryFit("shepherd", forestBandana);
+  const pending = deriveAvatarAccessoryFit("shepherd", copperCollar);
+
+  assert.equal(fitted.status, "template-fitted");
+  assert.equal(fitted.label, "Template-fitted");
+  assert.match(fitted.detail, /PixelLab Shepherd overlay/);
+  assert.match(fitted.placementHint, /neck/i);
+  assert.equal(fitted.needsDeviceQa, true);
+
+  assert.equal(pending.status, "inventory-ready");
+  assert.equal(pending.label, "Pack pending");
+  assert.match(pending.detail, /shared inventory icon/);
+  assert.match(pending.detail, /template overlay pack ships/);
+
+  assert.equal(
+    summarizeAvatarAccessoryFits("shepherd"),
+    "7/10 accessories template-fitted for Shepherd; 3 stay inventory-ready until their template overlay pack ships.",
+  );
+  assert.equal(
+    summarizeAvatarAccessoryFits("retriever"),
+    "0/10 accessories template-fitted for Retriever; 10 stay inventory-ready until their template overlay pack ships.",
+  );
 });
 
 test("documents the scan-to-pixel workflow as owner-approved template matching", () => {
