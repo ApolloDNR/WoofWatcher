@@ -330,6 +330,7 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /listCareTwinRuntimeQaScenarios/);
   assert.match(qaRoute, /evaluateCareTwinRuntimeQaScenario/);
   assert.match(qaRoute, /deriveCareTwinChoreography/);
+  assert.match(qaRoute, /motionRecipeForSpriteAction/);
   assert.match(qaRoute, /LivingPhoenixRoom/);
   assert.match(qaRoute, /nativeQaPrompt/);
   assert.match(qaRoute, /testID=\{`care-twin-qa-stage-\$\{result\.scenario\.id\}`\}/);
@@ -357,6 +358,8 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Motion recipe/);
   assert.match(qaRoute, /choreography\.qaSummary/);
   assert.match(qaRoute, /choreography\.tapReaction\.action/);
+  assert.match(qaRoute, /motionRecipe\.qaHint/);
+  assert.match(qaRoute, /Motion proof/);
   assert.match(qaRoute, /ImagePicker\.launchImageLibraryAsync/);
   assert.match(qaRoute, /buildQaScreenshotEvidence/);
   assert.match(qaRoute, /qaScreenshotPlatformForRuntime/);

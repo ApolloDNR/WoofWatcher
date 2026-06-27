@@ -114,6 +114,9 @@ test("builds a shareable care twin QA report without claiming native QA is compl
   assert.match(text, /Summary: 1\/2 passed, 1 needs tune, 0 unreviewed/);
   assert.match(text, /Steady happy idle: Pass/);
   assert.match(text, /Health Watch signal: Needs tune/);
+  assert.match(text, /Motion recipe: tail wag/);
+  assert.match(text, /bob 1\.8px/);
+  assert.match(text, /Happy idle uses a readable body sway/);
   assert.match(text, /Health room crop needs 8px more bottom padding/);
   assert.match(text, /Attached screenshots: 1 \(iOS 1, Android 0/);
   assert.match(text, /Screenshots: ios-happy-idle\.png \(iOS\)/);

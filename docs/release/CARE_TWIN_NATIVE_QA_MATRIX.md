@@ -85,10 +85,13 @@ required"; it should show the derived missing iOS, Android, or flexible
 evidence counts from the saved `/care-twin-qa` session. If the QA session is
 empty, More intentionally keeps native proof blocked.
 
-Each state card also shows a Motion recipe generated from the same choreography
-model Home uses. Reviewers should confirm the primary loop, ambient micro-loops,
-and tap reaction match the state: happy states may bark/playfully react, rest
-states should use a soft check-in, and Health Watch should stay calm.
+Each state card also shows a Motion recipe and a Motion proof panel generated
+from the same choreography and motion-recipe model Home uses. Reviewers should
+confirm the primary loop, ambient micro-loops, tap reaction, bob, sway, tilt,
+scale pulse, and shadow pulse match the state: happy states may bark/playfully
+react, rest states should use a soft check-in, and Health Watch should stay
+calm. The native share report includes the same recipe line so screenshot notes
+and motion findings can travel together.
 
 ## Purpose
 

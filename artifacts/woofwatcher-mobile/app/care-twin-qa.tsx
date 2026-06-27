@@ -45,7 +45,11 @@ import {
   buildMobileLaunchQaCapturePlan,
   buildMobileLaunchQaCaptureShareText,
 } from "@/lib/mobileLaunchQaEvidence";
-import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
+import {
+  deriveCareTwinChoreography,
+  describeMotionRecipeForSpriteAction,
+  motionRecipeForSpriteAction,
+} from "@/lib/careTwinChoreography";
 import { deriveLaunchReadiness } from "@/lib/launchReadiness";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 import {
@@ -1238,6 +1242,8 @@ export default function CareTwinQaScreen() {
           const reviewStatus = qaStatusById[result.scenario.id] ?? "unreviewed";
           const reviewTone = statusTone(reviewStatus, colors);
           const choreography = deriveCareTwinChoreography(result.plan);
+          const motionRecipe = motionRecipeForSpriteAction(result.actualAction);
+          const motionRecipeSummary = describeMotionRecipeForSpriteAction(result.actualAction);
           const attachedScreenshots = qaEvidenceById[result.scenario.id] ?? [];
 
           return (
@@ -1288,6 +1294,27 @@ export default function CareTwinQaScreen() {
                 </Text>
                 <Text style={[s.promptText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
                   {choreography.qaSummary}
+                </Text>
+              </View>
+
+              <View style={[s.motionProofBox, { backgroundColor: `${colors.sage}12`, borderColor: `${colors.sage}44` }]}>
+                <View style={s.motionProofHeader}>
+                  <Text style={[s.promptLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    Motion proof
+                  </Text>
+                  <QaBadge label={`${motionRecipe.bodyBobPx}px bob`} tone={colors.sage} />
+                </View>
+                <View style={s.motionMetricGrid}>
+                  <MetaItem icon="swap-horizontal-outline" label="Sway" value={`${motionRecipe.bodySwayPx}px`} />
+                  <MetaItem icon="sync-outline" label="Tilt" value={`${motionRecipe.tiltDeg}deg`} />
+                  <MetaItem icon="resize-outline" label="Pulse" value={`${motionRecipe.scalePulse}`} />
+                  <MetaItem icon="ellipse-outline" label="Shadow" value={`${motionRecipe.shadowScalePulse}/${motionRecipe.shadowOpacityPulse}`} />
+                </View>
+                <Text style={[s.promptText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {motionRecipe.qaHint}
+                </Text>
+                <Text style={[s.motionRecipeSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {motionRecipeSummary}
                 </Text>
               </View>
 
@@ -2197,6 +2224,27 @@ const s = StyleSheet.create({
   promptText: {
     fontSize: 13,
     lineHeight: 19,
+  },
+  motionProofBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
+  motionProofHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  motionMetricGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  motionRecipeSummary: {
+    fontSize: 11,
+    lineHeight: 16,
   },
   reviewGrid: {
     flexDirection: "row",

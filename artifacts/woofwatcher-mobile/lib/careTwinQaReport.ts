@@ -1,4 +1,5 @@
 import type { CareTwinRuntimeQaResult } from "./careTwinAssets.ts";
+import { describeMotionRecipeForSpriteAction } from "./careTwinChoreography.ts";
 import type { QaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
 import { qaScreenshotEvidenceNames } from "./qaScreenshotEvidence.ts";
 
@@ -92,6 +93,7 @@ export function buildCareTwinQaShareText(
     lines.push(
       `- ${result.scenario.label}: ${careTwinQaStatusLabel(review.status)} | sprite=${result.actualAction} | room=${result.actualRoomVariant} | zone=${result.actualZone} | need=${result.actualNeed}`,
     );
+    lines.push(`  ${describeMotionRecipeForSpriteAction(result.actualAction)}`);
 
     if (note) {
       lines.push(`  Note: ${note}`);

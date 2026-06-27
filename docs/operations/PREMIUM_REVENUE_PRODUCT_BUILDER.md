@@ -848,6 +848,18 @@ no failed log. The check-run annotation reports the standing account
 billing/spending-limit blocker, so this remains an external CI gate rather than
 a product regression.
 
+The care-twin motion QA proof pass connected those living motion recipes to the
+native device review cockpit. `describeMotionRecipeForSpriteAction` now formats
+each sprite action's bob, sway, tilt, scale pulse, shadow pulse, and QA hint;
+`/care-twin-qa` renders those values in a `Motion proof` panel for every state;
+and the Care Twin QA share report includes the same line for handoff notes. This
+does not replace native screenshots, but it gives iOS/Android testers a precise
+single-sprite motion checklist for crop, gait, tap reaction, and game-feel
+review. Local verification passed focused Care Twin QA/mobile readiness, the
+392-test behavior/readiness suite, mobile TypeScript, PixelLab verification at
+149 files, Expo web export, preview `HEAD 200` on `/` and `/care-twin-qa`, and
+`git diff --check` with expected Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

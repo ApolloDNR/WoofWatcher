@@ -157,6 +157,19 @@ export function motionRecipeForSpriteAction(action: CareTwinSpriteAction): CareT
   return MOTION_RECIPES[action];
 }
 
+export function describeMotionRecipeForSpriteAction(action: CareTwinSpriteAction): string {
+  const recipe = motionRecipeForSpriteAction(action);
+  return [
+    `Motion recipe: ${formatAction(action)}`,
+    `bob ${recipe.bodyBobPx}px`,
+    `sway ${recipe.bodySwayPx}px`,
+    `tilt ${recipe.tiltDeg}deg`,
+    `scale pulse ${recipe.scalePulse}`,
+    `shadow pulse ${recipe.shadowScalePulse}/${recipe.shadowOpacityPulse}`,
+    recipe.qaHint,
+  ].join(" | ");
+}
+
 function durationFor(action: CareTwinSpriteAction): number {
   const track = CARE_TWIN_SPRITE_MANIFEST[action];
   return Math.max(650, Math.round((track.frameCount / Math.max(1, track.fps)) * 1000));
