@@ -1577,6 +1577,28 @@ export default function MoreScreen() {
                   {nativeQaCaptureNeedsTuneTarget ? (
                     <Pressable
                       accessibilityRole="button"
+                      accessibilityLabel={`Open first Native QA Needs tune target: ${nativeQaCaptureNeedsTuneTarget.title}`}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        router.push(buildCareTwinQaFocusRoute(nativeQaCaptureNeedsTuneTarget) as never);
+                      }}
+                      style={({ pressed }) => [
+                        s.nativeQaCaptureNeedsTuneAction,
+                        {
+                          borderColor: colors.rose + "66",
+                          backgroundColor: pressed ? colors.rose + "21" : colors.rose + "14",
+                        },
+                      ]}
+                    >
+                      <Ionicons name="locate-outline" size={15} color={colors.rose} />
+                      <Text style={[s.nativeQaCaptureCockpitActionText, { color: colors.rose, fontFamily: "Inter_800ExtraBold" }]}>
+                        Open Needs Tune
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                  {nativeQaCaptureNeedsTuneTarget ? (
+                    <Pressable
+                      accessibilityRole="button"
                       accessibilityLabel="Share first Native QA Needs tune fix brief"
                       onPress={shareNativeQaFixBrief}
                       style={({ pressed }) => [
@@ -3213,6 +3235,18 @@ const s = StyleSheet.create({
   },
   nativeQaCaptureShareText: { color: "#FFFFFF", fontSize: 12.5 },
   nativeQaCaptureFixBrief: {
+    flex: 1,
+    minWidth: 132,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 8,
+  },
+  nativeQaCaptureNeedsTuneAction: {
     flex: 1,
     minWidth: 132,
     minHeight: MIN_MOBILE_TOUCH_TARGET,

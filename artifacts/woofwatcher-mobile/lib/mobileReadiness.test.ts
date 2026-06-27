@@ -2095,7 +2095,10 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /nativeQaCapturePlan\.nextTargets/);
   assert.match(more, /nativeQaCaptureNeedsTuneTarget/);
   assert.match(more, /Share Fix Brief/);
+  assert.match(more, /Open Needs Tune/);
   assert.match(more, /accessibilityLabel="Share first Native QA Needs tune fix brief"/);
+  assert.match(more, /accessibilityLabel=\{`Open first Native QA Needs tune target:/);
+  assert.match(more, /router\.push\(buildCareTwinQaFocusRoute\(nativeQaCaptureNeedsTuneTarget\) as never\)/);
   assert.match(more, /mobileLaunchQaCaptureTargetStatusLabel\(target\)/);
   assert.match(more, /Pass pending proof/);
   assert.match(more, /nativeQaCaptureHasProofPending/);
@@ -2146,6 +2149,7 @@ test("keeps More launch and household gateway actions on shared mobile touch tar
     "providerSetupButton",
     "nativeQaCaptureShare",
     "nativeQaCaptureFixBrief",
+    "nativeQaCaptureNeedsTuneAction",
     "nativeQaCaptureCockpitAction",
     "betaNextActionButton",
     "betaHandoffShareButton",
