@@ -138,6 +138,7 @@ Latest completed local runtime/accessibility hardening:
 - Mobile first-run Setup confirmation now includes active household context from `/me` when available. It names the selected pack and tells multi-household caregivers to manage invite, sync, and switching for their packs in More while clarifying setup only saved the care foundation.
 - Mobile first-run Setup now captures household sync intent before provider-backed onboarding is complete. Share invite, Join pack, and Decide later choices keep actual invite/join/sync/switching work routed to More, and the post-save alert only offers Open More when the chosen next step needs those real household tools.
 - Setup-to-More household handoff is now intent-aware before provider-backed onboarding is complete. Share invite and Join pack choices pass a `setupHandoff` route param into More, where a setup next-step card routes to the existing owner/admin invite share action or invite-code modal without claiming invite approval, cloud onboarding, or arbitrary membership changes are complete.
+- Mobile More display-name copy now mirrors the active-household member update boundary. The display-name row, edit modal, and save confirmation name the active pack so multi-household caregivers are not told the name change applies to every household or future provider-backed surface.
 
 Next highest-impact work:
 

@@ -202,6 +202,7 @@ export default function MoreScreen() {
   const updateMe = useUpdateMe();
 
   const household = me.data?.household;
+  const activeDisplayNamePack = household?.name?.trim() || "this pack";
   const setupHandoffValue = Array.isArray(routeParams.setupHandoff)
     ? routeParams.setupHandoff[0]
     : routeParams.setupHandoff;
@@ -519,6 +520,7 @@ export default function MoreScreen() {
         onSuccess: () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setNameOpen(false);
+          Alert.alert("Name saved", `You'll appear as ${name} in ${activeDisplayNamePack}.`);
           refreshMe();
         },
         onError: () => Alert.alert("Couldn't update name", "Please try again."),
@@ -1674,7 +1676,7 @@ export default function MoreScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[s.linkLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Your display name</Text>
                 <Text numberOfLines={1} style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {myName || "Set how you appear on logs"}
+                  {myName || `Set how you appear in ${activeDisplayNamePack}`}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
@@ -1880,7 +1882,7 @@ export default function MoreScreen() {
         colors={colors}
         icon="person-circle-outline"
         title="Your display name"
-        subtitle="This is how you'll appear on every care log."
+        subtitle={`This is how you'll appear on care logs for ${activeDisplayNamePack}.`}
         placeholder="Alex"
         value={nameValue}
         onChangeText={setNameValue}

@@ -98,6 +98,8 @@ Current evidence, 2026-06-24: Mobile More now exposes the active-household switc
 
 Current evidence, 2026-06-27: Setup-to-More household handoff stays truthful and self-clearing. Share invite and Join pack setup choices still route owners to the real More household tools, and More hides the setup next-step card after the owner opens the invite share or invite-code modal instead of leaving a stale onboarding prompt.
 
+Current evidence, 2026-06-27: Mobile More display-name copy now names the active pack in the row, edit modal, and save confirmation. This matches the API boundary where `/me` updates the global display name plus the authenticated user's active-household membership row, without implying a caregiver identity change across every household or future provider-backed admin surface.
+
 Current evidence, 2026-06-24: API household audit review now has an owner/admin-scoped contract. `household_audit_events` stores durable household audit rows, and `GET /household/audit-events` returns newest-first events with bounded `limit`, `action`, and `lifecycleState` filters before final provider-backed audit retention policy exists.
 
 Current evidence, 2026-06-24: Sensitive household actions now produce durable audit rows for owner/admin review. Default household creation, household rename, active-household switching, and invite acceptance insert `household.created`, `household.renamed`, `household.active_changed`, and `household.member_joined` events into `household_audit_events` before final provider-backed account audit policy exists.

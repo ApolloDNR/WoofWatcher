@@ -1576,6 +1576,10 @@ test("keeps household access readiness visible from More", () => {
   assert.match(more, /Role update saved/);
   assert.match(more, /\$\{target\.name\}'s pack role is now \$\{formatHouseholdRoleLabel\(role\)\}\./);
   assert.match(more, /Couldn't update role/);
+  assert.match(more, /activeDisplayNamePack/);
+  assert.match(more, /Set how you appear in \$\{activeDisplayNamePack\}/);
+  assert.match(more, /This is how you'll appear on care logs for \$\{activeDisplayNamePack\}\./);
+  assert.match(more, /Name saved/);
   assert.match(more, /refresh\(\)/);
   assert.match(more, /Couldn't switch household/);
 });

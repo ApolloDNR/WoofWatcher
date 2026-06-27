@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-27: Display Name Copy Names The Active Pack
+
+Decision: Mobile More should describe display-name edits as applying to the active pack's care logs, and the save confirmation should name that selected household context.
+
+Reason: The API intentionally updates the authenticated user's global display name plus the active-household membership display-name row. Saying the name appears on every care log can imply a broader all-households or provider-backed identity change than the launch contract supports. Active-pack wording keeps multi-household caregiver identity truthful while richer account/profile administration remains gated.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed account profile management, richer multi-household onboarding, member profile editing, audit policy, or cross-household identity controls become active release work.
+
 ### 2026-06-27: Setup Household Handoff Clears After The Owner Acts
 
 Decision: More should treat the `setupHandoff` route param as initial context, render the setup next-step card through local visible-handoff state, and hide the card after the owner shares the invite or opens the invite-code modal.
