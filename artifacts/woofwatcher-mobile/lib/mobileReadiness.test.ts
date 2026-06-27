@@ -2099,6 +2099,10 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /nativeQaCaptureHasProofPending/);
   assert.match(more, /ownerPreviewProofStatus/);
   assert.match(more, /Owner preview proof/);
+  assert.match(more, /storeScreenshotProofStatus/);
+  assert.match(more, /Store screenshot proof/);
+  assert.match(more, /Next store screenshot/);
+  assert.match(more, /storeScreenshotProofStatus\.nextTarget/);
   assert.match(more, /Finish Proof/);
   assert.match(more, /nativeQaCaptureCockpitAction/);
   assert.match(more, /Share\.share\(\{[\s\S]*message:\s*buildMobileLaunchQaCaptureShareText\(nativeQaCapturePlan/);

@@ -111,6 +111,7 @@ test("lists the combined native release and store screenshot QA surfaces", () =>
   assert.ok(ids.includes("phoenix-home"));
   assert.ok(ids.includes("avatar-studio"));
   assert.ok(ids.includes("store-phoenix-home"));
+  assert.ok(ids.includes("store-health-watch"));
   assert.ok(ids.includes("store-privacy-launch-gates"));
   assert.ok(surfaces.every((surface) => surface.requiredEvidence.some((item) => /screenshot/i.test(item))));
 });
@@ -273,6 +274,68 @@ test("builds a shareable native QA capture script for Apollo and device testers"
   assert.match(text, /Needs tune if: Mark Needs tune if Home clips under the safe area or hides the main action\./);
   assert.match(text, /2\. Care Pass \(\/records\)/);
   assert.match(text, /Done condition: capture iOS and Android proof in \/care-twin-qa/);
+});
+
+test("keeps store screenshot proof visible even when normal native targets fill the capture list", () => {
+  const surfaces: readonly MobileReleaseQaSurface[] = [
+    {
+      ...focusedSurfaces[0],
+      id: "home-one",
+      title: "Home One",
+    },
+    {
+      ...focusedSurfaces[0],
+      id: "home-two",
+      title: "Home Two",
+    },
+    {
+      ...focusedSurfaces[0],
+      id: "home-three",
+      title: "Home Three",
+    },
+    {
+      ...focusedSurfaces[0],
+      id: "home-four",
+      title: "Home Four",
+    },
+    {
+      id: "store-health-watch",
+      title: "Store: Health Watch",
+      route: "/health",
+      priority: "release-polish",
+      goal: "Capture store-ready Health Watch evidence.",
+      devicePrompt: "Capture Review packet and Vet-share checklist.",
+      setupSteps: ["Open Health and keep Review packet visible before capturing the store screenshot."],
+      verificationSteps: ["Confirm the Review packet is visible with the Vet-share checklist."],
+      acceptanceCriteria: ["Health Review Packet shows owner prompts, vet-share checklist, and Not veterinary advice boundary."],
+      failureEscalation: "Mark Needs tune if Health Watch hides the Review packet.",
+      requiredEvidence: [
+        "iOS screenshot for store packet: Health Watch.",
+        "Android screenshot for store packet: Health Watch.",
+        "Health Watch Review packet with Vet-share checklist and Draft vet questions visible.",
+      ],
+      launchRisk: "If Health Watch is missing, the store listing lacks truthful health-workflow proof.",
+    },
+  ];
+
+  const plan = buildMobileLaunchQaCapturePlan(null, surfaces);
+
+  assert.deepEqual(
+    plan.nextTargets.map((target) => target.surfaceId),
+    ["home-one", "home-two", "home-three", "home-four"],
+  );
+  assert.equal(plan.storeScreenshotProofStatus.total, 1);
+  assert.equal(plan.storeScreenshotProofStatus.complete, 0);
+  assert.equal(plan.storeScreenshotProofStatus.open, 1);
+  assert.equal(plan.storeScreenshotProofStatus.statusLabel, "Store proof open");
+  assert.equal(plan.storeScreenshotProofStatus.nextTarget?.surfaceId, "store-health-watch");
+  assert.match(plan.storeScreenshotProofStatus.missingEvidence.join(" "), /Attach 1 iOS screenshot for Store: Health Watch/);
+
+  const text = buildMobileLaunchQaCaptureShareText(plan, "2026-06-27T09:30:00.000Z");
+
+  assert.match(text, /Store screenshot proof: Store proof open/);
+  assert.match(text, /Next store screenshot: Store: Health Watch \(\/health\)/);
+  assert.match(text, /Store screenshot missing: Attach 1 iOS screenshot for Store: Health Watch/);
 });
 
 test("preserves owner preview route-loop details in the capture plan and share script", () => {

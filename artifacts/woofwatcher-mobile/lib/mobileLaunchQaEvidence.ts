@@ -41,6 +41,15 @@ export interface MobileLaunchQaOwnerPreviewProofStatus {
   note?: string;
 }
 
+export interface MobileLaunchQaStoreScreenshotProofStatus {
+  total: number;
+  complete: number;
+  open: number;
+  statusLabel: string;
+  nextTarget: MobileLaunchQaCaptureTarget | null;
+  missingEvidence: string[];
+}
+
 export interface MobileLaunchQaCapturePlan {
   totalSurfaces: number;
   openSurfaces: number;
@@ -48,9 +57,11 @@ export interface MobileLaunchQaCapturePlan {
   nextTargets: MobileLaunchQaCaptureTarget[];
   firstNeedsTuneTarget: MobileLaunchQaCaptureTarget | null;
   ownerPreviewProofStatus: MobileLaunchQaOwnerPreviewProofStatus;
+  storeScreenshotProofStatus: MobileLaunchQaStoreScreenshotProofStatus;
 }
 
 const OWNER_PREVIEW_CORE_LOOP_ID = "owner-preview-core-loop";
+const STORE_SCREENSHOT_SURFACE_PREFIX = "store-";
 
 export function mobileLaunchQaCaptureTargetStatusLabel(
   target: MobileLaunchQaCaptureTarget | null | undefined,
@@ -233,12 +244,55 @@ function ownerPreviewProofStatusFor(
   };
 }
 
+function isStoreScreenshotSurface(surface: MobileReleaseQaSurface): boolean {
+  return surface.id.startsWith(STORE_SCREENSHOT_SURFACE_PREFIX);
+}
+
+function storeScreenshotProofStatusFor(
+  session: MobileQaSessionState | null | undefined,
+  surfaces: readonly MobileReleaseQaSurface[],
+): MobileLaunchQaStoreScreenshotProofStatus {
+  const storeSurfaces = surfaces.filter(isStoreScreenshotSurface);
+  const openTargets = storeSurfaces
+    .map<MobileLaunchQaCaptureTarget | null>((surface) => {
+      const review = reviewForSessionSurface(session, surface);
+      const missingEvidence = missingEvidenceForSurface(surface, review);
+      const complete = review.status === "pass" && missingEvidence.length === 0;
+      if (complete) return null;
+      return captureTargetForSurface(surface, review, missingEvidence);
+    })
+    .filter((target): target is MobileLaunchQaCaptureTarget => !!target);
+  const nextTarget = openTargets[0] ?? null;
+  const complete = Math.max(0, storeSurfaces.length - openTargets.length);
+
+  let statusLabel = "No store screenshots";
+  if (storeSurfaces.length > 0 && openTargets.length === 0) {
+    statusLabel = "Store proof complete";
+  } else if (nextTarget?.status === "pass" && nextTarget.missingEvidence.length > 0) {
+    statusLabel = "Pass pending proof";
+  } else if (nextTarget?.status === "needs-review") {
+    statusLabel = "Needs tune";
+  } else if (nextTarget) {
+    statusLabel = "Store proof open";
+  }
+
+  return {
+    total: storeSurfaces.length,
+    complete,
+    open: openTargets.length,
+    statusLabel,
+    nextTarget,
+    missingEvidence: nextTarget?.missingEvidence ?? [],
+  };
+}
+
 export function buildMobileLaunchQaCapturePlan(
   session: MobileQaSessionState | null | undefined,
   surfaces: readonly MobileReleaseQaSurface[] = listMobileLaunchQaSurfaces(),
 ): MobileLaunchQaCapturePlan {
   const surfaceOrder = new Map(surfaces.map((surface, index) => [surface.id, index]));
   const ownerPreviewProofStatus = ownerPreviewProofStatusFor(session, surfaces);
+  const storeScreenshotProofStatus = storeScreenshotProofStatusFor(session, surfaces);
   const targets = surfaces
     .map<MobileLaunchQaCaptureTarget | null>((surface) => {
       const review = reviewForSessionSurface(session, surface);
@@ -262,6 +316,7 @@ export function buildMobileLaunchQaCapturePlan(
     nextTargets: targets.slice(0, 4),
     firstNeedsTuneTarget: targets.find((target) => target.status === "needs-review") ?? null,
     ownerPreviewProofStatus,
+    storeScreenshotProofStatus,
   };
 }
 
@@ -340,6 +395,17 @@ export function buildMobileLaunchQaCaptureShareText(
         : "No owner-preview proof is missing."
     }`,
     `Owner preview evidence: ${plan.ownerPreviewProofStatus.evidenceAttached} attached.`,
+    `Store screenshot proof: ${plan.storeScreenshotProofStatus.statusLabel}. ${plan.storeScreenshotProofStatus.complete}/${plan.storeScreenshotProofStatus.total} complete.`,
+    `Next store screenshot: ${
+      plan.storeScreenshotProofStatus.nextTarget
+        ? `${plan.storeScreenshotProofStatus.nextTarget.title} (${plan.storeScreenshotProofStatus.nextTarget.route})`
+        : "No store screenshot target is open."
+    }`,
+    `Store screenshot missing: ${
+      plan.storeScreenshotProofStatus.missingEvidence.length
+        ? plan.storeScreenshotProofStatus.missingEvidence.join(" ")
+        : "No store screenshot proof is missing."
+    }`,
     "",
     "Next captures:",
   ];

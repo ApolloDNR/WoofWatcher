@@ -1039,12 +1039,16 @@ export default function MoreScreen() {
 
   const nativeQaCaptureNeedsTuneTarget = nativeQaCapturePlan.firstNeedsTuneTarget;
   const ownerPreviewProofStatus = nativeQaCapturePlan.ownerPreviewProofStatus;
+  const storeScreenshotProofStatus = nativeQaCapturePlan.storeScreenshotProofStatus;
   const ownerPreviewProofHasPending = ownerPreviewProofStatus.statusLabel === "Pass pending proof";
   const ownerPreviewProofSummary =
     ownerPreviewProofStatus.missingEvidence[0] ?? "Owner preview proof is complete for the saved QA session.";
+  const storeScreenshotProofHasPending = storeScreenshotProofStatus.statusLabel !== "Store proof complete";
+  const storeScreenshotProofSummary =
+    storeScreenshotProofStatus.missingEvidence[0] ?? "Store screenshot proof is complete for the saved QA session.";
   const nativeQaCaptureHasProofPending = nativeQaCapturePlan.nextTargets.some(
     (target) => mobileLaunchQaCaptureTargetStatusLabel(target) === "Pass pending proof",
-  ) || ownerPreviewProofHasPending;
+  ) || ownerPreviewProofHasPending || storeScreenshotProofStatus.statusLabel === "Pass pending proof";
   const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "Open QA Cockpit";
 
   const H_PAD = 20;
@@ -1499,6 +1503,58 @@ export default function MoreScreen() {
                     color={ownerPreviewProofHasPending ? colors.amber : colors.sage}
                   />
                 </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open store screenshot QA proof. ${storeScreenshotProofStatus.statusLabel}. ${storeScreenshotProofStatus.nextTarget ? `Next store screenshot: ${storeScreenshotProofStatus.nextTarget.title}. ${storeScreenshotProofSummary}` : storeScreenshotProofSummary}`}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push("/care-twin-qa" as never);
+                  }}
+                  style={({ pressed }) => [
+                    s.nativeQaOwnerProofRow,
+                    {
+                      borderColor: storeScreenshotProofHasPending ? colors.copper + "66" : colors.border,
+                      backgroundColor: storeScreenshotProofHasPending ? colors.copper + "12" : colors.card,
+                      opacity: pressed ? 0.76 : 1,
+                    },
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.nativeQaOwnerProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      Store screenshot proof
+                    </Text>
+                    <Text
+                      style={[
+                        s.nativeQaOwnerProofTitle,
+                        {
+                          color: storeScreenshotProofHasPending ? colors.copper : colors.foreground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {storeScreenshotProofStatus.statusLabel}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                    >
+                      {storeScreenshotProofStatus.complete}/{storeScreenshotProofStatus.total} complete. {storeScreenshotProofStatus.open} open.
+                    </Text>
+                    {storeScreenshotProofStatus.nextTarget ? (
+                      <Text
+                        numberOfLines={2}
+                        style={[s.nativeQaOwnerProofDetail, { color: colors.copper, fontFamily: "Inter_700Bold" }]}
+                      >
+                        Next store screenshot: {storeScreenshotProofStatus.nextTarget.title} - {storeScreenshotProofSummary}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Ionicons
+                    name={storeScreenshotProofHasPending ? "storefront-outline" : "shield-checkmark-outline"}
+                    size={17}
+                    color={storeScreenshotProofHasPending ? colors.copper : colors.sage}
+                  />
+                </Pressable>
                 <View style={s.nativeQaCaptureActions}>
                   <Pressable
                     accessibilityRole="button"
