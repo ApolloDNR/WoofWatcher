@@ -1396,6 +1396,15 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
   - Command: `expo export --platform web --output-dir .expo-smoke --clear`
   - Result: passed; refreshed `.expo-smoke` for local preview.
 
+### Remote Verification
+
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: remote run `28274880697` failed before job execution with job
+    `83779509676`; the job reported `steps: []`, and `gh run view --log-failed`
+    returned `log not found: 83779509676`. This matches the standing
+    billing/spending-limit pre-job blocker rather than a local test failure.
+
 ### Remaining Work
 
 - Native iOS and Android device/simulator proof is still the main external gate.
