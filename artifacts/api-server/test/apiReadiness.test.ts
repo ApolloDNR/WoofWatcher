@@ -956,6 +956,30 @@ test("household sharing cleanup review API stays owner-scoped and typed", () => 
   );
 });
 
+test("API Zod public barrel avoids schema and generated-type export ambiguity", () => {
+  const publicBarrel = read("lib/api-zod/src/index.ts");
+
+  assert.match(publicBarrel, /export \* from "\.\/generated\/api"/, "runtime Zod schemas must stay exported");
+  assert.doesNotMatch(
+    publicBarrel,
+    /export type \* from "\.\/generated\/types"/,
+    "generated model types must not be star-exported because some names collide with runtime schemas",
+  );
+
+  for (const alias of [
+    "HouseholdInvitationType",
+    "HouseholdInvitationLifecycleStateType",
+    "HouseholdInvitationListFiltersType",
+    "HouseholdInvitationMutationResponseType",
+    "HouseholdSharingCleanupCandidateType",
+    "HouseholdSharingCleanupFiltersType",
+    "HouseholdSharingCleanupKindType",
+    "HouseholdSharingCleanupRecommendedActionType",
+  ]) {
+    assert.match(publicBarrel, new RegExp(`\\b${alias}\\b`), `${alias} must stay available for type-only imports`);
+  }
+});
+
 test("Access Pass expiry is enforced at member-auth request time", () => {
   const household = read("artifacts/api-server/src/lib/household.ts");
   const householdRoute = read("artifacts/api-server/src/routes/household.ts");

@@ -4,6 +4,49 @@
 
 WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 
+## 2026-06-27 API Zod Barrel Typecheck Cleanup
+
+### What Changed
+
+- Fixed the root TypeScript build blocker in `lib/api-zod/src/index.ts` by
+  replacing the ambiguous generated model star export with explicit type
+  exports.
+- Kept generated Zod schemas as the stable runtime exports from
+  `./generated/api`.
+- Re-exported the eight colliding household invitation/cleanup model types with
+  `Type` suffix aliases, such as `HouseholdInvitationType`, so generated schema
+  constants and generated model types no longer fight over the same public name.
+- Added an API readiness guard that prevents the public barrel from regressing
+  to `export type * from "./generated/types"`.
+
+### Files Changed In This Slice
+
+- `lib/api-zod/src/index.ts`
+- `artifacts/api-server/test/apiReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- API readiness:
+  - Command: `node --experimental-strip-types --test artifacts/api-server/test/apiReadiness.test.ts`
+  - Result: passed, 17 tests.
+- Root focused tests:
+  - Command: `node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts`
+  - Result: passed, 431 tests.
+- Root TypeScript build:
+  - Command: `tsc --build --pretty false`
+  - Result: passed.
+
+### Remaining Work
+
+- Native iOS/Android device or simulator QA remains the external launch gate.
+- GitHub Actions remote verification still cannot execute until the account
+  billing/spending-limit blocker is fixed.
+- Continue visual/device polish and provider setup truth without claiming
+  generated PDF, provider upload, store approval, or native beta readiness.
+
 ## 2026-06-27 Records Care Pass Export Manifest Polish
 
 ### What Changed
@@ -59,11 +102,12 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
   - Command: `git diff --check`
   - Result: passed with expected Windows CRLF warnings only.
 
-### Known Limitation
+### Historical Limitation
 
-- A broad root `tsc --build --pretty false` still fails on pre-existing duplicate
-  exports in `lib/api-zod/src/index.ts` for household invitation/cleanup types.
-  This is unrelated to the Records manifest polish and remains a cleanup item.
+- At the time of this Records slice, a broad root
+  `tsc --build --pretty false` failed on pre-existing duplicate exports in
+  `lib/api-zod/src/index.ts` for household invitation/cleanup types. The
+  follow-up API Zod barrel cleanup above resolved that blocker.
 
 ### Remote Verification
 
