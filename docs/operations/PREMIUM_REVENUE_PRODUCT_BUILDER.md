@@ -1066,6 +1066,17 @@ only that target's focused proof without wiping unrelated QA evidence. Red/green
 verification first failed on the missing proof panel, then passed
 `mobileReadiness.test.ts` with 81/81 tests.
 
+Remote verification for focused QA screenshot proof commit `0de87ef` was
+manually dispatched as GitHub Actions run `28294054369`, but job/check-run
+`83830830154` failed before executing any steps. `gh run view --log-failed`
+returned `log not found: 83830830154`, and the check-run annotation says the
+job was not started because recent account payments failed or the spending limit
+needs to be increased. This is the standing GitHub billing/spending-limit
+blocker, not a local regression. Local verification passed the red/green mobile
+readiness check, the 440-test focused contract suite, mobile TypeScript,
+PixelLab asset verification at 149 files, Expo web export to `.expo-smoke`, root
+route `HEAD 200`, focused QA route `HEAD 200`, and `git diff --check`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
