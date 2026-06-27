@@ -1354,6 +1354,55 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Continue local launch-hardening while the recurring GitHub Actions
   billing/spending-limit blocker prevents remote CI from executing jobs.
 
+## 2026-06-27 Phoenix Home First-Screen Polish
+
+### What Changed
+
+- Added a responsive `homeFirstScreenLayout` contract for Phoenix Home.
+- Replaced the hardcoded Home hero ratio with density-aware layout values for
+  iPhone-class preview widths.
+- Tightened the Care Twin button, presence card overlap, status tile sizing,
+  and mission-deck peek above the floating paw navigation.
+- Extended mobile readiness coverage so the Home route must stay wired to the
+  mockup-accurate first-screen layout contract.
+- Refreshed the local Expo web preview at `http://127.0.0.1:4194/`.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/index.tsx`
+- `artifacts/woofwatcher-mobile/lib/homeFirstScreenLayout.ts`
+- `artifacts/woofwatcher-mobile/lib/homeFirstScreenLayout.test.ts`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused Home/readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/homeFirstScreenLayout.test.ts artifacts/woofwatcher-mobile/lib/homeMissionLayout.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 87 mobile readiness tests plus the focused Home layout tests.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 390 tests.
+- Mobile TypeScript:
+  - Command: `tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Expo web export:
+  - Command: `expo export --platform web --output-dir .expo-smoke --clear`
+  - Result: passed; refreshed `.expo-smoke` for local preview.
+
+### Remaining Work
+
+- Native iOS and Android device/simulator proof is still the main external gate.
+- Continue mockup-accurate owner-preview polish on Home, Log, Health, Avatar
+  Studio, Care Pass/Records, and `/care-twin-qa` without claiming App Store,
+  Play Store, provider sync/storage/AI/payments/push, or native beta completion.
+
 ## 2026-06-21 Provider Launch Setup Cockpit
 
 ### What Changed

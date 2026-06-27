@@ -1186,3 +1186,28 @@ Design intent:
 - Keep the UI polished and useful while preventing false cloud/PDF claims.
 - Connect Records, Care Pass, and Provider Launch Setup into one coherent
   handoff story for Replit/Fable/native implementation work.
+
+## 2026-06-27 Phoenix Home First-Screen Layout Contract
+
+Phoenix Home now has a responsive first-screen composition helper instead of a
+single hardcoded room aspect ratio:
+
+- `homeFirstScreenLayout.ts` owns compact/balanced/showcase density,
+  hero aspect ratio, Care Twin button sizing, presence-card overlap, status
+  tile sizing, and a mission-deck peek estimate above the floating paw nav.
+- The Home route consumes those values for the pixel room, presence card, and
+  status tiles so the first viewport stays closer to Apollo's mockups on
+  iPhone-class widths.
+- `homeFirstScreenLayout.test.ts` protects iPhone preview, compact-phone, and
+  touch-target constraints.
+- `mobileReadiness.test.ts` now checks that Home stays wired to the first-screen
+  layout contract and the real mission deck.
+
+Design intent:
+
+- Keep Phoenix Room as the emotional first impression while exposing enough of
+  the care-command layer to feel like a polished app, not a static scene.
+- Prevent the floating paw nav from visually eating the first useful mission
+  content on owner-preview screens.
+- Give Fable/Replit/native polish a stable tuning surface for later visual
+  passes without weakening the care workflow.

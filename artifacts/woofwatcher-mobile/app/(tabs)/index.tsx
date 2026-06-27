@@ -40,6 +40,7 @@ import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import {
+  getFloatingTabChromeMetrics,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
@@ -53,13 +54,12 @@ import {
   type CareTwinReactionToneRole,
 } from "@/lib/careTwinReactionPolicy";
 import { buildHomeMissionDeck, type HomeMissionTone } from "@/lib/homeMissionDeck";
+import { getHomeFirstScreenLayout } from "@/lib/homeFirstScreenLayout";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
-
-const HERO_RATIO = 1.05;
 
 interface QuickItem {
   key: string;
@@ -172,7 +172,7 @@ function adventureQuestIcon(id: string): PixelIconName {
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { width: viewportWidth } = useWindowDimensions();
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const router = useRouter();
   const { state, addEntry } = useCare();
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
@@ -182,10 +182,28 @@ export default function HomeScreen() {
     topInset: insets.top,
     surface: "tabbed",
   });
+  const tabChrome = getFloatingTabChromeMetrics({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
+  const bottomChromeClearance = Math.max(
+    tabChrome.tabBarBottom + tabChrome.tabBarHeight,
+    tabChrome.centerFabBottom + tabChrome.centerFabSize,
+  );
+  const homeFirstScreenLayout = useMemo(
+    () =>
+      getHomeFirstScreenLayout({
+        width: viewportWidth,
+        height: viewportHeight,
+        topPadding,
+        bottomChromeClearance,
+      }),
+    [bottomChromeClearance, topPadding, viewportHeight, viewportWidth],
+  );
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30000);
@@ -702,7 +720,17 @@ export default function HomeScreen() {
           </View>
 
           <BoardCard padded={false} style={s.heroCard}>
-            <View style={[s.heroConsoleHeader, { backgroundColor: colors.ivory, borderBottomColor: colors.border }]}>
+            <View
+              style={[
+                s.heroConsoleHeader,
+                {
+                  minHeight: homeFirstScreenLayout.heroHeaderMinHeight,
+                  paddingVertical: homeFirstScreenLayout.heroHeaderVerticalPadding,
+                  backgroundColor: colors.ivory,
+                  borderBottomColor: colors.border,
+                },
+              ]}
+            >
               <View style={s.heroConsoleTitleRow}>
                 <PixelIcon name="heart" size={22} />
                 <View style={s.heroConsoleCopy}>
@@ -721,6 +749,8 @@ export default function HomeScreen() {
                 style={({ pressed }) => [
                   s.heroStudioButton,
                   {
+                    width: homeFirstScreenLayout.heroStudioButtonWidth,
+                    minHeight: homeFirstScreenLayout.heroStudioButtonMinHeight,
                     backgroundColor: pressed ? colors.secondary : colors.card,
                     borderColor: colors.border,
                   },
@@ -734,7 +764,10 @@ export default function HomeScreen() {
                 </Text>
               </Pressable>
             </View>
-            <View style={s.heroWrap}>
+            <View
+              accessibilityHint={homeFirstScreenLayout.qaLabel}
+              style={[s.heroWrap, { aspectRatio: homeFirstScreenLayout.heroAspectRatio }]}
+            >
               <LivingPhoenixRoom
                 mood={avatarMotion.avatarMood}
                 motion={avatarMotion}
@@ -753,7 +786,17 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
             onPress={() => router.push(openAloneSession ? "/log?type=alone" : openWalkSession ? "/log?type=walk" : "/more")}
-            style={[s.presencePanel, { backgroundColor: colors.ivory, borderColor: colors.border }]}
+            style={[
+              s.presencePanel,
+              {
+                width: `${homeFirstScreenLayout.presencePanelWidthPercent}%`,
+                minHeight: homeFirstScreenLayout.presencePanelMinHeight,
+                marginTop: -homeFirstScreenLayout.presencePanelOverlap,
+                marginBottom: homeFirstScreenLayout.presencePanelMarginBottom,
+                backgroundColor: colors.ivory,
+                borderColor: colors.border,
+              },
+            ]}
           >
             <View style={[s.presenceAvatar, { backgroundColor: openAloneSession ? colors.amber : openWalkSession ? colors.sage : colors.copper }]}>
               {openAloneSession ? (
@@ -781,14 +824,38 @@ export default function HomeScreen() {
             <Ionicons name="chevron-forward" size={17} color={colors.navy} />
           </Pressable>
 
-          <View style={s.statusTiles}>
+          <View
+            style={[
+              s.statusTiles,
+              {
+                gap: homeFirstScreenLayout.statusTileGap,
+                marginBottom: homeFirstScreenLayout.statusTileMarginBottom,
+              },
+            ]}
+          >
             {statusTiles.map((tile) => (
               <View
                 key={tile.label}
-                style={[s.statusTile, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[
+                  s.statusTile,
+                  {
+                    minHeight: homeFirstScreenLayout.statusTileMinHeight,
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
               >
-                <View style={[s.statusTileIcon, { backgroundColor: tile.tone + "16" }]}>
-                  <PixelIcon name={tile.icon} size={29} />
+                <View
+                  style={[
+                    s.statusTileIcon,
+                    {
+                      width: homeFirstScreenLayout.statusTileIconBoxSize,
+                      height: homeFirstScreenLayout.statusTileIconBoxSize,
+                      backgroundColor: tile.tone + "16",
+                    },
+                  ]}
+                >
+                  <PixelIcon name={tile.icon} size={homeFirstScreenLayout.statusTileIconSize} />
                 </View>
                 <Text style={[s.statusTileLabel, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
                   {tile.label}
@@ -1244,7 +1311,6 @@ const s = StyleSheet.create({
   },
   heroWrap: {
     width: "100%",
-    aspectRatio: HERO_RATIO,
     position: "relative",
   },
   presencePanel: {

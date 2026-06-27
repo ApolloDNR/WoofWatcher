@@ -647,10 +647,15 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
 test("keeps Home organized around real care-RPG missions, not decorative cards", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const missionDeck = readMobileLibFile("homeMissionDeck.ts");
+  const firstScreenLayout = readMobileLibFile("homeFirstScreenLayout.ts");
   const missionLayout = readMobileLibFile("homeMissionLayout.ts");
   const releaseQa = readMobileLibFile("mobileReleaseQa.ts");
 
   assert.match(home, /buildHomeMissionDeck/);
+  assert.match(home, /getHomeFirstScreenLayout/);
+  assert.match(home, /homeFirstScreenLayout\.heroAspectRatio/);
+  assert.match(home, /homeFirstScreenLayout\.presencePanelOverlap/);
+  assert.match(home, /homeFirstScreenLayout\.statusTileMinHeight/);
   assert.match(home, /getHomeMissionDeckLayout/);
   assert.match(home, /useWindowDimensions/);
   assert.match(home, /missionLayout\.qaLabel/);
@@ -670,6 +675,11 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(missionDeck, /Start quest/);
   assert.match(missionDeck, /Care Pass/);
   assert.match(missionDeck, /No mission in this deck should pretend to be live cloud sync/);
+
+  assert.match(firstScreenLayout, /mockup-accurate/);
+  assert.match(firstScreenLayout, /firstMissionPeekPx/);
+  assert.match(firstScreenLayout, /heroAspectRatio/);
+  assert.match(firstScreenLayout, /presencePanelOverlap/);
 
   assert.match(missionLayout, /compact/);
   assert.match(missionLayout, /estimatedDeckHeight/);
