@@ -726,6 +726,15 @@ test("describes Care Pass artifact export readiness without claiming PDF generat
   assert.match(exportView.pdfDetail, /PDF export still needs native or provider-backed generation/);
   assert.equal(exportView.storage.label, "Ready to upload");
   assert.equal(exportView.providerBacked, false);
+  assert.deepEqual(
+    exportView.manifestRows.map((row) => row.label),
+    ["Format", "Source", "PDF", "Storage"],
+  );
+  assert.equal(exportView.manifestRows[0]?.value, "Printable HTML");
+  assert.equal(exportView.manifestRows[1]?.value, "Print-ready");
+  assert.equal(exportView.manifestRows[2]?.value, "PDF pending");
+  assert.equal(exportView.manifestRows[3]?.value, "Ready to upload");
+  assert.match(exportView.manifestRows[2]?.detail ?? "", /native or provider-backed generation/);
 });
 
 test("restores escaped print source for older care pass artifacts", () => {

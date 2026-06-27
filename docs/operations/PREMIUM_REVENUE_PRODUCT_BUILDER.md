@@ -795,6 +795,21 @@ Remote verification for that pass was dispatched as GitHub Actions run
 check-run annotation reports the standing account billing/spending-limit
 blocker, so this remains an external CI gate rather than a product regression.
 
+The Records Care Pass export-manifest polish pass made saved report artifacts
+more readable and launch-trustworthy. `describeCarePassArtifactExport` now
+returns explicit manifest rows for `Format`, `Source`, `PDF`, and `Storage`;
+Records Report History renders those rows as a compact board grid while keeping
+the existing resend and printable-source share actions. The surface still says
+`PDF pending` and keeps provider-backed storage false until native/provider PDF
+generation and real storage upload exist. Local verification passed the
+red/green Care Pass/mobile readiness guard, the 391-test behavior/readiness
+suite, PixelLab verification at 149 files, mobile TypeScript after regenerating
+ignored care-domain declarations, Expo web export, preview `HEAD 200`,
+`/records` browser console smoke, and `git diff --check` with expected Windows
+CRLF warnings only. A broad root `tsc --build --pretty false` still fails on
+pre-existing duplicate exports in `lib/api-zod/src/index.ts`, unrelated to this
+Records polish.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

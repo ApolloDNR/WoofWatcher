@@ -1428,6 +1428,10 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /storageProviderConfigured: Boolean\(state\.launchProviderProfile\?\.storageProviderConfigured\)/);
   assert.match(records, /exportView\.formatLabel/);
   assert.match(records, /exportView\.pdfDetail/);
+  assert.match(records, /Export manifest/);
+  assert.match(records, /exportView\.manifestRows\.map/);
+  assert.match(records, /artifactManifestGrid/);
+  assert.match(records, /artifactManifestCell/);
   assert.match(records, /sharePrintableReportArtifact/);
   assert.match(records, /Print-ready/);
   assert.match(records, /storage\.label/);

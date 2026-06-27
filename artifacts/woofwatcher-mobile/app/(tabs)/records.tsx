@@ -1816,7 +1816,6 @@ export default function RecordsScreen() {
                   storageProviderConfigured: Boolean(state.launchProviderProfile?.storageProviderConfigured),
                 });
                 const storage = exportView.storage;
-                const exportSizeKb = Math.max(1, Math.ceil(exportView.byteSize / 1024));
                 const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
                 return (
                   <View
@@ -1840,7 +1839,7 @@ export default function RecordsScreen() {
                         {exportView.fileName}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {exportView.formatLabel} - {exportSizeKb} KB - PDF pending
+                        {exportView.formatLabel} source - PDF pending
                       </Text>
                       <View style={s.artifactStorageRow}>
                         <View
@@ -1874,6 +1873,24 @@ export default function RecordsScreen() {
                       <Text numberOfLines={2} style={[s.artifactStorageDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                         {exportView.pdfDetail}
                       </Text>
+                      <Text style={[s.artifactManifestTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        Export manifest
+                      </Text>
+                      <View style={s.artifactManifestGrid}>
+                        {exportView.manifestRows.map((row) => (
+                          <View key={row.label} style={[s.artifactManifestCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                            <Text style={[s.artifactManifestLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                              {row.label}
+                            </Text>
+                            <Text numberOfLines={1} style={[s.artifactManifestValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {row.value}
+                            </Text>
+                            <Text numberOfLines={2} style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                              {row.detail}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
                     </View>
                     <View style={s.reportArtifactActions}>
                       <View style={[s.artifactBadge, { backgroundColor: colors.sage + "14" }]}>
@@ -2432,6 +2449,18 @@ const s = StyleSheet.create({
   artifactStoragePill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 10, maxWidth: 170 },
   artifactStorageText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4, flexShrink: 1 },
   artifactStorageDetail: { fontSize: 11.5, lineHeight: 15, marginTop: 5 },
+  artifactManifestTitle: { fontSize: 11.5, marginTop: 10, textTransform: "uppercase", letterSpacing: 0.4 },
+  artifactManifestGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 7 },
+  artifactManifestCell: {
+    width: "48%",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+  },
+  artifactManifestLabel: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  artifactManifestValue: { fontSize: 11.5, marginTop: 3 },
+  artifactManifestDetail: { fontSize: 10.5, lineHeight: 14, marginTop: 3 },
   artifactIconButton: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,

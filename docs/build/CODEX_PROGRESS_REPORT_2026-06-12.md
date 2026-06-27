@@ -4,6 +4,73 @@
 
 WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 
+## 2026-06-27 Records Care Pass Export Manifest Polish
+
+### What Changed
+
+- Added owner-readable Care Pass artifact manifest rows for `Format`, `Source`,
+  `PDF`, and `Storage` from the shared care-domain export helper.
+- Updated Records Report History to render that manifest as a compact grid so
+  a saved report clearly says what exists now, what can be shared, and what is
+  still pending.
+- Preserved the truthful boundary that saved reports are printable HTML sources
+  and not generated PDFs or provider-backed cloud uploads until those systems
+  are configured.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/records.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `lib/care-domain/src/care-pass.ts`
+- `lib/care-domain/test/care-pass.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Focused Care Pass/mobile readiness:
+  - Command: `node --experimental-strip-types --test lib/care-domain/test/care-pass.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: passed, 105 tests after the intentional red failure on missing
+    manifest rows/UI wiring.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed, 391 tests.
+- PixelLab asset verification:
+  - Command: `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Mobile TypeScript:
+  - Command: `tsc -p lib/care-domain/tsconfig.json` then
+    `tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit --incremental false`
+  - Result: passed after regenerating ignored care-domain declarations.
+- Expo web export:
+  - Command: `expo export --platform web --output-dir .expo-smoke --clear`
+  - Result: passed; bundle `entry-aef306a7d72c7e5c0bb715abb95d2210.js`.
+- Local preview:
+  - Command: `HEAD http://127.0.0.1:4194/`
+  - Result: `200`.
+- Browser console smoke:
+  - Route: `http://127.0.0.1:4194/records`
+  - Result: route mounted with no console errors. The current local state has no
+    saved report artifacts, so the manifest grid is protected by source tests
+    until a device/user fixture saves a Care Pass.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with expected Windows CRLF warnings only.
+
+### Known Limitation
+
+- A broad root `tsc --build --pretty false` still fails on pre-existing duplicate
+  exports in `lib/api-zod/src/index.ts` for household invitation/cleanup types.
+  This is unrelated to the Records manifest polish and remains a cleanup item.
+
+### Remaining Work
+
+- Native iOS/Android device or simulator QA remains the external launch gate.
+- Continue Phoenix room crop/sprite proof, `/care-twin-qa` evidence, provider
+  setup truth, and the `lib/api-zod` duplicate-export typecheck cleanup.
+
 ## 2026-06-27 Avatar Studio Scan Truth Polish
 
 ### What Changed

@@ -1305,3 +1305,25 @@ Design intent:
   sprite packs, clear owner approval, and no blurry photo-as-avatar shortcut.
 - Give Fable/Replit/native polish a durable product contract for later scan UI
   animation and PixelLab production work.
+
+## 2026-06-27 Records Care Pass Export Manifest Polish
+
+Records Report History now presents saved Care Pass artifacts as a clear export
+manifest:
+
+- `describeCarePassArtifactExport` returns four manifest rows: `Format`,
+  `Source`, `PDF`, and `Storage`.
+- Each row has a label, value, and short detail so the user can understand the
+  printable HTML source, restored/generated source state, PDF boundary, and
+  local/provider storage state at a glance.
+- Records renders the manifest as a compact two-column board grid under the
+  existing storage/PDF detail copy and above resend/print-source actions.
+
+Design intent:
+
+- Make Care Pass feel like a serious handoff product for vets, sitters,
+  trainers, and owners.
+- Keep export truth visible: printable HTML exists today; generated PDF and
+  provider upload remain pending until real services are configured.
+- Improve scanability for App Store-quality Records without adding fake cloud
+  or fake PDF claims.

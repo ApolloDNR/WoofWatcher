@@ -103,6 +103,12 @@ export interface CarePassArtifactPrintView {
   status: "ready" | "restored";
 }
 
+export interface CarePassArtifactExportManifestRow {
+  label: string;
+  value: string;
+  detail: string;
+}
+
 export interface CarePassArtifactExportView {
   fileName: string;
   mimeType: "text/html";
@@ -113,6 +119,7 @@ export interface CarePassArtifactExportView {
   pdfDetail: string;
   storage: CarePassArtifactStorageView;
   providerBacked: boolean;
+  manifestRows: CarePassArtifactExportManifestRow[];
 }
 
 export type CarePassArtifactStorageStatus = "local-only" | "upload-ready" | "uploaded" | "failed";
@@ -674,16 +681,41 @@ export function describeCarePassArtifactExport(
 ): CarePassArtifactExportView {
   const printable = getCarePassArtifactPrintView(artifact);
   const storage = describeCarePassArtifactStorage(artifact, options);
+  const sourceLabel = printable.status === "ready" ? "Print-ready" : "Print restored";
+  const byteSize = utf8ByteLength(printable.html);
+  const pdfDetail = "PDF export still needs native or provider-backed generation; share the printable HTML source until that is configured.";
   return {
     fileName: printable.fileName,
     mimeType: "text/html",
     formatLabel: "Printable HTML",
     sourceStatus: printable.status,
-    byteSize: utf8ByteLength(printable.html),
+    byteSize,
     pdfStatus: "not-generated",
-    pdfDetail: "PDF export still needs native or provider-backed generation; share the printable HTML source until that is configured.",
+    pdfDetail,
     storage,
     providerBacked: storage.providerBacked,
+    manifestRows: [
+      {
+        label: "Format",
+        value: "Printable HTML",
+        detail: `${Math.max(1, Math.ceil(byteSize / 1024))} KB source for print/share.`,
+      },
+      {
+        label: "Source",
+        value: sourceLabel,
+        detail: printable.status === "ready" ? "Saved from the generated Care Pass." : "Restored from saved report text.",
+      },
+      {
+        label: "PDF",
+        value: "PDF pending",
+        detail: pdfDetail,
+      },
+      {
+        label: "Storage",
+        value: storage.label,
+        detail: storage.detail,
+      },
+    ],
   };
 }
 
