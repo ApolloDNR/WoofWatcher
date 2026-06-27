@@ -325,7 +325,7 @@ test("registers the care twin native QA route for device review", () => {
   );
 
   assert.match(rootLayout, /name="care-twin-qa"/);
-  assert.match(more, /router\.push\("\/care-twin-qa" as never\)/);
+  assert.match(more, /buildCareTwinQaFocusRoute\(nativeQaCapturePlan\.nextTargets\[0\]\)/);
   assert.match(more, /__DEV__/);
   assert.match(qaRoute, /listCareTwinRuntimeQaScenarios/);
   assert.match(qaRoute, /evaluateCareTwinRuntimeQaScenario/);
@@ -2103,18 +2103,27 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /Store screenshot proof/);
   assert.match(more, /Next store screenshot/);
   assert.match(more, /storeScreenshotProofStatus\.nextTarget/);
+  assert.match(more, /buildCareTwinQaFocusRoute/);
+  assert.match(more, /qaSurface=\$\{encodeURIComponent\(target\.surfaceId\)\}/);
+  assert.match(more, /buildCareTwinQaFocusRoute\(storeScreenshotProofStatus\.nextTarget\)/);
   assert.match(more, /Finish Proof/);
   assert.match(more, /nativeQaCaptureCockpitAction/);
   assert.match(more, /Share\.share\(\{[\s\S]*message:\s*buildMobileLaunchQaCaptureShareText\(nativeQaCapturePlan/);
   assert.match(more, /nativeQa:\s*savedNativeQaSummary/);
   assert.doesNotMatch(more, /nativeQa:\s*null/);
-  assert.match(more, /router\.push\("\/care-twin-qa" as never\)/);
+  assert.match(more, /router\.push\(buildCareTwinQaFocusRoute/);
 
   assert.match(careTwinQaRoute, /buildMobileLaunchQaCaptureShareText/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaCaptureShareText\(betaCapturePlan,\s*reviewedAtIso\)/);
   assert.match(careTwinQaRoute, /buildMobileReleaseQaShareText\(releaseQaSurfaces,\s*releaseReviews,\s*reviewedAtIso\)/);
+  assert.match(careTwinQaRoute, /useLocalSearchParams/);
+  assert.match(careTwinQaRoute, /buildMobileLaunchQaFocusedTarget/);
+  assert.match(careTwinQaRoute, /Focused QA Target/);
+  assert.match(careTwinQaRoute, /focusedQaTarget\.target\.missingEvidence/);
+  assert.match(careTwinQaRoute, /Attach focused QA proof/);
 
   assert.match(qaEvidence, /buildMobileLaunchQaCapturePlan/);
+  assert.match(qaEvidence, /buildMobileLaunchQaFocusedTarget/);
   assert.match(qaEvidence, /ownerPreviewProofStatus/);
   assert.match(qaEvidence, /Owner preview proof:/);
   assert.match(qaEvidence, /buildMobileLaunchQaCaptureShareText/);

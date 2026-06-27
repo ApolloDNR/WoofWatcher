@@ -60,6 +60,13 @@ export interface MobileLaunchQaCapturePlan {
   storeScreenshotProofStatus: MobileLaunchQaStoreScreenshotProofStatus;
 }
 
+export interface MobileLaunchQaFocusedTarget {
+  surface: MobileReleaseQaSurface;
+  target: MobileLaunchQaCaptureTarget;
+  statusLabel: string;
+  complete: boolean;
+}
+
 const OWNER_PREVIEW_CORE_LOOP_ID = "owner-preview-core-loop";
 const STORE_SCREENSHOT_SURFACE_PREFIX = "store-";
 
@@ -283,6 +290,27 @@ function storeScreenshotProofStatusFor(
     statusLabel,
     nextTarget,
     missingEvidence: nextTarget?.missingEvidence ?? [],
+  };
+}
+
+export function buildMobileLaunchQaFocusedTarget(
+  session: MobileQaSessionState | null | undefined,
+  surfaceId: string,
+  surfaces: readonly MobileReleaseQaSurface[] = listMobileLaunchQaSurfaces(),
+): MobileLaunchQaFocusedTarget | null {
+  const surface = surfaces.find((item) => item.id === surfaceId);
+  if (!surface) return null;
+
+  const review = reviewForSessionSurface(session, surface);
+  const missingEvidence = missingEvidenceForSurface(surface, review);
+  const complete = review.status === "pass" && missingEvidence.length === 0;
+  const target = captureTargetForSurface(surface, review, missingEvidence);
+
+  return {
+    surface,
+    target,
+    statusLabel: complete ? "Pass" : mobileLaunchQaCaptureTargetStatusLabel(target),
+    complete,
   };
 }
 

@@ -67,6 +67,7 @@ import {
   deriveNativeQaSummaryFromMobileQaSession,
   mobileLaunchQaCaptureTargetStatusLabel,
   type MobileLaunchQaCapturePlan,
+  type MobileLaunchQaCaptureTarget,
 } from "@/lib/mobileLaunchQaEvidence";
 import {
   MOBILE_QA_SESSION_STORAGE_KEY,
@@ -197,6 +198,11 @@ function launchBadgeTone(
   if (status === "approval-required") return colors.copper;
   if (status === "provider-gated") return colors.rose;
   return colors.amber;
+}
+
+function buildCareTwinQaFocusRoute(target: Pick<MobileLaunchQaCaptureTarget, "surfaceId"> | null | undefined): string {
+  if (!target) return "/care-twin-qa";
+  return `/care-twin-qa?qaSurface=${encodeURIComponent(target.surfaceId)}`;
 }
 
 export default function MoreScreen() {
@@ -850,7 +856,7 @@ export default function MoreScreen() {
             sub: "Internal device review for Phoenix room states and sprite loops",
             onPress: () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push("/care-twin-qa" as never);
+              router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0]) as never);
             },
           },
         ]
@@ -913,7 +919,7 @@ export default function MoreScreen() {
     tone: launchStatusTone(tile.status, colors),
     onPress:
       tile.key === "native-qa"
-        ? () => router.push("/care-twin-qa" as never)
+        ? () => router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0]) as never)
         : tile.key === "storage" || tile.key === "store-approval"
           ? () => router.push("/privacy")
           : tile.key === "woofguide-ai"
@@ -1508,7 +1514,7 @@ export default function MoreScreen() {
                   accessibilityLabel={`Open store screenshot QA proof. ${storeScreenshotProofStatus.statusLabel}. ${storeScreenshotProofStatus.nextTarget ? `Next store screenshot: ${storeScreenshotProofStatus.nextTarget.title}. ${storeScreenshotProofSummary}` : storeScreenshotProofSummary}`}
                   onPress={() => {
                     Haptics.selectionAsync();
-                    router.push("/care-twin-qa" as never);
+                    router.push(buildCareTwinQaFocusRoute(storeScreenshotProofStatus.nextTarget) as never);
                   }}
                   style={({ pressed }) => [
                     s.nativeQaOwnerProofRow,
@@ -1596,7 +1602,7 @@ export default function MoreScreen() {
                     }
                     onPress={() => {
                       Haptics.selectionAsync();
-                      router.push("/care-twin-qa" as never);
+                      router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0] ?? storeScreenshotProofStatus.nextTarget) as never);
                     }}
                     style={({ pressed }) => [
                       s.nativeQaCaptureCockpitAction,
@@ -1643,7 +1649,7 @@ export default function MoreScreen() {
                       accessibilityLabel={`Open ${target.title} QA capture. Status: ${targetStatusLabel}. ${target.missingEvidence.join(" ")} ${target.setupSteps[0] ?? ""} ${target.verificationSteps[0] ?? ""} ${target.acceptanceCriteria[0] ?? ""} ${target.failureEscalation}`}
                       onPress={() => {
                         Haptics.selectionAsync();
-                        router.push(target.route as never);
+                        router.push(buildCareTwinQaFocusRoute(target) as never);
                       }}
                       style={({ pressed }) => [
                         s.nativeQaCaptureRow,
@@ -1753,7 +1759,7 @@ export default function MoreScreen() {
                     }
                     onPress={
                       launchReleasePacket.betaShipStatus === "qa-first"
-                        ? () => router.push("/care-twin-qa" as never)
+                        ? () => router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0] ?? storeScreenshotProofStatus.nextTarget) as never)
                         : shareBetaHandoffPacket
                     }
                     style={({ pressed }) => [

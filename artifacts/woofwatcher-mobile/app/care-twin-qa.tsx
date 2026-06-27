@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -44,6 +44,7 @@ import {
 import {
   buildMobileLaunchQaCapturePlan,
   buildMobileLaunchQaCaptureShareText,
+  buildMobileLaunchQaFocusedTarget,
 } from "@/lib/mobileLaunchQaEvidence";
 import {
   deriveCareTwinChoreography,
@@ -209,6 +210,10 @@ const QA_SCREENSHOT_PLATFORM_OPTIONS: { label: string; value: QaScreenshotEviden
   { label: "Web", value: "web" },
 ];
 
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 function buildQaReturnRoute(target: { route: string; id?: string; surfaceId?: string; title: string }): string {
   const separator = target.route.includes("?") ? "&" : "?";
   const surfaceId = target.surfaceId ?? target.id ?? "qa-surface";
@@ -218,6 +223,7 @@ function buildQaReturnRoute(target: { route: string; id?: string; surfaceId?: st
 export default function CareTwinQaScreen() {
   const colors = useColors();
   const router = useRouter();
+  const routeParams = useLocalSearchParams<{ qaSurface?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const [selectedEvidencePlatform, setSelectedEvidencePlatform] = useState<QaScreenshotEvidencePlatform>(() =>
     qaScreenshotPlatformForRuntime(),
@@ -325,6 +331,41 @@ export default function CareTwinQaScreen() {
       ),
     [qaEvidenceById, qaNotes, qaStatusById, releaseQaSurfaces, surfaceEvidenceById, surfaceNotes, surfaceStatusById],
   );
+  const focusedQaSurfaceId = firstParam(routeParams.qaSurface);
+  const focusedQaTarget = useMemo(
+    () =>
+      focusedQaSurfaceId
+        ? buildMobileLaunchQaFocusedTarget(
+            {
+              careTwinStatusById: qaStatusById,
+              careTwinNotes: qaNotes,
+              careTwinEvidenceById: qaEvidenceById,
+              surfaceStatusById,
+              surfaceNotes,
+              surfaceEvidenceById,
+            },
+            focusedQaSurfaceId,
+            releaseQaSurfaces,
+          )
+        : null,
+    [
+      focusedQaSurfaceId,
+      qaEvidenceById,
+      qaNotes,
+      qaStatusById,
+      releaseQaSurfaces,
+      surfaceEvidenceById,
+      surfaceNotes,
+      surfaceStatusById,
+    ],
+  );
+  const focusedQaTargetTone = focusedQaTarget
+    ? focusedQaTarget.statusLabel === "Pass"
+      ? colors.sage
+      : focusedQaTarget.statusLabel === "Needs tune" || focusedQaTarget.statusLabel === "Pass pending proof"
+        ? colors.amber
+        : colors.copper
+    : colors.mutedForeground;
   const nextBetaTarget = betaCapturePlan.nextTargets[0];
   const nextBetaTargetMissingEvidence = nextBetaTarget?.missingEvidence ?? [];
   const nextBetaTargetHasMissingEvidence = nextBetaTargetMissingEvidence.length > 0;
@@ -510,6 +551,201 @@ export default function CareTwinQaScreen() {
           back
           onBack={() => router.back()}
         />
+
+        {focusedQaSurfaceId ? (
+          <BoardCard style={s.focusedQaCard}>
+            <View style={s.betaRunMissionHeader}>
+              <View style={s.betaRunMissionTitleWrap}>
+                <Ionicons name="locate-outline" size={18} color={focusedQaTargetTone} />
+                <View style={s.betaRunMissionCopy}>
+                  <Text style={[s.betaRunMissionKicker, { color: focusedQaTargetTone, fontFamily: "Inter_800ExtraBold" }]}>
+                    Focused QA Target
+                  </Text>
+                  <Text style={[s.betaRunMissionTitle, { color: colors.foreground, fontFamily: DISPLAY }]} numberOfLines={1}>
+                    {focusedQaTarget?.target.title ?? "Target not found"}
+                  </Text>
+                </View>
+              </View>
+              <QaBadge label={focusedQaTarget?.statusLabel ?? "Missing"} tone={focusedQaTargetTone} />
+            </View>
+            {focusedQaTarget ? (
+              <>
+                <Text style={[s.focusedQaGoal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  {focusedQaTarget.surface.goal}
+                </Text>
+                <View style={s.betaRunMissionGrid}>
+                  <View style={[s.betaRunMissionMeta, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Text style={[s.betaRunMissionMetaLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      Route
+                    </Text>
+                    <Text style={[s.betaRunMissionMetaValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]} numberOfLines={1}>
+                      {focusedQaTarget.target.route}
+                    </Text>
+                  </View>
+                  <View style={[s.betaRunMissionMeta, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Text style={[s.betaRunMissionMetaLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      Evidence
+                    </Text>
+                    <Text style={[s.betaRunMissionMetaValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                      {focusedQaTarget.target.evidenceAttached} attached
+                    </Text>
+                  </View>
+                  <View style={[s.betaRunMissionMeta, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Text style={[s.betaRunMissionMetaLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      Priority
+                    </Text>
+                    <Text style={[s.betaRunMissionMetaValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]} numberOfLines={1}>
+                      {focusedQaTarget.target.priority === "launch-critical" ? "Critical" : "Store prep"}
+                    </Text>
+                  </View>
+                </View>
+                <View style={[s.focusedQaProofBox, { backgroundColor: `${focusedQaTargetTone}12`, borderColor: `${focusedQaTargetTone}55` }]}>
+                  <Text style={[s.focusedQaProofLabel, { color: focusedQaTargetTone, fontFamily: "Inter_800ExtraBold" }]}>
+                    Proof needed now
+                  </Text>
+                  {(focusedQaTarget.target.missingEvidence.length
+                    ? focusedQaTarget.target.missingEvidence
+                    : ["No missing proof remains for this focused target. Share the QA summary and keep public store approval separate."]).map((item) => (
+                    <View key={`focused-${item}`} style={s.betaRunStep}>
+                      <View style={[s.betaRunStepDot, { backgroundColor: focusedQaTargetTone }]} />
+                      <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {item}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+                <VerificationStepList colors={colors} label="Setup first" steps={focusedQaTarget.target.setupSteps.slice(0, 2)} />
+                <VerificationStepList colors={colors} label="Verify on device" steps={focusedQaTarget.target.verificationSteps.slice(0, 2)} />
+                <VerificationStepList colors={colors} label="Pass when" steps={focusedQaTarget.target.acceptanceCriteria.slice(0, 2)} />
+                <View style={[s.betaRunEscalation, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                  <Text style={[s.betaRunEscalationLabel, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                    Mark Needs tune if
+                  </Text>
+                  <Text style={[s.betaRunEscalationText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    {focusedQaTarget.target.failureEscalation}
+                  </Text>
+                </View>
+                <View style={[s.betaRunMissionNote, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[s.betaRunMissionNoteLabel, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                    Focus note
+                  </Text>
+                  <TextInput
+                    accessibilityLabel={`Focused QA note for ${focusedQaTarget.target.title}`}
+                    multiline
+                    textAlignVertical="top"
+                    placeholder="Save the screenshot condition, device, and anything that still feels off."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={surfaceNotes[focusedQaTarget.target.surfaceId] ?? ""}
+                    onChangeText={(value) =>
+                      setSurfaceNotes((current) => ({
+                        ...current,
+                        [focusedQaTarget.target.surfaceId]: value,
+                      }))
+                    }
+                    style={[
+                      s.betaRunMissionNoteInput,
+                      {
+                        color: colors.foreground,
+                        borderColor: colors.border,
+                        backgroundColor: colors.card,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  />
+                </View>
+                <View style={s.betaRunMissionActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Attach focused QA proof for ${focusedQaTarget.target.title}`}
+                    onPress={() => attachSurfaceScreenshot(focusedQaTarget.surface)}
+                    style={({ pressed }) => [
+                      s.betaRunMissionAttach,
+                      {
+                        backgroundColor: pressed ? `${colors.copper}22` : `${colors.copper}12`,
+                        borderColor: `${colors.copper}55`,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="camera-outline" size={17} color={colors.copper} />
+                    <View style={s.betaRunMissionActionCopy}>
+                      <Text style={[s.betaRunMissionAttachText, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                        Attach focused QA proof
+                      </Text>
+                      <Text style={[s.betaRunMissionActionHint, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        Tagged as {selectedEvidencePlatformLabel}
+                      </Text>
+                    </View>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open focused QA route ${focusedQaTarget.target.route}`}
+                    onPress={() => router.push(buildQaReturnRoute(focusedQaTarget.target) as never)}
+                    style={({ pressed }) => [
+                      s.betaRunMissionReviewButton,
+                      {
+                        backgroundColor: pressed ? `${colors.sage}14` : colors.background,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="open-outline" size={17} color={colors.sage} />
+                    <Text style={[s.betaRunMissionReviewText, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                      Open route
+                    </Text>
+                  </Pressable>
+                </View>
+                <View style={s.betaRunMissionReviewRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: focusedQaTarget.target.status === "pass" }}
+                    accessibilityLabel={`Mark focused QA target pass: ${focusedQaTarget.target.title}`}
+                    onPress={() => markSurface(focusedQaTarget.target.surfaceId, "pass")}
+                    style={({ pressed }) => [
+                      s.betaRunMissionReviewButton,
+                      {
+                        backgroundColor: focusedQaTarget.target.status === "pass" ? `${colors.sage}1F` : pressed ? `${colors.sage}14` : colors.background,
+                        borderColor: focusedQaTarget.target.status === "pass" ? colors.sage : colors.border,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="checkmark-circle" size={17} color={colors.sage} />
+                    <Text style={[s.betaRunMissionReviewText, { color: focusedQaTarget.target.status === "pass" ? colors.sage : colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                      Pass
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: focusedQaTarget.target.status === "needs-review" }}
+                    accessibilityLabel={`Mark focused QA target needs tune: ${focusedQaTarget.target.title}`}
+                    onPress={() => markSurface(focusedQaTarget.target.surfaceId, "needs-review")}
+                    style={({ pressed }) => [
+                      s.betaRunMissionReviewButton,
+                      {
+                        backgroundColor:
+                          focusedQaTarget.target.status === "needs-review" ? `${colors.amber}1F` : pressed ? `${colors.amber}14` : colors.background,
+                        borderColor: focusedQaTarget.target.status === "needs-review" ? colors.amber : colors.border,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="build" size={17} color={colors.amber} />
+                    <Text
+                      style={[
+                        s.betaRunMissionReviewText,
+                        { color: focusedQaTarget.target.status === "needs-review" ? colors.amber : colors.foreground, fontFamily: "Inter_800ExtraBold" },
+                      ]}
+                    >
+                      Needs tune
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <Text style={[s.focusedQaGoal, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                The requested QA surface is not in the current release plan. Open the next device mission below or share the QA summary.
+              </Text>
+            )}
+          </BoardCard>
+        ) : null}
 
         <BoardCard style={s.betaRunCard}>
           <View style={s.betaRunHeader}>
@@ -1569,6 +1805,24 @@ const s = StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     gap: 14,
+  },
+  focusedQaCard: {
+    gap: 12,
+  },
+  focusedQaGoal: {
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+  focusedQaProofBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 8,
+  },
+  focusedQaProofLabel: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
   },
   betaRunCard: {
     gap: 12,

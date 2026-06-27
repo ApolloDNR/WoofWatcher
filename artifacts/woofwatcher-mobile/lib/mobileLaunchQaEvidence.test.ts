@@ -5,6 +5,7 @@ import {
   buildMobileLaunchQaFixBriefShareText,
   buildMobileLaunchQaCaptureShareText,
   buildMobileLaunchQaCapturePlan,
+  buildMobileLaunchQaFocusedTarget,
   deriveNativeQaSummaryFromMobileQaSession,
   listMobileLaunchQaSurfaces,
   mobileLaunchQaCaptureTargetStatusLabel,
@@ -336,6 +337,42 @@ test("keeps store screenshot proof visible even when normal native targets fill 
   assert.match(text, /Store screenshot proof: Store proof open/);
   assert.match(text, /Next store screenshot: Store: Health Watch \(\/health\)/);
   assert.match(text, /Store screenshot missing: Attach 1 iOS screenshot for Store: Health Watch/);
+});
+
+test("builds a focused QA target for deep-linked launch readiness rows", () => {
+  const surfaces: readonly MobileReleaseQaSurface[] = [
+    {
+      id: "store-health-watch",
+      title: "Store: Health Watch",
+      route: "/health",
+      priority: "release-polish",
+      goal: "Capture store-ready Health Watch evidence.",
+      devicePrompt: "Capture Review packet and Vet-share checklist.",
+      setupSteps: ["Open Health and keep Review packet visible before capturing the store screenshot."],
+      verificationSteps: ["Confirm the Review packet is visible with the Vet-share checklist."],
+      acceptanceCriteria: ["Health Review Packet shows owner prompts, vet-share checklist, and Not veterinary advice boundary."],
+      failureEscalation: "Mark Needs tune if Health Watch hides the Review packet.",
+      requiredEvidence: [
+        "iOS screenshot for store packet: Health Watch.",
+        "Android screenshot for store packet: Health Watch.",
+        "Health Watch Review packet with Vet-share checklist and Draft vet questions visible.",
+      ],
+      launchRisk: "If Health Watch is missing, the store listing lacks truthful health-workflow proof.",
+    },
+  ];
+
+  const focused = buildMobileLaunchQaFocusedTarget(null, "store-health-watch", surfaces);
+
+  assert.ok(focused);
+  assert.equal(focused.surface.id, "store-health-watch");
+  assert.equal(focused.target.title, "Store: Health Watch");
+  assert.equal(focused.statusLabel, "Not reviewed");
+  assert.equal(focused.complete, false);
+  assert.deepEqual(focused.target.setupSteps, [
+    "Open Health and keep Review packet visible before capturing the store screenshot.",
+  ]);
+  assert.match(focused.target.missingEvidence.join(" "), /Attach 1 iOS screenshot for Store: Health Watch/);
+  assert.equal(buildMobileLaunchQaFocusedTarget(null, "missing-surface", surfaces), null);
 });
 
 test("preserves owner preview route-loop details in the capture plan and share script", () => {
