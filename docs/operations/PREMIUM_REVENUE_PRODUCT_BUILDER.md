@@ -1038,6 +1038,14 @@ Expo web export to `.expo-smoke`, root route `HEAD 200`, focused QA route
 the current local server, while the app root and focused QA route served
 successfully.
 
+The focused Needs Tune handoff pass made `/care-twin-qa?qaSurface=...`
+self-contained after a route is marked Needs tune. The focused target card now
+shows `Share fix brief` only for Needs Tune targets and uses the same
+source-backed `WoofWatcher Needs Tune Fix Brief` generator as More, so a tester
+can open the route, record the issue, mark Needs tune, and share the repair
+packet without leaving the cockpit. Red/green verification first failed on the
+missing import/action, then passed `mobileReadiness.test.ts` with 81/81 tests.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

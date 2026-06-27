@@ -2119,13 +2119,20 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /router\.push\(buildCareTwinQaFocusRoute/);
 
   assert.match(careTwinQaRoute, /buildMobileLaunchQaCaptureShareText/);
+  assert.match(careTwinQaRoute, /buildMobileLaunchQaFixBriefShareText/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaCaptureShareText\(betaCapturePlan,\s*reviewedAtIso\)/);
+  assert.match(careTwinQaRoute, /buildMobileLaunchQaFixBriefShareText\(betaCapturePlan,\s*generatedAtIso\)/);
+  assert.match(careTwinQaRoute, /const shareFocusedFixBrief = async/);
+  assert.match(careTwinQaRoute, /title:\s*"WoofWatcher Needs Tune Fix Brief"/);
   assert.match(careTwinQaRoute, /buildMobileReleaseQaShareText\(releaseQaSurfaces,\s*releaseReviews,\s*reviewedAtIso\)/);
   assert.match(careTwinQaRoute, /useLocalSearchParams/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaFocusedTarget/);
   assert.match(careTwinQaRoute, /Focused QA Target/);
   assert.match(careTwinQaRoute, /focusedQaTarget\.target\.missingEvidence/);
   assert.match(careTwinQaRoute, /Attach focused QA proof/);
+  assert.match(careTwinQaRoute, /focusedQaTarget\.target\.status === "needs-review"/);
+  assert.match(careTwinQaRoute, /accessibilityLabel=\{`Share focused Needs tune fix brief:/);
+  assert.match(careTwinQaRoute, /Share fix brief/);
 
   assert.match(qaEvidence, /buildMobileLaunchQaCapturePlan/);
   assert.match(qaEvidence, /buildMobileLaunchQaFocusedTarget/);

@@ -44,6 +44,7 @@ import {
 import {
   buildMobileLaunchQaCapturePlan,
   buildMobileLaunchQaCaptureShareText,
+  buildMobileLaunchQaFixBriefShareText,
   buildMobileLaunchQaFocusedTarget,
 } from "@/lib/mobileLaunchQaEvidence";
 import {
@@ -526,6 +527,20 @@ export default function CareTwinQaScreen() {
     }
   };
 
+  const shareFocusedFixBrief = async () => {
+    const generatedAtIso = new Date().toISOString();
+    const message = buildMobileLaunchQaFixBriefShareText(betaCapturePlan, generatedAtIso);
+
+    try {
+      await Share.share({
+        title: "WoofWatcher Needs Tune Fix Brief",
+        message,
+      });
+    } catch {
+      Alert.alert("Needs Tune Fix Brief", message);
+    }
+  };
+
   const shareStoreSubmissionPacket = async () => {
     try {
       await Share.share({
@@ -693,6 +708,25 @@ export default function CareTwinQaScreen() {
                       Open route
                     </Text>
                   </Pressable>
+                  {focusedQaTarget.target.status === "needs-review" ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Share focused Needs tune fix brief: ${focusedQaTarget.target.title}`}
+                      onPress={shareFocusedFixBrief}
+                      style={({ pressed }) => [
+                        s.betaRunSecondary,
+                        {
+                          backgroundColor: pressed ? `${colors.amber}18` : colors.background,
+                          borderColor: `${colors.amber}66`,
+                        },
+                      ]}
+                    >
+                      <Ionicons name="share-social-outline" size={16} color={colors.amber} />
+                      <Text style={[s.betaRunSecondaryText, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                        Share fix brief
+                      </Text>
+                    </Pressable>
+                  ) : null}
                 </View>
                 <View style={s.betaRunMissionReviewRow}>
                   <Pressable
