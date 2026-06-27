@@ -61,6 +61,12 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
   export clarity, Phoenix room sprite crop after real device review, and
   `/care-twin-qa` proof collection.
 
+### Remote Verification
+
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: run `28284289996` failed before job execution; job `83805462813` had no steps, `gh run view --log-failed` returned `log not found: 83805462813`, and the check-run annotation reported the standing billing/spending-limit blocker.
+
 ## Completed In This Pass
 
 - Confirmed the repo source-of-truth docs and current CI state.
