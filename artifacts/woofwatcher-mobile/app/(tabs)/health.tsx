@@ -10,6 +10,7 @@ import {
   BoardPill,
   BoardRouteHeader,
   BoardSectionHeader,
+  StatusMeter,
 } from "@/components/board/BoardPrimitives";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare } from "@/context/CareContext";
@@ -135,6 +136,32 @@ export default function HealthScreen() {
     });
   }, [bileEntries, now]);
 
+  const healthRhythm = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
+    return Array.from({ length: 7 }).map((_, index) => {
+      const date = new Date(now);
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - (6 - index));
+
+      const dayEntries = state.entries.filter((entry) => sameCalendarDay(entry.occurredAt, date));
+      const careLogs = dayEntries.filter((entry) =>
+        ["meal", "walk", "potty", "water", "medication", "training"].includes(
+          normalizeCareEventType(entry.type, entry.details),
+        ),
+      ).length;
+      const watchSignals = dayEntries.filter((entry) =>
+        ["vomit", "symptom", "incident"].includes(normalizeCareEventType(entry.type, entry.details)),
+      ).length;
+      const value = Math.max(0.18, Math.min(1, 0.34 + careLogs * 0.1 - watchSignals * 0.18));
+
+      return {
+        label: formatter.format(date).slice(0, 1),
+        value,
+        tone: watchSignals ? (watchSignals > 1 ? colors.rose : colors.amber) : colors.sage,
+      };
+    });
+  }, [colors.amber, colors.rose, colors.sage, now, state.entries]);
+
   const bileStatus =
     healthWatch.status === "alert"
       ? "Review"
@@ -162,6 +189,13 @@ export default function HealthScreen() {
     healthWatch.status === "good"
       ? "No active Health Watch signals are showing in the current window."
       : healthWatch.summary;
+  const statusMedallionLabel = score >= 88 ? "GOOD" : score >= 76 ? "WATCH" : "REVIEW";
+  const statusSupportCopy =
+    healthWatch.status === "good"
+      ? "You're on a roll. Keep the daily rhythm steady and share patterns when they matter."
+      : healthWatch.status === "alert"
+        ? "Consider sharing these observations with your vet, especially if patterns repeat."
+        : "Pattern noticed. Keep logging food, stool, vomiting, energy, and timing.";
   const reviewCopy =
     healthWatch.status === "good"
       ? "Keep logging meals, stool, vomiting, energy, and medication so future changes are easy to review."
@@ -195,6 +229,43 @@ export default function HealthScreen() {
       label: "Vomiting",
       status: healthWatch.counts.vomit7 ? "Watch" : "None",
       detail: healthWatch.counts.vomit7 ? `${healthWatch.counts.vomit7} in 7 days` : "No logs",
+      icon: "vomit",
+      tone: healthWatch.counts.vomit7 ? colors.amber : colors.sage,
+    },
+  ];
+
+  const healthSignalMeters: {
+    label: string;
+    value: number;
+    valueLabel: string;
+    icon: PixelIconName;
+    tone: string;
+  }[] = [
+    {
+      label: "Appetite",
+      value: healthWatch.counts.appetiteWatch7 ? 68 : 94,
+      valueLabel: healthWatch.counts.appetiteWatch7 ? "Watch" : "Good",
+      icon: "meal",
+      tone: healthWatch.counts.appetiteWatch7 ? colors.amber : colors.sage,
+    },
+    {
+      label: "Hydration",
+      value: 88,
+      valueLabel: "Good",
+      icon: "bile",
+      tone: colors.blueSignal,
+    },
+    {
+      label: "Energy",
+      value: healthWatch.status === "good" ? 92 : 72,
+      valueLabel: healthWatch.status === "good" ? "Good" : "Watch",
+      icon: "energy",
+      tone: healthWatch.status === "good" ? colors.sage : colors.amber,
+    },
+    {
+      label: "Vomiting",
+      value: healthWatch.counts.vomit7 ? Math.max(52, 88 - healthWatch.counts.vomit7 * 12) : 96,
+      valueLabel: healthWatch.counts.vomit7 ? "Watch" : "None",
       icon: "vomit",
       tone: healthWatch.counts.vomit7 ? colors.amber : colors.sage,
     },
@@ -285,49 +356,88 @@ export default function HealthScreen() {
           })}
         </View>
 
-        <BoardCard tone="navy" style={s.heroCard}>
-          <View style={s.heroTop}>
-            <View style={[s.heroIcon, { backgroundColor: scoreTone + "22", borderColor: scoreTone + "66" }]}>
-              <PixelIcon name={healthWatch.status === "good" ? "health" : "bile"} size={38} />
+        <BoardCard style={s.heroCard}>
+          <View style={s.statusConsoleTop}>
+            <View style={[s.statusMedallion, { backgroundColor: scoreTone + "16", borderColor: scoreTone + "66" }]}>
+              <PixelIcon name={healthWatch.status === "good" ? "health" : "bile"} size={42} />
+              <Text style={[s.statusMedallionLabel, { color: scoreTone, fontFamily: DISPLAY_SEMI }]}>
+                {statusMedallionLabel}
+              </Text>
             </View>
-            <View style={s.heroText}>
-              <Text style={[s.heroLabel, { color: colors.amber, fontFamily: DISPLAY_SEMI }]}>PHOENIX HEALTH</Text>
-              <Text style={[s.heroTitle, { fontFamily: DISPLAY }]}>{heroTitle}</Text>
-              <Text style={[s.heroCopy, { fontFamily: "Inter_500Medium" }]}>{heroCopy}</Text>
-            </View>
-            <View style={[s.scoreBadge, { backgroundColor: scoreTone + "20", borderColor: scoreTone + "66" }]}>
-              <Text style={[s.scoreValue, { color: colors.ivory, fontFamily: DISPLAY }]}>{score}</Text>
-              <Text style={[s.scoreLabel, { color: "rgba(255,249,239,0.72)", fontFamily: "Inter_700Bold" }]}>
-                SCORE
+
+            <View style={s.statusConsoleText}>
+              <View style={s.statusConsoleHeader}>
+                <View style={s.statusConsoleTitleWrap}>
+                  <Text style={[s.heroLabel, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>CARE STATUS</Text>
+                  <Text style={[s.heroTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{heroTitle}</Text>
+                </View>
+                <View style={[s.scoreBadge, { backgroundColor: scoreTone + "12", borderColor: scoreTone + "55" }]}>
+                  <Text style={[s.scoreValue, { color: colors.foreground, fontFamily: DISPLAY }]}>{score}</Text>
+                  <Text style={[s.scoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    SCORE
+                  </Text>
+                </View>
+              </View>
+              <Text style={[s.heroCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {heroCopy}
+              </Text>
+              <View style={[s.statusScoreTrack, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                <View style={[s.statusScoreFill, { width: `${score}%`, backgroundColor: scoreTone }]} />
+              </View>
+              <Text style={[s.statusSupportCopy, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {statusSupportCopy}
               </Text>
             </View>
           </View>
 
-          <View style={s.heroSignalRail}>
-            <View style={[s.heroSignal, { borderColor: colors.sage + "40" }]}>
-              <Text style={[s.heroSignalLabel, { color: "rgba(255,249,239,0.62)", fontFamily: "Inter_700Bold" }]}>
-                Appetite
+          <View style={s.statusMeterRail}>
+            {healthSignalMeters.map((meter) => (
+              <StatusMeter
+                key={meter.label}
+                icon={meter.icon}
+                label={meter.label}
+                value={meter.value}
+                valueLabel={meter.valueLabel}
+                tone={meter.tone}
+              />
+            ))}
+          </View>
+
+          <View style={[s.healthRhythmPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <View style={s.healthRhythmHeader}>
+              <Text style={[s.healthRhythmTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                7-day rhythm
               </Text>
-              <Text style={[s.heroSignalValue, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
-                {healthWatch.counts.appetiteWatch7 ? "Watch" : "Good"}
-              </Text>
-            </View>
-            <View style={[s.heroSignal, { borderColor: bileTone + "55" }]}>
-              <Text style={[s.heroSignalLabel, { color: "rgba(255,249,239,0.62)", fontFamily: "Inter_700Bold" }]}>
-                Bile
-              </Text>
-              <Text style={[s.heroSignalValue, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
-                {bileStatus}
-              </Text>
-            </View>
-            <View style={[s.heroSignal, { borderColor: colors.copper + "55" }]}>
-              <Text style={[s.heroSignalLabel, { color: "rgba(255,249,239,0.62)", fontFamily: "Inter_700Bold" }]}>
-                Vet share
-              </Text>
-              <Text style={[s.heroSignalValue, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
-                Ready
+              <Text style={[s.healthRhythmMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                Owner log signal
               </Text>
             </View>
+            <View style={s.healthRhythmBars}>
+              {healthRhythm.map((day, index) => (
+                <View key={`${day.label}-${index}`} style={s.healthRhythmColumn}>
+                  <View
+                    style={[
+                      s.healthRhythmBar,
+                      {
+                        height: 10 + Math.round(day.value * 30),
+                        backgroundColor: day.tone,
+                        borderColor: day.tone,
+                      },
+                    ]}
+                  />
+                  <Text style={[s.healthRhythmLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    {day.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={[s.healthBoundaryMini, { backgroundColor: colors.secondary, borderColor: colors.sage + "55" }]}>
+            <PixelIcon name="health" size={20} />
+            <Text style={[s.healthBoundaryMiniText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              Health observations, not diagnosis. Use patterns to prepare better vet questions.
+            </Text>
           </View>
 
           <View style={s.heroActions}>
@@ -349,12 +459,14 @@ export default function HealthScreen() {
               style={({ pressed }) => [
                 s.heroActionSecondary,
                 {
-                  backgroundColor: pressed ? "rgba(255,249,239,0.16)" : "rgba(255,249,239,0.09)",
-                  borderColor: "rgba(255,249,239,0.18)",
+                  backgroundColor: pressed ? colors.secondary : colors.background,
+                  borderColor: colors.border,
                 },
               ]}
             >
-              <Text style={[s.heroActionSecondaryText, { fontFamily: "Inter_700Bold" }]}>Records</Text>
+              <Text style={[s.heroActionSecondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                Records
+              </Text>
             </Pressable>
           </View>
         </BoardCard>
@@ -566,6 +678,123 @@ const s = StyleSheet.create({
   heroCard: {
     padding: 12,
     marginBottom: 12,
+  },
+  statusConsoleTop: {
+    flexDirection: "row",
+    gap: 11,
+    alignItems: "flex-start",
+  },
+  statusMedallion: {
+    width: 86,
+    minHeight: 108,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
+    gap: 6,
+  },
+  statusMedallionLabel: {
+    fontSize: 13,
+    letterSpacing: 0.5,
+    textAlign: "center",
+  },
+  statusConsoleText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  statusConsoleHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  statusConsoleTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  statusScoreTrack: {
+    height: 9,
+    borderRadius: 999,
+    borderWidth: 1,
+    overflow: "hidden",
+    marginTop: 9,
+  },
+  statusScoreFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
+  statusSupportCopy: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 8,
+  },
+  statusMeterRail: {
+    borderTopWidth: 1,
+    borderTopColor: "rgba(20,32,51,0.08)",
+    gap: 7,
+    marginTop: 13,
+    paddingTop: 12,
+  },
+  healthRhythmPanel: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 12,
+  },
+  healthRhythmHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  healthRhythmTitle: {
+    fontSize: 13,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  healthRhythmMeta: {
+    fontSize: 10.5,
+    textTransform: "uppercase",
+  },
+  healthRhythmBars: {
+    minHeight: 54,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 7,
+    marginTop: 9,
+  },
+  healthRhythmColumn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 4,
+  },
+  healthRhythmBar: {
+    width: "100%",
+    minHeight: 10,
+    borderWidth: 1,
+    borderRadius: 2,
+  },
+  healthRhythmLabel: {
+    fontSize: 9.5,
+  },
+  healthBoundaryMini: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  healthBoundaryMiniText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 12.2,
+    lineHeight: 17,
   },
   heroTop: {
     flexDirection: "row",

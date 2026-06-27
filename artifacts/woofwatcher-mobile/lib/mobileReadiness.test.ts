@@ -734,6 +734,11 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /Health score/);
   assert.match(health, /Health Snapshot/);
   assert.match(health, /Pattern Board/);
+  assert.match(health, /CARE STATUS/);
+  assert.match(health, /StatusMeter/);
+  assert.match(health, /statusScoreTrack/);
+  assert.match(health, /healthRhythmBars/);
+  assert.match(health, /Health observations, not diagnosis/);
   assert.match(health, /Log health note/);
   assert.match(health, /7-day bile log/);
   assert.match(health, /accessibilityState=\{\{ selected: active \}\}/);

@@ -1211,3 +1211,29 @@ Design intent:
   content on owner-preview screens.
 - Give Fable/Replit/native polish a stable tuning surface for later visual
   passes without weakening the care workflow.
+
+## 2026-06-27 Health Watch Care Status Polish
+
+Health Watch now follows the reference-board health screen more closely:
+
+- The first Health card is a cream `CARE STATUS` console rather than a dark
+  generic hero.
+- A pixel medallion carries `GOOD`, `WATCH`, or `REVIEW` from the derived
+  health score.
+- The score is shown as both a number and a horizontal track, matching the
+  retro HUD language from the boards.
+- Appetite, hydration, energy, and vomiting use shared `StatusMeter` segmented
+  rows instead of loose text badges.
+- A 7-day rhythm strip uses recent care logs minus watch signals to give the
+  screen a light RPG progress feel while staying tied to real care data.
+- The page now says `Health observations, not diagnosis` directly inside the
+  console so the serious health boundary is visible before the deeper pattern
+  cards.
+
+Design intent:
+
+- Make Health feel calm, trustworthy, and premium without drifting into
+  diagnosis or treatment claims.
+- Bring the Health/Bile screen closer to the saved Option B boards and App
+  Store-quality mobile hierarchy.
+- Keep playful pixel meters connected to real care logs, not fake game chores.

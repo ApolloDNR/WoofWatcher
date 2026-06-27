@@ -1354,6 +1354,61 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
 - Continue local launch-hardening while the recurring GitHub Actions
   billing/spending-limit blocker prevents remote CI from executing jobs.
 
+## 2026-06-27 Health Watch Care Status Polish
+
+### What Changed
+
+- Rebuilt the top Health Watch card into a reference-board-style `CARE STATUS`
+  console with a pixel medallion, status label, score track, real care copy,
+  and shared segmented `StatusMeter` rows.
+- Added a 7-day rhythm strip derived from recent care logs and watch signals so
+  the screen feels more alive while staying tied to real observations.
+- Added visible `Health observations, not diagnosis` copy inside the console,
+  preserving the non-diagnostic veterinary boundary.
+- Added mobile readiness coverage for the Health Care Status console, score
+  track, rhythm bars, segmented meters, and boundary copy.
+
+### Files Changed In This Slice
+
+- `artifacts/woofwatcher-mobile/app/(tabs)/health.tsx`
+- `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+- `docs/AUTONOMOUS_BUILD_QUEUE.md`
+- `docs/build/CODEX_PROGRESS_REPORT_2026-06-12.md`
+- `docs/design/UI_IMPLEMENTATION_NOTES.md`
+- `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`
+
+### Tests And Checks Run
+
+- Red/green Health readiness guard:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`
+  - Result: first failed on the missing Health Care Status contract, then passed 81/81.
+- Full mobile/domain behavior and readiness:
+  - Command: `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`
+  - Result: passed 390/390.
+- Mobile TypeScript:
+  - Command: `tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  - Result: passed.
+- PixelLab asset verification:
+  - Command: `node artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`
+  - Result: passed, `ok=149 missing=0 invalid=0`.
+- Expo web export:
+  - Command: `expo export --platform web --output-dir .expo-smoke --clear`
+  - Result: passed; exported to `artifacts/woofwatcher-mobile/.expo-smoke`.
+- Preview smoke:
+  - Command: `Invoke-WebRequest -Uri http://127.0.0.1:4194/ -Method Head`
+  - Result: `200`.
+  - Browser route: `http://127.0.0.1:4194/health`.
+  - Browser console: no captured errors.
+  - Limitation: browser screenshot capture timed out, so this is not a
+    substitute for native iOS/Android screenshot proof.
+
+### Remaining Work
+
+- Continue native iOS/Android proof from `/care-twin-qa`.
+- Continue owner-preview polish on Quick Log detail sheets, Log/Timeline
+  scanability, Avatar Studio scan truth, Phoenix sprite/stage crop after device
+  review, and Care Pass/Records export clarity.
+
 ## 2026-06-27 Phoenix Home First-Screen Polish
 
 ### What Changed
