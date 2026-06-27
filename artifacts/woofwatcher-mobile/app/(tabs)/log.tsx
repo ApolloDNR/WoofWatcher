@@ -226,7 +226,17 @@ const LOG_TYPES: LogType[] = [
           { id: "unwell", label: "Unwell", suffix: "unwell", mood: "unwell", severity: "alert" },
         ],
       },
+      {
+        key: "energyLevel",
+        label: "Energy level",
+        options: [
+          { id: "low", label: "Low", suffix: "low energy", severity: "watch" },
+          { id: "steady", label: "Steady", suffix: "steady energy" },
+          { id: "high", label: "High", suffix: "high energy" },
+        ],
+      },
     ],
+    noteField: { placeholder: "Sticky note: energy, trigger, appetite, visitors, weather, or what changed..." },
   },
   {
     type: "alone",
@@ -439,6 +449,8 @@ const DETAIL_LABELS: Record<string, string> = {
   serving: "Serving",
   stoolColor: "Stool color",
   pottyContext: "Context",
+  energyLevel: "Energy",
+  moodContext: "Care context",
   trainingOutcome: "Training outcome",
   trainingSkill: "Skill",
   nextPractice: "Next practice",
@@ -632,6 +644,7 @@ export default function LogScreen() {
   const [walkDistanceMiles, setWalkDistanceMiles] = useState("");
   const [walkDogInteractions, setWalkDogInteractions] = useState("");
   const [walkSocialOutcome, setWalkSocialOutcome] = useState("");
+  const [moodContext, setMoodContext] = useState("");
   const [trainingSkill, setTrainingSkill] = useState("");
   const [trainingNextPractice, setTrainingNextPractice] = useState("");
   const [aloneTrigger, setAloneTrigger] = useState("");
@@ -690,6 +703,7 @@ export default function LogScreen() {
     setWalkDistanceMiles("");
     setWalkDogInteractions("");
     setWalkSocialOutcome("");
+    setMoodContext("");
     setTrainingSkill("");
     setTrainingNextPractice("");
     setAloneTrigger("");
@@ -941,6 +955,15 @@ export default function LogScreen() {
       if (socialOutcome) details.socialOutcome = socialOutcome;
     }
 
+    if (config.type === "mood") {
+      const context = moodContext.trim();
+      details.householdVisible = householdVisible;
+      if (context) {
+        details.moodContext = context;
+        parts.push(context);
+      }
+    }
+
     if (config.type === "training") {
       const skill = trainingSkill.trim();
       const nextPractice = trainingNextPractice.trim();
@@ -1040,6 +1063,7 @@ export default function LogScreen() {
     walkDistanceMiles,
     walkDogInteractions,
     walkSocialOutcome,
+    moodContext,
     trainingSkill,
     trainingNextPractice,
     aloneTrigger,
@@ -1924,6 +1948,44 @@ export default function LogScreen() {
                     </Text>
                     <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                       {householdVisible ? "Shared walk logs update route templates and handoffs." : "Private walks stay out of household route templates."}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            )}
+
+            {selectedType === "mood" && (
+              <View style={s.mealFields}>
+                <View>
+                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Care context</Text>
+                  <TextInput
+                    placeholder="After breakfast, guests arrived, storm outside, post-walk..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={moodContext}
+                    onChangeText={setMoodContext}
+                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                  />
+                </View>
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setHouseholdVisible((prev) => !prev);
+                  }}
+                  style={[
+                    s.visibilityToggle,
+                    {
+                      backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
+                      borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons name={householdVisible ? "people-outline" : "lock-closed-outline"} size={16} color={householdVisible ? colors.sage : colors.mutedForeground} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.visibilityTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {householdVisible ? "Visible to household" : "Private log"}
+                    </Text>
+                    <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {householdVisible ? "Shared mood logs update Mood Trend and care-twin context." : "Private mood notes stay out of shared trends."}
                     </Text>
                   </View>
                 </Pressable>

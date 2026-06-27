@@ -147,6 +147,7 @@ Passing evidence:
 - Warm brand assets and Phoenix art exist.
 - Mobile screens have functional product surfaces.
 - Home has a tested avatar motion state model and visible motion row that connects avatar state to Health Watch, recent logs, routine status, quiet hours, and low energy.
+- Mood logging captures structured energy level, optional care context, sticky notes, and household visibility while preserving the mood field used by Records Mood Trend and care-twin state.
 
 Current gaps:
 

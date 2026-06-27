@@ -803,6 +803,20 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.match(log, /flexBasis: "47\.5%"/);
 });
 
+test("keeps mood logging structured for energy and care context", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const moodConfig = log.slice(log.indexOf('type: "mood"'), log.indexOf('type: "alone"'));
+
+  assert.match(moodConfig, /key: "energyLevel"/);
+  assert.match(moodConfig, /label: "Energy level"/);
+  assert.match(moodConfig, /id: "low"/);
+  assert.match(moodConfig, /id: "steady"/);
+  assert.match(moodConfig, /id: "high"/);
+  assert.match(moodConfig, /noteField: \{ placeholder: "Sticky note: energy, trigger, appetite, visitors, weather, or what changed\.\.\." \}/);
+  assert.match(log, /energyLevel: "Energy"/);
+  assert.match(log, /moodContext: "Care context"/);
+});
+
 test("keeps Quick Log search and timeline on shared board card anatomy", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 

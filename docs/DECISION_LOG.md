@@ -1655,6 +1655,22 @@ Owner: Codex.
 
 Revisit trigger: Native accessibility QA, Figma interaction specs, or a future care-twin action model changes the tap from feedback-only to a routed owner-reviewed workflow.
 
+### 2026-06-27: Mood Logs Need Structured Energy Context
+
+Decision: Mood logging should capture an explicit energy level and optional care context, plus household visibility and sticky notes, while preserving the top-level mood field used by Records Mood Trend and care-twin state.
+
+Reason: Mood and energy are part of the real care loop, not decorative avatar inputs. The household needs to know whether a mood check happened after food, visitors, weather, or activity, and future care-twin/report logic needs structured fields instead of parsing generic notes.
+
+Consequences:
+
+- The Log composer now records low/steady/high energy as `details.energyLevel` for mood logs.
+- Optional context is stored as `details.moodContext`, and sticky notes still capture richer owner observations.
+- Mood logs use the same household visibility boundary as other shared evidence, while Records can continue reading the existing top-level `mood`.
+
+Owner: Codex.
+
+Revisit trigger: Deeper mood analytics, Care Pass mood sections, or avatar state-machine work requires a shared care-domain mood trend helper.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

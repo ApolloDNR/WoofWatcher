@@ -74,6 +74,8 @@ Current evidence, 2026-06-11: Weekly Care Trends derives a household-visible 7-d
 
 Current evidence, 2026-06-11: Training logs now capture skill/cue, win/practice/struggle outcome, duration, next-practice notes, sticky notes, and household visibility, and Training Progress derives visible 30-day sessions, minutes, wins, struggles, skills, caregivers, and latest context.
 
+Current evidence, 2026-06-27: Mood logs now capture low/steady/high energy, optional care context, sticky notes, and household visibility in the Log composer while keeping the top-level mood field that Records Mood Trend and care-twin state already consume.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.

@@ -140,6 +140,7 @@ Latest completed local runtime/accessibility hardening:
 - Setup-to-More household handoff is now intent-aware before provider-backed onboarding is complete. Share invite and Join pack choices pass a `setupHandoff` route param into More, where a setup next-step card routes to the existing owner/admin invite share action or invite-code modal without claiming invite approval, cloud onboarding, or arbitrary membership changes are complete.
 - Mobile More display-name copy now mirrors the active-household member update boundary. The display-name row, edit modal, and save confirmation name the active pack so multi-household caregivers are not told the name change applies to every household or future provider-backed surface.
 - Animated care-twin taps now have an explicit screen-reader contract before native accessibility traversal. `AnimatedAvatar` exposes the full-scene response as a button, names Phoenix's current care-twin mood and visible speech fallback, and states that tapping only plays a gentle response without changing care records.
+- Mood logging now captures structured energy and care context before deeper mood analytics. The Log composer saves low/steady/high energy, optional care context, sticky notes, and household visibility while preserving the top-level mood field used by Records Mood Trend and care-twin state.
 
 Next highest-impact work:
 
