@@ -10,6 +10,7 @@ import {
   type CareTwinSpriteTrack,
 } from "./avatarLifeEngine.ts";
 import type { AvatarMotionModel, AvatarMotionState } from "./avatarMotion.ts";
+import { getCareTwinStageFraming, type CareTwinStageFraming } from "./careTwinStage.ts";
 import type { Mood } from "./phoenixStatus";
 
 export interface CareTwinSpriteAsset {
@@ -63,6 +64,7 @@ export interface CareTwinRuntimeQaResult {
   actualZone: AvatarLifePlan["zone"];
   actualScenePhase: CareTwinScenePhase;
   actualNeed: CareTwinNeed;
+  stageFraming: CareTwinStageFraming;
   readiness: CareTwinLayerReadiness;
 }
 
@@ -450,15 +452,17 @@ export function listCareTwinRuntimeQaScenarios(): CareTwinRuntimeQaScenario[] {
 export function evaluateCareTwinRuntimeQaScenario(scenario: CareTwinRuntimeQaScenario): CareTwinRuntimeQaResult {
   const plan = deriveCareTwinScene(scenario.motion);
   const actualRoomVariant = getCareTwinRoomVariantKey(scenario.motion.avatarMood, plan.spriteAction);
+  const actualZone = plan.zone;
 
   return {
     scenario,
     plan,
     actualAction: plan.spriteAction,
     actualRoomVariant,
-    actualZone: plan.zone,
+    actualZone,
     actualScenePhase: plan.scenePhase,
     actualNeed: plan.priorityNeed,
+    stageFraming: getCareTwinStageFraming(plan.spriteAction, actualZone),
     readiness: getCareTwinLayerReadiness(plan.spriteAction, scenario.motion.avatarMood),
   };
 }

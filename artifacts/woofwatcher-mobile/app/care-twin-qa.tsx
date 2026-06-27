@@ -1244,6 +1244,7 @@ export default function CareTwinQaScreen() {
           const choreography = deriveCareTwinChoreography(result.plan);
           const motionRecipe = motionRecipeForSpriteAction(result.actualAction);
           const motionRecipeSummary = describeMotionRecipeForSpriteAction(result.actualAction);
+          const stageFraming = result.stageFraming;
           const attachedScreenshots = qaEvidenceById[result.scenario.id] ?? [];
 
           return (
@@ -1315,6 +1316,33 @@ export default function CareTwinQaScreen() {
                 </Text>
                 <Text style={[s.motionRecipeSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                   {motionRecipeSummary}
+                </Text>
+              </View>
+
+              <View style={[s.stageFramingProofBox, { backgroundColor: `${colors.copper}10`, borderColor: `${colors.copper}44` }]}>
+                <View style={s.motionProofHeader}>
+                  <Text style={[s.promptLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                    Stage framing proof
+                  </Text>
+                  <QaBadge label={stageFraming.label} tone={colors.copper} />
+                </View>
+                <View style={s.motionMetricGrid}>
+                  <MetaItem icon="crop-outline" label="Zone" value={formatSlug(stageFraming.zone)} />
+                  <MetaItem icon="layers-outline" label="Avatar" value="Single sprite" />
+                  <MetaItem icon="phone-portrait-outline" label="Phone" value="Crop check" />
+                  <MetaItem icon="easel-outline" label="Mockup" value="Option B" />
+                </View>
+                <Text style={[s.promptText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {stageFraming.cropRule}
+                </Text>
+                <Text style={[s.stageFramingRule, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {stageFraming.hudClearanceRule}
+                </Text>
+                <Text style={[s.stageFramingRule, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {stageFraming.singleAvatarRule}
+                </Text>
+                <Text style={[s.motionRecipeSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {stageFraming.mockupAccuracyRule} {stageFraming.phoneQaHint}
                 </Text>
               </View>
 
@@ -2231,6 +2259,12 @@ const s = StyleSheet.create({
     padding: 12,
     gap: 10,
   },
+  stageFramingProofBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
   motionProofHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -2245,6 +2279,10 @@ const s = StyleSheet.create({
   motionRecipeSummary: {
     fontSize: 11,
     lineHeight: 16,
+  },
+  stageFramingRule: {
+    fontSize: 12,
+    lineHeight: 17,
   },
   reviewGrid: {
     flexDirection: "row",

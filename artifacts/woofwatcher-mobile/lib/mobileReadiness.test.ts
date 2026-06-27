@@ -360,6 +360,12 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /choreography\.tapReaction\.action/);
   assert.match(qaRoute, /motionRecipe\.qaHint/);
   assert.match(qaRoute, /Motion proof/);
+  assert.match(qaRoute, /Stage framing proof/);
+  assert.match(qaRoute, /result\.stageFraming/);
+  assert.match(qaRoute, /stageFraming\.cropRule/);
+  assert.match(qaRoute, /stageFraming\.hudClearanceRule/);
+  assert.match(qaRoute, /stageFraming\.singleAvatarRule/);
+  assert.match(qaRoute, /stageFraming\.phoneQaHint/);
   assert.match(qaRoute, /ImagePicker\.launchImageLibraryAsync/);
   assert.match(qaRoute, /buildQaScreenshotEvidence/);
   assert.match(qaRoute, /qaScreenshotPlatformForRuntime/);

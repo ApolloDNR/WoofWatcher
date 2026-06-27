@@ -167,7 +167,27 @@ test("defines a native QA matrix for every care twin state and room variant", ()
     assert.equal(result.actualNeed, scenario.expectedNeed, scenario.id);
     assert.equal(result.readiness.layeredReady, true, scenario.id);
     assert.deepEqual(result.readiness.missing, [], scenario.id);
+    assert.equal(result.stageFraming.zone, result.actualZone, scenario.id);
+    assert.match(result.stageFraming.cropRule, /head, paws, speech bubble, and bottom dock/i, scenario.id);
+    assert.match(result.stageFraming.hudClearanceRule, /HUD/i, scenario.id);
+    assert.match(result.stageFraming.singleAvatarRule, /single live sprite/i, scenario.id);
+    assert.match(result.stageFraming.phoneQaHint, /phone screenshot/i, scenario.id);
     assert.ok(scenario.nativeQaPrompt.length > 50, scenario.id);
     assert.doesNotMatch(scenario.nativeQaPrompt, /emergency|certainty|cure|treatment claim/i, scenario.id);
+  }
+});
+
+test("keeps stage framing contracts specific to each Phoenix room zone", () => {
+  const results = listCareTwinRuntimeQaScenarios().map(evaluateCareTwinRuntimeQaScenario);
+  const byZone = new Map(results.map((result) => [result.actualZone, result.stageFraming]));
+
+  assert.match(byZone.get("rug")?.cropRule ?? "", /centered/i);
+  assert.match(byZone.get("door")?.cropRule ?? "", /left third/i);
+  assert.match(byZone.get("bowl")?.cropRule ?? "", /bowl/i);
+  assert.match(byZone.get("bed")?.cropRule ?? "", /bed/i);
+  assert.match(byZone.get("window")?.cropRule ?? "", /window/i);
+  for (const framing of byZone.values()) {
+    assert.match(framing.mockupAccuracyRule, /Option B/i);
+    assert.match(framing.mockupAccuracyRule, /hard-pixel/i);
   }
 });

@@ -41,6 +41,15 @@ function qaResult(
     actualZone: "rug",
     actualScenePhase: "idle",
     actualNeed: "bond",
+    stageFraming: {
+      zone: "rug",
+      label: "Rug stage framing",
+      cropRule: "Keep Phoenix centered with head, paws, speech bubble, and bottom dock visible.",
+      hudClearanceRule: "HUD must not cover the face, paws, or bottom dock.",
+      singleAvatarRule: "Use the dogless room plus one single live sprite.",
+      mockupAccuracyRule: "Match Option B hard-pixel room staging.",
+      phoneQaHint: "Use a phone screenshot to confirm the stage feels balanced.",
+    },
     readiness: {
       layeredReady,
       spriteReady: layeredReady,
@@ -117,6 +126,9 @@ test("builds a shareable care twin QA report without claiming native QA is compl
   assert.match(text, /Motion recipe: tail wag/);
   assert.match(text, /bob 1\.8px/);
   assert.match(text, /Happy idle uses a readable body sway/);
+  assert.match(text, /Stage framing: Rug stage framing/);
+  assert.match(text, /single live sprite/);
+  assert.match(text, /phone screenshot/);
   assert.match(text, /Health room crop needs 8px more bottom padding/);
   assert.match(text, /Attached screenshots: 1 \(iOS 1, Android 0/);
   assert.match(text, /Screenshots: ios-happy-idle\.png \(iOS\)/);

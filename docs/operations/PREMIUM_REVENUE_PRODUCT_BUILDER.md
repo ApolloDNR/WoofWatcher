@@ -904,6 +904,17 @@ steps and no failed log. The check-run annotation reports the standing account
 billing/spending-limit blocker, so this remains an external CI gate rather than
 a product regression.
 
+The Phoenix room stage-framing proof pass made `/care-twin-qa` more actionable
+for the exact mockup and video-game feel Apollo wants. `getCareTwinStageFraming`
+now gives each room zone a crop rule, HUD-clearance rule, single-live-sprite
+rule, Option B hard-pixel accuracy rule, and phone-screenshot hint; every runtime
+QA scenario carries that contract; the QA route renders a `Stage framing proof`
+panel; and the native share report includes the same line. Local verification
+passed focused Care Twin/mobile readiness, the 395-test behavior/readiness
+suite, mobile TypeScript, PixelLab verification at 149 files, Expo web export,
+preview `HEAD 200` on `/` and `/care-twin-qa`, and `git diff --check` with
+expected Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
