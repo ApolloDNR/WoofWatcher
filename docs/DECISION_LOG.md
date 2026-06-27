@@ -1639,6 +1639,22 @@ Owner: Codex.
 
 Revisit trigger: Native accessibility QA, final Figma components, or platform-specific design guidance requires a different minimum target.
 
+### 2026-06-27: Animated Care-Twin Taps Need Explicit Accessibility Meaning
+
+Decision: Interactive care-twin avatar taps should be exposed as screen-reader buttons with mood-aware labels and a non-mutating hint.
+
+Reason: The animated care twin is a premium first-screen interaction, but tapping it only plays a gentle response and optional feedback callback. Screen-reader users need that boundary explicitly, and the app should not imply a care log, household sync write, or health action happened.
+
+Consequences:
+
+- `AnimatedAvatar` now exposes `accessibilityRole`, a mood/speech label, and a hint that the tap does not change care records.
+- Mobile readiness protects the contract until native screen-reader traversal is available.
+- Future care-twin interactions should keep playful reactions separate from actual care-log or routine mutations unless the UI clearly routes through an owner-reviewed action.
+
+Owner: Codex.
+
+Revisit trigger: Native accessibility QA, Figma interaction specs, or a future care-twin action model changes the tap from feedback-only to a routed owner-reviewed workflow.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

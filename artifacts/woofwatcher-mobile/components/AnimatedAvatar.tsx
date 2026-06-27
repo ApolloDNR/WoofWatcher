@@ -198,7 +198,13 @@ export function AnimatedAvatar({ mood, speech, onTap }: Props) {
   const crossfading = prevMood.current !== displayMood;
 
   return (
-    <Pressable onPress={handleTap} style={styles.root}>
+    <Pressable
+      onPress={handleTap}
+      accessibilityRole="button"
+      accessibilityLabel={`Phoenix care twin is ${displayMood}. ${speech ?? "Tap for a care-twin response"}`}
+      accessibilityHint="Plays a gentle Phoenix response without changing care records"
+      style={styles.root}
+    >
       {/* still dog scene — previous emotion underneath, current fades in on top */}
       <Animated.View style={[StyleSheet.absoluteFill, tapStyle]} pointerEvents="none">
         {crossfading && (

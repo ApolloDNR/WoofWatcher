@@ -354,6 +354,17 @@ test("keeps the living Phoenix room on shared mobile tap contracts", () => {
   assert.doesNotMatch(room, /nextChip: \{[\s\S]*minHeight: 32/);
 });
 
+test("keeps the animated avatar interaction accessible to screen readers", () => {
+  const animatedAvatar = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "AnimatedAvatar.tsx"),
+    "utf8",
+  );
+
+  assert.match(animatedAvatar, /accessibilityRole="button"/);
+  assert.match(animatedAvatar, /accessibilityLabel=\{`Phoenix care twin is \$\{displayMood\}\. \$\{speech \?\? "Tap for a care-twin response"\}`\}/);
+  assert.match(animatedAvatar, /accessibilityHint="Plays a gentle Phoenix response without changing care records"/);
+});
+
 test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {
   const domain = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-intelligence.ts"), "utf8");
   const home = readAppFile(join("(tabs)", "index.tsx"));
