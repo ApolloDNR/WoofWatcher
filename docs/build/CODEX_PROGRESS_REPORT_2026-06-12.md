@@ -43,6 +43,21 @@ WoofWatcher is mid-upgrade toward v1.5 Premium Neo-Retro Pixel Care.
 - Expo web export:
   - Command: `expo export --platform web --output-dir .expo-smoke --clear`
   - Result: passed; bundle `entry-61845be865258355eeb426d42907dd5e.js`.
+- Local preview:
+  - Command: `HEAD http://127.0.0.1:4194/`
+  - Result: `200`.
+- Diff whitespace check:
+  - Command: `git diff --check`
+  - Result: passed with expected Windows CRLF warnings only.
+
+### Remote Verification
+
+- GitHub Actions:
+  - Command: `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  - Result: run `28286493067` failed before job execution; job `83811229532`
+    had `steps: []`, `gh run view --log-failed` returned `log not found:
+    83811229532`, and the check-run annotation reported the standing
+    billing/spending-limit blocker.
 
 ### Remaining Work
 
