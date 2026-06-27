@@ -81,6 +81,7 @@ import {
 } from "@/lib/mealOutcomeUpdate";
 import {
   buildQuickLogEntry,
+  describeQuickLogDetailSheet,
   describeQuickLogLauncherAction,
   getQuickLogPolicy,
 } from "@/lib/quickLogEntry";
@@ -895,6 +896,7 @@ export default function LogScreen() {
   const [filter, setFilter] = useState<string | null>(null);
   const [launcherTab, setLauncherTab] = useState<LauncherTab>("favorites");
   const [selectedLauncherKey, setSelectedLauncherKey] = useState<string | null>(() => launcherActionKey(LAUNCHER_ACTIONS[0]!));
+  const [launcherDetailAction, setLauncherDetailAction] = useState<LauncherAction | null>(null);
   const pendingChoicePreset = useRef<Record<string, string> | null>(null);
 
   const config = TYPE_BY_ID[selectedType];
@@ -1805,6 +1807,13 @@ export default function LogScreen() {
     }
     return LAUNCHER_ACTIONS;
   }, [launcherTab]);
+  const launcherDetailPresentation = useMemo(
+    () =>
+      launcherDetailAction
+        ? describeQuickLogDetailSheet(launcherDetailAction.type, launcherDetailAction.label)
+        : null,
+    [launcherDetailAction],
+  );
 
   const selectLauncherAction = (action: LauncherAction) => {
     Haptics.selectionAsync();
@@ -1816,9 +1825,16 @@ export default function LogScreen() {
     }
   };
 
-  const openDetailedLauncherAction = (action: LauncherAction) => {
+  const focusFullComposerForLauncherAction = (action: LauncherAction) => {
     selectLauncherAction(action);
-    scrollRef.current?.scrollTo({ y: 620, animated: true });
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: 620, animated: true });
+    }, 80);
+  };
+
+  const openLauncherDetailSheet = (action: LauncherAction) => {
+    selectLauncherAction(action);
+    setLauncherDetailAction(action);
   };
 
   const handleLeavingHome = useCallback(() => {
@@ -1931,7 +1947,7 @@ export default function LogScreen() {
     }
     const policy = getQuickLogPolicy(action.type);
     if (policy.tapBehavior === "detail-required") {
-      openDetailedLauncherAction(action);
+      openLauncherDetailSheet(action);
       return;
     }
 
@@ -2046,7 +2062,7 @@ export default function LogScreen() {
                     accessibilityHint={launcherPresentation.feedbackHint}
                     accessibilityState={{ selected: active }}
                     onPress={() => handleQuickLauncherAction(action)}
-                    onLongPress={() => openDetailedLauncherAction(action)}
+                    onLongPress={() => openLauncherDetailSheet(action)}
                     style={({ pressed }) => [
                       s.launcherTile,
                       {
@@ -3425,6 +3441,122 @@ export default function LogScreen() {
         </Animated.View>
       </ScrollView>
 
+      {/* Launcher detail sheet */}
+      <Modal
+        visible={launcherDetailAction !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLauncherDetailAction(null)}
+      >
+        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setLauncherDetailAction(null)}>
+          <Pressable
+            style={[s.launcherDetailSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={s.editHandle} />
+            {launcherDetailAction && launcherDetailPresentation ? (
+              <>
+                <View style={s.launcherDetailTop}>
+                  <View style={[s.launcherDetailIcon, { backgroundColor: colors.brandNavy }]}>
+                    <PixelIcon name={launcherDetailAction.icon} size={34} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[s.launcherDetailKicker, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                      QUICK LOG FLOW
+                    </Text>
+                    <Text style={[s.launcherDetailTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      {launcherDetailPresentation.title}
+                    </Text>
+                    <Text style={[s.launcherDetailSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {launcherDetailPresentation.subtitle}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={[s.launcherDetailSummary, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Ionicons name="flash-outline" size={16} color={colors.copper} />
+                  <Text style={[s.launcherDetailSummaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    {launcherDetailPresentation.quickSummary}
+                  </Text>
+                </View>
+
+                <View style={s.launcherDetailChecklist}>
+                  {launcherDetailPresentation.detailChecklist.map((item) => (
+                    <View key={item} style={s.launcherDetailChecklistRow}>
+                      <View style={[s.launcherDetailBullet, { backgroundColor: colors.sage }]} />
+                      <Text style={[s.launcherDetailChecklistText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {item}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                {launcherDetailPresentation.safetyBoundary ? (
+                  <View style={[s.launcherDetailBoundary, { backgroundColor: colors.amber + "13", borderColor: colors.amber + "55" }]}>
+                    <Ionicons name="shield-checkmark-outline" size={16} color={colors.copper} />
+                    <Text style={[s.launcherDetailBoundaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                      {launcherDetailPresentation.safetyBoundary}
+                    </Text>
+                  </View>
+                ) : null}
+
+                <View style={s.launcherDetailActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${launcherDetailPresentation.primaryActionLabel}: ${launcherDetailAction.label}`}
+                    onPress={() => {
+                      const action = launcherDetailAction;
+                      setLauncherDetailAction(null);
+                      if (!action) return;
+                      if (launcherDetailPresentation.canQuickLog) {
+                        handleQuickLauncherAction(action);
+                      } else {
+                        focusFullComposerForLauncherAction(action);
+                      }
+                    }}
+                    style={({ pressed }) => [
+                      s.launcherDetailPrimary,
+                      {
+                        backgroundColor: pressed ? colors.brandNavy + "DD" : colors.brandNavy,
+                        borderColor: colors.shellNavy,
+                      },
+                    ]}
+                  >
+                    <Text style={[s.launcherDetailPrimaryText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                      {launcherDetailPresentation.primaryActionLabel}
+                    </Text>
+                    <Ionicons name="arrow-forward" size={17} color={colors.ivory} />
+                  </Pressable>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${launcherDetailPresentation.secondaryActionLabel}: ${launcherDetailAction.label}`}
+                    onPress={() => {
+                      const action = launcherDetailAction;
+                      setLauncherDetailAction(null);
+                      if (action && launcherDetailPresentation.secondaryActionLabel === "Open full details") {
+                        focusFullComposerForLauncherAction(action);
+                      }
+                    }}
+                    style={({ pressed }) => [
+                      s.launcherDetailSecondary,
+                      {
+                        backgroundColor: pressed ? colors.copper + "14" : colors.background,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[s.launcherDetailSecondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {launcherDetailPresentation.secondaryActionLabel}
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* Entry detail modal */}
       <Modal visible={detailEntry !== null} transparent animationType="slide" onRequestClose={() => setDetailEntryId(null)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
@@ -4644,6 +4776,39 @@ const s = StyleSheet.create({
     paddingHorizontal: 7,
   },
   entryOpenText: { fontSize: 10 },
+  launcherDetailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, gap: 14 },
+  launcherDetailTop: { flexDirection: "row", alignItems: "center", gap: 13 },
+  launcherDetailIcon: { width: 58, height: 58, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  launcherDetailKicker: { fontSize: 10.5, letterSpacing: 0.8 },
+  launcherDetailTitle: { fontSize: 23, marginTop: 2 },
+  launcherDetailSubtitle: { fontSize: 13, lineHeight: 18, marginTop: 3 },
+  launcherDetailSummary: { borderWidth: 1, borderRadius: 17, padding: 13, flexDirection: "row", gap: 10, alignItems: "flex-start" },
+  launcherDetailSummaryText: { flex: 1, fontSize: 13.5, lineHeight: 19 },
+  launcherDetailChecklist: { gap: 9 },
+  launcherDetailChecklistRow: { flexDirection: "row", gap: 9, alignItems: "flex-start" },
+  launcherDetailBullet: { width: 7, height: 7, borderRadius: 2, marginTop: 6 },
+  launcherDetailChecklistText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
+  launcherDetailBoundary: { borderWidth: 1, borderRadius: 16, padding: 12, flexDirection: "row", gap: 9, alignItems: "flex-start" },
+  launcherDetailBoundaryText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
+  launcherDetailActions: { gap: 10, marginTop: 2 },
+  launcherDetailPrimary: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  launcherDetailPrimaryText: { fontSize: 14.5 },
+  launcherDetailSecondary: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launcherDetailSecondaryText: { fontSize: 14 },
   detailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", padding: 22 },
   detailHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   detailIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },

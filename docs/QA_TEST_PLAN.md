@@ -1074,3 +1074,23 @@ Latest local evidence, 2026-06-26:
   `mobileReadiness.test.ts`.
 - Broader local proof passed the `386`-test behavior/readiness suite and
   PixelLab verification at `ok=149 missing=0 invalid=0`.
+
+## Quick Log Detail Sheet Owner-Preview Proof
+
+Latest local evidence, 2026-06-27:
+
+- Quick Log launcher tiles now have a compact detail sheet for long-press and
+  detail-required actions.
+- Meal detail presentation protects the served -> outcome lifecycle: quick log
+  can serve the usual meal, and full details capture Ate all, Ate most, Ate some,
+  Refused, or Still grazing.
+- Potty detail presentation protects the parent/outcome model: Potty is the
+  bathroom attempt, while pee, poop, both, accident, and tried-nothing are
+  outcomes.
+- Medication remains detail-first by policy, so the app asks for dose/status
+  context before saving instead of treating it like a casual one-tap log.
+- The latest mobile web preview was rebuilt to `.expo-smoke` and loaded at
+  `http://127.0.0.1:4194/` without a fallback error.
+- Verification passed `quickLogEntry.test.ts` 10/10, `mobileReadiness.test.ts`
+  81/81, the 387-test behavior/readiness suite, PixelLab verifier
+  `ok=149 missing=0 invalid=0`, Expo web export, and browser DOM smoke.

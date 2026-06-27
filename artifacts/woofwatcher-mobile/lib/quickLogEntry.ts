@@ -96,6 +96,17 @@ export interface QuickLogLauncherPresentation {
   detailRequired: boolean;
 }
 
+export interface QuickLogDetailSheetPresentation {
+  title: string;
+  subtitle: string;
+  quickSummary: string;
+  detailChecklist: string[];
+  canQuickLog: boolean;
+  primaryActionLabel: "Quick log now" | "Open full details";
+  secondaryActionLabel: "Open full details" | "Cancel";
+  safetyBoundary?: string;
+}
+
 function statusRank(routine: RoutineBoardItem): number {
   if (routine.status === "overdue") return 0;
   if (routine.status === "due") return 1;
@@ -242,6 +253,86 @@ export function describeQuickLogLauncherAction(
     detailRequired: false,
     accessibilityLabel: `Quick log ${safeLabel}. Long press for details.`,
     feedbackHint: "Tap saves the usual log. Long press opens more fields.",
+  };
+}
+
+export function describeQuickLogDetailSheet(
+  type: string | null | undefined,
+  label: string,
+): QuickLogDetailSheetPresentation {
+  const policy = getQuickLogPolicy(type);
+  const safeLabel = clean(label) || policy.type;
+  const title = `${safeLabel} details`;
+  const base = {
+    title,
+    canQuickLog: policy.tapBehavior === "quick-log",
+    primaryActionLabel: policy.tapBehavior === "quick-log" ? ("Quick log now" as const) : ("Open full details" as const),
+    secondaryActionLabel: policy.tapBehavior === "quick-log" ? ("Open full details" as const) : ("Cancel" as const),
+  };
+
+  if (policy.detailContract === "served-outcome") {
+    return {
+      ...base,
+      subtitle: "Fast bowl drop now, accurate outcome later.",
+      quickSummary: "Quick tap serves the usual meal and keeps the meal outcome pending until someone confirms what Phoenix ate.",
+      detailChecklist: [
+        "Meal uses a served -> outcome lifecycle so a bowl on the floor is not treated as eaten.",
+        "Track portion offered, expected portion, and food notes before saving.",
+        "Update later with Ate all, Ate most, Ate some, Refused, or Still grazing.",
+      ],
+    };
+  }
+
+  if (policy.detailContract === "parent-outcome") {
+    return {
+      ...base,
+      subtitle: "One bathroom log, clear outcomes inside.",
+      quickSummary: "Quick tap records a bathroom attempt without pretending pee or poop happened.",
+      detailChecklist: [
+        "Potty stays the parent event; Pee, poop, both, accident, or tried-nothing are outcomes.",
+        "Set outside or inside, then add stool consistency or pee notes only when relevant.",
+        "Save details afterward so Health Watch, Timeline, and handoffs read the same record.",
+      ],
+    };
+  }
+
+  if (policy.detailContract === "safety-critical") {
+    return {
+      ...base,
+      subtitle: "Medication needs context before it enters the household record.",
+      quickSummary: "This action opens details first so the dose, status, caregiver, and proof need are clear.",
+      detailChecklist: [
+        "Confirm medication name, dose, and whether it was taken or skipped.",
+        "Keep household visibility on unless the owner intentionally changes it.",
+        "Adult review and photo proof can be requested from the saved log when needed.",
+      ],
+      safetyBoundary: "Medication requires context before saving; WoofWatcher will not treat it like a casual tap log.",
+    };
+  }
+
+  if (policy.detailContract === "health-context") {
+    return {
+      ...base,
+      subtitle: "Health and incident notes stay factual and review-ready.",
+      quickSummary: "This action opens details first so the record includes context instead of a vague alert.",
+      detailChecklist: [
+        "Capture what happened, severity, trigger or context, and any immediate follow-up.",
+        "Keep language observational and non-diagnostic for vet, trainer, or sitter review.",
+        "Attach proof or request adult confirmation later if the household needs it.",
+      ],
+      safetyBoundary: "Health context is not veterinary advice. Use it to organize facts and share patterns with a vet.",
+    };
+  }
+
+  return {
+    ...base,
+    subtitle: "Fast when it is routine, detailed when it matters.",
+    quickSummary: `Quick tap saves a useful ${safeLabel.toLowerCase()} log with household-safe defaults.`,
+    detailChecklist: [
+      "Open full details for duration, notes, route, mood, or household visibility.",
+      "Saved logs can be edited, corrected, shared, or given sticky notes later.",
+      "Every detail becomes part of Timeline, reports, and household handoffs.",
+    ],
   };
 }
 

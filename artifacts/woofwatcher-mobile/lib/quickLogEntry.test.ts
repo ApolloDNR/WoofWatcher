@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildQuickLogEntry,
+  describeQuickLogDetailSheet,
   describeQuickLogLauncherAction,
   getQuickLogPolicy,
   type QuickLogState,
@@ -292,4 +293,28 @@ test("launcher presentation distinguishes quick tap logs from detail-first logs"
 
   assert.equal(describeQuickLogLauncherAction("vomit", "Vomit").modeLabel, "Details");
   assert.equal(describeQuickLogLauncherAction("incident", "Incident").detailRequired, true);
+});
+
+test("detail sheet presentation explains quick logging, details, and safety boundaries", () => {
+  const meal = describeQuickLogDetailSheet("meal", "Meal");
+  assert.equal(meal.title, "Meal details");
+  assert.equal(meal.canQuickLog, true);
+  assert.equal(meal.primaryActionLabel, "Quick log now");
+  assert.equal(meal.secondaryActionLabel, "Open full details");
+  assert.match(meal.quickSummary, /serves the usual meal/i);
+  assert.ok(meal.detailChecklist.some((item) => item.includes("served -> outcome")));
+  assert.ok(meal.detailChecklist.some((item) => item.includes("Ate all")));
+
+  const potty = describeQuickLogDetailSheet("potty", "Potty");
+  assert.equal(potty.canQuickLog, true);
+  assert.match(potty.quickSummary, /bathroom attempt/i);
+  assert.ok(potty.detailChecklist.some((item) => item.includes("Potty stays the parent")));
+  assert.ok(potty.detailChecklist.some((item) => item.includes("Pee, poop, both")));
+
+  const medication = describeQuickLogDetailSheet("medication", "Medication");
+  assert.equal(medication.canQuickLog, false);
+  assert.equal(medication.primaryActionLabel, "Open full details");
+  assert.equal(medication.secondaryActionLabel, "Cancel");
+  assert.match(medication.safetyBoundary ?? "", /requires context/i);
+  assert.ok(medication.detailChecklist.some((item) => item.includes("dose")));
 });

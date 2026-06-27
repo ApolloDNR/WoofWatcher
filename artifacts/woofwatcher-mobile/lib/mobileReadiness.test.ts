@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, relative } from "node:path";
+import { describeQuickLogDetailSheet } from "./quickLogEntry.ts";
 
 const APP_DIR = join(process.cwd(), "artifacts", "woofwatcher-mobile", "app");
 const MOBILE_LIB_DIR = join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib");
@@ -849,11 +850,23 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.match(log, /moodTone/);
   assert.match(log, /flexBasis: "47\.5%"/);
   assert.match(log, /buildQuickLogEntry/);
+  assert.match(log, /describeQuickLogDetailSheet/);
   assert.match(log, /describeQuickLogLauncherAction/);
   assert.match(log, /getQuickLogPolicy/);
   assert.match(log, /handleQuickLauncherAction/);
-  assert.match(log, /openDetailedLauncherAction/);
-  assert.match(log, /onLongPress=\{\(\) => openDetailedLauncherAction\(action\)\}/);
+  assert.match(log, /launcherDetailAction/);
+  assert.match(log, /launcherDetailPresentation/);
+  assert.match(log, /openLauncherDetailSheet/);
+  assert.match(log, /focusFullComposerForLauncherAction/);
+  assert.match(log, /onLongPress=\{\(\) => openLauncherDetailSheet\(action\)\}/);
+  assert.match(log, /QUICK LOG FLOW/);
+  const mealDetailSheet = describeQuickLogDetailSheet("meal", "Meal");
+  const medicationDetailSheet = describeQuickLogDetailSheet("medication", "Meds");
+  assert.equal(mealDetailSheet.primaryActionLabel, "Quick log now");
+  assert.equal(mealDetailSheet.secondaryActionLabel, "Open full details");
+  assert.equal(mealDetailSheet.canQuickLog, true);
+  assert.equal(medicationDetailSheet.primaryActionLabel, "Open full details");
+  assert.equal(medicationDetailSheet.canQuickLog, false);
   assert.match(log, /launcherPresentation\.accessibilityLabel/);
   assert.match(log, /launcherPresentation\.feedbackHint/);
   assert.match(log, /launcherPresentation\.modeLabel/);
@@ -874,6 +887,8 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
     "mealOutcomeButton",
     "pottyOptionButton",
     "pottySaveButton",
+    "launcherDetailPrimary",
+    "launcherDetailSecondary",
   ]) {
     assertStyleUsesSharedTouchTarget(log, styleName);
   }
