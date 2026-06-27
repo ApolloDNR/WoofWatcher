@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-27: Setup Household Handoff Clears After The Owner Acts
+
+Decision: More should treat the `setupHandoff` route param as initial context, render the setup next-step card through local visible-handoff state, and hide the card after the owner shares the invite or opens the invite-code modal.
+
+Reason: The handoff card should make the next action obvious, but leaving it visible after the owner takes that action makes onboarding feel unfinished and can imply a provider-backed task is still pending. Clearing it locally preserves truthful routing to the existing household tools without adding invite approval, cloud onboarding, arbitrary membership changes, or new backend state.
+
+Owner: Codex.
+
+Revisit trigger: Full auth-connected onboarding, invite approval, multi-household setup, provider-backed sync administration, or a native onboarding completion state becomes active release work.
+
 ### 2026-06-27: Setup Household Handoff Lands In More With Intent
 
 Decision: When the owner chooses Share invite or Join pack in first-run Setup, the Open More action should pass a setup handoff intent into More. More should show a setup next-step card that routes to the existing invite share action or invite-code modal, while keeping invite approval, arbitrary membership lookup, cloud onboarding, and final provider-backed administration gated.

@@ -207,6 +207,9 @@ export default function MoreScreen() {
     : routeParams.setupHandoff;
   const setupHandoffIntent: SetupHandoffIntent | null =
     setupHandoffValue === "start_pack" || setupHandoffValue === "join_pack" ? setupHandoffValue : null;
+  const [completedSetupHandoffIntent, setCompletedSetupHandoffIntent] = useState<SetupHandoffIntent | null>(null);
+  const visibleSetupHandoffIntent =
+    setupHandoffIntent && setupHandoffIntent !== completedSetupHandoffIntent ? setupHandoffIntent : null;
   const [selectedAuditAction, setSelectedAuditAction] = useState<(typeof AUDIT_ACTION_FILTERS)[number]["value"]>("all");
   const [selectedAuditLifecycle, setSelectedAuditLifecycle] = useState<(typeof AUDIT_LIFECYCLE_FILTERS)[number]["value"]>("all");
   const householdAudit = useListHouseholdAuditEvents(
@@ -423,6 +426,7 @@ export default function MoreScreen() {
   };
 
   const refreshMe = () => queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+  const completeSetupHandoff = (intent: SetupHandoffIntent) => setCompletedSetupHandoffIntent(intent);
 
   const shareInvite = () => {
     if (!household) return;
@@ -1027,12 +1031,12 @@ export default function MoreScreen() {
           </Pressable>
 
           {/* Care Team / Household */}
-          {setupHandoffIntent && (
+          {visibleSetupHandoffIntent && (
             <BoardCard style={[s.setupHandoffCard, { borderColor: colors.primary + "44" }]}>
               <View style={s.setupHandoffTop}>
                 <View style={[s.setupHandoffIcon, { backgroundColor: colors.primary + "18" }]}>
                   <Ionicons
-                    name={setupHandoffIntent === "start_pack" ? "person-add-outline" : "enter-outline"}
+                    name={visibleSetupHandoffIntent === "start_pack" ? "person-add-outline" : "enter-outline"}
                     size={20}
                     color={colors.primary}
                   />
@@ -1042,24 +1046,27 @@ export default function MoreScreen() {
                     Setup next step
                   </Text>
                   <Text style={[s.setupHandoffTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {setupHandoffIntent === "start_pack"
+                    {visibleSetupHandoffIntent === "start_pack"
                       ? "Share this pack when ready"
-                      : setupHandoffIntent === "join_pack"
+                      : visibleSetupHandoffIntent === "join_pack"
                         ? "Join the owner's pack"
                         : "Household next step"}
                   </Text>
                   <Text style={[s.setupHandoffCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {setupHandoffIntent === "start_pack"
+                    {visibleSetupHandoffIntent === "start_pack"
                       ? "Setup saved the dog care foundation. Share the owner/admin invite code here, then review Household Access before another caregiver logs care."
-                      : setupHandoffIntent === "join_pack"
+                      : visibleSetupHandoffIntent === "join_pack"
                         ? "Setup saved the dog care foundation. Enter the invite code from the pack owner here; WoofWatcher will only join a real synced household when the code matches."
                         : "Setup saved the dog care foundation. More keeps invite, join, sync health, and switching controls in the real household surface."}
                   </Text>
                 </View>
               </View>
-              {setupHandoffIntent === "start_pack" ? (
+              {visibleSetupHandoffIntent === "start_pack" ? (
                 <Pressable
-                  onPress={shareInvite}
+                  onPress={() => {
+                    completeSetupHandoff("start_pack");
+                    shareInvite();
+                  }}
                   disabled={!householdAccess.canShareInvite}
                   accessibilityRole="button"
                   accessibilityLabel="Share invite from setup handoff"
@@ -1079,6 +1086,7 @@ export default function MoreScreen() {
                 <Pressable
                   onPress={() => {
                     Haptics.selectionAsync();
+                    completeSetupHandoff("join_pack");
                     setJoinCode("");
                     setJoinOpen(true);
                   }}

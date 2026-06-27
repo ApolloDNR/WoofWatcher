@@ -47,6 +47,7 @@ Passing evidence:
 - Setup confirmation now reads the active household context from `/me` when available, names the active pack, and tells multi-household caregivers to manage invite, sync, and switching for their packs in More while clarifying setup only saved the care foundation.
 - Setup now captures household sync intent as Share invite, Join pack, or Decide later before saving the care foundation, and routes invite/join/sync/switching next steps to the real More household tools instead of pretending setup itself completed provider-backed household administration.
 - Setup-to-More handoff is now intent-aware. Share invite and Join pack setup choices land in More with a visible next-step card and accessible actions for the existing invite share or invite-code join modal, while provider-backed invite approval, arbitrary membership changes, and cloud onboarding remain gated.
+- The setup-to-More handoff now clears after the owner takes the handoff action, so Share invite and Join pack prompts do not linger as stale onboarding tasks after the existing invite share or invite-code modal is opened.
 - Log entries have a detail sheet with sticky notes, audit trail history, sync/error visibility, edit/delete actions, and shareable handoff text.
 - Server-backed care-entry deletes create a retained non-health household audit note with the deleted-entry snapshot, and mobile Log avoids duplicate local audit notes when the server already retained the delete audit.
 - Log exposes a durable Offline Outbox banner for local, pending, and failed care-entry changes with retryable create/update counts and a Retry sync action.
@@ -81,7 +82,7 @@ Passing evidence:
 
 Current gaps:
 
-- Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists and now confirms saved setup context plus household sync intent before returning to Today or More, but auth-connected account provisioning, invite approval, and richer multi-household management remain incomplete.
+- Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists and now confirms saved setup context plus household sync intent before returning to Today or More, and the More handoff clears once the owner opens the real invite/join tool, but auth-connected account provisioning, invite approval, and richer multi-household management remain incomplete.
 - Multiple dogs, broader provider-backed role enforcement, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
 - Runtime smoke has not been added.
 

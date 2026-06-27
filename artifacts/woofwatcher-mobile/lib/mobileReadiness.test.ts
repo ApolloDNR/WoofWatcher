@@ -180,8 +180,13 @@ test("keeps onboarding and avatar creation actions accessible to screen readers"
   assert.match(more, /useLocalSearchParams<\{ setupHandoff\?: string \| string\[\] \}>/);
   assert.match(more, /setupHandoffIntent/);
   assert.match(more, /Setup next step/);
-  assert.match(more, /setupHandoffIntent === "start_pack"/);
-  assert.match(more, /setupHandoffIntent === "join_pack"/);
+  assert.match(more, /visibleSetupHandoffIntent === "start_pack"/);
+  assert.match(more, /visibleSetupHandoffIntent === "join_pack"/);
+  assert.match(more, /completedSetupHandoffIntent/);
+  assert.match(more, /visibleSetupHandoffIntent/);
+  assert.match(more, /completeSetupHandoff/);
+  assert.match(more, /completeSetupHandoff\("start_pack"\)/);
+  assert.match(more, /completeSetupHandoff\("join_pack"\)/);
   assert.match(more, /accessibilityLabel="Share invite from setup handoff"/);
   assert.match(more, /accessibilityLabel="Enter invite code from setup handoff"/);
   assert.match(setup, /accessibilityLabel="Finish setup later"/);
