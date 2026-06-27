@@ -1397,6 +1397,12 @@ This slice moves Avatar Studio from a prototype portrait screen into the first s
   reported no errors.
 - Diff whitespace:
   `git diff --check` passed with expected Windows CRLF warnings only.
+- GitHub Actions:
+  `gh workflow run verify.yml --repo ApolloDNR/WoofWatcher --ref automation/premium-revenue-product-builder`
+  created run `28283693471`, but GitHub did not start job `83803898312`
+  because recent account payments failed or the spending limit needs to be
+  increased. `gh run view --log-failed` returned `log not found:
+  83803898312`.
 
 ### Remaining Work
 
