@@ -2129,6 +2129,10 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(careTwinQaRoute, /buildMobileLaunchQaFocusedTarget/);
   assert.match(careTwinQaRoute, /Focused QA Target/);
   assert.match(careTwinQaRoute, /focusedQaTarget\.target\.missingEvidence/);
+  assert.match(careTwinQaRoute, /focusedQaEvidence/);
+  assert.match(careTwinQaRoute, /title="Focused screenshot proof"/);
+  assert.match(careTwinQaRoute, /label=\{`\$\{focusedQaEvidence\.length\} focused`\}/);
+  assert.match(careTwinQaRoute, /evidence=\{focusedQaEvidence\}/);
   assert.match(careTwinQaRoute, /Attach focused QA proof/);
   assert.match(careTwinQaRoute, /focusedQaTarget\.target\.status === "needs-review"/);
   assert.match(careTwinQaRoute, /accessibilityLabel=\{`Share focused Needs tune fix brief:/);

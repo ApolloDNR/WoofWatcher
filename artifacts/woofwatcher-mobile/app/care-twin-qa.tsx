@@ -367,6 +367,7 @@ export default function CareTwinQaScreen() {
         ? colors.amber
         : colors.copper
     : colors.mutedForeground;
+  const focusedQaEvidence = focusedQaTarget ? surfaceEvidenceById[focusedQaTarget.target.surfaceId] ?? [] : [];
   const nextBetaTarget = betaCapturePlan.nextTargets[0];
   const nextBetaTargetMissingEvidence = nextBetaTarget?.missingEvidence ?? [];
   const nextBetaTargetHasMissingEvidence = nextBetaTargetMissingEvidence.length > 0;
@@ -629,6 +630,22 @@ export default function CareTwinQaScreen() {
                     </View>
                   ))}
                 </View>
+                <EvidenceCapture
+                  title="Focused screenshot proof"
+                  label={`${focusedQaEvidence.length} focused`}
+                  evidence={focusedQaEvidence}
+                  targetPlatformLabel={selectedEvidencePlatformLabel}
+                  attachLabel="Attach focused proof"
+                  attachAccessibilityLabel={`Attach focused QA proof for ${focusedQaTarget.target.title}`}
+                  clearAccessibilityLabel={`Clear focused QA proof for ${focusedQaTarget.target.title}`}
+                  onAttach={() => attachSurfaceScreenshot(focusedQaTarget.surface)}
+                  onClear={() =>
+                    setSurfaceEvidenceById((current) => ({
+                      ...current,
+                      [focusedQaTarget.target.surfaceId]: [],
+                    }))
+                  }
+                />
                 <VerificationStepList colors={colors} label="Setup first" steps={focusedQaTarget.target.setupSteps.slice(0, 2)} />
                 <VerificationStepList colors={colors} label="Verify on device" steps={focusedQaTarget.target.verificationSteps.slice(0, 2)} />
                 <VerificationStepList colors={colors} label="Pass when" steps={focusedQaTarget.target.acceptanceCriteria.slice(0, 2)} />
@@ -1732,15 +1749,23 @@ function ReviewButton({
 }
 
 function EvidenceCapture({
+  attachAccessibilityLabel = "Attach QA screenshot from Photos",
+  attachLabel = "Attach screenshot",
+  clearAccessibilityLabel = "Clear attached QA screenshots",
   evidence,
   label,
   targetPlatformLabel,
+  title = "Screenshot evidence",
   onAttach,
   onClear,
 }: {
+  attachAccessibilityLabel?: string;
+  attachLabel?: string;
+  clearAccessibilityLabel?: string;
   evidence: readonly QaScreenshotEvidence[];
   label: string;
   targetPlatformLabel: string;
+  title?: string;
   onAttach: () => void;
   onClear: () => void;
 }) {
@@ -1751,7 +1776,7 @@ function EvidenceCapture({
         <View style={s.evidenceCaptureTitleRow}>
           <Ionicons name="images-outline" size={16} color={colors.copper} />
           <Text style={[s.evidenceCaptureTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-            Screenshot evidence
+            {title}
           </Text>
         </View>
         <QaBadge label={label} tone={evidence.length ? colors.sage : colors.amber} />
@@ -1777,7 +1802,7 @@ function EvidenceCapture({
       <View style={s.evidenceActions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Attach QA screenshot from Photos"
+          accessibilityLabel={attachAccessibilityLabel}
           onPress={onAttach}
           style={({ pressed }) => [
             s.attachButton,
@@ -1788,12 +1813,12 @@ function EvidenceCapture({
           ]}
         >
           <Ionicons name="camera-outline" size={16} color={colors.copper} />
-          <Text style={[s.attachButtonText, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>Attach screenshot</Text>
+          <Text style={[s.attachButtonText, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>{attachLabel}</Text>
         </Pressable>
         {evidence.length ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Clear attached QA screenshots"
+            accessibilityLabel={clearAccessibilityLabel}
             onPress={onClear}
             style={({ pressed }) => [
               s.clearEvidenceButton,
