@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -81,6 +81,8 @@ const AUDIT_LIFECYCLE_FILTERS = [
   { label: "Active", value: "active" },
   { label: "Retained", value: "retained" },
 ] as const;
+
+type SetupHandoffIntent = "start_pack" | "join_pack";
 
 function auditEventLabel(event: HouseholdAuditEvent): string {
   switch (event.action) {
@@ -182,6 +184,7 @@ export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const routeParams = useLocalSearchParams<{ setupHandoff?: string | string[] }>();
   const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
   const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
   const centeredModalBackdropPadding = getCenteredModalBackdropPadding(insets.top, insets.bottom);
@@ -199,6 +202,11 @@ export default function MoreScreen() {
   const updateMe = useUpdateMe();
 
   const household = me.data?.household;
+  const setupHandoffValue = Array.isArray(routeParams.setupHandoff)
+    ? routeParams.setupHandoff[0]
+    : routeParams.setupHandoff;
+  const setupHandoffIntent: SetupHandoffIntent | null =
+    setupHandoffValue === "start_pack" || setupHandoffValue === "join_pack" ? setupHandoffValue : null;
   const [selectedAuditAction, setSelectedAuditAction] = useState<(typeof AUDIT_ACTION_FILTERS)[number]["value"]>("all");
   const [selectedAuditLifecycle, setSelectedAuditLifecycle] = useState<(typeof AUDIT_LIFECYCLE_FILTERS)[number]["value"]>("all");
   const householdAudit = useListHouseholdAuditEvents(
@@ -1019,6 +1027,72 @@ export default function MoreScreen() {
           </Pressable>
 
           {/* Care Team / Household */}
+          {setupHandoffIntent && (
+            <BoardCard style={[s.setupHandoffCard, { borderColor: colors.primary + "44" }]}>
+              <View style={s.setupHandoffTop}>
+                <View style={[s.setupHandoffIcon, { backgroundColor: colors.primary + "18" }]}>
+                  <Ionicons
+                    name={setupHandoffIntent === "start_pack" ? "person-add-outline" : "enter-outline"}
+                    size={20}
+                    color={colors.primary}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.setupHandoffKicker, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    Setup next step
+                  </Text>
+                  <Text style={[s.setupHandoffTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {setupHandoffIntent === "start_pack"
+                      ? "Share this pack when ready"
+                      : setupHandoffIntent === "join_pack"
+                        ? "Join the owner's pack"
+                        : "Household next step"}
+                  </Text>
+                  <Text style={[s.setupHandoffCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {setupHandoffIntent === "start_pack"
+                      ? "Setup saved the dog care foundation. Share the owner/admin invite code here, then review Household Access before another caregiver logs care."
+                      : setupHandoffIntent === "join_pack"
+                        ? "Setup saved the dog care foundation. Enter the invite code from the pack owner here; WoofWatcher will only join a real synced household when the code matches."
+                        : "Setup saved the dog care foundation. More keeps invite, join, sync health, and switching controls in the real household surface."}
+                  </Text>
+                </View>
+              </View>
+              {setupHandoffIntent === "start_pack" ? (
+                <Pressable
+                  onPress={shareInvite}
+                  disabled={!householdAccess.canShareInvite}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share invite from setup handoff"
+                  accessibilityState={{ disabled: !householdAccess.canShareInvite }}
+                  style={({ pressed }) => [
+                    s.setupHandoffAction,
+                    {
+                      backgroundColor: householdAccess.canShareInvite ? colors.primary : colors.border,
+                      opacity: pressed ? 0.82 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons name="share-outline" size={16} color="#fff" />
+                  <Text style={[s.setupHandoffActionText, { fontFamily: "Inter_700Bold" }]}>Share invite</Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setJoinCode("");
+                    setJoinOpen(true);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Enter invite code from setup handoff"
+                  style={({ pressed }) => [s.setupHandoffAction, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}
+                >
+                  <Ionicons name="key-outline" size={16} color="#fff" />
+                  <Text style={[s.setupHandoffActionText, { fontFamily: "Inter_700Bold" }]}>Enter invite code</Text>
+                </Pressable>
+              )}
+            </BoardCard>
+          )}
+
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader
               title="Care Team"
@@ -2072,6 +2146,22 @@ const s = StyleSheet.create({
   sectionLink: { fontSize: 14 },
   moreBoardCard: { marginTop: 14 },
   boardDivider: { borderTopWidth: 1, marginTop: 14 },
+  setupHandoffCard: { marginTop: 14 },
+  setupHandoffTop: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  setupHandoffIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  setupHandoffKicker: { fontSize: 10.5, letterSpacing: 0.5, textTransform: "uppercase" },
+  setupHandoffTitle: { fontSize: 16, marginTop: 2 },
+  setupHandoffCopy: { fontSize: 12.5, lineHeight: 18, marginTop: 3 },
+  setupHandoffAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 13,
+  },
+  setupHandoffActionText: { color: "#FFFFFF", fontSize: 13.5 },
 
   launchBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
   launchBadgeText: { fontSize: 9.5, letterSpacing: 0.5 },

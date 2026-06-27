@@ -202,6 +202,8 @@ Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the
 
 Current evidence, 2026-06-26: Mobile Setup now shows a post-save care-foundation confirmation before returning to Today. The confirmation summarizes the saved dog, starter routine, caregiver, and diet baseline, states that Today, Log, Records, reports, and WoofGuide will use the context, and keeps household invite/sync controls truthfully in More instead of implying provider-backed onboarding is complete.
 
+Current evidence, 2026-06-27: Mobile Setup now passes Share invite or Join pack handoff intent into More. More renders a setup next-step card with accessible actions for the existing owner/admin invite share path or invite-code join modal, while provider-backed invite approval, cloud onboarding, and arbitrary membership changes remain gated.
+
 ## Gate 5: Health Safety
 
 Passing means health features organize patterns without diagnosis. Urgent red flags direct users to veterinary care. WoofGuide stays bounded.

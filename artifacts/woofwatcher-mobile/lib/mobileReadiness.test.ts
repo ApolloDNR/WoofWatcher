@@ -151,6 +151,7 @@ test("keeps onboarding and avatar creation actions accessible to screen readers"
   );
   const setup = readAppFile("setup.tsx");
   const avatarStudio = readAppFile("portrait.tsx");
+  const more = readAppFile(join("(tabs)", "more.tsx"));
 
   assert.match(authUi, /accessibilityRole="button"[\s\S]*accessibilityLabel=\{label\}/);
   assert.match(authUi, /accessibilityState=\{\{ disabled: isDisabled, busy: Boolean\(loading\) \}\}/);
@@ -173,9 +174,16 @@ test("keeps onboarding and avatar creation actions accessible to screen readers"
   assert.match(setup, /Alert\.alert\(confirmation\.title/);
   assert.match(setup, /Go to Today/);
   assert.match(setup, /Open More/);
-  assert.match(setup, /router\.replace\("\/more"\)/);
+  assert.match(setup, /router\.replace\(\{ pathname: "\/more", params: \{ setupHandoff: draft\.householdSetupIntent \} \}\)/);
   assert.match(setup, /Household sync choice/);
   assert.match(setup, /Household setup choice: \$\{option\.label\}/);
+  assert.match(more, /useLocalSearchParams<\{ setupHandoff\?: string \| string\[\] \}>/);
+  assert.match(more, /setupHandoffIntent/);
+  assert.match(more, /Setup next step/);
+  assert.match(more, /setupHandoffIntent === "start_pack"/);
+  assert.match(more, /setupHandoffIntent === "join_pack"/);
+  assert.match(more, /accessibilityLabel="Share invite from setup handoff"/);
+  assert.match(more, /accessibilityLabel="Enter invite code from setup handoff"/);
   assert.match(setup, /accessibilityLabel="Finish setup later"/);
   assert.match(avatarStudio, /accessibilityLabel="Reset avatar draft"/);
   assert.match(avatarStudio, /accessibilityLabel="Save avatar configuration"/);

@@ -118,7 +118,7 @@ export default function SetupScreen() {
         ? [{ text: "Go to Today", onPress: () => router.replace("/(tabs)") }]
         : [
             { text: "Go to Today", style: "cancel" as const, onPress: () => router.replace("/(tabs)") },
-            { text: "Open More", onPress: () => router.replace("/more") },
+            { text: "Open More", onPress: () => router.replace({ pathname: "/more", params: { setupHandoff: draft.householdSetupIntent } }) },
           ];
     updateCareDoc(() => savedDoc);
     Alert.alert(confirmation.title, `${confirmation.body}\n\n${confirmation.nextStep}`, alertActions);

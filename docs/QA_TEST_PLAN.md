@@ -39,6 +39,7 @@ Latest local evidence, 2026-06-22:
 - PASS: Setup wizard tests now protect household sync intent in the post-save confirmation. Share invite, Join pack, and Decide later each keep actual invite/join/sync/switching work routed to More without claiming invite approval, membership join, or cloud onboarding completion.
 - PASS: Mobile readiness now protects Setup from regressing to a silent redirect or context-free confirmation after save by requiring the `/me` household context, expanded `buildSetupConfirmation(savedDoc, ...)`, and `Alert.alert(...)` path before the owner returns to Today.
 - PASS: Mobile readiness now protects Setup's accessible household sync choice section, the `householdSetupIntent` confirmation context, and the Open More route for invite/join next steps.
+- PASS: Mobile readiness now protects the setup-to-More household handoff. Share invite and Join pack setup choices pass a `setupHandoff` route param into More, and More renders a truthful setup next-step card with accessible actions for sharing the real owner/admin invite or opening the invite-code join modal.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -127,6 +128,7 @@ Latest local evidence, 2026-06-22:
 - WoofGuide deterministic actions and owner-reviewed draft payloads for meal logs, record reminders, vet notes, and Care Pass review.
 - Setup wizard.
 - Setup household sync intent routing for Share invite, Join pack, and Decide later, including truthful More handoff copy before provider-backed onboarding is complete.
+- Setup-to-More household handoff routing, including `setupHandoff` route params, visible More next-step copy, accessible share-invite and invite-code actions, and no claims that invite approval or cloud onboarding completed.
 - Premium plan packaging and checkout-disabled guard.
 - Premium entitlement policy for Free, Plus, and Family feature gates before checkout is enabled.
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.

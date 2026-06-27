@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-27: Setup Household Handoff Lands In More With Intent
+
+Decision: When the owner chooses Share invite or Join pack in first-run Setup, the Open More action should pass a setup handoff intent into More. More should show a setup next-step card that routes to the existing invite share action or invite-code modal, while keeping invite approval, arbitrary membership lookup, cloud onboarding, and final provider-backed administration gated.
+
+Reason: Setup already captures household intent, but a generic jump to More makes owners hunt for the correct household tool. An intent-aware handoff makes the next action obvious without inventing new provider-backed onboarding behavior or overstating sync readiness.
+
+Owner: Codex.
+
+Revisit trigger: Full auth-connected onboarding, invite approval, multi-household setup, provider-backed sync administration, or a native onboarding completion flow becomes active release work.
+
 ### 2026-06-26: Setup Captures Household Sync Intent Without Completing Admin Work
 
 Decision: Mobile first-run Setup should let the owner choose Share invite, Join pack, or Decide later after entering the dog care foundation. The choice should shape the post-save confirmation and whether the alert offers Open More, but actual invite sharing, invite-code joining, sync health, and household switching remain in More.
