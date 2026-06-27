@@ -1077,6 +1077,18 @@ readiness check, the 440-test focused contract suite, mobile TypeScript,
 PixelLab asset verification at 149 files, Expo web export to `.expo-smoke`, root
 route `HEAD 200`, focused QA route `HEAD 200`, and `git diff --check`.
 
+The focused target checklist pass added a source-backed share action for phone
+QA and handoff work. `buildMobileLaunchQaFocusedTargetShareText` now packages
+the active focused target into a checklist with the focused cockpit URL, target
+route, missing proof, attached proof count, setup, verification, pass criteria,
+Needs tune rule, optional owner route loop, and the App Store/Play Store
+approval boundary. The focused `/care-twin-qa?qaSurface=...` card now shows
+`Share target checklist` next to the attach/open route controls so Apollo,
+Fable, Replit, or a device tester can get the exact task before capturing iOS or
+Android screenshots. Red/green verification first failed on the missing
+export/action, then passed focused mobile launch QA/mobile readiness with 97/97
+tests.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

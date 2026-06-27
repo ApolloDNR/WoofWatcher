@@ -46,6 +46,7 @@ import {
   buildMobileLaunchQaCaptureShareText,
   buildMobileLaunchQaFixBriefShareText,
   buildMobileLaunchQaFocusedTarget,
+  buildMobileLaunchQaFocusedTargetShareText,
 } from "@/lib/mobileLaunchQaEvidence";
 import {
   deriveCareTwinChoreography,
@@ -528,6 +529,20 @@ export default function CareTwinQaScreen() {
     }
   };
 
+  const shareFocusedTargetChecklist = async () => {
+    const generatedAtIso = new Date().toISOString();
+    const message = buildMobileLaunchQaFocusedTargetShareText(focusedQaTarget, generatedAtIso);
+
+    try {
+      await Share.share({
+        title: "WoofWatcher Focused QA Target",
+        message,
+      });
+    } catch {
+      Alert.alert("Focused QA Target", message);
+    }
+  };
+
   const shareFocusedFixBrief = async () => {
     const generatedAtIso = new Date().toISOString();
     const message = buildMobileLaunchQaFixBriefShareText(betaCapturePlan, generatedAtIso);
@@ -723,6 +738,23 @@ export default function CareTwinQaScreen() {
                     <Ionicons name="open-outline" size={17} color={colors.sage} />
                     <Text style={[s.betaRunMissionReviewText, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
                       Open route
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Share focused QA target checklist: ${focusedQaTarget.target.title}`}
+                    onPress={shareFocusedTargetChecklist}
+                    style={({ pressed }) => [
+                      s.betaRunSecondary,
+                      {
+                        backgroundColor: pressed ? `${colors.brandNavy}12` : colors.background,
+                        borderColor: `${colors.brandNavy}44`,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="list-outline" size={16} color={colors.brandNavy} />
+                    <Text style={[s.betaRunSecondaryText, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                      Share target checklist
                     </Text>
                   </Pressable>
                   {focusedQaTarget.target.status === "needs-review" ? (

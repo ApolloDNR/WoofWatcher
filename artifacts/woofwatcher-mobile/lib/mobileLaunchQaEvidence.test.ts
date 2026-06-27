@@ -6,6 +6,7 @@ import {
   buildMobileLaunchQaCaptureShareText,
   buildMobileLaunchQaCapturePlan,
   buildMobileLaunchQaFocusedTarget,
+  buildMobileLaunchQaFocusedTargetShareText,
   deriveNativeQaSummaryFromMobileQaSession,
   listMobileLaunchQaSurfaces,
   mobileLaunchQaCaptureTargetStatusLabel,
@@ -373,6 +374,44 @@ test("builds a focused QA target for deep-linked launch readiness rows", () => {
   ]);
   assert.match(focused.target.missingEvidence.join(" "), /Attach 1 iOS screenshot for Store: Health Watch/);
   assert.equal(buildMobileLaunchQaFocusedTarget(null, "missing-surface", surfaces), null);
+});
+
+test("builds a focused target checklist for phone and handoff QA", () => {
+  const focused = buildMobileLaunchQaFocusedTarget(null, "store-health-watch", [
+    {
+      id: "store-health-watch",
+      title: "Store: Health Watch",
+      route: "/health",
+      priority: "release-polish",
+      goal: "Capture store-ready Health Watch evidence.",
+      devicePrompt: "Capture Review packet and Vet-share checklist.",
+      setupSteps: ["Open Health and keep Review packet visible before capturing the store screenshot."],
+      verificationSteps: ["Confirm the Review packet is visible with the Vet-share checklist."],
+      acceptanceCriteria: ["Health Review Packet shows owner prompts, vet-share checklist, and Not veterinary advice boundary."],
+      failureEscalation: "Mark Needs tune if Health Watch hides the Review packet.",
+      requiredEvidence: [
+        "iOS screenshot for store packet: Health Watch.",
+        "Android screenshot for store packet: Health Watch.",
+        "Health Watch Review packet with Vet-share checklist and Draft vet questions visible.",
+      ],
+      launchRisk: "If Health Watch is missing, the store listing lacks truthful health-workflow proof.",
+    },
+  ]);
+
+  assert.ok(focused);
+
+  const text = buildMobileLaunchQaFocusedTargetShareText(focused, "2026-06-27T10:00:00.000Z");
+
+  assert.match(text, /WoofWatcher Focused QA Target/);
+  assert.match(text, /Generated: 2026-06-27T10:00:00.000Z/);
+  assert.match(text, /Target: Store: Health Watch/);
+  assert.match(text, /Focused cockpit: \/care-twin-qa\?qaSurface=store-health-watch/);
+  assert.match(text, /Open route: \/health/);
+  assert.match(text, /Proof needed: Attach 1 iOS screenshot for Store: Health Watch\./);
+  assert.match(text, /Attached proof: 0 screenshot/);
+  assert.match(text, /Pass when: Health Review Packet shows owner prompts/);
+  assert.match(text, /After capture: return to \/care-twin-qa\?qaSurface=store-health-watch/);
+  assert.match(text, /Keep App Store\/Play Store approval separate/);
 });
 
 test("preserves owner preview route-loop details in the capture plan and share script", () => {

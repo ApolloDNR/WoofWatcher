@@ -2120,9 +2120,12 @@ test("feeds saved native QA session proof into More launch readiness", () => {
 
   assert.match(careTwinQaRoute, /buildMobileLaunchQaCaptureShareText/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaFixBriefShareText/);
+  assert.match(careTwinQaRoute, /buildMobileLaunchQaFocusedTargetShareText/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaCaptureShareText\(betaCapturePlan,\s*reviewedAtIso\)/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaFixBriefShareText\(betaCapturePlan,\s*generatedAtIso\)/);
+  assert.match(careTwinQaRoute, /const shareFocusedTargetChecklist = async/);
   assert.match(careTwinQaRoute, /const shareFocusedFixBrief = async/);
+  assert.match(careTwinQaRoute, /title:\s*"WoofWatcher Focused QA Target"/);
   assert.match(careTwinQaRoute, /title:\s*"WoofWatcher Needs Tune Fix Brief"/);
   assert.match(careTwinQaRoute, /buildMobileReleaseQaShareText\(releaseQaSurfaces,\s*releaseReviews,\s*reviewedAtIso\)/);
   assert.match(careTwinQaRoute, /useLocalSearchParams/);
@@ -2134,6 +2137,8 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(careTwinQaRoute, /label=\{`\$\{focusedQaEvidence\.length\} focused`\}/);
   assert.match(careTwinQaRoute, /evidence=\{focusedQaEvidence\}/);
   assert.match(careTwinQaRoute, /Attach focused QA proof/);
+  assert.match(careTwinQaRoute, /Share target checklist/);
+  assert.match(careTwinQaRoute, /accessibilityLabel=\{`Share focused QA target checklist:/);
   assert.match(careTwinQaRoute, /focusedQaTarget\.target\.status === "needs-review"/);
   assert.match(careTwinQaRoute, /accessibilityLabel=\{`Share focused Needs tune fix brief:/);
   assert.match(careTwinQaRoute, /Share fix brief/);

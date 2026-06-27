@@ -348,6 +348,61 @@ export function buildMobileLaunchQaCapturePlan(
   };
 }
 
+export function buildMobileLaunchQaFocusedTargetShareText(
+  focused: MobileLaunchQaFocusedTarget | null | undefined,
+  generatedAtIso = new Date().toISOString(),
+): string {
+  const lines = ["WoofWatcher Focused QA Target", `Generated: ${generatedAtIso}`];
+
+  if (!focused) {
+    lines.push(
+      "",
+      "No focused QA target is active.",
+      "Open More > Launch Readiness or /care-twin-qa and choose the next proof target before sharing a focused checklist.",
+    );
+    return lines.join("\n");
+  }
+
+  const { surface, target, statusLabel } = focused;
+  const focusedRoute = `/care-twin-qa?qaSurface=${encodeURIComponent(target.surfaceId)}`;
+
+  lines.push(
+    "",
+    `Target: ${target.title}`,
+    `Focused cockpit: ${focusedRoute}`,
+    `Open route: ${target.route}`,
+    `Priority: ${target.priority}`,
+    `Status: ${statusLabel}`,
+    `Goal: ${surface.goal}`,
+    `Device prompt: ${surface.devicePrompt}`,
+    `Proof needed: ${target.missingEvidence.join(" ") || "No missing proof remains for this focused target."}`,
+    `Attached proof: ${pluralLabel(target.evidenceAttached, "screenshot")}.`,
+    `Setup: ${target.setupSteps.join(" ") || "Open the route from the current local beta state."}`,
+    `Verify: ${target.verificationSteps.join(" ") || "Review the route on a phone-sized iOS or Android surface."}`,
+  );
+
+  if (target.routeChecklist?.length) {
+    lines.push("", "Owner route loop:");
+    target.routeChecklist.forEach((routeCheck, index) => {
+      lines.push(
+        `${index + 1}. ${routeCheck.label} (${routeCheck.route}): ${routeCheck.expected}${
+          routeCheck.proof ? ` Proof: ${routeCheck.proof}` : ""
+        }`,
+      );
+    });
+  }
+
+  lines.push(
+    "",
+    `Pass when: ${target.acceptanceCriteria.join(" ") || "The focused route passes its acceptance criteria."}`,
+    `Needs tune if: ${target.failureEscalation}`,
+    `After capture: return to ${focusedRoute}, attach focused proof, save a note if needed, and mark Pass or Needs tune.`,
+    "Keep App Store/Play Store approval separate from this local beta QA evidence.",
+  );
+
+  return lines.join("\n");
+}
+
 export function buildMobileLaunchQaFixBriefShareText(
   plan: MobileLaunchQaCapturePlan,
   generatedAtIso = new Date().toISOString(),
