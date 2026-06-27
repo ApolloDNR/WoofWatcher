@@ -22,6 +22,7 @@ test("builds a truthful provider setup plan from a local launch profile", async 
   assert.equal(plan.status, "owner-reviewed");
   assert.equal(plan.readyCount, 1);
   assert.equal(plan.totalCount, 8);
+  assert.equal(plan.openCount, 7);
   assert.equal(plan.percent, 13);
   assert.match(plan.headline, /1\/8/i);
   assert.match(plan.summary, /production providers/i);
@@ -29,6 +30,8 @@ test("builds a truthful provider setup plan from a local launch profile", async 
   assert.ok(plan.rows.some((row) => row.key === "database" && /Supabase/i.test(row.nextAction)));
   assert.ok(plan.rows.some((row) => row.key === "database" && /RLS/i.test(row.proofRequired)));
   assert.ok(plan.rows.some((row) => row.key === "storage" && /signed upload/i.test(row.proofRequired)));
+  assert.equal(plan.nextGate?.key, "database");
+  assert.match(plan.nextGate?.proofRequired ?? "", /Supabase project id/);
   assert.ok(plan.blockers.some((blocker) => /household database/i.test(blocker)));
   assert.equal(plan.providerInput.authConfigured, true);
   assert.equal(plan.providerInput.databaseConfigured, false);
@@ -88,6 +91,10 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /Progress: 3\/8 ready \(38%\)/);
   assert.match(text, /Ready/);
   assert.match(text, /Open/);
+  assert.match(text, /Next Provider Gate/);
+  assert.match(text, /WoofGuide AI/);
+  assert.match(text, /Owner: Apollo \/ safety/);
+  assert.match(text, /Proof: AI provider key location/);
   assert.match(text, /Proof Needed/);
   assert.match(text, /Household database sync: Supabase project id/);
   assert.match(text, /Records and media storage: Storage bucket names/);
@@ -114,5 +121,32 @@ test("does not show provider-approved until every provider gate is ready", async
   assert.equal(plan.status, "owner-reviewed");
   assert.equal(plan.statusLabel, "Owner reviewed");
   assert.equal(plan.readyCount, 1);
+  assert.equal(plan.openCount, 7);
+  assert.equal(plan.nextGate?.key, "database");
   assert.ok(plan.blockers.length > 0);
+});
+
+test("clears the next provider gate only when every production provider is ready", async () => {
+  const mod = await import("./launchProviderSetup.ts").catch(() => null);
+  assert.ok(mod, "launchProviderSetup module should exist");
+
+  const plan = mod.deriveLaunchProviderSetup({
+    authConfigured: true,
+    databaseConfigured: true,
+    storageProviderConfigured: true,
+    aiProviderConfigured: true,
+    paymentsEnabled: true,
+    pushNotificationsConfigured: true,
+    appStoreAccountsReady: true,
+    accountDeletionEnabled: true,
+    providerStatus: "provider-approved",
+  });
+
+  assert.equal(plan.openCount, 0);
+  assert.equal(plan.nextGate, null);
+  assert.equal(plan.status, "provider-approved");
+
+  const text = mod.buildLaunchProviderSetupShareText(plan, "2026-06-21T10:00:00.000Z");
+  assert.match(text, /Next Provider Gate/);
+  assert.match(text, /All provider gates are ready for final owner review/);
 });

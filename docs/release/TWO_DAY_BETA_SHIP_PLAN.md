@@ -128,6 +128,10 @@ Current environment note:
   production provider gate in More and in the share packet: Clerk, Supabase/RLS,
   storage signed uploads, WoofGuide AI policy, payments, push, Apple/Google
   store accounts, and account deletion evidence.
+- Provider Launch Setup now also highlights the single `Next provider gate`
+  with owner/action/proof and prioritizes open rows before ready rows, so Apollo
+  or a helper can close real provider proof without guessing which gate comes
+  next.
 - The in-app `Share Beta Handoff` packet now includes that provider proof
   checklist too, so deadline helpers can use one packet for dependency proof,
   device proof, provider evidence, and launch truth boundaries.

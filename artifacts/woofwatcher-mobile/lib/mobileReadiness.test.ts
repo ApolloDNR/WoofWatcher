@@ -2040,8 +2040,14 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /launchStoreSubmissionPacket\.verdictLabel/);
   assert.match(more, /Store Submission/);
   assert.match(more, /Provider Launch Setup/);
+  assert.match(more, /providerSetupVisibleRows/);
+  assert.match(more, /launchProviderSetupPlan\.nextGate/);
+  assert.match(more, /Next provider gate/);
+  assert.match(more, /Provider gates ready for owner approval/);
   assert.match(more, /row\.proofRequired/);
   assert.match(more, /Proof needed/);
+  assert.match(more, /Owner: \{launchProviderSetupPlan\.nextGate\.owner\}/);
+  assert.match(more, /Proof: \{launchProviderSetupPlan\.nextGate\.proofRequired\}/);
   assert.match(more, /Edit Provider Plan/);
   assert.match(more, /Share Provider Plan/);
   assert.match(more, /PROVIDER_SETUP_FIELDS\.every\(\(field\) => normalized\[field\.key\]\)/);
@@ -2061,6 +2067,10 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /Share\.share\(\{ message: buildStoreSubmissionPacketShareText\(launchStoreSubmissionPacket\)/);
   assert.match(careContext, /launchProviderProfile/);
   assert.match(providerSetup, /Provider Launch Setup/);
+  assert.match(providerSetup, /nextGate/);
+  assert.match(providerSetup, /openCount/);
+  assert.match(providerSetup, /Next Provider Gate/);
+  assert.match(providerSetup, /All provider gates are ready for final owner review/);
   assert.match(providerSetup, /No App Store or Play Store submission is approved by this checklist/);
   assert.match(launchModel, /storageQueue/);
   assert.match(launchModel, /local file/);

@@ -1348,3 +1348,27 @@ Design intent:
   Phoenix's primary sprite rig.
 - Leave native `/care-twin-qa` as the final proof path for phone-size crop,
   jitter, and motion readability.
+
+## 2026-06-27 Provider Launch Setup Next-Gate Polish
+
+More's Launch Readiness provider panel now behaves more like an operator handoff
+instead of a passive checklist:
+
+- `deriveLaunchProviderSetup` exposes `openCount` and a source-backed
+  `nextGate`, so the UI and share packet agree on the next production provider
+  blocker.
+- The More panel highlights `Next provider gate` with owner, next action, and
+  proof required before the row list.
+- The visible provider rows prioritize open gates before ready gates, so a
+  partially configured setup does not hide later production blockers.
+- The share packet adds a `Next Provider Gate` section and still states that
+  provider setup is not App Store or Play Store approval.
+
+Design intent:
+
+- Make the launch cockpit clearer for Apollo and outside builders during the
+  two-day beta push.
+- Preserve the truthful boundary: Clerk, Supabase, storage, AI, payments, push,
+  store accounts, and deletion only become ready when real proof is entered.
+- Keep the provider panel compact and mobile-readable while making the next
+  action obvious.

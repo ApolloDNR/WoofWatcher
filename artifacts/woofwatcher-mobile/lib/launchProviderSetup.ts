@@ -45,11 +45,13 @@ export interface LaunchProviderSetupPlan {
   statusLabel: string;
   readyCount: number;
   totalCount: number;
+  openCount: number;
   percent: number;
   headline: string;
   summary: string;
   notes: string;
   rows: LaunchProviderSetupRow[];
+  nextGate: LaunchProviderSetupRow | null;
   blockers: string[];
   nextActions: string[];
   providerInput: Pick<
@@ -232,11 +234,12 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
 
   const readyCount = rows.filter((row) => row.status === "ready").length;
   const totalCount = rows.length;
+  const openRows = rows.filter((row) => row.status === "blocked");
+  const openCount = openRows.length;
   const percent = totalCount > 0 ? Math.round((readyCount / totalCount) * 100) : 0;
-  const blockers = rows
-    .filter((row) => row.status === "blocked")
-    .map((row) => `${row.label}: ${row.nextAction}`);
+  const blockers = openRows.map((row) => `${row.label}: ${row.nextAction}`);
   const nextActions = blockers.slice(0, 4);
+  const nextGate = openRows[0] ?? null;
   const allReady = readyCount === totalCount;
   const status =
     allReady && profile.providerStatus === "provider-approved"
@@ -251,6 +254,7 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
     statusLabel: statusLabel(status),
     readyCount,
     totalCount,
+    openCount,
     percent,
     headline: `${readyCount}/${totalCount} provider gates ready`,
     summary: allReady
@@ -258,6 +262,7 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
       : "Production providers still need setup before WoofWatcher can honestly move from local preview to public launch.",
     notes: profile.notes,
     rows,
+    nextGate,
     blockers,
     nextActions,
     providerInput: {
@@ -287,6 +292,14 @@ export function buildLaunchProviderSetupShareText(
 ): string {
   const readyRows = plan.rows.filter((row) => row.status === "ready");
   const openRows = plan.rows.filter((row) => row.status === "blocked");
+  const nextGateLines = plan.nextGate
+    ? [
+        `- ${plan.nextGate.label}`,
+        `  Owner: ${plan.nextGate.owner}`,
+        `  Action: ${plan.nextGate.nextAction}`,
+        `  Proof: ${plan.nextGate.proofRequired}`,
+      ]
+    : ["- All provider gates are ready for final owner review."];
 
   return [
     "WoofWatcher Provider Launch Setup",
@@ -302,6 +315,9 @@ export function buildLaunchProviderSetupShareText(
     "",
     "Open",
     ...(openRows.length ? formatRows(openRows) : ["- No provider gates are open."]),
+    "",
+    "Next Provider Gate",
+    ...nextGateLines,
     "",
     "Proof Needed",
     ...formatProofRows(plan.rows),

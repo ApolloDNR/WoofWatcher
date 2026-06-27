@@ -957,6 +957,10 @@ export default function MoreScreen() {
       : launchProviderSetupPlan.status === "owner-reviewed"
         ? colors.copper
         : colors.rose;
+  const providerSetupVisibleRows = useMemo(() => {
+    const openRows = launchProviderSetupPlan.rows.filter((row) => row.status === "blocked");
+    return (openRows.length ? openRows : launchProviderSetupPlan.rows).slice(0, 4);
+  }, [launchProviderSetupPlan.rows]);
 
   const openProviderSetup = () => {
     setProviderDraft(normalizeLaunchProviderProfile(state.launchProviderProfile));
@@ -1397,8 +1401,58 @@ export default function MoreScreen() {
                   </Text>
                 </View>
               </View>
+              {launchProviderSetupPlan.nextGate ? (
+                <View
+                  style={[
+                    s.providerNextGate,
+                    {
+                      backgroundColor: providerSetupTone + "10",
+                      borderColor: providerSetupTone + "30",
+                    },
+                  ]}
+                >
+                  <View style={s.providerNextGateHeader}>
+                    <Ionicons name="flag-outline" size={15} color={providerSetupTone} />
+                    <Text style={[s.providerNextGateKicker, { color: providerSetupTone, fontFamily: "Inter_800ExtraBold" }]}>
+                      Next provider gate
+                    </Text>
+                  </View>
+                  <Text style={[s.providerNextGateTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {launchProviderSetupPlan.nextGate.label}
+                  </Text>
+                  <Text style={[s.providerNextGateMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    Owner: {launchProviderSetupPlan.nextGate.owner}
+                  </Text>
+                  <Text style={[s.providerNextGateCopy, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                    {launchProviderSetupPlan.nextGate.nextAction}
+                  </Text>
+                  <Text style={[s.providerNextGateProof, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    Proof: {launchProviderSetupPlan.nextGate.proofRequired}
+                  </Text>
+                </View>
+              ) : (
+                <View
+                  style={[
+                    s.providerNextGate,
+                    {
+                      backgroundColor: colors.sage + "12",
+                      borderColor: colors.sage + "35",
+                    },
+                  ]}
+                >
+                  <View style={s.providerNextGateHeader}>
+                    <Ionicons name="checkmark-circle-outline" size={15} color={colors.sage} />
+                    <Text style={[s.providerNextGateKicker, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+                      Provider gates ready for owner approval
+                    </Text>
+                  </View>
+                  <Text style={[s.providerNextGateCopy, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    Run native QA, confirm legal/support/store approvals, and keep this as a final review state until Apollo approves submission.
+                  </Text>
+                </View>
+              )}
               <View style={s.providerSetupRows}>
-                {launchProviderSetupPlan.rows.slice(0, 4).map((row) => {
+                {providerSetupVisibleRows.map((row) => {
                   const rowTone = row.status === "ready" ? colors.sage : colors.amber;
                   return (
                     <View key={row.key} style={[s.providerSetupRow, { borderTopColor: colors.border }]}>
@@ -3157,6 +3211,19 @@ const s = StyleSheet.create({
   providerSetupTitle: { fontSize: 13.5, lineHeight: 18 },
   providerSetupSub: { fontSize: 11.2, lineHeight: 15, marginTop: 2 },
   providerSetupCopy: { fontSize: 11.2, lineHeight: 16, marginTop: 4 },
+  providerNextGate: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+    gap: 4,
+  },
+  providerNextGateHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
+  providerNextGateKicker: { fontSize: 9.3, lineHeight: 12, textTransform: "uppercase" },
+  providerNextGateTitle: { fontSize: 13, lineHeight: 17 },
+  providerNextGateMeta: { fontSize: 10.3, lineHeight: 14 },
+  providerNextGateCopy: { fontSize: 11, lineHeight: 15 },
+  providerNextGateProof: { fontSize: 10.2, lineHeight: 14 },
   providerSetupRows: { marginTop: 8 },
   providerSetupRow: {
     minHeight: 52,

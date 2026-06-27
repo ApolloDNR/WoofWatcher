@@ -1094,3 +1094,21 @@ Latest local evidence, 2026-06-27:
 - Verification passed `quickLogEntry.test.ts` 10/10, `mobileReadiness.test.ts`
   81/81, the 387-test behavior/readiness suite, PixelLab verifier
   `ok=149 missing=0 invalid=0`, Expo web export, and browser DOM smoke.
+
+## Provider Launch Setup Next-Gate Proof
+
+Latest local evidence, 2026-06-27:
+
+- Provider Launch Setup now derives `openCount` and `nextGate` from the same
+  source model used by Launch Readiness and share packets.
+- More must show `Next provider gate` with owner, next action, and proof
+  required when any production provider gate remains open.
+- When all provider gates are ready, More must show the owner-review state
+  instead of implying store approval.
+- The share packet must include `Next Provider Gate` and the final boundary:
+  provider setup is not App Store or Play Store approval.
+- Red/green proof first failed on the missing next-gate model/UI, then passed
+  `launchProviderSetup.test.ts` and `mobileReadiness.test.ts`.
+- Broader local proof passed the 402-test behavior/readiness suite, mobile
+  TypeScript, PixelLab verifier `ok=149 missing=0 invalid=0`, Expo web export
+  to `.expo-smoke`, preview root `HEAD 200`, and focused QA route `HEAD 200`.
