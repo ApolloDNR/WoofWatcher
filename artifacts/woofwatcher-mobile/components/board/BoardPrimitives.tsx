@@ -23,6 +23,10 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function buildQaReturnToCockpitRoute(qaSurface: string | undefined): string {
+  return qaSurface ? `/care-twin-qa?qaSurface=${encodeURIComponent(qaSurface)}` : "/care-twin-qa";
+}
+
 export function BoardRouteHeader({
   kicker,
   title,
@@ -134,7 +138,7 @@ export function BoardRouteHeader({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Return to QA Cockpit${qaTitle ? ` for ${qaTitle}` : ""}`}
-          onPress={() => router.push("/care-twin-qa" as never)}
+          onPress={() => router.push(buildQaReturnToCockpitRoute(qaSurface) as never)}
           style={({ pressed }) => [
             styles.qaReturnBanner,
             {

@@ -444,7 +444,9 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(boardPrimitives, /qaReturn === "care-twin-qa"/);
   assert.match(boardPrimitives, /Return to QA Cockpit/);
   assert.match(boardPrimitives, /Capture done\? Attach proof/);
-  assert.match(boardPrimitives, /router\.push\("\/care-twin-qa" as never\)/);
+  assert.match(boardPrimitives, /function buildQaReturnToCockpitRoute/);
+  assert.match(boardPrimitives, /qaSurface \? `\/care-twin-qa\?qaSurface=\$\{encodeURIComponent\(qaSurface\)\}` : "\/care-twin-qa"/);
+  assert.match(boardPrimitives, /router\.push\(buildQaReturnToCockpitRoute\(qaSurface\) as never\)/);
   assert.match(boardPrimitives, /qaReturnBanner/);
   assert.doesNotMatch(qaRoute, /releaseSummary\.missingScreenshots === 0 \? colors\.sage : colors\.amber/);
   assert.match(qaSession, /careTwinEvidenceById/);
