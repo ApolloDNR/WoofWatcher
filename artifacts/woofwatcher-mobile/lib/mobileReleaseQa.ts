@@ -400,6 +400,10 @@ function storeScreenshotEvidenceFor(item: StoreScreenshotChecklistItem): string[
     `Store note: ${item.requirement}`,
   ];
 
+  if (isAvatarStudioStoreScreen(item)) {
+    evidence.push("Avatar Studio Template overlay readiness panel with Template-fitted and Pack pending labels visible.");
+  }
+
   if (item.status === "blocked") {
     evidence.push("Screenshot or note showing why this store claim remains blocked before submission.");
   }
@@ -418,6 +422,11 @@ function storeScreenshotVerificationStepsFor(
     "Confirm the screenshot does not claim live AI, cloud storage, payments, push, or store approval unless that provider gate is actually closed.",
   ];
 
+  if (isAvatarStudioStoreScreen(item)) {
+    steps.push("Confirm Template-fitted labels are visible for Shepherd/Phoenix overlays.");
+    steps.push("Confirm Pack pending labels stay visible for accessories or templates whose overlay packs are not finished.");
+  }
+
   if (item.status === "blocked") {
     steps.push("If the screen is blocked, capture the visible blocker or write a note instead of staging a misleading store screenshot.");
   }
@@ -430,6 +439,10 @@ function storeScreenshotSetupStepsFor(item: StoreScreenshotChecklistItem): strin
     "Use demo-safe or scrubbed household data before capturing any store-facing image.",
     "Set the screen to a realistic launch state without hiding unfinished provider, payment, AI, or storage gates.",
   ];
+
+  if (isAvatarStudioStoreScreen(item)) {
+    steps.push("Open Customize and keep Template overlay readiness visible before capturing the store screenshot.");
+  }
 
   if (item.status === "blocked") {
     steps.push("Leave the blocker visible or capture a blocker note instead of staging a misleading finished screen.");
@@ -445,6 +458,10 @@ function storeScreenshotAcceptanceCriteriaFor(item: StoreScreenshotChecklistItem
     `The screenshot truthfully supports the store requirement: ${item.requirement}`,
   ];
 
+  if (isAvatarStudioStoreScreen(item)) {
+    criteria.push("Avatar Studio screenshot preserves overlay-fit truth instead of implying every accessory pack is finished.");
+  }
+
   if (item.status === "blocked") {
     criteria.push("Blocked screens show the blocker or blocker note instead of pretending the launch gate is complete.");
   }
@@ -453,11 +470,19 @@ function storeScreenshotAcceptanceCriteriaFor(item: StoreScreenshotChecklistItem
 }
 
 function storeScreenshotFailureEscalationFor(item: StoreScreenshotChecklistItem): string {
+  if (isAvatarStudioStoreScreen(item)) {
+    return `Mark Needs tune if ${item.screen} hides Template overlay readiness, blurs the pixel avatar, or implies unfinished accessory packs are store-ready.`;
+  }
+
   if (item.status === "blocked") {
     return `Mark Needs tune and do not stage a fake finished screenshot if ${item.screen} still has provider, legal, payment, AI, storage, or store approval blockers.`;
   }
 
   return `Mark Needs tune if ${item.screen} exposes private data, overclaims provider readiness, crops poorly, or fails to prove the store screenshot requirement.`;
+}
+
+function isAvatarStudioStoreScreen(item: StoreScreenshotChecklistItem): boolean {
+  return item.screen.toLowerCase() === "avatar studio";
 }
 
 export function buildStoreSubmissionScreenshotQaSurfaces(

@@ -264,6 +264,11 @@ test("turns the store submission screenshot checklist into device QA surfaces", 
         status: "needed",
       },
       {
+        screen: "Avatar Studio",
+        requirement: "Capture Template overlay readiness with Template-fitted and Pack pending accessory labels visible.",
+        status: "needed",
+      },
+      {
         screen: "Privacy & Launch Gates",
         requirement: "Capture export, deletion request, support runbook, and launch-gate truth before submission.",
         status: "blocked",
@@ -277,23 +282,29 @@ test("turns the store submission screenshot checklist into device QA surfaces", 
   const surfaces = buildStoreSubmissionScreenshotQaSurfaces(packet);
   const ids = surfaces.map((surface) => surface.id);
 
-  assert.deepEqual(ids, ["store-phoenix-home", "store-privacy-launch-gates"]);
+  assert.deepEqual(ids, ["store-phoenix-home", "store-avatar-studio", "store-privacy-launch-gates"]);
   assert.equal(surfaces[0].route, "/");
-  assert.equal(surfaces[1].route, "/privacy");
+  assert.equal(surfaces[1].route, "/portrait");
+  assert.equal(surfaces[2].route, "/privacy");
   assert.equal(surfaces[0].priority, "release-polish");
-  assert.equal(surfaces[1].priority, "launch-critical");
+  assert.equal(surfaces[2].priority, "launch-critical");
   assert.match(surfaces[0].title, /Store: Phoenix Home/);
   assert.match(surfaces[0].devicePrompt, /App Store and Play Store/);
   assert.match(surfaces[0].setupSteps.join("\n"), /Use demo-safe or scrubbed household data/);
-  assert.match(surfaces[1].setupSteps.join("\n"), /Leave the blocker visible/);
+  assert.match(surfaces[1].setupSteps.join("\n"), /Open Customize and keep Template overlay readiness visible/);
+  assert.match(surfaces[1].verificationSteps.join("\n"), /Template-fitted/);
+  assert.match(surfaces[1].verificationSteps.join("\n"), /Pack pending/);
+  assert.match(surfaces[1].acceptanceCriteria.join("\n"), /overlay-fit truth/);
+  assert.match(surfaces[1].requiredEvidence.join("\n"), /Template overlay readiness panel/);
+  assert.match(surfaces[2].setupSteps.join("\n"), /Leave the blocker visible/);
   assert.match(surfaces[0].verificationSteps.join("\n"), /Open \//);
   assert.match(surfaces[0].verificationSteps.join("\n"), /Do not show private household data/);
   assert.match(surfaces[0].acceptanceCriteria.join("\n"), /No private household data/);
   assert.match(surfaces[0].acceptanceCriteria.join("\n"), /No provider claim appears unless the matching gate is actually closed/);
-  assert.match(surfaces[1].failureEscalation, /do not stage a fake finished screenshot/);
+  assert.match(surfaces[2].failureEscalation, /do not stage a fake finished screenshot/);
   assert.match(surfaces[0].requiredEvidence.join("\n"), /iOS screenshot for store packet/);
   assert.match(surfaces[0].requiredEvidence.join("\n"), /Android screenshot for store packet/);
-  assert.match(surfaces[1].launchRisk, /blocked/);
+  assert.match(surfaces[2].launchRisk, /blocked/);
 });
 
 test("builds a release QA share report with the screenshot boundary intact", () => {

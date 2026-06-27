@@ -87,6 +87,15 @@ test("builds a blocked App Store and Play Store prep packet without claiming app
   assert.match(packet.metadata.fullDescription, /not veterinary advice/i);
   assert.ok(packet.keywords.includes("dog care"));
   assert.ok(packet.screenshotChecklist.some((item) => item.screen === "Phoenix Home" && /iOS and Android/i.test(item.requirement)));
+  assert.ok(
+    packet.screenshotChecklist.some(
+      (item) =>
+        item.screen === "Avatar Studio" &&
+        /Template overlay readiness/i.test(item.requirement) &&
+        /Template-fitted/i.test(item.requirement) &&
+        /Pack pending/i.test(item.requirement),
+    ),
+  );
   assert.ok(packet.reviewNotes.some((note) => /not approved for App Store or Play Store submission/i.test(note)));
   assert.ok(packet.privacyDisclosures.some((item) => /care logs/i.test(item)));
   assert.ok(packet.blockedUntil.some((item) => /Native iOS\/Android/i.test(item)));
@@ -106,6 +115,7 @@ test("builds share text that is safe for store reviewers and future builders", (
   assert.match(text, /Not approved for App Store or Play Store submission/);
   assert.match(text, /Short description:/);
   assert.match(text, /Screenshot checklist:/);
+  assert.match(text, /Template overlay readiness/);
   assert.match(text, /Privacy disclosures:/);
   assert.doesNotMatch(text, /Ready for public download/i);
 });

@@ -887,6 +887,17 @@ steps and no failed log. The check-run annotation reports the standing account
 billing/spending-limit blocker, so this remains an external CI gate rather than
 a product regression.
 
+The follow-up store screenshot QA pass connected Avatar Studio's new
+accessory-fit truth to App Store/Play Store preparation. The Store Submission
+packet now requires Avatar Studio screenshots that show `Template overlay
+readiness`, `Template-fitted`, and `Pack pending` labels, and
+`buildStoreSubmissionScreenshotQaSurfaces` adds Avatar-specific setup,
+verification, required evidence, acceptance, and failure-escalation copy. Local
+verification passed focused store/QA/mobile readiness, the 394-test
+behavior/readiness suite, mobile TypeScript, PixelLab verification at 149 files,
+Expo web export, preview `HEAD 200` on `/portrait` and `/care-twin-qa`, and
+`git diff --check` with expected Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
