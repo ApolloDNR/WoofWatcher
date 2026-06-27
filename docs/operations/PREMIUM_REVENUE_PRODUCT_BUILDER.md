@@ -940,6 +940,18 @@ steps and no failed log. The check-run annotation reports the standing account
 billing/spending-limit blocker, so this remains an external CI gate rather than
 a product regression.
 
+The Health Review Packet store-screenshot guard pass made App Store/Play Store
+prep source-backed against the new Health workflow. The Store Submission packet
+now requires Health Watch screenshots that include the non-diagnostic `Review
+packet`, `Vet-share checklist`, and `Draft vet questions` action, and
+`buildStoreSubmissionScreenshotQaSurfaces` adds Health-specific setup,
+verification, required evidence, acceptance, and failure-escalation copy. The
+Owner Preview Core Loop also requires testers to confirm the Review packet and
+Draft vet questions in Health instead of only checking a generic Health/Bile
+screen. Local verification passed focused store/QA tests, the 398-test
+behavior/readiness suite, mobile TypeScript, and `git diff --check` with
+expected Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

@@ -80,7 +80,8 @@ function buildScreenshotChecklist(submissionReady: boolean): StoreScreenshotChec
     },
     {
       screen: "Health Watch",
-      requirement: "Capture non-diagnostic Health Watch and Bile Watch copy with calm review language.",
+      requirement:
+        "Capture non-diagnostic Health Watch, Bile Watch, the Review packet, Vet-share checklist, and Draft vet questions action.",
       status,
     },
     {

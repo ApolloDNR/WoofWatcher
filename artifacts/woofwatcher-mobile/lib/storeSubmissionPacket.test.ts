@@ -90,6 +90,15 @@ test("builds a blocked App Store and Play Store prep packet without claiming app
   assert.ok(
     packet.screenshotChecklist.some(
       (item) =>
+        item.screen === "Health Watch" &&
+        /Review packet/i.test(item.requirement) &&
+        /Vet-share checklist/i.test(item.requirement) &&
+        /Draft vet questions/i.test(item.requirement),
+    ),
+  );
+  assert.ok(
+    packet.screenshotChecklist.some(
+      (item) =>
         item.screen === "Avatar Studio" &&
         /Template overlay readiness/i.test(item.requirement) &&
         /Template-fitted/i.test(item.requirement) &&

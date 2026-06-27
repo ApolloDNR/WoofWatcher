@@ -140,7 +140,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Open Home, Log, Plans, Health, and More in order from the bottom navigation.",
       "In Log, quick-log one safe care event or open the detail sheet, then undo or leave a QA note if you do not want to persist it.",
       "In Plans, confirm upcoming care rows are readable and the add/edit flow is reachable without covering the paw nav.",
-      "In Health, confirm Health Watch and Bile Watch language stays non-diagnostic and readable on the phone.",
+      "In Health, confirm Health Watch and Bile Watch, plus the Review packet, Vet-share checklist, and Draft vet questions action stay non-diagnostic and readable on the phone.",
       "In More, open Launch Readiness, Records, Avatar Studio, and Care Pass/Reports paths and confirm no route is a dead end.",
       "In Records, confirm Care Pass Report History storage status says Saved on this device or Ready to upload, not provider-backed upload unless the provider gate is actually closed.",
     ],
@@ -404,6 +404,10 @@ function storeScreenshotEvidenceFor(item: StoreScreenshotChecklistItem): string[
     evidence.push("Avatar Studio Template overlay readiness panel with Template-fitted and Pack pending labels visible.");
   }
 
+  if (isHealthWatchStoreScreen(item)) {
+    evidence.push("Health Watch Review packet with Vet-share checklist and Draft vet questions visible.");
+  }
+
   if (item.status === "blocked") {
     evidence.push("Screenshot or note showing why this store claim remains blocked before submission.");
   }
@@ -427,6 +431,11 @@ function storeScreenshotVerificationStepsFor(
     steps.push("Confirm Pack pending labels stay visible for accessories or templates whose overlay packs are not finished.");
   }
 
+  if (isHealthWatchStoreScreen(item)) {
+    steps.push("Confirm the Review packet is visible with the Vet-share checklist.");
+    steps.push("Confirm Draft vet questions is visible and the boundary still says Not veterinary advice.");
+  }
+
   if (item.status === "blocked") {
     steps.push("If the screen is blocked, capture the visible blocker or write a note instead of staging a misleading store screenshot.");
   }
@@ -442,6 +451,10 @@ function storeScreenshotSetupStepsFor(item: StoreScreenshotChecklistItem): strin
 
   if (isAvatarStudioStoreScreen(item)) {
     steps.push("Open Customize and keep Template overlay readiness visible before capturing the store screenshot.");
+  }
+
+  if (isHealthWatchStoreScreen(item)) {
+    steps.push("Open Health and keep Review packet visible before capturing the store screenshot.");
   }
 
   if (item.status === "blocked") {
@@ -462,6 +475,10 @@ function storeScreenshotAcceptanceCriteriaFor(item: StoreScreenshotChecklistItem
     criteria.push("Avatar Studio screenshot preserves overlay-fit truth instead of implying every accessory pack is finished.");
   }
 
+  if (isHealthWatchStoreScreen(item)) {
+    criteria.push("Health Review Packet shows owner prompts, vet-share checklist, and Not veterinary advice boundary.");
+  }
+
   if (item.status === "blocked") {
     criteria.push("Blocked screens show the blocker or blocker note instead of pretending the launch gate is complete.");
   }
@@ -474,6 +491,10 @@ function storeScreenshotFailureEscalationFor(item: StoreScreenshotChecklistItem)
     return `Mark Needs tune if ${item.screen} hides Template overlay readiness, blurs the pixel avatar, or implies unfinished accessory packs are store-ready.`;
   }
 
+  if (isHealthWatchStoreScreen(item)) {
+    return `Mark Needs tune if ${item.screen} hides the Review packet, omits the Vet-share checklist, loses Draft vet questions, or sounds like medical certainty.`;
+  }
+
   if (item.status === "blocked") {
     return `Mark Needs tune and do not stage a fake finished screenshot if ${item.screen} still has provider, legal, payment, AI, storage, or store approval blockers.`;
   }
@@ -483,6 +504,10 @@ function storeScreenshotFailureEscalationFor(item: StoreScreenshotChecklistItem)
 
 function isAvatarStudioStoreScreen(item: StoreScreenshotChecklistItem): boolean {
   return item.screen.toLowerCase() === "avatar studio";
+}
+
+function isHealthWatchStoreScreen(item: StoreScreenshotChecklistItem): boolean {
+  return item.screen.toLowerCase() === "health watch";
 }
 
 export function buildStoreSubmissionScreenshotQaSurfaces(
