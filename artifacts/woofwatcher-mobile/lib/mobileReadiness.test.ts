@@ -881,7 +881,11 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /accessibilityLabel="Show Health 7-day rhythm"/);
   assert.match(health, /scrollRef\.current\?\.scrollTo\(\{ y: 0, animated: true \}\)/);
   assert.match(health, /accessibilityLabel="Open health owner notes"/);
-  assert.match(health, /router\.push\(\{ pathname: "\/log", params: \{ type: "symptom" \} \}\)/);
+  assert.match(health, /openHealthStatusRoute/);
+  assert.match(health, /statusActionLabel/);
+  assert.match(health, /statusCardAction/);
+  assert.match(health, /router\.push\(`\/log\?type=\$\{type\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(health, /accessibilityLabel=\{`\$\{row\.label\}\. \$\{row\.status\}\. \$\{row\.detail\}\. \$\{row\.actionLabel\}`\}/);
   assert.match(health, /accessibilityState=\{\{ selected: active \}\}/);
   assert.match(health, /Not veterinary advice/);
 });

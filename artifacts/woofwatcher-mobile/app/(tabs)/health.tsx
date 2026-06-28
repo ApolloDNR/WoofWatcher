@@ -127,6 +127,15 @@ function healthScore(input: {
   return clampScore(base - penalty);
 }
 
+function statusActionLabel(type: string): string {
+  if (type === "walk") return "Log activity";
+  if (type === "meal") return "Log appetite";
+  if (type === "potty") return "Log potty";
+  if (type === "water") return "Log water";
+  if (type === "mood") return "Log energy";
+  return "Log details";
+}
+
 export default function HealthScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -243,14 +252,32 @@ export default function HealthScreen() {
       ? "Keep logging meals, stool, vomiting, energy, and medication so future changes are easy to review."
       : "Capture timing, food context, energy, stool detail, and repeat events before sharing with your vet.";
 
-  const healthRows: { label: string; status: string; detail: string; icon: PixelIconName; tone: string }[] = [
-    { label: "Activity", status: "Good", detail: "Active daily", icon: "walk", tone: colors.sage },
+  const healthRows: {
+    label: string;
+    status: string;
+    detail: string;
+    icon: PixelIconName;
+    tone: string;
+    routeType: string;
+    actionLabel: string;
+  }[] = [
+    {
+      label: "Activity",
+      status: "Good",
+      detail: "Active daily",
+      icon: "walk",
+      tone: colors.sage,
+      routeType: "walk",
+      actionLabel: statusActionLabel("walk"),
+    },
     {
       label: "Appetite",
       status: healthWatch.counts.appetiteWatch7 ? "Watch" : "Good",
       detail: healthWatch.counts.appetiteWatch7 ? `${healthWatch.counts.appetiteWatch7} reduced meals` : "Eating well",
       icon: "meal",
       tone: healthWatch.counts.appetiteWatch7 ? colors.amber : colors.sage,
+      routeType: "meal",
+      actionLabel: statusActionLabel("meal"),
     },
     {
       label: "Stool",
@@ -258,14 +285,26 @@ export default function HealthScreen() {
       detail: healthWatch.counts.stoolWatch7 ? `${healthWatch.counts.stoolWatch7} review logs` : "Solid and healthy",
       icon: "poo",
       tone: healthWatch.counts.stoolWatch7 ? colors.amber : colors.sage,
+      routeType: "potty",
+      actionLabel: statusActionLabel("potty"),
     },
-    { label: "Hydration", status: "Good", detail: "Well hydrated", icon: "bile", tone: colors.blueSignal },
+    {
+      label: "Hydration",
+      status: "Good",
+      detail: "Well hydrated",
+      icon: "bile",
+      tone: colors.blueSignal,
+      routeType: "water",
+      actionLabel: statusActionLabel("water"),
+    },
     {
       label: "Energy",
       status: healthWatch.status === "good" ? "Good" : "Watch",
       detail: healthWatch.status === "good" ? "High and playful" : "Worth watching",
       icon: "energy",
       tone: healthWatch.status === "good" ? colors.sage : colors.amber,
+      routeType: "mood",
+      actionLabel: statusActionLabel("mood"),
     },
     {
       label: "Vomiting",
@@ -273,6 +312,8 @@ export default function HealthScreen() {
       detail: healthWatch.counts.vomit7 ? `${healthWatch.counts.vomit7} in 7 days` : "No logs",
       icon: "vomit",
       tone: healthWatch.counts.vomit7 ? colors.amber : colors.sage,
+      routeType: "symptom",
+      actionLabel: statusActionLabel("symptom"),
     },
   ];
 
@@ -364,6 +405,10 @@ export default function HealthScreen() {
       return;
     }
     router.push(action.route);
+  }
+
+  function openHealthStatusRoute(type: string): void {
+    router.push(`/log?type=${type}&detail=1&intent=${Date.now()}` as never);
   }
 
   async function shareHealthReviewPacket(): Promise<void> {
@@ -526,7 +571,7 @@ export default function HealthScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Log a health note"
-              onPress={() => router.push({ pathname: "/log", params: { type: "symptom" } })}
+              onPress={() => openHealthStatusRoute("symptom")}
               style={({ pressed }) => [
                 s.heroActionPrimary,
                 { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
@@ -771,9 +816,18 @@ export default function HealthScreen() {
           />
           <View style={s.statusGrid}>
             {healthRows.map((row) => (
-              <View
+              <Pressable
                 key={row.label}
-                style={[s.statusCard, { backgroundColor: colors.background, borderColor: colors.border }]}
+                accessibilityRole="button"
+                accessibilityLabel={`${row.label}. ${row.status}. ${row.detail}. ${row.actionLabel}`}
+                onPress={() => openHealthStatusRoute(row.routeType)}
+                style={({ pressed }) => [
+                  s.statusCard,
+                  {
+                    backgroundColor: pressed ? row.tone + "10" : colors.background,
+                    borderColor: pressed ? row.tone + "77" : colors.border,
+                  },
+                ]}
               >
                 <View style={[s.statusIcon, { backgroundColor: row.tone + "16" }]}>
                   <PixelIcon name={row.icon} size={24} />
@@ -785,7 +839,15 @@ export default function HealthScreen() {
                 <Text style={[s.statusDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   {row.detail}
                 </Text>
-              </View>
+                <View style={[s.statusCardAction, { backgroundColor: row.tone + "10", borderColor: row.tone + "44" }]}>
+                  <Text style={[s.statusCardActionText, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                    {row.actionLabel}
+                  </Text>
+                  <Text style={[s.statusCardActionArrow, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                    ›
+                  </Text>
+                </View>
+              </Pressable>
             ))}
           </View>
         </BoardCard>
@@ -823,7 +885,7 @@ export default function HealthScreen() {
                 <HealthHeaderAction
                   label="Owner notes"
                   accessibilityLabel="Open health owner notes"
-                  onPress={() => router.push({ pathname: "/log", params: { type: "symptom" } })}
+                  onPress={() => openHealthStatusRoute("symptom")}
                 />
               ) : undefined
             }
@@ -1317,6 +1379,29 @@ const s = StyleSheet.create({
   statusLabel: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0.2 },
   statusValue: { fontSize: 17, lineHeight: 20, marginTop: 2 },
   statusDetail: { fontSize: 11.5, lineHeight: 15, marginTop: 3 },
+  statusCardAction: {
+    minHeight: 28,
+    borderWidth: 1,
+    borderRadius: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    marginTop: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 6,
+  },
+  statusCardActionText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 10.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.2,
+  },
+  statusCardActionArrow: {
+    fontSize: 14,
+    lineHeight: 16,
+  },
 
   reviewPanel: {
     borderRadius: 8,

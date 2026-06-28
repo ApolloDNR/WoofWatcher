@@ -1871,3 +1871,28 @@ Design intent:
 - Let owners jump from a status concern directly to the right care workflow.
 - Preserve the current mobile nav while making Diet & Treats easier to reach
   from the Home screen.
+
+## 2026-06-28 Health Snapshot Care Action Polish
+
+Health Snapshot cards now act like care controls instead of static signals:
+
+- `Activity` opens the Walk detail flow.
+- `Appetite` opens the Meal detail flow.
+- `Stool` opens the Potty detail flow.
+- `Hydration` opens the Water detail flow.
+- `Energy` opens the Mood detail flow.
+- `Vomiting` opens the Symptom/Vomit detail path.
+- The Health hero `Log health note` button and Pattern Board `Owner notes`
+  action now use the same `/log?type=...&detail=1&intent=...` route contract.
+- Each card has a small action chip and an accessibility label that names the
+  signal, current status, evidence detail, and destination action.
+
+Design intent:
+
+- Make Health Watch feel like a calm command center instead of a passive
+  report.
+- Keep health language observational and non-diagnostic while making it easy to
+  add the next piece of evidence.
+- Reuse the existing Log detail-sheet flow so appetite, stool, hydration,
+  energy, and vomiting context stays connected to Timeline, sticky notes, trust
+  review, Care Pass, and reports.
