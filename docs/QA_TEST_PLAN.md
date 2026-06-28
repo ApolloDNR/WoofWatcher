@@ -225,6 +225,7 @@ Latest local evidence, 2026-06-22:
 64. Tap Reminder Center rows and confirm they route to the expected concrete workflow: routine edit, Records, Medication log, or Grooming log with the composer type preselected.
 65. Open Log, search by caregiver, route/place, medication detail, and sticky-note text, then combine search with type chips and confirm the summary and empty state update correctly.
 66. Open Records Medication History, search by medicine, dose, caregiver, and note text, then switch Taken, Skipped, Missed, and Needs review filters and confirm summary and empty-state copy update correctly.
+67. Add multiple household-visible mood logs across 90 days, plus one private and one stale mood log; confirm Records Mood Timeline shows only the shared recent items with caregiver, relative date, energy, context, notes, and non-diagnostic owner-reported boundary copy.
 
 ## Missing QA
 

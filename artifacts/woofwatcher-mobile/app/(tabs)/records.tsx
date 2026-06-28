@@ -274,6 +274,10 @@ export default function RecordsScreen() {
     () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: 30, limit: 3 }),
     [state.entries, now],
   );
+  const moodTimeline = useMemo(
+    () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: 90, limit: 8 }),
+    [state.entries, now],
+  );
 
   // ---- Incident lookback ----
   const incidents = useMemo(
@@ -911,6 +915,73 @@ export default function RecordsScreen() {
                     </View>
                   </View>
                 ) : null}
+              </>
+            )}
+          </BoardCard>
+
+          <BoardCard style={s.recordsBoardCard}>
+            <BoardSectionHeader
+              title="Mood Timeline"
+              action={moodTimeline.total ? `${moodTimeline.total} shared` : "No shared"}
+            />
+            {moodTimeline.items.length === 0 ? (
+              <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Shared mood check-ins over the last 90 days will appear here with energy and care context.
+              </Text>
+            ) : (
+              <>
+                <View style={s.moodTimelineSummary}>
+                  <View style={[s.watchSummaryIcon, { backgroundColor: (moodTimeline.status === "watch" ? colors.amber : colors.sage) + "18" }]}>
+                    <Ionicons name="pulse-outline" size={18} color={moodTimeline.status === "watch" ? colors.amber : colors.sage} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      {moodTimeline.status === "watch" ? "Pattern worth watching" : "Shared mood baseline"}
+                    </Text>
+                    <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {moodTimeline.summary}
+                    </Text>
+                  </View>
+                </View>
+                <View style={s.moodTimelineList}>
+                  {moodTimeline.items.map((item, index) => {
+                    const tone = item.tone === "alert" ? colors.rose : item.tone === "watch" ? colors.amber : colors.sage;
+                    return (
+                      <View
+                        key={item.id}
+                        style={[
+                          s.moodTimelineItem,
+                          index > 0 && { borderTopWidth: 1, borderTopColor: colors.border },
+                        ]}
+                      >
+                        <View style={[s.moodTimelineDot, { backgroundColor: tone }]} />
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <View style={s.moodTimelineHeader}>
+                            <Text style={[s.moodTimelineTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {item.moodLabel}
+                              {item.energyLevel ? `, ${item.energyLevel} energy` : ""}
+                            </Text>
+                            <Text style={[s.moodTimelineDate, { color: tone, fontFamily: "Inter_700Bold" }]}>
+                              {relativeDay(item.occurredAt, now)}
+                            </Text>
+                          </View>
+                          <Text style={[s.moodTimelineMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                            {item.caregiver}
+                            {item.context ? ` - ${item.context}` : ""}
+                          </Text>
+                          {item.note ? (
+                            <Text numberOfLines={2} style={[s.moodTimelineNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                              {item.note}
+                            </Text>
+                          ) : null}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+                <Text style={[s.moodBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Mood and energy are owner-reported care context, not a diagnosis.
+                </Text>
               </>
             )}
           </BoardCard>
@@ -2178,6 +2249,16 @@ const s = StyleSheet.create({
   moodPct: { fontSize: 12.5, width: 34, textAlign: "right" },
   moodCount: { fontSize: 12, width: 28 },
   moodLatest: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderTopWidth: 1, paddingTop: 10, marginTop: 10 },
+  moodTimelineSummary: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 6 },
+  moodTimelineList: { marginTop: 4 },
+  moodTimelineItem: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingVertical: 10 },
+  moodTimelineDot: { width: 9, height: 9, borderRadius: 4.5, marginTop: 5 },
+  moodTimelineHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  moodTimelineTitle: { flex: 1, minWidth: 0, fontSize: 13.2, lineHeight: 17 },
+  moodTimelineDate: { fontSize: 11.4, lineHeight: 15 },
+  moodTimelineMeta: { marginTop: 2, fontSize: 11.6, lineHeight: 16 },
+  moodTimelineNote: { marginTop: 4, fontSize: 11.5, lineHeight: 16 },
+  moodBoundary: { marginTop: 6, fontSize: 11.4, lineHeight: 16 },
 
   hydrationSummary: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
   hydrationMeter: { height: 8, borderRadius: 4, overflow: "hidden", marginBottom: 12 },

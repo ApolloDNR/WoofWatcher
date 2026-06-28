@@ -82,6 +82,8 @@ Current evidence, 2026-06-28: Care Pass reports now reuse the shared Mood Trend 
 
 Current evidence, 2026-06-28: WoofGuide now reuses the shared Mood Trend derivation for an owner-reviewed Mood & Energy summary action. Shared recent mood check-ins can be summarized with energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language, and approving the draft inserts only an assistant message instead of mutating care records.
 
+Current evidence, 2026-06-28: Records Mood Timeline now reuses the same shared Mood Trend derivation for a longer-range mobile review. Household-visible mood check-ins over 90 days show caregiver, relative date, energy, context, and notes, while private/stale logs stay excluded and the UI labels mood and energy as owner-reported context, not a diagnosis.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.

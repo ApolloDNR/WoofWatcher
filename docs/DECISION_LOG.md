@@ -1701,6 +1701,22 @@ Owner: Codex.
 
 Revisit trigger: Deeper mood analytics, Care Pass mood sections, or avatar state-machine work requires a shared care-domain mood trend helper.
 
+### 2026-06-28: Records Mood Timeline Uses Shared Owner-Reported Mood Evidence
+
+Decision: Records should show a longer-range Mood Timeline from `deriveMoodTrend` before adding predictive mood analytics, clinician language, or provider-backed AI interpretation.
+
+Reason: Mood logging, Records Mood Trend, Care Pass, and WoofGuide now share the same household-visible mood evidence. A 90-day mobile timeline lets owners review what changed over time, who logged it, and what care context was attached without pretending WoofWatcher can diagnose behavior or health.
+
+Consequences:
+
+- Records now derives both a 30-day Mood Trend summary and a 90-day Mood Timeline from `deriveMoodTrend`.
+- The timeline shows caregiver, relative date, energy, context, and notes for recent shared mood check-ins.
+- Private and stale mood logs remain excluded, and the UI repeats that mood and energy are owner-reported care context, not diagnosis.
+
+Owner: Codex.
+
+Revisit trigger: Period filters, richer mood visuals, clinician-reviewed wording, or provider-backed AI mood interpretation becomes active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

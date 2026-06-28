@@ -80,6 +80,7 @@ Passing evidence:
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
 - Records show expired, due-soon, current, and reference status for saved record rows.
 - WoofGuide shows deterministic suggested actions tied to health watch, record attention, diet setup, routines, meal logging, Care Pass preview, and owner-reviewed Mood & Energy summaries from shared mood evidence.
+- Records includes a 90-day Mood Timeline that reuses shared mood-trend evidence for household-visible check-ins, showing caregiver, relative date, energy, context, and notes while keeping private/stale logs excluded and non-diagnostic.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
 Current gaps:
@@ -151,6 +152,7 @@ Passing evidence:
 - Records Mood Trend now uses shared care-domain logic to exclude private/stale mood logs, summarize low/steady/high energy, show latest caregiver/context, and provide safe household next-step copy.
 - Care Pass reports now include a Mood & Energy handoff section when shared recent mood check-ins exist. The section reuses shared mood-trend logic, carries energy counts plus latest caregiver/context, excludes private/stale mood logs, and keeps owner-reported/non-diagnostic boundary language for sitter, trainer, and vet review.
 - WoofGuide suggested actions now include an owner-reviewed Mood & Energy summary when shared recent mood check-ins exist. The draft reuses shared mood-trend logic, keeps private/stale mood logs out, and inserts only reviewed assistant text without changing care records.
+- Records Mood Timeline now shows a longer-range 90-day history from the same shared mood-trend logic, with caregiver, date, energy, context, and notes for recent household-visible check-ins plus owner-reported/non-diagnostic boundary copy.
 
 Current gaps:
 
