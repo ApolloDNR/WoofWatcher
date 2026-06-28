@@ -469,7 +469,7 @@ function QuestRow({
       : quest.status === "locked"
         ? colors.mutedForeground
         : colors.copperBright;
-  const actionLabel = quest.status === "complete" ? "Open proof" : quest.status === "locked" ? "Locked" : "Start quest";
+  const actionLabel = quest.status === "complete" ? "Open proof" : quest.status === "locked" ? "Locked" : quest.actionLabel;
   return (
     <View style={[s.questRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
       <View style={[s.questIcon, { backgroundColor: tone + "18" }]}>

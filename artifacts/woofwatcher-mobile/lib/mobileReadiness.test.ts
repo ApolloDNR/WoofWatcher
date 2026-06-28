@@ -2207,7 +2207,8 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(adventure, /onPress=\{\(\) => startQuest\(availableQuest, availableQuestProofEntryId\)\}/);
   assert.doesNotMatch(adventure, /onPress=\{\(\) => saveMemory\(availableQuest\)\}/);
   assert.doesNotMatch(adventure, />Save Memory</);
-  assert.match(adventure, /Start quest/);
+  assert.match(adventure, /const actionLabel = quest\.status === "complete" \? "Open proof" : quest\.status === "locked" \? "Locked" : quest\.actionLabel/);
+  assert.doesNotMatch(adventure, /const actionLabel = quest\.status === "complete" \? "Open proof" : quest\.status === "locked" \? "Locked" : "Start quest"/);
   assert.match(adventure, /Open proof/);
   assert.match(adventure, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(questFeedback\.id\)\}` as never\)/);
   assert.match(adventure, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(proofEntryId\)\}` as never\)/);

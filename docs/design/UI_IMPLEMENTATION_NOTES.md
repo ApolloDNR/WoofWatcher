@@ -2022,3 +2022,19 @@ Design intent:
 - Avoid a fake-game feeling where proof is only a badge and cannot be inspected.
 - Make Adventure Mode feel more like professional app software wrapped in a
   playful pixel world.
+
+## 2026-06-28 Adventure Quest Row Copy Polish
+
+Quest Board action buttons now use the quest's actual action label:
+
+- Available walk quests show `Start walk`.
+- Available training quests show `Log training`.
+- Available play quests show `Log play`.
+- Memory quests can show `Save memory`.
+- Completed and locked quests continue to show `Open proof` and `Locked`.
+
+Design intent:
+
+- Keep the Adventure screen scannable in under five seconds.
+- Avoid vague prototype copy on a core game/care surface.
+- Make every button read like a real next step, not a generic quest command.
