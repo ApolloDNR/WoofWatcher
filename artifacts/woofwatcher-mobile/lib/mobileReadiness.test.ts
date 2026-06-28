@@ -737,7 +737,8 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
     immediateActionIndex < missionDeckIndex,
     "Next Up and Quick Log should stay above the richer RPG mission deck",
   );
-  assert.match(home, /BoardSectionHeader title="Next Up"/);
+  assert.doesNotMatch(home, /BoardSectionHeader title="Next Up" action=\{`1 of \$\{nextCount\}`\}/);
+  assert.match(home, /BoardSectionHeader\s+title="Next Up"[\s\S]*<BoardPill\s+label=\{`1 of \$\{nextCount\}`\}/);
   assert.match(home, /BoardSectionHeader\s+title="Quick Log"/);
   assert.match(home, /Today's Missions/);
 });

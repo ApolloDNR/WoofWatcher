@@ -23,6 +23,7 @@ import {
 
 import {
   BoardCard,
+  BoardPill,
   BoardSectionHeader,
   CareRow,
   QuickActionTile,
@@ -903,7 +904,10 @@ export default function HomeScreen() {
 
           <View style={s.homeSplit}>
             <BoardCard style={[s.nextCard, s.homeSplitCard]}>
-              <BoardSectionHeader title="Next Up" action={`1 of ${nextCount}`} />
+              <BoardSectionHeader
+                title="Next Up"
+                accessory={<BoardPill label={`1 of ${nextCount}`} icon="list-outline" tone={colors.sage} />}
+              />
               {nextUp.slice(0, 3).map((item, index) => (
                 <CareRow
                   key={`${item.label}-${item.time}-${index}`}

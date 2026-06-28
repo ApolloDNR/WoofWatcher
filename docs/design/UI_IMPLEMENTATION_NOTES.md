@@ -1504,6 +1504,25 @@ Design intent:
 - Continue the screen-by-screen pass toward mockup accuracy without adding fake
   provider, native, store, or PDF readiness claims.
 
+## 2026-06-28 Home Next Up Status Pill
+
+Phoenix Home now treats the compact `Next Up` count as state, not a fake
+action:
+
+- `Next Up / 1 of N` now renders the count as a shared `BoardPill` accessory.
+- The old `BoardSectionHeader action` label is test-blocked so the first screen
+  does not regress to passive text that looks tappable.
+- The Quick Log and owner-preview header actions remain real pressable route
+  targets; only the passive count became a pill.
+
+Design intent:
+
+- Keep the first screen honest and polished at the App Store preview level.
+- Preserve the five-second Home scan: what is next, how many care items are in
+  the queue, and where to act.
+- Continue aligning Home with the locked mockups without inventing provider,
+  native, PDF, store, or AI readiness.
+
 ## 2026-06-28 Health Header Action Polish
 
 Health Watch now treats compact header labels as real app actions:
