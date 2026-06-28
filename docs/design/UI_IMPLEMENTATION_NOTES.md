@@ -1757,3 +1757,26 @@ Design intent:
   a full form.
 - Preserve the truth boundary: this is detail routing into the existing Log
   workflow, not a fake Home bottom sheet or fake native haptic requirement.
+
+## 2026-06-28 Home-to-Log Detail Sheet Intent Polish
+
+Home long-press quick actions now open the compact Log launcher sheet directly
+instead of only selecting the Log route:
+
+- Home sends a unique detail intent through `/log?type=...&detail=1&intent=...`.
+- Log reads `type`, `detail`, and `intent` route params, selects the matching
+  launcher action, and opens the existing bottom-sheet launcher detail flow.
+- Repeated Home long presses receive a fresh intent so the sheet can reopen
+  cleanly after the user leaves and returns.
+- The Log route guards against stale route params by remembering the last
+  consumed detail intent.
+- The mobile readiness guard now requires Home long press to target the
+  detail-sheet route contract and requires Log to consume that intent through
+  the launcher sheet.
+
+Design intent:
+
+- Match the product doctrine: tap is instant, hold is detail.
+- Keep the detail UI compact and familiar by reusing the Log launcher sheet.
+- Avoid a disconnected Home-only form that would drift from meal lifecycle,
+  potty, medication, trust, sticky-note, and edit/audit logic.

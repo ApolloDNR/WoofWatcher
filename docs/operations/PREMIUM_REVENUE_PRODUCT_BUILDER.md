@@ -1411,6 +1411,19 @@ verification passed the 410-test behavior/readiness suite, `tsc --build`,
 mobile TypeScript, preview root `HEAD 200` at `http://127.0.0.1:4194/`, and
 `git diff --check` with expected Windows CRLF warnings only.
 
+The Home-to-Log detail sheet intent polish pass tightened that UX into a true
+compact-detail handoff. Home now sends `/log?type=...&detail=1&intent=...` on
+long press, and Log consumes the typed route intent by selecting the matching
+launcher action and opening the existing bottom-sheet launcher detail flow. A
+fresh intent is generated per long press and Log remembers the last consumed
+intent so stale route params do not reopen the sheet accidentally. Red/green
+verification first failed on the missing detail-intent route contract, then
+passed mobile readiness 87/87. Fresh local verification passed the 410-test
+behavior/readiness suite, `tsc --build`, mobile TypeScript, package-local Expo
+web export to `.expo-smoke` with 223 files, preview root `HEAD 200`, detail
+route `HEAD 200` at `/log?type=meal&detail=1&intent=smoke`, and
+`git diff --check` with expected Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

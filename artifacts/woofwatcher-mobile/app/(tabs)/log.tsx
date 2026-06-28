@@ -501,6 +501,11 @@ function launcherActionKey(action: Pick<LauncherAction, "label" | "type">): stri
   return `${action.type}:${action.label}`;
 }
 
+function findLauncherActionForType(type: CareEventType | null): LauncherAction | null {
+  if (!type) return null;
+  return LAUNCHER_ACTIONS.find((action) => action.type === type) ?? null;
+}
+
 // Icon resolution covers the composer types plus legacy entry types.
 const TYPE_ICON: Record<string, PulseIconName> = {
   ...LOG_TYPES.reduce((acc, t) => ({ ...acc, [t.type]: t.icon }), {} as Record<string, PulseIconName>),
@@ -851,13 +856,26 @@ export default function LogScreen() {
   const router = useRouter();
   const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
   const me = useGetMe();
-  const routeParams = useLocalSearchParams<{ type?: string | string[] }>();
+  const routeParams = useLocalSearchParams<{
+    type?: string | string[];
+    detail?: string | string[];
+    intent?: string | string[];
+  }>();
   const routeSelectedType = useMemo(() => {
     const rawType = Array.isArray(routeParams.type) ? routeParams.type[0] : routeParams.type;
     const normalized = normalizeCareEventType(rawType);
     return TYPE_BY_ID[normalized] ? normalized : null;
   }, [routeParams.type]);
+  const routeDetailParam = Array.isArray(routeParams.detail) ? routeParams.detail[0] : routeParams.detail;
+  const routeIntentParam = Array.isArray(routeParams.intent) ? routeParams.intent[0] : routeParams.intent;
+  const routeWantsDetailSheet =
+    routeDetailParam === "1" || routeDetailParam === "true" || routeDetailParam === "sheet";
+  const routeDetailIntentKey =
+    routeSelectedType && routeWantsDetailSheet
+      ? `${routeSelectedType}:${routeIntentParam ?? routeDetailParam ?? "detail"}`
+      : null;
   const lastRouteSelectedType = useRef<string | null>(null);
+  const lastRouteDetailIntentKey = useRef<string | null>(null);
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -950,12 +968,24 @@ export default function LogScreen() {
   );
 
   useEffect(() => {
-    if (routeSelectedType && routeSelectedType !== lastRouteSelectedType.current) {
+    if (!routeSelectedType) return;
+    if (routeSelectedType !== lastRouteSelectedType.current) {
       setSelectedType(routeSelectedType);
       setSelectedLauncherKey(null);
       lastRouteSelectedType.current = routeSelectedType;
     }
-  }, [routeSelectedType]);
+    if (!routeWantsDetailSheet || !routeDetailIntentKey || routeDetailIntentKey === lastRouteDetailIntentKey.current) {
+      return;
+    }
+    const routeDetailAction = findLauncherActionForType(routeSelectedType);
+    if (!routeDetailAction) return;
+    pendingChoicePreset.current = routeDetailAction.preset ?? null;
+    setLauncherTab(routeDetailAction.tab === "health" ? "health" : routeDetailAction.tab === "all" ? "all" : "favorites");
+    setSelectedLauncherKey(launcherActionKey(routeDetailAction));
+    setSelectedType(routeDetailAction.type);
+    setLauncherDetailAction(routeDetailAction);
+    lastRouteDetailIntentKey.current = routeDetailIntentKey;
+  }, [routeDetailIntentKey, routeSelectedType, routeWantsDetailSheet]);
 
   // Reset contextual controls whenever the type changes.
   useEffect(() => {

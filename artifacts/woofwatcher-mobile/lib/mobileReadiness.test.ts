@@ -750,6 +750,7 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
 
 test("keeps Home Quick Log header action as a real route target", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
+  const log = readAppFile(join("(tabs)", "log.tsx"));
   const primitives = readAppFile(join("..", "components", "board", "BoardPrimitives.tsx"));
 
   assert.match(
@@ -760,9 +761,14 @@ test("keeps Home Quick Log header action as a real route target", () => {
   assert.match(primitives, /onLongPress\?: \(\) => void/);
   assert.match(primitives, /delayLongPress=\{onLongPress \? \(delayLongPress \?\? 350\) : undefined\}/);
   assert.match(home, /const openQuickDetails = \(item: QuickItem\) =>/);
-  assert.match(home, /router\.push\(`\/log\?type=\$\{item\.type\}` as never\)/);
+  assert.match(home, /router\.push\(`\/log\?type=\$\{item\.type\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
   assert.match(home, /onLongPress=\{\(\) => openQuickDetails\(item\)\}/);
   assert.match(home, /accessibilityHint=\{item\.route \? "Opens the full Quick Log\." : "Long press opens details before saving\."\}/);
+  assert.match(log, /useLocalSearchParams<\{\s*type\?: string \| string\[\];\s*detail\?: string \| string\[\];\s*intent\?: string \| string\[\];\s*\}>/);
+  assert.match(log, /const routeWantsDetailSheet =/);
+  assert.match(log, /const routeDetailIntentKey =/);
+  assert.match(log, /findLauncherActionForType\(routeSelectedType\)/);
+  assert.match(log, /setLauncherDetailAction\(routeDetailAction\)/);
   assertStyleUsesSharedTouchTarget(home, "quickHeaderAction");
 });
 

@@ -627,7 +627,7 @@ export default function HomeScreen() {
       router.push(item.route);
       return;
     }
-    router.push(`/log?type=${item.type}` as never);
+    router.push(`/log?type=${item.type}&detail=1&intent=${Date.now()}` as never);
   };
 
   const logQuick = (item: QuickItem) => {
