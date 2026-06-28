@@ -1735,3 +1735,25 @@ Design intent:
 - Preserve the truth boundary: no provider-backed sync, native-device proof,
   store approval, generated PDF, AI/payment/push readiness, or public-launch
   approval is implied by this polish.
+
+## 2026-06-28 Home Quick Log Long-Press Detail Polish
+
+Home Quick Log now follows the locked logging doctrine more closely:
+
+- Tap still performs the fast default quick-log behavior.
+- Long press now opens the typed Log detail flow through `/log?type=...` for
+  Meal, Walk, Potty, Water, Training, Treat, and Play.
+- The `More` tile keeps routing to the full Quick Log surface.
+- Shared `QuickActionTile` now supports `onLongPress`, `delayLongPress`, and
+  explicit screen-reader hints so future quick-action surfaces can offer the
+  same fast/detailed split without custom one-off code.
+- The mobile readiness guard now protects the Home quick-log long-press
+  contract and verifies the route target stays typed.
+
+Design intent:
+
+- Keep common care logging under five seconds from Home.
+- Give owners a clear path to add details without forcing every quick log into
+  a full form.
+- Preserve the truth boundary: this is detail routing into the existing Log
+  workflow, not a fake Home bottom sheet or fake native haptic requirement.

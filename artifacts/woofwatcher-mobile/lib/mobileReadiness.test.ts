@@ -750,12 +750,19 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
 
 test("keeps Home Quick Log header action as a real route target", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
+  const primitives = readAppFile(join("..", "components", "board", "BoardPrimitives.tsx"));
 
   assert.match(
     home,
     /BoardSectionHeader\s+title="Quick Log"\s+accessory=\{\s*<Pressable[\s\S]*accessibilityLabel="Open full Quick Log"[\s\S]*onPress=\{\(\) => router\.push\("\/log"\)\}/,
   );
   assert.match(home, /style=\{\(\{ pressed \}\) => \[[\s\S]*s\.quickHeaderAction/);
+  assert.match(primitives, /onLongPress\?: \(\) => void/);
+  assert.match(primitives, /delayLongPress=\{onLongPress \? \(delayLongPress \?\? 350\) : undefined\}/);
+  assert.match(home, /const openQuickDetails = \(item: QuickItem\) =>/);
+  assert.match(home, /router\.push\(`\/log\?type=\$\{item\.type\}` as never\)/);
+  assert.match(home, /onLongPress=\{\(\) => openQuickDetails\(item\)\}/);
+  assert.match(home, /accessibilityHint=\{item\.route \? "Opens the full Quick Log\." : "Long press opens details before saving\."\}/);
   assertStyleUsesSharedTouchTarget(home, "quickHeaderAction");
 });
 

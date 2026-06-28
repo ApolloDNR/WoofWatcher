@@ -356,27 +356,36 @@ export function QuickActionTile({
   icon,
   label,
   onPress,
+  onLongPress,
   accessibilityLabel,
+  accessibilityHint,
   accent,
   style,
   iconSize = 28,
   labelStyle,
+  delayLongPress,
 }: {
   icon: PixelIconName;
   label: string;
   onPress: () => void;
+  onLongPress?: () => void;
   accessibilityLabel?: string;
+  accessibilityHint?: string;
   accent?: string;
   style?: StyleProp<ViewStyle>;
   iconSize?: number;
   labelStyle?: StyleProp<TextStyle>;
+  delayLongPress?: number;
 }) {
   const colors = useColors();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? `Log ${label}`}
+      accessibilityHint={accessibilityHint}
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={onLongPress ? (delayLongPress ?? 350) : undefined}
       style={({ pressed }) => [
         styles.quickTile,
         {

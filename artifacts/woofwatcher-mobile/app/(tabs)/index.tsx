@@ -619,6 +619,17 @@ export default function HomeScreen() {
     [],
   );
 
+  const openQuickDetails = (item: QuickItem) => {
+    if (Platform.OS !== "web") {
+      Haptics.selectionAsync().catch(() => {});
+    }
+    if (item.route) {
+      router.push(item.route);
+      return;
+    }
+    router.push(`/log?type=${item.type}` as never);
+  };
+
   const logQuick = (item: QuickItem) => {
     if (item.route) {
       router.push(item.route);
@@ -951,7 +962,9 @@ export default function HomeScreen() {
                     icon={item.icon}
                     label={item.label}
                     accessibilityLabel={item.route ? "Open Quick Log" : `Log ${item.label}`}
+                    accessibilityHint={item.route ? "Opens the full Quick Log." : "Long press opens details before saving."}
                     onPress={() => logQuick(item)}
+                    onLongPress={() => openQuickDetails(item)}
                     accent={colors.secondary}
                     style={s.homeQuickTile}
                     iconSize={25}
