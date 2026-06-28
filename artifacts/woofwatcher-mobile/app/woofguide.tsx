@@ -26,7 +26,7 @@ import {
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare, CareState } from "@/context/CareContext";
-import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import {
   getDockedComposerBottomPadding,
   getKeyboardAvoidingVerticalOffset,
@@ -315,7 +315,10 @@ export default function WoofGuideScreen() {
                   />
                 </BoardCard>
                 <BoardCard style={s.quickQuestionBoard}>
-                  <BoardSectionHeader title="Quick questions" action="Tap to ask" />
+                  <BoardSectionHeader
+                    title="Quick questions"
+                    accessory={<BoardPill label="Tap to ask" tone={colors.sage} />}
+                  />
                   <View style={s.quickQuestionGrid}>
                     {quickQuestions.map((q) => (
                       <Pressable
@@ -331,7 +334,10 @@ export default function WoofGuideScreen() {
                   </View>
                 </BoardCard>
                 <BoardCard style={s.actionBoard}>
-                  <BoardSectionHeader title="Suggested actions" action="Owner reviewed" />
+                  <BoardSectionHeader
+                    title="Suggested actions"
+                    accessory={<BoardPill label="Owner reviewed" tone={colors.amber} />}
+                  />
                   <View style={s.guideActionList}>
                     {actionCards.map((action) => {
                       const tone =

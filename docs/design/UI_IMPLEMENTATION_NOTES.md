@@ -1658,3 +1658,24 @@ Design intent:
   customization controls, mood previews, save, reset, and back navigation.
 - Preserve the scan-to-pixel truth boundary: this is PixelLab/template-assisted
   owner approval, not a fake live photo-to-avatar claim.
+
+## 2026-06-28 WoofGuide Status Pill Polish
+
+WoofGuide now keeps AI-assistant state labels visually honest through shared
+`BoardPill` accessories instead of passive header actions:
+
+- `Quick questions` shows `Tap to ask` as a sage status badge.
+- `Suggested actions` shows `Owner reviewed` as an amber status badge.
+- The real WoofGuide actions remain the quick-question chips, suggested action
+  rows, text/send controls, owner-review modal, and back navigation.
+- The mobile readiness guard now blocks `BoardSectionHeader action=` on the
+  WoofGuide route and requires the core assistant labels to stay on
+  `BoardPill`.
+
+Design intent:
+
+- Make WoofGuide feel like a polished in-app assistant surface, not a mockup
+  with fake action text.
+- Preserve the product truth boundary: the route remains owner-reviewed and
+  non-diagnostic, with no fake live AI/provider/veterinary readiness implied by
+  the visual polish.

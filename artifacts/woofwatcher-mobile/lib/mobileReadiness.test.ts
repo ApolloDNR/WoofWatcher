@@ -1061,6 +1061,10 @@ test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
   assert.match(guide, /<BoardCard style=\{s\.guideIntroCard\}/);
   assert.match(guide, /<BoardCard style=\{s\.quickQuestionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Quick questions"/);
   assert.match(guide, /<BoardCard style=\{s\.actionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Suggested actions"/);
+  assert.match(guide, /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/);
+  assert.doesNotMatch(guide, /<BoardSectionHeader[\s\S]*?\saction=/);
+  assert.match(guide, /BoardSectionHeader\s+title="Quick questions"[\s\S]*<BoardPill\s+label="Tap to ask"/);
+  assert.match(guide, /BoardSectionHeader\s+title="Suggested actions"[\s\S]*<BoardPill\s+label="Owner reviewed"/);
   assert.match(guide, /Owner review required/);
   assert.doesNotMatch(guide, /quickRow:/);
   assert.doesNotMatch(guide, /actionArea:/);
