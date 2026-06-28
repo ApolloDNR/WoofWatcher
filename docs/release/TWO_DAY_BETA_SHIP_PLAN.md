@@ -59,7 +59,7 @@ The beta must not claim:
 - In the owner-preview loop, quick-log one safe care event or open the detail sheet, then undo it or leave a QA note if you do not want the test log to stay in local preview data.
 - On Log, confirm the care-type tabs, Undo/Add details, meal outcome, potty outcome, trust review, walk finish, and alone-time return controls feel phone-sized and easy to tap.
 - On Plans, confirm schedule tabs, Add plan, Find event, suggestion add, routine done, owner chips, save, and delete controls feel phone-sized and easy to tap.
-- On Health, confirm the Health/Bile tabs plus `Log health note` and `Records` actions feel phone-sized, calm, and clearly non-diagnostic.
+- On Health, confirm the Health/Bile tabs plus `Log health note`, `Records`, and `Share review` actions feel phone-sized, calm, useful for vet/caregiver handoff, and clearly non-diagnostic.
 - On More, confirm Launch Readiness, Native QA Next Captures, provider setup, household invite, Access Pass, profile edit, and save/share actions feel phone-sized and easy to tap.
 - On Records, confirm Dog ID share/print, medication search/filter, Care Pass preview, report resend/print, record add/delete, attachment, and sheet save/cancel controls feel phone-sized and easy to tap.
 - On Avatar Studio, confirm Scan/Template/Customize/Emotes tabs, Gallery, Take photo, template tiles, coat swatches, face options, accessories, mood previews, Reset, and Save Avatar controls feel phone-sized and easy to tap.
@@ -107,8 +107,8 @@ Shippable for internal beta after local verification passes:
 Current environment note:
 
 - The latest cross-platform install-guard slice removed the root `sh -c` preinstall dependency that was blocking Windows package/export attempts before Expo could run. `preinstall` now calls `node scripts/enforce-pnpm-install.mjs`, which still removes forbidden npm/yarn lockfiles and rejects npm/yarn user agents while running in a Windows-friendly Node process.
-- The latest Expo config slice also declares `ios`, `android`, and `web` platforms in `artifacts/woofwatcher-mobile/app.json` and sets `expo.web.bundler` to `metro`, matching the committed `smoke:web` export path. A direct package-local Expo CLI export attempt now advances past the earlier Metro-platform configuration error and stops at the current dependency-layer blocker: `Cannot determine the project's Expo SDK version because the module 'expo' is not installed`.
-- The new root `doctor:mobile-beta` command summarizes this state for Apollo, Replit, or a device helper. In this cleaned Windows shell it exits blocked on the same two actionable issues: local `pnpm` is not on PATH, and the mobile package cannot resolve `expo`.
+- The latest Expo config slice also declares `ios`, `android`, and `web` platforms in `artifacts/woofwatcher-mobile/app.json` and sets `expo.web.bundler` to `metro`, matching the committed `smoke:web` export path. Package-local Expo CLI export now passes from `artifacts/woofwatcher-mobile` through `node_modules\expo\bin\cli export --platform web --output-dir .expo-smoke --clear`.
+- The new root `doctor:mobile-beta` command summarizes dependency/export state for Apollo, Replit, or a device helper. If `pnpm` is not on PATH, the scripted `smoke:web` path can still be blocked even when the package-local Expo CLI proof path passes; install or activate `pnpm@10.24.0` before treating the full doctor path as dependency-complete.
 - The root package now pins `packageManager: pnpm@10.24.0`, matching the GitHub Actions verify workflow. The doctor checks that alignment so Replit, Corepack, local shells, and CI use the same pnpm target before export proof.
 - The doctor now gives explicit bootstrap guidance for the missing-pnpm case: if Corepack is available, run `corepack prepare pnpm@10.24.0 --activate`; if Corepack is not on PATH, install pnpm 10.24.0 directly or run the proof path in Replit/WSL.
 - The doctor now also verifies the current Node runtime is Node 24 and that `artifacts/woofwatcher-mobile/eas.json` includes both iOS and Android build profiles for preview and production. Those checks currently pass in this shell.
@@ -135,7 +135,7 @@ Current environment note:
 - The in-app `Share Beta Handoff` packet now includes that provider proof
   checklist too, so deadline helpers can use one packet for dependency proof,
   device proof, provider evidence, and launch truth boundaries.
-- Mobile TypeScript/export remain blocked in this cleaned Windows shell by the missing Expo/mobile dependency layer, and no local iOS/Android simulator/tooling is visible here. Re-run the doctor, install, TypeScript/export, and actual device capture from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or a native-device environment before treating this as dependency/export/device-proven.
+- Mobile TypeScript and package-local web export now pass in this cleaned Windows shell, but no local iOS/Android simulator/tooling is visible here. Re-run the full doctor, install, scripted `smoke:web`, and actual device capture from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or a native-device environment before treating this as native/device-proven.
 
 Still blocked for public launch:
 

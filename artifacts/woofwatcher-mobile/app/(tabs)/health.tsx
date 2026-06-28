@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { deriveHealthWatch, normalizeCareEventType } from "@workspace/care-domain";
 
@@ -15,7 +15,11 @@ import {
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { deriveHealthReviewPacket, type HealthReviewPacketAction } from "@/lib/healthReviewPacket";
+import {
+  buildHealthReviewPacketShareText,
+  deriveHealthReviewPacket,
+  type HealthReviewPacketAction,
+} from "@/lib/healthReviewPacket";
 import { getRouteTopPadding, getTabbedRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -325,6 +329,16 @@ export default function HealthScreen() {
     router.push(action.route);
   }
 
+  async function shareHealthReviewPacket(): Promise<void> {
+    await Share.share({
+      message: buildHealthReviewPacketShareText(healthReviewPacket, {
+        dogName: state.profile.name || "Phoenix",
+        generatedAtIso: new Date(now).toISOString(),
+      }),
+      title: "WoofWatcher Health Review Packet",
+    });
+  }
+
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -573,6 +587,23 @@ export default function HealthScreen() {
               {healthReviewPacket.boundary}
             </Text>
           </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Share health review"
+            onPress={shareHealthReviewPacket}
+            style={({ pressed }) => [
+              s.reviewPacketShare,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.background,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text style={[s.reviewPacketShareText, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+              Share review
+            </Text>
+          </Pressable>
 
           <View style={s.reviewPacketActions}>
             <Pressable
@@ -1091,6 +1122,19 @@ const s = StyleSheet.create({
     minWidth: 0,
     fontSize: 12,
     lineHeight: 17,
+  },
+  reviewPacketShare: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    paddingHorizontal: 10,
+  },
+  reviewPacketShareText: {
+    fontSize: 13,
+    textAlign: "center",
   },
   reviewPacketActions: {
     flexDirection: "row",

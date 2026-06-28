@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { deriveHealthReviewPacket, type HealthReviewPacketInput } from "./healthReviewPacket.ts";
+import {
+  buildHealthReviewPacketShareText,
+  deriveHealthReviewPacket,
+  type HealthReviewPacketInput,
+} from "./healthReviewPacket.ts";
 
 const baseInput: HealthReviewPacketInput = {
   dogName: "Phoenix",
@@ -97,4 +101,38 @@ test("uses review language without diagnosis or treatment claims for alert statu
   assert.doesNotMatch(combined, /\bdiagnose[sd]?\b/i);
   assert.doesNotMatch(combined, /\btreat(?:ment|s|ed|ing)?\b/i);
   assert.doesNotMatch(combined, /\bcure[sd]?\b/i);
+});
+
+test("formats a shareable Health Review Packet without medical certainty", () => {
+  const packet = deriveHealthReviewPacket({
+    ...baseInput,
+    healthStatus: "watch",
+    healthSummary: "Yellow bile was logged once this week.",
+    healthCounts: {
+      vomit7: 1,
+      appetiteWatch7: 1,
+      stoolWatch7: 0,
+      anxiety7: 0,
+    },
+    bileStatus: "Watch",
+    lastYellowBileLabel: "Jun 27, 7:05 AM",
+    longestFoodGapLabel: "13.0 hours",
+  });
+
+  const text = buildHealthReviewPacketShareText(packet, {
+    dogName: "Phoenix",
+    generatedAtIso: "2026-06-27T16:50:00.000Z",
+  });
+
+  assert.match(text, /WoofWatcher Health Review Packet/);
+  assert.match(text, /Generated: 2026-06-27T16:50:00.000Z/);
+  assert.match(text, /Dog: Phoenix/);
+  assert.match(text, /Status: Worth watching/);
+  assert.match(text, /Language: Pattern noticed/);
+  assert.match(text, /Suggested prompts/);
+  assert.match(text, /Vet-share checklist/);
+  assert.match(text, /Boundary/);
+  assert.match(text, /Not veterinary advice/);
+  assert.doesNotMatch(text, /\bdiagnose[sd]?\b/i);
+  assert.doesNotMatch(text, /\btreat(?:ment|s|ed|ing)?\b/i);
 });

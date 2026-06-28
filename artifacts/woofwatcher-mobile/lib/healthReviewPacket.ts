@@ -37,6 +37,11 @@ export interface HealthReviewPacket {
   secondaryAction: HealthReviewPacketAction;
 }
 
+export interface HealthReviewPacketShareOptions {
+  dogName: string;
+  generatedAtIso?: string;
+}
+
 function hasFoodGapLabel(value: string): boolean {
   const normalized = value.trim().toLowerCase();
   return !!normalized && !normalized.includes("needs more") && !normalized.includes("learning");
@@ -133,4 +138,37 @@ export function deriveHealthReviewPacket(input: HealthReviewPacketInput): Health
       params: { prompt: "health-review" },
     },
   };
+}
+
+function formatShareList(items: readonly string[], fallback: string): string[] {
+  if (!items.length) return [`- ${fallback}`];
+  return items.map((item) => `- ${item}`);
+}
+
+export function buildHealthReviewPacketShareText(
+  packet: HealthReviewPacket,
+  options: HealthReviewPacketShareOptions,
+): string {
+  const generatedAtIso = options.generatedAtIso ?? new Date().toISOString();
+
+  return [
+    "WoofWatcher Health Review Packet",
+    `Generated: ${generatedAtIso}`,
+    `Dog: ${options.dogName}`,
+    `Status: ${packet.statusLabel}`,
+    `Language: ${packet.languagePill}`,
+    "",
+    "Summary",
+    packet.summary,
+    "",
+    "Suggested prompts",
+    ...formatShareList(packet.prompts, "Keep logging care observations before sharing."),
+    "",
+    "Vet-share checklist",
+    ...formatShareList(packet.vetShareChecklist, "No checklist items available yet."),
+    "",
+    "Boundary",
+    packet.boundary,
+    "This packet organizes owner observations only. It is not veterinary advice. Contact a veterinarian for medical concerns.",
+  ].join("\n");
 }

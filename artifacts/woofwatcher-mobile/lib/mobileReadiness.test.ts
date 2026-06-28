@@ -735,7 +735,7 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
 test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () => {
   const health = readAppFile(join("(tabs)", "health.tsx"));
 
-  for (const styleName of ["tabPill", "heroActionPrimary", "heroActionSecondary"]) {
+  for (const styleName of ["tabPill", "heroActionPrimary", "heroActionSecondary", "reviewPacketShare"]) {
     assertStyleUsesSharedTouchTarget(health, styleName);
   }
 
@@ -751,6 +751,9 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /healthReviewPacket\.prompts/);
   assert.match(health, /healthReviewPacket\.vetShareChecklist/);
   assert.match(health, /healthReviewPacket\.boundary/);
+  assert.match(health, /buildHealthReviewPacketShareText/);
+  assert.match(health, /Share health review/);
+  assert.match(health, /Share\.share\(\{[\s\S]*message:\s*buildHealthReviewPacketShareText\(healthReviewPacket/);
   assert.match(health, /Draft vet questions/);
   assert.match(health, /CARE STATUS/);
   assert.match(health, /StatusMeter/);

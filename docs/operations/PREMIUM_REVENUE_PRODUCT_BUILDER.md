@@ -1122,6 +1122,19 @@ manually dispatched as GitHub Actions run `28295375561`, but job/check-run
 returned `log not found: 83834270843`, matching the standing GitHub
 billing/spending-limit pre-job blocker rather than a local product regression.
 
+The Health Review Packet share pass made Health Watch more handoff-ready for
+vet and caregiver conversations without changing the non-diagnostic boundary.
+`buildHealthReviewPacketShareText` now packages the current packet into a
+single share message with generated time, dog name, status, safe language
+label, summary, suggested prompts, vet-share checklist, and owner-observation
+boundary copy. Health Watch exposes that through a compact `Share review`
+button below the packet boundary. Red/green verification first failed on the
+missing share helper/UI contract, then passed focused Health Review
+Packet/mobile readiness checks, the 403-test behavior/readiness suite, mobile
+TypeScript, PixelLab asset verification at 149 files, package-local Expo web
+export to `.expo-smoke`, preview root `HEAD 200`, focused QA route `HEAD 200`,
+and `git diff --check` with expected Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
