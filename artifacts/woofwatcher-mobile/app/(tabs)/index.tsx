@@ -867,6 +867,41 @@ export default function HomeScreen() {
             ))}
           </View>
 
+          <View style={s.homeSplit}>
+            <BoardCard style={[s.nextCard, s.homeSplitCard]}>
+              <BoardSectionHeader title="Next Up" action={`1 of ${nextCount}`} />
+              {nextUp.slice(0, 3).map((item, index) => (
+                <CareRow
+                  key={`${item.label}-${item.time}-${index}`}
+                  icon={item.icon}
+                  title={item.label}
+                  detail={index === 0 ? nextDetail : item.time}
+                  meta={index === 0 && pendingMeal ? "Update" : index === 0 ? "Start" : ""}
+                  onPress={() => router.push(pendingMeal ? "/log?type=meal" : "/calendar")}
+                />
+              ))}
+            </BoardCard>
+
+            <BoardCard style={[s.quickHomeCard, s.homeSplitCard]}>
+              <BoardSectionHeader title="Quick Log" action="Open" />
+              <View style={s.homeQuickGrid}>
+                {HOME_QUICK_LOG.map((item) => (
+                  <QuickActionTile
+                    key={item.key}
+                    icon={item.icon}
+                    label={item.label}
+                    accessibilityLabel={item.route ? "Open Quick Log" : `Log ${item.label}`}
+                    onPress={() => logQuick(item)}
+                    accent={colors.secondary}
+                    style={s.homeQuickTile}
+                    iconSize={25}
+                    labelStyle={s.homeQuickText}
+                  />
+                ))}
+              </View>
+            </BoardCard>
+          </View>
+
           <BoardCard tone="navy" style={[s.missionDeck, { padding: missionLayout.deckPadding }]}>
             <View style={[s.missionHeader, { marginBottom: missionLayout.headerGap }]}>
               <View>
@@ -961,41 +996,6 @@ export default function HomeScreen() {
               })}
             </View>
           </BoardCard>
-
-          <View style={s.homeSplit}>
-            <BoardCard style={[s.nextCard, s.homeSplitCard]}>
-              <BoardSectionHeader title="Next Up" action={`1 of ${nextCount}`} />
-              {nextUp.slice(0, 3).map((item, index) => (
-                <CareRow
-                  key={`${item.label}-${item.time}-${index}`}
-                  icon={item.icon}
-                  title={item.label}
-                  detail={index === 0 ? nextDetail : item.time}
-                  meta={index === 0 && pendingMeal ? "Update" : index === 0 ? "Start" : ""}
-                  onPress={() => router.push(pendingMeal ? "/log?type=meal" : "/calendar")}
-                />
-              ))}
-            </BoardCard>
-
-            <BoardCard style={[s.quickHomeCard, s.homeSplitCard]}>
-              <BoardSectionHeader title="Quick Log" action="Open" />
-              <View style={s.homeQuickGrid}>
-                {HOME_QUICK_LOG.map((item) => (
-                  <QuickActionTile
-                    key={item.key}
-                    icon={item.icon}
-                    label={item.label}
-                    accessibilityLabel={item.route ? "Open Quick Log" : `Log ${item.label}`}
-                    onPress={() => logQuick(item)}
-                    accent={colors.secondary}
-                    style={s.homeQuickTile}
-                    iconSize={25}
-                    labelStyle={s.homeQuickText}
-                  />
-                ))}
-              </View>
-            </BoardCard>
-          </View>
 
           <View style={s.cardGrid}>
             <BoardCard style={s.gridCard}>

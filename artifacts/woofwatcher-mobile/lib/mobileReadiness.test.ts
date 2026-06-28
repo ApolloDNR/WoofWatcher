@@ -725,6 +725,23 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(releaseQa, /floating paw nav/);
 });
 
+test("keeps Home immediate care actions ahead of the richer mission deck", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  const immediateActionIndex = home.indexOf("<View style={s.homeSplit}>");
+  const missionDeckIndex = home.indexOf('<BoardCard tone="navy" style={[s.missionDeck');
+
+  assert.notEqual(immediateActionIndex, -1, "Home should render the Next Up and Quick Log split");
+  assert.notEqual(missionDeckIndex, -1, "Home should render the mission deck");
+  assert.ok(
+    immediateActionIndex < missionDeckIndex,
+    "Next Up and Quick Log should stay above the richer RPG mission deck",
+  );
+  assert.match(home, /BoardSectionHeader title="Next Up"/);
+  assert.match(home, /BoardSectionHeader title="Quick Log"/);
+  assert.match(home, /Today's Missions/);
+});
+
 test("keeps Phoenix Home owner-preview actions on shared mobile touch targets", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

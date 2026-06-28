@@ -1440,3 +1440,25 @@ Design intent:
   two-day deadline.
 - Preserve truth: the static preview proves the local/PWA beta can open; it is
   not native iOS/Android proof, provider approval, or store approval.
+
+## 2026-06-28 Home Immediate Action Reorder
+
+Phoenix Home now puts the fast operational actions closer to the locked mobile
+mockups:
+
+- `Next Up` and `Quick Log` now render directly after the living Phoenix room
+  and status strip.
+- The richer navy care-RPG mission deck still exists, but it now follows the
+  immediate care loop as premium context instead of blocking it.
+- A mobile readiness guard protects this order so future visual polish cannot
+  bury the under-five-second owner actions below secondary story/progress UI.
+
+Design intent:
+
+- Make the first owner-review path answer "what is next?" and "what can I log
+  now?" faster.
+- Keep the Home surface serious enough for real household care while preserving
+  the neo-retro game layer as delight.
+- Move the screen closer to Apollo's selected reference boards without
+  weakening the truthful launch boundaries around native, provider, and store
+  proof.
