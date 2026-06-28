@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { deriveHealthWatch, normalizeCareEventType } from "@workspace/care-domain";
@@ -20,12 +20,48 @@ import {
   deriveHealthReviewPacket,
   type HealthReviewPacketAction,
 } from "@/lib/healthReviewPacket";
-import { getRouteTopPadding, getTabbedRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
+import {
+  getRouteTopPadding,
+  getTabbedRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
 type HealthTab = "health" | "bile";
+
+function HealthHeaderAction({
+  label,
+  accessibilityLabel,
+  onPress,
+}: {
+  label: string;
+  accessibilityLabel: string;
+  onPress: () => void;
+}) {
+  const colors = useColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      hitSlop={MOBILE_INLINE_HIT_SLOP}
+      onPress={onPress}
+      style={({ pressed }) => [
+        s.healthHeaderAction,
+        {
+          backgroundColor: pressed ? colors.secondary : colors.background,
+          borderColor: colors.border,
+        },
+      ]}
+    >
+      <Text style={[s.healthHeaderActionText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
 function entryText(entry: { title?: string; note?: string; details?: { [key: string]: unknown } }): string {
   const details = entry.details
@@ -97,6 +133,7 @@ export default function HealthScreen() {
   const insets = useSafeAreaInsets();
   const { state } = useCare();
   const now = Date.now();
+  const scrollRef = useRef<ScrollView>(null);
   const [activeTab, setActiveTab] = useState<HealthTab>("health");
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
@@ -342,6 +379,7 @@ export default function HealthScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        ref={scrollRef}
         style={s.container}
         contentContainerStyle={{
           paddingTop: getRouteTopPadding({
@@ -718,7 +756,19 @@ export default function HealthScreen() {
         ) : null}
 
         <BoardCard style={s.sectionCard}>
-          <BoardSectionHeader title="Health Snapshot" action="7-day view" />
+          <BoardSectionHeader
+            title="Health Snapshot"
+            accessory={
+              <HealthHeaderAction
+                label="7-day view"
+                accessibilityLabel="Show Health 7-day rhythm"
+                onPress={() => {
+                  setActiveTab("health");
+                  scrollRef.current?.scrollTo({ y: 0, animated: true });
+                }}
+              />
+            }
+          />
           <View style={s.statusGrid}>
             {healthRows.map((row) => (
               <View
@@ -766,7 +816,18 @@ export default function HealthScreen() {
         ) : null}
 
         <BoardCard style={s.sectionCard}>
-          <BoardSectionHeader title="Pattern Board" action={healthWatch.patterns.length ? "Owner notes" : undefined} />
+          <BoardSectionHeader
+            title="Pattern Board"
+            accessory={
+              healthWatch.patterns.length ? (
+                <HealthHeaderAction
+                  label="Owner notes"
+                  accessibilityLabel="Open health owner notes"
+                  onPress={() => router.push({ pathname: "/log", params: { type: "symptom" } })}
+                />
+              ) : undefined
+            }
+          />
           <View style={[s.reviewPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <Text style={[s.reviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
               {healthWatch.status === "good" ? "Care rhythm looks steady" : "Next best review step"}
@@ -1027,6 +1088,17 @@ const s = StyleSheet.create({
   sectionCard: { marginTop: 14 },
   sectionTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 2 },
   boardSectionTop: { flex: 1, marginBottom: 0 },
+  healthHeaderAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  healthHeaderActionText: {
+    fontSize: 11.5,
+  },
   reviewPacketTop: {
     flexDirection: "row",
     alignItems: "flex-start",

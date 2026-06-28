@@ -798,7 +798,7 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
 test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () => {
   const health = readAppFile(join("(tabs)", "health.tsx"));
 
-  for (const styleName of ["tabPill", "heroActionPrimary", "heroActionSecondary", "reviewPacketShare"]) {
+  for (const styleName of ["tabPill", "heroActionPrimary", "heroActionSecondary", "reviewPacketShare", "healthHeaderAction"]) {
     assertStyleUsesSharedTouchTarget(health, styleName);
   }
 
@@ -825,6 +825,12 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /Health observations, not diagnosis/);
   assert.match(health, /Log health note/);
   assert.match(health, /7-day bile log/);
+  assert.match(health, /function HealthHeaderAction/);
+  assert.match(health, /hitSlop=\{MOBILE_INLINE_HIT_SLOP\}/);
+  assert.match(health, /accessibilityLabel="Show Health 7-day rhythm"/);
+  assert.match(health, /scrollRef\.current\?\.scrollTo\(\{ y: 0, animated: true \}\)/);
+  assert.match(health, /accessibilityLabel="Open health owner notes"/);
+  assert.match(health, /router\.push\(\{ pathname: "\/log", params: \{ type: "symptom" \} \}\)/);
   assert.match(health, /accessibilityState=\{\{ selected: active \}\}/);
   assert.match(health, /Not veterinary advice/);
 });

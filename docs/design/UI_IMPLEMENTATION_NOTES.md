@@ -1503,3 +1503,25 @@ Design intent:
   the locked neo-retro pixel visual direction.
 - Continue the screen-by-screen pass toward mockup accuracy without adding fake
   provider, native, store, or PDF readiness claims.
+
+## 2026-06-28 Health Header Action Polish
+
+Health Watch now treats compact header labels as real app actions:
+
+- `Health Snapshot / 7-day view` is a thumb-safe `HealthHeaderAction` that
+  returns the screen to the top health rhythm view instead of acting like static
+  decorative copy.
+- `Pattern Board / Owner notes` now opens the symptom/health note composer in
+  Quick Log, so owners can add the observation evidence the screen asks for.
+- Both actions use the shared inline hit slop and minimum mobile touch target.
+- Mobile readiness now guards the reusable Health header action, route target,
+  scroll target, accessibility labels, and shared touch-target style.
+
+Design intent:
+
+- Make Health Watch feel calmer and more established while preserving the
+  non-diagnostic medical boundary.
+- Keep mockup-style labels honest: if an element looks tappable, it must either
+  route somewhere useful or stop looking like a control.
+- Continue visible Health mockup accuracy without claiming native proof,
+  provider-backed storage, generated PDF, store approval, or veterinary advice.

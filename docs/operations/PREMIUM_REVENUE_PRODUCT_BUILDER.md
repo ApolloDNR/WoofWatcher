@@ -1248,6 +1248,19 @@ manually dispatched as GitHub Actions run `28314204282`, but job/check-run
 `log not found: 83884302449`. This matches the standing GitHub
 billing/spending-limit pre-job blocker rather than a local product regression.
 
+The Health header action polish pass removed two mockup-style Health Watch dead
+affordances without weakening the medical boundary. `Health Snapshot / 7-day
+view` now renders as a real thumb-safe `HealthHeaderAction` that returns owners
+to the top 7-day rhythm view, and `Pattern Board / Owner notes` opens the
+symptom/health note composer in Quick Log so owners can add the observation
+evidence the screen asks for. Red/green verification first failed on the
+missing shared action contract, then passed mobile readiness 86/86. Fresh local
+verification passed the 409-test behavior/readiness suite, `tsc --build`,
+mobile TypeScript, PixelLab asset verification at 149 files, package-local Expo
+web export to `.expo-smoke`, preview root `HEAD 200` at
+`http://127.0.0.1:4194/`, and `git diff --check` with expected Windows CRLF
+warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
