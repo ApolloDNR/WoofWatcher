@@ -8,7 +8,7 @@ import {
   AVATAR_EMOTE_STATES,
   AVATAR_SCAN_WORKFLOW_STEPS,
   AVATAR_TEMPLATES,
-  buildMockScanSuggestion,
+  buildTemplateScanSuggestion,
   createDefaultAvatarConfig,
   deriveAvatarAccessoryFit,
   describeAvatarConfig,
@@ -81,8 +81,8 @@ test("creates and normalizes a Phoenix-first avatar config", () => {
   assert.equal(normalizeAvatarConfig({ templateId: "bully", emotePackId: "bully-starter" }, "Tank").emotePackId, "bully-starter");
 });
 
-test("keeps scan-assisted copy truthful and owner-approved", () => {
-  const suggestion = buildMockScanSuggestion("Phoenix", "2026-06-17T12:00:00.000Z");
+test("keeps template-scan copy truthful and owner-approved", () => {
+  const suggestion = buildTemplateScanSuggestion("Phoenix", "2026-06-17T12:00:00.000Z");
 
   assert.equal(suggestion.templateId, "shepherd");
   assert.equal(suggestion.confidence, "high");

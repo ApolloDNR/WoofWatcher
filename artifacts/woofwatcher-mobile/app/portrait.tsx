@@ -40,7 +40,7 @@ import {
   AVATAR_EMOTE_STATES,
   AVATAR_SCAN_WORKFLOW_STEPS,
   AVATAR_TEMPLATES,
-  buildMockScanSuggestion,
+  buildTemplateScanSuggestion,
   createDefaultAvatarConfig,
   deriveAvatarAccessoryFit,
   describeAvatarConfig,
@@ -187,7 +187,7 @@ export default function PortraitScreen() {
   const [scanLine, setScanLine] = useState(0);
   const [savedToast, setSavedToast] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const scanSuggestion = useMemo(() => buildMockScanSuggestion(petName), [petName]);
+  const scanSuggestion = useMemo(() => buildTemplateScanSuggestion(petName), [petName]);
 
   const scanAnim = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0)).current;
@@ -430,7 +430,7 @@ export default function PortraitScreen() {
               <View style={[s.corner, s.cornerBR]} />
             </Animated.View>
             <View style={s.workingCopy}>
-              <BoardPill label="Scan assist mock" icon="scan-outline" tone={colors.amber} active />
+              <BoardPill label="PixelLab template match" icon="scan-outline" tone={colors.amber} active />
               {sourceUri ? (
                 <View style={[s.sourceProofCard, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.copper }]}>
                   <Image source={{ uri: sourceUri }} style={s.sourceProofImage} contentFit="cover" transition={160} />
@@ -1041,7 +1041,7 @@ export default function PortraitScreen() {
         ) : (
           <BoardCard style={s.tipBoard} tone="soft">
             <Text style={[s.tipText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-              True AI scanning plugs in later. This version ships the reliable character creator, scan suggestion, and emote-preview system first.
+              Provider scanning can plug in later. This version ships the reliable PixelLab template matcher, character creator, and emote-preview system first.
             </Text>
           </BoardCard>
         )}

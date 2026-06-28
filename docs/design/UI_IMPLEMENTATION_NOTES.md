@@ -1942,3 +1942,23 @@ Design intent:
   shortcut with weaker recovery.
 - Preserve the care-operation feeling: visible routines should resolve into
   editable household evidence.
+
+## 2026-06-28 Avatar Studio PixelLab Truth Polish
+
+Avatar Studio no longer exposes mock-era scan language in the care-twin path:
+
+- The template suggestion helper is named `buildTemplateScanSuggestion`.
+- The working scan badge says `PixelLab template match`.
+- The support copy says provider scanning can plug in later, while the current
+  build ships the PixelLab template matcher, character creator, and emote
+  preview system.
+- The readiness contract guards against bringing back `Scan assist mock` or
+  `True AI scanning plugs in later` copy.
+
+Design intent:
+
+- Keep the product promise truthful without making Avatar Studio feel temporary.
+- Match Apollo's PixelLab direction: photos guide a pixel-template suggestion,
+  but the saved care twin remains an editable pixel character.
+- Preserve trust for store screenshots and owner previews by avoiding visible
+  mock, fake AI, or fake provider readiness language.

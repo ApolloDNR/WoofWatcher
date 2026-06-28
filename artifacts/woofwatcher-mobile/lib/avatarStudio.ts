@@ -413,7 +413,7 @@ export function normalizeAvatarConfig(input: unknown, petName = "Phoenix"): PetA
   };
 }
 
-export function buildMockScanSuggestion(petName = "Phoenix", now = new Date().toISOString()): AvatarScanSuggestion {
+export function buildTemplateScanSuggestion(petName = "Phoenix", now = new Date().toISOString()): AvatarScanSuggestion {
   const suggestedConfig = {
     ...createDefaultAvatarConfig(petName, now),
     scanAssisted: true,

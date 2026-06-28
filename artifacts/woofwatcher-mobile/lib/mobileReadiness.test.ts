@@ -1518,7 +1518,8 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   }
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);
-  assert.match(avatarModel, /buildMockScanSuggestion/);
+  assert.match(avatarModel, /buildTemplateScanSuggestion/);
+  assert.doesNotMatch(avatarModel, /buildMockScanSuggestion/);
   assert.match(avatarModel, /AVATAR_SCAN_WORKFLOW_STEPS/);
   assert.match(avatarModel, /You always approve the match/);
   assert.doesNotMatch(avatarModel, /perfectly scan/i);
@@ -1535,6 +1536,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.doesNotMatch(more, /Portrait Studio/);
   assert.doesNotMatch(avatarStudio, /backBtn:/);
   assert.doesNotMatch(avatarStudio, /headerTitle:/);
+  assert.doesNotMatch(avatarStudio, /Scan assist mock/);
+  assert.doesNotMatch(avatarStudio, /True AI scanning plugs in later/);
+  assert.match(avatarStudio, /PixelLab template match/);
+  assert.match(avatarStudio, /Provider scanning can plug in later/);
   assert.doesNotMatch(avatarStudio, /heroPreview: \{[^\n]*(shadowOpacity|elevation)/);
   assert.doesNotMatch(avatarStudio, /canvasCard: \{[^\n]*(shadowOpacity|elevation)/);
 });
