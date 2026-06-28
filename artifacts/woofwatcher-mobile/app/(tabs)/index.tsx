@@ -883,7 +883,29 @@ export default function HomeScreen() {
             </BoardCard>
 
             <BoardCard style={[s.quickHomeCard, s.homeSplitCard]}>
-              <BoardSectionHeader title="Quick Log" action="Open" />
+              <BoardSectionHeader
+                title="Quick Log"
+                accessory={
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Open full Quick Log"
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => router.push("/log")}
+                    style={({ pressed }) => [
+                      s.quickHeaderAction,
+                      {
+                        backgroundColor: pressed ? colors.secondary : colors.accent,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[s.quickHeaderActionText, { color: colors.navy, fontFamily: "Inter_800ExtraBold" }]}>
+                      Open
+                    </Text>
+                    <Ionicons name="chevron-forward" size={13} color={colors.navy} />
+                  </Pressable>
+                }
+              />
               <View style={s.homeQuickGrid}>
                 {HOME_QUICK_LOG.map((item) => (
                   <QuickActionTile
@@ -1492,6 +1514,21 @@ const s = StyleSheet.create({
   nextCard: { marginTop: 0 },
   quickHomeCard: {
     minHeight: 188,
+  },
+  quickHeaderAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  quickHeaderActionText: {
+    fontSize: 10,
+    letterSpacing: 0,
   },
   homeQuickGrid: {
     flexDirection: "row",

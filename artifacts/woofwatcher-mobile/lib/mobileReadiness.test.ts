@@ -738,8 +738,19 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
     "Next Up and Quick Log should stay above the richer RPG mission deck",
   );
   assert.match(home, /BoardSectionHeader title="Next Up"/);
-  assert.match(home, /BoardSectionHeader title="Quick Log"/);
+  assert.match(home, /BoardSectionHeader\s+title="Quick Log"/);
   assert.match(home, /Today's Missions/);
+});
+
+test("keeps Home Quick Log header action as a real route target", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  assert.match(
+    home,
+    /BoardSectionHeader\s+title="Quick Log"\s+accessory=\{\s*<Pressable[\s\S]*accessibilityLabel="Open full Quick Log"[\s\S]*onPress=\{\(\) => router\.push\("\/log"\)\}/,
+  );
+  assert.match(home, /style=\{\(\{ pressed \}\) => \[[\s\S]*s\.quickHeaderAction/);
+  assertStyleUsesSharedTouchTarget(home, "quickHeaderAction");
 });
 
 test("keeps Phoenix Home owner-preview actions on shared mobile touch targets", () => {

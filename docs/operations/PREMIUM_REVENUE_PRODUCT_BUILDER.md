@@ -1212,6 +1212,16 @@ and `gh run view --log-failed` returned `log not found: 83880810426`. This
 matches the standing GitHub billing/spending-limit pre-job blocker rather than
 a local product regression.
 
+The Home Quick Log header action pass removed another owner-preview dead end.
+The compact Home Quick Log card now renders `Open` as a real `Pressable`
+accessory that routes to `/log`, uses the `Open full Quick Log` accessibility
+label, shares the inline hit slop, and keeps the 48px touch-target contract
+through `quickHeaderAction`. Fresh local verification passed mobile readiness
+85/85, the 408-test behavior/readiness suite, `tsc --build`, mobile TypeScript,
+PixelLab asset verification at 149 files, package-local Expo web export to
+`.expo-smoke`, foreground preview root `HEAD 200` at
+`http://127.0.0.1:4194/`, and `git diff --check`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

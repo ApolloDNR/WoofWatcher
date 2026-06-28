@@ -1462,3 +1462,22 @@ Design intent:
 - Move the screen closer to Apollo's selected reference boards without
   weakening the truthful launch boundaries around native, provider, and store
   proof.
+
+## 2026-06-28 Home Quick Log Header Action
+
+The Home Quick Log card no longer shows a dead-looking `Open` label:
+
+- The header action is now a real `Pressable` route target that opens the full
+  Quick Log screen at `/log`.
+- The action uses the shared mobile touch-target minimum and inline hit slop so
+  it stays thumb-safe beside the section title.
+- A mobile readiness guard now protects the route target, accessibility label,
+  and touch-target style.
+
+Design intent:
+
+- Remove a first-screen dead affordance before owner preview.
+- Let users jump from the compact Home grid to the full detailed logging system
+  without hunting for the bottom tab.
+- Keep Home aligned with the premium-app rule that every visible control has a
+  real purpose.
