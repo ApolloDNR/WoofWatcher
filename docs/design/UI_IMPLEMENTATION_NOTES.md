@@ -1918,3 +1918,27 @@ Design intent:
 - Reduce owner-preview dead ends before native iOS/Android capture while staying
   honest that provider sync, push notifications, payments, AI, PDFs, and store
   approval are still gated.
+
+## 2026-06-28 Plans Routine Log Recovery Polish
+
+Plans Daily Routine quick logging now uses the same recoverable logging doctrine
+as Home:
+
+- Tapping a routine `Log done` button still records the routine quickly.
+- The created care entry id is captured immediately after `addEntry`.
+- A bottom-safe feedback bar confirms the routine log and offers `Undo` plus
+  `Add details`.
+- `Undo` deletes the exact created entry, so accidental routine taps do not
+  pollute household history.
+- `Add details` routes to `/log?entry=...`, opening the real source log for
+  notes, sticky notes, corrections, trust review, and audit history.
+- The feedback bar uses strong navy/copper treatment, accessible labels, and
+  minimum mobile touch targets.
+
+Design intent:
+
+- Keep routine completion under five seconds while making the action safe.
+- Treat Plans as part of the same logging system as Home and Log, not a separate
+  shortcut with weaker recovery.
+- Preserve the care-operation feeling: visible routines should resolve into
+  editable household evidence.

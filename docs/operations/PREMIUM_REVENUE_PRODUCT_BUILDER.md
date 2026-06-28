@@ -1504,6 +1504,21 @@ Expo web export to `.expo-smoke` with 223 files, preview route smoke for `/`,
 `/calendar`, and `/log?type=grooming&detail=1&intent=smoke`, and
 `git diff --check` with only expected Windows CRLF warnings.
 
+The Plans routine log recovery pass made Daily Routine completion safer and more
+consistent with the locked quick-log doctrine. Tapping a routine `Log done`
+button still creates the routine-aware care entry immediately, but the screen now
+keeps the returned entry id and shows a bottom-safe feedback bar with real
+`Undo` and `Add details` actions. Undo deletes the exact created entry. Add
+Details routes to `/log?entry=...` so owners can edit the real source log for
+notes, sticky notes, corrections, trust review, and audit history instead of
+creating duplicate evidence. Red/green verification first failed on the missing
+recoverable Plans routine logging contract, then passed mobile readiness 88/88.
+Fresh local verification passed the 411-test mobile/domain behavior suite,
+PixelLab assets `ok=149 missing=0 invalid=0`, root TypeScript, mobile TypeScript,
+package-local Expo web export to `.expo-smoke` with 223 files, preview route
+smoke for `/`, `/calendar`, and `/log?entry=smoke`, and `git diff --check` with
+only expected Windows CRLF warnings.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

@@ -2088,6 +2088,20 @@ test("routes Reminder Center rows to concrete care workflows", () => {
   assert.match(log, /routeSelectedType/);
 });
 
+test("keeps Plans routine quick logging recoverable and editable", () => {
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+
+  assert.match(calendar, /\{ state, updateCareDoc, addEntry, deleteEntry \} = useCare\(\)/);
+  assert.match(calendar, /const id = addEntry\(\{/);
+  assert.match(calendar, /showRoutineFeedback\(\{ id, title: routine\.label, type \}\)/);
+  assert.match(calendar, /deleteEntry\(routineFeedback\.id\)/);
+  assert.match(calendar, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(entryId\)\}` as never\)/);
+  assert.match(calendar, /accessibilityLabel=\{`Undo \$\{routineFeedback\.title\} routine log`\}/);
+  assert.match(calendar, /accessibilityLabel=\{`Add details to \$\{routineFeedback\.title\} routine log`\}/);
+  assert.match(calendar, /routineFeedback\.title\} logged/);
+  assert.match(calendar, />\s*Add details\s*</);
+});
+
 test("keeps Plans reminder and routine sections on shared board card anatomy", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
 

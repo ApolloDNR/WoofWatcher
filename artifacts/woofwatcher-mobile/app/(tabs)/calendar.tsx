@@ -155,7 +155,7 @@ export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, updateCareDoc, addEntry } = useCare();
+  const { state, updateCareDoc, addEntry, deleteEntry } = useCare();
 
   const { getToken } = useWoofAuth();
   const { routines, calendarEvents, profile, entries, caregivers, records } = state;
@@ -194,6 +194,8 @@ export default function CalendarScreen() {
   const [rOwner, setROwner] = useState("");
   const [rNote, setRNote] = useState("");
   const [rTimeError, setRTimeError] = useState<string | null>(null);
+  const [routineFeedback, setRoutineFeedback] = useState<{ id: string; title: string; type: string } | null>(null);
+  const routineFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // WoofGuide discovery
   const [discoverOpen, setDiscoverOpen] = useState(false);
@@ -409,6 +411,39 @@ export default function CalendarScreen() {
     setRoutineOpen(false);
   };
 
+  const clearRoutineFeedbackTimer = () => {
+    if (routineFeedbackTimer.current) {
+      clearTimeout(routineFeedbackTimer.current);
+      routineFeedbackTimer.current = null;
+    }
+  };
+
+  const showRoutineFeedback = (feedback: { id: string; title: string; type: string }) => {
+    clearRoutineFeedbackTimer();
+    setRoutineFeedback(feedback);
+    routineFeedbackTimer.current = setTimeout(() => {
+      setRoutineFeedback(null);
+      routineFeedbackTimer.current = null;
+    }, 9000);
+  };
+
+  const undoRoutineFeedback = () => {
+    if (!routineFeedback) return;
+    clearRoutineFeedbackTimer();
+    void deleteEntry(routineFeedback.id);
+    setRoutineFeedback(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  };
+
+  const openRoutineFeedbackDetails = () => {
+    if (!routineFeedback) return;
+    const entryId = routineFeedback.id;
+    clearRoutineFeedbackTimer();
+    setRoutineFeedback(null);
+    Haptics.selectionAsync();
+    router.push(`/log?entry=${encodeURIComponent(entryId)}` as never);
+  };
+
   const logRoutineDone = (routine: {
     id: string;
     label: string;
@@ -431,7 +466,7 @@ export default function CalendarScreen() {
       details.householdVisible = true;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addEntry({
+    const id = addEntry({
       type,
       title: routine.label,
       caregiver,
@@ -439,6 +474,7 @@ export default function CalendarScreen() {
       ...(note ? { note } : {}),
       details,
     });
+    showRoutineFeedback({ id, title: routine.label, type });
   };
 
   const discover = async () => {
@@ -489,6 +525,11 @@ export default function CalendarScreen() {
   // Mount animation
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(16)).current;
+  useEffect(() => {
+    return () => {
+      if (routineFeedbackTimer.current) clearTimeout(routineFeedbackTimer.current);
+    };
+  }, []);
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: Platform.OS !== "web" }),
@@ -1002,6 +1043,60 @@ export default function CalendarScreen() {
         </Animated.View>
       </ScrollView>
 
+      {routineFeedback ? (
+        <View
+          style={[
+            s.routineFeedback,
+            {
+              backgroundColor: colors.brandNavy,
+              borderColor: colors.copper + "66",
+              bottom: insets.bottom + 92,
+            },
+          ]}
+        >
+          <View style={s.routineFeedbackCopy}>
+            <Text style={[s.routineFeedbackTitle, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+              {routineFeedback.title} logged
+            </Text>
+            <Text style={[s.routineFeedbackSub, { color: colors.ivory + "CC", fontFamily: "Inter_600SemiBold" }]}>
+              Routine board updated. Add details now or undo this care log.
+            </Text>
+          </View>
+          <View style={s.routineFeedbackActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Undo ${routineFeedback.title} routine log`}
+              onPress={undoRoutineFeedback}
+              style={({ pressed }) => [
+                s.routineFeedbackButton,
+                {
+                  backgroundColor: pressed ? "rgba(255,249,239,0.17)" : "rgba(255,249,239,0.1)",
+                  borderColor: "rgba(255,249,239,0.34)",
+                },
+              ]}
+            >
+              <Text style={[s.routineFeedbackButtonText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>Undo</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Add details to ${routineFeedback.title} routine log`}
+              onPress={openRoutineFeedbackDetails}
+              style={({ pressed }) => [
+                s.routineFeedbackButton,
+                {
+                  backgroundColor: pressed ? colors.copper + "DD" : colors.copper,
+                  borderColor: colors.copper,
+                },
+              ]}
+            >
+              <Text style={[s.routineFeedbackButtonText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                Add details
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       {/* Routine editor modal */}
       <Modal visible={routineOpen} transparent animationType="slide" onRequestClose={() => setRoutineOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
@@ -1382,6 +1477,37 @@ const s = StyleSheet.create({
   routineStatusText: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
   routineTime: { fontSize: 13 },
   routineDoneBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  routineFeedback: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    zIndex: 20,
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 13,
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
+    elevation: 7,
+  },
+  routineFeedbackCopy: { flex: 1, minWidth: 0 },
+  routineFeedbackTitle: { fontSize: 14.5 },
+  routineFeedbackSub: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
+  routineFeedbackActions: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 8 },
+  routineFeedbackButton: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: 72,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 11,
+  },
+  routineFeedbackButtonText: { fontSize: 12.5 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
