@@ -169,6 +169,40 @@ function adventureQuestIcon(id: string): PixelIconName {
   return "heart";
 }
 
+function HomeHeaderAction({
+  label,
+  accessibilityLabel,
+  route,
+}: {
+  label: string;
+  accessibilityLabel: string;
+  route: "/log" | "/health" | "/calendar" | "/records";
+}) {
+  const colors = useColors();
+  const router = useRouter();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      hitSlop={MOBILE_INLINE_HIT_SLOP}
+      onPress={() => router.push(route as never)}
+      style={({ pressed }) => [
+        s.homeHeaderAction,
+        {
+          backgroundColor: pressed ? colors.secondary : colors.background,
+          borderColor: colors.border,
+        },
+      ]}
+    >
+      <Text style={[s.homeHeaderActionText, { color: colors.navy, fontFamily: "Inter_800ExtraBold" }]}>
+        {label}
+      </Text>
+      <Ionicons name="chevron-forward" size={13} color={colors.navy} />
+    </Pressable>
+  );
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -1054,7 +1088,16 @@ export default function HomeScreen() {
             </BoardCard>
 
             <BoardCard style={s.gridCard}>
-              <BoardSectionHeader title="Recent activity" action="View all" />
+              <BoardSectionHeader
+                title="Recent activity"
+                accessory={
+                  <HomeHeaderAction
+                    label="View all"
+                    accessibilityLabel="View all recent care activity"
+                    route="/log"
+                  />
+                }
+              />
               {recentActivity.length ? (
                 recentActivity.map((entry) => (
                   <CareRow
@@ -1180,7 +1223,16 @@ export default function HomeScreen() {
           </BoardCard>
 
           <BoardCard style={s.statusCard}>
-            <BoardSectionHeader title="Phoenix status" action="View full report" />
+            <BoardSectionHeader
+              title="Phoenix status"
+              accessory={
+                <HomeHeaderAction
+                  label="View full report"
+                  accessibilityLabel="Open full Health Watch"
+                  route="/health"
+                />
+              }
+            />
             <View style={s.meterStack}>
               <StatusMeter
                 label="Energy"
@@ -1527,6 +1579,21 @@ const s = StyleSheet.create({
     gap: 2,
   },
   quickHeaderActionText: {
+    fontSize: 10,
+    letterSpacing: 0,
+  },
+  homeHeaderAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  homeHeaderActionText: {
     fontSize: 10,
     letterSpacing: 0,
   },

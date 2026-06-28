@@ -1229,6 +1229,18 @@ and `gh run view --log-failed` returned `log not found: 83882396792`. This
 matches the standing GitHub billing/spending-limit pre-job blocker rather than
 a local product regression.
 
+The Home section-action polish pass removed two more owner-preview dead ends.
+`Recent activity / View all` now renders as a real `HomeHeaderAction` that
+opens `/log`, and `Phoenix status / View full report` opens `/health`. Both
+header actions carry explicit accessibility labels, use shared inline hit slop,
+and keep the 48px mobile touch-target contract through `homeHeaderAction`.
+Red/green verification first failed on the missing route targets, then passed
+mobile readiness 86/86. Fresh local verification passed the 409-test
+behavior/readiness suite, `tsc --build`, mobile TypeScript, PixelLab asset
+verification at 149 files, package-local Expo web export to `.expo-smoke`
+after adding the bundled Node directory to `PATH` for the local shell, preview
+root `HEAD 200` at `http://127.0.0.1:4194/`, and `git diff --check`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

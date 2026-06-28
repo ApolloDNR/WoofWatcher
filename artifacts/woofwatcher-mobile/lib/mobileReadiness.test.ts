@@ -753,6 +753,18 @@ test("keeps Home Quick Log header action as a real route target", () => {
   assertStyleUsesSharedTouchTarget(home, "quickHeaderAction");
 });
 
+test("keeps Home owner-preview section actions as real route targets", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  assert.match(home, /BoardSectionHeader\s+title="Recent activity"\s+accessory=\{\s*<HomeHeaderAction/);
+  assert.match(home, /accessibilityLabel="View all recent care activity"/);
+  assert.match(home, /route="\/log"/);
+  assert.match(home, /BoardSectionHeader\s+title="Phoenix status"\s+accessory=\{\s*<HomeHeaderAction/);
+  assert.match(home, /accessibilityLabel="Open full Health Watch"/);
+  assert.match(home, /route="\/health"/);
+  assertStyleUsesSharedTouchTarget(home, "homeHeaderAction");
+});
+
 test("keeps Phoenix Home owner-preview actions on shared mobile touch targets", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

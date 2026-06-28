@@ -1481,3 +1481,25 @@ Design intent:
   without hunting for the bottom tab.
 - Keep Home aligned with the premium-app rule that every visible control has a
   real purpose.
+
+## 2026-06-28 Home Section Action Polish
+
+Phoenix Home now removes two more mockup-style dead affordances:
+
+- `Recent activity / View all` is a real `Pressable` accessory that opens the
+  full Log timeline at `/log`.
+- `Phoenix status / View full report` is a real `Pressable` accessory that
+  opens Health Watch at `/health`.
+- Both actions use the shared inline hit slop and minimum mobile touch target,
+  so they remain thumb-safe in the compact board layout.
+- A mobile readiness guard protects the route targets, accessibility labels,
+  and shared touch-target style.
+
+Design intent:
+
+- Keep Home feeling like established app software, not a static presentation
+  board.
+- Make first-screen review actions navigable and purposeful while preserving
+  the locked neo-retro pixel visual direction.
+- Continue the screen-by-screen pass toward mockup accuracy without adding fake
+  provider, native, store, or PDF readiness claims.
