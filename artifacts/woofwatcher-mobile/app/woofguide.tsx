@@ -261,6 +261,15 @@ export default function WoofGuideScreen() {
       return;
     }
 
+    if (draft.kind === "mood_summary") {
+      setMessages((prev) => [
+        { id: `draft_${Date.now()}`, role: "assistant", content: draft.body },
+        ...prev,
+      ]);
+      setReviewAction(null);
+      return;
+    }
+
     if (draft.kind === "care_pass") {
       setReviewAction(null);
       router.push("/records");

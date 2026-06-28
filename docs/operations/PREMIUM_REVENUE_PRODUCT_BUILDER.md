@@ -143,12 +143,13 @@ Latest completed local runtime/accessibility hardening:
 - Mood logging now captures structured energy and care context before deeper mood analytics. The Log composer saves low/steady/high energy, optional care context, sticky notes, and household visibility while preserving the top-level mood field used by Records Mood Trend and care-twin state.
 - Records Mood Trend now derives from shared care-domain logic before deeper mood analytics. Private and stale mood logs are excluded, while low/steady/high energy counts, latest caregiver/context, watch status, summary, and next-step copy are visible in Records without diagnostic claims.
 - Care Pass reports now include shared Mood & Energy handoff context before deeper mood analytics. `buildCarePass` reuses `deriveMoodTrend` so recent household-visible mood check-ins, energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language reach sitter, trainer, and vet reports while private and stale mood logs stay excluded.
+- WoofGuide now creates an owner-reviewed Mood & Energy summary from the same shared mood trend before provider-backed AI actions. The suggested action excludes private/stale mood logs, carries source entry ids, energy counts, and latest caregiver/context, and approving it only inserts a reviewed assistant message without changing care records.
 
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA when provider/runtime access is available.
 2. Continue accessibility traversal and visual runtime inspection for the live mobile app and Avatar Studio once simulator/device access is available.
-3. Add longer-range mood trend views and WoofGuide owner-reviewed mood summaries from `deriveMoodTrend`.
+3. Add longer-range mood trend views and richer mood trend visuals from `deriveMoodTrend`.
 4. Replace first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art, then continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Add live API integration tests for care-state write races and care-entry delete retention once a test database and provider-auth harness are available.
 6. Add live household provisioning, invite-join, active-household persistence, `/me.households`, active-household switching, role-gated household rename, owner/admin member role updates, split care-plan versus care-log write roles, sitter/trainer own-entry correction scoping, household audit review, sensitive household audit producer, invite-code visibility, mobile switcher, mobile Care Team role-management, Pack Audit, and multi-household membership integration tests once a test database and provider-auth harness are available.

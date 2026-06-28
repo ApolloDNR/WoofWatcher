@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-28: WoofGuide Mood Summaries Are Owner-Reviewed And Non-Mutating
+
+Decision: WoofGuide suggested actions may surface a Mood & Energy summary when recent shared mood check-ins exist. The summary should reuse `deriveMoodTrend`, exclude private and stale mood logs, include energy counts plus latest caregiver/context, and insert only a reviewed assistant message after owner approval. It must not create care logs, change routines, call live AI, or imply diagnosis.
+
+Reason: Mood logging now feeds Records and Care Pass, but owners also need a bounded assistant explanation they can review in the same WoofGuide workflow as meal, record, vet-note, and Care Pass drafts. Reusing the shared helper keeps the assistant grounded in the same household-visible evidence while provider-backed generation, citations, permission-aware writes, and durable report drafts remain gated.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed WoofGuide generation, persisted report drafts, mood charting, avatar state-machine changes, or permission-aware assistant writes become active release work.
+
 ### 2026-06-28: Care Pass Uses Shared Mood Handoff Context
 
 Decision: Care Pass reports should include a Mood & Energy section when recent shared mood check-ins exist. The report builder should reuse `deriveMoodTrend`, carry low/steady/high energy counts plus latest caregiver/context into sitter, trainer, and vet handoffs, exclude private and stale mood logs, and state that mood/energy is owner-reported context rather than a diagnosis.

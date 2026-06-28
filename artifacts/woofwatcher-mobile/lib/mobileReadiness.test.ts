@@ -843,6 +843,21 @@ test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
   assert.doesNotMatch(guide, /actionRow: \{[^\n]*shadowOpacity/);
 });
 
+test("keeps WoofGuide mood summaries owner-reviewed and non-mutating", () => {
+  const guide = readAppFile("woofguide.tsx");
+  const actions = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "woofGuideActions.ts"),
+    "utf8",
+  );
+
+  assert.match(actions, /deriveMoodTrend/);
+  assert.match(actions, /id: "mood-summary"/);
+  assert.match(actions, /kind: "mood_summary"/);
+  assert.match(actions, /Owner-reported context only; not a diagnosis or emergency triage\./);
+  assert.match(guide, /draft\.kind === "mood_summary"/);
+  assert.match(guide, /content: draft\.body/);
+});
+
 test("keeps Premium value, plan, and entitlement surfaces on shared board anatomy", () => {
   const premium = readAppFile("premium.tsx");
 

@@ -79,7 +79,7 @@ Passing evidence:
 - Care Pass reports can be previewed by audience before sharing.
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
 - Records show expired, due-soon, current, and reference status for saved record rows.
-- WoofGuide shows deterministic suggested actions tied to health watch, record attention, diet setup, routines, meal logging, and Care Pass preview.
+- WoofGuide shows deterministic suggested actions tied to health watch, record attention, diet setup, routines, meal logging, Care Pass preview, and owner-reviewed Mood & Energy summaries from shared mood evidence.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
 Current gaps:
@@ -129,7 +129,7 @@ Passing evidence:
 - WoofGuide direction is documented.
 - Medical boundary is documented.
 - AI helper routes exist.
-- Deterministic WoofGuide action-card model and tests exist before action writes are enabled.
+- Deterministic WoofGuide action-card model and tests exist before action writes are enabled, including owner-reviewed Mood & Energy summaries that reuse shared mood trend evidence without mutating care records.
 
 Current gaps:
 
@@ -150,6 +150,7 @@ Passing evidence:
 - Mood logging captures structured energy level, optional care context, sticky notes, and household visibility while preserving the mood field used by Records Mood Trend and care-twin state.
 - Records Mood Trend now uses shared care-domain logic to exclude private/stale mood logs, summarize low/steady/high energy, show latest caregiver/context, and provide safe household next-step copy.
 - Care Pass reports now include a Mood & Energy handoff section when shared recent mood check-ins exist. The section reuses shared mood-trend logic, carries energy counts plus latest caregiver/context, excludes private/stale mood logs, and keeps owner-reported/non-diagnostic boundary language for sitter, trainer, and vet review.
+- WoofGuide suggested actions now include an owner-reviewed Mood & Energy summary when shared recent mood check-ins exist. The draft reuses shared mood-trend logic, keeps private/stale mood logs out, and inserts only reviewed assistant text without changing care records.
 
 Current gaps:
 

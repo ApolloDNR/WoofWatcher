@@ -1,5 +1,6 @@
 import {
   deriveHealthWatch,
+  deriveMoodTrend,
   deriveRecordReminders,
   getRecordDueStatus,
   normalizeCareEventType,
@@ -74,7 +75,7 @@ export interface WoofGuideActionState {
   records?: readonly WoofGuideActionRecord[];
 }
 
-export type WoofGuideDraftKind = "log_entry" | "reminder" | "vet_note" | "care_pass";
+export type WoofGuideDraftKind = "log_entry" | "reminder" | "vet_note" | "care_pass" | "mood_summary";
 
 export interface WoofGuideDraftEntry {
   type: string;
@@ -231,12 +232,54 @@ function carePassDraft(): WoofGuideActionDraft {
   };
 }
 
+function moodSummaryDraft(
+  state: WoofGuideActionState,
+  now: number,
+): WoofGuideActionDraft | undefined {
+  const name = dogName(state);
+  const trend = deriveMoodTrend({ entries: state.entries, now, lookbackDays: 30, limit: 4 });
+  if (trend.total === 0) return undefined;
+
+  const energyLine = `Energy: ${trend.energy.low} low, ${trend.energy.steady} steady, ${trend.energy.high} high.`;
+  const latest = trend.latest
+    ? `Latest: ${trend.latest.moodLabel}${trend.latest.energyLevel ? `, ${trend.latest.energyLevel} energy` : ""} by ${trend.latest.caregiver}${trend.latest.context ? ` after ${trend.latest.context}` : ""}.`
+    : "";
+  const visibleItems = trend.items
+    .map((item) => `- ${item.moodLabel}${item.energyLevel ? `, ${item.energyLevel} energy` : ""} by ${item.caregiver}${item.context ? ` (${item.context})` : ""}`)
+    .join("\n");
+
+  return {
+    kind: "mood_summary",
+    title: "Review mood summary",
+    body: [
+      `${name} Mood & Energy Review`,
+      "",
+      trend.summary,
+      energyLine,
+      latest,
+      visibleItems,
+      "",
+      trend.nextStep,
+      "Safety boundary: Mood and energy are owner-reported context only, not a diagnosis or emergency triage.",
+    ].filter(Boolean).join("\n"),
+    cta: "Insert summary",
+    safety: "Owner-reported context only; not a diagnosis or emergency triage.",
+    sourceEntryIds: trend.items.map((item) => item.id),
+  };
+}
+
 export function deriveWoofGuideActions(
   state: WoofGuideActionState,
   now: number = Date.now(),
 ): WoofGuideActionCard[] {
   const name = dogName(state);
   const health = deriveHealthWatch({ entries: state.entries, routines: state.routines, now });
+  const moodDraft = moodSummaryDraft(state, now);
+  const moodUrgency = moodDraft
+    ? deriveMoodTrend({ entries: state.entries, now, lookbackDays: 30, limit: 1 }).status === "watch"
+      ? "watch"
+      : "normal"
+    : "normal";
   const records = state.records ?? [];
   const recordVault = summarizeRecordVault(records);
   const recordReminders = deriveRecordReminders(records, { now });
@@ -295,6 +338,17 @@ export function deriveWoofGuideActions(
       icon: "bowl",
       route: "/log",
       draft: mealLogDraft(state, now),
+    });
+  }
+
+  if (moodDraft) {
+    actions.push({
+      id: "mood-summary",
+      label: "Review mood summary",
+      detail: moodDraft.body.split("\n").find((line) => line.includes("shared mood check-ins")) ?? "Summarize recent shared mood and energy context.",
+      urgency: moodUrgency,
+      icon: "heart",
+      draft: moodDraft,
     });
   }
 

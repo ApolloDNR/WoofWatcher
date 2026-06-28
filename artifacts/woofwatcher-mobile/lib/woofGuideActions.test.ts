@@ -113,3 +113,59 @@ test("creates an owner-reviewed meal log draft when the first meal is missing", 
   assert.equal(mealAction?.draft?.entry?.details?.mealCompletion, "complete");
   assert.equal(mealAction?.draft?.entry?.details?.householdVisible, true);
 });
+
+test("creates an owner-reviewed mood summary from shared mood energy logs", () => {
+  const actions = deriveWoofGuideActions(
+    {
+      profile: { name: "Phoenix" },
+      dietProfile: {
+        primaryFood: "Sensitive kibble",
+        normalPortion: "1 cup",
+        mealSchedule: "7 AM and 6 PM",
+      },
+      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
+      records: [
+        { id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" },
+        { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
+        { id: "insurance", type: "insurance", title: "Lemonade", due: "Policy WW-1042" },
+      ],
+      entries: [
+        {
+          id: "mood-low",
+          type: "mood",
+          title: "Mood - Visitors",
+          caregiver: "Emma",
+          mood: "anxious",
+          occurredAt: "2026-06-06T18:00:00.000Z",
+          details: {
+            energyLevel: "low",
+            moodContext: "Visitors came by",
+            householdVisible: true,
+          },
+        },
+        {
+          id: "private-mood",
+          type: "mood",
+          caregiver: "Apollo",
+          mood: "happy",
+          occurredAt: "2026-06-06T17:00:00.000Z",
+          details: {
+            energyLevel: "high",
+            householdVisible: false,
+          },
+        },
+      ],
+    },
+    NOW,
+  );
+
+  const moodAction = actions.find((action) => action.id === "mood-summary");
+
+  assert.equal(moodAction?.urgency, "watch");
+  assert.equal(moodAction?.draft?.kind, "mood_summary");
+  assert.match(moodAction?.detail ?? "", /1 shared mood check-ins/);
+  assert.match(moodAction?.draft?.body ?? "", /Mood & Energy Review/);
+  assert.match(moodAction?.draft?.body ?? "", /Visitors came by/);
+  assert.match(moodAction?.draft?.body ?? "", /owner-reported/i);
+  assert.deepEqual(moodAction?.draft?.sourceEntryIds, ["mood-low"]);
+});

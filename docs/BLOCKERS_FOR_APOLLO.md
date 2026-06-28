@@ -40,7 +40,7 @@
 
 ## Development Environment
 
-- `pnpm` is callable through the bundled runtime in this worktree, but `pnpm run build:ci` cannot complete in this Windows shell because the root `preinstall` script invokes `sh`, which is not available on PATH. A sandboxed attempt also fails registry fetches with `EACCES` unless network escalation is granted; after escalation, dependency resolution proceeds but the missing `sh` stops the install before CI scripts run.
+- `pnpm` is callable through the bundled runtime in this worktree, but `pnpm run build:ci` cannot complete in this Windows shell because the root `preinstall` script invokes `sh`, which is not available on PATH. Latest check, 2026-06-28: the sandboxed attempt failed registry fetches with `EACCES`; after network escalation, dependency resolution completed but `preinstall` failed with `'sh' is not recognized as an internal or external command`, stopping the install before CI scripts ran.
 - Codex could not attach to the in-app Browser target during the 2026-06-13 visual QA attempt (`iab` unavailable), so local screenshot/runtime verification is still pending in Fable/Replit or another browser-capable environment.
 
 ## Legal, Privacy, And Safety
