@@ -1550,6 +1550,23 @@ Owner: Codex.
 
 Revisit trigger: owner-approved cleanup apply is designed, provider migrations/RLS are approved, or expired invite/helper cleanup needs a scheduled job.
 
+### 2026-06-28: Port Main-Line Mood/Energy Logic Instead Of Broad-Merging The Premium Branch
+
+Decision: after fetching the latest `origin/main`, the automation branch should not broad-merge main for this slice. The full merge was attempted, produced conflicts across API, mobile routes, generated clients, binary avatar assets, and docs, then was aborted. The accepted approach is to port the highest-impact mood/energy care logic surgically into the premium branch.
+
+Reason: this automation branch contains richer premium UI, care-twin QA, provider-readiness, and release-handoff work. A mechanical merge would risk losing or flattening those product lines. Mood/energy logging is still valuable for launch because it connects Quick Log, Records, Phoenix's care twin, and future WoofGuide summaries, so it should be brought in deliberately through shared care-domain logic.
+
+Consequences:
+
+- `deriveMoodTrend` lives in `lib/care-domain` and becomes the source formula for shared mood/energy trends.
+- Quick Log Mood captures mood, energy level, household visibility, care context, and optional sticky notes.
+- Records Mood Trend uses the shared formula for average score, steady/watch status, energy mix, latest context, and next-step copy.
+- Main-line reconciliation should continue as explicit, test-backed ports until the branch can be safely merged or replaced.
+
+Owner: Codex.
+
+Revisit trigger: the premium branch is ready for a dedicated conflict-resolution merge window, or main contains another high-impact care logic change that should be ported intentionally.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

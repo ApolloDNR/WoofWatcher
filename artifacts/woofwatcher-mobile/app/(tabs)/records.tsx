@@ -41,6 +41,7 @@ import {
   deriveMedicationAdherence,
   deriveMedicationFollowUps,
   deriveMedicationHistory,
+  deriveMoodTrend,
   derivePottyHealth,
   deriveRecordReminders,
   deriveTrainingProgress,
@@ -87,14 +88,6 @@ const HEALTH_ICON: Record<string, PulseIconName> = {
   alone: "house",
   medication: "pill",
   meds: "pill",
-};
-
-const MOOD_META: Record<string, { label: string; score: number; tone: "good" | "watch" | "alert" }> = {
-  happy: { label: "Happy", score: 5, tone: "good" },
-  excited: { label: "Excited", score: 4, tone: "good" },
-  calm: { label: "Calm", score: 4, tone: "good" },
-  anxious: { label: "Anxious", score: 2, tone: "watch" },
-  unwell: { label: "Unwell", score: 1, tone: "alert" },
 };
 
 const PERIODS = [
@@ -299,25 +292,10 @@ export default function RecordsScreen() {
   }, [weightTrend.items, current]);
 
   // ---- Mood distribution (last 30 days) ----
-  const moodStats = useMemo(() => {
-    const recent = state.entries.filter(
-      (e) => e.mood && MOOD_META[e.mood] && daysBetween(e.occurredAt, now) <= 30,
-    );
-    const counts: Record<string, number> = {};
-    let total = 0;
-    let scoreSum = 0;
-    for (const e of recent) {
-      counts[e.mood as string] = (counts[e.mood as string] ?? 0) + 1;
-      total += 1;
-      scoreSum += MOOD_META[e.mood as string].score;
-    }
-    const avg = total ? scoreSum / total : 0;
-    const bars = Object.keys(MOOD_META)
-      .map((k) => ({ key: k, ...MOOD_META[k], count: counts[k] ?? 0 }))
-      .filter((b) => b.count > 0)
-      .sort((a, b) => b.count - a.count);
-    return { total, avg, bars };
-  }, [state.entries, now]);
+  const moodStats = useMemo(
+    () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: 30, limit: 3 }),
+    [state.entries, now],
+  );
 
   // ---- Incident lookback ----
   const incidents = useMemo(
@@ -474,7 +452,7 @@ export default function RecordsScreen() {
       report.topCaregiver ? `Most active caregiver: ${report.topCaregiver.name} (${report.topCaregiver.count})` : "",
       "",
       `Current weight: ${current} ${unit} (goal ${goalWeight} ${unit})`,
-      moodStats.total ? `Mood average: ${moodStats.avg.toFixed(1)}/5 over ${moodStats.total} check-ins` : "",
+      moodStats.total ? `Mood average: ${moodStats.averageScore.toFixed(1)}/5 over ${moodStats.total} check-ins` : "",
       "",
       "Shared from WoofWatcher - patterns for caregiver & vet review.",
     ]
@@ -913,26 +891,79 @@ export default function RecordsScreen() {
 
           {/* Mood trend */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Mood Trend" action={moodStats.total > 0 ? `${moodStats.avg.toFixed(1)}/5 avg` : undefined} />
+            <BoardSectionHeader title="Mood Trend" action={moodStats.total > 0 ? `${moodStats.averageScore.toFixed(1)}/5 avg` : undefined} />
             {moodStats.bars.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                No mood check-ins yet. Log a mood to see trends.
+                No shared mood check-ins yet. Log mood with energy and care context to see trends.
               </Text>
             ) : (
-              moodStats.bars.map((b) => {
-                const tone = b.tone === "alert" ? colors.rose : b.tone === "watch" ? colors.amber : colors.sage;
-                const pct = moodStats.total > 0 ? Math.round((b.count / moodStats.total) * 100) : 0;
-                return (
-                  <View key={b.key} style={s.moodRow}>
-                    <Text style={[s.moodLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{b.label}</Text>
-                    <View style={[s.moodTrack, { backgroundColor: colors.background }]}>
-                      <View style={[s.moodFill, { backgroundColor: tone, width: `${(b.count / maxBar) * 100}%` }]} />
-                    </View>
-                    <Text style={[s.moodPct, { color: tone, fontFamily: "Inter_700Bold" }]}>{pct}%</Text>
-                    <Text style={[s.moodCount, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>({b.count})</Text>
+              <>
+                <View style={s.moodSummary}>
+                  <View style={[s.watchSummaryIcon, { backgroundColor: (moodStats.status === "watch" ? colors.amber : colors.sage) + "18" }]}>
+                    <Ionicons
+                      name={moodStats.status === "watch" ? "alert-circle-outline" : "heart-circle-outline"}
+                      size={18}
+                      color={moodStats.status === "watch" ? colors.amber : colors.sage}
+                    />
                   </View>
-                );
-              })
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      {moodStats.status === "watch" ? "Worth watching" : "Mood steady"}
+                    </Text>
+                    <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {moodStats.summary}
+                    </Text>
+                  </View>
+                </View>
+                <View style={s.moodEnergyRow}>
+                  {[
+                    { label: "Low", value: moodStats.energy.low, color: colors.amber },
+                    { label: "Steady", value: moodStats.energy.steady, color: colors.sage },
+                    { label: "High", value: moodStats.energy.high, color: colors.primary },
+                  ].map((item) => (
+                    <View key={item.label} style={[s.moodEnergyPill, { backgroundColor: item.color + "14", borderColor: item.color + "33" }]}>
+                      <Text style={[s.moodEnergyValue, { color: item.color, fontFamily: DISPLAY_SEMI }]}>{item.value}</Text>
+                      <Text style={[s.moodEnergyLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
+                    </View>
+                  ))}
+                </View>
+                {moodStats.bars.map((b) => {
+                  const tone = b.tone === "alert" ? colors.rose : b.tone === "watch" ? colors.amber : colors.sage;
+                  const pct = moodStats.total > 0 ? Math.round((b.count / moodStats.total) * 100) : 0;
+                  return (
+                    <View key={b.key} style={s.moodRow}>
+                      <Text style={[s.moodLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{b.label}</Text>
+                      <View style={[s.moodTrack, { backgroundColor: colors.background }]}>
+                        <View style={[s.moodFill, { backgroundColor: tone, width: `${(b.count / maxBar) * 100}%` }]} />
+                      </View>
+                      <Text style={[s.moodPct, { color: tone, fontFamily: "Inter_700Bold" }]}>{pct}%</Text>
+                      <Text style={[s.moodCount, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>({b.count})</Text>
+                    </View>
+                  );
+                })}
+                {moodStats.latest ? (
+                  <View style={[s.moodLatest, { borderTopColor: colors.border }]}>
+                    <View style={[s.watchSignalDot, { backgroundColor: moodStats.latest.tone === "alert" ? colors.rose : moodStats.latest.tone === "watch" ? colors.amber : colors.sage }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        Latest: {moodStats.latest.moodLabel}
+                        {moodStats.latest.energyLevel ? ` - ${moodStats.latest.energyLevel} energy` : ""}
+                      </Text>
+                      <Text style={[s.watchPatternEvidence, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {moodStats.latest.caregiver} - {relativeDay(moodStats.latest.occurredAt, now)}
+                      </Text>
+                      {moodStats.latest.context ? (
+                        <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                          {moodStats.latest.context}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                ) : null}
+                <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {moodStats.nextStep}
+                </Text>
+              </>
             )}
           </BoardCard>
 
@@ -2319,12 +2350,18 @@ const s = StyleSheet.create({
   trendSignalTitle: { fontSize: 12.8 },
   trendSignalDetail: { fontSize: 12.3, lineHeight: 17, marginTop: 3 },
 
+  moodSummary: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 10 },
+  moodEnergyRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  moodEnergyPill: { flex: 1, borderWidth: 1, borderRadius: 13, alignItems: "center", paddingVertical: 8, paddingHorizontal: 6 },
+  moodEnergyValue: { fontSize: 18, letterSpacing: 0 },
+  moodEnergyLabel: { fontSize: 10.5, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.4 },
   moodRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   moodLabel: { fontSize: 14, width: 64 },
   moodTrack: { flex: 1, height: 12, borderRadius: 6, overflow: "hidden" },
   moodFill: { height: "100%", borderRadius: 6 },
   moodPct: { fontSize: 12.5, width: 34, textAlign: "right" },
   moodCount: { fontSize: 12, width: 28 },
+  moodLatest: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderTopWidth: 1, paddingTop: 10, marginTop: 8 },
 
   hydrationSummary: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
   hydrationMeter: { height: 8, borderRadius: 4, overflow: "hidden", marginBottom: 12 },

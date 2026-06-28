@@ -1394,3 +1394,27 @@ Design intent:
   while preserving the boundary that WoofWatcher does not diagnose.
 - Keep the Health tab aligned with the product promise: pattern organization,
   caregiver clarity, and useful handoff, not medical certainty.
+
+## 2026-06-28 Mood And Energy Trend Polish
+
+Mood logging now behaves like a real care signal instead of a decorative
+reaction:
+
+- Quick Log Mood keeps the familiar fast mood selector but adds structured
+  energy level, household visibility, care context, and a sticky-note prompt in
+  the full composer.
+- Records Mood Trend now uses a shared care-domain model to show status,
+  average score, energy mix, latest caregiver/context, and next-step copy.
+- The UI language stays observational: `Mood steady`, `Worth watching`, latest
+  context, and household trend copy, not diagnosis or behavior certainty.
+- The implementation avoids a broad `origin/main` merge that conflicted with
+  the richer premium branch and instead ports the durable care logic cleanly.
+
+Design intent:
+
+- Make Phoenix's mood/energy loop feel connected to real household care, the
+  living care twin, and future WoofGuide summaries.
+- Keep detailed logging optional and fast enough for mobile, while still
+  giving serious patterns enough evidence for caregiver, trainer, or vet review.
+- Preserve the neo-retro board polish by showing compact status/energy chips
+  and latest-context proof instead of a generic analytics block.

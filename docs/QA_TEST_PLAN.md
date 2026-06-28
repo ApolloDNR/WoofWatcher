@@ -1130,3 +1130,24 @@ Latest local evidence, 2026-06-28:
   TypeScript, PixelLab verifier `ok=149 missing=0 invalid=0`, package-local
   Expo web export to `.expo-smoke`, preview root `HEAD 200`, focused QA route
   `HEAD 200`, and `git diff --check` with expected Windows CRLF warnings only.
+
+## Mood And Energy Trend Proof
+
+Latest local evidence, 2026-06-28:
+
+- Quick Log Mood now captures a structured mood, energy level, household
+  visibility, care context, and optional sticky note.
+- `deriveMoodTrend` lives in `lib/care-domain` so Records, future Care Pass
+  text, and WoofGuide can share the same non-guessy formula.
+- Records Mood Trend now shows average score, steady/watch status, energy mix,
+  latest context, and a next step instead of a loose screen-local bar chart.
+- A broad `origin/main` merge was tested and aborted because it conflicted
+  across API, mobile routes, generated clients, binary avatar assets, and docs;
+  this pass intentionally ported only the relevant mood/energy logic.
+- Focused proof passed `care-domain.test.ts` and `mobileReadiness.test.ts`
+  with 88/88 tests.
+- Broader local proof passed the 405-test behavior/readiness suite,
+  `tsc --build`, mobile TypeScript, PixelLab verifier
+  `ok=149 missing=0 invalid=0`, package-local Expo web export to `.expo-smoke`,
+  preview root `HEAD 200`, focused QA route `HEAD 200`, and `git diff --check`
+  with expected Windows CRLF warnings only.

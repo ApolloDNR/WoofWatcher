@@ -1142,6 +1142,20 @@ and `gh run view --log-failed` returned `log not found: 83871694493`, matching
 the standing GitHub billing/spending-limit pre-job blocker rather than a local
 product regression.
 
+The 2026-06-28 mood and energy care-trend pass reconciled the highest-impact
+latest main-line care logic into this richer premium branch without doing a
+destructive broad merge. A full `origin/main` merge was tested and aborted after
+large conflicts across API, mobile routes, generated clients, binary avatar
+assets, and docs. The accepted path adds `deriveMoodTrend` in shared
+care-domain logic, captures structured mood energy level, household visibility,
+care context, and sticky notes in Quick Log, and upgrades Records Mood Trend
+with source-backed status, energy mix, latest context, and next-step copy. Local
+verification passed focused mood/mobile readiness tests 88/88, the 405-test
+behavior/readiness suite, `tsc --build`, mobile TypeScript, PixelLab verifier
+`ok=149 missing=0 invalid=0`, package-local Expo web export, preview root
+`HEAD 200`, focused QA route `HEAD 200`, and `git diff --check` with expected
+Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

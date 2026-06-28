@@ -948,6 +948,25 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   }
 });
 
+test("keeps mood logging structured for energy, context, and household visibility", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const moodConfig = log.slice(log.indexOf('type: "mood"'), log.indexOf('type: "alone"'));
+  const buildEntryBlock = log.slice(log.indexOf("const buildEntry = useCallback"), log.indexOf("const handleLog = useCallback"));
+
+  assert.match(moodConfig, /key: "energyLevel"/);
+  assert.match(moodConfig, /id: "steady"/);
+  assert.match(moodConfig, /id: "low"/);
+  assert.match(moodConfig, /id: "high"/);
+  assert.match(moodConfig, /Sticky note: energy, trigger, appetite/);
+  assert.match(log, /const \[moodContext, setMoodContext\] = useState\(""\)/);
+  assert.match(log, /selectedType === "mood"[\s\S]*Care context/);
+  assert.match(log, /value=\{moodContext\}/);
+  assert.match(log, /onChangeText=\{setMoodContext\}/);
+  assert.match(log, /Shared mood logs update Mood Trend/);
+  assert.match(buildEntryBlock, /config\.type === "mood"[\s\S]*details\.householdVisible = householdVisible/);
+  assert.match(buildEntryBlock, /details\.moodContext = context/);
+});
+
 test("keeps Quick Log search and timeline on shared board card anatomy", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
@@ -1521,6 +1540,11 @@ test("keeps Records trend sections on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Trends"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Weight Trend"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Mood Trend"/);
+  assert.match(records, /deriveMoodTrend/);
+  assert.match(records, /moodStats\.averageScore/);
+  assert.match(records, /moodStats\.energy\.low/);
+  assert.match(records, /moodStats\.latest\.context/);
+  assert.match(records, /Mood steady|Worth watching/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Hydration"/);
 });
 

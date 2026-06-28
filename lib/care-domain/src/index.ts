@@ -18,6 +18,7 @@ export * from "./alone-time.ts";
 export * from "./weight-trend.ts";
 export * from "./grooming-care.ts";
 export * from "./incident-watch.ts";
+export * from "./mood-trend.ts";
 export * from "./care-reminders.ts";
 export * from "./care-log-search.ts";
 export * from "./household-access.ts";
