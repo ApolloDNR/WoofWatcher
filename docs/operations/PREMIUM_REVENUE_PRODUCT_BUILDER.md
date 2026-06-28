@@ -1156,6 +1156,16 @@ behavior/readiness suite, `tsc --build`, mobile TypeScript, PixelLab verifier
 `HEAD 200`, focused QA route `HEAD 200`, and `git diff --check` with expected
 Windows CRLF warnings only.
 
+Fresh resumed verification then caught one stale launch-readiness assertion in
+the mobile beta doctor JSON contract. The doctor was correctly blocking beta
+export because the available CLI was `pnpm 11.7.0` while the repo pins
+`pnpm 10.24.0`; the readiness test now treats `pnpm CLI matches pinned version`
+as a named dependency/export gate alongside missing pnpm and missing Expo
+resolution. Fresh local verification passed mobile readiness 82/82, the
+405-test behavior/readiness suite, `tsc --build`, mobile TypeScript, PixelLab
+asset verification at 149 files, package-local Expo web export to
+`.expo-smoke`, and `git diff --check` with expected Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

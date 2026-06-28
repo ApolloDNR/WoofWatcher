@@ -2314,7 +2314,12 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(payload.checks?.some((check) => check.label === "unsupported bundled pnpm candidate" && check.detail?.includes("pnpm")));
   if (payload.result === "BLOCKED") {
     assert.ok(
-      payload.issues?.some((issue) => issue === "pnpm available" || issue === "mobile package can resolve expo"),
+      payload.issues?.some(
+        (issue) =>
+          issue === "pnpm available" ||
+          issue === "pnpm CLI matches pinned version" ||
+          issue === "mobile package can resolve expo",
+      ),
       "blocked beta doctor should name the missing dependency/export gate",
     );
   }
