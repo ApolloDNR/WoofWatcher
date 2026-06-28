@@ -1780,3 +1780,26 @@ Design intent:
 - Keep the detail UI compact and familiar by reusing the Log launcher sheet.
 - Avoid a disconnected Home-only form that would drift from meal lifecycle,
   potty, medication, trust, sticky-note, and edit/audit logic.
+
+## 2026-06-28 Home Quick Log Undo and Add Details Polish
+
+Home quick taps now get the same safety affordance expected from the locked
+logging doctrine:
+
+- A successful Home quick log keeps a longer feedback toast with `Undo` and
+  `Add details` actions.
+- `Undo` deletes the just-created local care entry instead of asking owners to
+  hunt through Timeline.
+- `Add details` routes to `/log?entry=...` and Log opens the saved entry detail
+  sheet for the exact event.
+- Log now accepts an `entry` route param and ignores stale entry params after
+  consuming them once.
+- The feedback toast uses real pressable actions with mobile touch targets
+  instead of a passive status-only notification.
+
+Design intent:
+
+- Make fast logging feel safe enough for real household use.
+- Preserve speed while giving owners a clean recovery path for accidental taps.
+- Keep follow-up details attached to the actual saved log so audit, sticky
+  notes, trust review, and future corrections remain connected.

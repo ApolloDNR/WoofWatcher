@@ -1424,6 +1424,19 @@ web export to `.expo-smoke` with 223 files, preview root `HEAD 200`, detail
 route `HEAD 200` at `/log?type=meal&detail=1&intent=smoke`, and
 `git diff --check` with expected Windows CRLF warnings only.
 
+The Home Quick Log undo/detail polish pass added a recovery loop to first-screen
+quick taps. Successful Home quick logs now keep a longer feedback toast with
+real `Undo` and `Add details` actions; Undo deletes the just-created local care
+entry, while Add details routes to `/log?entry=...` so Log opens the saved entry
+detail sheet for the exact event. Log now consumes an `entry` route param and
+guards against stale already-consumed entry params. Red/green verification
+first failed on the missing Home undo/detail and Log entry-route contract, then
+passed mobile readiness 87/87. Fresh local verification passed the 410-test
+behavior/readiness suite, `tsc --build`, mobile TypeScript, package-local Expo
+web export to `.expo-smoke` with 223 files, preview root `HEAD 200`, entry route
+`HEAD 200` at `/log?entry=smoke`, and `git diff --check` with expected Windows
+CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

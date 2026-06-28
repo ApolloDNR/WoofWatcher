@@ -764,11 +764,19 @@ test("keeps Home Quick Log header action as a real route target", () => {
   assert.match(home, /router\.push\(`\/log\?type=\$\{item\.type\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
   assert.match(home, /onLongPress=\{\(\) => openQuickDetails\(item\)\}/);
   assert.match(home, /accessibilityHint=\{item\.route \? "Opens the full Quick Log\." : "Long press opens details before saving\."\}/);
-  assert.match(log, /useLocalSearchParams<\{\s*type\?: string \| string\[\];\s*detail\?: string \| string\[\];\s*intent\?: string \| string\[\];\s*\}>/);
+  assert.match(log, /useLocalSearchParams<\{\s*type\?: string \| string\[\];\s*detail\?: string \| string\[\];\s*intent\?: string \| string\[\];\s*entry\?: string \| string\[\];\s*\}>/);
   assert.match(log, /const routeWantsDetailSheet =/);
   assert.match(log, /const routeDetailIntentKey =/);
   assert.match(log, /findLauncherActionForType\(routeSelectedType\)/);
   assert.match(log, /setLauncherDetailAction\(routeDetailAction\)/);
+  assert.match(log, /const routeEntryParam =/);
+  assert.match(log, /setDetailEntryId\(routeEntryParam\)/);
+  assert.match(home, /const \[quickFeedback, setQuickFeedback\]/);
+  assert.match(home, /deleteEntry\(quickFeedback\.id\)/);
+  assert.match(home, /const entryId = quickFeedback\.id/);
+  assert.match(home, /router\.push\(`\/log\?entry=\$\{entryId\}` as never\)/);
+  assert.match(home, /Undo/);
+  assert.match(home, /Add details/);
   assertStyleUsesSharedTouchTarget(home, "quickHeaderAction");
 });
 

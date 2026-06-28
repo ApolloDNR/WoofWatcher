@@ -209,7 +209,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const router = useRouter();
-  const { state, addEntry } = useCare();
+  const { state, addEntry, deleteEntry } = useCare();
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
 
   const topPadding = getRouteTopPadding({
@@ -589,6 +589,7 @@ export default function HomeScreen() {
   };
 
   const [toast, setToast] = useState<string | null>(null);
+  const [quickFeedback, setQuickFeedback] = useState<{ id: string; title: string; type: CareEventType } | null>(null);
   const [roomReaction, setRoomReaction] = useState<PhoenixRoomReaction | null>(null);
   const roomTapChoreography = useMemo(
     () => deriveCareTwinChoreography(deriveCareTwinScene(avatarMotion)),
@@ -596,8 +597,9 @@ export default function HomeScreen() {
   );
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const showToast = (msg: string) => {
+  const showToast = (msg: string, feedback?: { id: string; title: string; type: CareEventType }) => {
     setToast(msg);
+    setQuickFeedback(feedback ?? null);
     Animated.timing(toastOpacity, {
       toValue: 1,
       duration: 160,
@@ -609,8 +611,11 @@ export default function HomeScreen() {
         toValue: 0,
         duration: 240,
         useNativeDriver: Platform.OS !== "web",
-      }).start(() => setToast(null));
-    }, 1400);
+      }).start(() => {
+        setToast(null);
+        setQuickFeedback(null);
+      });
+    }, feedback ? 5200 : 1400);
   };
   useEffect(
     () => () => {
@@ -618,6 +623,24 @@ export default function HomeScreen() {
     },
     [],
   );
+
+  const undoQuickFeedback = () => {
+    if (!quickFeedback) return;
+    const title = quickFeedback.title;
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    void deleteEntry(quickFeedback.id);
+    setQuickFeedback(null);
+    showToast(`${title} undone`);
+  };
+
+  const openQuickFeedbackDetails = () => {
+    if (!quickFeedback) return;
+    const entryId = quickFeedback.id;
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(null);
+    setQuickFeedback(null);
+    router.push(`/log?entry=${entryId}` as never);
+  };
 
   const openQuickDetails = (item: QuickItem) => {
     if (Platform.OS !== "web") {
@@ -650,7 +673,7 @@ export default function HomeScreen() {
         return;
       }
       const entry = buildWalkSessionStartEntry({ caregiver, now });
-      addEntry(entry as Omit<Entry, "id">);
+      const id = addEntry(entry as Omit<Entry, "id">);
       const reactionPlan = describeCareTwinReactionForLog({
         type: "walk",
         label: "Walk",
@@ -665,7 +688,7 @@ export default function HomeScreen() {
         tone: reactionToneColor(reactionPlan.toneRole),
         spriteAction: reactionPlan.spriteAction,
       });
-      showToast("Walk started");
+      showToast("Walk started", { id, title: "Walk started", type: "walk" });
       return;
     }
     const role = state.caregivers.find((person) => person.name === caregiver)?.role;
@@ -679,7 +702,7 @@ export default function HomeScreen() {
       state,
       { caregiver, caregiverRole: role, now },
     );
-    addEntry(entry);
+    const id = addEntry(entry);
     const reactionPlan = describeCareTwinReactionForLog({
       type: entry.type,
       label: item.label,
@@ -698,7 +721,7 @@ export default function HomeScreen() {
       tone: reactionToneColor(reactionPlan.toneRole),
       spriteAction: reactionPlan.spriteAction,
     });
-    showToast(`${item.title} logged`);
+    showToast(`${item.title} logged`, { id, title: item.title, type: item.type });
   };
 
   const tapPhoenixRoom = () => {
@@ -1293,7 +1316,7 @@ export default function HomeScreen() {
 
       {toast && (
         <Animated.View
-          pointerEvents="none"
+          pointerEvents={quickFeedback ? "auto" : "none"}
           style={[
             s.toast,
             {
@@ -1304,6 +1327,38 @@ export default function HomeScreen() {
           ]}
         >
           <Text style={[s.toastText, { fontFamily: "Inter_700Bold" }]}>{toast}</Text>
+          {quickFeedback ? (
+            <View style={s.toastActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Undo ${quickFeedback.title} quick log`}
+                onPress={undoQuickFeedback}
+                style={({ pressed }) => [
+                  s.toastAction,
+                  {
+                    backgroundColor: pressed ? "rgba(255,249,239,0.16)" : "rgba(255,249,239,0.1)",
+                    borderColor: "rgba(255,249,239,0.34)",
+                  },
+                ]}
+              >
+                <Text style={[s.toastActionText, { fontFamily: "Inter_800ExtraBold" }]}>Undo</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Add details to ${quickFeedback.title}`}
+                onPress={openQuickFeedbackDetails}
+                style={({ pressed }) => [
+                  s.toastAction,
+                  {
+                    backgroundColor: pressed ? colors.copper + "DD" : colors.copper,
+                    borderColor: colors.copper,
+                  },
+                ]}
+              >
+                <Text style={[s.toastActionText, { fontFamily: "Inter_800ExtraBold" }]}>Add details</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </Animated.View>
       )}
     </View>
@@ -1785,8 +1840,21 @@ const s = StyleSheet.create({
     position: "absolute",
     alignSelf: "center",
     paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 999,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    maxWidth: "92%",
+    alignItems: "center",
+    gap: 8,
   },
   toastText: { color: "#FFFFFF", fontSize: 13 },
+  toastActions: { flexDirection: "row", gap: 8 },
+  toastAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toastActionText: { color: "#FFFFFF", fontSize: 12 },
 });

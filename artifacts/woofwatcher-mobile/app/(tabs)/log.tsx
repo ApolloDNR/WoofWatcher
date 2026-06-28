@@ -860,6 +860,7 @@ export default function LogScreen() {
     type?: string | string[];
     detail?: string | string[];
     intent?: string | string[];
+    entry?: string | string[];
   }>();
   const routeSelectedType = useMemo(() => {
     const rawType = Array.isArray(routeParams.type) ? routeParams.type[0] : routeParams.type;
@@ -874,8 +875,10 @@ export default function LogScreen() {
     routeSelectedType && routeWantsDetailSheet
       ? `${routeSelectedType}:${routeIntentParam ?? routeDetailParam ?? "detail"}`
       : null;
+  const routeEntryParam = Array.isArray(routeParams.entry) ? routeParams.entry[0] : routeParams.entry;
   const lastRouteSelectedType = useRef<string | null>(null);
   const lastRouteDetailIntentKey = useRef<string | null>(null);
+  const lastRouteEntryParam = useRef<string | null>(null);
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -1051,6 +1054,13 @@ export default function LogScreen() {
   const [editEntry, setEditEntry] = useState<Entry | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editNote, setEditNote] = useState("");
+
+  useEffect(() => {
+    if (!routeEntryParam || routeEntryParam === lastRouteEntryParam.current) return;
+    if (!state.entries.some((entry) => entry.id === routeEntryParam)) return;
+    setDetailEntryId(routeEntryParam);
+    lastRouteEntryParam.current = routeEntryParam;
+  }, [routeEntryParam, state.entries]);
 
   const caregiverColor = (name: string) => {
     const palette = [colors.primary, colors.copper, colors.sage, colors.amber];
