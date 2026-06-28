@@ -19,7 +19,7 @@ import {
   deriveAdventureMode,
   type AdventureQuest,
 } from "@workspace/care-domain";
-import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -154,7 +154,10 @@ export default function AdventureScreen() {
         </LinearGradient>
 
         <BoardCard style={s.board}>
-          <BoardSectionHeader title="Next quest" action={adventure.status === "needs-outing" ? "Start simple" : "Ready"} />
+          <BoardSectionHeader
+            title="Next quest"
+            accessory={<BoardPill label={adventure.status === "needs-outing" ? "Start simple" : "Ready"} tone={colors.amber} />}
+          />
           <Text style={[s.boardTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{adventure.title}</Text>
           <Text style={[s.boardCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             {adventure.nextStep}
@@ -187,7 +190,10 @@ export default function AdventureScreen() {
         </BoardCard>
 
         <BoardCard style={s.board}>
-          <BoardSectionHeader title="Quest board" action={`${adventure.quests.length} quests`} />
+          <BoardSectionHeader
+            title="Quest board"
+            accessory={<BoardPill label={`${adventure.quests.length} quests`} tone={colors.primary} />}
+          />
           <View style={s.questList}>
             {adventure.quests.map((quest) => (
               <QuestRow key={quest.id} quest={quest} colors={colors} />
@@ -196,7 +202,10 @@ export default function AdventureScreen() {
         </BoardCard>
 
         <BoardCard style={s.board}>
-          <BoardSectionHeader title="Care proof" action={`${adventure.completedProof.length} today`} />
+          <BoardSectionHeader
+            title="Care proof"
+            accessory={<BoardPill label={`${adventure.completedProof.length} today`} tone={colors.sage} />}
+          />
           {adventure.completedProof.length === 0 ? (
             <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               Log a walk, training win, or play reset to give Adventure Mode real proof.
@@ -214,7 +223,10 @@ export default function AdventureScreen() {
         </BoardCard>
 
         <BoardCard style={s.board}>
-          <BoardSectionHeader title="Memory shelf" action={adventure.memories.length ? "Private" : "Empty"} />
+          <BoardSectionHeader
+            title="Memory shelf"
+            accessory={<BoardPill label={adventure.memories.length ? "Private" : "Empty"} tone={colors.copperBright} />}
+          />
           {adventure.memories.length === 0 ? (
             <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               Saved adventure memories will appear here. Photos remain local/provider-gated until storage rules are approved.

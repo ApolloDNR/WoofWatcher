@@ -2091,6 +2091,12 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(home, /router\.push\("\/adventure" as never\)/);
   assert.match(adventure, /deriveAdventureMode/);
   assert.match(adventure, /buildAdventureMemoryDraft/);
+  assert.match(adventure, /import \{ BoardCard, BoardPill, BoardSectionHeader \}/);
+  assert.doesNotMatch(adventure, /<BoardSectionHeader[\s\S]*?\saction=/);
+  assert.match(adventure, /BoardSectionHeader\s+title="Next quest"[\s\S]*<BoardPill\s+label=\{adventure\.status === "needs-outing" \? "Start simple" : "Ready"\}/);
+  assert.match(adventure, /BoardSectionHeader\s+title="Quest board"[\s\S]*<BoardPill\s+label=\{`\$\{adventure\.quests\.length\} quests`\}/);
+  assert.match(adventure, /BoardSectionHeader\s+title="Care proof"[\s\S]*<BoardPill\s+label=\{`\$\{adventure\.completedProof\.length\} today`\}/);
+  assert.match(adventure, /BoardSectionHeader\s+title="Memory shelf"[\s\S]*<BoardPill\s+label=\{adventure\.memories\.length \? "Private" : "Empty"\}/);
   assert.match(adventure, /Private RPG/);
   assert.match(adventure, /Save Memory/);
   assert.match(adventure, /provider-gated/);

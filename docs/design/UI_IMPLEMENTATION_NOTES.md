@@ -1613,3 +1613,25 @@ Design intent:
 - Preserve the product truth boundary: no provider-backed checkout, app-store
   subscription, native beta, generated PDF, or store approval is implied by
   this visual polish.
+
+## 2026-06-28 Adventure Status Pill Polish
+
+Adventure Mode now treats quest and memory counts as status badges instead of
+mockup-style action text:
+
+- `Next quest` shows `Start simple` or `Ready` as an amber `BoardPill`
+  accessory.
+- `Quest board` shows the quest count as a primary `BoardPill`.
+- `Care proof` shows today's proof count as a sage `BoardPill`.
+- `Memory shelf` shows `Private` or `Empty` as a copper `BoardPill`.
+- The mobile readiness guard now blocks `BoardSectionHeader action=` on the
+  Adventure route and requires the key Adventure labels to stay on `BoardPill`.
+
+Design intent:
+
+- Keep Adventure Mode feeling like a polished care-RPG surface without fake
+  buttons.
+- Preserve the real actions: save private memory, share Adventure summary, and
+  back navigation.
+- Keep the product truth boundary clear: memories remain local/provider-gated
+  until storage rules and account sync are actually approved.
