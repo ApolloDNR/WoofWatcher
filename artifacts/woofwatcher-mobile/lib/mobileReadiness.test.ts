@@ -2211,6 +2211,9 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(adventure, /Open proof/);
   assert.match(adventure, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(questFeedback\.id\)\}` as never\)/);
   assert.match(adventure, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(proofEntryId\)\}` as never\)/);
+  assert.match(adventure, /const openProofLog = \(entryId: string\) =>/);
+  assert.match(adventure, /onPress=\{\(\) => openProofLog\(proof\.entryId\)\}/);
+  assert.match(adventure, /accessibilityLabel=\{`Open Adventure proof log: \$\{proof\.label\}`\}/);
   assert.match(adventure, /deleteEntry\(questFeedback\.id\)/);
   assert.match(adventure, /provider-gated/);
   assert.match(more, /Adventure Mode/);
@@ -2220,7 +2223,7 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
 test("keeps Adventure Mode actions on shared mobile touch targets", () => {
   const adventure = readAppFile("adventure.tsx");
 
-  for (const styleName of ["primaryBtn", "secondaryBtn", "questActionButton", "questFeedbackButton"]) {
+  for (const styleName of ["primaryBtn", "secondaryBtn", "questActionButton", "questFeedbackButton", "proofRow"]) {
     assertStyleUsesSharedTouchTarget(adventure, styleName);
   }
 });

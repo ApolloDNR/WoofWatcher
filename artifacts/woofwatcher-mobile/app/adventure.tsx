@@ -206,6 +206,11 @@ export default function AdventureScreen() {
     setQuestFeedback(null);
   };
 
+  const openProofLog = (entryId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(`/log?entry=${encodeURIComponent(entryId)}` as never);
+  };
+
   const shareAdventure = () => {
     const message = [
       `WoofWatcher Adventure Mode - ${adventure.petName}`,
@@ -389,10 +394,27 @@ export default function AdventureScreen() {
           ) : (
             <View style={s.proofList}>
               {adventure.completedProof.slice(0, 4).map((proof) => (
-                <View key={proof.entryId} style={[s.proofRow, { borderColor: colors.border }]}>
+                <Pressable
+                  key={proof.entryId}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open Adventure proof log: ${proof.label}`}
+                  accessibilityHint="Opens the exact care log that earned this Adventure proof."
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => openProofLog(proof.entryId)}
+                  style={({ pressed }) => [
+                    s.proofRow,
+                    {
+                      borderColor: pressed ? colors.sage : colors.border,
+                      backgroundColor: pressed ? colors.sage + "12" : colors.background,
+                    },
+                  ]}
+                >
                   <Text style={[s.proofLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{proof.label}</Text>
-                  <Text style={[s.proofXp, { color: colors.copperBright, fontFamily: DISPLAY_SEMI }]}>+{proof.xp} XP</Text>
-                </View>
+                  <View style={s.proofMeta}>
+                    <Text style={[s.proofXp, { color: colors.copperBright, fontFamily: DISPLAY_SEMI }]}>+{proof.xp} XP</Text>
+                    <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+                  </View>
+                </Pressable>
               ))}
             </View>
           )}
@@ -556,8 +578,18 @@ const s = StyleSheet.create({
   },
   questFeedbackButtonText: { fontSize: 12.5 },
   proofList: { gap: 8 },
-  proofRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
+  proofRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   proofLabel: { flex: 1, fontSize: 12.5 },
+  proofMeta: { flexDirection: "row", alignItems: "center", gap: 6 },
   proofXp: { fontSize: 13 },
   memoryList: { gap: 8 },
   memoryRow: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 8, borderWidth: 1, padding: 10 },

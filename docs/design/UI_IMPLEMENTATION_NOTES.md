@@ -2003,3 +2003,22 @@ Design intent:
   a memory button before a real outing exists.
 - Reduce visible mockup drift by making the hero-level task behave like a
   polished App Store screen, not a prototype shortcut.
+
+## 2026-06-28 Adventure Care Proof Routing Polish
+
+Adventure Mode `Care proof` rows now behave like source evidence:
+
+- Completed proof rows open `/log?entry=...` for the exact saved care log.
+- Rows are pressable, haptic, screen-reader labeled, and use the shared 48px
+  mobile touch-target contract.
+- A chevron affordance makes the row feel inspectable instead of decorative.
+- The proof still displays XP, but XP is treated as a reward attached to real
+  household care evidence.
+
+Design intent:
+
+- Keep the care-RPG layer connected to editable logs, sticky notes, trust review,
+  audit history, Reports, and Care Pass.
+- Avoid a fake-game feeling where proof is only a badge and cannot be inspected.
+- Make Adventure Mode feel more like professional app software wrapped in a
+  playful pixel world.
