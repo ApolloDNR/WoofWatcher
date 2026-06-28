@@ -1635,3 +1635,26 @@ Design intent:
   back navigation.
 - Keep the product truth boundary clear: memories remain local/provider-gated
   until storage rules and account sync are actually approved.
+
+## 2026-06-28 Avatar Studio Status Pill Polish
+
+Avatar Studio now keeps scan, template, customization, and emote state in
+shared `BoardPill` accessories instead of passive header actions:
+
+- `Generated mood set` shows `Owner review` as a status badge.
+- `Bring your dog in` shows `Start` or `Configured` as a status badge.
+- `Choose base template` shows the live sprite-pack count as a status badge.
+- `Coat colors`, `Face and ears`, `Accessories`, and `Mood set` render their
+  editable/current state as badges.
+- The mobile readiness guard now blocks `BoardSectionHeader action=` on the
+  Avatar Studio route and requires the core studio labels to stay on
+  `BoardPill`.
+
+Design intent:
+
+- Make Avatar Studio feel like a real product studio instead of a mockup with
+  decorative labels.
+- Keep real actions reserved for gallery, camera, template selection,
+  customization controls, mood previews, save, reset, and back navigation.
+- Preserve the scan-to-pixel truth boundary: this is PixelLab/template-assisted
+  owner approval, not a fake live photo-to-avatar claim.

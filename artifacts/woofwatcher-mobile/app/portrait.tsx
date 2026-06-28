@@ -664,7 +664,10 @@ export default function PortraitScreen() {
 
         {phase === "result" ? (
           <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader title="Generated mood set" action="Owner review" />
+            <BoardSectionHeader
+              title="Generated mood set"
+              accessory={<BoardPill label="Owner review" tone={colors.amber} />}
+            />
             <Text style={[s.copy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {scanSuggestion.copy}
             </Text>
@@ -681,7 +684,10 @@ export default function PortraitScreen() {
 
         {activeTab === "scan" ? (
           <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader title="Bring your dog in" action={hasConfiguredAvatar ? "Configured" : "Start"} />
+            <BoardSectionHeader
+              title="Bring your dog in"
+              accessory={<BoardPill label={hasConfiguredAvatar ? "Configured" : "Start"} tone={colors.sage} />}
+            />
             <Text style={[s.copy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               Add 1-3 clear photos. WoofWatcher will suggest a base template and traits, then you can edit every choice before saving.
             </Text>
@@ -734,7 +740,7 @@ export default function PortraitScreen() {
           <BoardCard style={s.avatarBoard}>
             <BoardSectionHeader
               title="Choose base template"
-              action={`${liveTemplateCount}/${AVATAR_TEMPLATES.length} live`}
+              accessory={<BoardPill label={`${liveTemplateCount}/${AVATAR_TEMPLATES.length} live`} tone={colors.primary} />}
             />
             <View style={s.templateGrid}>
               {AVATAR_TEMPLATES.map((template) => {
@@ -825,7 +831,7 @@ export default function PortraitScreen() {
         {activeTab === "customize" ? (
           <View>
             <BoardCard style={s.avatarBoard}>
-              <BoardSectionHeader title="Coat colors" action="Editable" />
+              <BoardSectionHeader title="Coat colors" accessory={<BoardPill label="Editable" tone={colors.sage} />} />
               <View style={s.swatchGrid}>
                 {COAT_SWATCHES.map((swatch) => {
                   const primary = draft.coatPrimary === swatch;
@@ -855,7 +861,7 @@ export default function PortraitScreen() {
             </BoardCard>
 
             <BoardCard style={s.avatarBoard}>
-              <BoardSectionHeader title="Face and ears" action={draft.faceMarkingId} />
+              <BoardSectionHeader title="Face and ears" accessory={<BoardPill label={draft.faceMarkingId} tone={colors.amber} />} />
               <View style={s.optionGrid}>
                 {FACE_MARKINGS.map((marking) => {
                   const active = draft.faceMarkingId === marking.id;
@@ -883,7 +889,7 @@ export default function PortraitScreen() {
             </BoardCard>
 
             <BoardCard style={s.avatarBoard}>
-              <BoardSectionHeader title="Accessories" action="Fit map" />
+              <BoardSectionHeader title="Accessories" accessory={<BoardPill label="Fit map" tone={colors.copper} />} />
               <View style={[s.accessoryFitPanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
                 <Text style={[s.accessoryFitTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
                   Template overlay readiness
@@ -942,7 +948,10 @@ export default function PortraitScreen() {
 
         {activeTab === "emotes" ? (
           <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader title="Mood set" action={draft.emotePackId === "phoenix-shepherd" ? "Phoenix pack" : "Starter"} />
+            <BoardSectionHeader
+              title="Mood set"
+              accessory={<BoardPill label={draft.emotePackId === "phoenix-shepherd" ? "Phoenix pack" : "Starter"} tone={colors.primary} />}
+            />
             <View style={s.moodGrid}>
               {AVATAR_EMOTE_STATES.map((emote) => {
                 const active = previewEmote === emote;

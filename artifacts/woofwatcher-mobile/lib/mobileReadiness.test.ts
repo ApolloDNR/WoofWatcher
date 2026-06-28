@@ -1180,6 +1180,14 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{s\.heroPreview\}/);
   assert.match(avatarStudio, /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Generated mood set"/);
   assert.match(avatarStudio, /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Mood set"/);
+  assert.doesNotMatch(avatarStudio, /<BoardSectionHeader[\s\S]*?\saction=/);
+  assert.match(avatarStudio, /BoardSectionHeader\s+title="Generated mood set"[\s\S]*<BoardPill\s+label="Owner review"/);
+  assert.match(avatarStudio, /BoardSectionHeader\s+title="Bring your dog in"[\s\S]*<BoardPill\s+label=\{hasConfiguredAvatar \? "Configured" : "Start"\}/);
+  assert.match(avatarStudio, /BoardSectionHeader\s+title="Choose base template"[\s\S]*<BoardPill\s+label=\{`\$\{liveTemplateCount\}\/\$\{AVATAR_TEMPLATES\.length\} live`\}/);
+  assert.match(avatarStudio, /BoardSectionHeader\s+title="Coat colors"[\s\S]*<BoardPill\s+label="Editable"/);
+  assert.match(avatarStudio, /BoardSectionHeader\s+title="Face and ears"[\s\S]*<BoardPill\s+label=\{draft\.faceMarkingId\}/);
+  assert.match(avatarStudio, /BoardSectionHeader\s+title="Accessories"[\s\S]*<BoardPill\s+label="Fit map"/);
+  assert.match(avatarStudio, /BoardSectionHeader\s+title="Mood set"[\s\S]*<BoardPill\s+label=\{draft\.emotePackId === "phoenix-shepherd" \? "Phoenix pack" : "Starter"\}/);
   assert.match(avatarStudio, /<BoardCard style=\{s\.tipBoard\} tone="soft"/);
   assert.match(avatarStudio, /Upload photos to help us suggest your dog's pixel care twin/);
   assert.match(avatarStudio, /AVATAR_SCAN_WORKFLOW_STEPS/);
