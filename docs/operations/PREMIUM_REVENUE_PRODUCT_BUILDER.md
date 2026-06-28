@@ -1451,6 +1451,18 @@ for the export script, preview root `HEAD 200`, entry route `HEAD 200` at
 `/log?entry=smoke`, and `git diff --check` with expected Windows CRLF warnings
 only.
 
+The Home Recent Activity exact-log routing pass removed another owner-preview
+dead end. Home now keeps each recent activity entry id, uses it as the stable
+row key, and routes taps to `/log?entry=...` so owners can open the exact saved
+care record for sticky notes, outcome updates, corrections, trust review, and
+audit history. The shared `CareRow` primitive now accepts explicit
+accessibility labels, so route-backed rows can say `Open recent care log: ...`
+instead of exposing generic title/detail text. Fresh local verification passed
+mobile readiness 87/87, the 410-test mobile/domain behavior suite,
+`tsc --build`, mobile TypeScript, package-local Expo web export to
+`.expo-smoke` with 223 files, and the entry route remains available at
+`/log?entry=smoke`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

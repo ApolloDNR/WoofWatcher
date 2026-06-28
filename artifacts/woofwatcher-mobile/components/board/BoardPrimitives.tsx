@@ -424,12 +424,14 @@ export function CareRow({
   detail,
   meta,
   onPress,
+  accessibilityLabel,
 }: {
   icon: PixelIconName;
   title: string;
   detail?: string;
   meta?: string;
   onPress?: () => void;
+  accessibilityLabel?: string;
 }) {
   const colors = useColors();
   const content = (
@@ -458,7 +460,7 @@ export function CareRow({
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${title}. ${detail ?? ""}`}
+        accessibilityLabel={accessibilityLabel ?? `${title}. ${detail ?? ""}`}
         onPress={onPress}
         style={({ pressed }) => [styles.careRow, { opacity: pressed ? 0.72 : 1 }]}
       >

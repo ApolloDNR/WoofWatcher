@@ -794,6 +794,10 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   assert.match(home, /BoardSectionHeader\s+title="Recent activity"\s+accessory=\{\s*<HomeHeaderAction/);
   assert.match(home, /accessibilityLabel="View all recent care activity"/);
   assert.match(home, /route="\/log"/);
+  assert.match(home, /id: entry\.id/);
+  assert.match(home, /key=\{entry\.id\}/);
+  assert.match(home, /accessibilityLabel=\{`Open recent care log: \$\{entry\.title\}`\}/);
+  assert.match(home, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(entry\.id\)\}` as never\)/);
   assert.match(home, /BoardSectionHeader\s+title="Phoenix status"\s+accessory=\{\s*<HomeHeaderAction/);
   assert.match(home, /accessibilityLabel="Open full Health Watch"/);
   assert.match(home, /route="\/health"/);

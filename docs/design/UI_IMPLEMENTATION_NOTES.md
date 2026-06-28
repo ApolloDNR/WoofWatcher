@@ -1825,3 +1825,26 @@ Design intent:
   decorative status.
 - Keep the served-to-outcome meal lifecycle attached to one household record.
 - Preserve the fast Home scan while sending follow-up taps to the right place.
+
+## 2026-06-28 Home Recent Activity Exact-Log Routing Polish
+
+Home `Recent activity` rows now open the exact saved care log instead of
+staying passive:
+
+- The Home recent activity view model keeps the source `entry.id`.
+- Each recent activity row uses the entry id as its stable key.
+- Tapping a row routes to `/log?entry=...`, using the existing Log entry-detail
+  flow for sticky notes, outcome updates, corrections, trust review, and audit
+  history.
+- Rows carry explicit screen-reader labels such as `Open recent care log:
+  Breakfast`.
+- The shared `CareRow` primitive accepts an explicit `accessibilityLabel` so
+  route-backed rows can describe their destination without inventing one-off
+  wrappers.
+
+Design intent:
+
+- Make every visible care item on Home useful and navigable.
+- Keep owner preview loops tight: see a recent log, tap it, edit the actual
+  source record.
+- Preserve the under-five-second Home scan while removing decorative dead ends.

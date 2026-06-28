@@ -488,6 +488,7 @@ export default function HomeScreen() {
         .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
         .slice(0, 3)
         .map((entry) => ({
+          id: entry.id,
           title: entry.title,
           time: shortTime(entry.occurredAt),
           icon: routineIcon(entry.type),
@@ -1146,11 +1147,13 @@ export default function HomeScreen() {
               {recentActivity.length ? (
                 recentActivity.map((entry) => (
                   <CareRow
-                    key={`${entry.title}-${entry.time}`}
+                    key={entry.id}
                     icon={entry.icon}
                     title={entry.title}
                     detail={entry.caregiver}
                     meta={entry.time}
+                    accessibilityLabel={`Open recent care log: ${entry.title}`}
+                    onPress={() => router.push(`/log?entry=${encodeURIComponent(entry.id)}` as never)}
                   />
                 ))
               ) : (
