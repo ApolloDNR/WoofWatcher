@@ -43,8 +43,11 @@ test("derives private adventure quests from real care evidence", () => {
   assert.equal(adventure.level, 2);
   assert.equal(adventure.completedProof.length, 2);
   assert.equal(adventure.quests[0].id, "memory-photo");
+  assert.equal(adventure.quests[0].action, "save-memory");
+  assert.equal(adventure.quests[0].actionLabel, "Save memory");
   assert.match(adventure.quests[0].title, /Save today's memory/);
   assert.equal(adventure.quests.some((quest) => quest.id === "sniffari-walk" && quest.status === "complete"), true);
+  assert.equal(adventure.quests.some((quest) => quest.id === "training-win" && quest.action === "log-training"), true);
   assert.match(adventure.nextStep, /Save a private memory/);
 });
 
@@ -59,6 +62,10 @@ test("keeps Adventure Mode private and calm when no outings are logged", () => {
   assert.equal(adventure.status, "needs-outing");
   assert.equal(adventure.todayXp, 0);
   assert.equal(adventure.quests[0].id, "sniffari-walk");
+  assert.equal(adventure.quests[0].action, "start-walk");
+  assert.equal(adventure.quests[0].actionLabel, "Start walk");
+  assert.equal(adventure.quests[1].action, "log-training");
+  assert.equal(adventure.quests[2].action, "log-play");
   assert.match(adventure.nextStep, /Start with a calm 10-20 minute walk/);
   assert.equal(adventure.privacyBoundary, "Adventure memories are private to the household unless an owner shares them.");
 });

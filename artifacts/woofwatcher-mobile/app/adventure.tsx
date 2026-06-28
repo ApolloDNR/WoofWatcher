@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -17,11 +17,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   buildAdventureMemoryDraft,
   deriveAdventureMode,
+  normalizeCareEventType,
+  type CareEventType,
   type AdventureQuest,
 } from "@workspace/care-domain";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
-import { useCare } from "@/context/CareContext";
+import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { buildQuickLogEntry } from "@/lib/quickLogEntry";
+import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import {
   getRouteTopPadding,
   getStandaloneRouteBottomPadding,
@@ -39,11 +43,55 @@ function questIcon(id: string): keyof typeof Ionicons.glyphMap {
   return "camera-outline";
 }
 
+function isSameLocalDay(iso: string, now: number): boolean {
+  const d = new Date(iso);
+  const n = new Date(now);
+  return (
+    d.getFullYear() === n.getFullYear() &&
+    d.getMonth() === n.getMonth() &&
+    d.getDate() === n.getDate()
+  );
+}
+
+function questCareType(quest: AdventureQuest): CareEventType | null {
+  if (quest.action === "start-walk") return "walk";
+  if (quest.action === "log-training") return "training";
+  if (quest.action === "log-play") return "play";
+  return null;
+}
+
+function findQuestProofEntryId(quest: AdventureQuest, entries: Entry[], now: number): string | null {
+  const careType = questCareType(quest);
+  if (!careType) return null;
+
+  return (
+    [...entries]
+      .filter((entry) => {
+        if (!entry.id || !isSameLocalDay(entry.occurredAt, now)) return false;
+        if (entry.details?.householdVisible === false) return false;
+        return normalizeCareEventType(entry.type, entry.details) === careType;
+      })
+      .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))[0]?.id ?? null
+  );
+}
+
+function adventureDetails(quest: AdventureQuest, current?: Record<string, unknown> | null): Record<string, unknown> {
+  return {
+    ...(current ?? {}),
+    householdVisible: current?.householdVisible !== false,
+    adventureQuestId: quest.id,
+    adventureQuestTitle: quest.title,
+    adventureRewardXp: quest.rewardXp,
+    careAdventure: true,
+  };
+}
+
 export default function AdventureScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, updateCareDoc } = useCare();
+  const { state, addEntry, deleteEntry, updateCareDoc } = useCare();
+  const [questFeedback, setQuestFeedback] = useState<{ id: string; title: string } | null>(null);
   const bottomPadding = getStandaloneRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -69,11 +117,19 @@ export default function AdventureScreen() {
   const availableQuest =
     adventure.quests.find((quest) => quest.status === "available") ?? adventure.quests[0];
 
-  const saveMemory = () => {
+  const caregiver = state.caregivers[0]?.name ?? "Care team";
+  const caregiverRole = state.caregivers.find((person) => person.name === caregiver)?.role;
+  const openWalkSession = useMemo(() => findOpenWalkSession(state.entries), [state.entries]);
+
+  const saveMemory = (quest: AdventureQuest | null | undefined = availableQuest) => {
+    if (quest?.action === "save-memory" && quest.status === "locked") {
+      Alert.alert("Complete care first", "Log a walk, training win, or play reset before saving this quest memory.");
+      return;
+    }
     const memory = buildAdventureMemoryDraft({
       petName,
-      questId: availableQuest?.id,
-      title: availableQuest?.title ?? "Adventure memory",
+      questId: quest?.id,
+      title: quest?.title ?? "Adventure memory",
       note: adventure.summary,
       humans: state.caregivers.map((caregiver) => caregiver.name).slice(0, 3),
     });
@@ -86,6 +142,61 @@ export default function AdventureScreen() {
       ],
     }));
     Alert.alert("Memory saved", "Saved as a local private household memory. Cloud photo storage is still provider-gated.");
+  };
+
+  const startQuest = (quest: AdventureQuest, proofEntryId: string | null) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (quest.status === "locked") {
+      Alert.alert("Quest locked", quest.evidence);
+      return;
+    }
+    if (quest.status === "complete") {
+      if (proofEntryId) {
+        router.push(`/log?entry=${encodeURIComponent(proofEntryId)}` as never);
+        return;
+      }
+      router.push("/log" as never);
+      return;
+    }
+    if (quest.action === "save-memory") {
+      saveMemory(quest);
+      return;
+    }
+    if (quest.action === "start-walk") {
+      if (openWalkSession?.id) {
+        setQuestFeedback({ id: openWalkSession.id, title: "Walk already active" });
+        router.push(`/log?entry=${encodeURIComponent(openWalkSession.id)}` as never);
+        return;
+      }
+      const entry = buildWalkSessionStartEntry({ caregiver, now, routineLabel: quest.title });
+      const id = addEntry({
+        ...entry,
+        details: adventureDetails(quest, entry.details),
+      } as Omit<Entry, "id">);
+      setQuestFeedback({ id, title: "Adventure walk started" });
+      return;
+    }
+
+    const careType = questCareType(quest);
+    if (!careType) return;
+    const entry = buildQuickLogEntry(
+      { type: careType, title: quest.title },
+      state,
+      { caregiver, caregiverRole, now },
+    );
+    const id = addEntry({
+      ...entry,
+      ...(careType === "training" ? { durationMinutes: 8 } : careType === "play" ? { durationMinutes: 10 } : {}),
+      details: adventureDetails(quest, entry.details),
+    });
+    setQuestFeedback({ id, title: `${quest.title} logged` });
+  };
+
+  const undoQuestFeedback = () => {
+    if (!questFeedback) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void deleteEntry(questFeedback.id);
+    setQuestFeedback(null);
   };
 
   const shareAdventure = () => {
@@ -170,7 +281,7 @@ export default function AdventureScreen() {
           </View>
           <View style={s.actionRow}>
             <Pressable
-              onPress={saveMemory}
+              onPress={() => saveMemory(availableQuest)}
               accessibilityRole="button"
               accessibilityLabel="Save private adventure memory"
               style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}
@@ -195,10 +306,59 @@ export default function AdventureScreen() {
             accessory={<BoardPill label={`${adventure.quests.length} quests`} tone={colors.primary} />}
           />
           <View style={s.questList}>
-            {adventure.quests.map((quest) => (
-              <QuestRow key={quest.id} quest={quest} colors={colors} />
-            ))}
+            {adventure.quests.map((quest) => {
+              const proofEntryId = findQuestProofEntryId(quest, state.entries, now);
+              return (
+                <QuestRow
+                  key={quest.id}
+                  quest={quest}
+                  colors={colors}
+                  proofEntryId={proofEntryId}
+                  onQuestAction={() => startQuest(quest, proofEntryId)}
+                />
+              );
+            })}
           </View>
+          {questFeedback ? (
+            <View style={[s.questFeedback, { backgroundColor: colors.sage + "12", borderColor: colors.sage + "44" }]}>
+              <View style={s.questFeedbackCopy}>
+                <Text style={[s.questFeedbackTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                  {questFeedback.title}
+                </Text>
+                <Text style={[s.questFeedbackSub, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  Quest proof saved. Undo it or add details to the exact care log.
+                </Text>
+              </View>
+              <View style={s.questFeedbackActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Undo ${questFeedback.title}`}
+                  onPress={undoQuestFeedback}
+                  style={({ pressed }) => [
+                    s.questFeedbackButton,
+                    { backgroundColor: pressed ? colors.secondary : colors.background, borderColor: colors.border },
+                  ]}
+                >
+                  <Text style={[s.questFeedbackButtonText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    Undo
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Add details to ${questFeedback.title}`}
+                  onPress={() => router.push(`/log?entry=${encodeURIComponent(questFeedback.id)}` as never)}
+                  style={({ pressed }) => [
+                    s.questFeedbackButton,
+                    { backgroundColor: pressed ? colors.copper + "DD" : colors.copper, borderColor: colors.copper },
+                  ]}
+                >
+                  <Text style={[s.questFeedbackButtonText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                    Add details
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
         </BoardCard>
 
         <BoardCard style={s.board}>
@@ -254,13 +414,24 @@ export default function AdventureScreen() {
   );
 }
 
-function QuestRow({ quest, colors }: { quest: AdventureQuest; colors: ReturnType<typeof useColors> }) {
+function QuestRow({
+  quest,
+  colors,
+  proofEntryId,
+  onQuestAction,
+}: {
+  quest: AdventureQuest;
+  colors: ReturnType<typeof useColors>;
+  proofEntryId: string | null;
+  onQuestAction: () => void;
+}) {
   const tone =
     quest.status === "complete"
       ? colors.sage
       : quest.status === "locked"
         ? colors.mutedForeground
         : colors.copperBright;
+  const actionLabel = quest.status === "complete" ? "Open proof" : quest.status === "locked" ? "Locked" : "Start quest";
   return (
     <View style={[s.questRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
       <View style={[s.questIcon, { backgroundColor: tone + "18" }]}>
@@ -274,6 +445,31 @@ function QuestRow({ quest, colors }: { quest: AdventureQuest; colors: ReturnType
       <View style={[s.questStatus, { backgroundColor: tone + "16" }]}>
         <Text style={[s.questStatusText, { color: tone, fontFamily: "Inter_700Bold" }]}>{quest.status}</Text>
       </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          quest.status === "complete"
+            ? `Open proof for ${quest.title}`
+            : quest.status === "locked"
+              ? `${quest.title} locked. ${quest.evidence}`
+              : `Start quest: ${quest.title}. ${quest.actionLabel}`
+        }
+        disabled={quest.status === "locked"}
+        onPress={onQuestAction}
+        style={({ pressed }) => [
+          s.questActionButton,
+          {
+            backgroundColor: quest.status === "locked" ? colors.muted : pressed ? tone + "28" : tone + "18",
+            borderColor: tone + "55",
+            opacity: quest.status === "locked" ? 0.62 : pressed ? 0.78 : 1,
+          },
+        ]}
+      >
+        <Text style={[s.questActionText, { color: tone, fontFamily: "Inter_800ExtraBold" }]}>
+          {actionLabel}
+        </Text>
+        {quest.status === "complete" && proofEntryId ? <Ionicons name="chevron-forward" size={13} color={tone} /> : null}
+      </Pressable>
     </View>
   );
 }
@@ -302,13 +498,47 @@ const s = StyleSheet.create({
   primaryBtnText: { color: "#FFFFFF", fontSize: 13.5 },
   secondaryBtn: { width: 50, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   questList: { gap: 10 },
-  questRow: { flexDirection: "row", gap: 10, borderWidth: 1, borderRadius: 8, padding: 11 },
+  questRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, borderWidth: 1, borderRadius: 8, padding: 11 },
   questIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   questTitle: { fontSize: 13.5 },
   questPrompt: { fontSize: 12, lineHeight: 16, marginTop: 2 },
   questEvidence: { fontSize: 11.2, lineHeight: 15, marginTop: 5 },
   questStatus: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8 },
   questStatusText: { fontSize: 10, textTransform: "capitalize" },
+  questActionButton: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    marginLeft: 44,
+    flexGrow: 1,
+  },
+  questActionText: { fontSize: 11, textTransform: "uppercase" },
+  questFeedback: {
+    borderWidth: 1,
+    borderRadius: 8,
+    marginTop: 12,
+    padding: 11,
+    gap: 10,
+  },
+  questFeedbackCopy: { gap: 2 },
+  questFeedbackTitle: { fontSize: 13.5 },
+  questFeedbackSub: { fontSize: 11.5, lineHeight: 16 },
+  questFeedbackActions: { flexDirection: "row", gap: 8 },
+  questFeedbackButton: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  questFeedbackButtonText: { fontSize: 12.5 },
   proofList: { gap: 8 },
   proofRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
   proofLabel: { flex: 1, fontSize: 12.5 },

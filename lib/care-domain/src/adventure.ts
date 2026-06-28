@@ -2,6 +2,7 @@ export type AdventureQuestStatus = "available" | "complete" | "locked";
 export type AdventureModeStatus = "needs-outing" | "quest-ready" | "memory-ready";
 export type AdventureMemoryStorageStatus = "local-draft" | "provider-ready" | "provider-saved";
 export type AdventureMemoryMediaStatus = "no-photo-yet" | "local-photo" | "provider-photo";
+export type AdventureQuestAction = "start-walk" | "log-training" | "log-play" | "save-memory";
 
 export interface AdventureEntry {
   id?: string;
@@ -42,6 +43,8 @@ export interface AdventureQuest {
   prompt: string;
   rewardXp: number;
   status: AdventureQuestStatus;
+  action: AdventureQuestAction;
+  actionLabel: string;
   evidence: string;
   safetyNote: string;
 }
@@ -134,10 +137,12 @@ function quest(
   prompt: string,
   rewardXp: number,
   status: AdventureQuestStatus,
+  action: AdventureQuestAction,
+  actionLabel: string,
   evidence: string,
   safetyNote = "Keep it private, safe, leashed where required, and appropriate for your dog.",
 ): AdventureQuest {
-  return { id, title, prompt, rewardXp, status, evidence, safetyNote };
+  return { id, title, prompt, rewardXp, status, action, actionLabel, evidence, safetyNote };
 }
 
 export function buildAdventureMemoryDraft(input: AdventureMemoryDraftInput): AdventureMemory {
@@ -194,6 +199,8 @@ export function deriveAdventureMode(input: AdventureInput): AdventureMode {
       `Take ${petName} on a calm 10-20 minute walk and let the outing become today's care adventure.`,
       20,
       hasWalk ? "complete" : "available",
+      "start-walk",
+      "Start walk",
       hasWalk ? "A household-visible walk is logged today." : "No walk adventure is logged yet.",
     ),
     quest(
@@ -202,6 +209,8 @@ export function deriveAdventureMode(input: AdventureInput): AdventureMode {
       "Practice one cue outside or near the door, then log the win or rough spot.",
       14,
       hasTraining ? "complete" : "available",
+      "log-training",
+      "Log training",
       hasTraining ? "A training session is logged today." : "No training win is logged yet.",
     ),
     quest(
@@ -210,6 +219,8 @@ export function deriveAdventureMode(input: AdventureInput): AdventureMode {
       "Add a short play or decompression moment if the day needs a softer mood.",
       10,
       playEntries.length > 0 ? "complete" : "available",
+      "log-play",
+      "Log play",
       playEntries.length > 0 ? "Play is logged today." : "No play memory is logged yet.",
     ),
     quest(
@@ -218,6 +229,8 @@ export function deriveAdventureMode(input: AdventureInput): AdventureMode {
       "Add one private note or photo caption so the care story grows from real life.",
       18,
       hasMemoryToday ? "complete" : hasWalk || hasTraining || playEntries.length > 0 ? "available" : "locked",
+      "save-memory",
+      "Save memory",
       hasMemoryToday ? "A memory is saved today." : "Complete a care outing first, then save the memory.",
       "Do not share location or photos publicly unless every owner agrees.",
     ),

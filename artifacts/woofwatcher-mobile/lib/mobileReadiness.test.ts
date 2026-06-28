@@ -2192,6 +2192,9 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(home, /router\.push\("\/adventure" as never\)/);
   assert.match(adventure, /deriveAdventureMode/);
   assert.match(adventure, /buildAdventureMemoryDraft/);
+  assert.match(adventure, /buildQuickLogEntry/);
+  assert.match(adventure, /buildWalkSessionStartEntry/);
+  assert.match(adventure, /findOpenWalkSession/);
   assert.match(adventure, /import \{ BoardCard, BoardPill, BoardSectionHeader \}/);
   assert.doesNotMatch(adventure, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(adventure, /BoardSectionHeader\s+title="Next quest"[\s\S]*<BoardPill\s+label=\{adventure\.status === "needs-outing" \? "Start simple" : "Ready"\}/);
@@ -2200,6 +2203,11 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(adventure, /BoardSectionHeader\s+title="Memory shelf"[\s\S]*<BoardPill\s+label=\{adventure\.memories\.length \? "Private" : "Empty"\}/);
   assert.match(adventure, /Private RPG/);
   assert.match(adventure, /Save Memory/);
+  assert.match(adventure, /Start quest/);
+  assert.match(adventure, /Open proof/);
+  assert.match(adventure, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(questFeedback\.id\)\}` as never\)/);
+  assert.match(adventure, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(proofEntryId\)\}` as never\)/);
+  assert.match(adventure, /deleteEntry\(questFeedback\.id\)/);
   assert.match(adventure, /provider-gated/);
   assert.match(more, /Adventure Mode/);
   assert.match(more, /router\.push\("\/adventure"( as never)?\)/);
@@ -2208,7 +2216,7 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
 test("keeps Adventure Mode actions on shared mobile touch targets", () => {
   const adventure = readAppFile("adventure.tsx");
 
-  for (const styleName of ["primaryBtn", "secondaryBtn"]) {
+  for (const styleName of ["primaryBtn", "secondaryBtn", "questActionButton", "questFeedbackButton"]) {
     assertStyleUsesSharedTouchTarget(adventure, styleName);
   }
 });

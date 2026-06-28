@@ -1532,6 +1532,22 @@ invalid=0`, root TypeScript, mobile TypeScript, package-local Expo web export
 to `.expo-smoke` with 223 files, preview route smoke for `/` and `/portrait`,
 and `git diff --check` with only expected Windows CRLF warnings.
 
+The Adventure Quest action pass made the care-RPG layer operational instead of
+decorative. Shared `AdventureQuest` data now carries an action contract and
+label, and the mobile Adventure route can start/reopen a walk-session proof,
+create training or play care evidence, save a private memory, and open exact
+completed proof logs through `/log?entry=...`. Newly-created quest logs show a
+bottom-safe recovery panel with real `Undo` and `Add details` actions; Undo
+deletes the exact entry, while Add Details opens the saved log for notes, sticky
+notes, trust review, corrections, and audit history. Red/green verification
+first failed on missing quest action contracts, then passed focused
+adventure/mobile readiness 91/91. Fresh local verification passed the 411-test
+mobile/domain behavior suite, PixelLab assets `ok=149 missing=0 invalid=0`, root
+TypeScript, mobile TypeScript, package-local Expo web export to `.expo-smoke`
+with 223 files, preview route smoke for `/`, `/adventure`, and
+`/log?entry=smoke`, and `git diff --check` with only expected Windows CRLF
+warnings.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

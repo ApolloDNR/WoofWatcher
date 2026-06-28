@@ -1962,3 +1962,24 @@ Design intent:
   but the saved care twin remains an editable pixel character.
 - Preserve trust for store screenshots and owner previews by avoiding visible
   mock, fake AI, or fake provider readiness language.
+
+## 2026-06-28 Adventure Quest Action Polish
+
+Adventure Mode quests now behave like real care-operation cards:
+
+- Each `AdventureQuest` has an action contract and visible action label.
+- Sniffari walks start or reopen a walk-session proof log.
+- Training and play quests create typed care evidence with adventure context.
+- Memory-photo quests save the existing private adventure memory.
+- Completed quests open their exact proof log through `/log?entry=...`.
+- Newly-created quest evidence shows `Undo` and `Add details` recovery actions.
+- `Undo` deletes the exact entry; `Add details` opens the real log for notes,
+  sticky notes, trust review, corrections, and audit history.
+
+Design intent:
+
+- Make Adventure Mode feel like a care RPG without turning it into fake chores.
+- Keep the game layer attached to real household evidence, reports, Timeline,
+  and Care Pass sources.
+- Preserve the under-five-second loop while giving owners a clean recovery path
+  after quick quest actions.
