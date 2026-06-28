@@ -39,7 +39,7 @@
 
 ## Development Environment
 
-- Local Windows shell currently lacks `pnpm`, `npm`, `corepack`, and `node_modules`, so `pnpm run typecheck` cannot run locally even though zero-install Node behavior tests pass.
+- `pnpm` is callable through the bundled runtime in this worktree, but `pnpm run build:ci` cannot complete in this Windows shell because the root `preinstall` script invokes `sh`, which is not available on PATH. A sandboxed attempt also fails registry fetches with `EACCES` unless network escalation is granted; after escalation, dependency resolution proceeds but the missing `sh` stops the install before CI scripts run.
 - Codex could not attach to the in-app Browser target during the 2026-06-13 visual QA attempt (`iab` unavailable), so local screenshot/runtime verification is still pending in Fable/Replit or another browser-capable environment.
 
 ## Legal, Privacy, And Safety

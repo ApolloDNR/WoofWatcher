@@ -78,6 +78,8 @@ Current evidence, 2026-06-27: Mood logs now capture low/steady/high energy, opti
 
 Current evidence, 2026-06-28: Records Mood Trend now derives from shared care-domain logic. Private and stale mood logs stay out of the household trend, while visible check-ins carry energy counts, latest caregiver/context, watch status, owner-readable summary, and safe next-step copy.
 
+Current evidence, 2026-06-28: Care Pass reports now reuse the shared Mood Trend derivation for a Mood & Energy handoff section. Recent household-visible mood check-ins carry low/steady/high energy counts, latest caregiver/context, and non-diagnostic owner-reported boundary language into sitter, trainer, and vet reports while private and stale mood logs stay out.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.
@@ -273,6 +275,8 @@ Current evidence, 2026-06-11: Care Pass reports now include an Alone Time sectio
 Current evidence, 2026-06-11: Care Pass reports now include a Weight Trend section with recent weigh-in count, current weight, goal, change from previous, latest caregiver context, and owner-reported/vet-review boundary language.
 
 Current evidence, 2026-06-11: Care Pass reports now include a Grooming Care section with recent grooming count, type counts, latest grooming context, products, next due date, and owner-reported/non-diagnostic boundary language.
+
+Current evidence, 2026-06-28: Care Pass reports now include a Mood & Energy section with recent shared mood check-ins, energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language for sitter, trainer, and vet handoffs.
 
 Current evidence, 2026-06-14: Mobile Records now presents Care Pass audience previews, saved report artifacts, and Progress Report controls as shared board sections with accessible resend, printable-source, and share actions preserved for sitter/vet/trainer handoff workflows.
 

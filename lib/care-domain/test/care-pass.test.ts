@@ -266,6 +266,66 @@ test("care pass includes weekly care trend context", () => {
   assert.match(pass.message, /Watch: Potty watch/);
 });
 
+test("care pass includes shared mood and energy handoff context", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "trainer",
+    now: new Date("2026-06-08T12:00:00-07:00").getTime(),
+    entries: [
+      ...baseInput().entries,
+      {
+        id: "mood-low",
+        type: "mood",
+        title: "Mood - visitors",
+        caregiver: "Emma",
+        occurredAt: "2026-06-08T08:00:00-07:00",
+        mood: "anxious",
+        details: {
+          energyLevel: "low",
+          moodContext: "Visitors came by before breakfast",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "mood-steady",
+        type: "mood",
+        title: "Mood - settled",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-07T18:00:00-07:00",
+        mood: "calm",
+        details: { energyLevel: "steady", householdVisible: true },
+      },
+      {
+        id: "private-mood",
+        type: "mood",
+        title: "Private mood",
+        caregiver: "Emma",
+        occurredAt: "2026-06-08T09:00:00-07:00",
+        mood: "happy",
+        details: { energyLevel: "high", householdVisible: false },
+      },
+      {
+        id: "old-mood",
+        type: "mood",
+        title: "Old mood",
+        caregiver: "Apollo",
+        occurredAt: "2026-04-01T09:00:00-07:00",
+        mood: "unwell",
+        details: { energyLevel: "low", householdVisible: true },
+      },
+    ],
+  });
+
+  const section = pass.sections.find((item) => item.title === "Mood & Energy");
+  assert.ok(section);
+  assert.match(pass.message, /2 shared mood check-ins/);
+  assert.match(pass.message, /Energy: 1 low, 1 steady, 0 high/);
+  assert.match(pass.message, /Latest: Anxious, low energy by Emma/);
+  assert.match(pass.message, /Visitors came by before breakfast/);
+  assert.doesNotMatch(pass.message, /Private mood/);
+  assert.doesNotMatch(pass.message, /Old mood/);
+});
+
 test("care pass includes potty health context for sitter and vet review", () => {
   const pass = buildCarePass({
     ...baseInput(),

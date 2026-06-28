@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-28: Care Pass Uses Shared Mood Handoff Context
+
+Decision: Care Pass reports should include a Mood & Energy section when recent shared mood check-ins exist. The report builder should reuse `deriveMoodTrend`, carry low/steady/high energy counts plus latest caregiver/context into sitter, trainer, and vet handoffs, exclude private and stale mood logs, and state that mood/energy is owner-reported context rather than a diagnosis.
+
+Reason: Mood logging and Records Mood Trend now capture structured energy and care context, but handoff reports are the surface sitters, trainers, and vets actually receive. Reusing the shared helper keeps Records and Care Pass aligned, avoids route-local report parsing, and turns mood data into useful care context without expanding into diagnosis, live AI, or deeper analytics before those release slices are ready.
+
+Owner: Codex.
+
+Revisit trigger: Longer-range mood charts, WoofGuide mood explanations, trainer/vet report templates, avatar state-machine changes, or provider-backed report storage become active release work.
+
 ### 2026-06-28: Mood Trend Uses Shared Energy Context
 
 Decision: Records Mood Trend should derive from shared care-domain logic instead of route-local aggregation. The shared helper should exclude private and stale mood logs, preserve low/steady/high energy, latest caregiver/context, watch status, summary, and next-step copy, and keep the language non-diagnostic.

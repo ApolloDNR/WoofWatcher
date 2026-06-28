@@ -149,6 +149,7 @@ Passing evidence:
 - Home has a tested avatar motion state model and visible motion row that connects avatar state to Health Watch, recent logs, routine status, quiet hours, and low energy.
 - Mood logging captures structured energy level, optional care context, sticky notes, and household visibility while preserving the mood field used by Records Mood Trend and care-twin state.
 - Records Mood Trend now uses shared care-domain logic to exclude private/stale mood logs, summarize low/steady/high energy, show latest caregiver/context, and provide safe household next-step copy.
+- Care Pass reports now include a Mood & Energy handoff section when shared recent mood check-ins exist. The section reuses shared mood-trend logic, carries energy counts plus latest caregiver/context, excludes private/stale mood logs, and keeps owner-reported/non-diagnostic boundary language for sitter, trainer, and vet review.
 
 Current gaps:
 
@@ -230,7 +231,7 @@ Current gaps:
 - Mobile Pack Audit role-change label readiness is covered so role updates render owner-readable caregiver-specific previous-to-new details instead of leaking internal ids like `vet_viewer`.
 - Household Access role labels and permission summaries are covered by focused domain tests, and Mobile More's visible permission line is covered by readiness so the launch role set stays owner-readable while final provider-backed enforcement remains separate.
 - Animated care-twin tap accessibility is covered by mobile readiness so Phoenix's full-scene response action has a button role, mood-aware label, and non-mutating hint before native screen-reader traversal is available.
-- Need report/export tests.
+- Need broader report/export tests beyond the current Care Pass artifact, print source, and Mood & Energy handoff coverage.
 - Need release smoke checklist.
 
 ## Gate 8: Security, Privacy, And Compliance
