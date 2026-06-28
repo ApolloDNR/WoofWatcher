@@ -1418,3 +1418,25 @@ Design intent:
   giving serious patterns enough evidence for caregiver, trainer, or vet review.
 - Preserve the neo-retro board polish by showing compact status/energy chips
   and latest-context proof instead of a generic analytics block.
+
+## 2026-06-28 Static Beta Preview Handoff
+
+The exported web beta now has a first-class preview command instead of relying
+on an ad hoc foreground Node process:
+
+- Root `preview:mobile-beta` delegates to the mobile `preview:smoke` script.
+- Mobile `preview:smoke` and `preview:web` both serve the `.expo-smoke` export
+  at `http://127.0.0.1:4194/`, matching the in-app browser preview tab Apollo
+  uses during design review.
+- `serve-smoke-preview.js` defaults to port `4194`, blocks path traversal with
+  a root-relative check, and clearly tells reviewers to keep the terminal open.
+- The mobile beta doctor proof command list now includes `preview:smoke` after
+  `smoke:web`, so Replit, Fable, or a device helper cannot stop at export-only
+  evidence when the next step is owner visual review.
+
+Design intent:
+
+- Make previewing the exact exported beta boring and repeatable under the
+  two-day deadline.
+- Preserve truth: the static preview proves the local/PWA beta can open; it is
+  not native iOS/Android proof, provider approval, or store approval.

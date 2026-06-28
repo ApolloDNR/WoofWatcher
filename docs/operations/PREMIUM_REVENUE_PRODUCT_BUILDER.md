@@ -1172,6 +1172,21 @@ executing any steps. `gh run view --log-failed` returned
 `log not found: 83876299726`. This matches the standing GitHub
 billing/spending-limit pre-job blocker rather than a local product regression.
 
+The static beta preview handoff pass made the owner-review preview path a
+tested product contract. Root `preview:mobile-beta` now delegates to the mobile
+`preview:smoke` script, the mobile package also exposes `preview:web`, and the
+static preview server defaults to `http://127.0.0.1:4194/` with a foreground
+terminal reminder. `scripts/mobile-beta-doctor.mjs --json` now includes
+`pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` in the proof
+sequence and tells helpers to serve the exact `.expo-smoke` export after
+`smoke:web`. Local verification passed mobile readiness 83/83, the 406-test
+behavior/readiness suite, `tsc --build`, mobile TypeScript, PixelLab asset
+verification at 149 files, package-local Expo web export to `.expo-smoke`,
+foreground preview root `HEAD 200`, and `git diff --check` with expected
+Windows CRLF warnings only. This keeps Apollo/Fable/Replit preview review
+aligned to the same exported build without claiming native iOS/Android,
+provider, or store proof.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

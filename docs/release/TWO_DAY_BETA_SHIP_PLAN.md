@@ -99,6 +99,9 @@ Shippable for internal beta after local verification passes:
 - `pnpm run doctor:mobile-beta:json` reports the same status as parseable JSON
   for Replit, native helpers, or automation, including structured
   `proofCommands` for the dependency/export proof sequence.
+- `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` serves the
+  exact `.expo-smoke` export at `http://127.0.0.1:4194/`; keep that terminal
+  open while Apollo, Fable, Replit, or device QA reviews the build.
 - The mobile beta doctor passes the Node 24 runtime check and confirms EAS
   preview/production build profiles cover both iOS and Android.
 - If `pnpm` is present, the mobile beta doctor confirms the actual CLI version
@@ -119,8 +122,11 @@ Current environment note:
   true issues: missing local `pnpm` and missing mobile `expo` dependency
   resolution.
 - The JSON payload also includes `proofCommands`, so automation can read the
-  exact `corepack`, `pnpm install`, doctor, JSON doctor, and `smoke:web` command
-  order without parsing prose.
+  exact `corepack`, `pnpm install`, doctor, JSON doctor, `smoke:web`, and
+  `preview:smoke` command order without parsing prose.
+- The mobile package now has `preview:smoke` and `preview:web` aliases for the
+  no-dependency static server, both pinned to port `4194`, and the root
+  `preview:mobile-beta` command points to the same handoff path.
 - The in-app `Share Beta Handoff` packet now repeats the exact dependency proof
   commands and warns that dependency proof only counts when both doctor commands
   report no blockers.

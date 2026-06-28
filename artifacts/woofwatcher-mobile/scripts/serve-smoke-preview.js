@@ -4,7 +4,7 @@ const path = require("path");
 
 const projectRoot = path.resolve(__dirname, "..");
 const root = path.resolve(projectRoot, ".expo-smoke");
-const port = Number(process.env.PORT || process.argv[2] || 4207);
+const port = Number(process.env.PORT || process.argv[2] || 4194);
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -31,9 +31,10 @@ function resolveFile(urlPath) {
   const decodedPath = decodeURIComponent(urlPath.split("?")[0] || "/");
   const requestedPath = decodedPath === "/" ? "/index.html" : decodedPath;
   const normalized = path.normalize(requestedPath).replace(/^([/\\])+/, "");
-  const file = path.join(root, normalized);
+  const file = path.resolve(root, normalized);
+  const relative = path.relative(root, file);
 
-  if (!file.startsWith(root)) {
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
     return { forbidden: true, file: null };
   }
 
@@ -63,4 +64,5 @@ const server = http.createServer((req, res) => {
 
 server.listen(port, "127.0.0.1", () => {
   console.log(`WoofWatcher preview: http://127.0.0.1:${port}`);
+  console.log("Keep this terminal open while Apollo, Fable, Replit, or device QA reviews the exported beta.");
 });

@@ -158,6 +158,29 @@ test("keeps Expo web export smoke wired into CI", () => {
   assert.match(mobileGitignore, /\.expo-smoke\//);
 });
 
+test("keeps a static beta preview server wired for Apollo review", () => {
+  const rootPackage = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"));
+  const mobilePackage = JSON.parse(
+    readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "package.json"), "utf8"),
+  );
+  const serveSmokePreview = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "scripts", "serve-smoke-preview.js"),
+    "utf8",
+  );
+  const doctorSource = readFileSync(join(process.cwd(), "scripts", "mobile-beta-doctor.mjs"), "utf8");
+
+  assert.equal(rootPackage.scripts["preview:mobile-beta"], "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke");
+  assert.equal(mobilePackage.scripts["preview:smoke"], "node scripts/serve-smoke-preview.js 4194");
+  assert.equal(mobilePackage.scripts["preview:web"], "node scripts/serve-smoke-preview.js 4194");
+  assert.match(serveSmokePreview, /const root = path\.resolve\(projectRoot, "\.expo-smoke"\)/);
+  assert.match(serveSmokePreview, /process\.argv\[2\] \|\| 4194/);
+  assert.match(serveSmokePreview, /Missing \.expo-smoke\/index\.html/);
+  assert.match(serveSmokePreview, /Keep this terminal open/);
+  assert.match(serveSmokePreview, /127\.0\.0\.1/);
+  assert.match(doctorSource, /preview:smoke/);
+  assert.match(doctorSource, /http:\/\/127\.0\.0\.1:4194\//);
+});
+
 test("keeps local Clerk placeholders from blanking the web preview", () => {
   const auth = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "auth.ts"), "utf8");
 
@@ -2330,6 +2353,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     "pnpm run doctor:mobile-beta",
     "pnpm run doctor:mobile-beta:json",
     "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+    "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
   ]);
   assert.deepEqual(payload.handoffProofSections, [
     "Dependency proof commands",
@@ -2339,6 +2363,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     "Truth boundaries",
   ]);
   assert.ok(payload.nextActions?.some((action) => action.includes("pnpm --filter @workspace/woofwatcher-mobile run smoke:web")));
+  assert.ok(payload.nextActions?.some((action) => action.includes("preview:smoke") && action.includes("127.0.0.1:4194")));
   assert.ok(payload.nextActions?.some((action) => action.includes("/care-twin-qa")));
   assert.ok(payload.nextActions?.some((action) => action.includes("Printable HTML") && action.includes("PDF pending")));
   assert.ok(payload.truthBoundaries?.some((boundary) => boundary.includes("READY_FOR_EXPORT only")));
