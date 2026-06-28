@@ -1624,6 +1624,19 @@ test("keeps Records trend sections on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Hydration"/);
 });
 
+test("keeps Records section status labels as badges instead of passive actions", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/);
+  assert.doesNotMatch(records, /<BoardSectionHeader[\s\S]*?\saction=/);
+  assert.match(records, /BoardSectionHeader\s+title="Care Trends"[\s\S]*<BoardPill\s+label="7 days"/);
+  assert.match(records, /BoardSectionHeader[\s\S]*title="Weight Trend"[\s\S]*<BoardPill\s+label=\{remaining > 0 \?/);
+  assert.match(records, /BoardSectionHeader\s+title="Mood Trend"[\s\S]*<BoardPill\s+label=\{moodStats\.total > 0 \?/);
+  assert.match(records, /BoardSectionHeader\s+title="Hydration"[\s\S]*<BoardPill\s+label=\{waterHydration\.total \?/);
+  assert.match(records, /BoardSectionHeader\s+title="Care Pass"[\s\S]*<BoardPill\s+label="Preview"/);
+  assert.match(records, /BoardSectionHeader\s+title="Records Cabinet"[\s\S]*<BoardPill\s+label=\{`\$\{recordVault\.total\} saved`\}/);
+});
+
 test("keeps Records dog ID heading on shared board section anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 

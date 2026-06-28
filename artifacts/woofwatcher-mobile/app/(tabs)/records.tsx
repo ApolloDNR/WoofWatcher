@@ -71,7 +71,7 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
-import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -644,7 +644,7 @@ export default function RecordsScreen() {
 
           {/* Care trends */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Care Trends" action="7 days" />
+            <BoardSectionHeader title="Care Trends" accessory={<BoardPill label="7 days" tone={colors.primary} />} />
             <View style={s.trendHeroRow}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "14" }]}>
                 <Ionicons name="analytics-outline" size={18} color={colors.primary} />
@@ -838,7 +838,12 @@ export default function RecordsScreen() {
           <BoardCard style={[s.recordsBoardCard, { padding: cardPad }]}>
             <BoardSectionHeader
               title="Weight Trend"
-              action={remaining > 0 ? `${remaining.toFixed(1)} ${unit} ${weightTrend.direction === "reduce" ? "over goal" : "to go"}` : "Goal reached"}
+              accessory={
+                <BoardPill
+                  label={remaining > 0 ? `${remaining.toFixed(1)} ${unit} ${weightTrend.direction === "reduce" ? "over goal" : "to go"}` : "Goal reached"}
+                  tone={remaining > 0 ? colors.amber : colors.sage}
+                />
+              }
             />
             <View style={s.chartTopRow}>
               <View>
@@ -891,7 +896,15 @@ export default function RecordsScreen() {
 
           {/* Mood trend */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Mood Trend" action={moodStats.total > 0 ? `${moodStats.averageScore.toFixed(1)}/5 avg` : undefined} />
+            <BoardSectionHeader
+              title="Mood Trend"
+              accessory={
+                <BoardPill
+                  label={moodStats.total > 0 ? `${moodStats.averageScore.toFixed(1)}/5 avg` : "No mood logs"}
+                  tone={moodStats.status === "watch" ? colors.amber : colors.sage}
+                />
+              }
+            />
             {moodStats.bars.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                 No shared mood check-ins yet. Log mood with energy and care context to see trends.
@@ -969,7 +982,10 @@ export default function RecordsScreen() {
 
           {/* Hydration */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Hydration" action={waterHydration.total ? `${waterHydration.total} logs` : "No logs"} />
+            <BoardSectionHeader
+              title="Hydration"
+              accessory={<BoardPill label={waterHydration.total ? `${waterHydration.total} logs` : "No logs"} tone={colors.primary} />}
+            />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "18" }]}>
                 <Ionicons name="water-outline" size={18} color={colors.primary} />
@@ -1018,7 +1034,10 @@ export default function RecordsScreen() {
 
           {/* Walk activity */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Walk Activity" action={walkActivity.total ? `${walkActivity.total} walks` : "No walks"} />
+            <BoardSectionHeader
+              title="Walk Activity"
+              accessory={<BoardPill label={walkActivity.total ? `${walkActivity.total} walks` : "No walks"} tone={colors.sage} />}
+            />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
                 <Ionicons name="walk-outline" size={18} color={colors.sage} />
@@ -1115,7 +1134,12 @@ export default function RecordsScreen() {
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Training Progress"
-              action={trainingProgress.totalSessions ? `${trainingProgress.totalSessions} sessions` : "No sessions"}
+              accessory={
+                <BoardPill
+                  label={trainingProgress.totalSessions ? `${trainingProgress.totalSessions} sessions` : "No sessions"}
+                  tone={colors.copper}
+                />
+              }
             />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.copper + "18" }]}>
@@ -1183,7 +1207,15 @@ export default function RecordsScreen() {
 
           {/* Alone time */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Alone Time" action={aloneTime.totalSessions ? `${aloneTime.totalSessions} logs` : "No logs"} />
+            <BoardSectionHeader
+              title="Alone Time"
+              accessory={
+                <BoardPill
+                  label={aloneTime.totalSessions ? `${aloneTime.totalSessions} logs` : "No logs"}
+                  tone={aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.secondary}
+                />
+              }
+            />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.secondary + "18" }]}>
                 <Ionicons name="home-outline" size={18} color={colors.secondary} />
@@ -1256,7 +1288,10 @@ export default function RecordsScreen() {
 
           {/* Grooming care */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Grooming Care" action={groomingCare.totalSessions ? `${groomingCare.totalSessions} logs` : "No logs"} />
+            <BoardSectionHeader
+              title="Grooming Care"
+              accessory={<BoardPill label={groomingCare.totalSessions ? `${groomingCare.totalSessions} logs` : "No logs"} tone={colors.sage} />}
+            />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
                 <Ionicons name="sparkles-outline" size={18} color={colors.sage} />
@@ -1323,7 +1358,10 @@ export default function RecordsScreen() {
 
           {/* Potty health */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Potty Health" action={pottyHealth.total ? `${pottyHealth.total} logs` : "No logs"} />
+            <BoardSectionHeader
+              title="Potty Health"
+              accessory={<BoardPill label={pottyHealth.total ? `${pottyHealth.total} logs` : "No logs"} tone={pottyHealth.watchCount ? colors.amber : colors.sage} />}
+            />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.amber + "18" }]}>
                 <Ionicons name="medical-outline" size={18} color={colors.amber} />
@@ -1801,7 +1839,7 @@ export default function RecordsScreen() {
 
           {/* Care pass */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Care Pass" action="Preview" />
+            <BoardSectionHeader title="Care Pass" accessory={<BoardPill label="Preview" tone={colors.copper} />} />
             <View style={s.carePassList}>
               {CARE_PASS_OPTIONS.map((option) => (
                 <Pressable
@@ -1835,7 +1873,7 @@ export default function RecordsScreen() {
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Report History"
-              action={reportArtifacts.length ? `${reportArtifacts.length} saved` : "No saved"}
+              accessory={<BoardPill label={reportArtifacts.length ? `${reportArtifacts.length} saved` : "No saved"} tone={colors.primary} />}
             />
             {reportArtifacts.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
@@ -2059,7 +2097,7 @@ export default function RecordsScreen() {
 
           {/* Records cabinet */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Records Cabinet" action={`${recordVault.total} saved`} />
+            <BoardSectionHeader title="Records Cabinet" accessory={<BoardPill label={`${recordVault.total} saved`} tone={colors.primary} />} />
             {recordList.length === 0 ? (
               <View style={s.recordEmpty}>
                 <Ionicons name="folder-open-outline" size={28} color={colors.mutedForeground} />

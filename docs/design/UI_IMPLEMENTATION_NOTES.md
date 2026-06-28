@@ -1565,3 +1565,30 @@ Design intent:
 - Preserve the quick, game-like rhythm of logging without creating dead ends.
 - Move the high-frequency Log workflow closer to the locked mockups while
   keeping the app truthful about provider, native, PDF, and store readiness.
+
+## 2026-06-28 Records Status Pill Polish
+
+Records and Care Pass now treat dense header metrics as status badges instead
+of passive action text:
+
+- `Care Trends`, `Weight Trend`, `Mood Trend`, `Hydration`, `Walk Activity`,
+  `Training Progress`, `Alone Time`, `Grooming Care`, `Potty Health`,
+  `Care Pass`, `Report History`, and `Records Cabinet` now render their
+  compact labels through shared `BoardPill` accessories.
+- The badge tones now match the care state: steady signals use sage, watch
+  states use amber/rose, hydration/reporting use navy, and Care Pass uses
+  copper.
+- Real actions on Records remain real press targets, including dog ID share,
+  printable credential share, Care Pass rows, report resend/print, report
+  share, diet edit, and record creation.
+- The mobile readiness guard now blocks `BoardSectionHeader action=` on the
+  Records route and requires the key status labels to stay on `BoardPill`.
+
+Design intent:
+
+- Make Records feel like an established, high-density mobile product instead
+  of a prototype with decorative labels.
+- Keep the serious record, report, and Care Pass surfaces visually aligned with
+  the neo-retro board system without creating dead ends.
+- Preserve the truth boundary: no generated PDF, provider upload, native beta,
+  or store approval is implied by these visual status badges.
