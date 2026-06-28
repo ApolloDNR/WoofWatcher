@@ -38,7 +38,7 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
-import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -695,7 +695,10 @@ export default function CalendarScreen() {
 
           {/* Upcoming one-off events */}
           <BoardCard style={s.upcomingBoardCard}>
-            <BoardSectionHeader title="Upcoming Events" action={upcoming.length ? `${upcoming.length} days` : "Add one"} />
+            <BoardSectionHeader
+              title="Upcoming Events"
+              accessory={<BoardPill label={upcoming.length ? `${upcoming.length} days` : "Add one"} tone={colors.primary} />}
+            />
             {upcoming.length === 0 ? (
               <View style={[s.emptyPanel, { backgroundColor: colors.background }]}>
                 <Ionicons name="calendar-outline" size={30} color={colors.mutedForeground} />
@@ -753,7 +756,7 @@ export default function CalendarScreen() {
           <BoardCard style={[s.plansBoardCard, { borderColor: reminderTone + "44" }]}>
             <BoardSectionHeader
               title="Reminder Center"
-              action={reminderCount === 0 ? "Clear" : `${reminderCount} active`}
+              accessory={<BoardPill label={reminderCount === 0 ? "Clear" : `${reminderCount} active`} tone={reminderTone} />}
             />
             <View style={s.responsibilityTop}>
               <View style={[s.responsibilityIcon, { backgroundColor: reminderTone + "18" }]}>

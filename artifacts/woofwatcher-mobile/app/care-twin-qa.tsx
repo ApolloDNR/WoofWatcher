@@ -7,7 +7,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { LivingPhoenixRoom, type PhoenixRoomStat } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
@@ -1232,7 +1232,15 @@ export default function CareTwinQaScreen() {
           </Pressable>
         </BoardCard>
 
-        <BoardSectionHeader title="Launch Workflow QA" action={releaseScreenshotEvidenceComplete ? "platform proof complete" : releaseMissingEvidenceLabel} />
+        <BoardSectionHeader
+          title="Launch Workflow QA"
+          accessory={
+            <BoardPill
+              label={releaseScreenshotEvidenceComplete ? "platform proof complete" : releaseMissingEvidenceLabel}
+              tone={releaseScreenshotEvidenceComplete ? colors.sage : colors.amber}
+            />
+          }
+        />
 
         {releaseSurfaces.map((surface) => {
           const reviewStatus = surfaceStatusById[surface.id] ?? "unreviewed";
@@ -1366,7 +1374,10 @@ export default function CareTwinQaScreen() {
           );
         })}
 
-        <BoardSectionHeader title="Store Screenshot QA" action={storeSubmissionPacket.verdictLabel} />
+        <BoardSectionHeader
+          title="Store Screenshot QA"
+          accessory={<BoardPill label={storeSubmissionPacket.verdictLabel} tone={colors.copper} />}
+        />
 
         <BoardCard style={s.surfaceCard}>
           <View style={s.surfaceHeader}>
@@ -1553,7 +1564,10 @@ export default function CareTwinQaScreen() {
           );
         })}
 
-        <BoardSectionHeader title="Device Review Matrix" action={`${scenarios.length} scenes`} />
+        <BoardSectionHeader
+          title="Device Review Matrix"
+          accessory={<BoardPill label={`${scenarios.length} scenes`} tone={colors.brandNavy} />}
+        />
 
         {scenarios.map((result, index) => {
           const energy = energyForScenario(result);

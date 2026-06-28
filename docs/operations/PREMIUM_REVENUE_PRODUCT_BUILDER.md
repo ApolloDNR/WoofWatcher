@@ -1383,6 +1383,21 @@ verification at 149 files, package-local Expo web export to `.expo-smoke` with
 223 files, preview root `HEAD 200` at `http://127.0.0.1:4194/`, and
 `git diff --check` with expected Windows CRLF warnings only.
 
+The Setup, Plans, and Care Twin QA status-pill polish pass removed the remaining
+passive `BoardSectionHeader action` labels from setup, planning, and launch QA
+surfaces. Setup progress, after-save review, upcoming event count, Reminder
+Center status, launch workflow proof state, store screenshot verdict, and device
+review matrix count now render through shared `BoardPill` accessories, while
+real actions remain save/finish-later, plan/routine editing and logging,
+reminder rows, QA proof attachment, QA/store packet sharing, review surfaces,
+and back navigation. Red/green verification first failed on the missing setup
+and planning/QA pill contracts, then passed mobile readiness 87/87. Fresh local
+verification passed the 410-test behavior/readiness suite, `tsc --build`,
+mobile TypeScript, PixelLab asset verification at 149 files, package-local Expo
+web export to `.expo-smoke` with 223 files, preview root `HEAD 200` at
+`http://127.0.0.1:4194/`, and `git diff --check` with expected Windows CRLF
+warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

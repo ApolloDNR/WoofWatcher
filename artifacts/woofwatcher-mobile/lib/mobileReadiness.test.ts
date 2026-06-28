@@ -348,6 +348,8 @@ test("registers the care twin native QA route for device review", () => {
   );
 
   assert.match(rootLayout, /name="care-twin-qa"/);
+  assert.match(qaRoute, /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/);
+  assert.doesNotMatch(qaRoute, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(more, /buildCareTwinQaFocusRoute\(nativeQaCapturePlan\.nextTargets\[0\]\)/);
   assert.match(more, /__DEV__/);
   assert.match(qaRoute, /listCareTwinRuntimeQaScenarios/);
@@ -372,6 +374,9 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /deriveLaunchReadiness/);
   assert.match(qaRoute, /storeSubmissionPacket\.screenshotChecklist/);
   assert.match(qaRoute, /Store Screenshot QA/);
+  assert.match(qaRoute, /BoardSectionHeader\s+title="Launch Workflow QA"[\s\S]*<BoardPill\s+label=\{releaseScreenshotEvidenceComplete \? "platform proof complete" : releaseMissingEvidenceLabel\}/);
+  assert.match(qaRoute, /BoardSectionHeader\s+title="Store Screenshot QA"[\s\S]*<BoardPill\s+label=\{storeSubmissionPacket\.verdictLabel\}/);
+  assert.match(qaRoute, /BoardSectionHeader\s+title="Device Review Matrix"[\s\S]*<BoardPill\s+label=\{`\$\{scenarios\.length\} scenes`\}/);
   assert.match(qaRoute, /Share store packet/);
   assert.match(qaRoute, /AsyncStorage/);
   assert.match(qaRoute, /MOBILE_QA_SESSION_STORAGE_KEY/);
@@ -925,9 +930,12 @@ test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
     assert.match(source, /BoardCard/, `${route} should use shared BoardCard sections`);
   }
 
+  assert.match(plans, /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/);
+  assert.doesNotMatch(plans, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(log, /<BoardCard[\s\S]*style=\{s\.composerHero/);
   assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Choose care type"/);
-  assert.match(plans, /<BoardCard[\s\S]*BoardSectionHeader title="Upcoming Events"/);
+  assert.match(plans, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Upcoming Events"/);
+  assert.match(plans, /BoardSectionHeader\s+title="Upcoming Events"[\s\S]*<BoardPill\s+label=\{upcoming\.length \? `\$\{upcoming\.length\} days` : "Add one"\}/);
   assert.match(records, /<BoardCard[\s\S]*WOOFWATCHER DOG ID/);
 });
 
@@ -1536,8 +1544,12 @@ test("keeps Setup onboarding on shared board anatomy", () => {
   const setup = readAppFile("setup.tsx");
 
   assert.match(setup, /@\/components\/board\/BoardPrimitives/);
+  assert.match(setup, /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/);
+  assert.doesNotMatch(setup, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(setup, /<BoardRouteHeader[\s\S]*title="Set up WoofWatcher"/);
   assert.match(setup, /<BoardCard style=\{s\.progressCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Setup progress"/);
+  assert.match(setup, /BoardSectionHeader\s+title="Setup progress"[\s\S]*<BoardPill\s+label=\{`\$\{onboarding\.completedCount\}\/\$\{onboarding\.totalCount\} ready`\}/);
+  assert.match(setup, /BoardSectionHeader\s+title="After save"[\s\S]*<BoardPill\s+label="Review"/);
   assert.match(setup, /function Section[\s\S]*<BoardCard style=\{s\.section\}/);
   assert.match(setup, /Dog profile/);
   assert.match(setup, /Diet baseline/);
@@ -2029,6 +2041,7 @@ test("keeps Plans reminder and routine sections on shared board card anatomy", (
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
 
   assert.match(calendar, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Reminder Center"/);
+  assert.match(calendar, /BoardSectionHeader\s+title="Reminder Center"[\s\S]*<BoardPill\s+label=\{reminderCount === 0 \? "Clear" : `\$\{reminderCount\} active`\}/);
   assert.match(calendar, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Daily Routine"/);
   assert.doesNotMatch(calendar, /sectionHeader:/);
   assert.doesNotMatch(calendar, /sectionTitle:/);

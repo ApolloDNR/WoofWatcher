@@ -1703,3 +1703,35 @@ Design intent:
 - Preserve the product truth boundary: local export, local attachment queue,
   provider-gated storage, support readiness, deletion request, and launch
   policy status remain explicit without implying public-launch approval.
+
+## 2026-06-28 Setup, Plans, and QA Status Pill Polish
+
+Setup, Plans, and Care Twin QA now keep section state in shared `BoardPill`
+accessories instead of passive header actions:
+
+- Setup `Setup progress` shows the saved-foundation count as a primary status
+  badge.
+- Setup `After save` shows `Review` as an amber status badge.
+- Plans `Upcoming Events` shows the upcoming-day count or `Add one` as a
+  primary status badge.
+- Plans `Reminder Center` shows `Clear` or the active reminder count as a
+  status badge.
+- Care Twin QA `Launch Workflow QA` shows platform-proof completion or the
+  missing-proof label as a status badge.
+- Care Twin QA `Store Screenshot QA` shows the store-submission verdict as a
+  copper status badge.
+- Care Twin QA `Device Review Matrix` shows the scenario count as a navy status
+  badge.
+- The mobile readiness guard now blocks `BoardSectionHeader action=` on Setup,
+  Plans, and Care Twin QA and requires these labels to stay on `BoardPill`.
+
+Design intent:
+
+- Make the remaining setup, planning, and launch-review surfaces feel like
+  established app infrastructure instead of decorative mockup labels.
+- Keep real actions reserved for saving the foundation, finishing later,
+  adding/editing plans, logging routines, reminder rows, attaching proof,
+  sharing QA/store packets, opening review surfaces, and back navigation.
+- Preserve the truth boundary: no provider-backed sync, native-device proof,
+  store approval, generated PDF, AI/payment/push readiness, or public-launch
+  approval is implied by this polish.

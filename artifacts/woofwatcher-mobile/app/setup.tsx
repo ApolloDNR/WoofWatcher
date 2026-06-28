@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { deriveOnboardingStatus } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
 import {
   getKeyboardAvoidingVerticalOffset,
@@ -157,7 +157,10 @@ export default function SetupScreen() {
           />
 
           <BoardCard style={s.progressCard}>
-            <BoardSectionHeader title="Setup progress" action={`${onboarding.completedCount}/${onboarding.totalCount} ready`} />
+            <BoardSectionHeader
+              title="Setup progress"
+              accessory={<BoardPill label={`${onboarding.completedCount}/${onboarding.totalCount} ready`} tone={colors.primary} />}
+            />
             <View style={s.progressTop}>
               <View>
                 <Text style={[s.progressValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -306,7 +309,10 @@ export default function SetupScreen() {
           </Section>
 
           <BoardCard style={s.confirmationCard}>
-            <BoardSectionHeader title="After save" action="Review" />
+            <BoardSectionHeader
+              title="After save"
+              accessory={<BoardPill label="Review" tone={colors.amber} />}
+            />
             <Text style={[s.confirmationTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{confirmation.title}</Text>
             <Text style={[s.householdLabel, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>{confirmation.householdLabel}</Text>
             <Text style={[s.confirmationDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{confirmation.detail}</Text>
