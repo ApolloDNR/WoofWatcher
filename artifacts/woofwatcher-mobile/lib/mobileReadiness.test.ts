@@ -703,7 +703,8 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(home, /Today's Missions/);
   assert.match(home, /Care RPG/);
   assert.match(home, /router\.push\(mission\.route as never\)/);
-  assert.match(home, /\/log\?type=meal/);
+  assert.match(home, /pendingMealRoute/);
+  assert.match(home, /\/log\?entry=/);
   assert.match(home, /\/calendar/);
   assert.match(home, /\/adventure/);
   assert.match(home, /\/health/);
@@ -751,6 +752,7 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
 test("keeps Home Quick Log header action as a real route target", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));
+  const homeMissionDeck = readMobileLibFile("homeMissionDeck.ts");
   const primitives = readAppFile(join("..", "components", "board", "BoardPrimitives.tsx"));
 
   assert.match(
@@ -771,6 +773,12 @@ test("keeps Home Quick Log header action as a real route target", () => {
   assert.match(log, /setLauncherDetailAction\(routeDetailAction\)/);
   assert.match(log, /const routeEntryParam =/);
   assert.match(log, /setDetailEntryId\(routeEntryParam\)/);
+  assert.match(homeMissionDeck, /`\/log\?entry=\$\{string\}`/);
+  assert.match(home, /const pendingMealRoute = pendingMeal/);
+  assert.match(home, /encodeURIComponent\(pendingMeal\.id\)/);
+  assert.match(home, /const nextUpRoute = pendingMealRoute \?\? \(openAloneSession \|\| openWalkSession \? "\/log" : "\/calendar"\)/);
+  assert.match(home, /route: nextUpRoute/);
+  assert.match(home, /router\.push\(nextUpRoute as never\)/);
   assert.match(home, /const \[quickFeedback, setQuickFeedback\]/);
   assert.match(home, /deleteEntry\(quickFeedback\.id\)/);
   assert.match(home, /const entryId = quickFeedback\.id/);

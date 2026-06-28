@@ -1803,3 +1803,25 @@ Design intent:
 - Preserve speed while giving owners a clean recovery path for accidental taps.
 - Keep follow-up details attached to the actual saved log so audit, sticky
   notes, trust review, and future corrections remain connected.
+
+## 2026-06-28 Home Pending Meal Open-Loop Routing Polish
+
+Home pending-meal cards now route to the exact saved meal log instead of a
+generic Meal composer:
+
+- When Home detects a served/grazing meal with an unresolved outcome, it builds
+  `/log?entry=...` from that meal id.
+- `Next Up` now uses a single `nextUpRoute`: pending meals open the exact log,
+  active walk/alone loops open Log, and ordinary scheduled care opens Plans.
+- The care-RPG mission deck accepts `/log?entry=...` routes so its open-loop
+  mission can also point at the real record.
+- Existing Log `entry` route handling opens the detail sheet for that exact
+  event, where owners can update meal outcome, add sticky notes, correct, or
+  review trust/audit context.
+
+Design intent:
+
+- Make "Dinner served - outcome pending" feel like a real workflow, not a
+  decorative status.
+- Keep the served-to-outcome meal lifecycle attached to one household record.
+- Preserve the fast Home scan while sending follow-up taps to the right place.

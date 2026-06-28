@@ -1437,6 +1437,20 @@ web export to `.expo-smoke` with 223 files, preview root `HEAD 200`, entry route
 `HEAD 200` at `/log?entry=smoke`, and `git diff --check` with expected Windows
 CRLF warnings only.
 
+The Home pending-meal open-loop routing pass made the served-to-outcome meal
+lifecycle feel more like one coherent household workflow. When Home detects a
+served or grazing meal whose outcome is still pending, both the `Next Up` row
+and the care-RPG `My Care Today` mission now route to `/log?entry=...` for that
+exact meal instead of generic `/log?type=meal`. Active walk/alone loops still
+route to Log, while ordinary scheduled care routes to Plans. Red/green
+verification first failed on the missing exact-entry route contract, then
+passed mobile readiness 87/87. Fresh local verification passed the 410-test
+behavior/readiness suite, `tsc --build`, mobile TypeScript, package-local Expo
+web export to `.expo-smoke` with 223 files after adding bundled Node to `PATH`
+for the export script, preview root `HEAD 200`, entry route `HEAD 200` at
+`/log?entry=smoke`, and `git diff --check` with expected Windows CRLF warnings
+only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

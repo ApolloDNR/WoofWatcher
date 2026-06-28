@@ -381,6 +381,10 @@ export default function HomeScreen() {
       : status.minutesUntilNext !== null
       ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
       : nextPrimary?.time ?? "Ready when you are";
+  const pendingMealRoute = pendingMeal
+    ? (`/log?entry=${encodeURIComponent(pendingMeal.id)}` as `/log?entry=${string}`)
+    : null;
+  const nextUpRoute = pendingMealRoute ?? (openAloneSession || openWalkSession ? "/log" : "/calendar");
 
   const health = status.counts.healthAlert
     ? { status: "Needs Watch", sub: "Recent symptom logged", color: colors.amber }
@@ -521,7 +525,7 @@ export default function HomeScreen() {
           label: nextPrimary?.label ?? "Review today's care",
           detail: nextDetail,
           icon: nextPrimary?.icon ?? "clock",
-          route: pendingMeal ? "/log?type=meal" : openAloneSession || openWalkSession ? "/log" : "/calendar",
+          route: nextUpRoute,
           openLoop: Boolean(pendingMeal || openAloneSession || openWalkSession),
         },
         adventure: {
@@ -558,6 +562,7 @@ export default function HomeScreen() {
       nextDetail,
       nextPrimary?.icon,
       nextPrimary?.label,
+      nextUpRoute,
       openAloneSession,
       openWalkSession,
       pendingMeal,
@@ -949,7 +954,7 @@ export default function HomeScreen() {
                   title={item.label}
                   detail={index === 0 ? nextDetail : item.time}
                   meta={index === 0 && pendingMeal ? "Update" : index === 0 ? "Start" : ""}
-                  onPress={() => router.push(pendingMeal ? "/log?type=meal" : "/calendar")}
+                  onPress={() => router.push(nextUpRoute as never)}
                 />
               ))}
             </BoardCard>

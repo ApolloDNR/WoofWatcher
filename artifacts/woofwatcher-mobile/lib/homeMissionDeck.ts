@@ -6,6 +6,7 @@ export type HomeMissionRoute =
   | "/health"
   | "/log"
   | "/log?type=meal"
+  | `/log?entry=${string}`
   | "/records";
 
 export type HomeMissionIcon =
