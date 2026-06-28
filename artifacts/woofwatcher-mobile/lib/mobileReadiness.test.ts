@@ -1103,9 +1103,15 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
   const privacy = readAppFile("privacy.tsx");
 
   assert.match(privacy, /@\/components\/board\/BoardPrimitives/);
+  assert.match(privacy, /import \{ BoardCard, BoardPill, BoardSectionHeader \}/);
+  assert.doesNotMatch(privacy, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(privacy, /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Export summary"/);
+  assert.match(privacy, /BoardSectionHeader\s+title="Export summary"[\s\S]*<BoardPill\s+label="Local bundle"/);
+  assert.match(privacy, /BoardSectionHeader\s+title="Attachment queue"[\s\S]*<BoardPill\s+label=\{`\$\{bundle\.storage\.attachmentQueue\.total\} files`\}/);
   assert.match(privacy, /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Support runbook"/);
+  assert.match(privacy, /BoardSectionHeader\s+title="Support runbook"[\s\S]*<BoardPill\s+label="Launch gate"/);
   assert.match(privacy, /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch safety gates"/);
+  assert.match(privacy, /BoardSectionHeader\s+title="Launch safety gates"[\s\S]*<BoardPill\s+label=\{`\$\{sections\.length\} gates`\}/);
   assert.match(privacy, /<BoardCard style=\{\[s\.noticeBoard/);
   assert.match(privacy, /Export care data/);
   assert.match(privacy, /Deletion request/);

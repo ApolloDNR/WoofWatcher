@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
 import { useCare, type LaunchSupportProfile } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -237,7 +237,10 @@ export default function PrivacyScreen() {
         </LinearGradient>
 
         <BoardCard style={s.privacyBoard}>
-          <BoardSectionHeader title="Export summary" action="Local bundle" />
+          <BoardSectionHeader
+            title="Export summary"
+            accessory={<BoardPill label="Local bundle" tone={colors.sage} />}
+          />
           <View style={s.statsGrid}>
             <StatCard label="Logs" value={String(bundle.counts.entries)} colors={colors} />
             <StatCard label="Records" value={String(bundle.counts.records)} colors={colors} />
@@ -247,7 +250,10 @@ export default function PrivacyScreen() {
         </BoardCard>
 
         <BoardCard style={s.privacyBoard}>
-          <BoardSectionHeader title="Attachment queue" action={`${bundle.storage.attachmentQueue.total} files`} />
+          <BoardSectionHeader
+            title="Attachment queue"
+            accessory={<BoardPill label={`${bundle.storage.attachmentQueue.total} files`} tone={colors.copper} />}
+          />
           <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             {bundle.storage.attachmentSummary}
           </Text>
@@ -286,7 +292,10 @@ export default function PrivacyScreen() {
         </View>
 
         <BoardCard style={s.privacyBoard}>
-          <BoardSectionHeader title="Support runbook" action="Launch gate" />
+          <BoardSectionHeader
+            title="Support runbook"
+            accessory={<BoardPill label="Launch gate" tone={colors.amber} />}
+          />
           <Text style={[s.supportVerdict, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
             {supportPlan.verdictLabel}
           </Text>
@@ -345,7 +354,10 @@ export default function PrivacyScreen() {
         </BoardCard>
 
         <BoardCard style={s.privacyBoard}>
-          <BoardSectionHeader title="Launch safety gates" action={`${sections.length} gates`} />
+          <BoardSectionHeader
+            title="Launch safety gates"
+            accessory={<BoardPill label={`${sections.length} gates`} tone={colors.primary} />}
+          />
           <View style={s.sectionStack}>
             {sections.map((section) => (
               <SafetyRow key={section.title} section={section} colors={colors} />

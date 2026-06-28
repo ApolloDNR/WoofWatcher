@@ -1679,3 +1679,27 @@ Design intent:
 - Preserve the product truth boundary: the route remains owner-reviewed and
   non-diagnostic, with no fake live AI/provider/veterinary readiness implied by
   the visual polish.
+
+## 2026-06-28 Privacy Status Pill Polish
+
+Privacy & Safety now keeps launch-readiness and export state in shared
+`BoardPill` accessories instead of passive header actions:
+
+- `Export summary` shows `Local bundle` as a sage status badge.
+- `Attachment queue` shows the local attachment count as a copper status badge.
+- `Support runbook` shows `Launch gate` as an amber status badge.
+- `Launch safety gates` shows the gate count as a primary status badge.
+- The real Privacy actions remain close/back, export care data, deletion
+  request, launch support profile edit, support runbook share, and modal save
+  controls.
+- The mobile readiness guard now blocks `BoardSectionHeader action=` on the
+  Privacy route and requires the core launch-safety labels to stay on
+  `BoardPill`.
+
+Design intent:
+
+- Make the launch trust surface feel like established product infrastructure
+  instead of a checklist mockup.
+- Preserve the product truth boundary: local export, local attachment queue,
+  provider-gated storage, support readiness, deletion request, and launch
+  policy status remain explicit without implying public-launch approval.
