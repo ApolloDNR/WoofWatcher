@@ -2202,7 +2202,11 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(adventure, /BoardSectionHeader\s+title="Care proof"[\s\S]*<BoardPill\s+label=\{`\$\{adventure\.completedProof\.length\} today`\}/);
   assert.match(adventure, /BoardSectionHeader\s+title="Memory shelf"[\s\S]*<BoardPill\s+label=\{adventure\.memories\.length \? "Private" : "Empty"\}/);
   assert.match(adventure, /Private RPG/);
-  assert.match(adventure, /Save Memory/);
+  assert.match(adventure, /const availableQuestProofEntryId = findQuestProofEntryId\(availableQuest, state\.entries, now\)/);
+  assert.match(adventure, /const primaryQuestActionLabel/);
+  assert.match(adventure, /onPress=\{\(\) => startQuest\(availableQuest, availableQuestProofEntryId\)\}/);
+  assert.doesNotMatch(adventure, /onPress=\{\(\) => saveMemory\(availableQuest\)\}/);
+  assert.doesNotMatch(adventure, />Save Memory</);
   assert.match(adventure, /Start quest/);
   assert.match(adventure, /Open proof/);
   assert.match(adventure, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(questFeedback\.id\)\}` as never\)/);

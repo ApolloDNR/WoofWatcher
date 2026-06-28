@@ -1548,6 +1548,19 @@ with 223 files, preview route smoke for `/`, `/adventure`, and
 `/log?entry=smoke`, and `git diff --check` with only expected Windows CRLF
 warnings.
 
+The Adventure Next-Quest CTA polish pass corrected the top card's misleading
+memory-first action. The `Next quest` primary button now derives the current
+quest proof id, labels itself from the real quest state (`Start walk`, `Log
+training`, `Log play`, `Save memory`, `Open proof`, or `Locked`), disables
+locked quests, and calls the same source-backed `startQuest` path as Quest Board
+rows. Red/green verification first failed on the missing action-aware top CTA
+contract, then passed mobile readiness 88/88. Fresh local verification passed
+the 411-test mobile/domain behavior suite, PixelLab assets `ok=149 missing=0
+invalid=0`, root TypeScript, mobile TypeScript, package-local Expo web export
+to `.expo-smoke` with 223 files, preview route smoke for `/`, `/adventure`, and
+`/log?entry=smoke`, and `git diff --check` with only expected Windows CRLF
+warnings.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

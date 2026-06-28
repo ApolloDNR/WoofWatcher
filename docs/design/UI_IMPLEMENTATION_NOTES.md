@@ -1983,3 +1983,23 @@ Design intent:
   and Care Pass sources.
 - Preserve the under-five-second loop while giving owners a clean recovery path
   after quick quest actions.
+
+## 2026-06-28 Adventure Next-Quest CTA Polish
+
+The top `Next quest` card now uses the same action model as the Quest Board:
+
+- The primary CTA no longer always says `Save Memory`.
+- The CTA derives the current quest proof id before rendering.
+- It shows `Start walk`, `Log training`, `Log play`, `Save memory`, `Open proof`,
+  or `Locked` from the actual quest state.
+- It calls `startQuest(availableQuest, availableQuestProofEntryId)` so the top
+  card creates or opens the same source-backed evidence as the quest rows.
+- Locked quests are disabled instead of acting like a fake action.
+
+Design intent:
+
+- Make the first Adventure action obvious and accurate.
+- Keep the care-RPG promise tied to real logs instead of confusing owners with
+  a memory button before a real outing exists.
+- Reduce visible mockup drift by making the hero-level task behave like a
+  polished App Store screen, not a prototype shortcut.

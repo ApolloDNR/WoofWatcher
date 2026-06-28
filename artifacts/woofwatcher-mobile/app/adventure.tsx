@@ -116,6 +116,13 @@ export default function AdventureScreen() {
 
   const availableQuest =
     adventure.quests.find((quest) => quest.status === "available") ?? adventure.quests[0];
+  const availableQuestProofEntryId = findQuestProofEntryId(availableQuest, state.entries, now);
+  const primaryQuestActionLabel =
+    availableQuest.status === "complete"
+      ? "Open proof"
+      : availableQuest.status === "locked"
+        ? "Locked"
+        : availableQuest.actionLabel;
 
   const caregiver = state.caregivers[0]?.name ?? "Care team";
   const caregiverRole = state.caregivers.find((person) => person.name === caregiver)?.role;
@@ -281,13 +288,22 @@ export default function AdventureScreen() {
           </View>
           <View style={s.actionRow}>
             <Pressable
-              onPress={() => saveMemory(availableQuest)}
+              onPress={() => startQuest(availableQuest, availableQuestProofEntryId)}
               accessibilityRole="button"
-              accessibilityLabel="Save private adventure memory"
-              style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}
+              accessibilityLabel={`Run next Adventure quest: ${availableQuest.title}. ${primaryQuestActionLabel}`}
+              disabled={availableQuest.status === "locked"}
+              style={({ pressed }) => [
+                s.primaryBtn,
+                {
+                  backgroundColor: availableQuest.status === "locked" ? colors.mutedForeground : colors.primary,
+                  opacity: availableQuest.status === "locked" ? 0.58 : pressed ? 0.82 : 1,
+                },
+              ]}
             >
-              <Ionicons name="heart-outline" size={16} color="#FFFFFF" />
-              <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>Save Memory</Text>
+              <Ionicons name={questIcon(availableQuest.id)} size={16} color="#FFFFFF" />
+              <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>
+                {primaryQuestActionLabel}
+              </Text>
             </Pressable>
             <Pressable
               onPress={shareAdventure}
