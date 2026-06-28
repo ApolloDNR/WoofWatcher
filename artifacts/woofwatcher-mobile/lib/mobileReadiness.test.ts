@@ -2077,10 +2077,12 @@ test("routes Reminder Center rows to concrete care workflows", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
   assert.match(calendar, /openReminderAction/);
+  assert.match(calendar, /openReminderLogDetailRoute/);
   assert.match(calendar, /openBoardRoutine\(routine\)/);
   assert.match(calendar, /router\.push\("\/records"\)/);
-  assert.match(calendar, /pathname: "\/log"/);
-  assert.match(calendar, /type: "grooming"/);
+  assert.match(calendar, /router\.push\(`\/log\?type=\$\{encodeURIComponent\(type\)\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(calendar, /openReminderLogDetailRoute\("medication"\)/);
+  assert.match(calendar, /openReminderLogDetailRoute\("grooming"\)/);
   assert.match(calendar, /accessibilityLabel=\{`Open reminder action: \$\{item\.label\}`\}/);
   assert.match(log, /useLocalSearchParams/);
   assert.match(log, /routeSelectedType/);

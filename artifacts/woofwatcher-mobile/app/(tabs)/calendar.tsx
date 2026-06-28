@@ -343,6 +343,10 @@ export default function CalendarScreen() {
     });
   };
 
+  const openReminderLogDetailRoute = (type: string) => {
+    router.push(`/log?type=${encodeURIComponent(type)}&detail=1&intent=${Date.now()}` as never);
+  };
+
   const openReminderAction = (item: CareReminderItem) => {
     Haptics.selectionAsync();
     const routine = item.sourceId ? routineBoard.items.find((candidate) => candidate.id === item.sourceId) : null;
@@ -351,11 +355,11 @@ export default function CalendarScreen() {
       return;
     }
     if (item.kind === "medication" && routine) {
-      router.push({ pathname: "/log", params: { type: "medication" } });
+      openReminderLogDetailRoute("medication");
       return;
     }
     if (item.kind === "grooming") {
-      router.push({ pathname: "/log", params: { type: "grooming" } });
+      openReminderLogDetailRoute("grooming");
       return;
     }
     if (item.kind === "record" || item.kind === "medication") {

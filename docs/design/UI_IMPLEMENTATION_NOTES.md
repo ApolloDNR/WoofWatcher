@@ -1896,3 +1896,25 @@ Design intent:
 - Reuse the existing Log detail-sheet flow so appetite, stool, hydration,
   energy, and vomiting context stays connected to Timeline, sticky notes, trust
   review, Care Pass, and reports.
+
+## 2026-06-28 Plans Reminder Detail-Intent Polish
+
+Plans Reminder Center now sends safety and follow-up reminders into the compact
+typed Log detail flow:
+
+- Medication reminder rows open `/log?type=medication&detail=1&intent=...`.
+- Grooming reminder rows open `/log?type=grooming&detail=1&intent=...`.
+- Routine reminders still open the routine editor because the owner may need to
+  edit responsibility, time, or assignment.
+- Record reminders still open Records because the owner needs the vault context.
+
+Design intent:
+
+- Keep Plans aligned with the locked logging doctrine: reminders should lead to
+  the exact care workflow, not a generic screen.
+- Preserve the shared Log detail sheet as the single source of truth for
+  medication proof, grooming notes, sticky notes, trust review, audit history,
+  Records, and Care Pass evidence.
+- Reduce owner-preview dead ends before native iOS/Android capture while staying
+  honest that provider sync, push notifications, payments, AI, PDFs, and store
+  approval are still gated.

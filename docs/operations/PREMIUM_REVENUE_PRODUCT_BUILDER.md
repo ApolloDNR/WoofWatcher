@@ -1491,6 +1491,19 @@ to `.expo-smoke` with 223 files, preview route smoke for `/`, `/health`, and
 `/log?type=water&detail=1&intent=smoke`, and `git diff --check` with only
 expected Windows CRLF warnings.
 
+The Plans Reminder Center detail-intent pass tightened another owner-preview
+care loop. Medication and grooming reminder rows now open the typed compact Log
+detail flow through `/log?type=...&detail=1&intent=...` instead of landing on a
+generic Log screen. Routine reminders still open the routine editor, and record
+reminders still open Records, preserving the correct owner context for each
+reminder kind. Red/green verification first failed on the missing Plans reminder
+detail-intent contract, then passed mobile readiness 87/87. Fresh local
+verification passed the 410-test mobile/domain behavior suite, PixelLab assets
+`ok=149 missing=0 invalid=0`, root TypeScript, mobile TypeScript, package-local
+Expo web export to `.expo-smoke` with 223 files, preview route smoke for `/`,
+`/calendar`, and `/log?type=grooming&detail=1&intent=smoke`, and
+`git diff --check` with only expected Windows CRLF warnings.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
