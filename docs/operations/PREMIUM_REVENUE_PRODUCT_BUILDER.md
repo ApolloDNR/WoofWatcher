@@ -1320,6 +1320,18 @@ web export to `.expo-smoke`, preview root `HEAD 200` at
 `http://127.0.0.1:4194/`, and `git diff --check` with expected Windows CRLF
 warnings only.
 
+The Premium status-pill polish pass removed passive `BoardSectionHeader action`
+labels from the revenue screen. `Why upgrade`, `Plans`, and
+`Launch entitlements` now render status through shared `BoardPill`
+accessories, while the real actions remain the launch checklist and back
+navigation. Red/green verification first failed on the missing Premium pill
+contract, then passed mobile readiness 87/87. Fresh local verification passed
+the 410-test behavior/readiness suite, `tsc --build`, mobile TypeScript,
+PixelLab asset verification at 149 files, package-local Expo web export to
+`.expo-smoke` with 223 files, preview root `HEAD 200` at
+`http://127.0.0.1:4194/`, and `git diff --check` with expected Windows CRLF
+warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

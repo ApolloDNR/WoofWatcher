@@ -1592,3 +1592,24 @@ Design intent:
   the neo-retro board system without creating dead ends.
 - Preserve the truth boundary: no generated PDF, provider upload, native beta,
   or store approval is implied by these visual status badges.
+
+## 2026-06-28 Premium Status Pill Polish
+
+Premium now uses the shared board anatomy for revenue-facing status labels:
+
+- `Why upgrade` shows the number of value signals as a `BoardPill` accessory
+  instead of a passive section action.
+- `Plans` shows `Checkout gated` as an amber `BoardPill`, keeping the screen
+  honest that production checkout is not wired yet.
+- `Launch entitlements` shows `Current: Free` as a primary `BoardPill` while
+  preserving real actions for the launch checklist and back navigation.
+- The mobile readiness guard now blocks `BoardSectionHeader action=` on the
+  Premium route and requires the key Premium labels to stay on `BoardPill`.
+
+Design intent:
+
+- Keep the monetization surface polished without implying live payments.
+- Make passive launch/revenue states look like status, not dead controls.
+- Preserve the product truth boundary: no provider-backed checkout, app-store
+  subscription, native beta, generated PDF, or store approval is implied by
+  this visual polish.

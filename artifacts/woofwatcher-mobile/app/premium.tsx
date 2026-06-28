@@ -23,7 +23,7 @@ import {
 } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -141,7 +141,10 @@ export default function PremiumScreen() {
           </View>
 
           <BoardCard style={s.premiumBoard}>
-            <BoardSectionHeader title="Why upgrade" action={`${preview.valueSignals.length} signals`} />
+            <BoardSectionHeader
+              title="Why upgrade"
+              accessory={<BoardPill label={`${preview.valueSignals.length} signals`} tone={colors.sage} />}
+            />
             <View style={s.signalGrid}>
               {preview.valueSignals.slice(0, 4).map((signal) => (
                 <View key={signal.key} style={[s.signalTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -160,7 +163,7 @@ export default function PremiumScreen() {
           </BoardCard>
 
           <View style={s.planSection}>
-            <BoardSectionHeader title="Plans" action="Checkout gated" />
+            <BoardSectionHeader title="Plans" accessory={<BoardPill label="Checkout gated" tone={colors.amber} />} />
           </View>
           <View style={s.planStack}>
             {preview.plans.map((plan) => (
@@ -174,7 +177,7 @@ export default function PremiumScreen() {
           </View>
 
           <BoardCard style={s.entitlementCard}>
-            <BoardSectionHeader title="Launch entitlements" action="Current: Free" />
+            <BoardSectionHeader title="Launch entitlements" accessory={<BoardPill label="Current: Free" tone={colors.primary} />} />
             <Text style={[s.entitlementSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               Current plan: Free
             </Text>

@@ -1082,8 +1082,12 @@ test("keeps Premium value, plan, and entitlement surfaces on shared board anatom
 
   assert.match(premium, /@\/components\/board\/BoardPrimitives/);
   assert.match(premium, /<BoardCard style=\{s\.premiumBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Why upgrade"/);
-  assert.match(premium, /BoardSectionHeader title="Plans" action="Checkout gated"/);
+  assert.match(premium, /import \{ BoardCard, BoardPill, BoardSectionHeader \}/);
+  assert.doesNotMatch(premium, /<BoardSectionHeader[\s\S]*?\saction=/);
+  assert.match(premium, /BoardSectionHeader\s+title="Why upgrade"[\s\S]*<BoardPill\s+label=\{`\$\{preview\.valueSignals\.length\} signals`\}/);
+  assert.match(premium, /BoardSectionHeader\s+title="Plans"[\s\S]*<BoardPill\s+label="Checkout gated"/);
   assert.match(premium, /<BoardCard style=\{s\.entitlementCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch entitlements"/);
+  assert.match(premium, /BoardSectionHeader\s+title="Launch entitlements"[\s\S]*<BoardPill\s+label="Current: Free"/);
   assert.match(premium, /function PlanCard[\s\S]*<BoardCard/);
   assert.match(premium, /Premium launch checklist/);
   assert.doesNotMatch(premium, /sectionHeader:/);
