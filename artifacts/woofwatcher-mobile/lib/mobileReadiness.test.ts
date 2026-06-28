@@ -790,6 +790,7 @@ test("keeps Home Quick Log header action as a real route target", () => {
 
 test("keeps Home owner-preview section actions as real route targets", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
+  const more = readAppFile(join("(tabs)", "more.tsx"));
 
   assert.match(home, /BoardSectionHeader\s+title="Recent activity"\s+accessory=\{\s*<HomeHeaderAction/);
   assert.match(home, /accessibilityLabel="View all recent care activity"/);
@@ -801,6 +802,17 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   assert.match(home, /BoardSectionHeader\s+title="Phoenix status"\s+accessory=\{\s*<HomeHeaderAction/);
   assert.match(home, /accessibilityLabel="Open full Health Watch"/);
   assert.match(home, /route="\/health"/);
+  assert.match(home, /type StatusTileTarget = "mood" \| "health" \| "diet" \| "bond"/);
+  assert.match(home, /const openStatusTile = \(target: StatusTileTarget\) =>/);
+  assert.match(home, /router\.push\(`\/log\?type=mood&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(home, /router\.push\("\/health"\)/);
+  assert.match(home, /router\.push\("\/more\?section=diet" as never\)/);
+  assert.match(home, /router\.push\(`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(home, /accessibilityLabel=\{`\$\{tile\.label\}\. \$\{tile\.value\}\. \$\{tile\.actionLabel\}`\}/);
+  assert.match(home, /onPress=\{\(\) => openStatusTile\(tile\.target\)\}/);
+  assert.match(more, /useLocalSearchParams<\{\s*section\?: string \| string\[\];\s*\}>/);
+  assert.match(more, /const sectionParam = Array\.isArray\(routeParams\.section\) \? routeParams\.section\[0\] : routeParams\.section/);
+  assert.match(more, /if \(sectionParam === "diet"\) setDietOpen\(true\)/);
   assertStyleUsesSharedTouchTarget(home, "homeHeaderAction");
 });
 

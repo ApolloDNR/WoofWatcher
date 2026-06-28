@@ -1848,3 +1848,26 @@ Design intent:
 - Keep owner preview loops tight: see a recent log, tap it, edit the actual
   source record.
 - Preserve the under-five-second Home scan while removing decorative dead ends.
+
+## 2026-06-28 Home HUD Status Tile Routing Polish
+
+Home's first-screen status HUD now behaves like a real care command surface:
+
+- `Happiness` opens the Mood detail flow through
+  `/log?type=mood&detail=1&intent=...`.
+- `Energy` opens Health Watch.
+- `Hunger` opens More with Diet Profile details expanded through
+  `/more?section=diet`.
+- `Bond` opens the Play detail flow through
+  `/log?type=play&detail=1&intent=...`.
+- Each HUD tile is a pressable, accessible button with a label that explains
+  the visible value and destination.
+- More reads the `section=diet` route param and expands the Diet Profile card
+  without pretending a dedicated Diet route exists yet.
+
+Design intent:
+
+- Make the pixel HUD feel game-like without becoming decorative.
+- Let owners jump from a status concern directly to the right care workflow.
+- Preserve the current mobile nav while making Diet & Treats easier to reach
+  from the Home screen.

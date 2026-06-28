@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -209,6 +209,10 @@ export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const routeParams = useLocalSearchParams<{
+    section?: string | string[];
+  }>();
+  const sectionParam = Array.isArray(routeParams.section) ? routeParams.section[0] : routeParams.section;
   const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
   const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
@@ -450,6 +454,10 @@ export default function MoreScreen() {
   const [pInsurancePolicy, setPInsurancePolicy] = useState("");
 
   const [dietEditOpen, setDietEditOpen] = useState(false);
+
+  useEffect(() => {
+    if (sectionParam === "diet") setDietOpen(true);
+  }, [sectionParam]);
   const [dPrimaryFood, setDPrimaryFood] = useState("");
   const [dNormalPortion, setDNormalPortion] = useState("");
   const [dMealSchedule, setDMealSchedule] = useState("");

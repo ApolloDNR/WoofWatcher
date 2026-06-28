@@ -1463,6 +1463,18 @@ mobile readiness 87/87, the 410-test mobile/domain behavior suite,
 `.expo-smoke` with 223 files, and the entry route remains available at
 `/log?entry=smoke`.
 
+The Home HUD status tile routing pass made the first-screen Tamagotchi-style
+status cards behave like real care controls. `Happiness` now opens the Mood
+detail flow, `Energy` opens Health Watch, `Hunger` opens More with Diet Profile
+expanded through `/more?section=diet`, and `Bond` opens the Play detail flow.
+Each tile is pressable, carries an explicit accessibility label, and keeps the
+existing compact HUD layout. More now consumes the `section=diet` route param
+and expands Diet Profile without inventing a fake standalone Diet route. Red
+verification first failed on the missing HUD route contract, then passed mobile
+readiness 87/87. Fresh local verification passed the 410-test mobile/domain
+behavior suite, `tsc --build`, mobile TypeScript, and package-local Expo web
+export to `.expo-smoke` with 223 files.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

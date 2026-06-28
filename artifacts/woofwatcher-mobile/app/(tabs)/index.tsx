@@ -73,6 +73,8 @@ interface QuickItem {
   route?: "/log";
 }
 
+type StatusTileTarget = "mood" | "health" | "diet" | "bond";
+
 const HOME_QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
   { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
@@ -512,11 +514,55 @@ export default function HomeScreen() {
   const adventureQuest = adventureMode.quests[0];
 
   const statusTiles = [
-    { label: "Happiness", value: status.meta.label, icon: moodIcon, tone: colors.amber },
-    { label: "Energy", value: `${status.energy}%`, icon: "energy" as PixelIconName, tone: colors.sage },
-    { label: "Hunger", value: hungerLabel, icon: "hunger" as PixelIconName, tone: fed ? colors.sage : colors.copper },
-    { label: "Bond", value: bondLabel, icon: "heart" as PixelIconName, tone: colors.rose },
+    {
+      label: "Happiness",
+      value: status.meta.label,
+      icon: moodIcon,
+      tone: colors.amber,
+      target: "mood" as StatusTileTarget,
+      actionLabel: "Open mood details",
+    },
+    {
+      label: "Energy",
+      value: `${status.energy}%`,
+      icon: "energy" as PixelIconName,
+      tone: colors.sage,
+      target: "health" as StatusTileTarget,
+      actionLabel: "Open Health Watch",
+    },
+    {
+      label: "Hunger",
+      value: hungerLabel,
+      icon: "hunger" as PixelIconName,
+      tone: fed ? colors.sage : colors.copper,
+      target: "diet" as StatusTileTarget,
+      actionLabel: "Open Diet Profile",
+    },
+    {
+      label: "Bond",
+      value: bondLabel,
+      icon: "heart" as PixelIconName,
+      tone: colors.rose,
+      target: "bond" as StatusTileTarget,
+      actionLabel: "Open play details",
+    },
   ];
+  const openStatusTile = (target: StatusTileTarget) => {
+    void Haptics.selectionAsync();
+    if (target === "mood") {
+      router.push(`/log?type=mood&detail=1&intent=${Date.now()}` as never);
+      return;
+    }
+    if (target === "health") {
+      router.push("/health");
+      return;
+    }
+    if (target === "diet") {
+      router.push("/more?section=diet" as never);
+      return;
+    }
+    router.push(`/log?type=play&detail=1&intent=${Date.now()}` as never);
+  };
   const homeMissions = useMemo(
     () =>
       buildHomeMissionDeck({
@@ -909,14 +955,19 @@ export default function HomeScreen() {
             ]}
           >
             {statusTiles.map((tile) => (
-              <View
+              <Pressable
                 key={tile.label}
-                style={[
+                accessibilityRole="button"
+                accessibilityLabel={`${tile.label}. ${tile.value}. ${tile.actionLabel}`}
+                onPress={() => openStatusTile(tile.target)}
+                style={({ pressed }) => [
                   s.statusTile,
                   {
                     minHeight: homeFirstScreenLayout.statusTileMinHeight,
-                    backgroundColor: colors.card,
+                    backgroundColor: pressed ? colors.secondary : colors.card,
                     borderColor: colors.border,
+                    opacity: pressed ? 0.78 : 1,
+                    transform: [{ scale: pressed ? 0.98 : 1 }],
                   },
                 ]}
               >
@@ -938,7 +989,7 @@ export default function HomeScreen() {
                 <Text style={[s.statusTileValue, { color: tile.tone, fontFamily: "Inter_700Bold" }]}>
                   {tile.value}
                 </Text>
-              </View>
+              </Pressable>
             ))}
           </View>
 
