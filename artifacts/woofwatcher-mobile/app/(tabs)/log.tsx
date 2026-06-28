@@ -87,7 +87,7 @@ import {
 } from "@/lib/quickLogEntry";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
-import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -2620,7 +2620,11 @@ export default function LogScreen() {
               ))}
             </View>
 
-            <BoardSectionHeader title="Choose care type" action="Fast tap" style={s.composerSectionHeader} />
+            <BoardSectionHeader
+              title="Choose care type"
+              accessory={<BoardPill label="Fast tap" icon="flash-outline" tone={colors.copper} />}
+              style={s.composerSectionHeader}
+            />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -3309,7 +3313,10 @@ export default function LogScreen() {
           {/* Today at a glance */}
           {todaySnapshot.total > 0 && (
             <BoardCard style={s.logBoardCard}>
-              <BoardSectionHeader title="Today at a glance" action={`${todaySnapshot.total} logged`} />
+              <BoardSectionHeader
+                title="Today at a glance"
+                accessory={<BoardPill label={`${todaySnapshot.total} logged`} icon="checkmark-circle-outline" tone={colors.sage} />}
+              />
               <View style={[s.snapshotSummary, { backgroundColor: colors.background }]}>
                 <View style={s.snapshotLeft}>
                   <Text style={[s.snapshotCount, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{todaySnapshot.total}</Text>
@@ -3332,7 +3339,10 @@ export default function LogScreen() {
 
           {/* Search and filters */}
           <BoardCard style={s.logBoardCard}>
-            <BoardSectionHeader title="Find care logs" action={logSearch.hasActiveFilters ? "Filtered" : undefined} />
+            <BoardSectionHeader
+              title="Find care logs"
+              accessory={logSearch.hasActiveFilters ? <BoardPill label="Filtered" icon="funnel-outline" tone={colors.copper} /> : undefined}
+            />
             <View style={[s.searchPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Ionicons name="search" size={18} color={colors.mutedForeground} />
               <TextInput

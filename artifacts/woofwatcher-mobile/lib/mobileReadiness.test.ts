@@ -925,7 +925,7 @@ test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
   }
 
   assert.match(log, /<BoardCard[\s\S]*style=\{s\.composerHero/);
-  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader title="Choose care type"/);
+  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Choose care type"/);
   assert.match(plans, /<BoardCard[\s\S]*BoardSectionHeader title="Upcoming Events"/);
   assert.match(records, /<BoardCard[\s\S]*WOOFWATCHER DOG ID/);
 });
@@ -937,10 +937,10 @@ test("keeps Quick Log composer card boundaries separate from search controls", (
 
   assert.match(composerBlock, /<BoardCard[\s\S]*<\/BoardCard>/);
   assert.match(composerBlock, /style=\{s\.composerHero/);
-  assert.match(composerBlock, /BoardSectionHeader title="Choose care type"/);
+  assert.match(composerBlock, /BoardSectionHeader[\s\S]*title="Choose care type"/);
   assert.doesNotMatch(composerBlock, /title="Find care logs"/);
   assert.match(searchBlock, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Find care logs"[\s\S]*<\/BoardCard>/);
-  assert.doesNotMatch(searchBlock, /BoardSectionHeader title="Choose care type"/);
+  assert.doesNotMatch(searchBlock, /title="Choose care type"/);
 });
 
 test("keeps Quick Log polished for exact tap selection and mobile scanability", () => {
@@ -958,6 +958,8 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.match(log, /describeQuickLogDetailSheet/);
   assert.match(log, /describeQuickLogLauncherAction/);
   assert.match(log, /getQuickLogPolicy/);
+  assert.doesNotMatch(log, /BoardSectionHeader title="Choose care type" action="Fast tap"/);
+  assert.match(log, /BoardSectionHeader\s+title="Choose care type"[\s\S]*<BoardPill\s+label="Fast tap"/);
   assert.match(log, /handleQuickLauncherAction/);
   assert.match(log, /launcherDetailAction/);
   assert.match(log, /launcherDetailPresentation/);
@@ -1041,6 +1043,10 @@ test("keeps Quick Log search and timeline on shared board card anatomy", () => {
 
   assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Today at a glance"/);
   assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Find care logs"/);
+  assert.doesNotMatch(log, /BoardSectionHeader title="Today at a glance" action=\{\`\$\{todaySnapshot\.total\} logged`\}/);
+  assert.match(log, /BoardSectionHeader\s+title="Today at a glance"[\s\S]*<BoardPill\s+label=\{\`\$\{todaySnapshot\.total\} logged`\}/);
+  assert.doesNotMatch(log, /BoardSectionHeader title="Find care logs" action=\{logSearch\.hasActiveFilters \? "Filtered" : undefined\}/);
+  assert.match(log, /BoardSectionHeader\s+title="Find care logs"[\s\S]*<BoardPill\s+label="Filtered"/);
   assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title=\{g\.label\}/);
   assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="No matching logs"/);
   assert.doesNotMatch(log, /searchCard:/);

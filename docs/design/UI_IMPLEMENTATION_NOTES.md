@@ -1525,3 +1525,24 @@ Design intent:
   route somewhere useful or stop looking like a control.
 - Continue visible Health mockup accuracy without claiming native proof,
   provider-backed storage, generated PDF, store approval, or veterinary advice.
+
+## 2026-06-28 Log Status Pill Polish
+
+Quick Log now separates status labels from real actions:
+
+- `Choose care type / Fast tap` now renders `Fast tap` as a `BoardPill`
+  accessory, so it reads like a quick-mode status instead of a dead button.
+- `Today at a glance / N logged` now renders the count as a success status pill
+  instead of a section action.
+- `Find care logs / Filtered` now appears only as a filter-state pill when
+  filters are active.
+- The mobile readiness guard now protects these status accessories and prevents
+  the old mockup-style action labels from coming back.
+
+Design intent:
+
+- Keep the Log screen feeling like established mobile software: tappable things
+  should perform an action, while passive state should look like passive state.
+- Preserve the quick, game-like rhythm of logging without creating dead ends.
+- Move the high-frequency Log workflow closer to the locked mockups while
+  keeping the app truthful about provider, native, PDF, and store readiness.
