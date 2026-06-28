@@ -148,6 +148,7 @@ Passing evidence:
 - Mobile screens have functional product surfaces.
 - Home has a tested avatar motion state model and visible motion row that connects avatar state to Health Watch, recent logs, routine status, quiet hours, and low energy.
 - Mood logging captures structured energy level, optional care context, sticky notes, and household visibility while preserving the mood field used by Records Mood Trend and care-twin state.
+- Records Mood Trend now uses shared care-domain logic to exclude private/stale mood logs, summarize low/steady/high energy, show latest caregiver/context, and provide safe household next-step copy.
 
 Current gaps:
 

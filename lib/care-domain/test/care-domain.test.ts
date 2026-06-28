@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   deriveCareDayStatus,
+  deriveMoodTrend,
   getCareEventDefinition,
   normalizeCareEventType,
 } from "../src/index.ts";
@@ -79,4 +80,68 @@ test("derives day status from normalized care entries", () => {
   assert.equal(status.counts.anxiety, 1);
   assert.equal(status.counts.walkMinutes, 30);
   assert.equal(status.healthAlert, true);
+});
+
+test("derives mood trend from shared mood and energy check-ins", () => {
+  const trend = deriveMoodTrend({
+    now: NOW,
+    entries: [
+      {
+        id: "mood_1",
+        type: "mood",
+        title: "Mood - Visitors",
+        occurredAt: "2026-06-06T12:00:00.000Z",
+        caregiver: "Emma",
+        mood: "anxious",
+        details: {
+          energyLevel: "low",
+          moodContext: "Visitors came by",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "mood_2",
+        type: "mood",
+        occurredAt: "2026-06-05T12:00:00.000Z",
+        caregiver: "Apollo",
+        mood: "calm",
+        details: {
+          energyLevel: "steady",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "private_mood",
+        type: "mood",
+        occurredAt: "2026-06-05T13:00:00.000Z",
+        mood: "happy",
+        details: {
+          energyLevel: "high",
+          householdVisible: false,
+        },
+      },
+      {
+        id: "old_mood",
+        type: "mood",
+        occurredAt: "2026-04-01T12:00:00.000Z",
+        mood: "unwell",
+        details: {
+          energyLevel: "low",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  assert.equal(trend.total, 2);
+  assert.equal(trend.averageScore, 3);
+  assert.equal(trend.status, "watch");
+  assert.equal(trend.watchCount, 1);
+  assert.equal(trend.energy.low, 1);
+  assert.equal(trend.energy.steady, 1);
+  assert.equal(trend.energy.high, 0);
+  assert.deepEqual(trend.caregivers, ["Emma", "Apollo"]);
+  assert.equal(trend.latest?.context, "Visitors came by");
+  assert.match(trend.summary, /2 shared mood check-ins/);
+  assert.match(trend.nextStep, /Visitors came by/);
 });

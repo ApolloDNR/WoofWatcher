@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-28: Mood Trend Uses Shared Energy Context
+
+Decision: Records Mood Trend should derive from shared care-domain logic instead of route-local aggregation. The shared helper should exclude private and stale mood logs, preserve low/steady/high energy, latest caregiver/context, watch status, summary, and next-step copy, and keep the language non-diagnostic.
+
+Reason: Mood and energy logs are now structured care evidence. Leaving Records as a simple local mood-count chart would store useful context without making it reviewable by the household, reports, or future care-domain surfaces. Shared derivation keeps the real care loop consistent while deeper analytics, Care Pass mood sections, and native runtime QA remain separate work.
+
+Owner: Codex.
+
+Revisit trigger: Deeper mood analytics, Care Pass mood handoff sections, avatar state-machine changes, trainer/vet report language, or provider-backed WoofGuide mood explanations become active release work.
+
 ### 2026-06-27: Invite-Code Join Success Names The Active Pack
 
 Decision: Mobile More should show a post-join confirmation when an invite code is accepted. The confirmation should use the generated `/household/join` response to name the joined household as the active care sync pack, then keep switching, Household Access, and Sync Health in More while stating that provider-backed invite approval remains gated.

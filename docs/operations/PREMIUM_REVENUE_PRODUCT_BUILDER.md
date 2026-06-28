@@ -141,6 +141,7 @@ Latest completed local runtime/accessibility hardening:
 - Mobile More display-name copy now mirrors the active-household member update boundary. The display-name row, edit modal, and save confirmation name the active pack so multi-household caregivers are not told the name change applies to every household or future provider-backed surface.
 - Animated care-twin taps now have an explicit screen-reader contract before native accessibility traversal. `AnimatedAvatar` exposes the full-scene response as a button, names Phoenix's current care-twin mood and visible speech fallback, and states that tapping only plays a gentle response without changing care records.
 - Mood logging now captures structured energy and care context before deeper mood analytics. The Log composer saves low/steady/high energy, optional care context, sticky notes, and household visibility while preserving the top-level mood field used by Records Mood Trend and care-twin state.
+- Records Mood Trend now derives from shared care-domain logic before deeper mood analytics. Private and stale mood logs are excluded, while low/steady/high energy counts, latest caregiver/context, watch status, summary, and next-step copy are visible in Records without diagnostic claims.
 
 Next highest-impact work:
 

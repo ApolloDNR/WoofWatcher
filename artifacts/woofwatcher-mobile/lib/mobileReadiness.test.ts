@@ -1273,6 +1273,9 @@ test("keeps Records trend sections on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Trends"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Weight Trend"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Mood Trend"/);
+  assert.match(records, /deriveMoodTrend\(\{ entries: state\.entries, now, lookbackDays: 30, limit: 3 \}\)/);
+  assert.match(records, /moodStats\.energy\.low/);
+  assert.match(records, /moodStats\.latest\.context/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Hydration"/);
 });
 
