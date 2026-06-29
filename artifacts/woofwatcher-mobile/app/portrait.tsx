@@ -89,7 +89,7 @@ const SCAN_LINES = [
 ];
 
 const SCAN_WORKFLOW_ACCESSIBILITY_SUMMARY = "Photo reference, Template match, Pixel twin, Owner approval";
-const HERO_TEMPLATE_SPRITE_SIZE = 286;
+const HERO_TEMPLATE_SPRITE_SIZE = 256;
 
 const COAT_SWATCHES = [
   "#1B1714",
@@ -527,62 +527,71 @@ export default function PortraitScreen() {
                       },
                     ]}
                   >
-                    <Image
-                      source={selectedTemplateStillSource}
-                      style={[s.templateHeroDog, pixelImageStyle, previewIsSprite ? s.templateHeroDogGhost : null]}
-                      contentFit="contain"
-                      transition={180}
-                    />
                     {previewIsSprite && previewSpriteTrack ? (
-                      <SpriteSheetPlayer
-                        asset={previewSpriteAsset}
-                        track={previewSpriteTrack}
-                        width={HERO_TEMPLATE_SPRITE_SIZE}
-                        height={HERO_TEMPLATE_SPRITE_SIZE}
-                        style={s.templateHeroSprite}
-                        testID="avatar-studio-live-sprite-preview"
-                      />
-                    ) : null}
-                    {!previewIsSprite ? previewAccessoryLayers.map((layer) => {
-                      if (layer.kind !== "bed" && layer.source) {
-                        return (
-                          <Image
-                            key={layer.id}
-                            source={layer.source}
-                            style={[s.templateAccessoryLayer, pixelImageStyle]}
-                            contentFit="contain"
-                            transition={150}
-                            pointerEvents="none"
-                          />
-                        );
-                      }
-                      switch (layer.kind) {
-                        case "bandana":
-                          return <View key={layer.id} style={[s.templateBandana, { backgroundColor: layer.tone }]} pointerEvents="none" />;
-                        case "collar":
-                          return <View key={layer.id} style={[s.templateCollar, { borderColor: layer.tone }]} pointerEvents="none" />;
-                        case "hat":
-                          return (
-                            <View key={layer.id} style={[s.templateHatWrap, { borderBottomColor: layer.tone }]} pointerEvents="none">
-                              <View style={[s.templateHatPom, { backgroundColor: layer.tone }]} />
-                            </View>
-                          );
-                        case "mask":
-                          return <View key={layer.id} style={[s.templateMask, { backgroundColor: layer.tone }]} pointerEvents="none" />;
-                        case "vest":
-                          return <View key={layer.id} style={[s.templateVest, { backgroundColor: layer.tone }]} pointerEvents="none" />;
-                        case "sparkles":
-                          return (
-                            <View key={layer.id} style={s.templateSparkleCluster} pointerEvents="none">
-                              <View style={[s.templateSparkle, s.templateSparkleOne, { backgroundColor: layer.tone }]} />
-                              <View style={[s.templateSparkle, s.templateSparkleTwo, { backgroundColor: layer.tone }]} />
-                              <View style={[s.templateSparkle, s.templateSparkleThree, { backgroundColor: layer.tone }]} />
-                            </View>
-                          );
-                        default:
-                          return null;
-                      }
-                    }) : null}
+                      <View
+                        testID="avatar-studio-pixel-sprite-viewport"
+                        style={[s.templateSpriteViewport, { backgroundColor: "rgba(247,242,232,0.12)", borderColor: colors.navy }]}
+                      >
+                        <View style={[s.templateSpriteGround, { backgroundColor: colors.sage, borderColor: colors.navy }]} pointerEvents="none" />
+                        <SpriteSheetPlayer
+                          asset={previewSpriteAsset}
+                          track={previewSpriteTrack}
+                          width={HERO_TEMPLATE_SPRITE_SIZE}
+                          height={HERO_TEMPLATE_SPRITE_SIZE}
+                          style={s.templateHeroSprite}
+                          testID="avatar-studio-live-sprite-preview"
+                        />
+                      </View>
+                    ) : (
+                      <>
+                        <Image
+                          source={selectedTemplateStillSource}
+                          style={[s.templateHeroDog, pixelImageStyle]}
+                          contentFit="contain"
+                          transition={180}
+                        />
+                        {previewAccessoryLayers.map((layer) => {
+                          if (layer.kind !== "bed" && layer.source) {
+                            return (
+                              <Image
+                                key={layer.id}
+                                source={layer.source}
+                                style={[s.templateAccessoryLayer, pixelImageStyle]}
+                                contentFit="contain"
+                                transition={150}
+                                pointerEvents="none"
+                              />
+                            );
+                          }
+                          switch (layer.kind) {
+                            case "bandana":
+                              return <View key={layer.id} style={[s.templateBandana, { backgroundColor: layer.tone }]} pointerEvents="none" />;
+                            case "collar":
+                              return <View key={layer.id} style={[s.templateCollar, { borderColor: layer.tone }]} pointerEvents="none" />;
+                            case "hat":
+                              return (
+                                <View key={layer.id} style={[s.templateHatWrap, { borderBottomColor: layer.tone }]} pointerEvents="none">
+                                  <View style={[s.templateHatPom, { backgroundColor: layer.tone }]} />
+                                </View>
+                              );
+                            case "mask":
+                              return <View key={layer.id} style={[s.templateMask, { backgroundColor: layer.tone }]} pointerEvents="none" />;
+                            case "vest":
+                              return <View key={layer.id} style={[s.templateVest, { backgroundColor: layer.tone }]} pointerEvents="none" />;
+                            case "sparkles":
+                              return (
+                                <View key={layer.id} style={s.templateSparkleCluster} pointerEvents="none">
+                                  <View style={[s.templateSparkle, s.templateSparkleOne, { backgroundColor: layer.tone }]} />
+                                  <View style={[s.templateSparkle, s.templateSparkleTwo, { backgroundColor: layer.tone }]} />
+                                  <View style={[s.templateSparkle, s.templateSparkleThree, { backgroundColor: layer.tone }]} />
+                                </View>
+                              );
+                            default:
+                              return null;
+                          }
+                        })}
+                      </>
+                    )}
                   </Animated.View>
                   <View style={[s.templateSpeech, { backgroundColor: colors.ivory, borderColor: colors.navy }]}>
                     <Text style={[s.templateSpeechText, { color: colors.navy, fontFamily: DISPLAY }]}>
@@ -592,7 +601,7 @@ export default function PortraitScreen() {
                   <View style={[s.templateLiveChip, { backgroundColor: colors.navy, borderColor: colors.copper }]}>
                     <View style={[s.templateLiveDot, { backgroundColor: previewIsSprite ? colors.sage : colors.amber }]} />
                     <Text style={[s.templateLiveChipText, { fontFamily: "Inter_700Bold" }]}>
-                      {previewIsSprite ? "LIVE PIXEL PET" : "STILL PREVIEW"}
+                      {previewIsSprite ? "PIXELLAB SPRITE" : "STILL PREVIEW"}
                     </Text>
                   </View>
                   <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
@@ -649,7 +658,7 @@ export default function PortraitScreen() {
               />
               <Text style={[s.savedName, { fontFamily: DISPLAY }]}>{petName}'s Pixel Twin</Text>
               <Text style={[s.savedSub, { fontFamily: "Inter_600SemiBold" }]}>
-                {previewIsSprite ? `${previewMotionLabel}. ` : "Still preview until a live animation pack exists. "}
+                {previewIsSprite ? `${previewMotionLabel}. Live PixelLab sprite rig. ` : "Still preview until a live animation pack exists. "}
                 {avatarSummary}
               </Text>
             </View>
@@ -1247,12 +1256,29 @@ const s = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  templateHeroDogGhost: {
-    opacity: 0,
+  templateSpriteViewport: {
+    width: 272,
+    height: 272,
+    borderRadius: 3,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    overflow: "hidden",
+    position: "relative",
+  },
+  templateSpriteGround: {
+    position: "absolute",
+    left: 22,
+    right: 22,
+    bottom: 15,
+    height: 26,
+    borderRadius: 2,
+    borderWidth: 2,
+    opacity: 0.28,
+    transform: [{ skewX: "-8deg" }],
   },
   templateHeroSprite: {
-    position: "absolute",
-    bottom: 0,
+    marginBottom: 7,
   },
   templateAccessoryLayer: {
     position: "absolute",

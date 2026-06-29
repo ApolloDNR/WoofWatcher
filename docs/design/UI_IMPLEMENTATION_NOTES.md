@@ -2426,3 +2426,37 @@ Verification:
   `ok=149 missing=0 invalid=0`, package-local Expo web export, `git diff
   --check`, and preview route smoke for Home plus Today Command meal, walk,
   potty, and source-log routes.
+
+## 2026-06-29 Avatar Studio Sprite-First Pixel Stage
+
+Avatar Studio now treats the animated PixelLab sprite as the primary visual
+surface when a live pack exists:
+
+- The large care-twin hero no longer renders a hidden still dog behind the live
+  sprite.
+- Live templates render inside a dedicated
+  `avatar-studio-pixel-sprite-viewport` with a 256px sprite frame so the stage
+  reads as game UI instead of a soft portrait card.
+- The live badge now says `PIXELLAB SPRITE`, matching the production asset
+  source and avoiding fake scan/AI claims.
+- Hungry, anxious, sleepy, home-alone, and not-feeling-well template previews
+  stay animated through the idle loop instead of falling back to still art.
+
+Design intent:
+
+- Make the "real dog becomes a pixel care twin" promise visible on the Avatar
+  Studio screen.
+- Keep the current PixelLab limitation truthful: launch templates have idle and
+  walk sprite rigs now; full emotion-specific gait/emote strips still need
+  native phone-size QA and future asset passes.
+- Preserve the mockup direction: a contained room, visible HUD/chip language,
+  and a living sprite, not a generic uploaded-photo portrait.
+
+Verification:
+
+- Red/green mobile readiness first failed on the missing sprite viewport, then
+  passed Avatar Studio-focused readiness after implementation.
+- Fresh local verification passed root TypeScript, mobile TypeScript, the
+  459-test mobile/domain/API/PWA suite, PixelLab asset verification
+  `ok=149 missing=0 invalid=0`, package-local Expo web export, and preview
+  route smoke for Home, Avatar Studio, Log detail, Health, and More.

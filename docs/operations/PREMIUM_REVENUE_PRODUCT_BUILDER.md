@@ -1943,6 +1943,24 @@ failed before producing useful logs. `gh run view --log-failed` returned
 Treat this as the standing GitHub billing/spending-limit pre-job blocker, not as
 product verification evidence or a local app regression.
 
+The Avatar Studio sprite-first pass tightened the care-twin presentation around
+the PixelLab assets Apollo selected. The hero preview now renders a dedicated
+`avatar-studio-pixel-sprite-viewport` and uses the 256px sprite strip as the
+visible dog layer whenever a live pack exists, instead of hiding a still portrait
+under the sprite. The live badge now reads `PIXELLAB SPRITE`, and launch-template
+mood previews for hungry, anxious, sleepy, home-alone, and not-feeling-well stay
+animated through the idle loop instead of dropping to still art. Red/green
+verification first failed on the missing viewport guard, then passed
+Avatar Studio-focused readiness after implementation. Fresh local verification
+passed root TypeScript, mobile TypeScript, the 459-test mobile/domain/API/PWA
+suite, PixelLab asset verification `ok=149 missing=0 invalid=0`, package-local
+Expo web export to `.expo-smoke` with 219 assets / 223 files, and route smoke for
+`/`, `/portrait`, `/log?type=meal&detail=1&intent=smoke`,
+`/health?tab=health`, and `/more`. This clears only local web preview and asset
+packaging proof; it does not clear native iOS/Android sprite/gait QA,
+provider-backed sync/storage/AI/payments/push, app-store accounts,
+legal/privacy/support review, CI completion, or Apollo launch sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

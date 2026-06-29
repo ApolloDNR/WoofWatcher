@@ -1439,7 +1439,9 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /getCareTwinSpriteAsset/);
   assert.match(avatarStudio, /getAvatarTemplateSpritePreview/);
   assert.match(avatarStudio, /avatar-studio-live-sprite-preview/);
-  assert.match(avatarStudio, /templateHeroDogGhost:\s*\{\s*opacity:\s*0/);
+  assert.match(avatarStudio, /avatar-studio-pixel-sprite-viewport/);
+  assert.match(avatarStudio, /PIXELLAB SPRITE/);
+  assert.doesNotMatch(avatarStudio, /templateHeroDogGhost:\s*\{\s*opacity:\s*0/);
   assert.match(avatarStudio, /templatePixelFloor/);
   assert.match(avatarStudio, /templateLiveChip/);
   assert.match(avatarPreviewModel, /Animated Phoenix pack/);
@@ -1475,6 +1477,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarTemplateSpriteAssets, /toy:[\s\S]*idle-tail-wag/);
   assert.match(avatarTemplateSpriteAssets, /toy:[\s\S]*walk-loop/);
   assert.match(avatarTemplateSpriteAssets, /getAvatarTemplateSpritePreview/);
+  assert.match(
+    avatarTemplateSpriteAssets,
+    /case "hungry":[\s\S]*case "anxious":[\s\S]*case "sleepy":[\s\S]*case "home_alone":[\s\S]*case "not_feeling_well":[\s\S]*return "idle-tail-wag"/,
+  );
   for (const templateId of [
     "bully",
     "dachshund",

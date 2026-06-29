@@ -473,6 +473,11 @@ export function mapAvatarEmoteToTemplateSpriteAction(
     case "happy":
     case "calm":
     case "proud":
+    case "hungry":
+    case "anxious":
+    case "sleepy":
+    case "home_alone":
+    case "not_feeling_well":
       return "idle-tail-wag";
     case "excited":
     case "bored":
