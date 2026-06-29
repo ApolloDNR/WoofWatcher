@@ -2024,6 +2024,20 @@ billing/spending-limit annotation, and `gh run view --log-failed` returned
 `log not found: 84151501310`. Treat this as the standing GitHub account blocker,
 not as product verification evidence or a local app regression.
 
+The Today Command health-routing pass removed a first-screen workflow mismatch.
+`deriveTodayCommand` now treats symptom logs as health signals, keeps vomit/bile
+signals routed to `/health?tab=bile`, routes non-vomit symptoms to
+`/health?tab=health`, and no longer sends the primary Health Watch command to
+Records. Red/green verification first failed on the old `/records` route and
+on symptoms being buried behind the meal command, then passed
+`todayCommand.test.ts` 9/9 after implementation. Fresh local verification
+passed mobile readiness 94/94, the 463-test behavior/readiness suite, root and
+mobile TypeScript, PixelLab verification `ok=149 missing=0 invalid=0`, Expo web
+export to `.expo-smoke` with 219 assets / 223 files, and route smoke for `/`,
+`/health?tab=health`, `/health?tab=bile`, and
+`/log?type=symptom&detail=1&intent=smoke`. Remaining proof is still native
+iOS/Android device QA and the standing GitHub billing/spending-limit recovery.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

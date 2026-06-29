@@ -13,6 +13,8 @@ export type TodayCommandRoute =
   | `/log?entry=${string}`
   | `/log?type=${string}&detail=1&intent=${string}`
   | "/calendar"
+  | "/health?tab=health"
+  | "/health?tab=bile"
   | "/records"
   | "/woofguide"
   | "/more";
@@ -221,6 +223,11 @@ function getHealthUrgency(entries: readonly TodayCommandEntry[]): TodayCommandUr
   return "normal";
 }
 
+function isHealthSignalEntry(entry: TodayCommandEntry): boolean {
+  const normalized = normalizeCareEventType(entry.type, entry.details);
+  return normalized === "vomit" || normalized === "symptom";
+}
+
 function plural(count: number, singular: string, multiple = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : multiple}`;
 }
@@ -330,15 +337,19 @@ export function deriveTodayCommand(
           ? `${sync.pending} syncing`
           : "Synced";
 
-  const vomitEntries = todays.filter(
+  const healthSignalEntries = todays.filter(isHealthSignalEntry);
+  const vomitEntries = healthSignalEntries.filter(
     (entry) => normalizeCareEventType(entry.type, entry.details) === "vomit",
   );
-  const healthUrgency = getHealthUrgency(vomitEntries);
+  const healthUrgency = getHealthUrgency(healthSignalEntries);
   const health: TodayCommandHealth =
-    vomitEntries.length > 0
+    healthSignalEntries.length > 0
       ? {
           label: "Health watch",
-          detail: `${plural(vomitEntries.length, "vomit")} logged today. Check notes and watch for repeats.`,
+          detail:
+            vomitEntries.length > 0
+              ? `${plural(vomitEntries.length, "vomit")} logged today. Check notes and watch for repeats.`
+              : `${plural(healthSignalEntries.length, "health signal")} logged today. Review notes and watch for changes.`,
           urgency: healthUrgency,
         }
       : {
@@ -375,12 +386,14 @@ export function deriveTodayCommand(
   }
 
   if (health.urgency !== "normal" || dayStatus.healthAlert) {
+    const healthRoute: TodayCommandRoute =
+      vomitEntries.length > 0 ? "/health?tab=bile" : "/health?tab=health";
     return {
       primaryAction: {
         kind: "health",
         label: health.urgency === "alert" ? "Review health alert" : "Review health watch",
         detail: health.detail,
-        route: "/records",
+        route: healthRoute,
         urgency: health.urgency,
         icon: "vomit",
       },

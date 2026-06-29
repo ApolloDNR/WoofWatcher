@@ -115,10 +115,33 @@ test("vomit watch event creates health watch urgency", () => {
   );
 
   assert.equal(command.primaryAction.kind, "health");
-  assert.equal(command.primaryAction.route, "/records");
+  assert.equal(command.primaryAction.route, "/health?tab=bile");
   assert.equal(command.primaryAction.urgency, "watch");
   assert.equal(command.health.urgency, "watch");
   assert.match(command.health.detail, /vomit/i);
+});
+
+test("non-vomit health alerts route to Health Watch instead of Records", () => {
+  const command = deriveTodayCommand(
+    state({
+      entries: [
+        {
+          id: "symptom_1",
+          type: "symptom",
+          title: "Low appetite",
+          caregiver: "Apollo",
+          occurredAt: "2026-06-06T08:40:00-07:00",
+          severity: "watch",
+        },
+      ],
+    }),
+    MORNING,
+  );
+
+  assert.equal(command.primaryAction.kind, "health");
+  assert.equal(command.primaryAction.route, "/health?tab=health");
+  assert.equal(command.primaryAction.urgency, "watch");
+  assert.match(command.primaryAction.detail, /health signal/i);
 });
 
 test("next routine produces a routine action when core care is caught up", () => {
