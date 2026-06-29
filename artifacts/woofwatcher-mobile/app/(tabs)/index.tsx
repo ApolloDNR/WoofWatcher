@@ -77,6 +77,7 @@ type StatusTileTarget = "mood" | "health" | "diet" | "bond";
 type TodayMetricTarget = "activity" | "meals" | "potty";
 type PhoenixStatusMeterTarget = "energy" | "hunger" | "hydration" | "bile" | "bond";
 type HomeWatchTarget = "health" | "bile" | "alone";
+type HomePresenceRoute = "/more?section=household" | `/log?entry=${string}` | `/log?type=${string}&detail=1&intent=${number}`;
 type HomeNextUpRoute = "/calendar" | `/log?entry=${string}` | `/log?type=${string}&detail=1&intent=${number}`;
 type HomeNextUpItem = {
   label: string;
@@ -342,6 +343,16 @@ export default function HomeScreen() {
     : openWalkSession
       ? `${formatDuration(openWalkMinutes)} active - finish in Log`
       : `At home - ${timeLabel}`;
+  const presenceRoute: HomePresenceRoute = openAloneSession
+    ? openAloneSession.id ? homeLogEntryRoute(openAloneSession.id) : homeLogDetailRoute("alone", now)
+    : openWalkSession
+      ? openWalkSession.id ? homeLogEntryRoute(openWalkSession.id) : homeLogDetailRoute("walk", now)
+      : "/more?section=household";
+  const presenceActionHint = openAloneSession
+    ? "Opens the active Alone Time log so you can complete the return check-in."
+    : openWalkSession
+      ? "Opens the active walk log so you can finish or edit the walk."
+      : "Opens Household Pulse and care-team status in More.";
 
   const meals = status.counts.meals;
   const fed = meals.target > 0 ? meals.done >= meals.target : true;
@@ -651,6 +662,11 @@ export default function HomeScreen() {
       return;
     }
     router.push(`/log?type=alone&detail=1&intent=${Date.now()}` as never);
+  };
+
+  const openPresencePanel = () => {
+    void Haptics.selectionAsync();
+    router.push(presenceRoute as never);
   };
 
   const openHomeCareIntelligenceNextAction = () => {
@@ -1033,7 +1049,8 @@ export default function HomeScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
-            onPress={() => router.push(openAloneSession ? "/log?type=alone" : openWalkSession ? "/log?type=walk" : "/more")}
+            accessibilityHint={presenceActionHint}
+            onPress={openPresencePanel}
             style={[
               s.presencePanel,
               {

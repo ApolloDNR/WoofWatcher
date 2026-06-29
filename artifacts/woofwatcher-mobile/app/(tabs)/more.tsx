@@ -84,7 +84,7 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
-import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -213,6 +213,7 @@ export default function MoreScreen() {
     section?: string | string[];
   }>();
   const sectionParam = Array.isArray(routeParams.section) ? routeParams.section[0] : routeParams.section;
+  const householdFocus = sectionParam === "household";
   const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
   const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
@@ -1107,6 +1108,18 @@ export default function MoreScreen() {
             centered
             plain
           />
+
+          {householdFocus && (
+            <BoardCard style={[s.moreBoardCard, { borderColor: colors.sage + "66", backgroundColor: colors.sage + "10" }]}>
+              <BoardSectionHeader
+                title="Household focus"
+                accessory={<BoardPill label="Presence route" tone={colors.sage} />}
+              />
+              <Text style={[s.responsibilitySummary, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                Review Care Team, Household Access, and Household Pulse below for who is with {petName}, what is open, and who can help next.
+              </Text>
+            </BoardCard>
+          )}
 
           {/* Profile header card */}
           <View style={[s.profileCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>

@@ -820,6 +820,9 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   assert.match(more, /useLocalSearchParams<\{\s*section\?: string \| string\[\];\s*\}>/);
   assert.match(more, /const sectionParam = Array\.isArray\(routeParams\.section\) \? routeParams\.section\[0\] : routeParams\.section/);
   assert.match(more, /if \(sectionParam === "diet"\) setDietOpen\(true\)/);
+  assert.match(more, /const householdFocus = sectionParam === "household"/);
+  assert.match(more, /title="Household focus"/);
+  assert.match(more, /Presence route/);
   assertStyleUsesSharedTouchTarget(home, "homeHeaderAction");
 });
 
@@ -829,6 +832,21 @@ test("keeps Phoenix Home owner-preview actions on shared mobile touch targets", 
   for (const styleName of ["headerButton", "heroStudioButton", "presencePanel", "adventureInline", "todayMetric"]) {
     assertStyleUsesSharedTouchTarget(home, styleName);
   }
+});
+
+test("keeps Home presence panel routed to exact household care state", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  assert.match(home, /type HomePresenceRoute = "\/more\?section=household" \| `\/log\?entry=\$\{string\}` \| `\/log\?type=\$\{string\}&detail=1&intent=\$\{number\}`;/);
+  assert.match(home, /const presenceRoute: HomePresenceRoute = openAloneSession/);
+  assert.match(home, /openAloneSession\.id \? homeLogEntryRoute\(openAloneSession\.id\) : homeLogDetailRoute\("alone", now\)/);
+  assert.match(home, /openWalkSession\.id \? homeLogEntryRoute\(openWalkSession\.id\) : homeLogDetailRoute\("walk", now\)/);
+  assert.match(home, /: "\/more\?section=household";/);
+  assert.match(home, /const openPresencePanel = \(\) =>/);
+  assert.match(home, /router\.push\(presenceRoute as never\)/);
+  assert.match(home, /accessibilityHint=\{presenceActionHint\}/);
+  assert.match(home, /onPress=\{openPresencePanel\}/);
+  assert.doesNotMatch(home, /router\.push\(openAloneSession \? "\/log\?type=alone" : openWalkSession \? "\/log\?type=walk" : "\/more"\)/);
 });
 
 test("keeps Home today summary metrics route-backed instead of decorative", () => {

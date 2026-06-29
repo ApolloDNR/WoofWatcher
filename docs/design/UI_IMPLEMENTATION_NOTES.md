@@ -2327,3 +2327,35 @@ Verification:
   415-test mobile/domain suite, PixelLab asset verification, Expo web export,
   and preview route smoke for Home, source-log entry, Walk detail, Alone Time
   detail, Plans, Health Overview, and Bile Watch routes.
+
+## 2026-06-29 Home Presence Panel Routing
+
+The first-screen presence panel now opens the exact care state behind Phoenix's
+status:
+
+- Active home-alone sessions open the source `/log?entry=...` record when the
+  entry id exists.
+- Active walk sessions open the source `/log?entry=...` record when the entry id
+  exists.
+- Older imported/id-less active sessions fall back to the matching Alone Time or
+  Walk detail sheet through `/log?type=...&detail=1&intent=...`.
+- Normal household presence opens `/more?section=household`.
+- More renders a top `Household focus` card for that route so the owner lands on
+  care-team, household access, and Household Pulse context instead of a generic
+  More screen.
+
+Design intent:
+
+- Keep the visual "Phoenix is with..." panel from becoming passive chrome.
+- Make active care loops correctable from Home: finish a walk, complete an
+  alone-time return check-in, or review the exact source log.
+- Make household status discoverable without adding another primary tab.
+
+Verification:
+
+- Red/green mobile readiness first failed on the missing presence-panel route
+  contract, then passed 93/93 after implementation.
+- Fresh local verification passed root TypeScript, mobile TypeScript, the
+  416-test mobile/domain suite, PixelLab asset verification, Expo web export,
+  and preview route smoke for Home, Household focus, exact log entry, Walk
+  detail, Alone Time detail, Health Overview, and Bile Watch routes.
