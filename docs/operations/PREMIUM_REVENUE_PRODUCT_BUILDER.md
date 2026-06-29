@@ -1961,6 +1961,14 @@ packaging proof; it does not clear native iOS/Android sprite/gait QA,
 provider-backed sync/storage/AI/payments/push, app-store accounts,
 legal/privacy/support review, CI completion, or Apollo launch sign-off.
 
+Manual remote verification for commit `5f2c4be` was dispatched as GitHub Actions
+run `28393907730` on branch `automation/premium-revenue-product-builder`, but it
+failed before producing useful logs. Job `84127618580` completed with zero
+recorded steps, and `gh run view --log-failed` returned
+`log not found: 84127618580`. Treat this as the standing GitHub
+billing/spending-limit pre-job blocker, not as product verification evidence or
+a local app regression.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
