@@ -3485,6 +3485,19 @@ test("keeps Records rooted in a live pixel credential stage", () => {
   assert.match(records, /Records Command Vault/);
 });
 
+test("keeps More rooted in a live pixel launch command stage", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  assert.match(more, /ImageBackground/);
+  assert.match(more, /MORE_COMMAND_STAGE_ROOM/);
+  assert.match(more, /CARE_TWIN_ROOM_VARIANT_ASSETS\.night/);
+  assert.match(more, /SpriteSheetPlayer/);
+  assert.match(more, /getCareTwinSpriteAsset\("idle-breathe"\)/);
+  assert.match(more, /CARE_TWIN_SPRITE_MANIFEST\["idle-breathe"\]/);
+  assert.match(more, /pixelImageStyle/);
+  assert.match(more, /Launch Command Hub/);
+});
+
 test("keeps Plans owner-preview controls on shared mobile touch targets", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
 

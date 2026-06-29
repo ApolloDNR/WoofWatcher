@@ -2127,6 +2127,23 @@ before execution with `steps: []` and `runner_id: 0`. `gh run view
 GitHub account/pre-job blocker, not as product verification evidence or a local
 app regression.
 
+The More launch command-hub pass moved the system/tools route closer to Apollo's
+Option B mockups without weakening the serious launch workflow. More now opens
+with the dogless night room, a live `idle-breathe` `SpriteSheetPlayer`,
+hard-pixel rendering, `Launch Command Hub` speech, a readiness chip, and a compact
+Launch/QA/Sync/Roster HUD derived from the release score, saved native-QA proof
+counts, sync dashboard, and CareTwin roster state. The command action routes to
+the native QA cockpit while beta is QA-first, or shares the beta handoff packet
+when local beta proof is ready. The existing Profile, CareTwin Roster, Care
+Intelligence, Launch Readiness, Provider Launch Setup, Native QA capture,
+Household Access, Access Pass, My Care Today, Sync Health, Diet, and tool links
+remain intact. Red/green verification first failed on the missing pixel-stage
+contract, then passed mobile readiness 97/97 after implementation. Fresh local
+verification passed mobile TypeScript, the 466-test behavior/readiness suite,
+root TypeScript, PixelLab verification `ok=149 missing=0 invalid=0`, Expo web
+export to `.expo-smoke` with 219 assets / 223 files, `/more` route smoke, and
+`git diff --check`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

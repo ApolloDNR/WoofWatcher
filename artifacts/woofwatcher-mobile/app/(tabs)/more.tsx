@@ -8,6 +8,7 @@ import {
   Alert,
   Animated,
   Image,
+  ImageBackground,
   Modal,
   Platform,
   Pressable,
@@ -84,10 +85,17 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const MORE_COMMAND_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.night.source;
+const MORE_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
+const MORE_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
 
 type HouseholdMemberSummary = {
   displayName?: string | null;
@@ -1069,6 +1077,45 @@ export default function MoreScreen() {
     (target) => mobileLaunchQaCaptureTargetStatusLabel(target) === "Pass pending proof",
   ) || ownerPreviewProofHasPending || storeScreenshotProofStatus.statusLabel === "Pass pending proof";
   const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "Open QA Cockpit";
+  const moreCommandOpenGates = launchReadinessPlan.tiles.filter((tile) => tile.status !== "ready").length;
+  const moreCommandProviderOpen = launchProviderSetupPlan.rows.filter((row) => row.status !== "ready").length;
+  const moreCommandSignal = Math.max(1, Math.min(5, Math.round(launchReleasePacket.readinessScore / 20)));
+  const moreCommandStatusLabel =
+    launchReadinessPlan.status === "store-ready"
+      ? "Store Ready"
+      : launchReadinessPlan.status === "approval-required"
+        ? "Owner Review"
+        : launchReadinessPlan.status === "provider-gated"
+          ? "Provider Gates"
+          : "QA First";
+  const moreCommandSpeech =
+    launchReleasePacket.betaShipStatus === "ready"
+      ? "Beta packet is ready. Review, then share."
+      : launchReleasePacket.betaShipStatus === "qa-first"
+        ? "Capture native QA proof before launch."
+        : launchReadinessPlan.nextActions[0] ?? "Clear launch gates without pretending providers are live.";
+  const moreCommandHud = [
+    {
+      label: "Launch",
+      value: `${launchReleasePacket.readinessScore}%`,
+      tone: betaShipTone,
+    },
+    {
+      label: "QA",
+      value: `${nativeQaCapturePlan.completeSurfaces}/${nativeQaCapturePlan.totalSurfaces}`,
+      tone: nativeQaCapturePlan.openSurfaces === 0 ? colors.sage : colors.amber,
+    },
+    {
+      label: "Sync",
+      value: syncDashboard.status === "healthy" ? "Current" : syncDashboard.actionLabel,
+      tone: syncTone,
+    },
+    {
+      label: "Roster",
+      value: `${careTwinRoster.liveCount}/${careTwinRoster.pets.length}`,
+      tone: careTwinRoster.providerGatedCount > 0 ? colors.amber : colors.sage,
+    },
+  ];
 
   const openCareIntelligenceNextAction = () => {
     Haptics.selectionAsync();
@@ -1108,6 +1155,128 @@ export default function MoreScreen() {
             centered
             plain
           />
+
+          <BoardCard padded={false} style={s.moreCommandStageCard}>
+            <ImageBackground
+              source={MORE_COMMAND_STAGE_ROOM}
+              resizeMode="cover"
+              imageStyle={[s.moreCommandStageImage, pixelImageStyle]}
+              style={s.moreCommandStage}
+              testID="more-launch-command-pixel-stage"
+            >
+              <View style={s.moreCommandStageShade} />
+              <View style={s.moreCommandStageScanline} />
+              <View style={s.moreCommandStageTop}>
+                <View style={s.moreCommandBubble}>
+                  <Text style={[s.moreCommandKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                    Launch Command Hub
+                  </Text>
+                  <Text
+                    numberOfLines={3}
+                    style={[s.moreCommandSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                  >
+                    {moreCommandSpeech}
+                  </Text>
+                  <View style={s.moreCommandBubbleTail} />
+                </View>
+                <View style={[s.moreCommandChip, { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" }]}>
+                  <Ionicons name="rocket-outline" size={15} color={readinessBadgeTone} />
+                  <Text style={[s.moreCommandChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                    {moreCommandStatusLabel}
+                  </Text>
+                </View>
+              </View>
+
+              <View pointerEvents="none" style={s.moreCommandSprite}>
+                <View style={s.moreCommandSpriteShadow} />
+                <SpriteSheetPlayer
+                  asset={MORE_COMMAND_STAGE_SPRITE}
+                  track={MORE_COMMAND_STAGE_TRACK}
+                  width={132}
+                  height={132}
+                  testID="more-launch-command-pixel-sprite"
+                />
+              </View>
+
+              <View style={[s.moreCommandHud, { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" }]}>
+                {moreCommandHud.map((metric) => (
+                  <View key={metric.label} style={s.moreCommandHudCell}>
+                    <Text style={[s.moreCommandHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
+                      {metric.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      style={[s.moreCommandHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                    >
+                      {metric.value}
+                    </Text>
+                    <View style={s.moreCommandSignalRow}>
+                      {[0, 1, 2, 3, 4].map((bar) => (
+                        <View
+                          key={bar}
+                          style={[
+                            s.moreCommandSignalBar,
+                            {
+                              height: 5 + bar * 2,
+                              backgroundColor: bar < moreCommandSignal ? metric.tone : colors.ivory + "2F",
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <View style={s.moreCommandFooter}>
+                <View style={[s.moreCommandMission, { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" }]}>
+                  <Text style={[s.moreCommandMissionLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                    Open gates
+                  </Text>
+                  <Text style={[s.moreCommandMissionValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
+                    {moreCommandOpenGates} launch / {moreCommandProviderOpen} provider
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    launchReleasePacket.betaShipStatus === "qa-first"
+                      ? "Open native QA cockpit from launch command hub"
+                      : "Share WoofWatcher beta handoff packet from launch command hub"
+                  }
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    if (launchReleasePacket.betaShipStatus === "qa-first") {
+                      router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0] ?? storeScreenshotProofStatus.nextTarget) as never);
+                      return;
+                    }
+                    shareBetaHandoffPacket();
+                  }}
+                  style={({ pressed }) => [
+                    s.moreCommandAction,
+                    {
+                      backgroundColor: launchReleasePacket.betaShipStatus === "qa-first" ? colors.amber : colors.sage,
+                      opacity: pressed ? 0.82 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
+                    size={15}
+                    color={colors.ivory}
+                  />
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    style={[s.moreCommandActionText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                  >
+                    {launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Beta Packet"}
+                  </Text>
+                </Pressable>
+              </View>
+            </ImageBackground>
+          </BoardCard>
 
           {householdFocus && (
             <BoardCard style={[s.moreBoardCard, { borderColor: colors.sage + "66", backgroundColor: colors.sage + "10" }]}>
@@ -3080,6 +3249,168 @@ const s = StyleSheet.create({
   header: { marginBottom: 18 },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 3 },
+
+  moreCommandStageCard: {
+    marginTop: 6,
+    overflow: "hidden",
+  },
+  moreCommandStage: {
+    minHeight: 360,
+    padding: 12,
+    justifyContent: "space-between",
+  },
+  moreCommandStageImage: {
+    borderRadius: 8,
+  },
+  moreCommandStageShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(8,20,36,0.24)",
+  },
+  moreCommandStageScanline: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,249,239,0.05)",
+  },
+  moreCommandStageTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  moreCommandBubble: {
+    maxWidth: "68%",
+    minHeight: 78,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#081424",
+    backgroundColor: "rgba(255,249,239,0.94)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  moreCommandKicker: {
+    fontSize: 9,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  moreCommandSpeech: {
+    fontSize: 13,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+  moreCommandBubbleTail: {
+    position: "absolute",
+    left: 26,
+    bottom: -10,
+    width: 16,
+    height: 16,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#081424",
+    backgroundColor: "rgba(255,249,239,0.94)",
+    transform: [{ rotate: "45deg" }],
+  },
+  moreCommandChip: {
+    minHeight: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  moreCommandChipText: {
+    fontSize: 10,
+    lineHeight: 13,
+    textTransform: "uppercase",
+  },
+  moreCommandSprite: {
+    position: "absolute",
+    right: 28,
+    bottom: 92,
+    width: 150,
+    height: 134,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  moreCommandSpriteShadow: {
+    position: "absolute",
+    bottom: 8,
+    width: 116,
+    height: 22,
+    borderRadius: 999,
+    backgroundColor: "rgba(8,20,36,0.34)",
+  },
+  moreCommandHud: {
+    alignSelf: "stretch",
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    flexDirection: "row",
+    gap: 7,
+    marginTop: 138,
+  },
+  moreCommandHudCell: {
+    flex: 1,
+    minWidth: 0,
+  },
+  moreCommandHudLabel: {
+    fontSize: 9,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  moreCommandHudValue: {
+    fontSize: 13,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  moreCommandSignalRow: {
+    height: 18,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 2,
+    marginTop: 4,
+  },
+  moreCommandSignalBar: {
+    width: 5,
+    borderRadius: 2,
+  },
+  moreCommandFooter: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 9,
+    marginTop: 10,
+  },
+  moreCommandMission: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  moreCommandMissionLabel: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  moreCommandMissionValue: {
+    fontSize: 13,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  moreCommandAction: {
+    minWidth: 118,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  moreCommandActionText: {
+    fontSize: 12.5,
+    lineHeight: 16,
+  },
 
   profileCard: {
     borderRadius: 26,
