@@ -1793,6 +1793,20 @@ after the run completed in about six seconds. Treat this as the standing GitHub
 billing/spending-limit pre-job blocker, not as product verification evidence or
 a local app regression.
 
+The Home mission deck route-contract pass removed the last bare Meal mission
+route allowed by the shared mission type. `HomeMissionRoute` no longer permits
+`/log?type=meal`; mission rows must use exact log entries, typed detail-intent
+routes, Plans, Health tabs, Adventure, Records, or the full Log route. The
+mission deck unit test now exercises `/log?type=meal&detail=1&intent=123`, and
+mobile readiness guards against reintroducing the broad meal route. Red/green
+mobile readiness first failed on the old route allowance, then passed 93/93
+after implementation. Fresh local verification passed Home mission deck tests
+2/2, root TypeScript, mobile TypeScript, the 416-test mobile/domain suite,
+PixelLab asset verification `ok=149 missing=0 invalid=0`, package-local Expo web
+export to `.expo-smoke` with 223 files, `git diff --check` with expected Windows
+CRLF warnings, and route smoke for `/`, `/log?type=meal&detail=1&intent=123`,
+`/adventure`, and `/health?tab=health`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

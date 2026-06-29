@@ -716,6 +716,7 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(missionDeck, /Start quest/);
   assert.match(missionDeck, /Care Pass/);
   assert.match(missionDeck, /No mission in this deck should pretend to be live cloud sync/);
+  assert.doesNotMatch(missionDeck, /\|\s*"\/log\?type=meal"/);
 
   assert.match(firstScreenLayout, /mockup-accurate/);
   assert.match(firstScreenLayout, /firstMissionPeekPx/);

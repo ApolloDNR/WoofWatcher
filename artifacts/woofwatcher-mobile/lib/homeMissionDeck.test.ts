@@ -11,7 +11,7 @@ test("builds a care-RPG mission deck from real open care state", () => {
       label: "Dinner served",
       detail: "Outcome pending - update when Phoenix finishes",
       icon: "meal",
-      route: "/log?type=meal",
+      route: "/log?type=meal&detail=1&intent=123",
       openLoop: true,
     },
     adventure: {
@@ -38,7 +38,7 @@ test("builds a care-RPG mission deck from real open care state", () => {
     ["care-today", "adventure", "health", "care-pass"],
   );
 
-  assert.equal(missions[0].route, "/log?type=meal");
+  assert.equal(missions[0].route, "/log?type=meal&detail=1&intent=123");
   assert.equal(missions[0].statusLabel, "Open loop");
   assert.equal(missions[0].tone, "copper");
   assert.match(missions[0].detail, /Outcome pending/);

@@ -6,7 +6,6 @@ export type HomeMissionRoute =
   | "/health?tab=health"
   | "/health?tab=bile"
   | "/log"
-  | "/log?type=meal"
   | `/log?entry=${string}`
   | `/log?type=${string}&detail=1&intent=${number}`
   | "/records";
