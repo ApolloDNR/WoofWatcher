@@ -1565,6 +1565,13 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   );
   assert.match(health, /Draft vet questions/);
   assert.match(health, /CARE STATUS/);
+  assert.match(health, /ImageBackground/);
+  assert.match(health, /HEALTH_WATCH_STAGE_ROOM/);
+  assert.match(health, /CARE_TWIN_ROOM_VARIANT_ASSETS\.healthWatch/);
+  assert.match(health, /SpriteSheetPlayer/);
+  assert.match(health, /getCareTwinSpriteAsset\("health-watch"\)/);
+  assert.match(health, /CARE_TWIN_SPRITE_MANIFEST\["health-watch"\]/);
+  assert.match(health, /pixelImageStyle/);
   assert.match(health, /StatusMeter/);
   assert.match(health, /statusScoreTrack/);
   assert.match(health, /healthRhythmBars/);

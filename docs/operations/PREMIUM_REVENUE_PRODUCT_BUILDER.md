@@ -2064,6 +2064,19 @@ view --log-failed` returned `log not found: 84163369485`. Treat this as the
 standing GitHub account blocker, not as product verification evidence or a local
 app regression.
 
+The Health Watch pixel-stage pass moved the health route closer to the premium
+neo-retro mockups without weakening the health boundary. The hero now renders
+the dogless `healthWatch` room, a live `health-watch` `SpriteSheetPlayer`,
+hard-pixel rendering, a calm speech bubble, status chip, and compact score/bile
+HUD while preserving the existing Health Watch/Bile Watch formulas, review
+packet actions, exact Log routes, Records handoff, and non-diagnostic copy.
+Red/green verification first failed on the missing pixel-stage contract, then
+passed mobile readiness 94/94 after implementation. Fresh local verification
+passed mobile TypeScript, the 463-test behavior/readiness suite, root
+TypeScript, PixelLab verification `ok=149 missing=0 invalid=0`, Expo web export
+to `.expo-smoke` with 219 assets / 223 files, `/health?tab=health` and
+`/health?tab=bile` route smoke, and `git diff --check`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

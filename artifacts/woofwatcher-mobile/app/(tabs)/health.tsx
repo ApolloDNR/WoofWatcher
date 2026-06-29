@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { ImageBackground, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { deriveHealthWatch, normalizeCareEventType } from "@workspace/care-domain";
 
@@ -13,8 +13,11 @@ import {
   StatusMeter,
 } from "@/components/board/BoardPrimitives";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import {
   buildHealthReviewPacketShareText,
   deriveHealthReviewPacket,
@@ -26,9 +29,13 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const HEALTH_WATCH_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.healthWatch.source;
+const HEALTH_WATCH_STAGE_SPRITE = getCareTwinSpriteAsset("health-watch");
+const HEALTH_WATCH_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["health-watch"];
 
 type HealthTab = "health" | "bile";
 
@@ -490,6 +497,57 @@ export default function HealthScreen() {
         </View>
 
         <BoardCard style={s.heroCard}>
+          <ImageBackground
+            source={HEALTH_WATCH_STAGE_ROOM}
+            resizeMode="cover"
+            imageStyle={[s.healthStageImage, pixelImageStyle]}
+            style={s.healthStage}
+          >
+            <View style={s.healthStageShade} />
+            <View style={s.healthStageScanline} />
+            <View style={s.healthStageTop}>
+              <View style={s.healthStageBubble}>
+                <Text style={[s.healthStageBubbleTitle, { color: colors.navy, fontFamily: DISPLAY_SEMI }]}>
+                  {healthWatch.status === "good" ? "Feeling steady." : "Let's take it easy."}
+                </Text>
+                <Text style={[s.healthStageBubbleCopy, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  Health Watch records patterns calmly.
+                </Text>
+                <View style={s.healthStageBubbleTail} />
+              </View>
+              <View style={[s.healthStageChip, { backgroundColor: colors.brandNavy + "DD", borderColor: colors.ivory + "55" }]}>
+                <PixelIcon name="health" size={16} />
+                <Text style={[s.healthStageChipText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                  {statusMedallionLabel}
+                </Text>
+              </View>
+            </View>
+            <View pointerEvents="none" style={s.healthStageSprite}>
+              <View style={s.healthStageSpriteShadow} />
+              <SpriteSheetPlayer
+                asset={HEALTH_WATCH_STAGE_SPRITE}
+                track={HEALTH_WATCH_STAGE_TRACK}
+                width={132}
+                height={132}
+                testID="health-watch-pixel-sprite"
+              />
+            </View>
+            <View style={[s.healthStageHud, { backgroundColor: colors.brandNavy + "D9", borderColor: colors.ivory + "44" }]}>
+              <View style={s.healthStageHudRow}>
+                <Text style={[s.healthStageHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>Score</Text>
+                <Text style={[s.healthStageHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                  {score}/100
+                </Text>
+              </View>
+              <View style={s.healthStageHudRow}>
+                <Text style={[s.healthStageHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>Bile</Text>
+                <Text style={[s.healthStageHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                  {bileStatus}
+                </Text>
+              </View>
+            </View>
+          </ImageBackground>
+
           <View style={s.statusConsoleTop}>
             <View style={[s.statusMedallion, { backgroundColor: scoreTone + "16", borderColor: scoreTone + "66" }]}>
               <PixelIcon name={healthWatch.status === "good" ? "health" : "bile"} size={42} />
@@ -960,6 +1018,128 @@ const s = StyleSheet.create({
   heroCard: {
     padding: 12,
     marginBottom: 12,
+  },
+  healthStage: {
+    minHeight: 238,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "rgba(8,26,42,0.42)",
+    overflow: "hidden",
+    padding: 12,
+    marginBottom: 12,
+  },
+  healthStageImage: {
+    borderRadius: 8,
+  },
+  healthStageShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(8,26,42,0.16)",
+  },
+  healthStageScanline: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.22)",
+    backgroundColor: "rgba(255,249,239,0.035)",
+  },
+  healthStageTop: {
+    position: "relative",
+    zIndex: 5,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  healthStageBubble: {
+    maxWidth: "62%",
+    minHeight: 66,
+    borderRadius: 3,
+    borderWidth: 2,
+    borderColor: "#081A2A",
+    backgroundColor: "rgba(255,249,239,0.95)",
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+  },
+  healthStageBubbleTitle: {
+    fontSize: 14,
+    lineHeight: 17,
+  },
+  healthStageBubbleCopy: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 3,
+  },
+  healthStageBubbleTail: {
+    position: "absolute",
+    right: 20,
+    bottom: -8,
+    width: 14,
+    height: 14,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#081A2A",
+    backgroundColor: "rgba(255,249,239,0.95)",
+    transform: [{ rotate: "-45deg" }],
+  },
+  healthStageChip: {
+    minHeight: 34,
+    borderRadius: 7,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  healthStageChipText: {
+    fontSize: 11,
+    letterSpacing: 0.4,
+  },
+  healthStageSprite: {
+    position: "absolute",
+    zIndex: 4,
+    right: 20,
+    bottom: 46,
+    width: 146,
+    height: 146,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  healthStageSpriteShadow: {
+    position: "absolute",
+    bottom: 17,
+    width: 94,
+    height: 14,
+    borderRadius: 999,
+    backgroundColor: "rgba(8,26,42,0.28)",
+  },
+  healthStageHud: {
+    position: "absolute",
+    zIndex: 6,
+    left: 12,
+    right: 12,
+    bottom: 12,
+    minHeight: 42,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  healthStageHudRow: {
+    flex: 1,
+    minWidth: 0,
+  },
+  healthStageHudLabel: {
+    fontSize: 10,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  healthStageHudValue: {
+    fontSize: 13,
+    lineHeight: 16,
+    marginTop: 1,
   },
   statusConsoleTop: {
     flexDirection: "row",
