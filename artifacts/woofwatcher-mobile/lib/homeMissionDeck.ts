@@ -3,7 +3,6 @@ export type HomeMissionTone = "sage" | "copper" | "amber" | "rose" | "navy";
 export type HomeMissionRoute =
   | "/adventure"
   | "/calendar"
-  | "/health"
   | "/health?tab=health"
   | "/health?tab=bile"
   | "/log"

@@ -2268,3 +2268,29 @@ Verification:
 - Fresh local verification passed the 415-test mobile/domain suite, root
   TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
   and preview route smoke for Home, Health Overview, and Bile Watch routes.
+
+## 2026-06-29 Home And Log Health Entry Routing
+
+The remaining broad Health entry points now land on Health Overview with route
+state:
+
+- Home's top health/notification shortcut opens `/health?tab=health`.
+- The Phoenix Status `View full report` action opens `/health?tab=health`.
+- Quick Log's header Health action opens `/health?tab=health`.
+- Bile-specific entry points continue to open `/health?tab=bile`.
+
+Design intent:
+
+- Treat Health Overview as a real destination, not a generic fallback.
+- Keep top-bar and section-header actions consistent with the same tab-aware
+  navigation contract used by Home cards, status meters, and mission rows.
+- Preserve a calm health UX: broad health shortcuts go to overview, bile signals
+  go to Bile Watch.
+
+Verification:
+
+- Red/green mobile readiness first failed on the remaining broad Health entry
+  points, then passed 92/92 after the route updates.
+- Fresh local verification passed the 415-test mobile/domain suite, root
+  TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
+  and preview route smoke for Home, Log, Health Overview, and Bile Watch routes.

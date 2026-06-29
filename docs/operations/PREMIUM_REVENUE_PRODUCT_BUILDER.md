@@ -1711,6 +1711,21 @@ native iOS/Android device QA, provider-backed sync/storage/AI/payments/push,
 app-store accounts, legal/privacy/support review, CI completion, or Apollo
 launch sign-off.
 
+The Home and Quick Log health entry routing pass removed the last broad Health
+shortcuts found in the visible owner-preview flow. Home's top health shortcut,
+Phoenix Status `View full report`, and Quick Log's header Health action now all
+open `/health?tab=health`; Bile-specific entry points remain routed to
+`/health?tab=bile`. Red/green mobile readiness first failed on the old broad
+routes, then passed 92/92 after the update. Fresh local verification passed the
+415-test mobile/domain behavior suite, root TypeScript, mobile TypeScript,
+PixelLab asset verification `ok=149 missing=0 invalid=0`, package-local Expo
+web export to `.expo-smoke` with 223 files, and preview route smoke for `/`,
+`/log`, `/health?tab=health`, and `/health?tab=bile`. This clears local web
+preview and owner-flow Health routing proof only; it does not clear native
+iOS/Android device QA, provider-backed sync/storage/AI/payments/push, app-store
+accounts, legal/privacy/support review, CI completion, or Apollo launch
+sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

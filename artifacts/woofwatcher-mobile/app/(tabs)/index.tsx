@@ -188,7 +188,7 @@ function HomeHeaderAction({
 }: {
   label: string;
   accessibilityLabel: string;
-  route: "/log" | "/health" | "/calendar" | "/records";
+  route: "/log" | "/health?tab=health" | "/health?tab=bile" | "/calendar" | "/records";
 }) {
   const colors = useColors();
   const router = useRouter();
@@ -915,7 +915,7 @@ export default function HomeScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Open Health Watch"
-              onPress={() => router.push("/health")}
+              onPress={() => router.push("/health?tab=health" as never)}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[s.headerButton, { borderColor: "transparent", backgroundColor: "transparent" }]}
             >
@@ -1509,7 +1509,7 @@ export default function HomeScreen() {
                 <HomeHeaderAction
                   label="View full report"
                   accessibilityLabel="Open full Health Watch"
-                  route="/health"
+                  route="/health?tab=health"
                 />
               }
             />

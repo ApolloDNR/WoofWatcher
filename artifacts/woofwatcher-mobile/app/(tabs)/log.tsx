@@ -2101,7 +2101,7 @@ export default function LogScreen() {
             actionLabel="Open Health Watch"
             onAction={() => {
               Haptics.selectionAsync();
-              router.push("/health");
+              router.push("/health?tab=health" as never);
             }}
           />
 

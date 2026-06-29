@@ -801,7 +801,8 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   assert.match(home, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(entry\.id\)\}` as never\)/);
   assert.match(home, /BoardSectionHeader\s+title="Phoenix status"\s+accessory=\{\s*<HomeHeaderAction/);
   assert.match(home, /accessibilityLabel="Open full Health Watch"/);
-  assert.match(home, /route="\/health"/);
+  assert.match(home, /route="\/health\?tab=health"/);
+  assert.match(home, /accessibilityLabel="Open Health Watch"[\s\S]*router\.push\("\/health\?tab=health" as never\)/);
   assert.match(home, /type StatusTileTarget = "mood" \| "health" \| "diet" \| "bond"/);
   assert.match(home, /const openStatusTile = \(target: StatusTileTarget\) =>/);
   assert.match(home, /router\.push\(`\/log\?type=mood&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
@@ -1088,6 +1089,8 @@ test("keeps Quick Log composer card boundaries separate from search controls", (
 test("keeps Quick Log polished for exact tap selection and mobile scanability", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
+  assert.match(log, /actionLabel="Open Health Watch"/);
+  assert.match(log, /router\.push\("\/health\?tab=health" as never\)/);
   assert.match(log, /launcherActionKey/);
   assert.match(log, /selectedLauncherKey === launcherActionKey\(action\)/);
   assert.match(log, /accessibilityState=\{\{ selected: active \}\}/);
