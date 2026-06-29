@@ -1666,6 +1666,22 @@ preview route smoke for `/`, `/log?type=walk&detail=1&intent=smoke`,
 `/log?type=potty&detail=1&intent=smoke`. The preview server is running at
 `http://127.0.0.1:4194/` for Apollo review.
 
+The Home Phoenix status meter routing pass removed another passive first-screen
+surface. The shared `StatusMeter` primitive now has optional pressable behavior
+with inline hit slop, accessible labels/hints, and 48px target sizing only when
+`onPress` is provided. Home uses that path so Energy and Bile Risk open Health
+Watch, Hunger opens Meal detail, Hydration opens Water detail, and Bond opens
+Play detail. Red/green verification first failed on the missing status-meter
+route contract, then passed mobile readiness 90/90. Fresh local verification
+passed the 413-test mobile/domain behavior suite, root TypeScript, mobile
+TypeScript, PixelLab asset verification `ok=149 missing=0 invalid=0`,
+package-local Expo web export to `.expo-smoke` with 223 files, and preview
+route smoke for `/`, `/health`, `/log?type=meal&detail=1&intent=smoke`,
+`/log?type=water&detail=1&intent=smoke`, and
+`/log?type=play&detail=1&intent=smoke`. Manual branch verify run `28347096325`
+failed before job execution with GitHub's billing/spending-limit annotation, so
+remote CI still cannot provide app proof for this slice.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

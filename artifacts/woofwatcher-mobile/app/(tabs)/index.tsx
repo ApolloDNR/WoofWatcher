@@ -75,6 +75,7 @@ interface QuickItem {
 
 type StatusTileTarget = "mood" | "health" | "diet" | "bond";
 type TodayMetricTarget = "activity" | "meals" | "potty";
+type PhoenixStatusMeterTarget = "energy" | "hunger" | "hydration" | "bile" | "bond";
 
 const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
   activity: "walk",
@@ -574,6 +575,23 @@ export default function HomeScreen() {
   const openTodayMetric = (target: TodayMetricTarget) => {
     void Haptics.selectionAsync();
     router.push(`/log?type=${todayMetricRouteType[target]}&detail=1&intent=${Date.now()}` as never);
+  };
+
+  const openPhoenixStatusMeter = (target: PhoenixStatusMeterTarget) => {
+    void Haptics.selectionAsync();
+    if (target === "energy" || target === "bile") {
+      router.push("/health");
+      return;
+    }
+    if (target === "hunger") {
+      router.push(`/log?type=meal&detail=1&intent=${Date.now()}` as never);
+      return;
+    }
+    if (target === "hydration") {
+      router.push(`/log?type=water&detail=1&intent=${Date.now()}` as never);
+      return;
+    }
+    router.push(`/log?type=play&detail=1&intent=${Date.now()}` as never);
   };
 
   const openHomeCareIntelligenceNextAction = () => {
@@ -1462,6 +1480,9 @@ export default function HomeScreen() {
                 value={status.energy}
                 valueLabel={`${status.energy}%`}
                 tone={colors.sage}
+                accessibilityLabel="Open Phoenix energy in Health Watch"
+                accessibilityHint="Opens Health Watch for energy and activity context."
+                onPress={() => openPhoenixStatusMeter("energy")}
               />
               <StatusMeter
                 label="Hunger"
@@ -1469,6 +1490,9 @@ export default function HomeScreen() {
                 value={hungerScore}
                 valueLabel={fed ? "Full" : "Hungry"}
                 tone={fed ? colors.sage : colors.copper}
+                accessibilityLabel="Open Phoenix meal detail from hunger"
+                accessibilityHint="Opens the meal detail flow for portions and outcomes."
+                onPress={() => openPhoenixStatusMeter("hunger")}
               />
               <StatusMeter
                 label="Hydration"
@@ -1476,6 +1500,9 @@ export default function HomeScreen() {
                 value={hydrationScore}
                 valueLabel="Good"
                 tone={colors.blueSignal}
+                accessibilityLabel="Open Phoenix water detail from hydration"
+                accessibilityHint="Opens the water detail flow for hydration notes."
+                onPress={() => openPhoenixStatusMeter("hydration")}
               />
               <StatusMeter
                 label="Bile Risk"
@@ -1483,6 +1510,9 @@ export default function HomeScreen() {
                 value={bileCount ? 46 : 82}
                 valueLabel={bile.status}
                 tone={bile.color}
+                accessibilityLabel="Open Phoenix bile risk in Health Watch"
+                accessibilityHint="Opens Health Watch and Bile Watch context."
+                onPress={() => openPhoenixStatusMeter("bile")}
               />
               <StatusMeter
                 label="Bond"
@@ -1490,6 +1520,9 @@ export default function HomeScreen() {
                 value={bondScore}
                 valueLabel={bondLabel}
                 tone={colors.sage}
+                accessibilityLabel="Open Phoenix bond play detail"
+                accessibilityHint="Opens the play detail flow for bond-building care."
+                onPress={() => openPhoenixStatusMeter("bond")}
               />
             </View>
           </BoardCard>

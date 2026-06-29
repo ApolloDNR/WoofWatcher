@@ -13,7 +13,7 @@ import {
 
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
-import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
+import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -307,6 +307,9 @@ export function StatusMeter({
   icon,
   tone,
   segments,
+  onPress,
+  accessibilityLabel,
+  accessibilityHint,
 }: {
   label: string;
   value: number;
@@ -314,6 +317,9 @@ export function StatusMeter({
   icon?: PixelIconName;
   tone?: string;
   segments?: number;
+  onPress?: () => void;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }) {
   const colors = useColors();
   const count = segments ?? colors.pixelUi.statusSegments;
@@ -321,8 +327,8 @@ export function StatusMeter({
   const filled = Math.max(1, Math.round(pct * count));
   const active = tone ?? colors.sage;
 
-  return (
-    <View style={styles.meterRow}>
+  const content = (
+    <>
       <View style={styles.meterLabelWrap}>
         {icon ? <PixelIcon name={icon} size={20} /> : null}
         <Text style={[styles.meterLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
@@ -348,6 +354,34 @@ export function StatusMeter({
           {valueLabel}
         </Text>
       ) : null}
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? `${label} ${valueLabel ?? `${Math.round(pct * 100)} percent`}`}
+        accessibilityHint={accessibilityHint}
+        hitSlop={MOBILE_INLINE_HIT_SLOP}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.meterRow,
+          styles.meterPressable,
+          {
+            backgroundColor: pressed ? colors.secondary : "transparent",
+            borderColor: pressed ? active : "transparent",
+          },
+        ]}
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={styles.meterRow}>
+      {content}
     </View>
   );
 }
@@ -623,6 +657,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     minHeight: 28,
+  },
+  meterPressable: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
   },
   meterLabelWrap: {
     width: 94,

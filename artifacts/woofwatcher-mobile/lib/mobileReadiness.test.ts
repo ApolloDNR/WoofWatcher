@@ -838,6 +838,33 @@ test("keeps Home today summary metrics route-backed instead of decorative", () =
   assert.match(home, /onPress=\{\(\) => openTodayMetric\("potty"\)\}/);
 });
 
+test("keeps Home Phoenix status meters route-backed instead of decorative", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const primitives = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "board", "BoardPrimitives.tsx"),
+    "utf8",
+  );
+
+  assert.match(primitives, /onPress\?: \(\) => void/);
+  assert.match(primitives, /accessibilityHint\?: string/);
+  assert.match(primitives, /hitSlop=\{MOBILE_INLINE_HIT_SLOP\}/);
+  assert.match(home, /type PhoenixStatusMeterTarget = "energy" \| "hunger" \| "hydration" \| "bile" \| "bond";/);
+  assert.match(home, /const openPhoenixStatusMeter = \(target: PhoenixStatusMeterTarget\) =>/);
+  assert.match(home, /router\.push\(`\/log\?type=meal&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(home, /router\.push\(`\/log\?type=water&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(home, /router\.push\(`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(home, /accessibilityLabel="Open Phoenix energy in Health Watch"/);
+  assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("energy"\)\}/);
+  assert.match(home, /accessibilityLabel="Open Phoenix meal detail from hunger"/);
+  assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("hunger"\)\}/);
+  assert.match(home, /accessibilityLabel="Open Phoenix water detail from hydration"/);
+  assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("hydration"\)\}/);
+  assert.match(home, /accessibilityLabel="Open Phoenix bile risk in Health Watch"/);
+  assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("bile"\)\}/);
+  assert.match(home, /accessibilityLabel="Open Phoenix bond play detail"/);
+  assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("bond"\)\}/);
+});
+
 test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {
   const domain = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-intelligence.ts"), "utf8");
   const home = readAppFile(join("(tabs)", "index.tsx"));

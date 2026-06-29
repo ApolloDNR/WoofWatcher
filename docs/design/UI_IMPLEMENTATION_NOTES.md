@@ -2176,3 +2176,34 @@ Verification:
   TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
   and preview route smoke for Home plus Walk, Meal, and Potty detail-intent
   routes.
+
+## 2026-06-29 Home Phoenix Status Meter Routing
+
+The lower Home `Phoenix status` meter stack now behaves like a command surface:
+
+- The shared `StatusMeter` component supports optional `onPress`,
+  `accessibilityLabel`, and `accessibilityHint` props.
+- Read-only meter usages remain read-only; the 48px pressable row and inline
+  hit slop are only used when a caller provides `onPress`.
+- Home's Energy meter opens Health Watch.
+- Home's Hunger meter opens Meal detail for portions and outcomes.
+- Home's Hydration meter opens Water detail.
+- Home's Bile Risk meter opens Health Watch and Bile Watch context.
+- Home's Bond meter opens Play detail for bond-building care.
+
+Design intent:
+
+- Remove passive duplication from the first screen.
+- Let owners move from a status signal directly into the care workflow that can
+  improve or explain that signal.
+- Keep the premium pixel HUD useful without forcing every shared meter in the
+  app to become interactive.
+
+Verification:
+
+- Red/green mobile readiness first failed on the missing pressable meter
+  contract, then passed 90/90.
+- Fresh local verification passed the 413-test mobile/domain suite, root
+  TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
+  and preview route smoke for Home, Health, Meal detail, Water detail, and Play
+  detail routes.
