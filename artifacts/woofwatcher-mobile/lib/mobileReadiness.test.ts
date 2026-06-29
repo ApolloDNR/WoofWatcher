@@ -3546,6 +3546,12 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(adventure, /buildQuickLogEntry/);
   assert.match(adventure, /buildWalkSessionStartEntry/);
   assert.match(adventure, /findOpenWalkSession/);
+  assert.match(adventure, /ImageBackground/);
+  assert.match(adventure, /ADVENTURE_STAGE_SCENE/);
+  assert.match(adventure, /SpriteSheetPlayer/);
+  assert.match(adventure, /getCareTwinSpriteAsset\("walk-loop"\)/);
+  assert.match(adventure, /CARE_TWIN_SPRITE_MANIFEST\["walk-loop"\]/);
+  assert.match(adventure, /pixelImageStyle/);
   assert.match(
     adventure,
     /import \{ BoardCard, BoardPill, BoardSectionHeader \}/,

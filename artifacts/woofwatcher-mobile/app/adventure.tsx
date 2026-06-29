@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   Alert,
+  ImageBackground,
   Pressable,
   Platform,
   ScrollView,
@@ -23,8 +23,11 @@ import {
   type AdventureQuest,
 } from "@workspace/care-domain";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { buildQuickLogEntry } from "@/lib/quickLogEntry";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import {
@@ -33,9 +36,13 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const ADVENTURE_STAGE_SCENE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
+const ADVENTURE_STAGE_SPRITE = getCareTwinSpriteAsset("walk-loop");
+const ADVENTURE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["walk-loop"];
 
 function questIcon(id: string): keyof typeof Ionicons.glyphMap {
   if (id.includes("walk")) return "map-outline";
@@ -264,12 +271,14 @@ export default function AdventureScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
       >
-        <LinearGradient
-          colors={[colors.midnight, colors.primary, colors.sage]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        <ImageBackground
+          source={ADVENTURE_STAGE_SCENE}
+          resizeMode="cover"
+          imageStyle={[s.heroImage, pixelImageStyle]}
           style={s.hero}
         >
+          <View style={s.heroShade} />
+          <View style={s.heroScanline} />
           <View style={s.heroTop}>
             <Pressable
               accessibilityRole="button"
@@ -284,11 +293,30 @@ export default function AdventureScreen() {
               <Text style={[s.heroBadgeText, { fontFamily: "Inter_700Bold" }]}>Private RPG</Text>
             </View>
           </View>
-          <Text style={[s.kicker, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>REAL CARE ADVENTURE</Text>
-          <Text style={[s.title, { fontFamily: DISPLAY }]}>Adventure Mode</Text>
-          <Text style={[s.subtitle, { fontFamily: "Inter_500Medium" }]}>
-            Turn real walks, training wins, play resets, and tiny memories into {petName}'s private care story.
-          </Text>
+          <View style={s.heroSpeech}>
+            <Text style={[s.heroSpeechText, { fontFamily: DISPLAY_SEMI }]}>
+              {availableQuest.status === "locked" ? "Care first, then memory." : "Quest ready!"}
+            </Text>
+            <Text style={[s.heroSpeechSub, { fontFamily: "Inter_700Bold" }]}>{availableQuest.title}</Text>
+            <View style={s.heroSpeechTail} />
+          </View>
+          <View pointerEvents="none" style={s.heroSpriteStage}>
+            <View style={s.heroSpriteShadow} />
+            <SpriteSheetPlayer
+              asset={ADVENTURE_STAGE_SPRITE}
+              track={ADVENTURE_STAGE_TRACK}
+              width={172}
+              height={172}
+              testID="adventure-mode-walk-sprite"
+            />
+          </View>
+          <View style={s.heroCopy}>
+            <Text style={[s.kicker, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>REAL CARE ADVENTURE</Text>
+            <Text style={[s.title, { fontFamily: DISPLAY }]}>Adventure Mode</Text>
+            <Text style={[s.subtitle, { fontFamily: "Inter_700Bold" }]}>
+              Real walks become private quests, memories, and care XP.
+            </Text>
+          </View>
           <View style={s.levelRow}>
             <View style={s.levelTile}>
               <Text style={[s.levelValue, { fontFamily: DISPLAY }]}>{adventure.level}</Text>
@@ -303,7 +331,7 @@ export default function AdventureScreen() {
               <Text style={[s.levelLabel, { fontFamily: "Inter_700Bold" }]}>Memories</Text>
             </View>
           </View>
-        </LinearGradient>
+        </ImageBackground>
 
         <BoardCard style={s.board}>
           <BoardSectionHeader
@@ -561,16 +589,71 @@ function QuestRow({
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  hero: { borderRadius: 8, padding: 18, marginBottom: 14, overflow: "hidden" },
-  heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
-  heroIcon: { width: 38, height: 38, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.12)" },
-  heroBadge: { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, backgroundColor: "rgba(255,255,255,0.14)" },
+  hero: { minHeight: 326, borderRadius: 8, padding: 16, marginBottom: 14, overflow: "hidden", borderWidth: 2, borderColor: "rgba(8,26,42,0.48)" },
+  heroImage: { borderRadius: 8 },
+  heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(8, 26, 42, 0.22)" },
+  heroScanline: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.22)",
+    backgroundColor: "rgba(255,249,239,0.03)",
+  },
+  heroTop: { position: "relative", zIndex: 5, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  heroIcon: { width: 38, height: 38, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(8,26,42,0.68)", borderWidth: 1, borderColor: "rgba(255,249,239,0.24)" },
+  heroBadge: { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, backgroundColor: "rgba(8,26,42,0.72)", borderWidth: 1, borderColor: "rgba(255,249,239,0.24)" },
   heroBadgeText: { color: "#FFFFFF", fontSize: 11.5 },
+  heroSpeech: {
+    position: "absolute",
+    zIndex: 6,
+    top: 66,
+    left: 20,
+    maxWidth: "56%",
+    minHeight: 70,
+    borderRadius: 3,
+    borderWidth: 2,
+    borderColor: "#081A2A",
+    backgroundColor: "rgba(255,249,239,0.94)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  heroSpeechText: { color: "#081A2A", fontSize: 15, lineHeight: 18 },
+  heroSpeechSub: { color: "#C85A2A", fontSize: 11.5, lineHeight: 15, marginTop: 3 },
+  heroSpeechTail: {
+    position: "absolute",
+    right: 28,
+    bottom: -9,
+    width: 15,
+    height: 15,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#081A2A",
+    backgroundColor: "rgba(255,249,239,0.94)",
+    transform: [{ rotate: "-45deg" }],
+  },
+  heroSpriteStage: {
+    position: "absolute",
+    right: -6,
+    bottom: 54,
+    width: 190,
+    height: 190,
+    zIndex: 4,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  heroSpriteShadow: {
+    position: "absolute",
+    bottom: 15,
+    width: 126,
+    height: 18,
+    borderRadius: 999,
+    backgroundColor: "rgba(8,26,42,0.34)",
+  },
+  heroCopy: { position: "relative", zIndex: 5, marginTop: 82, maxWidth: "58%" },
   kicker: { fontSize: 11, letterSpacing: 0.8 },
   title: { color: "#FFFFFF", fontSize: 31, letterSpacing: 0, marginTop: 4 },
-  subtitle: { color: "rgba(255,255,255,0.82)", fontSize: 14, lineHeight: 20, marginTop: 6 },
-  levelRow: { flexDirection: "row", gap: 9, marginTop: 16 },
-  levelTile: { flex: 1, minHeight: 70, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center", padding: 8 },
+  subtitle: { color: "rgba(255,255,255,0.9)", fontSize: 13, lineHeight: 18, marginTop: 5, textShadowColor: "rgba(8,26,42,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  levelRow: { position: "absolute", zIndex: 6, left: 14, right: 14, bottom: 14, flexDirection: "row", gap: 8 },
+  levelTile: { flex: 1, minHeight: 58, borderRadius: 8, backgroundColor: "rgba(8,26,42,0.76)", borderWidth: 1, borderColor: "rgba(255,249,239,0.22)", alignItems: "center", justifyContent: "center", padding: 8 },
   levelValue: { color: "#FFFFFF", fontSize: 23 },
   levelLabel: { color: "rgba(255,255,255,0.76)", fontSize: 10.5, marginTop: 2 },
   board: { marginBottom: 12 },
