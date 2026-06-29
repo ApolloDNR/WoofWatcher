@@ -864,7 +864,7 @@ export default function HomeScreen() {
     }
     const policy = getQuickLogPolicy(item.type);
     if (policy.tapBehavior === "detail-required") {
-      router.push(`/log?type=${item.type}` as never);
+      router.push(homeLogDetailRoute(policy.type, Date.now()) as never);
       return;
     }
     if (Platform.OS !== "web") {

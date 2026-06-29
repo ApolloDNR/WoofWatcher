@@ -792,6 +792,8 @@ test("keeps Home Quick Log header action as a real route target", () => {
   assert.match(home, /const nextUpRoute = nextPrimary\?\.route \?\? "\/calendar"/);
   assert.match(home, /route: nextUpRoute/);
   assert.match(home, /router\.push\(item\.route as never\)/);
+  assert.match(home, /if \(policy\.tapBehavior === "detail-required"\) \{\s*router\.push\(homeLogDetailRoute\(policy\.type, Date\.now\(\)\) as never\);\s*return;\s*\}/);
+  assert.doesNotMatch(home, /router\.push\(`\/log\?type=\$\{item\.type\}` as never\)/);
   assert.match(home, /const \[quickFeedback, setQuickFeedback\]/);
   assert.match(home, /deleteEntry\(quickFeedback\.id\)/);
   assert.match(home, /const entryId = quickFeedback\.id/);
