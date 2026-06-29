@@ -1628,6 +1628,9 @@ web export to `.expo-smoke` with 223 files, and preview route smoke for `/`,
 `/more`, `/log?entry=dinner-1`, and `/care-twin-qa?qaSurface=home`. The local
 beta doctor still reports `BLOCKED` because this Windows shell exposes
 `pnpm@11.7.0` while the launch path is pinned to `pnpm@10.24.0`.
+Manual branch verify run `28344966240` was triggered after the commit and
+failed before job execution with GitHub's billing/spending-limit annotation, so
+remote CI still cannot provide app proof for this slice.
 
 Next highest-impact work:
 
