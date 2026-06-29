@@ -2038,6 +2038,13 @@ export to `.expo-smoke` with 219 assets / 223 files, and route smoke for `/`,
 `/log?type=symptom&detail=1&intent=smoke`. Remaining proof is still native
 iOS/Android device QA and the standing GitHub billing/spending-limit recovery.
 
+Manual remote verification for commit `648d685` was dispatched as GitHub Actions
+run `28402608398` on branch `automation/premium-revenue-product-builder`, but
+it failed before the job started. GitHub reported job `84157380035` with the
+billing/spending-limit annotation, and `gh run view --log-failed` returned
+`log not found: 84157380035`. Treat this as the standing GitHub account blocker,
+not as product verification evidence or a local app regression.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
