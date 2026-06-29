@@ -54,12 +54,18 @@ import {
   describeCareTwinReactionForLog,
   type CareTwinReactionToneRole,
 } from "@/lib/careTwinReactionPolicy";
-import { buildHomeMissionDeck, type HomeMissionTone } from "@/lib/homeMissionDeck";
+import {
+  buildHomeMissionDeck,
+  type HomeMissionTone,
+} from "@/lib/homeMissionDeck";
 import { getHomeFirstScreenLayout } from "@/lib/homeFirstScreenLayout";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
-import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
+import {
+  buildWalkSessionStartEntry,
+  findOpenWalkSession,
+} from "@/lib/walkSession";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 import { deriveTodayCommand, type TodayCommandIcon } from "@/lib/todayCommand";
 
@@ -76,10 +82,21 @@ interface QuickItem {
 
 type StatusTileTarget = "mood" | "health" | "diet" | "bond";
 type TodayMetricTarget = "activity" | "meals" | "potty";
-type PhoenixStatusMeterTarget = "energy" | "hunger" | "hydration" | "bile" | "bond";
+type PhoenixStatusMeterTarget =
+  | "energy"
+  | "hunger"
+  | "hydration"
+  | "bile"
+  | "bond";
 type HomeWatchTarget = "health" | "bile" | "alone";
-type HomePresenceRoute = "/more?section=household" | `/log?entry=${string}` | `/log?type=${string}&detail=1&intent=${number}`;
-type HomeNextUpRoute = "/calendar" | `/log?entry=${string}` | `/log?type=${string}&detail=1&intent=${number}`;
+type HomePresenceRoute =
+  | "/more?section=household"
+  | `/log?entry=${string}`
+  | `/log?type=${string}&detail=1&intent=${number}`;
+type HomeNextUpRoute =
+  | "/calendar"
+  | `/log?entry=${string}`
+  | `/log?type=${string}&detail=1&intent=${number}`;
 type HomeNextUpItem = {
   label: string;
   time: string;
@@ -98,11 +115,42 @@ const HOME_QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
   { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
   { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty" },
-  { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water" },
-  { key: "training", icon: "training", label: "Training", type: "training", title: "Training win" },
-  { key: "treat", icon: "treat", label: "Treat", type: "treat", title: "Treat" },
-  { key: "play", icon: "play", label: "Play", type: "play", title: "Play session" },
-  { key: "more", icon: "note", label: "More", type: "note", title: "Open quick log", route: "/log" },
+  {
+    key: "water",
+    icon: "bile",
+    label: "Water",
+    type: "water",
+    title: "Fresh water",
+  },
+  {
+    key: "training",
+    icon: "training",
+    label: "Training",
+    type: "training",
+    title: "Training win",
+  },
+  {
+    key: "treat",
+    icon: "treat",
+    label: "Treat",
+    type: "treat",
+    title: "Treat",
+  },
+  {
+    key: "play",
+    icon: "play",
+    label: "Play",
+    type: "play",
+    title: "Play session",
+  },
+  {
+    key: "more",
+    icon: "note",
+    label: "More",
+    type: "note",
+    title: "Open quick log",
+    route: "/log",
+  },
 ];
 
 const SPEECH_BY_MOOD: Record<Mood, string> = {
@@ -167,12 +215,14 @@ function shortTime(iso: string): string {
 }
 
 function detailValue(details: unknown, key: string): unknown {
-  if (!details || typeof details !== "object" || Array.isArray(details)) return undefined;
+  if (!details || typeof details !== "object" || Array.isArray(details))
+    return undefined;
   return (details as Record<string, unknown>)[key];
 }
 
 function careDetails(details: unknown): CareEventDetails {
-  if (!details || typeof details !== "object" || Array.isArray(details)) return undefined;
+  if (!details || typeof details !== "object" || Array.isArray(details))
+    return undefined;
   return details as CareEventDetails;
 }
 
@@ -181,14 +231,21 @@ function isPendingMealLog(entry: { type: string; details?: unknown }): boolean {
   if (normalizeCareEventType(entry.type, details) !== "meal") return false;
   const completion = String(detailValue(entry.details, "mealCompletion") ?? "");
   const lifecycle = String(detailValue(entry.details, "mealLifecycle") ?? "");
-  return lifecycle === "outcome-pending" || completion === "served" || completion === "grazing";
+  return (
+    lifecycle === "outcome-pending" ||
+    completion === "served" ||
+    completion === "grazing"
+  );
 }
 
 function homeLogEntryRoute(entryId: string): `/log?entry=${string}` {
   return `/log?entry=${encodeURIComponent(entryId)}`;
 }
 
-function homeLogDetailRoute(type: CareEventType, intent: number): `/log?type=${string}&detail=1&intent=${number}` {
+function homeLogDetailRoute(
+  type: CareEventType,
+  intent: number,
+): `/log?type=${string}&detail=1&intent=${number}` {
   return `/log?type=${type}&detail=1&intent=${intent}`;
 }
 
@@ -223,7 +280,12 @@ function HomeHeaderAction({
 }: {
   label: string;
   accessibilityLabel: string;
-  route: "/log" | "/health?tab=health" | "/health?tab=bile" | "/calendar" | "/records";
+  route:
+    | "/log"
+    | "/health?tab=health"
+    | "/health?tab=bile"
+    | "/calendar"
+    | "/records";
 }) {
   const colors = useColors();
   const router = useRouter();
@@ -242,7 +304,12 @@ function HomeHeaderAction({
         },
       ]}
     >
-      <Text style={[s.homeHeaderActionText, { color: colors.navy, fontFamily: "Inter_800ExtraBold" }]}>
+      <Text
+        style={[
+          s.homeHeaderActionText,
+          { color: colors.navy, fontFamily: "Inter_800ExtraBold" },
+        ]}
+      >
         {label}
       </Text>
       <Ionicons name="chevron-forward" size={13} color={colors.navy} />
@@ -253,7 +320,8 @@ function HomeHeaderAction({
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+  const { width: viewportWidth, height: viewportHeight } =
+    useWindowDimensions();
   const router = useRouter();
   const { state, addEntry, deleteEntry, refresh } = useCare();
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
@@ -336,13 +404,18 @@ export default function HomeScreen() {
     [avatarConfig.templateId],
   );
   const caregiver = state.caregivers[0]?.name ?? "Emma";
-  const timeLabel = useMemo(() => shortTime(new Date(now).toISOString()), [now]);
+  const timeLabel = useMemo(
+    () => shortTime(new Date(now).toISOString()),
+    [now],
+  );
   const openAloneSession = useMemo(
     () => findOpenAloneTimeSession(state.entries),
     [state.entries],
   );
   const openAloneStartedAt = openAloneSession
-    ? String(openAloneSession.details?.aloneStartedAt ?? openAloneSession.occurredAt)
+    ? String(
+        openAloneSession.details?.aloneStartedAt ?? openAloneSession.occurredAt,
+      )
     : "";
   const openAloneMinutes = useMemo(() => {
     if (!openAloneStartedAt) return 0;
@@ -355,7 +428,9 @@ export default function HomeScreen() {
     [state.entries],
   );
   const openWalkStartedAt = openWalkSession
-    ? String(openWalkSession.details?.walkStartedAt ?? openWalkSession.occurredAt)
+    ? String(
+        openWalkSession.details?.walkStartedAt ?? openWalkSession.occurredAt,
+      )
     : "";
   const openWalkMinutes = useMemo(() => {
     if (!openWalkStartedAt) return 0;
@@ -363,7 +438,11 @@ export default function HomeScreen() {
     if (!Number.isFinite(startedAt)) return 0;
     return Math.max(0, Math.round((now - startedAt) / 60000));
   }, [now, openWalkStartedAt]);
-  const presenceState = openAloneSession ? "home-alone" : openWalkSession ? "on-walk" : "with-human";
+  const presenceState = openAloneSession
+    ? "home-alone"
+    : openWalkSession
+      ? "on-walk"
+      : "with-human";
   const presenceLabel = openAloneSession
     ? `${petName} Home alone`
     : openWalkSession
@@ -375,9 +454,13 @@ export default function HomeScreen() {
       ? `${formatDuration(openWalkMinutes)} active - finish in Log`
       : `At home - ${timeLabel}`;
   const presenceRoute: HomePresenceRoute = openAloneSession
-    ? openAloneSession.id ? homeLogEntryRoute(openAloneSession.id) : homeLogDetailRoute("alone", now)
+    ? openAloneSession.id
+      ? homeLogEntryRoute(openAloneSession.id)
+      : homeLogDetailRoute("alone", now)
     : openWalkSession
-      ? openWalkSession.id ? homeLogEntryRoute(openWalkSession.id) : homeLogDetailRoute("walk", now)
+      ? openWalkSession.id
+        ? homeLogEntryRoute(openWalkSession.id)
+        : homeLogDetailRoute("walk", now)
       : "/more?section=household";
   const presenceActionHint = openAloneSession
     ? "Opens the active Alone Time log so you can complete the return check-in."
@@ -397,8 +480,12 @@ export default function HomeScreen() {
   const pendingMeal = useMemo(
     () =>
       [...state.entries]
-        .filter((entry) => isToday(entry.occurredAt, now) && isPendingMealLog(entry))
-        .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))[0] ?? null,
+        .filter(
+          (entry) => isToday(entry.occurredAt, now) && isPendingMealLog(entry),
+        )
+        .sort(
+          (a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt),
+        )[0] ?? null,
     [state.entries, now],
   );
 
@@ -409,7 +496,9 @@ export default function HomeScreen() {
           label: "Home alone",
           time: `${formatDuration(openAloneMinutes)} - log return`,
           icon: "clock" as PixelIconName,
-          route: openAloneSession.id ? homeLogEntryRoute(openAloneSession.id) : homeLogDetailRoute("alone", now),
+          route: openAloneSession.id
+            ? homeLogEntryRoute(openAloneSession.id)
+            : homeLogDetailRoute("alone", now),
           meta: "Return",
         },
       ];
@@ -420,7 +509,9 @@ export default function HomeScreen() {
           label: "Walk active",
           time: `${formatDuration(openWalkMinutes)} - finish in Log`,
           icon: "walk" as PixelIconName,
-          route: openWalkSession.id ? homeLogEntryRoute(openWalkSession.id) : homeLogDetailRoute("walk", now),
+          route: openWalkSession.id
+            ? homeLogEntryRoute(openWalkSession.id)
+            : homeLogDetailRoute("walk", now),
           meta: "Finish",
         },
       ];
@@ -432,7 +523,9 @@ export default function HomeScreen() {
           label: `${label} served`,
           time: "Outcome pending",
           icon: "meal" as PixelIconName,
-          route: pendingMeal.id ? homeLogEntryRoute(pendingMeal.id) : homeLogDetailRoute("meal", now),
+          route: pendingMeal.id
+            ? homeLogEntryRoute(pendingMeal.id)
+            : homeLogDetailRoute("meal", now),
           meta: "Update",
         },
       ];
@@ -450,34 +543,59 @@ export default function HomeScreen() {
       });
     }
     return [
-      { label: `Walk with ${caregiver}`, time: "5:30 PM", icon: "walk" as PixelIconName, route: homeLogDetailRoute("walk", now), meta: "Start" },
-      { label: "Dinner", time: "7:00 PM", icon: "meal" as PixelIconName, route: homeLogDetailRoute("meal", now), meta: "Serve" },
-      { label: "Training", time: "6:30 PM", icon: "training" as PixelIconName, route: homeLogDetailRoute("training", now), meta: "Log" },
+      {
+        label: `Walk with ${caregiver}`,
+        time: "5:30 PM",
+        icon: "walk" as PixelIconName,
+        route: homeLogDetailRoute("walk", now),
+        meta: "Start",
+      },
+      {
+        label: "Dinner",
+        time: "7:00 PM",
+        icon: "meal" as PixelIconName,
+        route: homeLogDetailRoute("meal", now),
+        meta: "Serve",
+      },
+      {
+        label: "Training",
+        time: "6:30 PM",
+        icon: "training" as PixelIconName,
+        route: homeLogDetailRoute("training", now),
+        meta: "Log",
+      },
     ];
-  }, [openAloneMinutes, openAloneSession, openWalkMinutes, openWalkSession, pendingMeal, state.routines, caregiver, now]);
+  }, [
+    openAloneMinutes,
+    openAloneSession,
+    openWalkMinutes,
+    openWalkSession,
+    pendingMeal,
+    state.routines,
+    caregiver,
+    now,
+  ]);
 
   const nextPrimary = nextUp[0];
   const nextCount = Math.max(nextUp.length, 1);
-  const nextMeta =
-    pendingMeal
-      ? "Open meal"
-      : openAloneSession
+  const nextMeta = pendingMeal
+    ? "Open meal"
+    : openAloneSession
       ? "I'm Home"
       : openWalkSession
-      ? "Finish walk"
-      : status.minutesUntilNext !== null
-      ? `In ${formatDuration(status.minutesUntilNext)}`
-      : nextPrimary?.time ?? "Ready";
-  const nextDetail =
-    pendingMeal
-      ? "Outcome pending - update when Phoenix finishes"
-      : openAloneSession
+        ? "Finish walk"
+        : status.minutesUntilNext !== null
+          ? `In ${formatDuration(status.minutesUntilNext)}`
+          : (nextPrimary?.time ?? "Ready");
+  const nextDetail = pendingMeal
+    ? "Outcome pending - update when Phoenix finishes"
+    : openAloneSession
       ? `${formatDuration(openAloneMinutes)} active - log return`
       : openWalkSession
-      ? `${formatDuration(openWalkMinutes)} active - finish in Log`
-      : status.minutesUntilNext !== null
-      ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
-      : nextPrimary?.time ?? "Ready when you are";
+        ? `${formatDuration(openWalkMinutes)} active - finish in Log`
+        : status.minutesUntilNext !== null
+          ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
+          : (nextPrimary?.time ?? "Ready when you are");
   const nextUpRoute = nextPrimary?.route ?? "/calendar";
   const todayCommandTone =
     todayCommand.primaryAction.urgency === "alert"
@@ -497,7 +615,11 @@ export default function HomeScreen() {
             : "Start";
 
   const health = status.counts.healthAlert
-    ? { status: "Needs Watch", sub: "Recent symptom logged", color: colors.amber }
+    ? {
+        status: "Needs Watch",
+        sub: "Recent symptom logged",
+        color: colors.amber,
+      }
     : { status: "Stable", sub: "All good right now", color: colors.sage };
 
   const bileCount = useMemo(
@@ -512,7 +634,11 @@ export default function HomeScreen() {
   const bile =
     bileCount === 0
       ? { status: "Low Risk", sub: "Everything looks good", color: colors.sage }
-      : { status: "Watch", sub: `${bileCount} flagged today`, color: colors.amber };
+      : {
+          status: "Watch",
+          sub: `${bileCount} flagged today`,
+          color: colors.amber,
+        };
 
   const roomStats = useMemo<PhoenixRoomStat[]>(
     () => [
@@ -520,8 +646,14 @@ export default function HomeScreen() {
         label: "Mood",
         value: status.meta.label,
         icon: moodIcon,
-        tone: status.mood === "unwell" ? colors.rose : status.mood === "anxious" ? colors.amber : colors.sage,
-        progress: status.mood === "unwell" ? 44 : status.mood === "anxious" ? 62 : 92,
+        tone:
+          status.mood === "unwell"
+            ? colors.rose
+            : status.mood === "anxious"
+              ? colors.amber
+              : colors.sage,
+        progress:
+          status.mood === "unwell" ? 44 : status.mood === "anxious" ? 62 : 92,
       },
       {
         label: "Energy",
@@ -583,7 +715,11 @@ export default function HomeScreen() {
     [state.entries, now],
   );
   const alone = {
-    status: openAloneSession ? "Home alone" : aloneMinutes > 0 ? formatDuration(aloneMinutes) : "0m",
+    status: openAloneSession
+      ? "Home alone"
+      : aloneMinutes > 0
+        ? formatDuration(aloneMinutes)
+        : "0m",
     sub: openAloneSession
       ? `${formatDuration(openAloneMinutes)} active`
       : aloneMinutes > 0
@@ -674,7 +810,9 @@ export default function HomeScreen() {
 
   const openTodayMetric = (target: TodayMetricTarget) => {
     void Haptics.selectionAsync();
-    router.push(`/log?type=${todayMetricRouteType[target]}&detail=1&intent=${Date.now()}` as never);
+    router.push(
+      `/log?type=${todayMetricRouteType[target]}&detail=1&intent=${Date.now()}` as never,
+    );
   };
 
   const openPhoenixStatusMeter = (target: PhoenixStatusMeterTarget) => {
@@ -723,10 +861,15 @@ export default function HomeScreen() {
       return;
     }
     if (careIntelligence.nextAction.targetEntryId) {
-      router.push(`/log?entry=${encodeURIComponent(careIntelligence.nextAction.targetEntryId)}` as never);
+      router.push(
+        `/log?entry=${encodeURIComponent(careIntelligence.nextAction.targetEntryId)}` as never,
+      );
       return;
     }
-    if (careIntelligence.nextAction.kind === "handle-routine" || careIntelligence.nextAction.targetRoutineId) {
+    if (
+      careIntelligence.nextAction.kind === "handle-routine" ||
+      careIntelligence.nextAction.targetRoutineId
+    ) {
       router.push("/calendar");
       return;
     }
@@ -811,7 +954,11 @@ export default function HomeScreen() {
     ],
   );
   const missionLayout = useMemo(
-    () => getHomeMissionDeckLayout({ width: viewportWidth, missionCount: homeMissions.length }),
+    () =>
+      getHomeMissionDeckLayout({
+        width: viewportWidth,
+        missionCount: homeMissions.length,
+      }),
     [homeMissions.length, viewportWidth],
   );
 
@@ -831,15 +978,24 @@ export default function HomeScreen() {
   };
 
   const [toast, setToast] = useState<string | null>(null);
-  const [quickFeedback, setQuickFeedback] = useState<{ id: string; title: string; type: CareEventType } | null>(null);
-  const [roomReaction, setRoomReaction] = useState<PhoenixRoomReaction | null>(null);
+  const [quickFeedback, setQuickFeedback] = useState<{
+    id: string;
+    title: string;
+    type: CareEventType;
+  } | null>(null);
+  const [roomReaction, setRoomReaction] = useState<PhoenixRoomReaction | null>(
+    null,
+  );
   const roomTapChoreography = useMemo(
     () => deriveCareTwinChoreography(deriveCareTwinScene(avatarMotion)),
     [avatarMotion],
   );
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const showToast = (msg: string, feedback?: { id: string; title: string; type: CareEventType }) => {
+  const showToast = (
+    msg: string,
+    feedback?: { id: string; title: string; type: CareEventType },
+  ) => {
     setToast(msg);
     setQuickFeedback(feedback ?? null);
     Animated.timing(toastOpacity, {
@@ -848,16 +1004,19 @@ export default function HomeScreen() {
       useNativeDriver: Platform.OS !== "web",
     }).start();
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => {
-      Animated.timing(toastOpacity, {
-        toValue: 0,
-        duration: 240,
-        useNativeDriver: Platform.OS !== "web",
-      }).start(() => {
-        setToast(null);
-        setQuickFeedback(null);
-      });
-    }, feedback ? 5200 : 1400);
+    toastTimer.current = setTimeout(
+      () => {
+        Animated.timing(toastOpacity, {
+          toValue: 0,
+          duration: 240,
+          useNativeDriver: Platform.OS !== "web",
+        }).start(() => {
+          setToast(null);
+          setQuickFeedback(null);
+        });
+      },
+      feedback ? 5200 : 1400,
+    );
   };
   useEffect(
     () => () => {
@@ -892,7 +1051,9 @@ export default function HomeScreen() {
       router.push(item.route);
       return;
     }
-    router.push(`/log?type=${item.type}&detail=1&intent=${Date.now()}` as never);
+    router.push(
+      `/log?type=${item.type}&detail=1&intent=${Date.now()}` as never,
+    );
   };
 
   const openActiveWalkFromHomeQuickLog = () => {
@@ -941,7 +1102,9 @@ export default function HomeScreen() {
       showToast("Walk started", { id, title: "Walk started", type: "walk" });
       return;
     }
-    const role = state.caregivers.find((person) => person.name === caregiver)?.role;
+    const role = state.caregivers.find(
+      (person) => person.name === caregiver,
+    )?.role;
     const entry = buildQuickLogEntry(
       {
         type: item.type,
@@ -965,20 +1128,31 @@ export default function HomeScreen() {
       id: Date.now(),
       icon: reactionPlan.icon,
       label: reactionPlan.label,
-      detail: avatarMotion.cue === "health-watch" && reactionPlan.toneRole !== "health"
-        ? "Main Phoenix stays gentle while health context remains visible."
-        : reactionPlan.detail,
+      detail:
+        avatarMotion.cue === "health-watch" &&
+        reactionPlan.toneRole !== "health"
+          ? "Main Phoenix stays gentle while health context remains visible."
+          : reactionPlan.detail,
       tone: reactionToneColor(reactionPlan.toneRole),
       spriteAction: reactionPlan.spriteAction,
     });
-    showToast(`${item.title} logged`, { id, title: item.title, type: item.type });
+    showToast(`${item.title} logged`, {
+      id,
+      title: item.title,
+      type: item.type,
+    });
   };
 
   const tapPhoenixRoom = () => {
     const tapReaction = roomTapChoreography.tapReaction;
     setRoomReaction({
       id: Date.now(),
-      icon: tapReaction.action === "comfort-loop" ? "health" : tapReaction.action === "ear-perk" ? "clock" : "heart",
+      icon:
+        tapReaction.action === "comfort-loop"
+          ? "health"
+          : tapReaction.action === "ear-perk"
+            ? "clock"
+            : "heart",
       label: tapReaction.label,
       detail: tapReaction.qaHint,
       tone: colors.brandNavy,
@@ -1014,13 +1188,21 @@ export default function HomeScreen() {
               accessibilityLabel="Open More"
               onPress={() => router.push("/more")}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
-              style={[s.headerButton, { borderColor: "transparent", backgroundColor: "transparent" }]}
+              style={[
+                s.headerButton,
+                { borderColor: "transparent", backgroundColor: "transparent" },
+              ]}
             >
               <Ionicons name="menu" size={27} color={colors.navy} />
             </Pressable>
             <View style={s.logoWrap}>
               <WoofWatcherLogo size={39} wordmarkSize={30} />
-              <Text style={[s.logoSub, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+              <Text
+                style={[
+                  s.logoSub,
+                  { color: colors.navy, fontFamily: "Inter_600SemiBold" },
+                ]}
+              >
                 Real care. Pixel heart.
               </Text>
             </View>
@@ -1029,11 +1211,20 @@ export default function HomeScreen() {
               accessibilityLabel="Open Health Watch"
               onPress={() => router.push("/health?tab=health" as never)}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
-              style={[s.headerButton, { borderColor: "transparent", backgroundColor: "transparent" }]}
+              style={[
+                s.headerButton,
+                { borderColor: "transparent", backgroundColor: "transparent" },
+              ]}
             >
-              <Ionicons name="notifications-outline" size={23} color={colors.navy} />
+              <Ionicons
+                name="notifications-outline"
+                size={23}
+                color={colors.navy}
+              />
               <View style={[s.badge, { backgroundColor: colors.rose }]}>
-                <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>3</Text>
+                <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>
+                  3
+                </Text>
               </View>
             </Pressable>
           </View>
@@ -1044,7 +1235,8 @@ export default function HomeScreen() {
                 s.heroConsoleHeader,
                 {
                   minHeight: homeFirstScreenLayout.heroHeaderMinHeight,
-                  paddingVertical: homeFirstScreenLayout.heroHeaderVerticalPadding,
+                  paddingVertical:
+                    homeFirstScreenLayout.heroHeaderVerticalPadding,
                   backgroundColor: colors.ivory,
                   borderBottomColor: colors.border,
                 },
@@ -1053,10 +1245,24 @@ export default function HomeScreen() {
               <View style={s.heroConsoleTitleRow}>
                 <PixelIcon name="heart" size={22} />
                 <View style={s.heroConsoleCopy}>
-                  <Text style={[s.heroConsoleKicker, { color: colors.copper, fontFamily: "Fredoka_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.heroConsoleKicker,
+                      {
+                        color: colors.copper,
+                        fontFamily: "Fredoka_600SemiBold",
+                      },
+                    ]}
+                  >
                     PHOENIX HOME
                   </Text>
-                  <Text numberOfLines={1} style={[s.heroConsoleTitle, { color: colors.navy, fontFamily: "Fredoka_700Bold" }]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      s.heroConsoleTitle,
+                      { color: colors.navy, fontFamily: "Fredoka_700Bold" },
+                    ]}
+                  >
                     Phoenix Room
                   </Text>
                 </View>
@@ -1075,17 +1281,31 @@ export default function HomeScreen() {
                   },
                 ]}
               >
-                <Text style={[s.heroStudioKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[
+                    s.heroStudioKicker,
+                    { color: colors.copper, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
                   Care Twin
                 </Text>
-                <Text numberOfLines={1} style={[s.heroStudioTitle, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    s.heroStudioTitle,
+                    { color: colors.navy, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
                   {avatarTemplate.label}
                 </Text>
               </Pressable>
             </View>
             <View
               accessibilityHint={homeFirstScreenLayout.qaLabel}
-              style={[s.heroWrap, { aspectRatio: homeFirstScreenLayout.heroAspectRatio }]}
+              style={[
+                s.heroWrap,
+                { aspectRatio: homeFirstScreenLayout.heroAspectRatio },
+              ]}
             >
               <LivingPhoenixRoom
                 mood={avatarMotion.avatarMood}
@@ -1093,9 +1313,16 @@ export default function HomeScreen() {
                 speech={avatarMotion.speech || SPEECH_BY_MOOD[status.mood]}
                 energy={status.energy}
                 presenceLabel={presenceLabel}
-                nextLabel={openWalkSession ? "Walk active" : openAloneSession ? "Home alone" : avatarMotion.label}
+                nextLabel={
+                  openWalkSession
+                    ? "Walk active"
+                    : openAloneSession
+                      ? "Home alone"
+                      : avatarMotion.label
+                }
                 reaction={roomReaction}
                 statusReadouts={roomStats}
+                avatarConfig={avatarConfig}
                 onPress={tapPhoenixRoom}
               />
             </View>
@@ -1118,26 +1345,52 @@ export default function HomeScreen() {
               },
             ]}
           >
-            <View style={[s.presenceAvatar, { backgroundColor: openAloneSession ? colors.amber : openWalkSession ? colors.sage : colors.copper }]}>
+            <View
+              style={[
+                s.presenceAvatar,
+                {
+                  backgroundColor: openAloneSession
+                    ? colors.amber
+                    : openWalkSession
+                      ? colors.sage
+                      : colors.copper,
+                },
+              ]}
+            >
               {openAloneSession ? (
                 <Ionicons name="home-outline" size={18} color="#FFFFFF" />
               ) : openWalkSession ? (
                 <PixelIcon name="walk" size={21} />
               ) : (
-                <Text style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}
+                >
                   {caregiver.charAt(0).toUpperCase()}
                 </Text>
               )}
             </View>
             <View style={s.presenceCopy}>
-              <Text style={[s.presenceText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+              <Text
+                style={[
+                  s.presenceText,
+                  { color: colors.navy, fontFamily: "Inter_700Bold" },
+                ]}
+              >
                 {openAloneSession
                   ? `${petName} is home alone`
                   : openWalkSession
                     ? `${petName} is on a walk`
                     : `${petName} is with ${caregiver}`}
               </Text>
-              <Text style={[s.presenceSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                style={[
+                  s.presenceSub,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
                 {presenceSub}
               </Text>
             </View>
@@ -1180,12 +1433,25 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  <PixelIcon name={tile.icon} size={homeFirstScreenLayout.statusTileIconSize} />
+                  <PixelIcon
+                    name={tile.icon}
+                    size={homeFirstScreenLayout.statusTileIconSize}
+                  />
                 </View>
-                <Text style={[s.statusTileLabel, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[
+                    s.statusTileLabel,
+                    { color: colors.navy, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
                   {tile.label}
                 </Text>
-                <Text style={[s.statusTileValue, { color: tile.tone, fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[
+                    s.statusTileValue,
+                    { color: tile.tone, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
                   {tile.value}
                 </Text>
               </Pressable>
@@ -1197,7 +1463,9 @@ export default function HomeScreen() {
             accessibilityLabel={`Today Command. ${todayCommand.primaryAction.label}. ${todayCommand.primaryAction.detail}`}
             accessibilityHint="Opens the exact care workflow behind today's recommended action."
             hitSlop={MOBILE_INLINE_HIT_SLOP}
-            onPress={() => router.push(todayCommand.primaryAction.route as never)}
+            onPress={() =>
+              router.push(todayCommand.primaryAction.route as never)
+            }
             style={({ pressed }) => [
               s.todayCommandCard,
               {
@@ -1206,22 +1474,57 @@ export default function HomeScreen() {
               },
             ]}
           >
-            <View style={[s.todayCommandIcon, { backgroundColor: todayCommandTone + "18" }]}>
-              <PixelIcon name={todayCommandPixelIcon(todayCommand.primaryAction.icon)} size={28} />
+            <View
+              style={[
+                s.todayCommandIcon,
+                { backgroundColor: todayCommandTone + "18" },
+              ]}
+            >
+              <PixelIcon
+                name={todayCommandPixelIcon(todayCommand.primaryAction.icon)}
+                size={28}
+              />
             </View>
             <View style={s.todayCommandCopy}>
-              <Text style={[s.todayCommandKicker, { color: colors.copper, fontFamily: "Fredoka_600SemiBold" }]}>
+              <Text
+                style={[
+                  s.todayCommandKicker,
+                  { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
+                ]}
+              >
                 Today Command
               </Text>
-              <Text numberOfLines={1} style={[s.todayCommandTitle, { color: colors.navy, fontFamily: "Fredoka_700Bold" }]}>
+              <Text
+                numberOfLines={1}
+                style={[
+                  s.todayCommandTitle,
+                  { color: colors.navy, fontFamily: "Fredoka_700Bold" },
+                ]}
+              >
                 {todayCommand.primaryAction.label}
               </Text>
-              <Text numberOfLines={2} style={[s.todayCommandDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+              <Text
+                numberOfLines={2}
+                style={[
+                  s.todayCommandDetail,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
                 {todayCommand.primaryAction.detail}
               </Text>
             </View>
-            <View style={[s.todayCommandCta, { backgroundColor: todayCommandTone }]}>
-              <Text style={[s.todayCommandCtaText, { fontFamily: "Inter_800ExtraBold" }]}>
+            <View
+              style={[s.todayCommandCta, { backgroundColor: todayCommandTone }]}
+            >
+              <Text
+                style={[
+                  s.todayCommandCtaText,
+                  { fontFamily: "Inter_800ExtraBold" },
+                ]}
+              >
                 {todayCommandCta}
               </Text>
               <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
@@ -1232,7 +1535,13 @@ export default function HomeScreen() {
             <BoardCard style={[s.nextCard, s.homeSplitCard]}>
               <BoardSectionHeader
                 title="Next Up"
-                accessory={<BoardPill label={`1 of ${nextCount}`} icon="list-outline" tone={colors.sage} />}
+                accessory={
+                  <BoardPill
+                    label={`1 of ${nextCount}`}
+                    icon="list-outline"
+                    tone={colors.sage}
+                  />
+                }
               />
               {nextUp.slice(0, 3).map((item, index) => (
                 <CareRow
@@ -1258,15 +1567,29 @@ export default function HomeScreen() {
                     style={({ pressed }) => [
                       s.quickHeaderAction,
                       {
-                        backgroundColor: pressed ? colors.secondary : colors.accent,
+                        backgroundColor: pressed
+                          ? colors.secondary
+                          : colors.accent,
                         borderColor: colors.border,
                       },
                     ]}
                   >
-                    <Text style={[s.quickHeaderActionText, { color: colors.navy, fontFamily: "Inter_800ExtraBold" }]}>
+                    <Text
+                      style={[
+                        s.quickHeaderActionText,
+                        {
+                          color: colors.navy,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
                       Open
                     </Text>
-                    <Ionicons name="chevron-forward" size={13} color={colors.navy} />
+                    <Ionicons
+                      name="chevron-forward"
+                      size={13}
+                      color={colors.navy}
+                    />
                   </Pressable>
                 }
               />
@@ -1276,8 +1599,14 @@ export default function HomeScreen() {
                     key={item.key}
                     icon={item.icon}
                     label={item.label}
-                    accessibilityLabel={item.route ? "Open Quick Log" : `Log ${item.label}`}
-                    accessibilityHint={item.route ? "Opens the full Quick Log." : "Long press opens details before saving."}
+                    accessibilityLabel={
+                      item.route ? "Open Quick Log" : `Log ${item.label}`
+                    }
+                    accessibilityHint={
+                      item.route
+                        ? "Opens the full Quick Log."
+                        : "Long press opens details before saving."
+                    }
                     onPress={() => logQuick(item)}
                     onLongPress={() => openQuickDetails(item)}
                     accent={colors.secondary}
@@ -1290,20 +1619,43 @@ export default function HomeScreen() {
             </BoardCard>
           </View>
 
-          <BoardCard tone="navy" style={[s.missionDeck, { padding: missionLayout.deckPadding }]}>
-            <View style={[s.missionHeader, { marginBottom: missionLayout.headerGap }]}>
+          <BoardCard
+            tone="navy"
+            style={[s.missionDeck, { padding: missionLayout.deckPadding }]}
+          >
+            <View
+              style={[
+                s.missionHeader,
+                { marginBottom: missionLayout.headerGap },
+              ]}
+            >
               <View>
-                <Text style={[s.missionKicker, { color: colors.amber, fontFamily: "Fredoka_600SemiBold" }]}>
+                <Text
+                  style={[
+                    s.missionKicker,
+                    { color: colors.amber, fontFamily: "Fredoka_600SemiBold" },
+                  ]}
+                >
                   Today's Missions
                 </Text>
-                <Text numberOfLines={1} style={[s.missionTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[s.missionTitle, { fontFamily: "Fredoka_700Bold" }]}
+                >
                   Care RPG command center
                 </Text>
               </View>
               {missionLayout.showBadge ? (
                 <View style={s.missionBadge}>
                   <PixelIcon name="heart" size={25} />
-                  <Text style={[s.missionBadgeText, { fontFamily: "Inter_800ExtraBold" }]}>Care RPG</Text>
+                  <Text
+                    style={[
+                      s.missionBadgeText,
+                      { fontFamily: "Inter_800ExtraBold" },
+                    ]}
+                  >
+                    Care RPG
+                  </Text>
                 </View>
               ) : null}
             </View>
@@ -1326,7 +1678,9 @@ export default function HomeScreen() {
                       },
                       {
                         borderColor: pressed ? tone : "rgba(255,249,239,0.18)",
-                        backgroundColor: pressed ? "rgba(255,249,239,0.16)" : "rgba(255,249,239,0.08)",
+                        backgroundColor: pressed
+                          ? "rgba(255,249,239,0.16)"
+                          : "rgba(255,249,239,0.08)",
                       },
                     ]}
                   >
@@ -1341,21 +1695,48 @@ export default function HomeScreen() {
                         },
                       ]}
                     >
-                      <PixelIcon name={mission.icon as PixelIconName} size={missionLayout.iconSize} />
+                      <PixelIcon
+                        name={mission.icon as PixelIconName}
+                        size={missionLayout.iconSize}
+                      />
                     </View>
                     <View style={s.missionCopy}>
                       <View style={s.missionCopyTop}>
-                        <Text numberOfLines={1} style={[s.missionLabel, { fontFamily: "Inter_800ExtraBold" }]}>
+                        <Text
+                          numberOfLines={1}
+                          style={[
+                            s.missionLabel,
+                            { fontFamily: "Inter_800ExtraBold" },
+                          ]}
+                        >
                           {mission.label}
                         </Text>
-                        <Text numberOfLines={1} style={[s.missionStatus, { color: tone, fontFamily: "Inter_800ExtraBold" }]}>
+                        <Text
+                          numberOfLines={1}
+                          style={[
+                            s.missionStatus,
+                            { color: tone, fontFamily: "Inter_800ExtraBold" },
+                          ]}
+                        >
                           {mission.statusLabel}
                         </Text>
                       </View>
-                      <Text numberOfLines={1} style={[s.missionRowTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          s.missionRowTitle,
+                          { fontFamily: "Fredoka_700Bold" },
+                        ]}
+                      >
                         {mission.title}
                       </Text>
-                      <Text numberOfLines={missionLayout.detailLines} style={[s.missionDetail, { fontFamily: "Inter_600SemiBold" }]}>
+                      <Text
+                        numberOfLines={missionLayout.detailLines}
+                        style={[
+                          s.missionDetail,
+                          { fontFamily: "Inter_600SemiBold" },
+                        ]}
+                      >
                         {mission.detail}
                       </Text>
                     </View>
@@ -1372,12 +1753,19 @@ export default function HomeScreen() {
                         numberOfLines={1}
                         style={[
                           s.missionCtaText,
-                          { maxWidth: missionLayout.ctaTextMaxWidth, fontFamily: "Inter_800ExtraBold" },
+                          {
+                            maxWidth: missionLayout.ctaTextMaxWidth,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
                         ]}
                       >
                         {mission.cta}
                       </Text>
-                      <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
+                      <Ionicons
+                        name="chevron-forward"
+                        size={15}
+                        color="#FFF9EF"
+                      />
                     </View>
                   </Pressable>
                 );
@@ -1398,16 +1786,31 @@ export default function HomeScreen() {
                   style={({ pressed }) => [
                     s.todayMetric,
                     {
-                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      backgroundColor: pressed
+                        ? colors.secondary
+                        : colors.background,
                       borderColor: pressed ? colors.sage : colors.border,
                     },
                   ]}
                 >
                   <PixelIcon name="walk" size={26} />
-                  <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.metricValue,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {status.counts.walkMinutes}m
                   </Text>
-                  <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.metricLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     Activity
                   </Text>
                 </Pressable>
@@ -1420,16 +1823,31 @@ export default function HomeScreen() {
                   style={({ pressed }) => [
                     s.todayMetric,
                     {
-                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      backgroundColor: pressed
+                        ? colors.secondary
+                        : colors.background,
                       borderColor: pressed ? colors.copper : colors.border,
                     },
                   ]}
                 >
                   <PixelIcon name="meal" size={26} />
-                  <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.metricValue,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {completionLabel(meals.done, meals.target || 2)}
                   </Text>
-                  <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.metricLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     Meals
                   </Text>
                 </Pressable>
@@ -1442,16 +1860,34 @@ export default function HomeScreen() {
                   style={({ pressed }) => [
                     s.todayMetric,
                     {
-                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      backgroundColor: pressed
+                        ? colors.secondary
+                        : colors.background,
                       borderColor: pressed ? colors.blueSignal : colors.border,
                     },
                   ]}
                 >
                   <PixelIcon name="pee" size={26} />
-                  <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                    {completionLabel(status.counts.potty.done, status.counts.potty.target || 3)}
+                  <Text
+                    style={[
+                      s.metricValue,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    {completionLabel(
+                      status.counts.potty.done,
+                      status.counts.potty.target || 3,
+                    )}
                   </Text>
-                  <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.metricLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     Potty
                   </Text>
                 </Pressable>
@@ -1478,11 +1914,23 @@ export default function HomeScreen() {
                     detail={entry.caregiver}
                     meta={entry.time}
                     accessibilityLabel={`Open recent care log: ${entry.title}`}
-                    onPress={() => router.push(`/log?entry=${encodeURIComponent(entry.id)}` as never)}
+                    onPress={() =>
+                      router.push(
+                        `/log?entry=${encodeURIComponent(entry.id)}` as never,
+                      )
+                    }
                   />
                 ))
               ) : (
-                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                <Text
+                  style={[
+                    s.emptyText,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
                   No care logs yet today.
                 </Text>
               )}
@@ -1522,17 +1970,37 @@ export default function HomeScreen() {
                 accessibilityHint={w.hint}
                 hitSlop={MOBILE_INLINE_HIT_SLOP}
                 onPress={() => openHomeWatchCard(w.target)}
-                style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.72 : 1 }]}
+                style={({ pressed }) => [
+                  { flex: 1, opacity: pressed ? 0.72 : 1 },
+                ]}
               >
                 <BoardCard style={s.watchCard}>
                   <PixelIcon name={w.icon} size={24} />
-                  <Text style={[s.watchTitle, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.watchTitle,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {w.title}
                   </Text>
-                  <Text style={[s.watchStatus, { color: w.data.color, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.watchStatus,
+                      { color: w.data.color, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {w.data.status}
                   </Text>
-                  <Text style={[s.watchSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  <Text
+                    style={[
+                      s.watchSub,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
                     {w.data.sub}
                   </Text>
                 </BoardCard>
@@ -1543,7 +2011,12 @@ export default function HomeScreen() {
           <BoardCard tone="navy" style={s.questCard}>
             <View style={s.questTop}>
               <View>
-                <Text style={[s.questKicker, { color: colors.amber, fontFamily: "Fredoka_600SemiBold" }]}>
+                <Text
+                  style={[
+                    s.questKicker,
+                    { color: colors.amber, fontFamily: "Fredoka_600SemiBold" },
+                  ]}
+                >
                   Care quest
                 </Text>
                 <Text style={[s.questTitle, { fontFamily: "Fredoka_700Bold" }]}>
@@ -1560,8 +2033,19 @@ export default function HomeScreen() {
             <View style={s.questProofGrid}>
               {careIntelligence.metrics.slice(0, 3).map((metric) => (
                 <View key={metric.label} style={s.questProofTile}>
-                  <Text style={[s.questProofValue, { fontFamily: "Fredoka_700Bold" }]}>{metric.value}</Text>
-                  <Text style={[s.questProofLabel, { fontFamily: "Inter_700Bold" }]}>{metric.label}</Text>
+                  <Text
+                    style={[
+                      s.questProofValue,
+                      { fontFamily: "Fredoka_700Bold" },
+                    ]}
+                  >
+                    {metric.value}
+                  </Text>
+                  <Text
+                    style={[s.questProofLabel, { fontFamily: "Inter_700Bold" }]}
+                  >
+                    {metric.label}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -1574,8 +2058,12 @@ export default function HomeScreen() {
                     style={[
                       s.questPip,
                       {
-                        backgroundColor: active ? colors.sage : "rgba(255,249,239,0.18)",
-                        borderColor: active ? colors.sage : "rgba(255,249,239,0.26)",
+                        backgroundColor: active
+                          ? colors.sage
+                          : "rgba(255,249,239,0.18)",
+                        borderColor: active
+                          ? colors.sage
+                          : "rgba(255,249,239,0.26)",
                       },
                     ]}
                   />
@@ -1598,8 +2086,12 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 s.questNextAction,
                 {
-                  borderColor: pressed ? colors.amber : "rgba(255,249,239,0.26)",
-                  backgroundColor: pressed ? "rgba(255,249,239,0.16)" : "rgba(255,249,239,0.1)",
+                  borderColor: pressed
+                    ? colors.amber
+                    : "rgba(255,249,239,0.26)",
+                  backgroundColor: pressed
+                    ? "rgba(255,249,239,0.16)"
+                    : "rgba(255,249,239,0.1)",
                 },
               ]}
             >
@@ -1607,18 +2099,37 @@ export default function HomeScreen() {
                 <PixelIcon name={homeCareIntelligenceIcon} size={24} />
               </View>
               <View style={s.questNextCopy}>
-                <Text style={[s.questNextKicker, { fontFamily: "Inter_800ExtraBold" }]}>
+                <Text
+                  style={[
+                    s.questNextKicker,
+                    { fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
                   Next care move
                 </Text>
-                <Text numberOfLines={1} style={[s.questNextTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[s.questNextTitle, { fontFamily: "Fredoka_700Bold" }]}
+                >
                   {careIntelligence.nextAction.label}
                 </Text>
-                <Text numberOfLines={2} style={[s.questNextDetail, { fontFamily: "Inter_600SemiBold" }]}>
+                <Text
+                  numberOfLines={2}
+                  style={[
+                    s.questNextDetail,
+                    { fontFamily: "Inter_600SemiBold" },
+                  ]}
+                >
                   {careIntelligence.nextAction.detail}
                 </Text>
               </View>
               <View style={s.questNextCta}>
-                <Text style={[s.questNextCtaText, { fontFamily: "Inter_800ExtraBold" }]}>
+                <Text
+                  style={[
+                    s.questNextCtaText,
+                    { fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
                   {homeCareIntelligenceCta}
                 </Text>
                 <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
@@ -1630,21 +2141,36 @@ export default function HomeScreen() {
               onPress={() => router.push("/adventure" as never)}
               style={({ pressed }) => [
                 s.adventureInline,
-                { borderColor: "rgba(255,249,239,0.28)", opacity: pressed ? 0.78 : 1 },
+                {
+                  borderColor: "rgba(255,249,239,0.28)",
+                  opacity: pressed ? 0.78 : 1,
+                },
               ]}
             >
               <View style={s.adventureIcon}>
-                <PixelIcon name={adventureQuestIcon(adventureQuest.id)} size={25} />
+                <PixelIcon
+                  name={adventureQuestIcon(adventureQuest.id)}
+                  size={25}
+                />
               </View>
               <View style={s.adventureCopy}>
-                <Text style={[s.adventureKicker, { fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[s.adventureKicker, { fontFamily: "Inter_700Bold" }]}
+                >
                   Adventure Mode
                 </Text>
-                <Text numberOfLines={1} style={[s.adventureTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[s.adventureTitle, { fontFamily: "Fredoka_700Bold" }]}
+                >
                   {adventureQuest.title}
                 </Text>
-                <Text numberOfLines={2} style={[s.adventureSub, { fontFamily: "Inter_600SemiBold" }]}>
-                  Level {adventureMode.level} - {adventureMode.todayXp} XP today - {adventureMode.memoriesCount} memories
+                <Text
+                  numberOfLines={2}
+                  style={[s.adventureSub, { fontFamily: "Inter_600SemiBold" }]}
+                >
+                  Level {adventureMode.level} - {adventureMode.todayXp} XP today
+                  - {adventureMode.memoriesCount} memories
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#FFF9EF" />
@@ -1730,7 +2256,9 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <Text style={[s.toastText, { fontFamily: "Inter_700Bold" }]}>{toast}</Text>
+          <Text style={[s.toastText, { fontFamily: "Inter_700Bold" }]}>
+            {toast}
+          </Text>
           {quickFeedback ? (
             <View style={s.toastActions}>
               <Pressable
@@ -1740,12 +2268,21 @@ export default function HomeScreen() {
                 style={({ pressed }) => [
                   s.toastAction,
                   {
-                    backgroundColor: pressed ? "rgba(255,249,239,0.16)" : "rgba(255,249,239,0.1)",
+                    backgroundColor: pressed
+                      ? "rgba(255,249,239,0.16)"
+                      : "rgba(255,249,239,0.1)",
                     borderColor: "rgba(255,249,239,0.34)",
                   },
                 ]}
               >
-                <Text style={[s.toastActionText, { fontFamily: "Inter_800ExtraBold" }]}>Undo</Text>
+                <Text
+                  style={[
+                    s.toastActionText,
+                    { fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
+                  Undo
+                </Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -1754,12 +2291,21 @@ export default function HomeScreen() {
                 style={({ pressed }) => [
                   s.toastAction,
                   {
-                    backgroundColor: pressed ? colors.copper + "DD" : colors.copper,
+                    backgroundColor: pressed
+                      ? colors.copper + "DD"
+                      : colors.copper,
                     borderColor: colors.copper,
                   },
                 ]}
               >
-                <Text style={[s.toastActionText, { fontFamily: "Inter_800ExtraBold" }]}>Add details</Text>
+                <Text
+                  style={[
+                    s.toastActionText,
+                    { fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
+                  Add details
+                </Text>
               </Pressable>
             </View>
           ) : null}

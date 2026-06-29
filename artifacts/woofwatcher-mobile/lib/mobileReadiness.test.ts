@@ -6,7 +6,12 @@ import { join, relative } from "node:path";
 import { describeQuickLogDetailSheet } from "./quickLogEntry.ts";
 
 const APP_DIR = join(process.cwd(), "artifacts", "woofwatcher-mobile", "app");
-const MOBILE_LIB_DIR = join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib");
+const MOBILE_LIB_DIR = join(
+  process.cwd(),
+  "artifacts",
+  "woofwatcher-mobile",
+  "lib",
+);
 
 function readAppFile(path: string): string {
   return readFileSync(join(APP_DIR, path), "utf8");
@@ -26,16 +31,38 @@ function getStyleBlock(source: string, styleName: string): string {
   return nextStyle === -1 ? remaining : remaining.slice(0, nextStyle);
 }
 
-function assertStyleUsesSharedTouchTarget(source: string, styleName: string): void {
+function assertStyleUsesSharedTouchTarget(
+  source: string,
+  styleName: string,
+): void {
   const block = getStyleBlock(source, styleName);
-  assert.match(block, /minHeight:\s*MIN_MOBILE_TOUCH_TARGET/, `${styleName} should use the shared mobile touch target`);
-  assert.doesNotMatch(block, /minHeight:\s*(?:3\d|4[0-7])\b/, `${styleName} should not keep a route-local undersized height`);
+  assert.match(
+    block,
+    /minHeight:\s*MIN_MOBILE_TOUCH_TARGET/,
+    `${styleName} should use the shared mobile touch target`,
+  );
+  assert.doesNotMatch(
+    block,
+    /minHeight:\s*(?:3\d|4[0-7])\b/,
+    `${styleName} should not keep a route-local undersized height`,
+  );
 }
 
-function assertStyleReferencesSharedTouchTarget(source: string, styleName: string): void {
+function assertStyleReferencesSharedTouchTarget(
+  source: string,
+  styleName: string,
+): void {
   const block = getStyleBlock(source, styleName);
-  assert.match(block, /MIN_MOBILE_TOUCH_TARGET/, `${styleName} should reference the shared mobile touch target`);
-  assert.doesNotMatch(block, /\b(?:minHeight|height):\s*(?:3\d|4[0-7])\b/, `${styleName} should not keep a route-local undersized height`);
+  assert.match(
+    block,
+    /MIN_MOBILE_TOUCH_TARGET/,
+    `${styleName} should reference the shared mobile touch target`,
+  );
+  assert.doesNotMatch(
+    block,
+    /\b(?:minHeight|height):\s*(?:3\d|4[0-7])\b/,
+    `${styleName} should not keep a route-local undersized height`,
+  );
 }
 
 function listAppFiles(dir = APP_DIR): string[] {
@@ -48,20 +75,28 @@ function listAppFiles(dir = APP_DIR): string[] {
 
 function routeExists(route: string): boolean {
   if (!route.startsWith("/")) return true;
-  if (route === "/(tabs)") return existsSync(join(APP_DIR, "(tabs)", "index.tsx"));
-  if (route === "/(auth)") return existsSync(join(APP_DIR, "(auth)", "_layout.tsx"));
+  if (route === "/(tabs)")
+    return existsSync(join(APP_DIR, "(tabs)", "index.tsx"));
+  if (route === "/(auth)")
+    return existsSync(join(APP_DIR, "(auth)", "_layout.tsx"));
 
   const clean = route.replace(/^\//, "");
   const direct = join(APP_DIR, `${clean}.tsx`);
   const grouped = join(APP_DIR, clean, "_layout.tsx");
   const tab = join(APP_DIR, "(tabs)", `${clean}.tsx`);
   const auth = join(APP_DIR, "(auth)", `${clean.replace("(auth)/", "")}.tsx`);
-  return [direct, grouped, tab, auth].some((candidate) => existsSync(candidate));
+  return [direct, grouped, tab, auth].some((candidate) =>
+    existsSync(candidate),
+  );
 }
 
 function readPngSize(path: string): { width: number; height: number } {
   const buffer = readFileSync(path);
-  assert.equal(buffer.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", `${path} should be a PNG`);
+  assert.equal(
+    buffer.subarray(0, 8).toString("hex"),
+    "89504e470d0a1a0a",
+    `${path} should be a PNG`,
+  );
   return {
     width: buffer.readUInt32BE(16),
     height: buffer.readUInt32BE(20),
@@ -72,16 +107,43 @@ test("registers the critical mobile routes and tabs", () => {
   const rootLayout = readAppFile("_layout.tsx");
   const tabLayout = readAppFile(join("(tabs)", "_layout.tsx"));
 
-  for (const route of ["portrait", "setup", "woofguide", "premium", "privacy", "adventure", "care-twin-qa"]) {
-    assert.match(rootLayout, new RegExp(`name="${route}"`), `${route} stack screen should be registered`);
-    assert.ok(existsSync(join(APP_DIR, `${route}.tsx`)), `${route} route file should exist`);
+  for (const route of [
+    "portrait",
+    "setup",
+    "woofguide",
+    "premium",
+    "privacy",
+    "adventure",
+    "care-twin-qa",
+  ]) {
+    assert.match(
+      rootLayout,
+      new RegExp(`name="${route}"`),
+      `${route} stack screen should be registered`,
+    );
+    assert.ok(
+      existsSync(join(APP_DIR, `${route}.tsx`)),
+      `${route} route file should exist`,
+    );
   }
 
   for (const tab of ["Home", "Log", "Plans", "Health", "More"]) {
-    assert.match(tabLayout, new RegExp(`title: "${tab}"`), `${tab} tab should be visible`);
+    assert.match(
+      tabLayout,
+      new RegExp(`title: "${tab}"`),
+      `${tab} tab should be visible`,
+    );
   }
-  assert.match(tabLayout, /name="records"/, "records route should stay registered for More links and deep links");
-  assert.match(tabLayout, /href: null/, "records should not appear as a primary bottom tab in v1.5");
+  assert.match(
+    tabLayout,
+    /name="records"/,
+    "records route should stay registered for More links and deep links",
+  );
+  assert.match(
+    tabLayout,
+    /href: null/,
+    "records should not appear as a primary bottom tab in v1.5",
+  );
 });
 
 test("keeps string router links pointed at existing route files", () => {
@@ -105,7 +167,13 @@ test("keeps launch-blocking safety copy on premium, privacy, and WoofGuide surfa
   const premium = readAppFile("premium.tsx");
   const privacy = readAppFile("privacy.tsx");
   const privacyModel = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "privacySafety.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "privacySafety.ts",
+    ),
     "utf8",
   );
   const woofGuide = readAppFile("woofguide.tsx");
@@ -131,15 +199,29 @@ test("keeps launch-blocking safety copy on premium, privacy, and WoofGuide surfa
 });
 
 test("keeps Expo web export smoke wired into CI", () => {
-  const rootPackage = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"));
+  const rootPackage = JSON.parse(
+    readFileSync(join(process.cwd(), "package.json"), "utf8"),
+  );
   const mobilePackage = JSON.parse(
-    readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "package.json"), "utf8"),
+    readFileSync(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "package.json"),
+      "utf8",
+    ),
   );
   const mobileAppJson = JSON.parse(
-    readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "app.json"), "utf8"),
+    readFileSync(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "app.json"),
+      "utf8",
+    ),
   );
   const smokeScript = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "scripts", "smoke-web-export.js"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "scripts",
+      "smoke-web-export.js",
+    ),
     "utf8",
   );
   const mobileGitignore = readFileSync(
@@ -147,10 +229,16 @@ test("keeps Expo web export smoke wired into CI", () => {
     "utf8",
   );
 
-  assert.equal(mobilePackage.scripts["smoke:web"], "node scripts/smoke-web-export.js");
+  assert.equal(
+    mobilePackage.scripts["smoke:web"],
+    "node scripts/smoke-web-export.js",
+  );
   assert.deepEqual(mobileAppJson.expo.platforms, ["ios", "android", "web"]);
   assert.equal(mobileAppJson.expo.web.bundler, "metro");
-  assert.match(rootPackage.scripts["build:ci"], /woofwatcher-mobile run smoke:web/);
+  assert.match(
+    rootPackage.scripts["build:ci"],
+    /woofwatcher-mobile run smoke:web/,
+  );
   assert.match(smokeScript, /expo", "export"/);
   assert.match(smokeScript, /const outputDirName = "\.expo-smoke"/);
   assert.match(smokeScript, /"--output-dir", outputDirName/);
@@ -159,20 +247,46 @@ test("keeps Expo web export smoke wired into CI", () => {
 });
 
 test("keeps a static beta preview server wired for Apollo review", () => {
-  const rootPackage = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"));
+  const rootPackage = JSON.parse(
+    readFileSync(join(process.cwd(), "package.json"), "utf8"),
+  );
   const mobilePackage = JSON.parse(
-    readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "package.json"), "utf8"),
+    readFileSync(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "package.json"),
+      "utf8",
+    ),
   );
   const serveSmokePreview = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "scripts", "serve-smoke-preview.js"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "scripts",
+      "serve-smoke-preview.js",
+    ),
     "utf8",
   );
-  const doctorSource = readFileSync(join(process.cwd(), "scripts", "mobile-beta-doctor.mjs"), "utf8");
+  const doctorSource = readFileSync(
+    join(process.cwd(), "scripts", "mobile-beta-doctor.mjs"),
+    "utf8",
+  );
 
-  assert.equal(rootPackage.scripts["preview:mobile-beta"], "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke");
-  assert.equal(mobilePackage.scripts["preview:smoke"], "node scripts/serve-smoke-preview.js 4194");
-  assert.equal(mobilePackage.scripts["preview:web"], "node scripts/serve-smoke-preview.js 4194");
-  assert.match(serveSmokePreview, /const root = path\.resolve\(projectRoot, "\.expo-smoke"\)/);
+  assert.equal(
+    rootPackage.scripts["preview:mobile-beta"],
+    "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
+  );
+  assert.equal(
+    mobilePackage.scripts["preview:smoke"],
+    "node scripts/serve-smoke-preview.js 4194",
+  );
+  assert.equal(
+    mobilePackage.scripts["preview:web"],
+    "node scripts/serve-smoke-preview.js 4194",
+  );
+  assert.match(
+    serveSmokePreview,
+    /const root = path\.resolve\(projectRoot, "\.expo-smoke"\)/,
+  );
   assert.match(serveSmokePreview, /process\.argv\[2\] \|\| 4194/);
   assert.match(serveSmokePreview, /Missing \.expo-smoke\/index\.html/);
   assert.match(serveSmokePreview, /Keep this terminal open/);
@@ -182,13 +296,19 @@ test("keeps a static beta preview server wired for Apollo review", () => {
 });
 
 test("keeps local Clerk placeholders from blanking the web preview", () => {
-  const auth = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "auth.ts"), "utf8");
+  const auth = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "auth.ts"),
+    "utf8",
+  );
 
   assert.match(auth, /isPlaceholderPublishableKey/);
   assert.match(auth, /placeholder/);
   assert.match(auth, /local_smoke/);
   assert.match(auth, /!isPlaceholderPublishableKey/);
-  assert.match(auth, /useWoofAuth = isClerkConfigured \? useClerkAuth : useLocalAuth/);
+  assert.match(
+    auth,
+    /useWoofAuth = isClerkConfigured \? useClerkAuth : useLocalAuth/,
+  );
 });
 
 test("keeps critical mobile actions accessible to screen readers", () => {
@@ -199,13 +319,25 @@ test("keeps critical mobile actions accessible to screen readers", () => {
 
   assert.match(privacy, /accessibilityLabel="Close Privacy and Safety"/);
   assert.match(privacy, /accessibilityLabel="Export WoofWatcher care data"/);
-  assert.match(privacy, /accessibilityLabel="Prepare account deletion request"/);
-  assert.match(privacy, /accessibilityLabel="Share WoofWatcher support runbook"/);
-  assert.match(privacy, /accessibilityLabel="Edit WoofWatcher launch support profile"/);
+  assert.match(
+    privacy,
+    /accessibilityLabel="Prepare account deletion request"/,
+  );
+  assert.match(
+    privacy,
+    /accessibilityLabel="Share WoofWatcher support runbook"/,
+  );
+  assert.match(
+    privacy,
+    /accessibilityLabel="Edit WoofWatcher launch support profile"/,
+  );
   assert.match(premium, /accessibilityLabel="Open premium launch checklist"/);
   assert.match(premium, /accessibilityLabel="Back to care"/);
   assert.match(woofGuide, /accessibilityLabel=\{`Ask WoofGuide: \$\{q\}`\}/);
-  assert.match(woofGuide, /accessibilityLabel=\{`Review WoofGuide action: \$\{action\.label\}/);
+  assert.match(
+    woofGuide,
+    /accessibilityLabel=\{`Review WoofGuide action: \$\{action\.label\}/,
+  );
   assert.match(woofGuide, /accessibilityLabel="Close owner review"/);
   assert.match(woofGuide, /accessibilityLabel="Send WoofGuide message"/);
   assert.match(more, /accessibilityLabel="Edit dog profile"/);
@@ -217,7 +349,14 @@ test("keeps critical mobile actions accessible to screen readers", () => {
 test("keeps tabbed mobile routes clear of the floating paw nav", () => {
   const mobileLayout = readMobileLibFile("mobileLayout.ts");
   const tabs = readAppFile(join("(tabs)", "_layout.tsx"));
-  const tabbedRoutes = ["index", "log", "calendar", "health", "more", "records"];
+  const tabbedRoutes = [
+    "index",
+    "log",
+    "calendar",
+    "health",
+    "more",
+    "records",
+  ];
 
   assert.match(mobileLayout, /getFloatingTabChromeMetrics/);
   assert.match(mobileLayout, /getTabbedRouteBottomPadding/);
@@ -234,8 +373,16 @@ test("keeps tabbed mobile routes clear of the floating paw nav", () => {
 
   for (const route of tabbedRoutes) {
     const source = readAppFile(join("(tabs)", `${route}.tsx`));
-    assert.match(source, /getTabbedRouteBottomPadding/, `${route} should use shared tab bottom padding`);
-    assert.match(source, /getRouteTopPadding/, `${route} should use shared top safe-area padding`);
+    assert.match(
+      source,
+      /getTabbedRouteBottomPadding/,
+      `${route} should use shared tab bottom padding`,
+    );
+    assert.match(
+      source,
+      /getRouteTopPadding/,
+      `${route} should use shared top safe-area padding`,
+    );
     assert.doesNotMatch(
       source,
       /paddingBottom:\s*(?:128|130|142)\b/,
@@ -250,9 +397,22 @@ test("keeps tabbed mobile routes clear of the floating paw nav", () => {
 });
 
 test("keeps standalone mobile routes on shared safe-area helpers", () => {
-  const standaloneRoutes = ["adventure", "portrait", "care-twin-qa", "premium", "privacy", "setup"];
+  const standaloneRoutes = [
+    "adventure",
+    "portrait",
+    "care-twin-qa",
+    "premium",
+    "privacy",
+    "setup",
+  ];
   const authUi = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "auth-ui.tsx"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "auth-ui.tsx",
+    ),
     "utf8",
   );
   const woofGuide = readAppFile("woofguide.tsx");
@@ -264,7 +424,11 @@ test("keeps standalone mobile routes on shared safe-area helpers", () => {
       /getStandaloneRouteBottomPadding/,
       `${route} should use shared standalone route bottom padding`,
     );
-    assert.match(source, /getRouteTopPadding/, `${route} should use shared top safe-area padding`);
+    assert.match(
+      source,
+      /getRouteTopPadding/,
+      `${route} should use shared top safe-area padding`,
+    );
     assert.doesNotMatch(
       source,
       /paddingBottom:\s*(?:72|insets\.bottom\s*\+\s*(?:18|32|38|40|44))\b/,
@@ -290,17 +454,42 @@ test("keeps standalone mobile routes on shared safe-area helpers", () => {
 
 test("keeps mobile interaction contracts centralized for route chrome, modals, and inline controls", () => {
   const boardPrimitives = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "board", "BoardPrimitives.tsx"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "board",
+      "BoardPrimitives.tsx",
+    ),
     "utf8",
   );
   const errorFallback = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "ErrorFallback.tsx"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "ErrorFallback.tsx",
+    ),
     "utf8",
   );
   const routeSources = [
     ...listAppFiles(),
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "auth-ui.tsx"),
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "ErrorFallback.tsx"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "auth-ui.tsx",
+    ),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "ErrorFallback.tsx",
+    ),
   ];
 
   assert.match(boardPrimitives, /MIN_MOBILE_TOUCH_TARGET/);
@@ -348,9 +537,15 @@ test("registers the care twin native QA route for device review", () => {
   );
 
   assert.match(rootLayout, /name="care-twin-qa"/);
-  assert.match(qaRoute, /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/);
+  assert.match(
+    qaRoute,
+    /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/,
+  );
   assert.doesNotMatch(qaRoute, /<BoardSectionHeader[\s\S]*?\saction=/);
-  assert.match(more, /buildCareTwinQaFocusRoute\(nativeQaCapturePlan\.nextTargets\[0\]\)/);
+  assert.match(
+    more,
+    /buildCareTwinQaFocusRoute\(nativeQaCapturePlan\.nextTargets\[0\]\)/,
+  );
   assert.match(more, /__DEV__/);
   assert.match(qaRoute, /listCareTwinRuntimeQaScenarios/);
   assert.match(qaRoute, /evaluateCareTwinRuntimeQaScenario/);
@@ -358,7 +553,10 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /motionRecipeForSpriteAction/);
   assert.match(qaRoute, /LivingPhoenixRoom/);
   assert.match(qaRoute, /nativeQaPrompt/);
-  assert.match(qaRoute, /testID=\{`care-twin-qa-stage-\$\{result\.scenario\.id\}`\}/);
+  assert.match(
+    qaRoute,
+    /testID=\{`care-twin-qa-stage-\$\{result\.scenario\.id\}`\}/,
+  );
   assert.match(qaRoute, /Mobile release cockpit\./);
   assert.match(qaRoute, /qaStatusById/);
   assert.match(qaRoute, /qaNotes/);
@@ -374,9 +572,18 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /deriveLaunchReadiness/);
   assert.match(qaRoute, /storeSubmissionPacket\.screenshotChecklist/);
   assert.match(qaRoute, /Store Screenshot QA/);
-  assert.match(qaRoute, /BoardSectionHeader\s+title="Launch Workflow QA"[\s\S]*<BoardPill\s+label=\{releaseScreenshotEvidenceComplete \? "platform proof complete" : releaseMissingEvidenceLabel\}/);
-  assert.match(qaRoute, /BoardSectionHeader\s+title="Store Screenshot QA"[\s\S]*<BoardPill\s+label=\{storeSubmissionPacket\.verdictLabel\}/);
-  assert.match(qaRoute, /BoardSectionHeader\s+title="Device Review Matrix"[\s\S]*<BoardPill\s+label=\{`\$\{scenarios\.length\} scenes`\}/);
+  assert.match(
+    qaRoute,
+    /BoardSectionHeader\s+title="Launch Workflow QA"[\s\S]*<BoardPill\s+label=\{releaseScreenshotEvidenceComplete \? "platform proof complete" : releaseMissingEvidenceLabel\}/,
+  );
+  assert.match(
+    qaRoute,
+    /BoardSectionHeader\s+title="Store Screenshot QA"[\s\S]*<BoardPill\s+label=\{storeSubmissionPacket\.verdictLabel\}/,
+  );
+  assert.match(
+    qaRoute,
+    /BoardSectionHeader\s+title="Device Review Matrix"[\s\S]*<BoardPill\s+label=\{`\$\{scenarios\.length\} scenes`\}/,
+  );
   assert.match(qaRoute, /Share store packet/);
   assert.match(qaRoute, /AsyncStorage/);
   assert.match(qaRoute, /MOBILE_QA_SESSION_STORAGE_KEY/);
@@ -401,8 +608,14 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Tag screenshot evidence/);
   assert.match(qaRoute, /Tag QA screenshots as \$\{option\.label\}/);
   assert.match(qaRoute, /targetPlatform: selectedEvidencePlatform/);
-  assert.match(qaRoute, /New attachments are tagged as \{targetPlatformLabel\}/);
-  assert.match(qaRoute, /qaScreenshotEvidencePlatformLabel\(item\.targetPlatform\)/);
+  assert.match(
+    qaRoute,
+    /New attachments are tagged as \{targetPlatformLabel\}/,
+  );
+  assert.match(
+    qaRoute,
+    /qaScreenshotEvidencePlatformLabel\(item\.targetPlatform\)/,
+  );
   assert.match(qaRoute, /qaEvidenceById/);
   assert.match(qaRoute, /surfaceEvidenceById/);
   assert.match(qaRoute, /Attach screenshot/);
@@ -427,7 +640,10 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Mission note for \$\{nextBetaTarget\.title\}/);
   assert.match(qaRoute, /surfaceNotes\[nextBetaTarget\.surfaceId\]/);
   assert.match(qaRoute, /setSurfaceNotes/);
-  assert.match(qaRoute, /nextBetaTargetMissingEvidence\.some\(\(item\) => item\.includes\("QA note"\)\)/);
+  assert.match(
+    qaRoute,
+    /nextBetaTargetMissingEvidence\.some\(\(item\) => item\.includes\("QA note"\)\)/,
+  );
   assert.match(qaRoute, /nextBetaTargetMissingEvidence/);
   assert.match(qaRoute, /nextBetaTargetPassPendingProof/);
   assert.match(qaRoute, /Pass pending proof/);
@@ -448,7 +664,10 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Mark next beta mission pass:/);
   assert.match(qaRoute, /markSurface\(nextBetaTarget\.surfaceId, "pass"\)/);
   assert.match(qaRoute, /Mark next beta mission needs tune:/);
-  assert.match(qaRoute, /markSurface\(nextBetaTarget\.surfaceId, "needs-review"\)/);
+  assert.match(
+    qaRoute,
+    /markSurface\(nextBetaTarget\.surfaceId, "needs-review"\)/,
+  );
   assert.match(qaRoute, /minHeight: MIN_MOBILE_TOUCH_TARGET/);
   for (const styleName of [
     "betaRunPlatformOption",
@@ -467,16 +686,28 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /qaReturn=care-twin-qa/);
   assert.match(qaRoute, /qaSurface=\$\{encodeURIComponent\(surfaceId\)\}/);
   assert.match(qaRoute, /qaTitle=\$\{encodeURIComponent\(target\.title\)\}/);
-  assert.match(qaRoute, /accessibilityLabel=\{[\s\S]*Open next beta QA surface:/);
+  assert.match(
+    qaRoute,
+    /accessibilityLabel=\{[\s\S]*Open next beta QA surface:/,
+  );
   assert.match(boardPrimitives, /useLocalSearchParams/);
   assert.match(boardPrimitives, /qaReturn === "care-twin-qa"/);
   assert.match(boardPrimitives, /Return to QA Cockpit/);
   assert.match(boardPrimitives, /Capture done\? Attach proof/);
   assert.match(boardPrimitives, /function buildQaReturnToCockpitRoute/);
-  assert.match(boardPrimitives, /qaSurface \? `\/care-twin-qa\?qaSurface=\$\{encodeURIComponent\(qaSurface\)\}` : "\/care-twin-qa"/);
-  assert.match(boardPrimitives, /router\.push\(buildQaReturnToCockpitRoute\(qaSurface\) as never\)/);
+  assert.match(
+    boardPrimitives,
+    /qaSurface \? `\/care-twin-qa\?qaSurface=\$\{encodeURIComponent\(qaSurface\)\}` : "\/care-twin-qa"/,
+  );
+  assert.match(
+    boardPrimitives,
+    /router\.push\(buildQaReturnToCockpitRoute\(qaSurface\) as never\)/,
+  );
   assert.match(boardPrimitives, /qaReturnBanner/);
-  assert.doesNotMatch(qaRoute, /releaseSummary\.missingScreenshots === 0 \? colors\.sage : colors\.amber/);
+  assert.doesNotMatch(
+    qaRoute,
+    /releaseSummary\.missingScreenshots === 0 \? colors\.sage : colors\.amber/,
+  );
   assert.match(qaSession, /careTwinEvidenceById/);
   assert.match(qaSession, /surfaceEvidenceById/);
   assert.match(qaSession, /cleanQaScreenshotEvidence/);
@@ -486,11 +717,17 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(releaseQa, /attachedIosScreenshots/);
   assert.match(releaseQa, /missingAndroidScreenshots/);
   assert.match(releaseQa, /mobileReleaseQaScreenshotEvidenceComplete/);
-  assert.match(releaseQa, /route: "\/log\?type=incident&detail=1&intent=incident-composer"/);
+  assert.match(
+    releaseQa,
+    /route: "\/log\?type=incident&detail=1&intent=incident-composer"/,
+  );
   assert.doesNotMatch(releaseQa, /route: "\/log\?type=incident",/);
   assert.match(releaseQa, /formatMobileReleaseQaPlatformEvidence/);
   assert.match(releaseQa, /formatMobileReleaseQaMissingEvidence/);
-  assert.match(releaseQa, /Platform evidence: \$\{formatMobileReleaseQaPlatformEvidence\(summary\)\}/);
+  assert.match(
+    releaseQa,
+    /Platform evidence: \$\{formatMobileReleaseQaPlatformEvidence\(summary\)\}/,
+  );
   assert.match(releaseQa, /Evidence gap:/);
   assert.match(releaseQa, /missingScreenshots/);
   assert.match(careTwinReport, /Attached screenshots/);
@@ -514,7 +751,10 @@ test("shows premium entitlement policy before checkout is enabled", () => {
 
 test("keeps Expo app identity release-grade", () => {
   const appConfig = JSON.parse(
-    readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "app.json"), "utf8"),
+    readFileSync(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "app.json"),
+      "utf8",
+    ),
   );
   const expo = appConfig.expo;
 
@@ -528,7 +768,12 @@ test("keeps Expo app identity release-grade", () => {
 });
 
 test("keeps EAS build profiles ready for iOS and Android release paths", () => {
-  const easPath = join(process.cwd(), "artifacts", "woofwatcher-mobile", "eas.json");
+  const easPath = join(
+    process.cwd(),
+    "artifacts",
+    "woofwatcher-mobile",
+    "eas.json",
+  );
 
   assert.ok(existsSync(easPath), "mobile EAS config should exist");
 
@@ -544,7 +789,12 @@ test("keeps EAS build profiles ready for iOS and Android release paths", () => {
 });
 
 test("documents the mobile-first iOS, Android, and web release handoff path", () => {
-  const runbookPath = join(process.cwd(), "docs", "release", "MOBILE_RELEASE_RUNBOOK.md");
+  const runbookPath = join(
+    process.cwd(),
+    "docs",
+    "release",
+    "MOBILE_RELEASE_RUNBOOK.md",
+  );
 
   assert.ok(existsSync(runbookPath), "mobile release runbook should exist");
 
@@ -571,31 +821,78 @@ test("wires Home to the Phoenix status model", () => {
 test("wires Home to the living Phoenix room and avatar motion model", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const room = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "LivingPhoenixRoom.tsx"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "LivingPhoenixRoom.tsx",
+    ),
     "utf8",
   );
   const lifeEngine = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarLifeEngine.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "avatarLifeEngine.ts",
+    ),
     "utf8",
   );
   const spritePlayer = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "SpriteSheetPlayer.tsx"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "SpriteSheetPlayer.tsx",
+    ),
     "utf8",
   );
   const choreography = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "careTwinChoreography.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "careTwinChoreography.ts",
+    ),
     "utf8",
   );
   const careTwinAssets = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "careTwinAssets.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "careTwinAssets.ts",
+    ),
     "utf8",
   );
   const reactionPolicy = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "careTwinReactionPolicy.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "careTwinReactionPolicy.ts",
+    ),
+    "utf8",
+  );
+  const avatarRoomRuntime = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "avatarRoomRuntime.ts",
+    ),
     "utf8",
   );
 
   assert.match(home, /LivingPhoenixRoom/);
+  assert.match(home, /avatarConfig=\{avatarConfig\}/);
   assert.match(home, /deriveAvatarMotion/);
   assert.match(home, /avatarMotion\.speech/);
   assert.match(home, /setRoomReaction/);
@@ -603,7 +900,10 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(home, /reactionToneColor/);
   assert.match(home, /roomTapChoreography/);
   assert.match(home, /tapReaction\.action/);
-  assert.match(home, /deriveCareTwinChoreography\(deriveCareTwinScene\(avatarMotion\)\)/);
+  assert.match(
+    home,
+    /deriveCareTwinChoreography\(deriveCareTwinScene\(avatarMotion\)\)/,
+  );
   assert.match(home, /avatarMotion\.line/);
   assert.match(home, /Phoenix Room/);
   assert.match(home, /heroStudioButton/);
@@ -618,6 +918,12 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(room, /plan\.recommendedActionLabel/);
   assert.match(room, /plan\.scenePhase/);
   assert.match(room, /SpriteSheetPlayer/);
+  assert.match(room, /deriveAvatarRoomRuntime/);
+  assert.match(room, /avatarConfig\?: PetAvatarConfig/);
+  assert.match(room, /avatarRoomRuntime\?\.spriteTrack/);
+  assert.match(room, /care-twin-template-sprite-player/);
+  assert.match(room, /care-twin-avatar-underlay-\$\{layer\.id\}/);
+  assert.match(room, /care-twin-avatar-overlay-\$\{layer\.id\}/);
   assert.match(room, /deriveCareTwinChoreography/);
   assert.match(room, /choreography\.ambient/);
   assert.match(room, /choreography\.reactionDurationMs/);
@@ -657,13 +963,35 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(choreography, /return "ear-perk"/);
   assert.match(choreography, /return "comfort-loop"/);
   assert.match(choreography, /return "bark-loop"/);
-  assert.match(reactionPolicy, /export function describeCareTwinReactionForLog/);
-  assert.match(reactionPolicy, /Outcome stays open so the household can update what Phoenix actually ate/);
-  assert.match(reactionPolicy, /Bathroom attempt logged without pretending pee or poop happened/);
-  assert.match(reactionPolicy, /Activity progress updates without spawning a second avatar/);
-  assert.match(reactionPolicy, /Health Watch records the pattern calmly for owner or vet review/);
+  assert.match(
+    reactionPolicy,
+    /export function describeCareTwinReactionForLog/,
+  );
+  assert.match(
+    reactionPolicy,
+    /Outcome stays open so the household can update what Phoenix actually ate/,
+  );
+  assert.match(
+    reactionPolicy,
+    /Bathroom attempt logged without pretending pee or poop happened/,
+  );
+  assert.match(
+    reactionPolicy,
+    /Activity progress updates without spawning a second avatar/,
+  );
+  assert.match(
+    reactionPolicy,
+    /Health Watch records the pattern calmly for owner or vet review/,
+  );
   assert.match(reactionPolicy, /spriteAction: "health-watch"/);
   assert.doesNotMatch(reactionPolicy, /spawn a second dog/);
+  assert.match(avatarRoomRuntime, /deriveAvatarRoomRuntime/);
+  assert.match(avatarRoomRuntime, /template-idle-walk-pack/);
+  assert.match(avatarRoomRuntime, /phoenix-action-pack/);
+  assert.match(avatarRoomRuntime, /deriveAvatarPreviewAccessories/);
+  assert.match(avatarRoomRuntime, /getAvatarTemplateAccessorySource/);
+  assert.match(avatarRoomRuntime, /underlayLayers/);
+  assert.match(avatarRoomRuntime, /overlayLayers/);
   assert.match(careTwinAssets, /CARE_TWIN_SPRITE_ASSETS/);
   assert.match(careTwinAssets, /CARE_TWIN_DOGLESS_ROOM_ASSETS/);
   assert.match(careTwinAssets, /dogless-room-layer/);
@@ -717,7 +1045,10 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(missionDeck, /Open loop/);
   assert.match(missionDeck, /Start quest/);
   assert.match(missionDeck, /Care Pass/);
-  assert.match(missionDeck, /No mission in this deck should pretend to be live cloud sync/);
+  assert.match(
+    missionDeck,
+    /No mission in this deck should pretend to be live cloud sync/,
+  );
   assert.doesNotMatch(missionDeck, /\|\s*"\/log\?type=meal"/);
 
   assert.match(firstScreenLayout, /mockup-accurate/);
@@ -739,16 +1070,28 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
   const home = readAppFile(join("(tabs)", "index.tsx"));
 
   const immediateActionIndex = home.indexOf("<View style={s.homeSplit}>");
-  const missionDeckIndex = home.indexOf('<BoardCard tone="navy" style={[s.missionDeck');
+  const missionDeckIndex = home.search(
+    /<BoardCard\s+tone="navy"\s+style=\{\[s\.missionDeck/,
+  );
 
-  assert.notEqual(immediateActionIndex, -1, "Home should render the Next Up and Quick Log split");
+  assert.notEqual(
+    immediateActionIndex,
+    -1,
+    "Home should render the Next Up and Quick Log split",
+  );
   assert.notEqual(missionDeckIndex, -1, "Home should render the mission deck");
   assert.ok(
     immediateActionIndex < missionDeckIndex,
     "Next Up and Quick Log should stay above the richer RPG mission deck",
   );
-  assert.doesNotMatch(home, /BoardSectionHeader title="Next Up" action=\{`1 of \$\{nextCount\}`\}/);
-  assert.match(home, /BoardSectionHeader\s+title="Next Up"[\s\S]*<BoardPill\s+label=\{`1 of \$\{nextCount\}`\}/);
+  assert.doesNotMatch(
+    home,
+    /BoardSectionHeader title="Next Up" action=\{`1 of \$\{nextCount\}`\}/,
+  );
+  assert.match(
+    home,
+    /BoardSectionHeader\s+title="Next Up"[\s\S]*<BoardPill\s+label=\{`1 of \$\{nextCount\}`\}/,
+  );
   assert.match(home, /BoardSectionHeader\s+title="Quick Log"/);
   assert.match(home, /Today's Missions/);
 });
@@ -757,20 +1100,37 @@ test("keeps Home Quick Log header action as a real route target", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const homeMissionDeck = readMobileLibFile("homeMissionDeck.ts");
-  const primitives = readAppFile(join("..", "components", "board", "BoardPrimitives.tsx"));
+  const primitives = readAppFile(
+    join("..", "components", "board", "BoardPrimitives.tsx"),
+  );
 
   assert.match(
     home,
     /BoardSectionHeader\s+title="Quick Log"\s+accessory=\{\s*<Pressable[\s\S]*accessibilityLabel="Open full Quick Log"[\s\S]*onPress=\{\(\) => router\.push\("\/log"\)\}/,
   );
-  assert.match(home, /style=\{\(\{ pressed \}\) => \[[\s\S]*s\.quickHeaderAction/);
+  assert.match(
+    home,
+    /style=\{\(\{ pressed \}\) => \[[\s\S]*s\.quickHeaderAction/,
+  );
   assert.match(primitives, /onLongPress\?: \(\) => void/);
-  assert.match(primitives, /delayLongPress=\{onLongPress \? \(delayLongPress \?\? 350\) : undefined\}/);
+  assert.match(
+    primitives,
+    /delayLongPress=\{onLongPress \? \(delayLongPress \?\? 350\) : undefined\}/,
+  );
   assert.match(home, /const openQuickDetails = \(item: QuickItem\) =>/);
-  assert.match(home, /router\.push\(`\/log\?type=\$\{item\.type\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(
+    home,
+    /router\.push\(\s*`\/log\?type=\$\{item\.type\}&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
+  );
   assert.match(home, /onLongPress=\{\(\) => openQuickDetails\(item\)\}/);
-  assert.match(home, /accessibilityHint=\{item\.route \? "Opens the full Quick Log\." : "Long press opens details before saving\."\}/);
-  assert.match(log, /useLocalSearchParams<\{\s*type\?: string \| string\[\];\s*detail\?: string \| string\[\];\s*intent\?: string \| string\[\];\s*entry\?: string \| string\[\];\s*\}>/);
+  assert.match(
+    home,
+    /accessibilityHint=\{\s*item\.route\s*\?\s*"Opens the full Quick Log\."\s*:\s*"Long press opens details before saving\."\s*\}/,
+  );
+  assert.match(
+    log,
+    /useLocalSearchParams<\{\s*type\?: string \| string\[\];\s*detail\?: string \| string\[\];\s*intent\?: string \| string\[\];\s*entry\?: string \| string\[\];\s*\}>/,
+  );
   assert.match(log, /const routeWantsDetailSheet =/);
   assert.match(log, /const routeDetailIntentKey =/);
   assert.match(log, /findLauncherActionForType\(routeSelectedType\)/);
@@ -780,27 +1140,54 @@ test("keeps Home Quick Log header action as a real route target", () => {
   assert.match(homeMissionDeck, /`\/log\?entry=\$\{string\}`/);
   assert.match(home, /type HomeNextUpRoute =/);
   assert.match(home, /function homeLogEntryRoute\(entryId: string\)/);
-  assert.match(home, /function homeLogDetailRoute\(type: CareEventType, intent: number\)/);
-  assert.match(home, /route: openWalkSession\.id \? homeLogEntryRoute\(openWalkSession\.id\) : homeLogDetailRoute\("walk", now\)/);
-  assert.match(home, /route: openAloneSession\.id \? homeLogEntryRoute\(openAloneSession\.id\) : homeLogDetailRoute\("alone", now\)/);
-  assert.match(home, /route: pendingMeal\.id \? homeLogEntryRoute\(pendingMeal\.id\) : homeLogDetailRoute\("meal", now\)/);
+  assert.match(
+    home,
+    /function homeLogDetailRoute\(\s*type: CareEventType,\s*intent: number,\s*\)/,
+  );
+  assert.match(
+    home,
+    /route:\s*openWalkSession\.id\s*\?\s*homeLogEntryRoute\(openWalkSession\.id\)\s*:\s*homeLogDetailRoute\("walk", now\)/,
+  );
+  assert.match(
+    home,
+    /route:\s*openAloneSession\.id\s*\?\s*homeLogEntryRoute\(openAloneSession\.id\)\s*:\s*homeLogDetailRoute\("alone", now\)/,
+  );
+  assert.match(
+    home,
+    /route:\s*pendingMeal\.id\s*\?\s*homeLogEntryRoute\(pendingMeal\.id\)\s*:\s*homeLogDetailRoute\("meal", now\)/,
+  );
   assert.match(home, /const openActiveWalkFromHomeQuickLog = \(\) =>/);
-  assert.match(home, /const activeWalkRoute = openWalkSession\.id\s*\?\s*homeLogEntryRoute\(openWalkSession\.id\)\s*:\s*homeLogDetailRoute\("walk", Date\.now\(\)\)/);
+  assert.match(
+    home,
+    /const activeWalkRoute = openWalkSession\.id\s*\?\s*homeLogEntryRoute\(openWalkSession\.id\)\s*:\s*homeLogDetailRoute\("walk", Date\.now\(\)\)/,
+  );
   assert.match(home, /router\.push\(activeWalkRoute as never\)/);
   assert.match(home, /openActiveWalkFromHomeQuickLog\(\)/);
   assert.match(home, /route: homeLogDetailRoute\("walk", now\)/);
-  assert.match(home, /const nextUpRoute = nextPrimary\?\.route \?\? "\/calendar"/);
+  assert.match(
+    home,
+    /const nextUpRoute =\s*nextPrimary\?\.route \?\? "\/calendar"/,
+  );
   assert.match(home, /route: nextUpRoute/);
   assert.match(home, /router\.push\(item\.route as never\)/);
-  assert.match(home, /if \(policy\.tapBehavior === "detail-required"\) \{\s*router\.push\(homeLogDetailRoute\(policy\.type, Date\.now\(\)\) as never\);\s*return;\s*\}/);
-  assert.doesNotMatch(home, /router\.push\(`\/log\?type=\$\{item\.type\}` as never\)/);
+  assert.match(
+    home,
+    /if \(policy\.tapBehavior === "detail-required"\) \{\s*router\.push\(homeLogDetailRoute\(policy\.type, Date\.now\(\)\) as never\);\s*return;\s*\}/,
+  );
+  assert.doesNotMatch(
+    home,
+    /router\.push\(`\/log\?type=\$\{item\.type\}` as never\)/,
+  );
   assert.match(home, /const \[quickFeedback, setQuickFeedback\]/);
   assert.match(home, /deleteEntry\(quickFeedback\.id\)/);
   assert.match(home, /const entryId = quickFeedback\.id/);
   assert.match(home, /router\.push\(`\/log\?entry=\$\{entryId\}` as never\)/);
   assert.match(home, /Undo/);
   assert.match(home, /Add details/);
-  assert.doesNotMatch(home, /showToast\("Walk already active"\);\s*router\.push\("\/log\?type=walk" as never\)/);
+  assert.doesNotMatch(
+    home,
+    /showToast\("Walk already active"\);\s*router\.push\("\/log\?type=walk" as never\)/,
+  );
   assertStyleUsesSharedTouchTarget(home, "quickHeaderAction");
 });
 
@@ -808,27 +1195,60 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
 
-  assert.match(home, /BoardSectionHeader\s+title="Recent activity"\s+accessory=\{\s*<HomeHeaderAction/);
+  assert.match(
+    home,
+    /BoardSectionHeader\s+title="Recent activity"\s+accessory=\{\s*<HomeHeaderAction/,
+  );
   assert.match(home, /accessibilityLabel="View all recent care activity"/);
   assert.match(home, /route="\/log"/);
   assert.match(home, /id: entry\.id/);
   assert.match(home, /key=\{entry\.id\}/);
-  assert.match(home, /accessibilityLabel=\{`Open recent care log: \$\{entry\.title\}`\}/);
-  assert.match(home, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(entry\.id\)\}` as never\)/);
-  assert.match(home, /BoardSectionHeader\s+title="Phoenix status"\s+accessory=\{\s*<HomeHeaderAction/);
+  assert.match(
+    home,
+    /accessibilityLabel=\{`Open recent care log: \$\{entry\.title\}`\}/,
+  );
+  assert.match(
+    home,
+    /router\.push\(\s*`\/log\?entry=\$\{encodeURIComponent\(entry\.id\)\}` as never,?\s*\)/,
+  );
+  assert.match(
+    home,
+    /BoardSectionHeader\s+title="Phoenix status"\s+accessory=\{\s*<HomeHeaderAction/,
+  );
   assert.match(home, /accessibilityLabel="Open full Health Watch"/);
   assert.match(home, /route="\/health\?tab=health"/);
-  assert.match(home, /accessibilityLabel="Open Health Watch"[\s\S]*router\.push\("\/health\?tab=health" as never\)/);
-  assert.match(home, /type StatusTileTarget = "mood" \| "health" \| "diet" \| "bond"/);
+  assert.match(
+    home,
+    /accessibilityLabel="Open Health Watch"[\s\S]*router\.push\("\/health\?tab=health" as never\)/,
+  );
+  assert.match(
+    home,
+    /type StatusTileTarget = "mood" \| "health" \| "diet" \| "bond"/,
+  );
   assert.match(home, /const openStatusTile = \(target: StatusTileTarget\) =>/);
-  assert.match(home, /router\.push\(`\/log\?type=mood&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(
+    home,
+    /router\.push\(\s*`\/log\?type=mood&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
+  );
   assert.match(home, /router\.push\("\/health\?tab=health" as never\)/);
   assert.match(home, /router\.push\("\/more\?section=diet" as never\)/);
-  assert.match(home, /router\.push\(`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
-  assert.match(home, /accessibilityLabel=\{`\$\{tile\.label\}\. \$\{tile\.value\}\. \$\{tile\.actionLabel\}`\}/);
+  assert.match(
+    home,
+    /router\.push\(\s*`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
+  );
+  assert.match(
+    home,
+    /accessibilityLabel=\{`\$\{tile\.label\}\. \$\{tile\.value\}\. \$\{tile\.actionLabel\}`\}/,
+  );
   assert.match(home, /onPress=\{\(\) => openStatusTile\(tile\.target\)\}/);
-  assert.match(more, /useLocalSearchParams<\{\s*section\?: string \| string\[\];\s*\}>/);
-  assert.match(more, /const sectionParam = Array\.isArray\(routeParams\.section\) \? routeParams\.section\[0\] : routeParams\.section/);
+  assert.match(
+    more,
+    /useLocalSearchParams<\{\s*section\?: string \| string\[\];\s*\}>/,
+  );
+  assert.match(
+    more,
+    /const sectionParam = Array\.isArray\(routeParams\.section\) \? routeParams\.section\[0\] : routeParams\.section/,
+  );
   assert.match(more, /if \(sectionParam === "diet"\) setDietOpen\(true\)/);
   assert.match(more, /const householdFocus = sectionParam === "household"/);
   assert.match(more, /title="Household focus"/);
@@ -839,7 +1259,13 @@ test("keeps Home owner-preview section actions as real route targets", () => {
 test("keeps Phoenix Home owner-preview actions on shared mobile touch targets", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 
-  for (const styleName of ["headerButton", "heroStudioButton", "presencePanel", "adventureInline", "todayMetric"]) {
+  for (const styleName of [
+    "headerButton",
+    "heroStudioButton",
+    "presencePanel",
+    "adventureInline",
+    "todayMetric",
+  ]) {
     assertStyleUsesSharedTouchTarget(home, styleName);
   }
 });
@@ -847,24 +1273,48 @@ test("keeps Phoenix Home owner-preview actions on shared mobile touch targets", 
 test("keeps Home presence panel routed to exact household care state", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 
-  assert.match(home, /type HomePresenceRoute = "\/more\?section=household" \| `\/log\?entry=\$\{string\}` \| `\/log\?type=\$\{string\}&detail=1&intent=\$\{number\}`;/);
-  assert.match(home, /const presenceRoute: HomePresenceRoute = openAloneSession/);
-  assert.match(home, /openAloneSession\.id \? homeLogEntryRoute\(openAloneSession\.id\) : homeLogDetailRoute\("alone", now\)/);
-  assert.match(home, /openWalkSession\.id \? homeLogEntryRoute\(openWalkSession\.id\) : homeLogDetailRoute\("walk", now\)/);
+  assert.match(
+    home,
+    /type HomePresenceRoute =[\s\S]*"\/more\?section=household"[\s\S]*`\/log\?entry=\$\{string\}`[\s\S]*`\/log\?type=\$\{string\}&detail=1&intent=\$\{number\}`/,
+  );
+  assert.match(
+    home,
+    /const presenceRoute: HomePresenceRoute = openAloneSession/,
+  );
+  assert.match(
+    home,
+    /openAloneSession\.id\s*\?\s*homeLogEntryRoute\(openAloneSession\.id\)\s*:\s*homeLogDetailRoute\("alone", now\)/,
+  );
+  assert.match(
+    home,
+    /openWalkSession\.id\s*\?\s*homeLogEntryRoute\(openWalkSession\.id\)\s*:\s*homeLogDetailRoute\("walk", now\)/,
+  );
   assert.match(home, /: "\/more\?section=household";/);
   assert.match(home, /const openPresencePanel = \(\) =>/);
   assert.match(home, /router\.push\(presenceRoute as never\)/);
   assert.match(home, /accessibilityHint=\{presenceActionHint\}/);
   assert.match(home, /onPress=\{openPresencePanel\}/);
-  assert.doesNotMatch(home, /router\.push\(openAloneSession \? "\/log\?type=alone" : openWalkSession \? "\/log\?type=walk" : "\/more"\)/);
+  assert.doesNotMatch(
+    home,
+    /router\.push\(openAloneSession \? "\/log\?type=alone" : openWalkSession \? "\/log\?type=walk" : "\/more"\)/,
+  );
 });
 
 test("keeps Home today summary metrics route-backed instead of decorative", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 
-  assert.match(home, /type TodayMetricTarget = "activity" \| "meals" \| "potty";/);
-  assert.match(home, /const openTodayMetric = \(target: TodayMetricTarget\) =>/);
-  assert.match(home, /router\.push\(`\/log\?type=\$\{todayMetricRouteType\[target\]\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(
+    home,
+    /type TodayMetricTarget = "activity" \| "meals" \| "potty";/,
+  );
+  assert.match(
+    home,
+    /const openTodayMetric = \(target: TodayMetricTarget\) =>/,
+  );
+  assert.match(
+    home,
+    /router\.push\(\s*`\/log\?type=\$\{todayMetricRouteType\[target\]\}&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
+  );
   assert.match(home, /accessibilityLabel="Open today activity logs"/);
   assert.match(home, /onPress=\{\(\) => openTodayMetric\("activity"\)\}/);
   assert.match(home, /accessibilityLabel="Open today meal logs"/);
@@ -876,27 +1326,70 @@ test("keeps Home today summary metrics route-backed instead of decorative", () =
 test("keeps Home Phoenix status meters route-backed instead of decorative", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const primitives = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "board", "BoardPrimitives.tsx"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "board",
+      "BoardPrimitives.tsx",
+    ),
     "utf8",
   );
 
   assert.match(primitives, /onPress\?: \(\) => void/);
   assert.match(primitives, /accessibilityHint\?: string/);
   assert.match(primitives, /hitSlop=\{MOBILE_INLINE_HIT_SLOP\}/);
-  assert.match(home, /type PhoenixStatusMeterTarget = "energy" \| "hunger" \| "hydration" \| "bile" \| "bond";/);
-  assert.match(home, /const openPhoenixStatusMeter = \(target: PhoenixStatusMeterTarget\) =>/);
-  assert.match(home, /target === "energy"[\s\S]*router\.push\("\/health\?tab=health" as never\)/);
-  assert.match(home, /target === "bile"[\s\S]*router\.push\("\/health\?tab=bile" as never\)/);
-  assert.match(home, /router\.push\(`\/log\?type=meal&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
-  assert.match(home, /router\.push\(`\/log\?type=water&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
-  assert.match(home, /router\.push\(`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
-  assert.match(home, /accessibilityLabel="Open Phoenix energy in Health Watch"/);
+  assert.match(
+    home,
+    /type PhoenixStatusMeterTarget =[\s\S]*"energy"[\s\S]*"hunger"[\s\S]*"hydration"[\s\S]*"bile"[\s\S]*"bond";/,
+  );
+  assert.match(
+    home,
+    /const openPhoenixStatusMeter = \(target: PhoenixStatusMeterTarget\) =>/,
+  );
+  assert.match(
+    home,
+    /target === "energy"[\s\S]*router\.push\("\/health\?tab=health" as never\)/,
+  );
+  assert.match(
+    home,
+    /target === "bile"[\s\S]*router\.push\("\/health\?tab=bile" as never\)/,
+  );
+  assert.match(
+    home,
+    /router\.push\(\s*`\/log\?type=meal&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
+  );
+  assert.match(
+    home,
+    /router\.push\(\s*`\/log\?type=water&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
+  );
+  assert.match(
+    home,
+    /router\.push\(\s*`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
+  );
+  assert.match(
+    home,
+    /accessibilityLabel="Open Phoenix energy in Health Watch"/,
+  );
   assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("energy"\)\}/);
-  assert.match(home, /accessibilityLabel="Open Phoenix meal detail from hunger"/);
+  assert.match(
+    home,
+    /accessibilityLabel="Open Phoenix meal detail from hunger"/,
+  );
   assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("hunger"\)\}/);
-  assert.match(home, /accessibilityLabel="Open Phoenix water detail from hydration"/);
-  assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("hydration"\)\}/);
-  assert.match(home, /accessibilityLabel="Open Phoenix bile risk in Health Watch"/);
+  assert.match(
+    home,
+    /accessibilityLabel="Open Phoenix water detail from hydration"/,
+  );
+  assert.match(
+    home,
+    /onPress=\{\(\) => openPhoenixStatusMeter\("hydration"\)\}/,
+  );
+  assert.match(
+    home,
+    /accessibilityLabel="Open Phoenix bile risk in Health Watch"/,
+  );
   assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("bile"\)\}/);
   assert.match(home, /accessibilityLabel="Open Phoenix bond play detail"/);
   assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("bond"\)\}/);
@@ -907,32 +1400,56 @@ test("keeps Home watch cards deep-linked to exact care workflows", () => {
   const health = readAppFile(join("(tabs)", "health.tsx"));
 
   assert.match(home, /type HomeWatchTarget = "health" \| "bile" \| "alone";/);
-  assert.match(home, /const openHomeWatchCard = \(target: HomeWatchTarget\) =>/);
+  assert.match(
+    home,
+    /const openHomeWatchCard = \(target: HomeWatchTarget\) =>/,
+  );
   assert.match(home, /router\.push\("\/health\?tab=bile" as never\)/);
-  assert.match(home, /router\.push\(`\/log\?type=alone&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(
+    home,
+    /router\.push\(\s*`\/log\?type=alone&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
+  );
   assert.match(home, /hitSlop=\{MOBILE_INLINE_HIT_SLOP\}/);
   assert.match(home, /accessibilityHint=\{w\.hint\}/);
   assert.match(home, /onPress=\{\(\) => openHomeWatchCard\(w\.target\)\}/);
   assert.match(home, /target: "bile" as HomeWatchTarget/);
   assert.match(home, /target: "alone" as HomeWatchTarget/);
-  assert.match(health, /useLocalSearchParams<\{\s*tab\?: string \| string\[\];?\s*\}>/);
-  assert.match(health, /const requestedTab: HealthTab = tabParam === "bile" \? "bile" : "health";/);
+  assert.match(
+    health,
+    /useLocalSearchParams<\{\s*tab\?: string \| string\[\];?\s*\}>/,
+  );
+  assert.match(
+    health,
+    /const requestedTab: HealthTab = tabParam === "bile" \? "bile" : "health";/,
+  );
   assert.match(health, /useEffect\(\(\) => \{\s*setActiveTab\(requestedTab\);/);
 });
 
 test("keeps Home mission health rows tab-specific", () => {
   const homeMissionDeck = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "homeMissionDeck.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "homeMissionDeck.ts",
+    ),
     "utf8",
   );
 
   assert.match(homeMissionDeck, /"\/health\?tab=bile"/);
   assert.match(homeMissionDeck, /"\/health\?tab=health"/);
-  assert.match(homeMissionDeck, /route: input\.health\.needsReview \? "\/health\?tab=bile" : "\/health\?tab=health"/);
+  assert.match(
+    homeMissionDeck,
+    /route: input\.health\.needsReview \? "\/health\?tab=bile" : "\/health\?tab=health"/,
+  );
 });
 
 test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {
-  const domain = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-intelligence.ts"), "utf8");
+  const domain = readFileSync(
+    join(process.cwd(), "lib", "care-domain", "src", "care-intelligence.ts"),
+    "utf8",
+  );
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
@@ -955,12 +1472,21 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
   assert.match(domain, /targetRoutineId\?: string/);
   assert.match(more, /const openCareIntelligenceNextAction = \(\) =>/);
   assert.match(more, /careIntelligence\.nextAction\.targetEntryId/);
-  assert.match(more, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(careIntelligence\.nextAction\.targetEntryId\)\}` as never\)/);
+  assert.match(
+    more,
+    /router\.push\(\s*`\/log\?entry=\$\{encodeURIComponent\(careIntelligence\.nextAction\.targetEntryId\)\}` as never,?\s*\)/,
+  );
   assert.match(more, /onPress=\{openCareIntelligenceNextAction\}/);
   assert.match(home, /const openHomeCareIntelligenceNextAction = \(\) =>/);
   assert.match(home, /careIntelligence\.nextAction\.targetEntryId/);
-  assert.match(home, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(careIntelligence\.nextAction\.targetEntryId\)\}` as never\)/);
-  assert.match(home, /accessibilityLabel=\{`Home Care Intelligence next action: \$\{careIntelligence\.nextAction\.label\}`\}/);
+  assert.match(
+    home,
+    /router\.push\(\s*`\/log\?entry=\$\{encodeURIComponent\(careIntelligence\.nextAction\.targetEntryId\)\}` as never,?\s*\)/,
+  );
+  assert.match(
+    home,
+    /accessibilityLabel=\{`Home Care Intelligence next action: \$\{careIntelligence\.nextAction\.label\}`\}/,
+  );
   assert.match(home, /onPress=\{openHomeCareIntelligenceNextAction\}/);
   assertStyleUsesSharedTouchTarget(home, "questNextAction");
 });
@@ -971,17 +1497,35 @@ test("renders Today Command on Home as a real care workflow control", () => {
   assert.match(home, /deriveTodayCommand/);
   assert.match(home, /const todayCommand = useMemo/);
   assert.match(home, /Today Command/);
-  assert.match(home, /accessibilityLabel=\{`Today Command\. \$\{todayCommand\.primaryAction\.label\}\. \$\{todayCommand\.primaryAction\.detail\}`\}/);
-  assert.match(home, /accessibilityHint="Opens the exact care workflow behind today's recommended action\."/);
-  assert.match(home, /router\.push\(todayCommand\.primaryAction\.route as never\)/);
-  assert.match(home, /todayCommandPixelIcon\(todayCommand\.primaryAction\.icon\)/);
+  assert.match(
+    home,
+    /accessibilityLabel=\{`Today Command\. \$\{todayCommand\.primaryAction\.label\}\. \$\{todayCommand\.primaryAction\.detail\}`\}/,
+  );
+  assert.match(
+    home,
+    /accessibilityHint="Opens the exact care workflow behind today's recommended action\."/,
+  );
+  assert.match(
+    home,
+    /router\.push\(todayCommand\.primaryAction\.route as never\)/,
+  );
+  assert.match(
+    home,
+    /todayCommandPixelIcon\(todayCommand\.primaryAction\.icon\)/,
+  );
   assertStyleUsesSharedTouchTarget(home, "todayCommandCard");
 });
 
 test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () => {
   const health = readAppFile(join("(tabs)", "health.tsx"));
 
-  for (const styleName of ["tabPill", "heroActionPrimary", "heroActionSecondary", "reviewPacketShare", "healthHeaderAction"]) {
+  for (const styleName of [
+    "tabPill",
+    "heroActionPrimary",
+    "heroActionSecondary",
+    "reviewPacketShare",
+    "healthHeaderAction",
+  ]) {
     assertStyleUsesSharedTouchTarget(health, styleName);
   }
 
@@ -999,10 +1543,16 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /healthReviewPacket\.boundary/);
   assert.match(health, /buildHealthReviewPacketShareText/);
   assert.match(health, /Share health review/);
-  assert.match(health, /Share\.share\(\{[\s\S]*message:\s*buildHealthReviewPacketShareText\(healthReviewPacket/);
+  assert.match(
+    health,
+    /Share\.share\(\{[\s\S]*message:\s*buildHealthReviewPacketShareText\(healthReviewPacket/,
+  );
   assert.match(health, /action\.route\.startsWith\("\/log\?"\)/);
   assert.match(health, /router\.push\(action\.route as never\)/);
-  assert.doesNotMatch(health, /router\.push\(\{ pathname: "\/log", params: action\.params \?\? \{\} \}\)/);
+  assert.doesNotMatch(
+    health,
+    /router\.push\(\{ pathname: "\/log", params: action\.params \?\? \{\} \}\)/,
+  );
   assert.match(health, /Draft vet questions/);
   assert.match(health, /CARE STATUS/);
   assert.match(health, /StatusMeter/);
@@ -1014,20 +1564,35 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /function HealthHeaderAction/);
   assert.match(health, /hitSlop=\{MOBILE_INLINE_HIT_SLOP\}/);
   assert.match(health, /accessibilityLabel="Show Health 7-day rhythm"/);
-  assert.match(health, /scrollRef\.current\?\.scrollTo\(\{ y: 0, animated: true \}\)/);
+  assert.match(
+    health,
+    /scrollRef\.current\?\.scrollTo\(\{ y: 0, animated: true \}\)/,
+  );
   assert.match(health, /accessibilityLabel="Open health owner notes"/);
   assert.match(health, /openHealthStatusRoute/);
   assert.match(health, /statusActionLabel/);
   assert.match(health, /statusCardAction/);
-  assert.match(health, /router\.push\(`\/log\?type=\$\{type\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
-  assert.match(health, /accessibilityLabel=\{`\$\{row\.label\}\. \$\{row\.status\}\. \$\{row\.detail\}\. \$\{row\.actionLabel\}`\}/);
+  assert.match(
+    health,
+    /router\.push\(`\/log\?type=\$\{type\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/,
+  );
+  assert.match(
+    health,
+    /accessibilityLabel=\{`\$\{row\.label\}\. \$\{row\.status\}\. \$\{row\.detail\}\. \$\{row\.actionLabel\}`\}/,
+  );
   assert.match(health, /accessibilityState=\{\{ selected: active \}\}/);
   assert.match(health, /Not veterinary advice/);
 });
 
 test("locks the mobile pixel UI foundation to Apollo's reference boards", () => {
   const colors = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "constants", "colors.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "constants",
+      "colors.ts",
+    ),
     "utf8",
   );
   const primitivesPath = join(
@@ -1090,13 +1655,25 @@ test("extends the mobile pixel board system across core v1.5 routes", () => {
     avatarStudio: readAppFile("portrait.tsx"),
   };
 
-  for (const exportedName of ["BoardRouteHeader", "BoardPill", "BoardMetricTile"]) {
+  for (const exportedName of [
+    "BoardRouteHeader",
+    "BoardPill",
+    "BoardMetricTile",
+  ]) {
     assert.match(primitives, new RegExp(`export function ${exportedName}`));
   }
 
   for (const [route, source] of Object.entries(coreRoutes)) {
-    assert.match(source, /@\/components\/board\/BoardPrimitives/, `${route} should import board primitives`);
-    assert.match(source, /BoardRouteHeader/, `${route} should use the shared route header`);
+    assert.match(
+      source,
+      /@\/components\/board\/BoardPrimitives/,
+      `${route} should import board primitives`,
+    );
+    assert.match(
+      source,
+      /BoardRouteHeader/,
+      `${route} should use the shared route header`,
+    );
     assert.match(
       source,
       /BoardCard|BoardSectionHeader|CareRow|StatusMeter|BoardMetricTile/,
@@ -1111,28 +1688,56 @@ test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
   for (const [route, source] of Object.entries({ log, plans, records })) {
-    assert.match(source, /BoardCard/, `${route} should use shared BoardCard sections`);
+    assert.match(
+      source,
+      /BoardCard/,
+      `${route} should use shared BoardCard sections`,
+    );
   }
 
-  assert.match(plans, /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/);
+  assert.match(
+    plans,
+    /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/,
+  );
   assert.doesNotMatch(plans, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(log, /<BoardCard[\s\S]*style=\{s\.composerHero/);
-  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Choose care type"/);
-  assert.match(plans, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Upcoming Events"/);
-  assert.match(plans, /BoardSectionHeader\s+title="Upcoming Events"[\s\S]*<BoardPill\s+label=\{upcoming\.length \? `\$\{upcoming\.length\} days` : "Add one"\}/);
+  assert.match(
+    log,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Choose care type"/,
+  );
+  assert.match(
+    plans,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Upcoming Events"/,
+  );
+  assert.match(
+    plans,
+    /BoardSectionHeader\s+title="Upcoming Events"[\s\S]*<BoardPill\s+label=\{upcoming\.length \? `\$\{upcoming\.length\} days` : "Add one"\}/,
+  );
   assert.match(records, /<BoardCard[\s\S]*WOOFWATCHER DOG ID/);
 });
 
 test("keeps Quick Log composer card boundaries separate from search controls", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
-  const composerBlock = log.slice(log.indexOf("{/* Composer card */}"), log.indexOf("{/* Today at a glance */}"));
-  const searchBlock = log.slice(log.indexOf("{/* Search and filters */}"), log.indexOf("{/* Timeline */}"));
+  const composerBlock = log.slice(
+    log.indexOf("{/* Composer card */}"),
+    log.indexOf("{/* Today at a glance */}"),
+  );
+  const searchBlock = log.slice(
+    log.indexOf("{/* Search and filters */}"),
+    log.indexOf("{/* Timeline */}"),
+  );
 
   assert.match(composerBlock, /<BoardCard[\s\S]*<\/BoardCard>/);
   assert.match(composerBlock, /style=\{s\.composerHero/);
-  assert.match(composerBlock, /BoardSectionHeader[\s\S]*title="Choose care type"/);
+  assert.match(
+    composerBlock,
+    /BoardSectionHeader[\s\S]*title="Choose care type"/,
+  );
   assert.doesNotMatch(composerBlock, /title="Find care logs"/);
-  assert.match(searchBlock, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Find care logs"[\s\S]*<\/BoardCard>/);
+  assert.match(
+    searchBlock,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Find care logs"[\s\S]*<\/BoardCard>/,
+  );
   assert.doesNotMatch(searchBlock, /title="Choose care type"/);
 });
 
@@ -1153,8 +1758,14 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.match(log, /describeQuickLogDetailSheet/);
   assert.match(log, /describeQuickLogLauncherAction/);
   assert.match(log, /getQuickLogPolicy/);
-  assert.doesNotMatch(log, /BoardSectionHeader title="Choose care type" action="Fast tap"/);
-  assert.match(log, /BoardSectionHeader\s+title="Choose care type"[\s\S]*<BoardPill\s+label="Fast tap"/);
+  assert.doesNotMatch(
+    log,
+    /BoardSectionHeader title="Choose care type" action="Fast tap"/,
+  );
+  assert.match(
+    log,
+    /BoardSectionHeader\s+title="Choose care type"[\s\S]*<BoardPill\s+label="Fast tap"/,
+  );
   assert.match(log, /handleQuickLauncherAction/);
   assert.match(log, /launcherDetailAction/);
   assert.match(log, /launcherDetailPresentation/);
@@ -1168,10 +1779,16 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.match(log, /launcherDetailPresentation\.editLaterCopy/);
   assert.match(log, /openLauncherDetailSheet/);
   assert.match(log, /focusFullComposerForLauncherAction/);
-  assert.match(log, /onLongPress=\{\(\) => openLauncherDetailSheet\(action\)\}/);
+  assert.match(
+    log,
+    /onLongPress=\{\(\) => openLauncherDetailSheet\(action\)\}/,
+  );
   assert.match(log, /QUICK LOG FLOW/);
   const mealDetailSheet = describeQuickLogDetailSheet("meal", "Meal");
-  const medicationDetailSheet = describeQuickLogDetailSheet("medication", "Meds");
+  const medicationDetailSheet = describeQuickLogDetailSheet(
+    "medication",
+    "Meds",
+  );
   assert.equal(mealDetailSheet.primaryActionLabel, "Quick log now");
   assert.equal(mealDetailSheet.secondaryActionLabel, "Open full details");
   assert.equal(mealDetailSheet.canQuickLog, true);
@@ -1216,8 +1833,14 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
 
 test("keeps mood logging structured for energy, context, and household visibility", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
-  const moodConfig = log.slice(log.indexOf('type: "mood"'), log.indexOf('type: "alone"'));
-  const buildEntryBlock = log.slice(log.indexOf("const buildEntry = useCallback"), log.indexOf("const handleLog = useCallback"));
+  const moodConfig = log.slice(
+    log.indexOf('type: "mood"'),
+    log.indexOf('type: "alone"'),
+  );
+  const buildEntryBlock = log.slice(
+    log.indexOf("const buildEntry = useCallback"),
+    log.indexOf("const handleLog = useCallback"),
+  );
 
   assert.match(moodConfig, /key: "energyLevel"/);
   assert.match(moodConfig, /id: "steady"/);
@@ -1229,21 +1852,48 @@ test("keeps mood logging structured for energy, context, and household visibilit
   assert.match(log, /value=\{moodContext\}/);
   assert.match(log, /onChangeText=\{setMoodContext\}/);
   assert.match(log, /Shared mood logs update Mood Trend/);
-  assert.match(buildEntryBlock, /config\.type === "mood"[\s\S]*details\.householdVisible = householdVisible/);
+  assert.match(
+    buildEntryBlock,
+    /config\.type === "mood"[\s\S]*details\.householdVisible = householdVisible/,
+  );
   assert.match(buildEntryBlock, /details\.moodContext = context/);
 });
 
 test("keeps Quick Log search and timeline on shared board card anatomy", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
-  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Today at a glance"/);
-  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Find care logs"/);
-  assert.doesNotMatch(log, /BoardSectionHeader title="Today at a glance" action=\{\`\$\{todaySnapshot\.total\} logged`\}/);
-  assert.match(log, /BoardSectionHeader\s+title="Today at a glance"[\s\S]*<BoardPill\s+label=\{\`\$\{todaySnapshot\.total\} logged`\}/);
-  assert.doesNotMatch(log, /BoardSectionHeader title="Find care logs" action=\{logSearch\.hasActiveFilters \? "Filtered" : undefined\}/);
-  assert.match(log, /BoardSectionHeader\s+title="Find care logs"[\s\S]*<BoardPill\s+label="Filtered"/);
-  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title=\{g\.label\}/);
-  assert.match(log, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="No matching logs"/);
+  assert.match(
+    log,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Today at a glance"/,
+  );
+  assert.match(
+    log,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Find care logs"/,
+  );
+  assert.doesNotMatch(
+    log,
+    /BoardSectionHeader title="Today at a glance" action=\{\`\$\{todaySnapshot\.total\} logged`\}/,
+  );
+  assert.match(
+    log,
+    /BoardSectionHeader\s+title="Today at a glance"[\s\S]*<BoardPill\s+label=\{\`\$\{todaySnapshot\.total\} logged`\}/,
+  );
+  assert.doesNotMatch(
+    log,
+    /BoardSectionHeader title="Find care logs" action=\{logSearch\.hasActiveFilters \? "Filtered" : undefined\}/,
+  );
+  assert.match(
+    log,
+    /BoardSectionHeader\s+title="Find care logs"[\s\S]*<BoardPill\s+label="Filtered"/,
+  );
+  assert.match(
+    log,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title=\{g\.label\}/,
+  );
+  assert.match(
+    log,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="No matching logs"/,
+  );
   assert.doesNotMatch(log, /searchCard:/);
   assert.doesNotMatch(log, /snapshotBar:/);
   assert.doesNotMatch(log, /dayCard:/);
@@ -1253,12 +1903,27 @@ test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
   const guide = readAppFile("woofguide.tsx");
 
   assert.match(guide, /<BoardCard style=\{s\.guideIntroCard\}/);
-  assert.match(guide, /<BoardCard style=\{s\.quickQuestionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Quick questions"/);
-  assert.match(guide, /<BoardCard style=\{s\.actionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Suggested actions"/);
-  assert.match(guide, /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/);
+  assert.match(
+    guide,
+    /<BoardCard style=\{s\.quickQuestionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Quick questions"/,
+  );
+  assert.match(
+    guide,
+    /<BoardCard style=\{s\.actionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Suggested actions"/,
+  );
+  assert.match(
+    guide,
+    /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/,
+  );
   assert.doesNotMatch(guide, /<BoardSectionHeader[\s\S]*?\saction=/);
-  assert.match(guide, /BoardSectionHeader\s+title="Quick questions"[\s\S]*<BoardPill\s+label="Tap to ask"/);
-  assert.match(guide, /BoardSectionHeader\s+title="Suggested actions"[\s\S]*<BoardPill\s+label="Owner reviewed"/);
+  assert.match(
+    guide,
+    /BoardSectionHeader\s+title="Quick questions"[\s\S]*<BoardPill\s+label="Tap to ask"/,
+  );
+  assert.match(
+    guide,
+    /BoardSectionHeader\s+title="Suggested actions"[\s\S]*<BoardPill\s+label="Owner reviewed"/,
+  );
   assert.match(guide, /Owner review required/);
   assert.doesNotMatch(guide, /quickRow:/);
   assert.doesNotMatch(guide, /actionArea:/);
@@ -1270,7 +1935,13 @@ test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
 test("keeps WoofGuide prompt, send, and owner-review actions on shared mobile touch targets", () => {
   const guide = readAppFile("woofguide.tsx");
 
-  for (const styleName of ["quickChip", "actionRow", "sendBtn", "reviewCancel", "reviewApply"]) {
+  for (const styleName of [
+    "quickChip",
+    "actionRow",
+    "sendBtn",
+    "reviewCancel",
+    "reviewApply",
+  ]) {
     assertStyleReferencesSharedTouchTarget(guide, styleName);
   }
 });
@@ -1279,13 +1950,31 @@ test("keeps Premium value, plan, and entitlement surfaces on shared board anatom
   const premium = readAppFile("premium.tsx");
 
   assert.match(premium, /@\/components\/board\/BoardPrimitives/);
-  assert.match(premium, /<BoardCard style=\{s\.premiumBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Why upgrade"/);
-  assert.match(premium, /import \{ BoardCard, BoardPill, BoardSectionHeader \}/);
+  assert.match(
+    premium,
+    /<BoardCard style=\{s\.premiumBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Why upgrade"/,
+  );
+  assert.match(
+    premium,
+    /import \{ BoardCard, BoardPill, BoardSectionHeader \}/,
+  );
   assert.doesNotMatch(premium, /<BoardSectionHeader[\s\S]*?\saction=/);
-  assert.match(premium, /BoardSectionHeader\s+title="Why upgrade"[\s\S]*<BoardPill\s+label=\{`\$\{preview\.valueSignals\.length\} signals`\}/);
-  assert.match(premium, /BoardSectionHeader\s+title="Plans"[\s\S]*<BoardPill\s+label="Checkout gated"/);
-  assert.match(premium, /<BoardCard style=\{s\.entitlementCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch entitlements"/);
-  assert.match(premium, /BoardSectionHeader\s+title="Launch entitlements"[\s\S]*<BoardPill\s+label="Current: Free"/);
+  assert.match(
+    premium,
+    /BoardSectionHeader\s+title="Why upgrade"[\s\S]*<BoardPill\s+label=\{`\$\{preview\.valueSignals\.length\} signals`\}/,
+  );
+  assert.match(
+    premium,
+    /BoardSectionHeader\s+title="Plans"[\s\S]*<BoardPill\s+label="Checkout gated"/,
+  );
+  assert.match(
+    premium,
+    /<BoardCard style=\{s\.entitlementCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch entitlements"/,
+  );
+  assert.match(
+    premium,
+    /BoardSectionHeader\s+title="Launch entitlements"[\s\S]*<BoardPill\s+label="Current: Free"/,
+  );
   assert.match(premium, /function PlanCard[\s\S]*<BoardCard/);
   assert.match(premium, /Premium launch checklist/);
   assert.doesNotMatch(premium, /sectionHeader:/);
@@ -1297,15 +1986,39 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
   const privacy = readAppFile("privacy.tsx");
 
   assert.match(privacy, /@\/components\/board\/BoardPrimitives/);
-  assert.match(privacy, /import \{ BoardCard, BoardPill, BoardSectionHeader \}/);
+  assert.match(
+    privacy,
+    /import \{ BoardCard, BoardPill, BoardSectionHeader \}/,
+  );
   assert.doesNotMatch(privacy, /<BoardSectionHeader[\s\S]*?\saction=/);
-  assert.match(privacy, /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Export summary"/);
-  assert.match(privacy, /BoardSectionHeader\s+title="Export summary"[\s\S]*<BoardPill\s+label="Local bundle"/);
-  assert.match(privacy, /BoardSectionHeader\s+title="Attachment queue"[\s\S]*<BoardPill\s+label=\{`\$\{bundle\.storage\.attachmentQueue\.total\} files`\}/);
-  assert.match(privacy, /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Support runbook"/);
-  assert.match(privacy, /BoardSectionHeader\s+title="Support runbook"[\s\S]*<BoardPill\s+label="Launch gate"/);
-  assert.match(privacy, /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch safety gates"/);
-  assert.match(privacy, /BoardSectionHeader\s+title="Launch safety gates"[\s\S]*<BoardPill\s+label=\{`\$\{sections\.length\} gates`\}/);
+  assert.match(
+    privacy,
+    /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Export summary"/,
+  );
+  assert.match(
+    privacy,
+    /BoardSectionHeader\s+title="Export summary"[\s\S]*<BoardPill\s+label="Local bundle"/,
+  );
+  assert.match(
+    privacy,
+    /BoardSectionHeader\s+title="Attachment queue"[\s\S]*<BoardPill\s+label=\{`\$\{bundle\.storage\.attachmentQueue\.total\} files`\}/,
+  );
+  assert.match(
+    privacy,
+    /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Support runbook"/,
+  );
+  assert.match(
+    privacy,
+    /BoardSectionHeader\s+title="Support runbook"[\s\S]*<BoardPill\s+label="Launch gate"/,
+  );
+  assert.match(
+    privacy,
+    /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch safety gates"/,
+  );
+  assert.match(
+    privacy,
+    /BoardSectionHeader\s+title="Launch safety gates"[\s\S]*<BoardPill\s+label=\{`\$\{sections\.length\} gates`\}/,
+  );
   assert.match(privacy, /<BoardCard style=\{\[s\.noticeBoard/);
   assert.match(privacy, /Export care data/);
   assert.match(privacy, /Deletion request/);
@@ -1318,23 +2031,53 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
 test("keeps Avatar Studio preview and mood states on shared board anatomy", () => {
   const avatarStudio = readAppFile("portrait.tsx");
   const avatarModel = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarStudio.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "avatarStudio.ts",
+    ),
     "utf8",
   );
   const avatarTemplateAssets = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateAssets.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "avatarTemplateAssets.ts",
+    ),
     "utf8",
   );
   const avatarTemplateSpriteAssets = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarTemplateSpriteAssets.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "avatarTemplateSpriteAssets.ts",
+    ),
     "utf8",
   );
   const avatarPreviewModel = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarPreviewModel.ts"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "avatarPreviewModel.ts",
+    ),
     "utf8",
   );
   const avatarContext = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "AvatarContext.tsx"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "context",
+      "AvatarContext.tsx",
+    ),
     "utf8",
   );
   const home = readAppFile(join("(tabs)", "index.tsx"));
@@ -1375,25 +2118,94 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     "not_feeling_well",
   ];
   const templateEmotePacks = {
-    retriever: ["happy", "calm", "excited", "bored", "hungry", "anxious", "sleepy", "proud", "home-alone", "not-feeling-well"],
-    husky: ["happy", "calm", "excited", "bored", "hungry", "anxious", "sleepy", "proud", "home-alone", "not-feeling-well"],
-    bully: ["happy", "calm", "excited", "bored", "hungry", "anxious", "sleepy", "proud", "home-alone", "not-feeling-well"],
+    retriever: [
+      "happy",
+      "calm",
+      "excited",
+      "bored",
+      "hungry",
+      "anxious",
+      "sleepy",
+      "proud",
+      "home-alone",
+      "not-feeling-well",
+    ],
+    husky: [
+      "happy",
+      "calm",
+      "excited",
+      "bored",
+      "hungry",
+      "anxious",
+      "sleepy",
+      "proud",
+      "home-alone",
+      "not-feeling-well",
+    ],
+    bully: [
+      "happy",
+      "calm",
+      "excited",
+      "bored",
+      "hungry",
+      "anxious",
+      "sleepy",
+      "proud",
+      "home-alone",
+      "not-feeling-well",
+    ],
   };
 
-  assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{\[s\.canvasCard/);
-  assert.match(avatarStudio, /<BoardCard padded=\{false\} style=\{s\.heroPreview\}/);
-  assert.match(avatarStudio, /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Generated mood set"/);
-  assert.match(avatarStudio, /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Mood set"/);
+  assert.match(
+    avatarStudio,
+    /<BoardCard\s+padded=\{false\}\s+style=\{\[s\.canvasCard/,
+  );
+  assert.match(
+    avatarStudio,
+    /<BoardCard\s+padded=\{false\}\s+style=\{s\.heroPreview\}/,
+  );
+  assert.match(
+    avatarStudio,
+    /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Generated mood set"/,
+  );
+  assert.match(
+    avatarStudio,
+    /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Mood set"/,
+  );
   assert.doesNotMatch(avatarStudio, /<BoardSectionHeader[\s\S]*?\saction=/);
-  assert.match(avatarStudio, /BoardSectionHeader\s+title="Generated mood set"[\s\S]*<BoardPill\s+label="Owner review"/);
-  assert.match(avatarStudio, /BoardSectionHeader\s+title="Bring your dog in"[\s\S]*<BoardPill\s+label=\{hasConfiguredAvatar \? "Configured" : "Start"\}/);
-  assert.match(avatarStudio, /BoardSectionHeader\s+title="Choose base template"[\s\S]*<BoardPill\s+label=\{`\$\{liveTemplateCount\}\/\$\{AVATAR_TEMPLATES\.length\} live`\}/);
-  assert.match(avatarStudio, /BoardSectionHeader\s+title="Coat colors"[\s\S]*<BoardPill\s+label="Editable"/);
-  assert.match(avatarStudio, /BoardSectionHeader\s+title="Face and ears"[\s\S]*<BoardPill\s+label=\{draft\.faceMarkingId\}/);
-  assert.match(avatarStudio, /BoardSectionHeader\s+title="Accessories"[\s\S]*<BoardPill\s+label="Fit map"/);
-  assert.match(avatarStudio, /BoardSectionHeader\s+title="Mood set"[\s\S]*<BoardPill\s+label=\{draft\.emotePackId === "phoenix-shepherd" \? "Phoenix pack" : "Starter"\}/);
+  assert.match(
+    avatarStudio,
+    /BoardSectionHeader\s+title="Generated mood set"[\s\S]*<BoardPill\s+label="Owner review"/,
+  );
+  assert.match(
+    avatarStudio,
+    /BoardSectionHeader\s+title="Bring your dog in"[\s\S]*<BoardPill\s+label=\{hasConfiguredAvatar \? "Configured" : "Start"\}/,
+  );
+  assert.match(
+    avatarStudio,
+    /BoardSectionHeader\s+title="Choose base template"[\s\S]*<BoardPill\s+label=\{`\$\{liveTemplateCount\}\/\$\{AVATAR_TEMPLATES\.length\} live`\}/,
+  );
+  assert.match(
+    avatarStudio,
+    /BoardSectionHeader\s+title="Coat colors"[\s\S]*<BoardPill\s+label="Editable"/,
+  );
+  assert.match(
+    avatarStudio,
+    /BoardSectionHeader\s+title="Face and ears"[\s\S]*<BoardPill\s+label=\{draft\.faceMarkingId\}/,
+  );
+  assert.match(
+    avatarStudio,
+    /BoardSectionHeader\s+title="Accessories"[\s\S]*<BoardPill\s+label="Fit map"/,
+  );
+  assert.match(
+    avatarStudio,
+    /BoardSectionHeader\s+title="Mood set"[\s\S]*<BoardPill\s+label=\{\s*draft\.emotePackId === "phoenix-shepherd"\s*\?\s*"Phoenix pack"\s*:\s*"Starter"\s*\}/,
+  );
   assert.match(avatarStudio, /<BoardCard style=\{s\.tipBoard\} tone="soft"/);
-  assert.match(avatarStudio, /Upload photos to help us suggest your dog's pixel care twin/);
+  assert.match(
+    avatarStudio,
+    /Upload photos to help us suggest your dog's pixel care twin/,
+  );
   assert.match(avatarStudio, /AVATAR_SCAN_WORKFLOW_STEPS/);
   assert.match(avatarStudio, /scanPipelineGrid/);
   assert.match(avatarStudio, /scanPipelineCard/);
@@ -1411,7 +2223,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /LivingPhoenixRoom/);
   assert.match(avatarStudio, /deriveAvatarMotion/);
   assert.match(avatarStudio, /derivePhoenixStatus/);
-  assert.match(avatarStudio, /getAvatarTemplateBaseSource\(draft\.templateId\)/);
+  assert.match(
+    avatarStudio,
+    /getAvatarTemplateBaseSource\(draft\.templateId\)/,
+  );
   assert.match(avatarStudio, /getAvatarTemplateDisplaySource\(template\.id\)/);
   assert.match(avatarStudio, /templateHeroDogWrap/);
   assert.match(avatarStudio, /s\.templateArtWrap/);
@@ -1419,7 +2234,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /phoenix-main-head-v2-crisp\.png/);
   assert.match(avatarStudio, /selectedTemplateStillSource/);
   assert.match(avatarStudio, /PHOTO REFERENCE/);
-  assert.match(avatarStudio, /Building a pixel twin, not using the photo as the avatar/);
+  assert.match(
+    avatarStudio,
+    /Building a pixel twin, not using the photo as the avatar/,
+  );
   assert.doesNotMatch(avatarStudio, /assets\/board\/hero\.png/);
   assert.doesNotMatch(avatarStudio, /getAvatarSource\("happy"\)/);
   assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_PREVIEW_ASSETS/);
@@ -1441,7 +2259,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /avatar-studio-live-sprite-preview/);
   assert.match(avatarStudio, /avatar-studio-pixel-sprite-viewport/);
   assert.match(avatarStudio, /PIXELLAB SPRITE/);
-  assert.doesNotMatch(avatarStudio, /templateHeroDogGhost:\s*\{\s*opacity:\s*0/);
+  assert.doesNotMatch(
+    avatarStudio,
+    /templateHeroDogGhost:\s*\{\s*opacity:\s*0/,
+  );
   assert.match(avatarStudio, /templatePixelFloor/);
   assert.match(avatarStudio, /templateLiveChip/);
   assert.match(avatarPreviewModel, /Animated Phoenix pack/);
@@ -1452,8 +2273,14 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /liveTemplateCount/);
   assert.match(avatarStudio, /templateLiveBadge/);
   assert.match(avatarStudio, /Sprite rig in production/);
-  assert.match(avatarTemplateAssets, /assets\/avatar\/templates\/shepherd\/preview-crisp\.png/);
-  assert.match(avatarTemplateAssets, /assets\/avatar\/templates\/shepherd\/base-crisp\.png/);
+  assert.match(
+    avatarTemplateAssets,
+    /assets\/avatar\/templates\/shepherd\/preview-crisp\.png/,
+  );
+  assert.match(
+    avatarTemplateAssets,
+    /assets\/avatar\/templates\/shepherd\/base-crisp\.png/,
+  );
   assert.match(avatarTemplateSpriteAssets, /bully:[\s\S]*idle-tail-wag/);
   assert.match(avatarTemplateSpriteAssets, /bully:[\s\S]*walk-loop/);
   assert.match(avatarTemplateSpriteAssets, /dachshund:[\s\S]*idle-tail-wag/);
@@ -1495,7 +2322,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     "toy",
   ]) {
     for (const fileName of ["idle-tail-wag-strip.png", "walk-loop-strip.png"]) {
-      assert.match(avatarTemplateSpriteAssets, new RegExp(`assets/avatar/templates/${templateId}/sprites/${fileName}`));
+      assert.match(
+        avatarTemplateSpriteAssets,
+        new RegExp(`assets/avatar/templates/${templateId}/sprites/${fileName}`),
+      );
       const size = readPngSize(
         join(
           process.cwd(),
@@ -1516,16 +2346,31 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
       );
     }
   }
-  assert.match(avatarStudio, /getAvatarTemplateAccessorySource\(draft\.templateId, layer\.id\)/);
-  assert.match(avatarStudio, /getAvatarTemplateEmoteSource\(draft\.templateId, previewEmote\)/);
-  assert.match(avatarStudio, /summarizeAvatarAccessoryFits\(draft\.templateId\)/);
-  assert.match(avatarStudio, /deriveAvatarAccessoryFit\(draft\.templateId, item\)/);
+  assert.match(
+    avatarStudio,
+    /getAvatarTemplateAccessorySource\(draft\.templateId, layer\.id\)/,
+  );
+  assert.match(
+    avatarStudio,
+    /getAvatarTemplateEmoteSource\(\s*draft\.templateId,\s*previewEmote,\s*\)/,
+  );
+  assert.match(
+    avatarStudio,
+    /summarizeAvatarAccessoryFits\(draft\.templateId\)/,
+  );
+  assert.match(
+    avatarStudio,
+    /deriveAvatarAccessoryFit\(draft\.templateId, item\)/,
+  );
   assert.match(avatarStudio, /Template overlay readiness/);
   assert.match(avatarStudio, /accessoryFitPanel/);
   assert.match(avatarStudio, /fit\.label/);
   assert.match(avatarStudio, /fit\.placementHint/);
   assert.match(avatarPreviewModel, /fitStatus/);
-  assert.match(avatarPreviewModel, /deriveAvatarAccessoryFit\(config\.templateId, item\)/);
+  assert.match(
+    avatarPreviewModel,
+    /deriveAvatarAccessoryFit\(config\.templateId, item\)/,
+  );
   assert.match(avatarStudio, /templateBandana/);
   assert.match(avatarStudio, /templateVest/);
   assert.match(avatarStudio, /templateAccessoryLayer/);
@@ -1535,9 +2380,22 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     ["phoenix-main-head-v2-crisp.png", { width: 1024, height: 1024 }],
   ] as const) {
     const size = readPngSize(
-      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "phoenix", "approved", fileName),
+      join(
+        process.cwd(),
+        "artifacts",
+        "woofwatcher-mobile",
+        "assets",
+        "avatar",
+        "phoenix",
+        "approved",
+        fileName,
+      ),
     );
-    assert.deepEqual(size, expected, `${fileName} should be a nearest-neighbor crisp Phoenix asset`);
+    assert.deepEqual(
+      size,
+      expected,
+      `${fileName} should be a nearest-neighbor crisp Phoenix asset`,
+    );
   }
   for (const [fileName, expected] of [
     ["option-b-seated.png", { width: 170, height: 170 }],
@@ -1545,9 +2403,22 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     ["option-b-sleep-source.png", { width: 170, height: 170 }],
   ] as const) {
     const size = readPngSize(
-      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "phoenix", "candidates", fileName),
+      join(
+        process.cwd(),
+        "artifacts",
+        "woofwatcher-mobile",
+        "assets",
+        "avatar",
+        "phoenix",
+        "candidates",
+        fileName,
+      ),
     );
-    assert.deepEqual(size, expected, `${fileName} should stay archived as a PixelLab Option B source candidate`);
+    assert.deepEqual(
+      size,
+      expected,
+      `${fileName} should stay archived as a PixelLab Option B source candidate`,
+    );
   }
   for (const [fileName, expected] of [
     ["option-b-idle-tail-wag-strip.png", { width: 2048, height: 256 }],
@@ -1562,45 +2433,104 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     ["option-b-celebrate-hop-strip.png", { width: 2048, height: 256 }],
   ] as const) {
     const size = readPngSize(
-      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "phoenix", "candidates", fileName),
+      join(
+        process.cwd(),
+        "artifacts",
+        "woofwatcher-mobile",
+        "assets",
+        "avatar",
+        "phoenix",
+        "candidates",
+        fileName,
+      ),
     );
-    assert.deepEqual(size, expected, `${fileName} should stay archived as an 8-frame Option B animation proof`);
+    assert.deepEqual(
+      size,
+      expected,
+      `${fileName} should stay archived as an 8-frame Option B animation proof`,
+    );
   }
   for (const [fileName, expected] of [
     ["preview-crisp.png", { width: 340, height: 340 }],
     ["base-crisp.png", { width: 680, height: 680 }],
   ] as const) {
     const size = readPngSize(
-      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", "shepherd", fileName),
+      join(
+        process.cwd(),
+        "artifacts",
+        "woofwatcher-mobile",
+        "assets",
+        "avatar",
+        "templates",
+        "shepherd",
+        fileName,
+      ),
     );
-    assert.deepEqual(size, expected, `${fileName} should be a nearest-neighbor crisp shepherd asset`);
+    assert.deepEqual(
+      size,
+      expected,
+      `${fileName} should be a nearest-neighbor crisp shepherd asset`,
+    );
   }
   for (const templateId of templateIds) {
-    const registryPreviewPath = templateId === "shepherd" ? "preview-crisp" : "preview";
+    const registryPreviewPath =
+      templateId === "shepherd" ? "preview-crisp" : "preview";
     assert.match(
       avatarTemplateAssets,
-      new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/${registryPreviewPath}\\.png`),
+      new RegExp(
+        `${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/${registryPreviewPath}\\.png`,
+      ),
     );
     const size = readPngSize(
-      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", templateId, "preview.png"),
+      join(
+        process.cwd(),
+        "artifacts",
+        "woofwatcher-mobile",
+        "assets",
+        "avatar",
+        "templates",
+        templateId,
+        "preview.png",
+      ),
     );
-    assert.deepEqual(size, { width: 85, height: 85 }, `${templateId} preview should be a PixelLab 85x85 thumbnail`);
+    assert.deepEqual(
+      size,
+      { width: 85, height: 85 },
+      `${templateId} preview should be a PixelLab 85x85 thumbnail`,
+    );
   }
   for (const templateId of templateIds) {
     const registryBasePath = templateId === "shepherd" ? "base-crisp" : "base";
     assert.match(
       avatarTemplateAssets,
-      new RegExp(`${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/${registryBasePath}\\.png`),
+      new RegExp(
+        `${templateId}:[\\s\\S]*assets/avatar/templates/${templateId}/${registryBasePath}\\.png`,
+      ),
     );
     const size = readPngSize(
-      join(process.cwd(), "artifacts", "woofwatcher-mobile", "assets", "avatar", "templates", templateId, "base.png"),
+      join(
+        process.cwd(),
+        "artifacts",
+        "woofwatcher-mobile",
+        "assets",
+        "avatar",
+        "templates",
+        templateId,
+        "base.png",
+      ),
     );
-    assert.deepEqual(size, { width: 170, height: 170 }, `${templateId} base should be a PixelLab 170x170 character base`);
+    assert.deepEqual(
+      size,
+      { width: 170, height: 170 },
+      `${templateId} base should be a PixelLab 170x170 character base`,
+    );
   }
   for (const accessoryId of shepherdAccessoryIds) {
     assert.match(
       avatarTemplateAssets,
-      new RegExp(`"${accessoryId}":[\\s\\S]*assets/avatar/templates/shepherd/accessories/${accessoryId}\\.png`),
+      new RegExp(
+        `"${accessoryId}":[\\s\\S]*assets/avatar/templates/shepherd/accessories/${accessoryId}\\.png`,
+      ),
     );
     const size = readPngSize(
       join(
@@ -1615,12 +2545,18 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
         `${accessoryId}.png`,
       ),
     );
-    assert.deepEqual(size, { width: 170, height: 170 }, `${accessoryId} overlay should be a 170x170 transparent PNG`);
+    assert.deepEqual(
+      size,
+      { width: 170, height: 170 },
+      `${accessoryId} overlay should be a 170x170 transparent PNG`,
+    );
   }
   for (const emoteId of shepherdEmoteIds) {
     assert.match(
       avatarTemplateAssets,
-      new RegExp(`${emoteId}:[\\s\\S]*assets/avatar/templates/shepherd/emotes/${emoteId}\\.png`),
+      new RegExp(
+        `${emoteId}:[\\s\\S]*assets/avatar/templates/shepherd/emotes/${emoteId}\\.png`,
+      ),
     );
     const size = readPngSize(
       join(
@@ -1635,13 +2571,19 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
         `${emoteId}.png`,
       ),
     );
-    assert.deepEqual(size, { width: 170, height: 170 }, `${emoteId} emote should be a 170x170 transparent PNG`);
+    assert.deepEqual(
+      size,
+      { width: 170, height: 170 },
+      `${emoteId} emote should be a 170x170 transparent PNG`,
+    );
   }
   for (const [templateId, emoteIds] of Object.entries(templateEmotePacks)) {
     for (const emoteId of emoteIds) {
       assert.match(
         avatarTemplateAssets,
-        new RegExp(`assets/avatar/templates/${templateId}/emotes/${emoteId}\\.png`),
+        new RegExp(
+          `assets/avatar/templates/${templateId}/emotes/${emoteId}\\.png`,
+        ),
       );
       const size = readPngSize(
         join(
@@ -1656,7 +2598,11 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
           `${emoteId}.png`,
         ),
       );
-      assert.deepEqual(size, { width: 170, height: 170 }, `${templateId} ${emoteId} emote should be a 170x170 transparent PNG`);
+      assert.deepEqual(
+        size,
+        { width: 170, height: 170 },
+        `${templateId} ${emoteId} emote should be a 170x170 transparent PNG`,
+      );
     }
   }
   assert.match(avatarModel, /PetAvatarConfig/);
@@ -1683,8 +2629,14 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.doesNotMatch(avatarStudio, /True AI scanning plugs in later/);
   assert.match(avatarStudio, /PixelLab template match/);
   assert.match(avatarStudio, /Provider scanning can plug in later/);
-  assert.doesNotMatch(avatarStudio, /heroPreview: \{[^\n]*(shadowOpacity|elevation)/);
-  assert.doesNotMatch(avatarStudio, /canvasCard: \{[^\n]*(shadowOpacity|elevation)/);
+  assert.doesNotMatch(
+    avatarStudio,
+    /heroPreview: \{[^\n]*(shadowOpacity|elevation)/,
+  );
+  assert.doesNotMatch(
+    avatarStudio,
+    /canvasCard: \{[^\n]*(shadowOpacity|elevation)/,
+  );
 });
 
 test("keeps Avatar Studio creator actions on shared mobile touch targets", () => {
@@ -1692,19 +2644,50 @@ test("keeps Avatar Studio creator actions on shared mobile touch targets", () =>
 
   assert.match(avatarStudio, /MOBILE_INLINE_HIT_SLOP/);
   assert.match(avatarStudio, /const selectStudioTab = \(tab: StudioTab\) =>/);
-  assert.match(avatarStudio, /const setCoatColor = \(swatch: string, primary: boolean\) =>/);
-  assert.match(avatarStudio, /const setFaceMarking = \(marking: AvatarFaceMarkingId\) =>/);
-  assert.match(avatarStudio, /const previewMoodState = \(emote: AvatarEmoteState\) =>/);
-  assert.match(avatarStudio, /accessibilityLabel=\{`Set \$\{marking\.label\} face marking`\}/);
-  assert.match(avatarStudio, /accessibilityHint="Double tap to apply this marking to the pixel twin\."/);
+  assert.match(
+    avatarStudio,
+    /const setCoatColor = \(swatch: string, primary: boolean\) =>/,
+  );
+  assert.match(
+    avatarStudio,
+    /const setFaceMarking = \(marking: AvatarFaceMarkingId\) =>/,
+  );
+  assert.match(
+    avatarStudio,
+    /const previewMoodState = \(emote: AvatarEmoteState\) =>/,
+  );
+  assert.match(
+    avatarStudio,
+    /accessibilityLabel=\{`Set \$\{marking\.label\} face marking`\}/,
+  );
+  assert.match(
+    avatarStudio,
+    /accessibilityHint="Double tap to apply this marking to the pixel twin\."/,
+  );
   assert.match(avatarStudio, /accessibilityLabel="Reset Avatar Studio draft"/);
   assert.match(avatarStudio, /accessibilityLabel="Save Avatar Studio draft"/);
-  assert.match(avatarStudio, /accessibilityHint="Saves the current pixel twin configuration locally\."/);
-  assert.match(avatarStudio, /onPress=\{\(\) => setCoatColor\(swatch, primary\)\}/);
-  assert.match(avatarStudio, /onPress=\{\(\) => setFaceMarking\(marking\.id\)\}/);
+  assert.match(
+    avatarStudio,
+    /accessibilityHint="Saves the current pixel twin configuration locally\."/,
+  );
+  assert.match(
+    avatarStudio,
+    /onPress=\{\(\) => setCoatColor\(swatch, primary\)\}/,
+  );
+  assert.match(
+    avatarStudio,
+    /onPress=\{\(\) => setFaceMarking\(marking\.id\)\}/,
+  );
   assert.match(avatarStudio, /onPress=\{\(\) => previewMoodState\(emote\)\}/);
 
-  for (const styleName of ["tab", "secondaryBtn", "primaryBtn", "swatch", "optionPill", "moodChip"]) {
+  for (const styleName of [
+    "tab",
+    "secondaryBtn",
+    "primaryBtn",
+    "swatch",
+    "optionPill",
+    "moodChip",
+  ]) {
     assertStyleUsesSharedTouchTarget(avatarStudio, styleName);
   }
 
@@ -1723,11 +2706,23 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
     "utf8",
   );
   const phaseOne = readFileSync(
-    join(process.cwd(), "docs", "design", "pixellab", "PHASE_1_PHOENIX_IDENTITY_PROMPT.md"),
+    join(
+      process.cwd(),
+      "docs",
+      "design",
+      "pixellab",
+      "PHASE_1_PHOENIX_IDENTITY_PROMPT.md",
+    ),
     "utf8",
   );
   const verifier = readFileSync(
-    join(process.cwd(), "artifacts", "woofwatcher-mobile", "scripts", "verify-pixellab-assets.js"),
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "scripts",
+      "verify-pixellab-assets.js",
+    ),
     "utf8",
   );
   const blockers = readFileSync(
@@ -1739,15 +2734,24 @@ test("documents PixelLab as the secure Phoenix asset production path", () => {
   assert.match(pixelLab, /PixelLab is the WoofWatcher production asset path/);
   assert.match(pixelLab, /Never commit that config file/);
   assert.match(pixelLab, /Do not call PixelLab from the mobile client/);
-  assert.match(phaseOne, /Create no more than four Phoenix main-avatar identity candidates/);
+  assert.match(
+    phaseOne,
+    /Create no more than four Phoenix main-avatar identity candidates/,
+  );
   assert.match(phaseOne, /transparent background/);
   assert.match(verifier, /PixelLab asset check complete/);
   assert.match(verifier, /readUInt32BE\(16\)/);
   assert.match(verifier, /templateAccessories/);
   assert.match(verifier, /templateEmotes/);
   assert.match(blockers, /PixelLab secret hygiene/);
-  assert.match(blockers, /Phoenix v2 seed\/state pack, full registered sprite manifest, active Option B dogless day room, PixelLab final-candidate night\/bedtime\/health-watch\/home-alone rooms, the full current Option B hard-pixel Phoenix runtime candidate family/);
-  assert.match(blockers, /12 Avatar Studio template preview thumbnails, the full 12-template base still pack, the first shepherd accessory overlay PNG pack, the first shepherd 10-state emote still pack, and the Retriever, Husky\/Spitz, and Bully 10-state template emote packs now exist locally/);
+  assert.match(
+    blockers,
+    /Phoenix v2 seed\/state pack, full registered sprite manifest, active Option B dogless day room, PixelLab final-candidate night\/bedtime\/health-watch\/home-alone rooms, the full current Option B hard-pixel Phoenix runtime candidate family/,
+  );
+  assert.match(
+    blockers,
+    /12 Avatar Studio template preview thumbnails, the full 12-template base still pack, the first shepherd accessory overlay PNG pack, the first shepherd 10-state emote still pack, and the Retriever, Husky\/Spitz, and Bully 10-state template emote packs now exist locally/,
+  );
   assert.doesNotMatch(pixelLab, /Bearer [0-9a-f-]{20,}/i);
 });
 
@@ -1755,12 +2759,24 @@ test("keeps Setup onboarding on shared board anatomy", () => {
   const setup = readAppFile("setup.tsx");
 
   assert.match(setup, /@\/components\/board\/BoardPrimitives/);
-  assert.match(setup, /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/);
+  assert.match(
+    setup,
+    /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/,
+  );
   assert.doesNotMatch(setup, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(setup, /<BoardRouteHeader[\s\S]*title="Set up WoofWatcher"/);
-  assert.match(setup, /<BoardCard style=\{s\.progressCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Setup progress"/);
-  assert.match(setup, /BoardSectionHeader\s+title="Setup progress"[\s\S]*<BoardPill\s+label=\{`\$\{onboarding\.completedCount\}\/\$\{onboarding\.totalCount\} ready`\}/);
-  assert.match(setup, /BoardSectionHeader\s+title="After save"[\s\S]*<BoardPill\s+label="Review"/);
+  assert.match(
+    setup,
+    /<BoardCard style=\{s\.progressCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Setup progress"/,
+  );
+  assert.match(
+    setup,
+    /BoardSectionHeader\s+title="Setup progress"[\s\S]*<BoardPill\s+label=\{`\$\{onboarding\.completedCount\}\/\$\{onboarding\.totalCount\} ready`\}/,
+  );
+  assert.match(
+    setup,
+    /BoardSectionHeader\s+title="After save"[\s\S]*<BoardPill\s+label="Review"/,
+  );
   assert.match(setup, /function Section[\s\S]*<BoardCard style=\{s\.section\}/);
   assert.match(setup, /Dog profile/);
   assert.match(setup, /Diet baseline/);
@@ -1774,7 +2790,10 @@ test("keeps Setup onboarding on shared board anatomy", () => {
   assert.match(setup, /Care foundation saved/);
   assert.match(setup, /Add invite code/);
   assert.doesNotMatch(setup, /header:/);
-  assert.doesNotMatch(setup, /progressCard: \{[^\n]*(borderRadius|borderWidth|padding)/);
+  assert.doesNotMatch(
+    setup,
+    /progressCard: \{[^\n]*(borderRadius|borderWidth|padding)/,
+  );
   assert.doesNotMatch(setup, /backgroundColor: colors\.card/);
 });
 
@@ -1794,7 +2813,10 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /getCarePassArtifactPrintView/);
   assert.match(records, /describeCarePassArtifactExport/);
   assert.match(records, /const storage = exportView\.storage/);
-  assert.match(records, /storageProviderConfigured: Boolean\(state\.launchProviderProfile\?\.storageProviderConfigured\)/);
+  assert.match(
+    records,
+    /storageProviderConfigured: Boolean\(state\.launchProviderProfile\?\.storageProviderConfigured\)/,
+  );
   assert.match(records, /exportView\.formatLabel/);
   assert.match(records, /exportView\.pdfDetail/);
   assert.match(records, /Export manifest/);
@@ -1805,8 +2827,14 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /Print-ready/);
   assert.match(records, /storage\.label/);
   assert.match(records, /storage\.detail/);
-  assert.match(records, /accessibilityLabel=\{`Resend \$\{artifact\.title\}`\}/);
-  assert.match(records, /accessibilityLabel=\{`Share printable report source for \$\{artifact\.title\}`\}/);
+  assert.match(
+    records,
+    /accessibilityLabel=\{`Resend \$\{artifact\.title\}`\}/,
+  );
+  assert.match(
+    records,
+    /accessibilityLabel=\{`Share printable report source for \$\{artifact\.title\}`\}/,
+  );
 });
 
 test("keeps Records dog ID wired for printable credential sharing", () => {
@@ -1821,9 +2849,18 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
 test("keeps Records Care Pass and reports on shared board card anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Pass"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Report History"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Progress Report"/);
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Pass"/,
+  );
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Report History"/,
+  );
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Progress Report"/,
+  );
 });
 
 test("keeps Records and Care Pass actions on shared mobile touch targets", () => {
@@ -1850,60 +2887,129 @@ test("keeps Records and Care Pass actions on shared mobile touch targets", () =>
 test("keeps Records vault, diet, and cabinet on shared board card anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Record Vault"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Diet on File"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Records Cabinet"/);
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Record Vault"/,
+  );
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Diet on File"/,
+  );
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Records Cabinet"/,
+  );
 });
 
 test("keeps Records trend sections on shared board card anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Trends"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Weight Trend"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Mood Trend"/);
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Trends"/,
+  );
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Weight Trend"/,
+  );
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Mood Trend"/,
+  );
   assert.match(records, /deriveMoodTrend/);
   assert.match(records, /moodStats\.averageScore/);
   assert.match(records, /moodStats\.energy\.low/);
   assert.match(records, /moodStats\.latest\.context/);
   assert.match(records, /Mood steady|Worth watching/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Hydration"/);
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Hydration"/,
+  );
 });
 
 test("keeps Records section status labels as badges instead of passive actions", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
-  assert.match(records, /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/);
+  assert.match(
+    records,
+    /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/,
+  );
   assert.doesNotMatch(records, /<BoardSectionHeader[\s\S]*?\saction=/);
-  assert.match(records, /BoardSectionHeader\s+title="Care Trends"[\s\S]*<BoardPill\s+label="7 days"/);
-  assert.match(records, /BoardSectionHeader[\s\S]*title="Weight Trend"[\s\S]*<BoardPill\s+label=\{remaining > 0 \?/);
-  assert.match(records, /BoardSectionHeader\s+title="Mood Trend"[\s\S]*<BoardPill\s+label=\{moodStats\.total > 0 \?/);
-  assert.match(records, /BoardSectionHeader\s+title="Hydration"[\s\S]*<BoardPill\s+label=\{waterHydration\.total \?/);
-  assert.match(records, /BoardSectionHeader\s+title="Care Pass"[\s\S]*<BoardPill\s+label="Preview"/);
-  assert.match(records, /BoardSectionHeader\s+title="Records Cabinet"[\s\S]*<BoardPill\s+label=\{`\$\{recordVault\.total\} saved`\}/);
+  assert.match(
+    records,
+    /BoardSectionHeader\s+title="Care Trends"[\s\S]*<BoardPill\s+label="7 days"/,
+  );
+  assert.match(
+    records,
+    /BoardSectionHeader[\s\S]*title="Weight Trend"[\s\S]*<BoardPill\s+label=\{remaining > 0 \?/,
+  );
+  assert.match(
+    records,
+    /BoardSectionHeader\s+title="Mood Trend"[\s\S]*<BoardPill\s+label=\{moodStats\.total > 0 \?/,
+  );
+  assert.match(
+    records,
+    /BoardSectionHeader\s+title="Hydration"[\s\S]*<BoardPill\s+label=\{waterHydration\.total \?/,
+  );
+  assert.match(
+    records,
+    /BoardSectionHeader\s+title="Care Pass"[\s\S]*<BoardPill\s+label="Preview"/,
+  );
+  assert.match(
+    records,
+    /BoardSectionHeader\s+title="Records Cabinet"[\s\S]*<BoardPill\s+label=\{`\$\{recordVault\.total\} saved`\}/,
+  );
 });
 
 test("keeps Records dog ID heading on shared board section anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
-  assert.match(records, /<BoardSectionHeader[\s\S]*title=\{`\$\{credential\.name\} ID Card`\}/);
-  assert.match(records, /<BoardCard tone="navy" padded=\{false\} style=\{s\.idCard\}/);
+  assert.match(
+    records,
+    /<BoardSectionHeader[\s\S]*title=\{`\$\{credential\.name\} ID Card`\}/,
+  );
+  assert.match(
+    records,
+    /<BoardCard tone="navy" padded=\{false\} style=\{s\.idCard\}/,
+  );
 });
 
 test("keeps Records activity and potty sections on shared board card anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Walk Activity"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Training Progress"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Potty Health"/);
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Walk Activity"/,
+  );
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Training Progress"/,
+  );
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Potty Health"/,
+  );
 });
 
 test("keeps Records watch, grooming, and medication sections on shared board card anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Alone Time"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Grooming Care"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Incident Watch"/);
-  assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Medication Plan"/);
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Alone Time"/,
+  );
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Grooming Care"/,
+  );
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Incident Watch"/,
+  );
+  assert.match(
+    records,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Medication Plan"/,
+  );
 });
 
 test("keeps Records wired to medication adherence status", () => {
@@ -2062,7 +3168,10 @@ test("keeps Alone Time as a start and return lifecycle instead of a loose durati
 
 test("keeps weight trend shared between Records and Care Pass reports", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
-  const carePass = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"), "utf8");
+  const carePass = readFileSync(
+    join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"),
+    "utf8",
+  );
 
   assert.match(records, /deriveWeightTrend/);
   assert.match(records, /weightTrend/);
@@ -2074,7 +3183,10 @@ test("keeps weight trend shared between Records and Care Pass reports", () => {
 test("keeps grooming care visible from Log composer to Records and Care Pass reports", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const records = readAppFile(join("(tabs)", "records.tsx"));
-  const carePass = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"), "utf8");
+  const carePass = readFileSync(
+    join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"),
+    "utf8",
+  );
 
   assert.match(log, /type: "grooming"/);
   assert.match(log, /groomingCondition/);
@@ -2092,7 +3204,10 @@ test("keeps grooming care visible from Log composer to Records and Care Pass rep
 test("keeps Incident Watch visible from Log composer to Records and Care Pass reports", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const records = readAppFile(join("(tabs)", "records.tsx"));
-  const carePass = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"), "utf8");
+  const carePass = readFileSync(
+    join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"),
+    "utf8",
+  );
 
   assert.match(log, /type: "incident"/);
   assert.match(log, /incidentType/);
@@ -2101,7 +3216,10 @@ test("keeps Incident Watch visible from Log composer to Records and Care Pass re
   assert.match(log, /incidentInjury/);
   assert.match(log, /incidentAction/);
   assert.match(log, /incidentFollowUp/);
-  assert.match(log, /Shared incident logs update Incident Watch, Care Pass, and trainer handoffs/);
+  assert.match(
+    log,
+    /Shared incident logs update Incident Watch, Care Pass, and trainer handoffs/,
+  );
   assert.match(records, /deriveIncidentWatch/);
   assert.match(records, /incidentWatch/);
   assert.match(records, /Incident Watch/);
@@ -2110,8 +3228,14 @@ test("keeps Incident Watch visible from Log composer to Records and Care Pass re
   assert.match(records, /Trainer goals/);
   assert.match(records, /Open Incident Watch follow-up/);
   assert.match(records, /incidentWatch\.latest\?\.id/);
-  assert.match(records, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(incidentWatch\.latest\.id\)\}` as never\)/);
-  assert.match(records, /router\.push\(`\/log\?type=incident&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(
+    records,
+    /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(incidentWatch\.latest\.id\)\}` as never\)/,
+  );
+  assert.match(
+    records,
+    /router\.push\(`\/log\?type=incident&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/,
+  );
   assert.doesNotMatch(records, /params: \{ type: "incident" \}/);
   assert.match(records, /Incident Watch keeps factual household context/);
   assert.match(carePass, /deriveIncidentWatch/);
@@ -2146,7 +3270,16 @@ test("keeps potty health visible from Log composer to Records", () => {
 });
 
 test("keeps the durable sync outbox visible in care context and Log", () => {
-  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
+  const careContext = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "context",
+      "CareContext.tsx",
+    ),
+    "utf8",
+  );
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
   assert.match(careContext, /deriveCareSyncOutbox/);
@@ -2245,10 +3378,16 @@ test("routes Reminder Center rows to concrete care workflows", () => {
   assert.match(calendar, /openReminderLogDetailRoute/);
   assert.match(calendar, /openBoardRoutine\(routine\)/);
   assert.match(calendar, /router\.push\("\/records"\)/);
-  assert.match(calendar, /router\.push\(`\/log\?type=\$\{encodeURIComponent\(type\)\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(
+    calendar,
+    /router\.push\(`\/log\?type=\$\{encodeURIComponent\(type\)\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/,
+  );
   assert.match(calendar, /openReminderLogDetailRoute\("medication"\)/);
   assert.match(calendar, /openReminderLogDetailRoute\("grooming"\)/);
-  assert.match(calendar, /accessibilityLabel=\{`Open reminder action: \$\{item\.label\}`\}/);
+  assert.match(
+    calendar,
+    /accessibilityLabel=\{`Open reminder action: \$\{item\.label\}`\}/,
+  );
   assert.match(log, /useLocalSearchParams/);
   assert.match(log, /routeSelectedType/);
 });
@@ -2256,13 +3395,28 @@ test("routes Reminder Center rows to concrete care workflows", () => {
 test("keeps Plans routine quick logging recoverable and editable", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
 
-  assert.match(calendar, /\{ state, updateCareDoc, addEntry, deleteEntry \} = useCare\(\)/);
+  assert.match(
+    calendar,
+    /\{ state, updateCareDoc, addEntry, deleteEntry \} = useCare\(\)/,
+  );
   assert.match(calendar, /const id = addEntry\(\{/);
-  assert.match(calendar, /showRoutineFeedback\(\{ id, title: routine\.label, type \}\)/);
+  assert.match(
+    calendar,
+    /showRoutineFeedback\(\{ id, title: routine\.label, type \}\)/,
+  );
   assert.match(calendar, /deleteEntry\(routineFeedback\.id\)/);
-  assert.match(calendar, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(entryId\)\}` as never\)/);
-  assert.match(calendar, /accessibilityLabel=\{`Undo \$\{routineFeedback\.title\} routine log`\}/);
-  assert.match(calendar, /accessibilityLabel=\{`Add details to \$\{routineFeedback\.title\} routine log`\}/);
+  assert.match(
+    calendar,
+    /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(entryId\)\}` as never\)/,
+  );
+  assert.match(
+    calendar,
+    /accessibilityLabel=\{`Undo \$\{routineFeedback\.title\} routine log`\}/,
+  );
+  assert.match(
+    calendar,
+    /accessibilityLabel=\{`Add details to \$\{routineFeedback\.title\} routine log`\}/,
+  );
   assert.match(calendar, /routineFeedback\.title\} logged/);
   assert.match(calendar, />\s*Add details\s*</);
 });
@@ -2270,9 +3424,18 @@ test("keeps Plans routine quick logging recoverable and editable", () => {
 test("keeps Plans reminder and routine sections on shared board card anatomy", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
 
-  assert.match(calendar, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Reminder Center"/);
-  assert.match(calendar, /BoardSectionHeader\s+title="Reminder Center"[\s\S]*<BoardPill\s+label=\{reminderCount === 0 \? "Clear" : `\$\{reminderCount\} active`\}/);
-  assert.match(calendar, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Daily Routine"/);
+  assert.match(
+    calendar,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Reminder Center"/,
+  );
+  assert.match(
+    calendar,
+    /BoardSectionHeader\s+title="Reminder Center"[\s\S]*<BoardPill\s+label=\{reminderCount === 0 \? "Clear" : `\$\{reminderCount\} active`\}/,
+  );
+  assert.match(
+    calendar,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Daily Routine"/,
+  );
   assert.doesNotMatch(calendar, /sectionHeader:/);
   assert.doesNotMatch(calendar, /sectionTitle:/);
   assert.doesNotMatch(calendar, /emptyCard:/);
@@ -2324,7 +3487,16 @@ test("keeps household access readiness visible from More", () => {
 
 test("keeps Access Pass and My Care Today operations visible from More", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
-  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
+  const careContext = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "context",
+      "CareContext.tsx",
+    ),
+    "utf8",
+  );
 
   assert.match(careContext, /accessPasses: AccessPass\[\]/);
   assert.match(more, /deriveAccessPassPlan/);
@@ -2342,7 +3514,16 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   const adventure = readAppFile("adventure.tsx");
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
-  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
+  const careContext = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "context",
+      "CareContext.tsx",
+    ),
+    "utf8",
+  );
 
   assert.match(rootLayout, /name="adventure"/);
   assert.match(careContext, /adventureMemories: AdventureMemory\[\]/);
@@ -2355,31 +3536,82 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(adventure, /buildQuickLogEntry/);
   assert.match(adventure, /buildWalkSessionStartEntry/);
   assert.match(adventure, /findOpenWalkSession/);
-  assert.match(adventure, /import \{ BoardCard, BoardPill, BoardSectionHeader \}/);
+  assert.match(
+    adventure,
+    /import \{ BoardCard, BoardPill, BoardSectionHeader \}/,
+  );
   assert.doesNotMatch(adventure, /<BoardSectionHeader[\s\S]*?\saction=/);
-  assert.match(adventure, /BoardSectionHeader\s+title="Next quest"[\s\S]*<BoardPill\s+label=\{adventure\.status === "needs-outing" \? "Start simple" : "Ready"\}/);
-  assert.match(adventure, /BoardSectionHeader\s+title="Quest board"[\s\S]*<BoardPill\s+label=\{`\$\{adventure\.quests\.length\} quests`\}/);
-  assert.match(adventure, /BoardSectionHeader\s+title="Care proof"[\s\S]*<BoardPill\s+label=\{`\$\{adventure\.completedProof\.length\} today`\}/);
-  assert.match(adventure, /BoardSectionHeader\s+title="Memory shelf"[\s\S]*<BoardPill\s+label=\{adventure\.memories\.length \? "Private" : "Empty"\}/);
+  assert.match(
+    adventure,
+    /BoardSectionHeader\s+title="Next quest"[\s\S]*<BoardPill\s+label=\{adventure\.status === "needs-outing" \? "Start simple" : "Ready"\}/,
+  );
+  assert.match(
+    adventure,
+    /BoardSectionHeader\s+title="Quest board"[\s\S]*<BoardPill\s+label=\{`\$\{adventure\.quests\.length\} quests`\}/,
+  );
+  assert.match(
+    adventure,
+    /BoardSectionHeader\s+title="Care proof"[\s\S]*<BoardPill\s+label=\{`\$\{adventure\.completedProof\.length\} today`\}/,
+  );
+  assert.match(
+    adventure,
+    /BoardSectionHeader\s+title="Memory shelf"[\s\S]*<BoardPill\s+label=\{adventure\.memories\.length \? "Private" : "Empty"\}/,
+  );
   assert.match(adventure, /Private RPG/);
-  assert.match(adventure, /const availableQuestProofEntryId = findQuestProofEntryId\(availableQuest, state\.entries, now\)/);
+  assert.match(
+    adventure,
+    /const availableQuestProofEntryId = findQuestProofEntryId\(availableQuest, state\.entries, now\)/,
+  );
   assert.match(adventure, /const primaryQuestActionLabel/);
-  assert.match(adventure, /onPress=\{\(\) => startQuest\(availableQuest, availableQuestProofEntryId\)\}/);
-  assert.doesNotMatch(adventure, /onPress=\{\(\) => saveMemory\(availableQuest\)\}/);
+  assert.match(
+    adventure,
+    /onPress=\{\(\) => startQuest\(availableQuest, availableQuestProofEntryId\)\}/,
+  );
+  assert.doesNotMatch(
+    adventure,
+    /onPress=\{\(\) => saveMemory\(availableQuest\)\}/,
+  );
   assert.doesNotMatch(adventure, />Save Memory</);
-  assert.match(adventure, /const actionLabel = quest\.status === "complete" \? "Open proof" : quest\.status === "locked" \? "Locked" : quest\.actionLabel/);
-  assert.doesNotMatch(adventure, /const actionLabel = quest\.status === "complete" \? "Open proof" : quest\.status === "locked" \? "Locked" : "Start quest"/);
+  assert.match(
+    adventure,
+    /const actionLabel = quest\.status === "complete" \? "Open proof" : quest\.status === "locked" \? "Locked" : quest\.actionLabel/,
+  );
+  assert.doesNotMatch(
+    adventure,
+    /const actionLabel = quest\.status === "complete" \? "Open proof" : quest\.status === "locked" \? "Locked" : "Start quest"/,
+  );
   assert.match(adventure, /Open proof/);
-  assert.match(adventure, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(questFeedback\.id\)\}` as never\)/);
-  assert.match(adventure, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(proofEntryId\)\}` as never\)/);
+  assert.match(
+    adventure,
+    /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(questFeedback\.id\)\}` as never\)/,
+  );
+  assert.match(
+    adventure,
+    /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(proofEntryId\)\}` as never\)/,
+  );
   assert.match(adventure, /const openProofLog = \(entryId: string\) =>/);
   assert.match(adventure, /onPress=\{\(\) => openProofLog\(proof\.entryId\)\}/);
-  assert.match(adventure, /accessibilityLabel=\{`Open Adventure proof log: \$\{proof\.label\}`\}/);
-  assert.match(adventure, /const shareAdventureMemory = \(memory: AdventureMemory\) =>/);
-  assert.match(adventure, /Photos and provider sync stay private\/local until storage rules are approved/);
+  assert.match(
+    adventure,
+    /accessibilityLabel=\{`Open Adventure proof log: \$\{proof\.label\}`\}/,
+  );
+  assert.match(
+    adventure,
+    /const shareAdventureMemory = \(memory: AdventureMemory\) =>/,
+  );
+  assert.match(
+    adventure,
+    /Photos and provider sync stay private\/local until storage rules are approved/,
+  );
   assert.match(adventure, /onPress=\{\(\) => shareAdventureMemory\(memory\)\}/);
-  assert.match(adventure, /accessibilityLabel=\{`Share Adventure memory: \$\{memory\.title\}`\}/);
-  assert.match(adventure, /accessibilityHint="Shares a private text summary of this saved Adventure memory\."/);
+  assert.match(
+    adventure,
+    /accessibilityLabel=\{`Share Adventure memory: \$\{memory\.title\}`\}/,
+  );
+  assert.match(
+    adventure,
+    /accessibilityHint="Shares a private text summary of this saved Adventure memory\."/,
+  );
   assert.match(adventure, /deleteEntry\(questFeedback\.id\)/);
   assert.match(adventure, /provider-gated/);
   assert.match(more, /Adventure Mode/);
@@ -2389,14 +3621,30 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
 test("keeps Adventure Mode actions on shared mobile touch targets", () => {
   const adventure = readAppFile("adventure.tsx");
 
-  for (const styleName of ["primaryBtn", "secondaryBtn", "questActionButton", "questFeedbackButton", "proofRow", "memoryRow"]) {
+  for (const styleName of [
+    "primaryBtn",
+    "secondaryBtn",
+    "questActionButton",
+    "questFeedbackButton",
+    "proofRow",
+    "memoryRow",
+  ]) {
     assertStyleUsesSharedTouchTarget(adventure, styleName);
   }
 });
 
 test("keeps CareTwin roster readiness visible without fake multi-dog switching", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
-  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
+  const careContext = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "context",
+      "CareContext.tsx",
+    ),
+    "utf8",
+  );
 
   assert.match(careContext, /activePetId/);
   assert.match(careContext, /pets: PetProfile\[\]/);
@@ -2412,16 +3660,49 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const launchModel = readMobileLibFile("launchReadiness.ts");
   const providerSetup = readMobileLibFile("launchProviderSetup.ts");
-  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
+  const careContext = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "context",
+      "CareContext.tsx",
+    ),
+    "utf8",
+  );
 
-  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="CareTwin Roster"/);
-  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Team"/);
-  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Household Access"/);
-  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Access Passes"/);
-  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="My Care Today"/);
-  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Responsibility Center"/);
-  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Sync Health"/);
-  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Launch Readiness"/);
+  assert.match(
+    more,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="CareTwin Roster"/,
+  );
+  assert.match(
+    more,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Team"/,
+  );
+  assert.match(
+    more,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Household Access"/,
+  );
+  assert.match(
+    more,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Access Passes"/,
+  );
+  assert.match(
+    more,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="My Care Today"/,
+  );
+  assert.match(
+    more,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Responsibility Center"/,
+  );
+  assert.match(
+    more,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Sync Health"/,
+  );
+  assert.match(
+    more,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Launch Readiness"/,
+  );
   assert.match(more, /deriveAttachmentManifest/);
   assert.match(more, /deriveLaunchReadiness/);
   assert.match(more, /deriveSupportRunbookPlan/);
@@ -2439,7 +3720,10 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /launchReleasePacket\.betaShipStatus/);
   assert.match(more, /launchReleasePacket\.betaVerdictLabel/);
   assert.match(more, /launchReleasePacket\.betaSummary/);
-  assert.match(more, /launchReleasePacket\.betaNextActions\.slice\(0, 3\)\.map/);
+  assert.match(
+    more,
+    /launchReleasePacket\.betaNextActions\.slice\(0, 3\)\.map/,
+  );
   assert.match(more, /accessibilityLabel=\{[\s\S]*Open beta device QA cockpit/);
   assert.match(more, /Open QA Cockpit/);
   assert.match(more, /Share Beta Packet/);
@@ -2455,39 +3739,78 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /row\.proofRequired/);
   assert.match(more, /Proof needed/);
   assert.match(more, /Owner: \{launchProviderSetupPlan\.nextGate\.owner\}/);
-  assert.match(more, /Proof: \{launchProviderSetupPlan\.nextGate\.proofRequired\}/);
+  assert.match(
+    more,
+    /Proof: \{launchProviderSetupPlan\.nextGate\.proofRequired\}/,
+  );
   assert.match(more, /Edit Provider Plan/);
   assert.match(more, /Share Provider Plan/);
-  assert.match(more, /PROVIDER_SETUP_FIELDS\.every\(\(field\) => normalized\[field\.key\]\)/);
+  assert.match(
+    more,
+    /PROVIDER_SETUP_FIELDS\.every\(\(field\) => normalized\[field\.key\]\)/,
+  );
   assert.match(more, /Share Store Packet/);
   assert.match(more, /Share Launch Packet/);
-  assert.match(more, /accessibilityLabel="Edit WoofWatcher provider launch setup"/);
-  assert.match(more, /accessibilityLabel="Share WoofWatcher provider setup plan"/);
+  assert.match(
+    more,
+    /accessibilityLabel="Edit WoofWatcher provider launch setup"/,
+  );
+  assert.match(
+    more,
+    /accessibilityLabel="Share WoofWatcher provider setup plan"/,
+  );
   assert.match(more, /accessibilityLabel="Share WoofWatcher release packet"/);
-  assert.match(more, /accessibilityLabel="Share WoofWatcher store submission packet"/);
-  assert.match(more, /Share\.share\(\{[\s\S]*message:\s*buildLaunchProviderSetupShareText\(launchProviderSetupPlan/);
+  assert.match(
+    more,
+    /accessibilityLabel="Share WoofWatcher store submission packet"/,
+  );
+  assert.match(
+    more,
+    /Share\.share\(\{[\s\S]*message:\s*buildLaunchProviderSetupShareText\(launchProviderSetupPlan/,
+  );
   assert.match(
     more,
     /const message = buildBetaHandoffPacketShareText\(launchReleasePacket,\s*nativeQaCapturePlan,\s*\{[\s\S]*providerSetupPlan:\s*launchProviderSetupPlan/,
   );
-  assert.match(more, /Share\.share\(\{ message,\s*title:\s*"WoofWatcher 48-Hour Beta Handoff" \}/);
-  assert.match(more, /Share\.share\(\{ message: buildReleasePacketShareText\(launchReleasePacket\)/);
-  assert.match(more, /Share\.share\(\{ message: buildStoreSubmissionPacketShareText\(launchStoreSubmissionPacket\)/);
+  assert.match(
+    more,
+    /Share\.share\(\{ message,\s*title:\s*"WoofWatcher 48-Hour Beta Handoff" \}/,
+  );
+  assert.match(
+    more,
+    /Share\.share\(\{ message: buildReleasePacketShareText\(launchReleasePacket\)/,
+  );
+  assert.match(
+    more,
+    /Share\.share\(\{ message: buildStoreSubmissionPacketShareText\(launchStoreSubmissionPacket\)/,
+  );
   assert.match(careContext, /launchProviderProfile/);
   assert.match(providerSetup, /Provider Launch Setup/);
   assert.match(providerSetup, /nextGate/);
   assert.match(providerSetup, /openCount/);
   assert.match(providerSetup, /Next Provider Gate/);
-  assert.match(providerSetup, /All provider gates are ready for final owner review/);
-  assert.match(providerSetup, /No App Store or Play Store submission is approved by this checklist/);
+  assert.match(
+    providerSetup,
+    /All provider gates are ready for final owner review/,
+  );
+  assert.match(
+    providerSetup,
+    /No App Store or Play Store submission is approved by this checklist/,
+  );
   assert.match(launchModel, /storageQueue/);
   assert.match(launchModel, /local file/);
   assert.match(launchModel, /Device proof required/);
   assert.match(launchModel, /Native iOS\/Android QA evidence is not attached/);
   assert.match(launchModel, /Checkout gated/);
   assert.doesNotMatch(more, /Expo\/EAS profiles ready/);
-  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Tools & Sharing"/);
-  assert.match(more, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Diet Profile"/);
+  assert.match(
+    more,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Tools & Sharing"/,
+  );
+  assert.match(
+    more,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Diet Profile"/,
+  );
   assert.doesNotMatch(more, /sectionHeader:/);
   assert.doesNotMatch(more, /sectionTitle:/);
 });
@@ -2514,9 +3837,18 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /nativeQaCaptureNeedsTuneTarget/);
   assert.match(more, /Share Fix Brief/);
   assert.match(more, /Open Needs Tune/);
-  assert.match(more, /accessibilityLabel="Share first Native QA Needs tune fix brief"/);
-  assert.match(more, /accessibilityLabel=\{`Open first Native QA Needs tune target:/);
-  assert.match(more, /router\.push\(buildCareTwinQaFocusRoute\(nativeQaCaptureNeedsTuneTarget\) as never\)/);
+  assert.match(
+    more,
+    /accessibilityLabel="Share first Native QA Needs tune fix brief"/,
+  );
+  assert.match(
+    more,
+    /accessibilityLabel=\{`Open first Native QA Needs tune target:/,
+  );
+  assert.match(
+    more,
+    /router\.push\(buildCareTwinQaFocusRoute\(nativeQaCaptureNeedsTuneTarget\) as never\)/,
+  );
   assert.match(more, /mobileLaunchQaCaptureTargetStatusLabel\(target\)/);
   assert.match(more, /Pass pending proof/);
   assert.match(more, /nativeQaCaptureHasProofPending/);
@@ -2528,10 +3860,16 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /storeScreenshotProofStatus\.nextTarget/);
   assert.match(more, /buildCareTwinQaFocusRoute/);
   assert.match(more, /qaSurface=\$\{encodeURIComponent\(target\.surfaceId\)\}/);
-  assert.match(more, /buildCareTwinQaFocusRoute\(storeScreenshotProofStatus\.nextTarget\)/);
+  assert.match(
+    more,
+    /buildCareTwinQaFocusRoute\(storeScreenshotProofStatus\.nextTarget\)/,
+  );
   assert.match(more, /Finish Proof/);
   assert.match(more, /nativeQaCaptureCockpitAction/);
-  assert.match(more, /Share\.share\(\{[\s\S]*message:\s*buildMobileLaunchQaCaptureShareText\(nativeQaCapturePlan/);
+  assert.match(
+    more,
+    /Share\.share\(\{[\s\S]*message:\s*buildMobileLaunchQaCaptureShareText\(nativeQaCapturePlan/,
+  );
   assert.match(more, /nativeQa:\s*savedNativeQaSummary/);
   assert.doesNotMatch(more, /nativeQa:\s*null/);
   assert.match(more, /router\.push\(buildCareTwinQaFocusRoute/);
@@ -2539,26 +3877,47 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(careTwinQaRoute, /buildMobileLaunchQaCaptureShareText/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaFixBriefShareText/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaFocusedTargetShareText/);
-  assert.match(careTwinQaRoute, /buildMobileLaunchQaCaptureShareText\(betaCapturePlan,\s*reviewedAtIso\)/);
-  assert.match(careTwinQaRoute, /buildMobileLaunchQaFixBriefShareText\(betaCapturePlan,\s*generatedAtIso\)/);
+  assert.match(
+    careTwinQaRoute,
+    /buildMobileLaunchQaCaptureShareText\(betaCapturePlan,\s*reviewedAtIso\)/,
+  );
+  assert.match(
+    careTwinQaRoute,
+    /buildMobileLaunchQaFixBriefShareText\(betaCapturePlan,\s*generatedAtIso\)/,
+  );
   assert.match(careTwinQaRoute, /const shareFocusedTargetChecklist = async/);
   assert.match(careTwinQaRoute, /const shareFocusedFixBrief = async/);
   assert.match(careTwinQaRoute, /title:\s*"WoofWatcher Focused QA Target"/);
   assert.match(careTwinQaRoute, /title:\s*"WoofWatcher Needs Tune Fix Brief"/);
-  assert.match(careTwinQaRoute, /buildMobileReleaseQaShareText\(releaseQaSurfaces,\s*releaseReviews,\s*reviewedAtIso\)/);
+  assert.match(
+    careTwinQaRoute,
+    /buildMobileReleaseQaShareText\(releaseQaSurfaces,\s*releaseReviews,\s*reviewedAtIso\)/,
+  );
   assert.match(careTwinQaRoute, /useLocalSearchParams/);
   assert.match(careTwinQaRoute, /buildMobileLaunchQaFocusedTarget/);
   assert.match(careTwinQaRoute, /Focused QA Target/);
   assert.match(careTwinQaRoute, /focusedQaTarget\.target\.missingEvidence/);
   assert.match(careTwinQaRoute, /focusedQaEvidence/);
   assert.match(careTwinQaRoute, /title="Focused screenshot proof"/);
-  assert.match(careTwinQaRoute, /label=\{`\$\{focusedQaEvidence\.length\} focused`\}/);
+  assert.match(
+    careTwinQaRoute,
+    /label=\{`\$\{focusedQaEvidence\.length\} focused`\}/,
+  );
   assert.match(careTwinQaRoute, /evidence=\{focusedQaEvidence\}/);
   assert.match(careTwinQaRoute, /Attach focused QA proof/);
   assert.match(careTwinQaRoute, /Share target checklist/);
-  assert.match(careTwinQaRoute, /accessibilityLabel=\{`Share focused QA target checklist:/);
-  assert.match(careTwinQaRoute, /focusedQaTarget\.target\.status === "needs-review"/);
-  assert.match(careTwinQaRoute, /accessibilityLabel=\{`Share focused Needs tune fix brief:/);
+  assert.match(
+    careTwinQaRoute,
+    /accessibilityLabel=\{`Share focused QA target checklist:/,
+  );
+  assert.match(
+    careTwinQaRoute,
+    /focusedQaTarget\.target\.status === "needs-review"/,
+  );
+  assert.match(
+    careTwinQaRoute,
+    /accessibilityLabel=\{`Share focused Needs tune fix brief:/,
+  );
   assert.match(careTwinQaRoute, /Share fix brief/);
 
   assert.match(qaEvidence, /buildMobileLaunchQaCapturePlan/);
@@ -2602,7 +3961,16 @@ test("keeps More launch and household gateway actions on shared mobile touch tar
 });
 
 test("keeps care document refresh conflict-safe in CareContext", () => {
-  const careContext = readFileSync(join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"), "utf8");
+  const careContext = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "context",
+      "CareContext.tsx",
+    ),
+    "utf8",
+  );
 
   assert.match(careContext, /reconcileCareDocFromServer/);
   assert.match(careContext, /shouldPushLocal/);
@@ -2610,11 +3978,16 @@ test("keeps care document refresh conflict-safe in CareContext", () => {
 });
 
 test("keeps the root install guard cross-platform for deadline beta exports", () => {
-  const rootPackageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as {
+  const rootPackageJson = JSON.parse(
+    readFileSync(join(process.cwd(), "package.json"), "utf8"),
+  ) as {
     scripts?: Record<string, string>;
   };
   const preinstall = rootPackageJson.scripts?.preinstall ?? "";
-  const guardSource = readFileSync(join(process.cwd(), "scripts", "enforce-pnpm-install.mjs"), "utf8");
+  const guardSource = readFileSync(
+    join(process.cwd(), "scripts", "enforce-pnpm-install.mjs"),
+    "utf8",
+  );
 
   assert.equal(preinstall, "node scripts/enforce-pnpm-install.mjs");
   assert.doesNotMatch(preinstall, /\bsh\b|-c/);
@@ -2626,16 +3999,27 @@ test("keeps the root install guard cross-platform for deadline beta exports", ()
 });
 
 test("keeps a deadline beta doctor command for mobile export handoff", () => {
-  const rootPackageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as {
+  const rootPackageJson = JSON.parse(
+    readFileSync(join(process.cwd(), "package.json"), "utf8"),
+  ) as {
     packageManager?: string;
     scripts?: Record<string, string>;
   };
-  const doctorSource = readFileSync(join(process.cwd(), "scripts", "mobile-beta-doctor.mjs"), "utf8");
-  const verifyWorkflow = readFileSync(join(process.cwd(), ".github", "workflows", "verify.yml"), "utf8");
+  const doctorSource = readFileSync(
+    join(process.cwd(), "scripts", "mobile-beta-doctor.mjs"),
+    "utf8",
+  );
+  const verifyWorkflow = readFileSync(
+    join(process.cwd(), ".github", "workflows", "verify.yml"),
+    "utf8",
+  );
 
   assert.equal(rootPackageJson.packageManager, "pnpm@10.24.0");
   assert.match(verifyWorkflow, /version:\s*10\.24\.0/);
-  assert.equal(rootPackageJson.scripts?.["doctor:mobile-beta"], "node scripts/mobile-beta-doctor.mjs");
+  assert.equal(
+    rootPackageJson.scripts?.["doctor:mobile-beta"],
+    "node scripts/mobile-beta-doctor.mjs",
+  );
   assert.match(doctorSource, /WoofWatcher mobile beta doctor/);
   assert.match(doctorSource, /packageManager/);
   assert.match(doctorSource, /10\.24\.0/);
@@ -2655,16 +4039,25 @@ test("keeps a deadline beta doctor command for mobile export handoff", () => {
 });
 
 test("emits machine-readable mobile beta doctor status for Replit and native helpers", () => {
-  const rootPackageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as {
+  const rootPackageJson = JSON.parse(
+    readFileSync(join(process.cwd(), "package.json"), "utf8"),
+  ) as {
     scripts?: Record<string, string>;
   };
 
-  assert.equal(rootPackageJson.scripts?.["doctor:mobile-beta:json"], "node scripts/mobile-beta-doctor.mjs --json");
+  assert.equal(
+    rootPackageJson.scripts?.["doctor:mobile-beta:json"],
+    "node scripts/mobile-beta-doctor.mjs --json",
+  );
 
-  const result = spawnSync(process.execPath, ["scripts/mobile-beta-doctor.mjs", "--json"], {
-    cwd: process.cwd(),
-    encoding: "utf8",
-  });
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/mobile-beta-doctor.mjs", "--json"],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    },
+  );
 
   assert.equal(result.stderr, "");
 
@@ -2681,18 +4074,79 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   };
 
   assert.equal(payload.name, "WoofWatcher mobile beta doctor");
-  assert.ok(payload.result === "BLOCKED" || payload.result === "READY_FOR_EXPORT");
+  assert.ok(
+    payload.result === "BLOCKED" || payload.result === "READY_FOR_EXPORT",
+  );
   assert.equal(result.status, payload.result === "READY_FOR_EXPORT" ? 0 : 1);
-  assert.ok(payload.checks?.some((check) => check.label === "Node 24 runtime" && check.status === "PASS"));
-  assert.ok(payload.checks?.some((check) => check.label === "EAS build profiles include iOS and Android" && check.status === "PASS"));
-  assert.ok(payload.checks?.some((check) => check.label === "beta handoff source includes proof sections" && check.status === "PASS"));
-  assert.ok(payload.checks?.some((check) => check.label === "owner preview proof wiring is source-backed" && check.status === "PASS"));
-  assert.ok(payload.checks?.some((check) => check.label === "care-twin QA route proof flow is source-backed" && check.status === "PASS"));
-  assert.ok(payload.checks?.some((check) => check.label === "native QA Needs tune fix brief is source-backed" && check.status === "PASS"));
-  assert.ok(payload.checks?.some((check) => check.label === "provider-aware Care Pass storage is source-backed" && check.status === "PASS"));
-  assert.ok(payload.checks?.some((check) => check.label === "owner-preview Care Pass storage proof is source-backed" && check.status === "PASS"));
-  assert.ok(payload.checks?.some((check) => check.label === "beta handoff truth boundaries are source-backed" && check.status === "PASS"));
-  assert.ok(payload.checks?.some((check) => check.label === "unsupported bundled pnpm candidate" && check.detail?.includes("pnpm")));
+  assert.ok(
+    payload.checks?.some(
+      (check) => check.label === "Node 24 runtime" && check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "EAS build profiles include iOS and Android" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "beta handoff source includes proof sections" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "owner preview proof wiring is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "care-twin QA route proof flow is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "native QA Needs tune fix brief is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "provider-aware Care Pass storage is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label ===
+          "owner-preview Care Pass storage proof is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "beta handoff truth boundaries are source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "unsupported bundled pnpm candidate" &&
+        check.detail?.includes("pnpm"),
+    ),
+  );
   if (payload.result === "BLOCKED") {
     assert.ok(
       payload.issues?.some(
@@ -2704,7 +4158,9 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
       "blocked beta doctor should name the missing dependency/export gate",
     );
   }
-  assert.ok(payload.warnings?.includes("Corepack available for pnpm bootstrap"));
+  assert.ok(
+    payload.warnings?.includes("Corepack available for pnpm bootstrap"),
+  );
   assert.deepEqual(payload.proofCommands, [
     "corepack prepare pnpm@10.24.0 --activate",
     "pnpm install",
@@ -2720,11 +4176,41 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     "Provider proof needed",
     "Truth boundaries",
   ]);
-  assert.ok(payload.nextActions?.some((action) => action.includes("pnpm --filter @workspace/woofwatcher-mobile run smoke:web")));
-  assert.ok(payload.nextActions?.some((action) => action.includes("preview:smoke") && action.includes("127.0.0.1:4194")));
-  assert.ok(payload.nextActions?.some((action) => action.includes("/care-twin-qa")));
-  assert.ok(payload.nextActions?.some((action) => action.includes("Printable HTML") && action.includes("PDF pending")));
-  assert.ok(payload.truthBoundaries?.some((boundary) => boundary.includes("READY_FOR_EXPORT only")));
-  assert.ok(payload.truthBoundaries?.some((boundary) => boundary.includes("does not approve App Store")));
-  assert.ok(payload.truthBoundaries?.some((boundary) => boundary.includes("BLOCKED means do not claim")));
+  assert.ok(
+    payload.nextActions?.some((action) =>
+      action.includes(
+        "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+      ),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("preview:smoke") && action.includes("127.0.0.1:4194"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some((action) => action.includes("/care-twin-qa")),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("Printable HTML") && action.includes("PDF pending"),
+    ),
+  );
+  assert.ok(
+    payload.truthBoundaries?.some((boundary) =>
+      boundary.includes("READY_FOR_EXPORT only"),
+    ),
+  );
+  assert.ok(
+    payload.truthBoundaries?.some((boundary) =>
+      boundary.includes("does not approve App Store"),
+    ),
+  );
+  assert.ok(
+    payload.truthBoundaries?.some((boundary) =>
+      boundary.includes("BLOCKED means do not claim"),
+    ),
+  );
 });

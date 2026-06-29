@@ -1969,6 +1969,18 @@ recorded steps, and `gh run view --log-failed` returned
 billing/spending-limit pre-job blocker, not as product verification evidence or
 a local app regression.
 
+The Home care-twin avatar runtime pass connected Avatar Studio back into the
+main Phoenix room. `avatarRoomRuntime.ts` now derives Home room sprite mode and
+accessory layers from the saved Avatar Studio config: Shepherd/Phoenix keeps the
+full Option B action sprite family with fitted overlays/underlays, and
+non-Shepherd launch templates use their live PixelLab idle/walk sprite packs in
+Home. Home and Avatar Studio both pass the saved/draft config to
+`LivingPhoenixRoom`, and readiness tests protect this wiring. Local verification
+passed mobile readiness 94/94, the 461-test behavior/readiness suite, root and
+mobile TypeScript, PixelLab verification, Expo web export, route smoke, and
+`git diff --check`. Remaining work is native iOS/Android crop/gait/tap QA plus
+production-scale overlay/emote packs for every launch template.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

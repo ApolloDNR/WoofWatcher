@@ -32,7 +32,10 @@ import {
   getCareTwinSpriteAsset,
 } from "@/lib/careTwinAssets";
 import { zoneForSpriteAction } from "@/lib/careTwinStage";
-import { deriveCareTwinChoreography, motionRecipeForSpriteAction } from "@/lib/careTwinChoreography";
+import {
+  deriveCareTwinChoreography,
+  motionRecipeForSpriteAction,
+} from "@/lib/careTwinChoreography";
 import {
   CARE_TWIN_SPRITE_MANIFEST,
   deriveCareTwinScene,
@@ -40,6 +43,8 @@ import {
   type CareTwinHudTone,
   type CareTwinSpriteAction,
 } from "@/lib/avatarLifeEngine";
+import { deriveAvatarRoomRuntime } from "@/lib/avatarRoomRuntime";
+import type { PetAvatarConfig } from "@/lib/avatarStudio";
 import type { AvatarMotionModel } from "@/lib/avatarMotion";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import type { Mood } from "@/lib/phoenixStatus";
@@ -88,13 +93,17 @@ interface Props {
   nextLabel: string;
   reaction?: PhoenixRoomReaction | null;
   statusReadouts?: readonly PhoenixRoomStat[];
+  avatarConfig?: PetAvatarConfig;
   onPress?: () => void;
   presentation?: "home" | "studio";
 }
 
 type PercentString = `${number}%`;
 
-const MOOD_THEME: Record<Mood, { glow: string; wash: string; accent: string; status: PixelIconName }> = {
+const MOOD_THEME: Record<
+  Mood,
+  { glow: string; wash: string; accent: string; status: PixelIconName }
+> = {
   happy: {
     glow: "rgba(255, 216, 122, 0.38)",
     wash: "rgba(255, 248, 226, 0.03)",
@@ -127,7 +136,10 @@ const MOOD_THEME: Record<Mood, { glow: string; wash: string; accent: string; sta
   },
 };
 
-const ROOM_ZONES: Record<AvatarRoomZone, { x: number; y: number; scale: number; icon: PixelIconName; label: string }> = {
+const ROOM_ZONES: Record<
+  AvatarRoomZone,
+  { x: number; y: number; scale: number; icon: PixelIconName; label: string }
+> = {
   rug: { x: 0, y: 0, scale: 1, icon: "heart", label: "On the rug" },
   door: { x: -18, y: -4, scale: 1.015, icon: "walk", label: "Door check" },
   bowl: { x: 16, y: 9, scale: 1.01, icon: "meal", label: "Bowl time" },
@@ -135,7 +147,15 @@ const ROOM_ZONES: Record<AvatarRoomZone, { x: number; y: number; scale: number; 
   window: { x: -11, y: -9, scale: 1.008, icon: "happy", label: "Window watch" },
 };
 
-const FOCUS_SPOTS: Record<AvatarRoomZone, { left: PercentString; top: PercentString; width: PercentString; height: PercentString }> = {
+const FOCUS_SPOTS: Record<
+  AvatarRoomZone,
+  {
+    left: PercentString;
+    top: PercentString;
+    width: PercentString;
+    height: PercentString;
+  }
+> = {
   rug: { left: "18%", top: "25%", width: "47%", height: "55%" },
   door: { left: "10%", top: "24%", width: "45%", height: "54%" },
   bowl: { left: "48%", top: "59%", width: "38%", height: "24%" },
@@ -143,7 +163,10 @@ const FOCUS_SPOTS: Record<AvatarRoomZone, { left: PercentString; top: PercentStr
   window: { left: "30%", top: "8%", width: "42%", height: "32%" },
 };
 
-const SPRITE_STAGE_ZONES: Record<AvatarRoomZone, { left: PercentString; top: PercentString; width: number; height: number }> = {
+const SPRITE_STAGE_ZONES: Record<
+  AvatarRoomZone,
+  { left: PercentString; top: PercentString; width: number; height: number }
+> = {
   rug: { left: "17%", top: "23%", width: 248, height: 248 },
   door: { left: "7%", top: "23%", width: 246, height: 246 },
   bowl: { left: "34%", top: "32%", width: 224, height: 224 },
@@ -159,7 +182,11 @@ const HUD_TONE_COLOR: Record<CareTwinHudTone, string> = {
   reward: "#E07A2F",
 };
 
-const PIXEL_SPARKS: { left: PercentString; top: PercentString; size: number }[] = [
+const PIXEL_SPARKS: {
+  left: PercentString;
+  top: PercentString;
+  size: number;
+}[] = [
   { left: "8%", top: "19%", size: 4 },
   { left: "18%", top: "63%", size: 3 },
   { left: "42%", top: "12%", size: 4 },
@@ -168,10 +195,15 @@ const PIXEL_SPARKS: { left: PercentString; top: PercentString; size: number }[] 
   { left: "58%", top: "75%", size: 3 },
 ];
 
-const PIXEL_SCANLINES = Array.from({ length: 8 }).map((_, index) => `${10 + index * 11}%` as PercentString);
+const PIXEL_SCANLINES = Array.from({ length: 8 }).map(
+  (_, index) => `${10 + index * 11}%` as PercentString,
+);
 
 function energyBlocks(value: number): boolean[] {
-  const filled = Math.max(1, Math.min(8, Math.round((Math.max(0, Math.min(100, value)) / 100) * 8)));
+  const filled = Math.max(
+    1,
+    Math.min(8, Math.round((Math.max(0, Math.min(100, value)) / 100) * 8)),
+  );
   return Array.from({ length: 8 }).map((_, index) => index < filled);
 }
 
@@ -198,6 +230,7 @@ export function LivingPhoenixRoom({
   nextLabel,
   reaction,
   statusReadouts,
+  avatarConfig,
   onPress,
   presentation = "home",
 }: Props) {
@@ -210,19 +243,50 @@ export function LivingPhoenixRoom({
   const fallbackAvatarSource = PHOENIX_FALLBACK_AVATARS[mood];
   const lines = useMemo(() => speechLines(speech), [speech]);
   const hudAccent = HUD_TONE_COLOR[plan.hudTone] ?? theme.accent;
-  const [activeReaction, setActiveReaction] = useState<PhoenixRoomReaction | null>(reaction ?? null);
-  const [ambientSpriteAction, setAmbientSpriteAction] = useState<CareTwinSpriteAction | null>(null);
+  const [activeReaction, setActiveReaction] =
+    useState<PhoenixRoomReaction | null>(reaction ?? null);
+  const [ambientSpriteAction, setAmbientSpriteAction] =
+    useState<CareTwinSpriteAction | null>(null);
   const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ambientTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const activeSpriteAction = activeReaction?.spriteAction ?? ambientSpriteAction ?? plan.spriteAction;
+  const activeSpriteAction =
+    activeReaction?.spriteAction ?? ambientSpriteAction ?? plan.spriteAction;
+  const avatarRoomRuntime = useMemo(
+    () =>
+      avatarConfig
+        ? deriveAvatarRoomRuntime(avatarConfig, activeSpriteAction)
+        : null,
+    [activeSpriteAction, avatarConfig],
+  );
   const activeZoneKey = zoneForSpriteAction(activeSpriteAction, plan.zone);
   const zone = ROOM_ZONES[activeZoneKey];
   const focusSpot = FOCUS_SPOTS[activeZoneKey];
   const spriteZone = SPRITE_STAGE_ZONES[activeZoneKey];
-  const spriteAsset = useMemo(() => getCareTwinSpriteAsset(activeSpriteAction), [activeSpriteAction]);
-  const roomLayer = useMemo(() => getCareTwinRoomLayer(mood, activeSpriteAction), [activeSpriteAction, mood]);
-  const layerReadiness = useMemo(() => getCareTwinLayerReadiness(activeSpriteAction, mood), [activeSpriteAction, mood]);
-  const layeredStageReady = layerReadiness.layeredReady && Boolean(spriteAsset && roomLayer);
+  const spriteAsset = useMemo(
+    () =>
+      avatarRoomRuntime?.spriteAsset ??
+      getCareTwinSpriteAsset(activeSpriteAction),
+    [activeSpriteAction, avatarRoomRuntime?.spriteAsset],
+  );
+  const roomLayer = useMemo(
+    () => getCareTwinRoomLayer(mood, activeSpriteAction),
+    [activeSpriteAction, mood],
+  );
+  const layerReadiness = useMemo(
+    () => getCareTwinLayerReadiness(activeSpriteAction, mood),
+    [activeSpriteAction, mood],
+  );
+  const activeSpriteTrack =
+    avatarRoomRuntime?.spriteTrack ??
+    CARE_TWIN_SPRITE_MANIFEST[activeSpriteAction] ??
+    plan.spriteTrack;
+  const activeSpriteAsset =
+    avatarRoomRuntime?.spriteAsset ??
+    getCareTwinSpriteAsset(activeSpriteAction) ??
+    spriteAsset;
+  const layeredStageReady =
+    layerReadiness.roomReady &&
+    Boolean(activeSpriteAsset && roomLayer && activeSpriteTrack);
   const roomStageReady = Boolean(roomLayer);
   const stageSource = roomLayer?.source ?? sceneSource;
   const useFallbackAvatarLayer = roomStageReady && !layeredStageReady;
@@ -252,11 +316,23 @@ export function LivingPhoenixRoom({
           progress: plan.scenePhase === "idle" ? 72 : 88,
         },
       ],
-    [energy, hudAccent, mood, plan.moodLabel, plan.recommendedActionLabel, plan.scenePhase, statusReadouts, theme.accent, theme.status, zone.icon],
+    [
+      energy,
+      hudAccent,
+      mood,
+      plan.moodLabel,
+      plan.recommendedActionLabel,
+      plan.scenePhase,
+      statusReadouts,
+      theme.accent,
+      theme.status,
+      zone.icon,
+    ],
   );
-  const activeSpriteTrack = CARE_TWIN_SPRITE_MANIFEST[activeSpriteAction] ?? plan.spriteTrack;
-  const activeSpriteAsset = getCareTwinSpriteAsset(activeSpriteAction) ?? spriteAsset;
-  const motionRecipe = useMemo(() => motionRecipeForSpriteAction(activeSpriteAction), [activeSpriteAction]);
+  const motionRecipe = useMemo(
+    () => motionRecipeForSpriteAction(activeSpriteAction),
+    [activeSpriteAction],
+  );
 
   const breath = useSharedValue(0);
   const walkCycle = useSharedValue(0);
@@ -276,14 +352,20 @@ export function LivingPhoenixRoom({
   useEffect(() => {
     breath.value = 0;
     breath.value = withRepeat(
-      withTiming(1, { duration: plan.paceMs, easing: Easing.inOut(Easing.sin) }),
+      withTiming(1, {
+        duration: plan.paceMs,
+        easing: Easing.inOut(Easing.sin),
+      }),
       -1,
       true,
     );
 
     walkCycle.value = 0;
     walkCycle.value = withRepeat(
-      withTiming(1, { duration: Math.max(760, Math.round(plan.paceMs * 0.62)), easing: Easing.linear }),
+      withTiming(1, {
+        duration: Math.max(760, Math.round(plan.paceMs * 0.62)),
+        easing: Easing.linear,
+      }),
       -1,
       false,
     );
@@ -308,7 +390,10 @@ export function LivingPhoenixRoom({
       withSpring(1, { damping: 9, stiffness: 120 }),
       withDelay(1250, withTiming(0, { duration: 260 })),
     );
-    reactionTimer.current = setTimeout(() => setActiveReaction(null), choreography.reactionDurationMs);
+    reactionTimer.current = setTimeout(
+      () => setActiveReaction(null),
+      choreography.reactionDurationMs,
+    );
     return () => {
       if (reactionTimer.current) clearTimeout(reactionTimer.current);
     };
@@ -320,25 +405,36 @@ export function LivingPhoenixRoom({
     if (!choreography.ambient.length || plan.scenePhase === "rest") return;
 
     const shortestCadence = choreography.ambientCadenceMs ?? 2600;
-    const id = setInterval(() => {
-      if (activeReaction) return;
-      const available = choreography.ambient.filter((behavior) => Math.random() <= (behavior.chance ?? 1));
-      const next = available[Math.floor(Math.random() * available.length)];
-      if (!next || next.action === plan.spriteAction) return;
+    const id = setInterval(
+      () => {
+        if (activeReaction) return;
+        const available = choreography.ambient.filter(
+          (behavior) => Math.random() <= (behavior.chance ?? 1),
+        );
+        const next = available[Math.floor(Math.random() * available.length)];
+        if (!next || next.action === plan.spriteAction) return;
 
-      setAmbientSpriteAction(next.action);
-      if (ambientTimer.current) clearTimeout(ambientTimer.current);
-      ambientTimer.current = setTimeout(
-        () => setAmbientSpriteAction(null),
-        Math.min(1700, Math.max(900, next.durationMs)),
-      );
-    }, Math.max(1800, shortestCadence));
+        setAmbientSpriteAction(next.action);
+        if (ambientTimer.current) clearTimeout(ambientTimer.current);
+        ambientTimer.current = setTimeout(
+          () => setAmbientSpriteAction(null),
+          Math.min(1700, Math.max(900, next.durationMs)),
+        );
+      },
+      Math.max(1800, shortestCadence),
+    );
 
     return () => {
       clearInterval(id);
       if (ambientTimer.current) clearTimeout(ambientTimer.current);
     };
-  }, [activeReaction, choreography.ambient, choreography.ambientCadenceMs, plan.scenePhase, plan.spriteAction]);
+  }, [
+    activeReaction,
+    choreography.ambient,
+    choreography.ambientCadenceMs,
+    plan.scenePhase,
+    plan.spriteAction,
+  ]);
 
   const isWalking = plan.animation === "walk";
   const isEating = plan.animation === "eat" || plan.animation === "drink";
@@ -358,12 +454,44 @@ export function LivingPhoenixRoom({
     return {
       transform: [
         { translateX: zoneX.value * 0.1 + travel },
-        { translateY: zoneY.value * 0.08 - breath.value * plan.breathLift * (0.18 + motionRecipe.scalePulse * 0.08) - bob - celebration * 1.5 + chew * 0.8 + sleepDrift - tap.value * 3 },
-        { scale: zoneScale.value * (1.018 + breath.value * plan.breathScale * (0.52 + motionRecipe.scalePulse * 0.16) + tap.value * 0.01) },
-        { rotate: `${wave * motionRecipe.tiltDeg * 0.32 + chew * 0.18 + comfortTilt + tap.value * -0.55}deg` },
+        {
+          translateY:
+            zoneY.value * 0.08 -
+            breath.value *
+              plan.breathLift *
+              (0.18 + motionRecipe.scalePulse * 0.08) -
+            bob -
+            celebration * 1.5 +
+            chew * 0.8 +
+            sleepDrift -
+            tap.value * 3,
+        },
+        {
+          scale:
+            zoneScale.value *
+            (1.018 +
+              breath.value *
+                plan.breathScale *
+                (0.52 + motionRecipe.scalePulse * 0.16) +
+              tap.value * 0.01),
+        },
+        {
+          rotate: `${wave * motionRecipe.tiltDeg * 0.32 + chew * 0.18 + comfortTilt + tap.value * -0.55}deg`,
+        },
       ],
     };
-  }, [isCelebrate, isComfort, isEating, isSleeping, motionRecipe.bodyBobPx, motionRecipe.bodySwayPx, motionRecipe.scalePulse, motionRecipe.tiltDeg, plan.breathLift, plan.breathScale]);
+  }, [
+    isCelebrate,
+    isComfort,
+    isEating,
+    isSleeping,
+    motionRecipe.bodyBobPx,
+    motionRecipe.bodySwayPx,
+    motionRecipe.scalePulse,
+    motionRecipe.tiltDeg,
+    plan.breathLift,
+    plan.breathScale,
+  ]);
 
   const spriteRigStyle = useAnimatedStyle(() => {
     const wave = Math.sin(walkCycle.value * Math.PI * 2);
@@ -377,23 +505,62 @@ export function LivingPhoenixRoom({
     return {
       transform: [
         { translateX: zoneX.value * 0.55 + travel },
-        { translateY: zoneY.value * 0.32 - breath.value * plan.breathLift * (0.78 + motionRecipe.scalePulse * 0.32) - bob - celebration * 4 + chew * 2 + sleepDrift - tap.value * 8 },
-        { scale: zoneScale.value * (1 + breath.value * plan.breathScale * (0.82 + motionRecipe.scalePulse * 0.28) + tap.value * 0.025) },
-        { rotate: `${wave * motionRecipe.tiltDeg + chew * 0.6 + comfortTilt + tap.value * -1.4}deg` },
+        {
+          translateY:
+            zoneY.value * 0.32 -
+            breath.value *
+              plan.breathLift *
+              (0.78 + motionRecipe.scalePulse * 0.32) -
+            bob -
+            celebration * 4 +
+            chew * 2 +
+            sleepDrift -
+            tap.value * 8,
+        },
+        {
+          scale:
+            zoneScale.value *
+            (1 +
+              breath.value *
+                plan.breathScale *
+                (0.82 + motionRecipe.scalePulse * 0.28) +
+              tap.value * 0.025),
+        },
+        {
+          rotate: `${wave * motionRecipe.tiltDeg + chew * 0.6 + comfortTilt + tap.value * -1.4}deg`,
+        },
       ],
     };
-  }, [isCelebrate, isComfort, isEating, isSleeping, motionRecipe.bodyBobPx, motionRecipe.bodySwayPx, motionRecipe.scalePulse, motionRecipe.tiltDeg, plan.breathLift, plan.breathScale]);
+  }, [
+    isCelebrate,
+    isComfort,
+    isEating,
+    isSleeping,
+    motionRecipe.bodyBobPx,
+    motionRecipe.bodySwayPx,
+    motionRecipe.scalePulse,
+    motionRecipe.tiltDeg,
+    plan.breathLift,
+    plan.breathScale,
+  ]);
 
-  const spriteShadowStyle = useAnimatedStyle(() => ({
-    opacity: 0.28 + breath.value * motionRecipe.shadowOpacityPulse,
-    transform: [
-      { scaleX: 1.16 + breath.value * motionRecipe.shadowScalePulse },
-      { scaleY: 1 - breath.value * 0.05 },
-    ],
-  }), [motionRecipe.shadowOpacityPulse, motionRecipe.shadowScalePulse]);
+  const spriteShadowStyle = useAnimatedStyle(
+    () => ({
+      opacity: 0.28 + breath.value * motionRecipe.shadowOpacityPulse,
+      transform: [
+        { scaleX: 1.16 + breath.value * motionRecipe.shadowScalePulse },
+        { scaleY: 1 - breath.value * 0.05 },
+      ],
+    }),
+    [motionRecipe.shadowOpacityPulse, motionRecipe.shadowScalePulse],
+  );
 
   const dogFocusGlow = useAnimatedStyle(() => ({
-    opacity: interpolate(breath.value, [0, 0.5, 1], [0.16, plan.showCareAura ? 0.46 : 0.28, 0.16]),
+    opacity: interpolate(
+      breath.value,
+      [0, 0.5, 1],
+      [0.16, plan.showCareAura ? 0.46 : 0.28, 0.16],
+    ),
     transform: [{ scale: interpolate(breath.value, [0, 1], [0.96, 1.08]) }],
   }));
 
@@ -418,7 +585,13 @@ export function LivingPhoenixRoom({
     opacity: interpolate(reactionProgress.value, [0, 0.25, 1], [0, 1, 0.72]),
     transform: [
       { translateY: interpolate(reactionProgress.value, [0, 1], [8, -15]) },
-      { scale: interpolate(reactionProgress.value, [0, 0.35, 1], [0.8, 1.15, 1]) },
+      {
+        scale: interpolate(
+          reactionProgress.value,
+          [0, 0.35, 1],
+          [0.8, 1.15, 1],
+        ),
+      },
     ],
   }));
 
@@ -436,7 +609,7 @@ export function LivingPhoenixRoom({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Phoenix room. ${motion.label}. ${plan.tapVerb}. ${speech}`}
+      accessibilityLabel={`Phoenix room. ${avatarRoomRuntime?.templateLabel ?? "Shepherd"} care twin. ${motion.label}. ${plan.tapVerb}. ${speech}`}
       onPress={handlePress}
       style={styles.root}
     >
@@ -449,10 +622,18 @@ export function LivingPhoenixRoom({
       <Animated.Image
         source={stageSource}
         resizeMode="cover"
-        style={[styles.scene, pixelImageStyle, animateBakedScene ? sceneMotionStyle : null]}
+        style={[
+          styles.scene,
+          pixelImageStyle,
+          animateBakedScene ? sceneMotionStyle : null,
+        ]}
       />
       {PIXEL_SCANLINES.map((top) => (
-        <View key={top} pointerEvents="none" style={[styles.scanline, { top }]} />
+        <View
+          key={top}
+          pointerEvents="none"
+          style={[styles.scanline, { top }]}
+        />
       ))}
       <LinearGradient
         colors={[theme.wash, "rgba(255,249,239,0)", "rgba(8,20,36,0.28)"]}
@@ -486,14 +667,59 @@ export function LivingPhoenixRoom({
           ]}
           testID="care-twin-layered-sprite-rig"
         >
-          <Animated.View style={[styles.spriteGroundShadow, { backgroundColor: theme.glow }, spriteShadowStyle]} />
+          <Animated.View
+            style={[
+              styles.spriteGroundShadow,
+              { backgroundColor: theme.glow },
+              spriteShadowStyle,
+            ]}
+          />
+          {avatarRoomRuntime?.underlayLayers.map((layer) =>
+            layer.source ? (
+              <Animated.Image
+                key={`avatar-underlay-${layer.id}`}
+                source={layer.source}
+                resizeMode="contain"
+                style={[
+                  styles.avatarAccessoryLayer,
+                  styles.avatarAccessoryUnderlay,
+                  pixelImageStyle,
+                ]}
+                testID={`care-twin-avatar-underlay-${layer.id}`}
+              />
+            ) : null,
+          )}
           <SpriteSheetPlayer
-            key={activeReaction?.spriteAction ? `${activeReaction.id}-${activeReaction.spriteAction}` : activeSpriteTrack.key}
+            key={
+              activeReaction?.spriteAction
+                ? `${activeReaction.id}-${activeReaction.spriteAction}`
+                : activeSpriteTrack.key
+            }
             asset={activeSpriteAsset}
             height={spriteZone.height}
+            testID={
+              avatarRoomRuntime?.spriteMode === "template-idle-walk-pack"
+                ? "care-twin-template-sprite-player"
+                : "care-twin-sprite-player"
+            }
             track={activeSpriteTrack}
             width={spriteZone.width}
           />
+          {avatarRoomRuntime?.overlayLayers.map((layer) =>
+            layer.source ? (
+              <Animated.Image
+                key={`avatar-overlay-${layer.id}`}
+                source={layer.source}
+                resizeMode="contain"
+                style={[
+                  styles.avatarAccessoryLayer,
+                  styles.avatarAccessoryOverlay,
+                  pixelImageStyle,
+                ]}
+                testID={`care-twin-avatar-overlay-${layer.id}`}
+              />
+            ) : null,
+          )}
         </Animated.View>
       ) : null}
 
@@ -512,7 +738,13 @@ export function LivingPhoenixRoom({
           ]}
           testID="care-twin-fallback-avatar-rig"
         >
-          <Animated.View style={[styles.spriteGroundShadow, { backgroundColor: theme.glow }, spriteShadowStyle]} />
+          <Animated.View
+            style={[
+              styles.spriteGroundShadow,
+              { backgroundColor: theme.glow },
+              spriteShadowStyle,
+            ]}
+          />
           <Animated.Image
             source={fallbackAvatarSource}
             resizeMode="contain"
@@ -541,32 +773,73 @@ export function LivingPhoenixRoom({
       ))}
 
       <View style={styles.topHud} pointerEvents="none">
-        <View style={[styles.liveChip, { backgroundColor: "rgba(8, 26, 42, 0.88)", borderColor: "rgba(255,249,239,0.22)" }]}>
-          <Animated.View style={[styles.liveDot, { backgroundColor: hudAccent }, activeZoneStyle]} />
+        <View
+          style={[
+            styles.liveChip,
+            {
+              backgroundColor: "rgba(8, 26, 42, 0.88)",
+              borderColor: "rgba(255,249,239,0.22)",
+            },
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.liveDot,
+              { backgroundColor: hudAccent },
+              activeZoneStyle,
+            ]}
+          />
           <Text style={styles.liveText}>PHOENIX ROOM</Text>
         </View>
         {!isStudio ? (
           <Animated.View
             style={[
               styles.zoneChip,
-              { backgroundColor: "rgba(255,249,239,0.93)", borderColor: theme.accent },
+              {
+                backgroundColor: "rgba(255,249,239,0.93)",
+                borderColor: theme.accent,
+              },
               activeZoneStyle,
             ]}
           >
             <PixelIcon name={zone.icon} size={15} />
-            <Text style={[styles.zoneChipText, { color: colors.navy }]}>{zone.label}</Text>
+            <Text style={[styles.zoneChipText, { color: colors.navy }]}>
+              {zone.label}
+            </Text>
           </Animated.View>
         ) : null}
       </View>
 
       {!isStudio ? (
-        <View style={[styles.roomStatsPanel, { backgroundColor: "rgba(255,249,239,0.93)", borderColor: "rgba(8,26,42,0.18)" }]}>
+        <View
+          style={[
+            styles.roomStatsPanel,
+            {
+              backgroundColor: "rgba(255,249,239,0.93)",
+              borderColor: "rgba(8,26,42,0.18)",
+            },
+          ]}
+        >
           <View style={styles.roomStatsHeader}>
-            <Text style={[styles.roomStatsTitle, { color: colors.navy }]}>STATUS</Text>
+            <Text style={[styles.roomStatsTitle, { color: colors.navy }]}>
+              STATUS
+            </Text>
             <View style={styles.roomStatsSignalWrap}>
-              <View style={[styles.roomStatsSignal, { backgroundColor: hudAccent }]} />
-              <View style={[styles.roomStatsSignal, { backgroundColor: hudAccent, opacity: 0.58 }]} />
-              <View style={[styles.roomStatsSignal, { backgroundColor: hudAccent, opacity: 0.28 }]} />
+              <View
+                style={[styles.roomStatsSignal, { backgroundColor: hudAccent }]}
+              />
+              <View
+                style={[
+                  styles.roomStatsSignal,
+                  { backgroundColor: hudAccent, opacity: 0.58 },
+                ]}
+              />
+              <View
+                style={[
+                  styles.roomStatsSignal,
+                  { backgroundColor: hudAccent, opacity: 0.28 },
+                ]}
+              />
             </View>
           </View>
           {roomStats.map((stat) => (
@@ -574,10 +847,19 @@ export function LivingPhoenixRoom({
               <PixelIcon name={stat.icon} size={15} />
               <View style={styles.roomStatCopy}>
                 <View style={styles.roomStatTop}>
-                  <Text numberOfLines={1} style={[styles.roomStatLabel, { color: colors.navy }]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.roomStatLabel, { color: colors.navy }]}
+                  >
                     {stat.label}
                   </Text>
-                  <Text numberOfLines={1} style={[styles.roomStatValue, { color: stat.tone ?? hudAccent }]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.roomStatValue,
+                      { color: stat.tone ?? hudAccent },
+                    ]}
+                  >
                     {stat.value}
                   </Text>
                 </View>
@@ -588,8 +870,12 @@ export function LivingPhoenixRoom({
                       style={[
                         styles.roomStatBlock,
                         {
-                          backgroundColor: active ? stat.tone ?? hudAccent : colors.muted,
-                          borderColor: active ? stat.tone ?? hudAccent : colors.border,
+                          backgroundColor: active
+                            ? (stat.tone ?? hudAccent)
+                            : colors.muted,
+                          borderColor: active
+                            ? (stat.tone ?? hudAccent)
+                            : colors.border,
                         },
                       ]}
                     />
@@ -602,43 +888,95 @@ export function LivingPhoenixRoom({
       ) : null}
 
       {!isStudio ? (
-        <View style={[styles.speechBubble, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
+        <View
+          style={[
+            styles.speechBubble,
+            {
+              backgroundColor: "rgba(255,249,239,0.94)",
+              borderColor: colors.navy,
+            },
+          ]}
+        >
           {(lines.length ? lines : ["I'm ready."]).map((line) => (
-            <Text key={line} style={[styles.speechText, { color: colors.navy }]}>
+            <Text
+              key={line}
+              style={[styles.speechText, { color: colors.navy }]}
+            >
               {line}
             </Text>
           ))}
-          <View style={[styles.speechTail, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]} />
+          <View
+            style={[
+              styles.speechTail,
+              {
+                backgroundColor: "rgba(255,249,239,0.94)",
+                borderColor: colors.navy,
+              },
+            ]}
+          />
         </View>
       ) : null}
 
       {!isStudio ? (
-        <View style={[styles.statusPatch, { backgroundColor: "rgba(8,26,42,0.78)", borderColor: "rgba(255,249,239,0.2)" }]}>
+        <View
+          style={[
+            styles.statusPatch,
+            {
+              backgroundColor: "rgba(8,26,42,0.78)",
+              borderColor: "rgba(255,249,239,0.2)",
+            },
+          ]}
+        >
           <PixelIcon name={theme.status} size={22} />
           <View style={styles.statusPatchCopy}>
-            <Text style={styles.statusPatchKicker}>{plan.scenePhase.replace("-", " ")}</Text>
+            <Text style={styles.statusPatchKicker}>
+              {plan.scenePhase.replace("-", " ")}
+            </Text>
             <Text style={styles.statusPatchValue}>{plan.moodLabel}</Text>
           </View>
         </View>
       ) : null}
 
       {isWalking ? (
-        <Animated.View pointerEvents="none" style={[styles.walkMarks, shimmerStyle]}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.walkMarks, shimmerStyle]}
+        >
           <View style={[styles.walkMark, { backgroundColor: theme.accent }]} />
-          <View style={[styles.walkMark, styles.walkMarkShort, { backgroundColor: theme.accent }]} />
-          <View style={[styles.walkMark, styles.walkMarkTiny, { backgroundColor: theme.accent }]} />
+          <View
+            style={[
+              styles.walkMark,
+              styles.walkMarkShort,
+              { backgroundColor: theme.accent },
+            ]}
+          />
+          <View
+            style={[
+              styles.walkMark,
+              styles.walkMarkTiny,
+              { backgroundColor: theme.accent },
+            ]}
+          />
         </Animated.View>
       ) : null}
 
       {plan.showHearts ? (
-        <Animated.View pointerEvents="none" style={[styles.heartTrail, shimmerStyle]}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.heartTrail, shimmerStyle]}
+        >
           <PixelIcon name="heart" size={18} />
           <PixelIcon name="heart" size={12} />
         </Animated.View>
       ) : null}
 
       {plan.showSleep ? (
-        <Animated.View entering={FadeIn} exiting={FadeOut} pointerEvents="none" style={[styles.sleepBubble, shimmerStyle]}>
+        <Animated.View
+          entering={FadeIn}
+          exiting={FadeOut}
+          pointerEvents="none"
+          style={[styles.sleepBubble, shimmerStyle]}
+        >
           <Text style={styles.sleepText}>Zz</Text>
         </Animated.View>
       ) : null}
@@ -649,39 +987,85 @@ export function LivingPhoenixRoom({
           style={[
             styles.reaction,
             reactionStyle,
-            { backgroundColor: activeReaction.tone ?? colors.brandNavy, borderColor: "rgba(255,249,239,0.32)" },
+            {
+              backgroundColor: activeReaction.tone ?? colors.brandNavy,
+              borderColor: "rgba(255,249,239,0.32)",
+            },
           ]}
         >
           <PixelIcon name={activeReaction.icon} size={24} />
           <View style={styles.reactionTextWrap}>
             <Text style={styles.reactionTitle}>{activeReaction.label}</Text>
-            {activeReaction.detail ? <Text style={styles.reactionDetail}>{activeReaction.detail}</Text> : null}
+            {activeReaction.detail ? (
+              <Text style={styles.reactionDetail}>{activeReaction.detail}</Text>
+            ) : null}
           </View>
         </Animated.View>
       ) : null}
 
       {activeReaction ? (
-        <Animated.View pointerEvents="none" style={[styles.actionBurst, burstStyle]}>
-          <View style={[styles.actionSpark, { backgroundColor: theme.accent }]} />
-          <Text style={[styles.actionBurstText, { color: theme.accent }]}>+ care</Text>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.actionBurst, burstStyle]}
+        >
+          <View
+            style={[styles.actionSpark, { backgroundColor: theme.accent }]}
+          />
+          <Text style={[styles.actionBurstText, { color: theme.accent }]}>
+            + care
+          </Text>
           <View style={[styles.actionSpark, { backgroundColor: "#FFF9EF" }]} />
         </Animated.View>
       ) : null}
 
       {!isStudio ? (
-        <View style={[styles.roomDock, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: "rgba(8,26,42,0.12)" }]}>
+        <View
+          style={[
+            styles.roomDock,
+            {
+              backgroundColor: "rgba(255,249,239,0.94)",
+              borderColor: "rgba(8,26,42,0.12)",
+            },
+          ]}
+        >
           <View style={styles.dockColumn}>
-            <Text style={[styles.dockKicker, { color: colors.mutedForeground }]}>Presence</Text>
-            <Text numberOfLines={1} style={[styles.dockText, { color: colors.navy }]}>{presenceLabel}</Text>
+            <Text
+              style={[styles.dockKicker, { color: colors.mutedForeground }]}
+            >
+              Presence
+            </Text>
+            <Text
+              numberOfLines={1}
+              style={[styles.dockText, { color: colors.navy }]}
+            >
+              {presenceLabel}
+            </Text>
           </View>
-          <View style={[styles.dockDivider, { backgroundColor: colors.border }]} />
+          <View
+            style={[styles.dockDivider, { backgroundColor: colors.border }]}
+          />
           <View style={styles.dockColumn}>
-            <Text style={[styles.dockKicker, { color: colors.mutedForeground }]}>Care cue</Text>
-            <Text numberOfLines={1} style={[styles.dockText, { color: colors.navy }]}>{plan.recommendedActionLabel}</Text>
+            <Text
+              style={[styles.dockKicker, { color: colors.mutedForeground }]}
+            >
+              Care cue
+            </Text>
+            <Text
+              numberOfLines={1}
+              style={[styles.dockText, { color: colors.navy }]}
+            >
+              {plan.recommendedActionLabel}
+            </Text>
           </View>
-          <View style={[styles.dockDivider, { backgroundColor: colors.border }]} />
+          <View
+            style={[styles.dockDivider, { backgroundColor: colors.border }]}
+          />
           <View style={styles.energyDock}>
-            <Text style={[styles.dockKicker, { color: colors.mutedForeground }]}>Energy</Text>
+            <Text
+              style={[styles.dockKicker, { color: colors.mutedForeground }]}
+            >
+              Energy
+            </Text>
             <View style={styles.energyBlocks}>
               {energyBlocks(energy).map((active, index) => (
                 <View
@@ -701,9 +1085,19 @@ export function LivingPhoenixRoom({
       ) : null}
 
       {!isStudio ? (
-        <View style={[styles.nextChip, { backgroundColor: "rgba(8,26,42,0.86)", borderColor: "rgba(255,249,239,0.2)" }]}>
+        <View
+          style={[
+            styles.nextChip,
+            {
+              backgroundColor: "rgba(8,26,42,0.86)",
+              borderColor: "rgba(255,249,239,0.2)",
+            },
+          ]}
+        >
           <PixelIcon name={zone.icon} size={18} />
-          <Text numberOfLines={1} style={styles.nextText}>{plan.activityLabel} - {nextLabel}</Text>
+          <Text numberOfLines={1} style={styles.nextText}>
+            {plan.activityLabel} - {nextLabel}
+          </Text>
         </View>
       ) : null}
     </Pressable>
@@ -729,10 +1123,30 @@ const styles = StyleSheet.create({
     borderColor: "#FFF9EF",
     opacity: 0.82,
   },
-  frameCornerTopLeft: { left: 8, top: 8, borderLeftWidth: 2, borderTopWidth: 2 },
-  frameCornerTopRight: { right: 8, top: 8, borderRightWidth: 2, borderTopWidth: 2 },
-  frameCornerBottomLeft: { left: 8, bottom: 8, borderLeftWidth: 2, borderBottomWidth: 2 },
-  frameCornerBottomRight: { right: 8, bottom: 8, borderRightWidth: 2, borderBottomWidth: 2 },
+  frameCornerTopLeft: {
+    left: 8,
+    top: 8,
+    borderLeftWidth: 2,
+    borderTopWidth: 2,
+  },
+  frameCornerTopRight: {
+    right: 8,
+    top: 8,
+    borderRightWidth: 2,
+    borderTopWidth: 2,
+  },
+  frameCornerBottomLeft: {
+    left: 8,
+    bottom: 8,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+  },
+  frameCornerBottomRight: {
+    right: 8,
+    bottom: 8,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+  },
   scene: {
     position: "absolute",
     left: "-2%",
@@ -772,6 +1186,17 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     opacity: 0.35,
     transform: [{ scaleX: 1.25 }],
+  },
+  avatarAccessoryLayer: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
+  avatarAccessoryUnderlay: {
+    zIndex: 1,
+  },
+  avatarAccessoryOverlay: {
+    zIndex: 5,
   },
   fallbackAvatar: {
     width: "100%",

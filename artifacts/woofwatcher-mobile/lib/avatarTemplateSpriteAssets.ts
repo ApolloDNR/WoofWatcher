@@ -4,6 +4,13 @@ import type { SpriteSheetTrack } from "@/components/SpriteSheetPlayer";
 import type { AvatarEmoteState, AvatarTemplateId } from "@/lib/avatarStudio";
 import type { CareTwinSpriteAsset } from "@/lib/careTwinAssets";
 
+function bundledAsset(
+  path: string,
+  source: () => ImageSourcePropType,
+): ImageSourcePropType {
+  return typeof require === "function" ? source() : { uri: path };
+}
+
 export type AvatarTemplateSpriteAction = "idle-tail-wag" | "walk-loop";
 
 export interface AvatarTemplateSpritePackItem {
@@ -28,14 +35,21 @@ function spriteAsset(source: ImageSourcePropType): CareTwinSpriteAsset {
 }
 
 export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
-  Record<AvatarTemplateId, Partial<Record<AvatarTemplateSpriteAction, AvatarTemplateSpritePackItem>>>
+  Record<
+    AvatarTemplateId,
+    Partial<Record<AvatarTemplateSpriteAction, AvatarTemplateSpritePackItem>>
+  >
 > = {
   shepherd: {
     "idle-tail-wag": {
       action: "idle-tail-wag",
       label: "Shepherd live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "shepherd:option-b-idle-tail-wag",
@@ -43,16 +57,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Approved Option B Phoenix shepherd idle/tail-wag strip for the live Avatar Studio care-twin preview.",
+        notes:
+          "Approved Option B Phoenix shepherd idle/tail-wag strip for the live Avatar Studio care-twin preview.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Shepherd walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "shepherd:option-b-walk-loop",
@@ -60,9 +80,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 9,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Approved Option B Phoenix shepherd walk loop for live Avatar Studio movement.",
+        notes:
+          "Approved Option B Phoenix shepherd walk loop for live Avatar Studio movement.",
       },
     },
   },
@@ -71,7 +93,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       action: "idle-tail-wag",
       label: "Bully live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "bully:idle-tail-wag",
@@ -79,16 +105,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Bully idle breathing and soft body/tail wiggle loop.",
+        notes:
+          "Subscription-backed PixelLab Bully idle breathing and soft body/tail wiggle loop.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Bully walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/bully/sprites/walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/bully/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/bully/sprites/walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "bully:walk-loop",
@@ -96,9 +128,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 9,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/bully/sprites/walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/bully/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Bully standing-source walking-in-place loop for live Avatar Studio preview.",
+        notes:
+          "Subscription-backed PixelLab Bully standing-source walking-in-place loop for live Avatar Studio preview.",
       },
     },
   },
@@ -107,7 +141,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       action: "idle-tail-wag",
       label: "Dachshund live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "dachshund:idle-tail-wag",
@@ -115,16 +153,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Dachshund side-view idle breathing and soft tail wag loop.",
+        notes:
+          "Subscription-backed PixelLab Dachshund side-view idle breathing and soft tail wag loop.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Dachshund walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/dachshund/sprites/walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/dachshund/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/dachshund/sprites/walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "dachshund:walk-loop",
@@ -132,9 +176,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 9,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/dachshund/sprites/walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/dachshund/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Dachshund long-body side-view walking-in-place loop for live Avatar Studio preview.",
+        notes:
+          "Subscription-backed PixelLab Dachshund long-body side-view walking-in-place loop for live Avatar Studio preview.",
       },
     },
   },
@@ -143,7 +189,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       action: "idle-tail-wag",
       label: "Doodle live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "doodle:idle-tail-wag",
@@ -151,16 +201,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Doodle idle breathing and soft tail wag loop.",
+        notes:
+          "Subscription-backed PixelLab Doodle idle breathing and soft tail wag loop.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Doodle walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/doodle/sprites/walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/doodle/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/doodle/sprites/walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "doodle:walk-loop",
@@ -168,9 +224,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 9,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/doodle/sprites/walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/doodle/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Doodle standing-source walking-in-place loop for live Avatar Studio preview.",
+        notes:
+          "Subscription-backed PixelLab Doodle standing-source walking-in-place loop for live Avatar Studio preview.",
       },
     },
   },
@@ -179,7 +237,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       action: "idle-tail-wag",
       label: "Husky live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "husky:idle-tail-wag",
@@ -187,16 +249,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Husky/Spitz idle breathing and soft tail wag loop.",
+        notes:
+          "Subscription-backed PixelLab Husky/Spitz idle breathing and soft tail wag loop.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Husky walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/husky/sprites/walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/husky/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/husky/sprites/walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "husky:walk-loop",
@@ -204,9 +272,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 9,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/husky/sprites/walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/husky/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Husky/Spitz walking-in-place loop for live Avatar Studio preview.",
+        notes:
+          "Subscription-backed PixelLab Husky/Spitz walking-in-place loop for live Avatar Studio preview.",
       },
     },
   },
@@ -215,7 +285,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       action: "idle-tail-wag",
       label: "Hound live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "hound:idle-tail-wag",
@@ -223,16 +297,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Hound idle breathing with soft ear and tail motion.",
+        notes:
+          "Subscription-backed PixelLab Hound idle breathing with soft ear and tail motion.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Hound walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/hound/sprites/walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/hound/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/hound/sprites/walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "hound:walk-loop",
@@ -240,9 +320,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 9,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/hound/sprites/walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/hound/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Hound standing-source side-view walk loop for live Avatar Studio preview.",
+        notes:
+          "Subscription-backed PixelLab Hound standing-source side-view walk loop for live Avatar Studio preview.",
       },
     },
   },
@@ -251,7 +333,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       action: "idle-tail-wag",
       label: "Mixed Breed live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "mixed:idle-tail-wag",
@@ -259,16 +345,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Mixed Breed idle breathing with friendly ear and tail motion.",
+        notes:
+          "Subscription-backed PixelLab Mixed Breed idle breathing with friendly ear and tail motion.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Mixed Breed walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/mixed/sprites/walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/mixed/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/mixed/sprites/walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "mixed:walk-loop",
@@ -276,9 +368,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 9,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/mixed/sprites/walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/mixed/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Mixed Breed balanced side-view walk loop for live Avatar Studio preview.",
+        notes:
+          "Subscription-backed PixelLab Mixed Breed balanced side-view walk loop for live Avatar Studio preview.",
       },
     },
   },
@@ -287,7 +381,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       action: "idle-tail-wag",
       label: "Retriever live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/retriever/sprites/idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/retriever/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/retriever/sprites/idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "retriever:idle-tail-wag",
@@ -295,16 +393,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/retriever/sprites/idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/retriever/sprites/idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Retriever idle breathing and soft tail wag loop.",
+        notes:
+          "Subscription-backed PixelLab Retriever idle breathing and soft tail wag loop.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Retriever walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/retriever/sprites/walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/retriever/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/retriever/sprites/walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "retriever:walk-loop",
@@ -312,9 +416,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 9,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/retriever/sprites/walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/retriever/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Retriever walk loop for live Avatar Studio preview.",
+        notes:
+          "Subscription-backed PixelLab Retriever walk loop for live Avatar Studio preview.",
       },
     },
   },
@@ -323,7 +429,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       action: "idle-tail-wag",
       label: "Slender live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "slender:idle-tail-wag",
@@ -331,16 +441,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Slender idle breathing with elegant long-leg posture motion.",
+        notes:
+          "Subscription-backed PixelLab Slender idle breathing with elegant long-leg posture motion.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Slender walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/slender/sprites/walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/slender/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/slender/sprites/walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "slender:walk-loop",
@@ -348,9 +464,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 9,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/slender/sprites/walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/slender/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Slender long-leg side-view trot loop for live Avatar Studio preview.",
+        notes:
+          "Subscription-backed PixelLab Slender long-leg side-view trot loop for live Avatar Studio preview.",
       },
     },
   },
@@ -359,7 +477,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       action: "idle-tail-wag",
       label: "Spaniel live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "spaniel:idle-tail-wag",
@@ -367,16 +489,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Spaniel idle breathing with floppy-ear and tail motion.",
+        notes:
+          "Subscription-backed PixelLab Spaniel idle breathing with floppy-ear and tail motion.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Spaniel walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/spaniel/sprites/walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/spaniel/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/spaniel/sprites/walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "spaniel:walk-loop",
@@ -384,9 +512,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 9,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/spaniel/sprites/walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/spaniel/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Spaniel side-view walking-in-place loop for live Avatar Studio preview.",
+        notes:
+          "Subscription-backed PixelLab Spaniel side-view walking-in-place loop for live Avatar Studio preview.",
       },
     },
   },
@@ -395,7 +525,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       action: "idle-tail-wag",
       label: "Terrier live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "terrier:idle-tail-wag",
@@ -403,16 +537,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Terrier idle breathing and tiny tail/body wiggle loop.",
+        notes:
+          "Subscription-backed PixelLab Terrier idle breathing and tiny tail/body wiggle loop.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Terrier walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/terrier/sprites/walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/terrier/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/terrier/sprites/walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "terrier:walk-loop",
@@ -420,9 +560,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 9,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/terrier/sprites/walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/terrier/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Terrier standing-source trot loop for live Avatar Studio preview.",
+        notes:
+          "Subscription-backed PixelLab Terrier standing-source trot loop for live Avatar Studio preview.",
       },
     },
   },
@@ -431,7 +573,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       action: "idle-tail-wag",
       label: "Toy Breed live idle",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png"),
+        ),
       ),
       track: {
         key: "toy:idle-tail-wag",
@@ -439,16 +585,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 7,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Toy Breed idle breathing with tiny-body ear and tail motion.",
+        notes:
+          "Subscription-backed PixelLab Toy Breed idle breathing with tiny-body ear and tail motion.",
       },
     },
     "walk-loop": {
       action: "walk-loop",
       label: "Toy Breed walk loop",
       asset: spriteAsset(
-        require("@/assets/avatar/templates/toy/sprites/walk-loop-strip.png"),
+        bundledAsset(
+          "assets/avatar/templates/toy/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/toy/sprites/walk-loop-strip.png"),
+        ),
       ),
       track: {
         key: "toy:walk-loop",
@@ -456,9 +608,11 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         fps: 10,
         loop: true,
         slotSize: 256,
-        requiredAsset: "assets/avatar/templates/toy/sprites/walk-loop-strip.png",
+        requiredAsset:
+          "assets/avatar/templates/toy/sprites/walk-loop-strip.png",
         anchor: "bottom-center",
-        notes: "Subscription-backed PixelLab Toy Breed tiny side-view trot loop for live Avatar Studio preview.",
+        notes:
+          "Subscription-backed PixelLab Toy Breed tiny side-view trot loop for live Avatar Studio preview.",
       },
     },
   },
@@ -496,11 +650,15 @@ export function getAvatarTemplateSpritePreview(
   return AVATAR_TEMPLATE_SPRITE_ASSETS[templateId]?.[action] ?? null;
 }
 
-export function hasAvatarTemplateSpritePack(templateId: AvatarTemplateId): boolean {
+export function hasAvatarTemplateSpritePack(
+  templateId: AvatarTemplateId,
+): boolean {
   const pack = AVATAR_TEMPLATE_SPRITE_ASSETS[templateId];
   return Boolean(pack?.["idle-tail-wag"] && pack?.["walk-loop"]);
 }
 
 export function listAvatarTemplateSpriteSlots(): AvatarTemplateSpritePackItem[] {
-  return Object.values(AVATAR_TEMPLATE_SPRITE_ASSETS).flatMap((pack) => Object.values(pack ?? {}));
+  return Object.values(AVATAR_TEMPLATE_SPRITE_ASSETS).flatMap((pack) =>
+    Object.values(pack ?? {}),
+  );
 }
