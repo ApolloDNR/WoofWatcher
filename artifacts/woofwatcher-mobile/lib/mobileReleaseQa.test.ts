@@ -46,6 +46,17 @@ test("lists the launch-critical mobile QA surfaces for the next native pass", ()
   assert.ok(surfaces.every((surface) => surface.launchRisk.length > 0));
 });
 
+test("routes Incident Composer QA into the detail-first incident flow", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const surface = surfaces.find((item) => item.id === "incident-composer");
+
+  assert.ok(surface);
+  assert.equal(surface.route, "/log?type=incident&detail=1&intent=incident-composer");
+  assert.doesNotMatch(surface.route, /^\/log\?type=incident$/);
+  assert.match(surface.devicePrompt, /Incident detail flow/);
+  assert.match(surface.verificationSteps.join("\n"), /detail-first safety composer/);
+});
+
 test("keeps the Home mission deck as a launch-critical device QA target", () => {
   const surfaces = listMobileReleaseQaSurfaces();
   const surface = surfaces.find((item) => item.id === "home-mission-deck");

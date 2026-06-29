@@ -276,7 +276,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
   {
     id: "incident-composer",
     title: "Incident Composer",
-    route: "/log?type=incident",
+    route: "/log?type=incident&detail=1&intent=incident-composer",
     priority: "launch-critical",
     goal: "Confirm behavior-safety events can be logged with trigger, exposure, injury/action, follow-up, notes, and household visibility.",
     devicePrompt:

@@ -486,6 +486,8 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(releaseQa, /attachedIosScreenshots/);
   assert.match(releaseQa, /missingAndroidScreenshots/);
   assert.match(releaseQa, /mobileReleaseQaScreenshotEvidenceComplete/);
+  assert.match(releaseQa, /route: "\/log\?type=incident&detail=1&intent=incident-composer"/);
+  assert.doesNotMatch(releaseQa, /route: "\/log\?type=incident",/);
   assert.match(releaseQa, /formatMobileReleaseQaPlatformEvidence/);
   assert.match(releaseQa, /formatMobileReleaseQaMissingEvidence/);
   assert.match(releaseQa, /Platform evidence: \$\{formatMobileReleaseQaPlatformEvidence\(summary\)\}/);

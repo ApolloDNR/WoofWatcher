@@ -1814,6 +1814,24 @@ failed before producing useful logs. `gh run view --log-failed` returned
 Treat this as the standing GitHub billing/spending-limit pre-job blocker, not as
 product verification evidence or a local app regression.
 
+The Native QA Incident Composer routing pass tightened the next focused
+device-review route. The `incident-composer` surface now opens
+`/log?type=incident&detail=1&intent=incident-composer` instead of the old broad
+`/log?type=incident` route, so `/care-twin-qa?qaSurface=incident-composer`
+lands testers in the real detail-first Log sheet for factual safety context,
+trust/visibility, notes, and household review. Red/green verification first
+failed on the shallow route, then passed `mobileReleaseQa.test.ts` 9/9 and
+mobile readiness 93/93. Fresh local verification passed the 417-test
+mobile/domain behavior suite, root TypeScript, mobile TypeScript, PixelLab asset
+verification `ok=149 missing=0 invalid=0`, package-local Expo web export to
+`.expo-smoke` with 223 files, `git diff --check` with expected Windows CRLF
+warnings only, and route smoke for `/`,
+`/care-twin-qa?qaSurface=incident-composer`, and
+`/log?type=incident&detail=1&intent=incident-composer`. This clears only local
+web preview routing proof; it does not clear native iOS/Android device QA,
+provider-backed sync/storage/AI/payments/push, app-store accounts,
+legal/privacy/support review, CI completion, or Apollo launch sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
