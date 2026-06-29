@@ -537,6 +537,20 @@ export default function RecordsScreen() {
               },
             ]
           : []),
+        ...(recordVault.localAttachmentSummary.totalAttachable > 0
+          ? [
+              {
+                title: "Records Attachment Prep",
+                lines: [
+                  `Local files: ${recordVault.localAttachmentSummary.withAttachment}/${recordVault.localAttachmentSummary.totalAttachable} receipts or documents attached.`,
+                  recordVault.localAttachmentSummary.missingAttachment > 0 && recordVault.localAttachmentSummary.missingAttachmentTitles.length
+                    ? `Needs local file: ${recordVault.localAttachmentSummary.missingAttachmentTitles.join(", ")}.`
+                    : "Receipts and documents in this report have local files ready on this device.",
+                  recordVault.localAttachmentSummary.boundaryLine,
+                ],
+              },
+            ]
+          : []),
         {
           title: "Boundary",
           lines: ["Shared from WoofWatcher - patterns for caregiver and vet review."],

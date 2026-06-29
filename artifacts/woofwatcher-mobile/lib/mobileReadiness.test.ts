@@ -1293,6 +1293,10 @@ test("keeps Records Care Pass and reports on shared board card anatomy", () => {
   assert.match(records, /Mood & Energy snapshot/);
   assert.match(records, /Mood and Energy report snapshot/);
   assert.match(records, /moodReportSnapshot\.boundaryLine/);
+  assert.match(records, /recordVault\.localAttachmentSummary/);
+  assert.match(records, /title: "Records Attachment Prep"/);
+  assert.match(records, /Local files: \$\{recordVault\.localAttachmentSummary\.withAttachment\}\/\$\{recordVault\.localAttachmentSummary\.totalAttachable\}/);
+  assert.match(records, /recordVault\.localAttachmentSummary\.boundaryLine/);
 });
 
 test("keeps Records vault, diet, and cabinet on shared board card anatomy", () => {

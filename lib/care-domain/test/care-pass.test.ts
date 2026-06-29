@@ -329,6 +329,26 @@ test("care pass includes shared mood and energy handoff context", () => {
   assert.doesNotMatch(pass.message, /Old mood/);
 });
 
+test("care pass includes local record attachment prep without claiming cloud storage", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "vet",
+    records: [
+      ...baseInput().records,
+      { id: "receipt-ready", type: "receipt", title: "Wellness receipt", note: "$182 exam", attachmentUri: "file://receipt.jpg" },
+      { id: "doc-missing", type: "document", title: "Rabies certificate" },
+      { id: "doc-ready", type: "document", title: "Insurance PDF", attachmentUri: "file://insurance.pdf" },
+    ],
+  });
+
+  const section = pass.sections.find((item) => item.title === "Records Attachment Prep");
+  assert.ok(section);
+  assert.match(pass.message, /Local files: 2\/3 receipts or documents attached/);
+  assert.match(pass.message, /Needs local file: Rabies certificate/);
+  assert.match(pass.message, /Attachments are saved locally on this device/);
+  assert.doesNotMatch(pass.message, /cloud/i);
+});
+
 test("care pass includes potty health context for sitter and vet review", () => {
   const pass = buildCarePass({
     ...baseInput(),

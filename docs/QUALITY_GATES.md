@@ -96,6 +96,8 @@ Current evidence, 2026-06-29: Records Progress Reports now save print-ready repo
 
 Current evidence, 2026-06-29: Records Vault now summarizes local receipt/document attachment readiness from shared record-vault logic. Mobile Records shows per-section attachment counts, missing local file titles, and a boundary that attachments are local until provider-backed document storage is approved.
 
+Current evidence, 2026-06-29: Care Pass and Progress Reports now reuse the Records Vault local attachment summary for report handoff prep. Sitter/vet/trainer reports can show attached-versus-attachable receipt/document counts, missing local file titles, and the local-only storage boundary without claiming provider-backed document storage, binary PDF generation, or cloud sharing is ready.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.

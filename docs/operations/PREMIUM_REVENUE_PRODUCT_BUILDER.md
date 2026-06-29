@@ -151,6 +151,7 @@ Latest completed local runtime/accessibility hardening:
 - Progress Reports now include a report-ready Mood & Energy snapshot from `deriveMoodEnergyReportSnapshot`. The shared snapshot reuses the mood-trend evidence boundary, excludes private/stale mood logs, includes energy counts plus latest caregiver/context, and carries owner-reported/non-diagnostic boundary language into the shareable report.
 - Progress Reports now save print-ready report-history artifacts with `createProgressReportArtifact`. The stored source uses escaped HTML, stable filenames, section metadata, and the same Mood & Energy owner-reported boundary, while Records can resend or share printable source for Care Pass and Progress Report artifacts before binary PDF/server storage exists.
 - Records Vault now summarizes local receipt/document attachment readiness. `summarizeRecordVault` counts attachable records, local attachments, missing local file titles, and per-section attachment counts, while Mobile Records shows those counts with a local-only boundary before provider-backed document storage, retention, deletion, and cloud sharing are approved.
+- Care Pass and Progress Reports now carry Records Attachment Prep handoff lines from the shared record-vault summary. Reports show attached-versus-attachable receipt/document counts, missing local file titles, and the local-only storage boundary without claiming provider-backed document storage, binary PDF export, retention, deletion, or cloud sharing is ready.
 
 Next highest-impact work:
 

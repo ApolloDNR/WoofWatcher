@@ -87,6 +87,7 @@ Passing evidence:
 - Records Progress Reports now include a report-ready Mood & Energy snapshot from `deriveMoodEnergyReportSnapshot`, carrying shared recent mood evidence, low/steady/high energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language into the share payload.
 - Records Progress Reports now save report-history artifacts with escaped print-ready HTML, stable filenames, section metadata, and Mood & Energy boundary copy, and Report History can resend or share printable source for both Care Pass and Progress Report artifacts.
 - Records Vault now summarizes local receipt/document attachment readiness from shared record-vault logic. Mobile Records shows per-section attachment counts, missing local file titles, and a local-only storage boundary before provider-backed document storage is approved.
+- Care Pass and Progress Reports now include Records Attachment Prep lines from the same local attachment summary, so sitter/vet/trainer handoffs show which receipts/documents are attached locally and which still need local files without claiming cloud storage or binary PDF export is ready.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
 Current gaps:

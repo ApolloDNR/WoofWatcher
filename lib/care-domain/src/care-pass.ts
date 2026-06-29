@@ -7,6 +7,7 @@ import { deriveGroomingCare, type GroomingCareItem } from "./grooming-care.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
 import { deriveMoodTrend, type MoodTrendItem } from "./mood-trend.ts";
 import { derivePottyHealth } from "./potty-health.ts";
+import { summarizeRecordVault } from "./record-vault.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
 import { deriveWaterHydration } from "./water.ts";
 import { deriveWalkActivity, deriveWalkRouteTemplates, type WalkRouteTemplate } from "./walk-activity.ts";
@@ -53,6 +54,8 @@ export interface CarePassRecord {
   title: string;
   due?: string;
   note?: string;
+  attachmentUri?: string;
+  attachmentName?: string;
 }
 
 export interface CarePassInput {
@@ -264,6 +267,19 @@ function moodLatestLine(item: MoodTrendItem | null): string {
   const energy = item.energyLevel ? `, ${item.energyLevel} energy` : "";
   const context = item.context ? ` - ${item.context}` : "";
   return `Latest: ${item.moodLabel}${energy} by ${item.caregiver}${context}`;
+}
+
+function recordAttachmentPrepLines(records: readonly CarePassRecord[]): string[] {
+  const vault = summarizeRecordVault(records);
+  const summary = vault.localAttachmentSummary;
+  if (summary.totalAttachable === 0) return [];
+  return [
+    `Local files: ${summary.withAttachment}/${summary.totalAttachable} receipts or documents attached.`,
+    summary.missingAttachment > 0 && summary.missingAttachmentTitles.length
+      ? `Needs local file: ${summary.missingAttachmentTitles.join(", ")}.`
+      : "Receipts and documents in this report have local files ready on this device.",
+    summary.boundaryLine,
+  ];
 }
 
 function audienceChecklist(audience: CarePassAudience, name: string): string[] {
@@ -871,6 +887,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const weightTrend = deriveWeightTrend({ entries, profile, goals: input.goals ?? [], now, lookbackDays: 90 });
   const groomingCare = deriveGroomingCare({ entries, now, lookbackDays: 45 });
   const moodTrend = deriveMoodTrend({ entries, now, lookbackDays: 30, limit: 3 });
+  const recordAttachmentPrep = recordAttachmentPrepLines(records);
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -1013,6 +1030,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
       )),
       ...medicationFollowUps.map((item) => `${item.label}: ${item.detail} Action: ${item.action}`),
     ]),
+    section("Records Attachment Prep", recordAttachmentPrep),
     section(
       "Health Pattern Review",
       health.patterns.slice(0, 4).map((pattern) => (

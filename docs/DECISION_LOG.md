@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-29: Reports Can Carry Local Attachment Prep
+
+Decision: Care Pass and Progress Reports may include a `Records Attachment Prep` section derived from the shared Records Vault local attachment summary. The section may state attached-versus-attachable receipt/document counts, list a few missing local file titles, and repeat the local-only storage boundary.
+
+Reason: Records Vault now makes local receipt/document readiness visible, but handoff reports are where owners prepare context for sitters, trainers, and vets. Carrying the same summary into reports improves practical handoff prep without claiming provider-backed document storage, cloud sharing, retention/deletion, native file export, binary PDF generation, or server-backed report storage is ready.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed document storage, cloud sharing, native file export/download, binary PDF generation, report retention, or server-backed report artifacts becomes active release work.
+
 ### 2026-06-29: Records Vault Shows Local Attachment Readiness
 
 Decision: Records Vault may summarize local receipt/document attachment readiness from saved record metadata. The shared `summarizeRecordVault` helper should count attachable receipt/document records, local attachments, missing local file titles, and per-section attachment counts, while Mobile Records states that attachments are local until provider-backed document storage is approved.
