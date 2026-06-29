@@ -1717,6 +1717,22 @@ Owner: Codex.
 
 Revisit trigger: Period filters, richer mood visuals, clinician-reviewed wording, or provider-backed AI mood interpretation becomes active release work.
 
+### 2026-06-28: Mood Trend Period Filters Stay Evidence-Bounded
+
+Decision: Records Mood Trend should offer Week, Month, and Quarter views from shared mood evidence before adding predictive mood analytics or clinician-style interpretation.
+
+Reason: Owners need to compare whether recent mood and energy context is a short-term blip or a longer household pattern. The comparison must reuse the same private/stale exclusion and owner-reported boundary as `deriveMoodTrend`, so period controls do not become a separate analytics system with different trust rules.
+
+Consequences:
+
+- `deriveMoodTrendPeriods` derives period summaries by calling `deriveMoodTrend` for each period.
+- Records uses accessible period controls and compact period comparison bars while preserving the 90-day Mood Timeline.
+- Mood and energy remain framed as household care context, not diagnosis.
+
+Owner: Codex.
+
+Revisit trigger: Caregiver/context filters, sparklines, clinician-reviewed wording, or provider-backed AI mood interpretation becomes active release work.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

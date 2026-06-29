@@ -84,6 +84,8 @@ Current evidence, 2026-06-28: WoofGuide now reuses the shared Mood Trend derivat
 
 Current evidence, 2026-06-28: Records Mood Timeline now reuses the same shared Mood Trend derivation for a longer-range mobile review. Household-visible mood check-ins over 90 days show caregiver, relative date, energy, context, and notes, while private/stale logs stay excluded and the UI labels mood and energy as owner-reported context, not a diagnosis.
 
+Current evidence, 2026-06-28: Records Mood Trend now offers Week, Month, and Quarter views plus compact period comparison visuals from `deriveMoodTrendPeriods`. The period summaries reuse the same shared mood evidence boundary, keeping private/stale logs excluded and avoiding diagnostic claims.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.
@@ -149,6 +151,8 @@ Current evidence, 2026-06-14: Records Care Pass, Report History, and Progress Re
 Current evidence, 2026-06-14: Records Record Vault, Diet on File, and Records Cabinet now use shared board sections with working add/edit/delete entry points and internal vault tiles instead of separate floating card islands.
 
 Current evidence, 2026-06-14: Records Weight Trend, Mood Trend, and Hydration now use shared board sections while preserving the weight chart, mood distribution bars, hydration progress meter, latest-log context, and safe care-summary copy.
+
+Current evidence, 2026-06-28: Records Mood Trend period controls remain on the shared board anatomy with accessible button labels and selected state, while the 90-day Mood Timeline remains a separate longer-range owner review surface.
 
 Current evidence, 2026-06-14: Records Walk Activity, Training Progress, and Potty Health now use shared board sections while preserving saved routes, training focus/latest practice context, stool color/context, and care-safe next steps.
 

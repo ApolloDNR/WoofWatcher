@@ -21,6 +21,24 @@ export interface MoodTrendInput {
   limit?: number;
 }
 
+export interface MoodTrendPeriodInput {
+  entries: readonly MoodTrendEntry[];
+  periods: readonly {
+    label: string;
+    lookbackDays: number;
+  }[];
+  now?: number;
+  selectedLookbackDays?: number;
+  limit?: number;
+}
+
+export interface MoodTrendPeriodSummary {
+  label: string;
+  lookbackDays: number;
+  isSelected: boolean;
+  trend: MoodTrend;
+}
+
 export interface MoodTrendBar {
   key: string;
   label: string;
@@ -181,4 +199,20 @@ export function deriveMoodTrend(input: MoodTrendInput): MoodTrend {
     nextStep: nextStepFor(status, latest),
     latest,
   };
+}
+
+export function deriveMoodTrendPeriods(input: MoodTrendPeriodInput): MoodTrendPeriodSummary[] {
+  const selectedLookbackDays = input.selectedLookbackDays ?? input.periods[0]?.lookbackDays ?? 30;
+
+  return input.periods.map((period) => ({
+    label: period.label,
+    lookbackDays: period.lookbackDays,
+    isSelected: period.lookbackDays === selectedLookbackDays,
+    trend: deriveMoodTrend({
+      entries: input.entries,
+      now: input.now,
+      lookbackDays: period.lookbackDays,
+      limit: input.limit,
+    }),
+  }));
 }

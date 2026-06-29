@@ -1288,7 +1288,12 @@ test("keeps Records trend sections on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Trends"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Weight Trend"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Mood Trend"/);
-  assert.match(records, /deriveMoodTrend\(\{ entries: state\.entries, now, lookbackDays: 30, limit: 3 \}\)/);
+  assert.match(records, /deriveMoodTrendPeriods/);
+  assert.match(records, /MOOD_PERIODS/);
+  assert.match(records, /moodPeriodSummaries\.map/);
+  assert.match(records, /accessibilityLabel=\{`Show Mood Trend for \$\{period\.label\}`\}/);
+  assert.match(records, /moodPeriodVisuals/);
+  assert.match(records, /deriveMoodTrend\(\{ entries: state\.entries, now, lookbackDays: moodPeriod, limit: 3 \}\)/);
   assert.match(records, /deriveMoodTrend\(\{ entries: state\.entries, now, lookbackDays: 90, limit: 8 \}\)/);
   assert.match(records, /title="Mood Timeline"/);
   assert.match(records, /moodTimeline\.items\.map/);

@@ -40,6 +40,7 @@ import {
   deriveMedicationFollowUps,
   deriveMedicationHistory,
   deriveMoodTrend,
+  deriveMoodTrendPeriods,
   derivePottyHealth,
   deriveRecordReminders,
   deriveTrainingProgress,
@@ -91,6 +92,12 @@ const PERIODS = [
   { key: 7, label: "Week" },
   { key: 30, label: "Month" },
   { key: 90, label: "Quarter" },
+] as const;
+
+const MOOD_PERIODS = [
+  { lookbackDays: 7, label: "Week" },
+  { lookbackDays: 30, label: "Month" },
+  { lookbackDays: 90, label: "Quarter" },
 ] as const;
 
 const CARE_PASS_OPTIONS: {
@@ -176,6 +183,7 @@ export default function RecordsScreen() {
   const unit = state.profile.weight.unit;
 
   const [period, setPeriod] = useState<number>(30);
+  const [moodPeriod, setMoodPeriod] = useState<number>(30);
   const [recordOpen, setRecordOpen] = useState(false);
   const [recordType, setRecordType] = useState<RecordKind>("vaccine");
   const [recordTitle, setRecordTitle] = useState("");
@@ -271,8 +279,19 @@ export default function RecordsScreen() {
   }, [weightTrend.items, current]);
 
   const moodStats = useMemo(
-    () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: 30, limit: 3 }),
-    [state.entries, now],
+    () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: moodPeriod, limit: 3 }),
+    [state.entries, now, moodPeriod],
+  );
+  const moodPeriodSummaries = useMemo(
+    () =>
+      deriveMoodTrendPeriods({
+        entries: state.entries,
+        now,
+        selectedLookbackDays: moodPeriod,
+        periods: MOOD_PERIODS,
+        limit: 3,
+      }),
+    [state.entries, now, moodPeriod],
   );
   const moodTimeline = useMemo(
     () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: 90, limit: 8 }),
@@ -547,6 +566,7 @@ export default function RecordsScreen() {
   const goalY = yAt(goalWeight);
   const remaining = weightTrend.goalWeight ? weightTrend.remainingToGoal : Math.max(0, goalWeight - current);
   const maxBar = Math.max(1, ...moodStats.bars.map((b) => b.count));
+  const maxMoodPeriodTotal = Math.max(1, ...moodPeriodSummaries.map((period) => period.trend.total));
   const incidentMax = Math.max(1, incident7, incident30, incident90);
 
   const streak = useMemo(() => {
@@ -862,6 +882,39 @@ export default function RecordsScreen() {
           {/* Mood trend */}
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader title="Mood Trend" action={moodStats.total > 0 ? `${moodStats.averageScore.toFixed(1)}/5 avg` : undefined} />
+            <View style={s.moodPeriodTabs}>
+              {moodPeriodSummaries.map((period) => {
+                const selected = period.isSelected;
+                const tone = period.trend.status === "watch" ? colors.amber : colors.sage;
+                return (
+                  <Pressable
+                    key={period.lookbackDays}
+                    onPress={() => {
+                      setMoodPeriod(period.lookbackDays);
+                      Haptics.selectionAsync();
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Show Mood Trend for ${period.label}`}
+                    accessibilityState={{ selected }}
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    style={({ pressed }) => [
+                      s.moodPeriodTab,
+                      {
+                        backgroundColor: selected ? tone + "18" : pressed ? colors.secondary : colors.background,
+                        borderColor: selected ? tone : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[s.moodPeriodLabel, { color: selected ? tone : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      {period.label}
+                    </Text>
+                    <Text style={[s.moodPeriodCount, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {period.trend.total} shared
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
             {moodStats.bars.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                 No mood check-ins yet. Log a mood to see trends.
@@ -871,6 +924,30 @@ export default function RecordsScreen() {
                 <Text style={[s.moodSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   {moodStats.summary}
                 </Text>
+                <View style={s.moodPeriodVisuals}>
+                  {moodPeriodSummaries.map((period) => {
+                    const tone =
+                      period.trend.status === "watch"
+                        ? colors.amber
+                        : period.trend.total > 0
+                          ? colors.sage
+                          : colors.border;
+                    const widthPct = Math.max(8, Math.round((period.trend.total / maxMoodPeriodTotal) * 100));
+                    return (
+                      <View key={period.lookbackDays} style={s.moodPeriodVisualRow}>
+                        <Text style={[s.moodPeriodVisualLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          {period.label}
+                        </Text>
+                        <View style={[s.moodPeriodVisualTrack, { backgroundColor: colors.background }]}>
+                          <View style={[s.moodPeriodVisualFill, { backgroundColor: tone, width: `${widthPct}%` }]} />
+                        </View>
+                        <Text style={[s.moodPeriodVisualValue, { color: tone, fontFamily: "Inter_700Bold" }]}>
+                          {period.trend.averageScore ? period.trend.averageScore.toFixed(1) : "-"}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
                 <View style={s.moodEnergyRow}>
                   {[
                     { label: "Low", value: moodStats.energy.low, tone: colors.amber },
@@ -2239,6 +2316,25 @@ const s = StyleSheet.create({
 
   moodRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   moodSummary: { fontSize: 12.8, lineHeight: 18, marginBottom: 10 },
+  moodPeriodTabs: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  moodPeriodTab: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moodPeriodLabel: { fontSize: 12.2, lineHeight: 16 },
+  moodPeriodCount: { fontSize: 10.5, lineHeight: 14, marginTop: 1 },
+  moodPeriodVisuals: { gap: 8, marginBottom: 12 },
+  moodPeriodVisualRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  moodPeriodVisualLabel: { width: 54, fontSize: 11.4, lineHeight: 15 },
+  moodPeriodVisualTrack: { flex: 1, height: 10, borderRadius: 5, overflow: "hidden" },
+  moodPeriodVisualFill: { height: "100%", borderRadius: 5 },
+  moodPeriodVisualValue: { width: 28, textAlign: "right", fontSize: 11.8, lineHeight: 15 },
   moodEnergyRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
   moodEnergyPill: { flex: 1, borderRadius: 13, paddingVertical: 9, paddingHorizontal: 6, alignItems: "center" },
   moodEnergyValue: { fontSize: 18, letterSpacing: 0 },
