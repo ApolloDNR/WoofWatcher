@@ -43,6 +43,19 @@ export interface MoodTrendPeriodSummary {
   trend: MoodTrend;
 }
 
+export interface MoodTrendSparklineInput extends MoodTrendInput {
+  bucketCount?: number;
+}
+
+export interface MoodTrendSparklineBucket {
+  index: number;
+  label: string;
+  count: number;
+  averageScore: number;
+  watchCount: number;
+  tone: "empty" | "good" | "steady" | "watch";
+}
+
 export interface MoodTrendBar {
   key: string;
   label: string;
@@ -228,4 +241,54 @@ export function deriveMoodTrendPeriods(input: MoodTrendPeriodInput): MoodTrendPe
       context: input.context,
     }),
   }));
+}
+
+function sparklineBucketLabel(index: number, bucketCount: number, bucketDays: number): string {
+  if (index === bucketCount - 1) return "Now";
+  const weeksAgo = Math.max(1, Math.round(((bucketCount - index) * bucketDays) / 7));
+  return `${weeksAgo}w ago`;
+}
+
+export function deriveMoodTrendSparkline(input: MoodTrendSparklineInput): MoodTrendSparklineBucket[] {
+  const now = input.now ?? Date.now();
+  const lookbackDays = input.lookbackDays ?? 30;
+  const bucketCount = Math.max(1, Math.floor(input.bucketCount ?? 6));
+  const bucketDays = lookbackDays / bucketCount;
+  const trend = deriveMoodTrend({
+    ...input,
+    now,
+    lookbackDays,
+    limit: Math.max(input.entries.length, input.limit ?? 0, 1),
+  });
+  const buckets = Array.from({ length: bucketCount }, (_, index) => ({
+    index,
+    label: sparklineBucketLabel(index, bucketCount, bucketDays),
+    items: [] as MoodTrendItem[],
+  }));
+
+  for (const item of trend.items) {
+    const occurredAt = new Date(item.occurredAt).getTime();
+    const ageDays = (now - occurredAt) / 86400000;
+    if (!Number.isFinite(ageDays) || ageDays < 0 || ageDays > lookbackDays) continue;
+    const rawIndex = Math.floor((lookbackDays - ageDays) / bucketDays);
+    const index = Math.min(bucketCount - 1, Math.max(0, rawIndex));
+    buckets[index]?.items.push(item);
+  }
+
+  return buckets.map((bucket): MoodTrendSparklineBucket => {
+    const count = bucket.items.length;
+    const averageScore = count ? bucket.items.reduce((sum, item) => sum + item.score, 0) / count : 0;
+    const watchCount = bucket.items.filter((item) => item.tone !== "good" || item.energyLevel === "low").length;
+    const tone: MoodTrendSparklineBucket["tone"] =
+      count === 0 ? "empty" : watchCount > 0 || averageScore < 3.5 ? "watch" : averageScore >= 4.5 ? "good" : "steady";
+
+    return {
+      index: bucket.index,
+      label: bucket.label,
+      count,
+      averageScore,
+      watchCount,
+      tone,
+    };
+  });
 }

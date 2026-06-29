@@ -5,6 +5,7 @@ import {
   deriveCareDayStatus,
   deriveMoodTrend,
   deriveMoodTrendPeriods,
+  deriveMoodTrendSparkline,
   getCareEventDefinition,
   normalizeCareEventType,
 } from "../src/index.ts";
@@ -299,4 +300,93 @@ test("filters mood trend by caregiver and care context without widening shared e
   assert.equal(trend.energy.high, 0);
   assert.match(trend.summary, /1 shared mood check-ins/);
   assert.match(trend.nextStep, /Visitors/);
+});
+
+test("derives mood trend sparkline buckets from filtered shared evidence", () => {
+  const sparkline = deriveMoodTrendSparkline({
+    now: NOW,
+    bucketCount: 4,
+    lookbackDays: 28,
+    caregiver: "Emma",
+    context: "Visitors",
+    entries: [
+      {
+        id: "oldest_low",
+        type: "mood",
+        occurredAt: "2026-05-12T12:00:00.000Z",
+        caregiver: "Emma",
+        mood: "anxious",
+        details: {
+          energyLevel: "low",
+          moodContext: "Visitors",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "middle_calm",
+        type: "mood",
+        occurredAt: "2026-05-26T12:00:00.000Z",
+        caregiver: "Emma",
+        mood: "calm",
+        details: {
+          energyLevel: "steady",
+          moodContext: "Visitors",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "latest_happy",
+        type: "mood",
+        occurredAt: "2026-06-06T12:00:00.000Z",
+        caregiver: "Emma",
+        mood: "happy",
+        details: {
+          energyLevel: "high",
+          moodContext: "Visitors",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "other_context",
+        type: "mood",
+        occurredAt: "2026-06-06T11:00:00.000Z",
+        caregiver: "Emma",
+        mood: "unwell",
+        details: {
+          energyLevel: "low",
+          moodContext: "After walk",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "private_match",
+        type: "mood",
+        occurredAt: "2026-06-06T10:00:00.000Z",
+        caregiver: "Emma",
+        mood: "happy",
+        details: {
+          energyLevel: "high",
+          moodContext: "Visitors",
+          householdVisible: false,
+        },
+      },
+    ],
+  });
+
+  assert.deepEqual(
+    sparkline.map((bucket) => ({
+      index: bucket.index,
+      count: bucket.count,
+      averageScore: bucket.averageScore,
+      watchCount: bucket.watchCount,
+      tone: bucket.tone,
+      label: bucket.label,
+    })),
+    [
+      { index: 0, count: 1, averageScore: 2, watchCount: 1, tone: "watch", label: "4w ago" },
+      { index: 1, count: 0, averageScore: 0, watchCount: 0, tone: "empty", label: "3w ago" },
+      { index: 2, count: 1, averageScore: 4, watchCount: 0, tone: "steady", label: "2w ago" },
+      { index: 3, count: 1, averageScore: 5, watchCount: 0, tone: "good", label: "Now" },
+    ],
+  );
 });

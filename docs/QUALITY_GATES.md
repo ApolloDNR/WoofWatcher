@@ -88,6 +88,8 @@ Current evidence, 2026-06-28: Records Mood Trend now offers Week, Month, and Qua
 
 Current evidence, 2026-06-29: Records Mood Trend now filters shared mood review by caregiver and care context. `deriveMoodTrend` and `deriveMoodTrendPeriods` apply the same filters after the household-visible and lookback boundaries, so private/stale logs remain excluded while owners can narrow the summary and 90-day timeline to a specific caregiver or trigger/context.
 
+Current evidence, 2026-06-29: Records Mood Trend now includes a compact sparkline from `deriveMoodTrendSparkline`. The sparkline buckets the same selected-period, caregiver-filtered, and care-context-filtered household-visible mood evidence into owner-readable bars, preserving private/stale exclusions and non-diagnostic framing.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.
@@ -289,6 +291,8 @@ Current evidence, 2026-06-11: Care Pass reports now include a Weight Trend secti
 Current evidence, 2026-06-11: Care Pass reports now include a Grooming Care section with recent grooming count, type counts, latest grooming context, products, next due date, and owner-reported/non-diagnostic boundary language.
 
 Current evidence, 2026-06-28: Care Pass reports now include a Mood & Energy section with recent shared mood check-ins, energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language for sitter, trainer, and vet handoffs.
+
+Current evidence, 2026-06-29: Records Mood Trend now adds a filtered sparkline for owner review before report export. It does not diagnose or predict mood; it only visualizes recent shared check-in density and tone from the same care-domain evidence boundary.
 
 Current evidence, 2026-06-14: Mobile Records now presents Care Pass audience previews, saved report artifacts, and Progress Report controls as shared board sections with accessible resend, printable-source, and share actions preserved for sitter/vet/trainer handoff workflows.
 

@@ -41,6 +41,7 @@ import {
   deriveMedicationHistory,
   deriveMoodTrend,
   deriveMoodTrendPeriods,
+  deriveMoodTrendSparkline,
   derivePottyHealth,
   deriveRecordReminders,
   deriveTrainingProgress,
@@ -318,6 +319,18 @@ export default function RecordsScreen() {
         selectedLookbackDays: moodPeriod,
         periods: MOOD_PERIODS,
         limit: 3,
+        caregiver: moodCaregiverFilter,
+        context: moodContextFilter,
+      }),
+    [state.entries, now, moodPeriod, moodCaregiverFilter, moodContextFilter],
+  );
+  const moodSparkline = useMemo(
+    () =>
+      deriveMoodTrendSparkline({
+        entries: state.entries,
+        now,
+        lookbackDays: moodPeriod,
+        bucketCount: 8,
         caregiver: moodCaregiverFilter,
         context: moodContextFilter,
       }),
@@ -605,6 +618,7 @@ export default function RecordsScreen() {
   const remaining = weightTrend.goalWeight ? weightTrend.remainingToGoal : Math.max(0, goalWeight - current);
   const maxBar = Math.max(1, ...moodStats.bars.map((b) => b.count));
   const maxMoodPeriodTotal = Math.max(1, ...moodPeriodSummaries.map((period) => period.trend.total));
+  const maxMoodSparklineCount = Math.max(1, ...moodSparkline.map((bucket) => bucket.count));
   const incidentMax = Math.max(1, incident7, incident30, incident90);
 
   const streak = useMemo(() => {
@@ -1024,6 +1038,41 @@ export default function RecordsScreen() {
                 <Text style={[s.moodSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   {moodStats.summary}
                 </Text>
+                <View
+                  accessibilityLabel={`Mood sparkline. ${moodStats.summary}`}
+                  accessible
+                  style={[s.moodSparklineCard, { backgroundColor: colors.background }]}
+                >
+                  <View style={s.moodSparklineHeader}>
+                    <Text style={[s.moodSparklineTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Mood sparkline</Text>
+                    <Text style={[s.moodSparklineCaption, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      Shared check-ins across this {moodPeriod === 7 ? "week" : moodPeriod === 30 ? "month" : "quarter"}
+                    </Text>
+                  </View>
+                  <View style={s.moodSparkline}>
+                    {moodSparkline.map((bucket) => {
+                      const tone =
+                        bucket.tone === "watch"
+                          ? colors.amber
+                          : bucket.tone === "good"
+                            ? colors.sage
+                            : bucket.tone === "steady"
+                              ? colors.copper
+                              : colors.border;
+                      const height = bucket.count ? Math.max(12, Math.round((bucket.count / maxMoodSparklineCount) * 42)) : 8;
+                      return (
+                        <View key={bucket.index} style={s.moodSparklineBucket}>
+                          <View style={[s.moodSparklineTrack, { backgroundColor: colors.card }]}>
+                            <View style={[s.moodSparklineBar, { backgroundColor: tone, height }]} />
+                          </View>
+                          <Text style={[s.moodSparklineLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                            {bucket.label}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
                 <View style={s.moodPeriodVisuals}>
                   {moodPeriodSummaries.map((period) => {
                     const tone =
@@ -2437,6 +2486,22 @@ const s = StyleSheet.create({
   moodPeriodVisualTrack: { flex: 1, height: 10, borderRadius: 5, overflow: "hidden" },
   moodPeriodVisualFill: { height: "100%", borderRadius: 5 },
   moodPeriodVisualValue: { width: 28, textAlign: "right", fontSize: 11.8, lineHeight: 15 },
+  moodSparklineCard: { borderRadius: 8, padding: 10, marginBottom: 12 },
+  moodSparklineHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 },
+  moodSparklineTitle: { fontSize: 12.4, lineHeight: 16 },
+  moodSparklineCaption: { flex: 1, textAlign: "right", fontSize: 10.8, lineHeight: 14 },
+  moodSparkline: { height: 66, flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 6 },
+  moodSparklineBucket: { flex: 1, minWidth: 0, alignItems: "center", gap: 4 },
+  moodSparklineTrack: {
+    width: "100%",
+    maxWidth: 28,
+    height: 46,
+    borderRadius: 6,
+    overflow: "hidden",
+    justifyContent: "flex-end",
+  },
+  moodSparklineBar: { width: "100%", borderRadius: 6 },
+  moodSparklineLabel: { fontSize: 9.4, lineHeight: 12, textAlign: "center" },
   moodFilterGroup: { gap: 7, marginBottom: 12 },
   moodFilterRow: { gap: 7, paddingRight: 4 },
   moodFilterChip: {

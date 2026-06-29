@@ -47,6 +47,7 @@ Latest local evidence, 2026-06-22:
 - PASS: Mobile readiness now protects structured mood logging. The Log composer captures low/steady/high energy, optional care context, sticky notes, and household visibility while preserving the top-level mood field used by Records Mood Trend and care-twin state.
 - PASS: Care-domain and mobile readiness now protect Records Mood Trend derivation. `deriveMoodTrend` excludes private/stale mood logs, summarizes low/steady/high energy, preserves latest caregiver/context, and feeds owner-safe Records copy without diagnostic language.
 - PASS: Care-domain and mobile readiness now protect Records Mood Trend period views. `deriveMoodTrendPeriods` builds Week, Month, and Quarter summaries from the same shared mood evidence boundary, and Records exposes accessible period controls plus compact period comparison visuals.
+- PASS: Care-domain and mobile readiness now protect Records Mood Trend sparklines. `deriveMoodTrendSparkline` buckets the same selected-period, caregiver-filtered, and care-context-filtered shared mood evidence, while Records renders accessible sparkline bars without widening private/stale evidence or diagnostic claims.
 - PASS: Care-domain tests now protect Care Pass Mood & Energy handoff context. `buildCarePass` reuses `deriveMoodTrend` so sitter/trainer/vet reports include shared recent mood check-ins, energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language while excluding private and stale mood logs.
 - PASS: WoofGuide action tests and mobile readiness now protect owner-reviewed Mood & Energy summaries. `deriveWoofGuideActions` reuses `deriveMoodTrend`, excludes private/stale mood logs, produces a non-diagnostic `mood_summary` draft with source entry ids, and the WoofGuide screen inserts only the reviewed assistant message without changing care records.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
@@ -229,6 +230,7 @@ Latest local evidence, 2026-06-22:
 67. Add multiple household-visible mood logs across 90 days, plus one private and one stale mood log; confirm Records Mood Timeline shows only the shared recent items with caregiver, relative date, energy, context, notes, and non-diagnostic owner-reported boundary copy.
 68. In Records Mood Trend, switch Week, Month, and Quarter; confirm each period updates the summary, mood bars, energy counts, latest context, selected state, and compact period comparison without including private or stale logs.
 69. In Records Mood Trend, filter by caregiver and care context; confirm the summary, energy counts, period comparison, latest context, and Mood Timeline narrow to matching shared evidence, and filtered empty states do not imply diagnosis or hidden sync.
+70. In Records Mood Trend, switch Week, Month, and Quarter after applying caregiver/context filters; confirm the Mood sparkline bucket bars update with matching shared evidence only, keep empty periods visually distinct, and do not include private or stale mood logs.
 
 ## Missing QA
 

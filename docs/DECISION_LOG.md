@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-29: Mood Trend Sparklines Stay Evidence-Bounded
+
+Decision: Records Mood Trend may show a compact Mood sparkline for the selected Week, Month, or Quarter view, including caregiver and care-context filters. The sparkline should use `deriveMoodTrendSparkline`, bucket only household-visible mood check-ins that pass the same lookback and filter boundary as `deriveMoodTrend`, and show empty/watch/steady/good buckets without prediction or diagnosis.
+
+Reason: Owners need a quick visual read of whether recent mood check-ins are sparse, steady, improving, or worth watching, but that visual must not become a separate analytics system with looser evidence rules. Reusing the shared care-domain boundary keeps Records, Care Pass, and WoofGuide aligned while provider-backed interpretation and clinician-reviewed language remain gated.
+
+Owner: Codex.
+
+Revisit trigger: Predictive mood analytics, clinician-reviewed language, provider-backed AI mood interpretation, or avatar state-machine changes become active release work.
+
 ### 2026-06-28: WoofGuide Mood Summaries Are Owner-Reviewed And Non-Mutating
 
 Decision: WoofGuide suggested actions may surface a Mood & Energy summary when recent shared mood check-ins exist. The summary should reuse `deriveMoodTrend`, exclude private and stale mood logs, include energy counts plus latest caregiver/context, and insert only a reviewed assistant message after owner approval. It must not create care logs, change routines, call live AI, or imply diagnosis.
