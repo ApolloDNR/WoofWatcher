@@ -184,6 +184,8 @@ export default function RecordsScreen() {
 
   const [period, setPeriod] = useState<number>(30);
   const [moodPeriod, setMoodPeriod] = useState<number>(30);
+  const [moodCaregiver, setMoodCaregiver] = useState<string>("all");
+  const [moodContext, setMoodContext] = useState<string>("all");
   const [recordOpen, setRecordOpen] = useState(false);
   const [recordType, setRecordType] = useState<RecordKind>("vaccine");
   const [recordTitle, setRecordTitle] = useState("");
@@ -278,9 +280,35 @@ export default function RecordsScreen() {
     };
   }, [weightTrend.items, current]);
 
+  const moodFilterSource = useMemo(
+    () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: 90, limit: 20 }),
+    [state.entries, now],
+  );
+  const moodCaregiverFilter = moodCaregiver === "all" ? undefined : moodCaregiver;
+  const moodContextFilter = moodContext === "all" ? undefined : moodContext;
+  const moodCaregiverOptions = ["all", ...moodFilterSource.caregivers];
+  const moodContextOptions = ["all", ...moodFilterSource.contexts];
+
+  useEffect(() => {
+    if (moodCaregiver !== "all" && !moodFilterSource.caregivers.includes(moodCaregiver)) {
+      setMoodCaregiver("all");
+    }
+    if (moodContext !== "all" && !moodFilterSource.contexts.includes(moodContext)) {
+      setMoodContext("all");
+    }
+  }, [moodCaregiver, moodContext, moodFilterSource.caregivers, moodFilterSource.contexts]);
+
   const moodStats = useMemo(
-    () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: moodPeriod, limit: 3 }),
-    [state.entries, now, moodPeriod],
+    () =>
+      deriveMoodTrend({
+        entries: state.entries,
+        now,
+        lookbackDays: moodPeriod,
+        limit: 3,
+        caregiver: moodCaregiverFilter,
+        context: moodContextFilter,
+      }),
+    [state.entries, now, moodPeriod, moodCaregiverFilter, moodContextFilter],
   );
   const moodPeriodSummaries = useMemo(
     () =>
@@ -290,12 +318,22 @@ export default function RecordsScreen() {
         selectedLookbackDays: moodPeriod,
         periods: MOOD_PERIODS,
         limit: 3,
+        caregiver: moodCaregiverFilter,
+        context: moodContextFilter,
       }),
-    [state.entries, now, moodPeriod],
+    [state.entries, now, moodPeriod, moodCaregiverFilter, moodContextFilter],
   );
   const moodTimeline = useMemo(
-    () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: 90, limit: 8 }),
-    [state.entries, now],
+    () =>
+      deriveMoodTrend({
+        entries: state.entries,
+        now,
+        lookbackDays: 90,
+        limit: 8,
+        caregiver: moodCaregiverFilter,
+        context: moodContextFilter,
+      }),
+    [state.entries, now, moodCaregiverFilter, moodContextFilter],
   );
 
   // ---- Incident lookback ----
@@ -915,9 +953,71 @@ export default function RecordsScreen() {
                 );
               })}
             </View>
+            <View style={s.moodFilterGroup}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.moodFilterRow}>
+                {moodCaregiverOptions.map((caregiver) => {
+                  const selected = moodCaregiver === caregiver;
+                  const label = caregiver === "all" ? "All caregivers" : caregiver;
+                  return (
+                    <Pressable
+                      key={caregiver}
+                      onPress={() => {
+                        setMoodCaregiver(caregiver);
+                        Haptics.selectionAsync();
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Filter Mood Trend by caregiver: ${label}`}
+                      accessibilityState={{ selected }}
+                      hitSlop={MOBILE_INLINE_HIT_SLOP}
+                      style={({ pressed }) => [
+                        s.moodFilterChip,
+                        {
+                          backgroundColor: selected ? colors.primary + "18" : pressed ? colors.secondary : colors.background,
+                          borderColor: selected ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.moodFilterText, { color: selected ? colors.primary : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.moodFilterRow}>
+                {moodContextOptions.map((context) => {
+                  const selected = moodContext === context;
+                  const label = context === "all" ? "All context" : context;
+                  return (
+                    <Pressable
+                      key={context}
+                      onPress={() => {
+                        setMoodContext(context);
+                        Haptics.selectionAsync();
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Filter Mood Trend by care context: ${label}`}
+                      accessibilityState={{ selected }}
+                      hitSlop={MOBILE_INLINE_HIT_SLOP}
+                      style={({ pressed }) => [
+                        s.moodFilterChip,
+                        {
+                          backgroundColor: selected ? colors.sage + "18" : pressed ? colors.secondary : colors.background,
+                          borderColor: selected ? colors.sage : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.moodFilterText, { color: selected ? colors.sage : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
             {moodStats.bars.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                No mood check-ins yet. Log a mood to see trends.
+                {moodFilterSource.total > 0 ? "No shared mood check-ins match these filters." : "No mood check-ins yet. Log a mood to see trends."}
               </Text>
             ) : (
               <>
@@ -1003,7 +1103,9 @@ export default function RecordsScreen() {
             />
             {moodTimeline.items.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Shared mood check-ins over the last 90 days will appear here with energy and care context.
+                {moodFilterSource.total > 0
+                  ? "Matching shared mood check-ins over the last 90 days will appear here."
+                  : "Shared mood check-ins over the last 90 days will appear here with energy and care context."}
               </Text>
             ) : (
               <>
@@ -2335,6 +2437,17 @@ const s = StyleSheet.create({
   moodPeriodVisualTrack: { flex: 1, height: 10, borderRadius: 5, overflow: "hidden" },
   moodPeriodVisualFill: { height: "100%", borderRadius: 5 },
   moodPeriodVisualValue: { width: 28, textAlign: "right", fontSize: 11.8, lineHeight: 15 },
+  moodFilterGroup: { gap: 7, marginBottom: 12 },
+  moodFilterRow: { gap: 7, paddingRight: 4 },
+  moodFilterChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moodFilterText: { fontSize: 11.6, lineHeight: 15 },
   moodEnergyRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
   moodEnergyPill: { flex: 1, borderRadius: 13, paddingVertical: 9, paddingHorizontal: 6, alignItems: "center" },
   moodEnergyValue: { fontSize: 18, letterSpacing: 0 },

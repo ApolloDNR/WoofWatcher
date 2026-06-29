@@ -220,3 +220,83 @@ test("derives mood trend period summaries from the same shared evidence boundary
   assert.equal(periods[1].trend.energy.steady, 1);
   assert.equal(periods[2].trend.energy.high, 1);
 });
+
+test("filters mood trend by caregiver and care context without widening shared evidence", () => {
+  const trend = deriveMoodTrend({
+    now: NOW,
+    caregiver: "Emma",
+    context: "Visitors",
+    entries: [
+      {
+        id: "emma_visitors_low",
+        type: "mood",
+        occurredAt: "2026-06-06T12:00:00.000Z",
+        caregiver: "Emma",
+        mood: "anxious",
+        details: {
+          energyLevel: "low",
+          moodContext: "Visitors",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "emma_walk_high",
+        type: "mood",
+        occurredAt: "2026-06-06T11:00:00.000Z",
+        caregiver: "Emma",
+        mood: "happy",
+        details: {
+          energyLevel: "high",
+          moodContext: "After walk",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "apollo_visitors_steady",
+        type: "mood",
+        occurredAt: "2026-06-06T10:00:00.000Z",
+        caregiver: "Apollo",
+        mood: "calm",
+        details: {
+          energyLevel: "steady",
+          moodContext: "Visitors",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "private_match",
+        type: "mood",
+        occurredAt: "2026-06-06T09:00:00.000Z",
+        caregiver: "Emma",
+        mood: "happy",
+        details: {
+          energyLevel: "high",
+          moodContext: "Visitors",
+          householdVisible: false,
+        },
+      },
+      {
+        id: "old_match",
+        type: "mood",
+        occurredAt: "2026-04-01T12:00:00.000Z",
+        caregiver: "Emma",
+        mood: "unwell",
+        details: {
+          energyLevel: "low",
+          moodContext: "Visitors",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  assert.equal(trend.total, 1);
+  assert.deepEqual(trend.items.map((item) => item.id), ["emma_visitors_low"]);
+  assert.deepEqual(trend.caregivers, ["Emma"]);
+  assert.deepEqual(trend.contexts, ["Visitors"]);
+  assert.equal(trend.energy.low, 1);
+  assert.equal(trend.energy.steady, 0);
+  assert.equal(trend.energy.high, 0);
+  assert.match(trend.summary, /1 shared mood check-ins/);
+  assert.match(trend.nextStep, /Visitors/);
+});

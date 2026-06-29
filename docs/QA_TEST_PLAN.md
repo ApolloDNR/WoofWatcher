@@ -228,6 +228,7 @@ Latest local evidence, 2026-06-22:
 66. Open Records Medication History, search by medicine, dose, caregiver, and note text, then switch Taken, Skipped, Missed, and Needs review filters and confirm summary and empty-state copy update correctly.
 67. Add multiple household-visible mood logs across 90 days, plus one private and one stale mood log; confirm Records Mood Timeline shows only the shared recent items with caregiver, relative date, energy, context, notes, and non-diagnostic owner-reported boundary copy.
 68. In Records Mood Trend, switch Week, Month, and Quarter; confirm each period updates the summary, mood bars, energy counts, latest context, selected state, and compact period comparison without including private or stale logs.
+69. In Records Mood Trend, filter by caregiver and care context; confirm the summary, energy counts, period comparison, latest context, and Mood Timeline narrow to matching shared evidence, and filtered empty states do not imply diagnosis or hidden sync.
 
 ## Missing QA
 

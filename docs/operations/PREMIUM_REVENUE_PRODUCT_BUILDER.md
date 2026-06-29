@@ -146,12 +146,13 @@ Latest completed local runtime/accessibility hardening:
 - WoofGuide now creates an owner-reviewed Mood & Energy summary from the same shared mood trend before provider-backed AI actions. The suggested action excludes private/stale mood logs, carries source entry ids, energy counts, and latest caregiver/context, and approving it only inserts a reviewed assistant message without changing care records.
 - Records Mood Timeline now extends the same shared mood evidence into a longer-range mobile review surface. Records derives a 90-day, eight-item timeline from `deriveMoodTrend`, showing caregiver, relative date, energy, context, and notes for household-visible check-ins while keeping private/stale logs excluded and labeling mood/energy as owner-reported context, not diagnosis.
 - Records Mood Trend now has accessible Week, Month, and Quarter filters plus compact period comparison visuals from `deriveMoodTrendPeriods`. The period views reuse the same household-visible mood evidence boundary as `deriveMoodTrend`, keep low/steady/high energy counts and latest context in the card, and stay explicitly non-diagnostic.
+- Records Mood Trend now has caregiver and care-context filters from the same shared domain helper. Records narrows the summary, period comparison, latest context, and 90-day timeline through accessible chips while private/stale logs stay excluded and filtered empty states stay truthful.
 
 Next highest-impact work:
 
 1. Run native iOS/Android simulator or device QA when provider/runtime access is available.
 2. Continue accessibility traversal and visual runtime inspection for the live mobile app and Avatar Studio once simulator/device access is available.
-3. Add the next richer Mood & Energy review layer, such as compact sparklines or caregiver/context filters, without diagnostic claims.
+3. Add the next richer Mood & Energy review layer, such as compact sparklines or caregiver/context visual polish, without diagnostic claims.
 4. Replace first-pass derived room variants with final illustrated night, bedtime, health-watch, and home-alone room art, then continue screen-by-screen polish, accessibility traversal, and visual regression.
 5. Add live API integration tests for care-state write races and care-entry delete retention once a test database and provider-auth harness are available.
 6. Add live household provisioning, invite-join, active-household persistence, `/me.households`, active-household switching, role-gated household rename, owner/admin member role updates, split care-plan versus care-log write roles, sitter/trainer own-entry correction scoping, household audit review, sensitive household audit producer, invite-code visibility, mobile switcher, mobile Care Team role-management, Pack Audit, and multi-household membership integration tests once a test database and provider-auth harness are available.

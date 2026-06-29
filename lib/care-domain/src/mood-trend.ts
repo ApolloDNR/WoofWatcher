@@ -19,6 +19,8 @@ export interface MoodTrendInput {
   now?: number;
   lookbackDays?: number;
   limit?: number;
+  caregiver?: string | null;
+  context?: string | null;
 }
 
 export interface MoodTrendPeriodInput {
@@ -30,6 +32,8 @@ export interface MoodTrendPeriodInput {
   now?: number;
   selectedLookbackDays?: number;
   limit?: number;
+  caregiver?: string | null;
+  context?: string | null;
 }
 
 export interface MoodTrendPeriodSummary {
@@ -69,6 +73,7 @@ export interface MoodTrend {
   energy: Record<MoodEnergyLevel, number>;
   watchCount: number;
   caregivers: string[];
+  contexts: string[];
   status: MoodTrendStatus;
   summary: string;
   nextStep: string;
@@ -143,6 +148,8 @@ export function deriveMoodTrend(input: MoodTrendInput): MoodTrend {
   const now = input.now ?? Date.now();
   const lookbackDays = input.lookbackDays ?? 30;
   const limit = input.limit ?? 5;
+  const caregiverFilter = clean(input.caregiver).toLowerCase();
+  const contextFilter = clean(input.context).toLowerCase();
   const items = input.entries
     .filter((entry) => normalizeCareEventType(entry.type, entry.details) === "mood")
     .filter(isVisible)
@@ -167,6 +174,8 @@ export function deriveMoodTrend(input: MoodTrendInput): MoodTrend {
       };
     })
     .filter((item): item is MoodTrendItem => Boolean(item))
+    .filter((item) => !caregiverFilter || item.caregiver.toLowerCase() === caregiverFilter)
+    .filter((item) => !contextFilter || item.context.toLowerCase() === contextFilter)
     .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
 
   const total = items.length;
@@ -183,6 +192,7 @@ export function deriveMoodTrend(input: MoodTrendInput): MoodTrend {
     .sort((a, b) => b.count - a.count);
   const watchCount = items.filter((item) => item.tone !== "good" || item.energyLevel === "low").length;
   const caregivers = Array.from(new Set(items.map((item) => item.caregiver).filter(Boolean)));
+  const contexts = Array.from(new Set(items.map((item) => item.context).filter(Boolean)));
   const latest = items[0] ?? null;
   const status = statusFor(total, watchCount, latest);
 
@@ -194,6 +204,7 @@ export function deriveMoodTrend(input: MoodTrendInput): MoodTrend {
     energy,
     watchCount,
     caregivers,
+    contexts,
     status,
     summary: summaryFor(total, averageScore, status),
     nextStep: nextStepFor(status, latest),
@@ -213,6 +224,8 @@ export function deriveMoodTrendPeriods(input: MoodTrendPeriodInput): MoodTrendPe
       now: input.now,
       lookbackDays: period.lookbackDays,
       limit: input.limit,
+      caregiver: input.caregiver,
+      context: input.context,
     }),
   }));
 }

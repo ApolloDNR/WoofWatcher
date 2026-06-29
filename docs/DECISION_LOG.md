@@ -1733,6 +1733,22 @@ Owner: Codex.
 
 Revisit trigger: Caregiver/context filters, sparklines, clinician-reviewed wording, or provider-backed AI mood interpretation becomes active release work.
 
+### 2026-06-29: Mood Trend Caregiver And Context Filters Stay Evidence-Bounded
+
+Decision: Records Mood Trend caregiver and care-context filters should live in `deriveMoodTrend`/`deriveMoodTrendPeriods`, not as UI-only filtering.
+
+Reason: Owners need to review whether a mood pattern belongs to one caregiver shift or one repeated care context, but that view must preserve the same household-visible, lookback, owner-reported, and non-diagnostic boundary as the summary, period views, Care Pass, and WoofGuide.
+
+Consequences:
+
+- `deriveMoodTrend` and `deriveMoodTrendPeriods` accept optional caregiver and context filters.
+- Records uses accessible filter chips to narrow the Mood Trend card and 90-day Mood Timeline together.
+- Private and stale mood logs remain excluded before filters are applied, and filtered empty states avoid implying diagnosis or hidden sync.
+
+Owner: Codex.
+
+Revisit trigger: Richer sparklines, clinician-reviewed language, provider-backed AI mood interpretation, or caregiver permission policy changes the shape of mood review.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
