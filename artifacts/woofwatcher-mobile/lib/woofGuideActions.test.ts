@@ -169,3 +169,41 @@ test("creates an owner-reviewed mood summary from shared mood energy logs", () =
   assert.match(moodAction?.draft?.body ?? "", /owner-reported/i);
   assert.deepEqual(moodAction?.draft?.sourceEntryIds, ["mood-low"]);
 });
+
+test("creates an owner-reviewed records attachment prep draft without claiming cloud storage", () => {
+  const actions = deriveWoofGuideActions(
+    {
+      profile: { name: "Phoenix" },
+      dietProfile: {
+        primaryFood: "Sensitive kibble",
+        normalPortion: "1 cup",
+        mealSchedule: "7 AM and 6 PM",
+      },
+      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
+      records: [
+        { id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" },
+        { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
+        { id: "insurance", type: "insurance", title: "Lemonade", due: "Policy WW-1042" },
+        {
+          id: "receipt-attached",
+          type: "receipt",
+          title: "Wellness visit receipt",
+          attachmentUri: "file:///local/wellness-receipt.pdf",
+        },
+        { id: "lab-missing", type: "document", title: "Latest lab panel" },
+      ],
+      entries: [],
+    },
+    NOW,
+  );
+
+  const prepAction = actions.find((action) => action.id === "records-attachment-prep");
+
+  assert.equal(prepAction?.route, "/records");
+  assert.equal(prepAction?.urgency, "watch");
+  assert.equal(prepAction?.draft?.kind, "records_attachment_prep");
+  assert.match(prepAction?.detail ?? "", /1 of 2 receipt\/document records have local files attached/i);
+  assert.match(prepAction?.draft?.body ?? "", /Latest lab panel/);
+  assert.match(prepAction?.draft?.body ?? "", /saved locally on this device/i);
+  assert.match(prepAction?.draft?.safety ?? "", /cloud storage is not enabled/i);
+});

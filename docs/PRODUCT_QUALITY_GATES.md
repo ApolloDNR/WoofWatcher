@@ -79,7 +79,7 @@ Passing evidence:
 - Care Pass reports can be previewed by audience before sharing.
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
 - Records show expired, due-soon, current, and reference status for saved record rows.
-- WoofGuide shows deterministic suggested actions tied to health watch, record attention, diet setup, routines, meal logging, Care Pass preview, and owner-reviewed Mood & Energy summaries from shared mood evidence.
+- WoofGuide shows deterministic suggested actions tied to health watch, record attention, diet setup, routines, meal logging, Care Pass preview, owner-reviewed Mood & Energy summaries from shared mood evidence, and owner-reviewed Records Attachment Prep from local receipt/document readiness.
 - Records includes a 90-day Mood Timeline that reuses shared mood-trend evidence for household-visible check-ins, showing caregiver, relative date, energy, context, and notes while keeping private/stale logs excluded and non-diagnostic.
 - Records Mood Trend now includes accessible Week, Month, and Quarter period controls plus compact period comparison visuals from shared care-domain mood logic, while private/stale mood logs stay excluded and mood/energy remain framed as owner-reported care context.
 - Records Mood Trend now includes accessible caregiver and care-context filters from the same shared mood evidence boundary, narrowing the summary and 90-day timeline without including private/stale logs or changing the non-diagnostic framing.
@@ -88,6 +88,7 @@ Passing evidence:
 - Records Progress Reports now save report-history artifacts with escaped print-ready HTML, stable filenames, section metadata, and Mood & Energy boundary copy, and Report History can resend or share printable source for both Care Pass and Progress Report artifacts.
 - Records Vault now summarizes local receipt/document attachment readiness from shared record-vault logic. Mobile Records shows per-section attachment counts, missing local file titles, and a local-only storage boundary before provider-backed document storage is approved.
 - Care Pass and Progress Reports now include Records Attachment Prep lines from the same local attachment summary, so sitter/vet/trainer handoffs show which receipts/documents are attached locally and which still need local files without claiming cloud storage or binary PDF export is ready.
+- WoofGuide Records Attachment Prep reuses the same local attachment summary and stays non-mutating: applying the draft inserts only a reviewed assistant note, routes owners to Records, and states that cloud storage is not enabled.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
 Current gaps:
@@ -189,7 +190,7 @@ Passing evidence:
 
 Current gaps:
 
-- Local environment does not currently have pnpm/node_modules installed in this Codex checkout.
+- Local `pnpm run build:ci` remains blocked in this Windows shell because the root `preinstall` script invokes `sh`, which is not available on PATH before typecheck/build scripts start.
 - Need API integration tests, including live validation for care-entry delete audit retention.
 - Need mobile runtime smoke.
 - Critical mobile action accessibility labels are covered by focused static smoke.

@@ -49,6 +49,8 @@ export interface WoofGuideActionRecord {
   title: string;
   due?: string;
   note?: string;
+  attachmentUri?: string;
+  attachmentName?: string;
 }
 
 export interface WoofGuideActionDiet {
@@ -75,7 +77,7 @@ export interface WoofGuideActionState {
   records?: readonly WoofGuideActionRecord[];
 }
 
-export type WoofGuideDraftKind = "log_entry" | "reminder" | "vet_note" | "care_pass" | "mood_summary";
+export type WoofGuideDraftKind = "log_entry" | "reminder" | "vet_note" | "care_pass" | "mood_summary" | "records_attachment_prep";
 
 export interface WoofGuideDraftEntry {
   type: string;
@@ -268,6 +270,34 @@ function moodSummaryDraft(
   };
 }
 
+function recordsAttachmentPrepDraft(state: WoofGuideActionState): WoofGuideActionDraft | undefined {
+  const vault = summarizeRecordVault(state.records ?? []);
+  const attachment = vault.localAttachmentSummary;
+  if (attachment.totalAttachable === 0 || attachment.missingAttachment === 0) return undefined;
+
+  const name = dogName(state);
+  const attachedLine = `${attachment.withAttachment} of ${attachment.totalAttachable} receipt/document records have local files attached.`;
+  const missingLine = attachment.missingAttachmentTitles.length
+    ? `Missing local files: ${attachment.missingAttachmentTitles.join(", ")}.`
+    : `${attachment.missingAttachment} receipt/document records still need local files.`;
+
+  return {
+    kind: "records_attachment_prep",
+    title: "Review records attachment prep",
+    body: [
+      `${name} Records Attachment Prep`,
+      "",
+      attachedLine,
+      missingLine,
+      attachment.boundaryLine,
+      "",
+      "Next step: Open Records, attach the missing local receipts or documents, then review the Care Pass or Progress Report before sharing.",
+    ].join("\n"),
+    cta: "Insert prep note",
+    safety: "Owner-reviewed prep only; cloud storage is not enabled and files stay local until provider-backed document storage is approved.",
+  };
+}
+
 export function deriveWoofGuideActions(
   state: WoofGuideActionState,
   now: number = Date.now(),
@@ -275,6 +305,7 @@ export function deriveWoofGuideActions(
   const name = dogName(state);
   const health = deriveHealthWatch({ entries: state.entries, routines: state.routines, now });
   const moodDraft = moodSummaryDraft(state, now);
+  const attachmentPrepDraft = recordsAttachmentPrepDraft(state);
   const moodUrgency = moodDraft
     ? deriveMoodTrend({ entries: state.entries, now, lookbackDays: 30, limit: 1 }).status === "watch"
       ? "watch"
@@ -349,6 +380,19 @@ export function deriveWoofGuideActions(
       urgency: moodUrgency,
       icon: "heart",
       draft: moodDraft,
+    });
+  }
+
+  if (attachmentPrepDraft) {
+    const attachment = recordVault.localAttachmentSummary;
+    actions.push({
+      id: "records-attachment-prep",
+      label: "Prep record files",
+      detail: `${attachment.withAttachment} of ${attachment.totalAttachable} receipt/document records have local files attached.`,
+      urgency: "watch",
+      icon: "records",
+      route: "/records",
+      draft: attachmentPrepDraft,
     });
   }
 

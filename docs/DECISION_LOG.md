@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-29: WoofGuide Can Draft Local Records Attachment Prep
+
+Decision: WoofGuide may surface an owner-reviewed `records_attachment_prep` suggested action when the Records Vault local attachment summary shows missing local receipt/document files. The draft may list attached-versus-attachable counts, name missing local file titles, route the owner to Records, and insert only a reviewed assistant note.
+
+Reason: Records, Care Pass, and Progress Reports now expose local attachment readiness, but owners also need a guided prep prompt before sharing sitter, trainer, or vet handoffs. Keeping this as a deterministic, owner-reviewed, non-mutating WoofGuide draft improves handoff readiness without claiming cloud storage, provider-backed document upload, binary PDF generation, retention/deletion policy, live AI, or unsupervised file actions are ready.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed document storage, cloud file sharing, native export/download, binary PDF generation, persisted report drafts, permission-aware assistant writes, or storage retention/deletion policy becomes active release work.
+
 ### 2026-06-29: Reports Can Carry Local Attachment Prep
 
 Decision: Care Pass and Progress Reports may include a `Records Attachment Prep` section derived from the shared Records Vault local attachment summary. The section may state attached-versus-attachable receipt/document counts, list a few missing local file titles, and repeat the local-only storage boundary.

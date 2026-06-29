@@ -12,9 +12,10 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-29:
 
+- PASS: 275 focused tests with the command above on 2026-06-29, now including WoofGuide owner-reviewed Records Attachment Prep coverage plus mobile readiness for the local-only, non-mutating draft path.
 - PASS: 273 focused tests with the command above on 2026-06-29, now including Care Pass `Records Attachment Prep` coverage and mobile Progress Report readiness for local receipt/document attachment prep without claiming provider-backed document storage.
 - PASS: PixelLab asset verifier on 2026-06-29 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
-- LIMIT: `pnpm run build:ci` on 2026-06-29 could not complete in this Windows shell. The sandboxed run failed while fetching registry packages with `EACCES`; the escalated run installed/reused 1276 packages, then stopped at the root `preinstall` script because `sh` is not available on PATH.
+- LIMIT: `pnpm run build:ci` on 2026-06-29 could not complete in this Windows shell. The latest escalated run installed/reused 1276 packages, then stopped at the root `preinstall` script because `sh` is not available on PATH before typecheck/build scripts started.
 - PASS: 273 focused tests with the command above, now including API route contract readiness for authenticated household scoping, care-state optimistic conflicts, household-isolated care-entry writes, and the `/care-entries?limit=` contract across OpenAPI, zod, and the generated React client.
 - PASS: 259 focused tests with the local zero-dependency suite on 2026-06-22, including API route readiness for server-retained care-entry delete audit notes and mobile Log duplicate-audit suppression for server-backed deletes.
 - PASS: 259 focused tests with the local zero-dependency suite on 2026-06-23, including API readiness for atomic care-state optimistic writes that update by household id and version, then return a refreshed 409 conflict response if another device wins the race.
@@ -56,6 +57,7 @@ Latest local evidence, 2026-06-29:
 - PASS: Care-domain and mobile readiness now protect Records Vault local attachment readiness. `summarizeRecordVault` counts receipt/document records with local attachments, missing attachment titles, and per-section attachment counts, while Records shows local-only storage boundary copy before provider-backed document storage is approved.
 - PASS: Care-domain tests now protect Care Pass Mood & Energy handoff context. `buildCarePass` reuses `deriveMoodTrend` so sitter/trainer/vet reports include shared recent mood check-ins, energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language while excluding private and stale mood logs.
 - PASS: WoofGuide action tests and mobile readiness now protect owner-reviewed Mood & Energy summaries. `deriveWoofGuideActions` reuses `deriveMoodTrend`, excludes private/stale mood logs, produces a non-diagnostic `mood_summary` draft with source entry ids, and the WoofGuide screen inserts only the reviewed assistant message without changing care records.
+- PASS: WoofGuide action tests and mobile readiness now protect owner-reviewed Records Attachment Prep. `deriveWoofGuideActions` reuses `summarizeRecordVault`, creates a `records_attachment_prep` draft only when local receipt/document files are missing, routes owners to Records, and inserts only a reviewed assistant message while stating that cloud storage is not enabled.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -253,4 +255,4 @@ Latest local evidence, 2026-06-29:
 - Document upload/security tests.
 - Self-serve provider-backed account deletion tests.
 - Payment/paywall tests when monetization is enabled.
-- Local `pnpm run build:ci` remains blocked in this Windows shell because the root preinstall script invokes `sh`, which is not available on PATH; the sandboxed attempt also blocks registry fetches without escalation. Focused tests and PixelLab verification remain the reliable local gates here.
+- Local `pnpm run build:ci` remains blocked in this Windows shell because the root preinstall script invokes `sh`, which is not available on PATH. Focused tests and PixelLab verification remain the reliable local gates here.

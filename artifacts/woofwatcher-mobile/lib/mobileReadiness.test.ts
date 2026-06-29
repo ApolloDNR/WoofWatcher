@@ -868,6 +868,27 @@ test("keeps WoofGuide mood summaries owner-reviewed and non-mutating", () => {
   assert.match(guide, /content: draft\.body/);
 });
 
+test("keeps WoofGuide records attachment prep owner-reviewed and local-only", () => {
+  const guide = readAppFile("woofguide.tsx");
+  const actions = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "woofGuideActions.ts"),
+    "utf8",
+  );
+
+  assert.match(actions, /summarizeRecordVault/);
+  assert.match(actions, /id: "records-attachment-prep"/);
+  assert.match(actions, /kind: "records_attachment_prep"/);
+  assert.match(actions, /cloud storage is not enabled/);
+  assert.match(actions, /route: "\/records"/);
+  assert.match(guide, /draft\.kind === "records_attachment_prep"/);
+  assert.match(guide, /content: draft\.body/);
+  const prepBranch = guide.slice(
+    guide.indexOf('draft.kind === "records_attachment_prep"'),
+    guide.indexOf('draft.kind === "care_pass"'),
+  );
+  assert.doesNotMatch(prepBranch, /addEntry|updateCareDoc/);
+});
+
 test("keeps Premium value, plan, and entitlement surfaces on shared board anatomy", () => {
   const premium = readAppFile("premium.tsx");
 
