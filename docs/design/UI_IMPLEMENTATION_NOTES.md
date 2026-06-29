@@ -2143,3 +2143,36 @@ Verification:
   TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
   preview route smoke for Home, targeted log entry, and Care Twin QA, plus
   `git diff --check`.
+
+## 2026-06-29 Home Today Summary Metric Routing
+
+The Home `Today at a glance` metrics now behave like compact care controls:
+
+- Activity opens the Walk detail flow through
+  `/log?type=walk&detail=1&intent=...`.
+- Meals opens the Meal detail flow for portions and outcomes through
+  `/log?type=meal&detail=1&intent=...`.
+- Potty opens the Potty parent detail flow through
+  `/log?type=potty&detail=1&intent=...`.
+- Each metric cell is a pressable 48px mobile target with a clear
+  accessibility label, hint, haptic selection, and route-specific pressed
+  border color.
+- The route mapping is typed as `TodayMetricTarget`, so future Home metrics can
+  be added without turning the first screen into one-off button logic.
+
+Design intent:
+
+- Remove another owner-preview dead end from the flagship Home screen.
+- Let Phoenix Home answer "what can I inspect or log now?" without sending
+  owners hunting through the full Log tab.
+- Keep the neo-retro HUD playful but operational: a metric is useful only if it
+  leads to the exact care workflow behind it.
+
+Verification:
+
+- Red/green mobile readiness first failed on the missing Today metric route and
+  touch-target contract, then passed 89/89.
+- Fresh local verification passed the 412-test mobile/domain suite, root
+  TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
+  and preview route smoke for Home plus Walk, Meal, and Potty detail-intent
+  routes.

@@ -1649,6 +1649,23 @@ preview route smoke for `/`, `/log?entry=dinner-1`, and
 CRLF warnings only. The preview server was restarted at
 `http://127.0.0.1:4194/` for Apollo review.
 
+The Home Today summary metric routing pass made the `Today at a glance` cells
+operational. Activity now opens the Walk detail sheet, Meals opens Meal detail
+for portion/outcome updates, and Potty opens the Potty parent detail flow for
+pee, poop, accidents, and notes through the same
+`/log?type=...&detail=1&intent=...` contract as other compact care actions.
+The cells are accessible 48px pressable targets with haptics and typed route
+mapping, so the first screen keeps feeling like a planned care command surface
+instead of a static report. Red/green verification first failed on the missing
+Today metric route/touch-target contract, then passed mobile readiness 89/89.
+Fresh local verification passed the 412-test mobile/domain behavior suite, root
+TypeScript, mobile TypeScript, PixelLab asset verification `ok=149 missing=0
+invalid=0`, package-local Expo web export to `.expo-smoke` with 223 files, and
+preview route smoke for `/`, `/log?type=walk&detail=1&intent=smoke`,
+`/log?type=meal&detail=1&intent=smoke`, and
+`/log?type=potty&detail=1&intent=smoke`. The preview server is running at
+`http://127.0.0.1:4194/` for Apollo review.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

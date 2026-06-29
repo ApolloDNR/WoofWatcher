@@ -819,9 +819,23 @@ test("keeps Home owner-preview section actions as real route targets", () => {
 test("keeps Phoenix Home owner-preview actions on shared mobile touch targets", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 
-  for (const styleName of ["headerButton", "heroStudioButton", "presencePanel", "adventureInline"]) {
+  for (const styleName of ["headerButton", "heroStudioButton", "presencePanel", "adventureInline", "todayMetric"]) {
     assertStyleUsesSharedTouchTarget(home, styleName);
   }
+});
+
+test("keeps Home today summary metrics route-backed instead of decorative", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  assert.match(home, /type TodayMetricTarget = "activity" \| "meals" \| "potty";/);
+  assert.match(home, /const openTodayMetric = \(target: TodayMetricTarget\) =>/);
+  assert.match(home, /router\.push\(`\/log\?type=\$\{todayMetricRouteType\[target\]\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(home, /accessibilityLabel="Open today activity logs"/);
+  assert.match(home, /onPress=\{\(\) => openTodayMetric\("activity"\)\}/);
+  assert.match(home, /accessibilityLabel="Open today meal logs"/);
+  assert.match(home, /onPress=\{\(\) => openTodayMetric\("meals"\)\}/);
+  assert.match(home, /accessibilityLabel="Open today potty logs"/);
+  assert.match(home, /onPress=\{\(\) => openTodayMetric\("potty"\)\}/);
 });
 
 test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {

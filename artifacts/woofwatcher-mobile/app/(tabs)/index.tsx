@@ -74,6 +74,13 @@ interface QuickItem {
 }
 
 type StatusTileTarget = "mood" | "health" | "diet" | "bond";
+type TodayMetricTarget = "activity" | "meals" | "potty";
+
+const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
+  activity: "walk",
+  meals: "meal",
+  potty: "potty",
+};
 
 const HOME_QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
@@ -562,6 +569,11 @@ export default function HomeScreen() {
       return;
     }
     router.push(`/log?type=play&detail=1&intent=${Date.now()}` as never);
+  };
+
+  const openTodayMetric = (target: TodayMetricTarget) => {
+    void Haptics.selectionAsync();
+    router.push(`/log?type=${todayMetricRouteType[target]}&detail=1&intent=${Date.now()}` as never);
   };
 
   const openHomeCareIntelligenceNextAction = () => {
@@ -1192,7 +1204,20 @@ export default function HomeScreen() {
             <BoardCard style={s.gridCard}>
               <BoardSectionHeader title="Today at a glance" />
               <View style={s.todayGrid}>
-                <View style={s.todayMetric}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open today activity logs"
+                  accessibilityHint="Opens the walk detail flow for today's activity."
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => openTodayMetric("activity")}
+                  style={({ pressed }) => [
+                    s.todayMetric,
+                    {
+                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      borderColor: pressed ? colors.sage : colors.border,
+                    },
+                  ]}
+                >
                   <PixelIcon name="walk" size={26} />
                   <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
                     {status.counts.walkMinutes}m
@@ -1200,8 +1225,21 @@ export default function HomeScreen() {
                   <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                     Activity
                   </Text>
-                </View>
-                <View style={s.todayMetric}>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open today meal logs"
+                  accessibilityHint="Opens the meal detail flow for portions and outcomes."
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => openTodayMetric("meals")}
+                  style={({ pressed }) => [
+                    s.todayMetric,
+                    {
+                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      borderColor: pressed ? colors.copper : colors.border,
+                    },
+                  ]}
+                >
                   <PixelIcon name="meal" size={26} />
                   <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
                     {completionLabel(meals.done, meals.target || 2)}
@@ -1209,8 +1247,21 @@ export default function HomeScreen() {
                   <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                     Meals
                   </Text>
-                </View>
-                <View style={s.todayMetric}>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open today potty logs"
+                  accessibilityHint="Opens the potty detail flow for pee, poop, accidents, and notes."
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => openTodayMetric("potty")}
+                  style={({ pressed }) => [
+                    s.todayMetric,
+                    {
+                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      borderColor: pressed ? colors.blueSignal : colors.border,
+                    },
+                  ]}
+                >
                   <PixelIcon name="pee" size={26} />
                   <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
                     {completionLabel(status.counts.potty.done, status.counts.potty.target || 3)}
@@ -1218,7 +1269,7 @@ export default function HomeScreen() {
                   <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                     Potty
                   </Text>
-                </View>
+                </Pressable>
               </View>
             </BoardCard>
 
@@ -2012,7 +2063,13 @@ const s = StyleSheet.create({
   },
   todayMetric: {
     flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 7,
     alignItems: "center",
+    justifyContent: "center",
     gap: 4,
   },
   metricValue: { fontSize: 17 },
