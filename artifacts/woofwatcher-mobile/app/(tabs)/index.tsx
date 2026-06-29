@@ -211,7 +211,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const router = useRouter();
-  const { state, addEntry, deleteEntry } = useCare();
+  const { state, addEntry, deleteEntry, refresh } = useCare();
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
 
   const topPadding = getRouteTopPadding({
@@ -563,6 +563,44 @@ export default function HomeScreen() {
     }
     router.push(`/log?type=play&detail=1&intent=${Date.now()}` as never);
   };
+
+  const openHomeCareIntelligenceNextAction = () => {
+    void Haptics.selectionAsync();
+    if (careIntelligence.nextAction.kind === "retry-sync") {
+      refresh();
+      return;
+    }
+    if (careIntelligence.nextAction.targetEntryId) {
+      router.push(`/log?entry=${encodeURIComponent(careIntelligence.nextAction.targetEntryId)}` as never);
+      return;
+    }
+    if (careIntelligence.nextAction.kind === "handle-routine" || careIntelligence.nextAction.targetRoutineId) {
+      router.push("/calendar");
+      return;
+    }
+    if (careIntelligence.nextAction.kind === "update-meal-outcome") {
+      router.push(`/log?type=meal&detail=1&intent=${Date.now()}` as never);
+      return;
+    }
+    router.push("/log");
+  };
+
+  const homeCareIntelligenceIcon: PixelIconName =
+    careIntelligence.nextAction.kind === "update-meal-outcome"
+      ? "meal"
+      : careIntelligence.nextAction.kind === "handle-routine"
+        ? "clock"
+        : careIntelligence.nextAction.kind === "retry-sync"
+          ? "note"
+          : "heart";
+  const homeCareIntelligenceCta =
+    careIntelligence.nextAction.kind === "retry-sync"
+      ? "Retry"
+      : careIntelligence.nextAction.kind === "handle-routine"
+        ? "Plans"
+        : careIntelligence.nextAction.targetEntryId
+          ? "Open log"
+          : "Open";
   const homeMissions = useMemo(
     () =>
       buildHomeMissionDeck({
@@ -1296,6 +1334,40 @@ export default function HomeScreen() {
             </View>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={`Home Care Intelligence next action: ${careIntelligence.nextAction.label}`}
+              accessibilityHint={careIntelligence.nextAction.detail}
+              onPress={openHomeCareIntelligenceNextAction}
+              style={({ pressed }) => [
+                s.questNextAction,
+                {
+                  borderColor: pressed ? colors.amber : "rgba(255,249,239,0.26)",
+                  backgroundColor: pressed ? "rgba(255,249,239,0.16)" : "rgba(255,249,239,0.1)",
+                },
+              ]}
+            >
+              <View style={s.questNextIcon}>
+                <PixelIcon name={homeCareIntelligenceIcon} size={24} />
+              </View>
+              <View style={s.questNextCopy}>
+                <Text style={[s.questNextKicker, { fontFamily: "Inter_800ExtraBold" }]}>
+                  Next care move
+                </Text>
+                <Text numberOfLines={1} style={[s.questNextTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                  {careIntelligence.nextAction.label}
+                </Text>
+                <Text numberOfLines={2} style={[s.questNextDetail, { fontFamily: "Inter_600SemiBold" }]}>
+                  {careIntelligence.nextAction.detail}
+                </Text>
+              </View>
+              <View style={s.questNextCta}>
+                <Text style={[s.questNextCtaText, { fontFamily: "Inter_800ExtraBold" }]}>
+                  {homeCareIntelligenceCta}
+                </Text>
+                <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
+              </View>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
               accessibilityLabel={`Open Adventure Mode. ${adventureQuest.title}. ${adventureMode.summary}`}
               onPress={() => router.push("/adventure" as never)}
               style={({ pressed }) => [
@@ -1833,6 +1905,63 @@ const s = StyleSheet.create({
   questMeta: {
     color: "rgba(255,249,239,0.82)",
     fontSize: 11.5,
+  },
+  questNextAction: {
+    marginTop: 11,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  questNextIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,249,239,0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.2)",
+  },
+  questNextCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  questNextKicker: {
+    color: "rgba(255,249,239,0.64)",
+    fontSize: 8.5,
+    letterSpacing: 0,
+    textTransform: "uppercase",
+  },
+  questNextTitle: {
+    color: "#FFF9EF",
+    fontSize: 13.5,
+    lineHeight: 16,
+    marginTop: 1,
+  },
+  questNextDetail: {
+    color: "rgba(255,249,239,0.74)",
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  questNextCta: {
+    minHeight: 34,
+    borderRadius: 7,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,249,239,0.12)",
+  },
+  questNextCtaText: {
+    color: "#FFF9EF",
+    fontSize: 10.5,
   },
   adventureInline: {
     marginTop: 13,

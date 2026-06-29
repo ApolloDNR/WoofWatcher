@@ -1632,6 +1632,23 @@ Manual branch verify run `28344966240` was triggered after the commit and
 failed before job execution with GitHub's billing/spending-limit annotation, so
 remote CI still cannot provide app proof for this slice.
 
+The Home Care Intelligence CTA pass carried the same source-backed open-loop
+contract onto the first screen. The Home `Care quest` card now shows a compact
+`Next care move` control that refreshes failed sync state, opens exact
+`/log?entry=...` source logs for pending meals or sparse evidence, sends routine
+work to Plans, and falls back to Log only when there is no more specific target.
+This keeps Home aligned with the product promise: the living pixel care surface
+should immediately route owners to the real care record that needs action.
+Red/green verification first failed on the missing Home route contract, then
+passed mobile readiness 88/88. Fresh local verification passed the 411-test
+mobile/domain behavior suite, root TypeScript, mobile TypeScript via the
+absolute TypeScript CLI path, PixelLab asset verification `ok=149 missing=0
+invalid=0`, package-local Expo web export to `.expo-smoke` with 223 files,
+preview route smoke for `/`, `/log?entry=dinner-1`, and
+`/care-twin-qa?qaSurface=home`, and `git diff --check` with expected Windows
+CRLF warnings only. The preview server was restarted at
+`http://127.0.0.1:4194/` for Apollo review.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

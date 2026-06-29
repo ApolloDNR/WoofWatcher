@@ -2113,3 +2113,33 @@ Verification:
   pending-log route, and Care Twin QA.
 - The beta doctor is still environment-blocked until the local shell exposes
   exact `pnpm@10.24.0`; the current bundled CLI is `11.7.0`.
+
+## 2026-06-29 Home Care Intelligence CTA
+
+The Home `Care quest` card now has an actionable first-screen next step:
+
+- The new `Next care move` CTA reads from `careIntelligence.nextAction`.
+- Pending meal outcomes and log-detail open loops open the exact saved log with
+  `/log?entry=...`.
+- Failed sync keeps the refresh/retry workflow instead of pretending a route
+  can fix provider state.
+- Routine loops open Plans/Calendar, and general care prompts open Log.
+- The CTA uses a compact pixel HUD row, haptic feedback, explicit accessibility
+  label/hint copy, and the shared 48px mobile touch-target contract.
+
+Design intent:
+
+- Home should answer "what should I do now?" in seconds.
+- Smart scores should always point to the real source log or routine that needs
+  owner action.
+- Keep the premium pixel style functional: the RPG layer should reduce care
+  confusion, not decorate around it.
+
+Verification:
+
+- Red/green mobile readiness first failed on the missing Home routing contract,
+  then passed 88/88.
+- Fresh local verification passed the 411-test mobile/domain suite, root
+  TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
+  preview route smoke for Home, targeted log entry, and Care Twin QA, plus
+  `git diff --check`.

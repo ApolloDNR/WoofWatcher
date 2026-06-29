@@ -850,6 +850,12 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
   assert.match(more, /careIntelligence\.nextAction\.targetEntryId/);
   assert.match(more, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(careIntelligence\.nextAction\.targetEntryId\)\}` as never\)/);
   assert.match(more, /onPress=\{openCareIntelligenceNextAction\}/);
+  assert.match(home, /const openHomeCareIntelligenceNextAction = \(\) =>/);
+  assert.match(home, /careIntelligence\.nextAction\.targetEntryId/);
+  assert.match(home, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(careIntelligence\.nextAction\.targetEntryId\)\}` as never\)/);
+  assert.match(home, /accessibilityLabel=\{`Home Care Intelligence next action: \$\{careIntelligence\.nextAction\.label\}`\}/);
+  assert.match(home, /onPress=\{openHomeCareIntelligenceNextAction\}/);
+  assertStyleUsesSharedTouchTarget(home, "questNextAction");
 });
 
 test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () => {
