@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Animated,
+  ImageBackground,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -72,9 +73,17 @@ import {
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+
+const RECORDS_CREDENTIAL_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.day.source;
+const RECORDS_CREDENTIAL_STAGE_SPRITE = getCareTwinSpriteAsset("tail-wag");
+const RECORDS_CREDENTIAL_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["tail-wag"];
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -157,6 +166,11 @@ function entryType(entry: Entry): string {
 function hasAttachment(record: unknown): boolean {
   const attachment = (record as { attachmentUri?: unknown }).attachmentUri;
   return typeof attachment === "string" && attachment.trim().length > 0;
+}
+
+function credentialFieldReady(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return normalized.length > 0 && normalized !== "not on file" && normalized !== "not set" && normalized !== "none";
 }
 
 export default function RecordsScreen() {
@@ -616,6 +630,40 @@ export default function RecordsScreen() {
     ["vaccine", "vet", "receipt", "insurance", "microchip", "document"].includes(section.kind),
   );
   const recordList = recordVault.priorityRecords;
+  const filedRecordSections = recordSections.filter((section) => section.count > 0).length;
+  const recordCoveragePercent = Math.round((filedRecordSections / Math.max(1, recordSections.length)) * 100);
+  const credentialReadyFields = [
+    credential.breed,
+    credential.weight,
+    credential.microchip,
+    credential.insurance,
+    credential.primaryVet,
+    credential.emergencyContact,
+    credential.vaccines,
+  ].filter(credentialFieldReady).length;
+  const credentialFieldTotal = 7;
+  const credentialReadinessPercent = Math.round((credentialReadyFields / credentialFieldTotal) * 100);
+  const recordsVaultScore = Math.round(recordCoveragePercent * 0.65 + credentialReadinessPercent * 0.35);
+  const recordsVaultStatus =
+    recordVault.missingCritical.length > 0
+      ? "Needs records"
+      : recordReminders.length > 0
+        ? "Review soon"
+        : "Vault steady";
+  const recordsVaultSpeech =
+    recordVault.missingCritical.length > 0
+      ? `Let's file ${recordVault.missingCritical[0].toLowerCase()} next.`
+      : recordReminders.length > 0
+        ? `${recordReminders[0].label} is worth checking.`
+        : recordVault.total > 0
+          ? "Dog ID and care files are ready."
+          : "Let's build Phoenix's care vault.";
+  const recordsVaultTone =
+    recordVault.missingCritical.length > 0
+      ? colors.amber
+      : recordReminders.length > 0
+        ? colors.copper
+        : colors.sage;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -631,6 +679,77 @@ export default function RecordsScreen() {
             subtitle={`${state.profile.name}'s file cabinet - trends, incidents & reports`}
             icon="folder-open-outline"
           />
+
+          <BoardCard style={s.recordsCredentialStageCard}>
+            <ImageBackground
+              source={RECORDS_CREDENTIAL_STAGE_ROOM}
+              resizeMode="cover"
+              imageStyle={[s.recordsCredentialStageImage, pixelImageStyle]}
+              style={s.recordsCredentialStage}
+              testID="records-credential-pixel-stage"
+            >
+              <View style={s.recordsCredentialStageShade} />
+              <View style={s.recordsCredentialStageScanline} />
+              <View style={s.recordsCredentialStageTop}>
+                <View style={s.recordsCredentialBubble}>
+                  <Text style={[s.recordsCredentialKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                    Records Command Vault
+                  </Text>
+                  <Text style={[s.recordsCredentialSpeech, { color: colors.navy, fontFamily: DISPLAY_SEMI }]}>
+                    {recordsVaultSpeech}
+                  </Text>
+                  <View style={s.recordsCredentialBubbleTail} />
+                </View>
+                <View style={[s.recordsCredentialChip, { backgroundColor: colors.brandNavy + "DD", borderColor: colors.ivory + "55" }]}>
+                  <Ionicons name={recordsVaultScore >= 80 ? "shield-checkmark" : "folder-open"} size={16} color={colors.ivory} />
+                  <Text style={[s.recordsCredentialChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                    {recordsVaultStatus}
+                  </Text>
+                </View>
+              </View>
+
+              <View pointerEvents="none" style={s.recordsCredentialSprite}>
+                <View style={s.recordsCredentialSpriteShadow} />
+                <SpriteSheetPlayer
+                  asset={RECORDS_CREDENTIAL_STAGE_SPRITE}
+                  track={RECORDS_CREDENTIAL_STAGE_TRACK}
+                  width={132}
+                  height={132}
+                  testID="records-credential-pixel-sprite"
+                />
+              </View>
+
+              <View style={[s.recordsCredentialIdPlate, { backgroundColor: colors.ivory + "F2", borderColor: colors.navy + "22" }]}>
+                <View style={[s.recordsCredentialIdBadge, { backgroundColor: recordsVaultTone + "1F" }]}>
+                  <Ionicons name="paw" size={16} color={recordsVaultTone} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[s.recordsCredentialIdLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                    WOOFWATCHER DOG ID
+                  </Text>
+                  <Text numberOfLines={1} style={[s.recordsCredentialIdName, { color: colors.navy, fontFamily: DISPLAY }]}>
+                    {credential.name}
+                  </Text>
+                  <Text numberOfLines={1} style={[s.recordsCredentialIdMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {credential.breed} - {credential.weight}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[s.recordsCredentialHud, { backgroundColor: colors.brandNavy + "DC", borderColor: colors.ivory + "44" }]}>
+                {[
+                  { label: "Saved", value: String(recordVault.total) },
+                  { label: "Ready", value: `${recordsVaultScore}%` },
+                  { label: "Alerts", value: String(recordReminders.length + recordVault.missingCritical.length) },
+                ].map((item) => (
+                  <View key={item.label} style={s.recordsCredentialHudCell}>
+                    <Text style={[s.recordsCredentialHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>{item.label}</Text>
+                    <Text style={[s.recordsCredentialHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>{item.value}</Text>
+                  </View>
+                ))}
+              </View>
+            </ImageBackground>
+          </BoardCard>
 
           {/* Care highlights strip */}
           <View style={[s.highlightStrip, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
@@ -2333,6 +2452,170 @@ const s = StyleSheet.create({
     gap: 4,
   },
   shareInlineGroup: { flexDirection: "row", alignItems: "center", gap: 14 },
+
+  recordsCredentialStageCard: {
+    marginTop: 2,
+    marginBottom: 14,
+    padding: 0,
+    overflow: "hidden",
+  },
+  recordsCredentialStage: {
+    minHeight: 318,
+    overflow: "hidden",
+    justifyContent: "space-between",
+  },
+  recordsCredentialStageImage: {
+    borderRadius: 22,
+  },
+  recordsCredentialStageShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(4, 16, 28, 0.12)",
+  },
+  recordsCredentialStageScanline: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.22)",
+  },
+  recordsCredentialStageTop: {
+    zIndex: 3,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+    padding: 14,
+  },
+  recordsCredentialBubble: {
+    maxWidth: "66%",
+    borderWidth: 2,
+    borderColor: "#18314A",
+    backgroundColor: "rgba(255,249,239,0.96)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    shadowColor: "#071523",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  recordsCredentialKicker: {
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+    marginBottom: 2,
+  },
+  recordsCredentialSpeech: {
+    fontSize: 15,
+    lineHeight: 19,
+  },
+  recordsCredentialBubbleTail: {
+    position: "absolute",
+    left: 42,
+    bottom: -10,
+    width: 14,
+    height: 14,
+    backgroundColor: "rgba(255,249,239,0.96)",
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#18314A",
+    transform: [{ rotate: "45deg" }],
+  },
+  recordsCredentialChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 13,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    maxWidth: 132,
+  },
+  recordsCredentialChipText: {
+    flexShrink: 1,
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  recordsCredentialSprite: {
+    position: "absolute",
+    right: 28,
+    bottom: 84,
+    zIndex: 2,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  recordsCredentialSpriteShadow: {
+    position: "absolute",
+    bottom: 3,
+    width: 92,
+    height: 16,
+    borderRadius: 999,
+    backgroundColor: "rgba(7, 18, 30, 0.25)",
+  },
+  recordsCredentialIdPlate: {
+    zIndex: 4,
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 74,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 17,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    shadowColor: "#071523",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+  recordsCredentialIdBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recordsCredentialIdLabel: {
+    fontSize: 9.8,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  recordsCredentialIdName: {
+    fontSize: 21,
+    letterSpacing: -0.2,
+    marginTop: 1,
+  },
+  recordsCredentialIdMeta: {
+    fontSize: 11.5,
+    marginTop: 2,
+  },
+  recordsCredentialHud: {
+    zIndex: 4,
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 14,
+    flexDirection: "row",
+    borderWidth: 1,
+    borderRadius: 17,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+  },
+  recordsCredentialHudCell: {
+    flex: 1,
+    alignItems: "center",
+    gap: 2,
+  },
+  recordsCredentialHudLabel: {
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  recordsCredentialHudValue: {
+    fontSize: 16,
+  },
 
   idCard: {
     borderRadius: 22,

@@ -3472,6 +3472,19 @@ test("keeps Plans schedule rooted in a live pixel command stage", () => {
   assert.match(calendar, /Plans Command Deck/);
 });
 
+test("keeps Records rooted in a live pixel credential stage", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /ImageBackground/);
+  assert.match(records, /RECORDS_CREDENTIAL_STAGE_ROOM/);
+  assert.match(records, /CARE_TWIN_ROOM_VARIANT_ASSETS\.day/);
+  assert.match(records, /SpriteSheetPlayer/);
+  assert.match(records, /getCareTwinSpriteAsset\("tail-wag"\)/);
+  assert.match(records, /CARE_TWIN_SPRITE_MANIFEST\["tail-wag"\]/);
+  assert.match(records, /pixelImageStyle/);
+  assert.match(records, /Records Command Vault/);
+});
+
 test("keeps Plans owner-preview controls on shared mobile touch targets", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
 

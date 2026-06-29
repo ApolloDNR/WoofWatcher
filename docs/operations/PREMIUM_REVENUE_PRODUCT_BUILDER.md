@@ -2105,6 +2105,21 @@ before execution with `steps: []` and `runner_id: 0`. `gh run view
 standing GitHub account/pre-job blocker, not as product verification evidence or
 a local app regression.
 
+The Records credential-stage pass moved the records route closer to Apollo's
+Option B mockups without weakening the vault/report workflow. Records now
+renders the dogless Option B day room, a live `tail-wag` `SpriteSheetPlayer`,
+hard-pixel rendering, Dog ID speech, status chip, and compact Saved/Ready/Alerts
+HUD derived from record vault coverage, credential readiness, missing critical
+records, and reminders. Existing Dog ID sharing, printable credential source,
+Care Pass previews/history, record reminders, medication history, health/potty/
+training/alone-time/grooming/incident summaries, and add/delete record flows
+remain intact. Red/green verification first failed on the missing pixel-stage
+contract, then passed mobile readiness 96/96 after implementation. Fresh local
+verification passed mobile TypeScript, the 465-test behavior/readiness suite,
+root TypeScript, PixelLab verification `ok=149 missing=0 invalid=0`, Expo web
+export to `.expo-smoke` with 219 assets / 223 files, `/records` route smoke,
+and `git diff --check`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
