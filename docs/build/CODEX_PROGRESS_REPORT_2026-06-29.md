@@ -110,3 +110,41 @@ Verification:
 - Expo web export passed to `.expo-smoke` with 223 files.
 - Preview route smoke passed for `/`, `/portrait`,
   `/log?type=meal&detail=1&intent=smoke`, `/health?tab=health`, and `/more`.
+
+## Home Care Twin Studio Long Press
+
+Completed the next tactile care-twin interaction pass on Phoenix Home.
+
+What changed:
+
+- The main `LivingPhoenixRoom` dog press target now supports both tap and
+  long-press behavior.
+- A normal tap still plays the care-twin reaction and toast feedback.
+- A long press opens Avatar Studio through the same `openAvatarStudio` route
+  handler as the visible Studio button, so the main dog now behaves like an
+  interactive game object instead of a static preview image.
+- The Home room exposes an accessibility hint explaining both actions:
+  tap for a care-twin reaction, long press to open Avatar Studio.
+- Mobile readiness now guards the `onLongPress` prop, the shared Home route
+  handler, and the Home-to-Studio interaction contract.
+
+Verification:
+
+- Mobile readiness passed 94/94.
+- Full local behavior/readiness suite passed 461/461.
+- Root TypeScript passed.
+- Mobile TypeScript passed.
+- PixelLab asset verification passed: `ok=149 missing=0 invalid=0`.
+- Expo web export passed to `.expo-smoke` with 219 assets / 223 files after
+  temporarily adding the bundled Node folder to `PATH` for the export script.
+- Preview route smoke passed for `/`, `/portrait`,
+  `/log?type=meal&detail=1&intent=smoke`, `/health?tab=health`, and `/more`.
+- `git diff --check` passed with expected Windows CRLF warnings only.
+
+Known limits:
+
+- This improves app feel and discoverability, but native iOS/Android device QA
+  is still required to approve long-press timing, haptics, sprite crop, and
+  gait feel.
+- The interaction remains local-first and asset-backed. It does not claim live
+  AI avatar generation, cloud sync, provider storage, or store approval.

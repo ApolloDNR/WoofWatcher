@@ -1161,6 +1161,11 @@ export default function HomeScreen() {
     showToast(avatarMotion.line);
   };
 
+  const openAvatarStudio = () => {
+    void Haptics.selectionAsync();
+    router.push("/portrait");
+  };
+
   const fade = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(fade, {
@@ -1270,7 +1275,7 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
-                onPress={() => router.push("/portrait")}
+                onPress={openAvatarStudio}
                 style={({ pressed }) => [
                   s.heroStudioButton,
                   {
@@ -1324,6 +1329,8 @@ export default function HomeScreen() {
                 statusReadouts={roomStats}
                 avatarConfig={avatarConfig}
                 onPress={tapPhoenixRoom}
+                onLongPress={openAvatarStudio}
+                accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
               />
             </View>
           </BoardCard>

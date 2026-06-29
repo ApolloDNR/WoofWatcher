@@ -907,6 +907,10 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(home, /avatarMotion\.line/);
   assert.match(home, /Phoenix Room/);
   assert.match(home, /heroStudioButton/);
+  assert.match(home, /const openAvatarStudio/);
+  assert.match(home, /onPress=\{openAvatarStudio\}/);
+  assert.match(home, /onLongPress=\{openAvatarStudio\}/);
+  assert.match(home, /Long press to open Avatar Studio/);
   assert.doesNotMatch(home, /avatarIdentityBar/);
   assert.match(room, /roomLiveTitle/);
   assert.match(room, /roomLiveDetail/);
@@ -924,6 +928,8 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(room, /SpriteSheetPlayer/);
   assert.match(room, /deriveAvatarRoomRuntime/);
   assert.match(room, /avatarConfig\?: PetAvatarConfig/);
+  assert.match(room, /onLongPress\?: \(\) => void/);
+  assert.match(room, /accessibilityHint\?: string/);
   assert.match(room, /avatarRoomRuntime\?\.spriteTrack/);
   assert.match(room, /care-twin-template-sprite-player/);
   assert.match(room, /care-twin-avatar-underlay-\$\{layer\.id\}/);

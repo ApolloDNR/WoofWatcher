@@ -95,6 +95,8 @@ interface Props {
   statusReadouts?: readonly PhoenixRoomStat[];
   avatarConfig?: PetAvatarConfig;
   onPress?: () => void;
+  onLongPress?: () => void;
+  accessibilityHint?: string;
   presentation?: "home" | "studio";
 }
 
@@ -232,6 +234,8 @@ export function LivingPhoenixRoom({
   statusReadouts,
   avatarConfig,
   onPress,
+  onLongPress,
+  accessibilityHint,
   presentation = "home",
 }: Props) {
   const colors = useColors();
@@ -617,7 +621,9 @@ export function LivingPhoenixRoom({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Phoenix room. ${avatarRoomRuntime?.templateLabel ?? "Shepherd"} care twin. ${motion.label}. ${plan.tapVerb}. ${speech}`}
+      accessibilityHint={accessibilityHint}
       onPress={handlePress}
+      onLongPress={onLongPress}
       style={styles.root}
     >
       <View pointerEvents="none" style={styles.pixelFrame}>
