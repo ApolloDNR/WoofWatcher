@@ -77,6 +77,14 @@ type StatusTileTarget = "mood" | "health" | "diet" | "bond";
 type TodayMetricTarget = "activity" | "meals" | "potty";
 type PhoenixStatusMeterTarget = "energy" | "hunger" | "hydration" | "bile" | "bond";
 type HomeWatchTarget = "health" | "bile" | "alone";
+type HomeNextUpRoute = "/calendar" | `/log?entry=${string}` | `/log?type=${string}&detail=1&intent=${number}`;
+type HomeNextUpItem = {
+  label: string;
+  time: string;
+  icon: PixelIconName;
+  route: HomeNextUpRoute;
+  meta?: string;
+};
 
 const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
   activity: "walk",
@@ -172,6 +180,14 @@ function isPendingMealLog(entry: { type: string; details?: unknown }): boolean {
   const completion = String(detailValue(entry.details, "mealCompletion") ?? "");
   const lifecycle = String(detailValue(entry.details, "mealLifecycle") ?? "");
   return lifecycle === "outcome-pending" || completion === "served" || completion === "grazing";
+}
+
+function homeLogEntryRoute(entryId: string): `/log?entry=${string}` {
+  return `/log?entry=${encodeURIComponent(entryId)}`;
+}
+
+function homeLogDetailRoute(type: CareEventType, intent: number): `/log?type=${string}&detail=1&intent=${number}` {
+  return `/log?type=${type}&detail=1&intent=${intent}`;
 }
 
 function adventureQuestIcon(id: string): PixelIconName {
@@ -344,13 +360,26 @@ export default function HomeScreen() {
     [state.entries, now],
   );
 
-  const nextUp = useMemo(() => {
+  const nextUp = useMemo<HomeNextUpItem[]>(() => {
+    if (openAloneSession) {
+      return [
+        {
+          label: "Home alone",
+          time: `${formatDuration(openAloneMinutes)} - log return`,
+          icon: "clock" as PixelIconName,
+          route: openAloneSession.id ? homeLogEntryRoute(openAloneSession.id) : homeLogDetailRoute("alone", now),
+          meta: "Return",
+        },
+      ];
+    }
     if (openWalkSession) {
       return [
         {
           label: "Walk active",
           time: `${formatDuration(openWalkMinutes)} - finish in Log`,
           icon: "walk" as PixelIconName,
+          route: openWalkSession.id ? homeLogEntryRoute(openWalkSession.id) : homeLogDetailRoute("walk", now),
+          meta: "Finish",
         },
       ];
     }
@@ -361,41 +390,53 @@ export default function HomeScreen() {
           label: `${label} served`,
           time: "Outcome pending",
           icon: "meal" as PixelIconName,
+          route: pendingMeal.id ? homeLogEntryRoute(pendingMeal.id) : homeLogDetailRoute("meal", now),
+          meta: "Update",
         },
       ];
     }
     if (state.routines.length) {
-      return state.routines.slice(0, 3).map((r) => ({
-        label: r.label,
-        time: r.time,
-        icon: routineIcon(r.type),
-      }));
+      return state.routines.slice(0, 3).map((r) => {
+        const routineType = normalizeCareEventType(r.type ?? "note");
+        return {
+          label: r.label,
+          time: r.time,
+          icon: routineIcon(routineType),
+          route: "/calendar" as const,
+          meta: "Plan",
+        };
+      });
     }
     return [
-      { label: `Walk with ${caregiver}`, time: "5:30 PM", icon: "walk" as PixelIconName },
-      { label: "Dinner", time: "7:00 PM", icon: "meal" as PixelIconName },
-      { label: "Training", time: "6:30 PM", icon: "training" as PixelIconName },
+      { label: `Walk with ${caregiver}`, time: "5:30 PM", icon: "walk" as PixelIconName, route: homeLogDetailRoute("walk", now), meta: "Start" },
+      { label: "Dinner", time: "7:00 PM", icon: "meal" as PixelIconName, route: homeLogDetailRoute("meal", now), meta: "Serve" },
+      { label: "Training", time: "6:30 PM", icon: "training" as PixelIconName, route: homeLogDetailRoute("training", now), meta: "Log" },
     ];
-  }, [openWalkMinutes, openWalkSession, pendingMeal, state.routines, caregiver]);
+  }, [openAloneMinutes, openAloneSession, openWalkMinutes, openWalkSession, pendingMeal, state.routines, caregiver, now]);
 
   const nextPrimary = nextUp[0];
   const nextCount = Math.max(nextUp.length, 1);
   const nextMeta =
     pendingMeal
       ? "Open meal"
+      : openAloneSession
+      ? "I'm Home"
+      : openWalkSession
+      ? "Finish walk"
       : status.minutesUntilNext !== null
       ? `In ${formatDuration(status.minutesUntilNext)}`
       : nextPrimary?.time ?? "Ready";
   const nextDetail =
     pendingMeal
       ? "Outcome pending - update when Phoenix finishes"
+      : openAloneSession
+      ? `${formatDuration(openAloneMinutes)} active - log return`
+      : openWalkSession
+      ? `${formatDuration(openWalkMinutes)} active - finish in Log`
       : status.minutesUntilNext !== null
       ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
       : nextPrimary?.time ?? "Ready when you are";
-  const pendingMealRoute = pendingMeal
-    ? (`/log?entry=${encodeURIComponent(pendingMeal.id)}` as `/log?entry=${string}`)
-    : null;
-  const nextUpRoute = pendingMealRoute ?? (openAloneSession || openWalkSession ? "/log" : "/calendar");
+  const nextUpRoute = nextPrimary?.route ?? "/calendar";
 
   const health = status.counts.healthAlert
     ? { status: "Needs Watch", sub: "Recent symptom logged", color: colors.amber }
@@ -1091,8 +1132,8 @@ export default function HomeScreen() {
                   icon={item.icon}
                   title={item.label}
                   detail={index === 0 ? nextDetail : item.time}
-                  meta={index === 0 && pendingMeal ? "Update" : index === 0 ? "Start" : ""}
-                  onPress={() => router.push(nextUpRoute as never)}
+                  meta={item.meta ?? ""}
+                  onPress={() => router.push(item.route as never)}
                 />
               ))}
             </BoardCard>

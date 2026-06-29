@@ -1726,6 +1726,25 @@ iOS/Android device QA, provider-backed sync/storage/AI/payments/push, app-store
 accounts, legal/privacy/support review, CI completion, or Apollo launch
 sign-off.
 
+The Home Next Up row-routing pass removed a subtle first-screen dead end.
+`Next Up` now derives typed row objects instead of one shared route: active
+walk, active home-alone, and pending meal rows open the exact source
+`/log?entry=...` record when an id exists, with Walk/Alone/Meal detail-sheet
+fallbacks for older id-less imported rows. Routine rows stay in Plans, and
+starter rows open the matching Walk, Meal, or Training detail composer. Red/green
+mobile readiness first failed on the missing row-level route contract, then
+passed 92/92 after implementation; focused Home/readiness verification passed
+94/94. Fresh local verification passed root TypeScript, mobile TypeScript, the
+415-test mobile/domain behavior suite, PixelLab asset verification `ok=149
+missing=0 invalid=0`, package-local Expo web export to `.expo-smoke` with 223
+files, and preview route smoke for `/`, `/log?entry=dinner-1`,
+`/log?type=walk&detail=1&intent=123`,
+`/log?type=alone&detail=1&intent=123`, `/calendar`, `/health?tab=health`, and
+`/health?tab=bile`. This clears local web preview and first-screen row routing
+proof only; it does not clear native iOS/Android device QA, provider-backed
+sync/storage/AI/payments/push, app-store accounts, legal/privacy/support review,
+CI completion, or Apollo launch sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

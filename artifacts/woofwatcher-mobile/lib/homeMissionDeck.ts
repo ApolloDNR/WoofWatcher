@@ -8,6 +8,7 @@ export type HomeMissionRoute =
   | "/log"
   | "/log?type=meal"
   | `/log?entry=${string}`
+  | `/log?type=${string}&detail=1&intent=${number}`
   | "/records";
 
 export type HomeMissionIcon =

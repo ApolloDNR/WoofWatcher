@@ -2294,3 +2294,36 @@ Verification:
 - Fresh local verification passed the 415-test mobile/domain suite, root
   TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
   and preview route smoke for Home, Log, Health Overview, and Bile Watch routes.
+
+## 2026-06-29 Home Next Up Row Routing
+
+The Home `Next Up` list now behaves like an intentional care queue instead of a
+single broad shortcut:
+
+- Each `Next Up` row carries its own typed route.
+- Active walk rows open the exact source log when possible, or the Walk detail
+  sheet when the imported/open session has no id.
+- Active home-alone rows open the exact source log when possible, or the Alone
+  Time detail sheet when the imported/open session has no id.
+- Pending served meals open the exact meal log for outcome updates when
+  possible, or the Meal detail sheet as an id-safe fallback.
+- Routine rows still route to Plans.
+- Starter rows route to the matching Walk, Meal, or Training detail composer.
+
+Design intent:
+
+- Remove a subtle dead-end where every visible row reused the first row's route.
+- Keep the first screen dog-care promise direct: tap the row, land where that
+  specific care item can be handled.
+- Preserve compatibility with older local/imported entries that may not have an
+  id.
+
+Verification:
+
+- Red/green mobile readiness first failed on the missing row-level route
+  contract, then passed 92/92 after implementation.
+- Focused Home/readiness verification passed 94/94.
+- Fresh local verification passed root TypeScript, mobile TypeScript, the
+  415-test mobile/domain suite, PixelLab asset verification, Expo web export,
+  and preview route smoke for Home, source-log entry, Walk detail, Alone Time
+  detail, Plans, Health Overview, and Bile Watch routes.
