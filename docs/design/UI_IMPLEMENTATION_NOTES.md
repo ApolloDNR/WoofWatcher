@@ -2207,3 +2207,34 @@ Verification:
   TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
   and preview route smoke for Home, Health, Meal detail, Water detail, and Play
   detail routes.
+
+## 2026-06-29 Home Watch Card Deep Links
+
+The Home `Health Watch`, `Bile Watch`, and `Alone Time` watch cards now route to
+the specific workflow behind each signal instead of opening broad screens:
+
+- Health Watch opens the Health overview tab with route state.
+- Bile Watch opens `/health?tab=bile`, and Health reads the `tab` route param
+  to land directly on the Bile Watch panel.
+- Alone Time opens the Alone Time detail-intent flow through
+  `/log?type=alone&detail=1&intent=...`, preserving the existing return
+  check-in panel when a home-alone session is active.
+- Each watch card now has an accessibility hint, inline hit slop, haptic
+  selection, and a typed `HomeWatchTarget` route helper.
+
+Design intent:
+
+- Keep Home's lower signal row from becoming decorative status chrome.
+- Make Bile Watch feel like a first-class product module, not just a Health
+  alias.
+- Make Alone Time behave like a real household workflow: leave, track, return,
+  and log the outcome without duplicate records.
+
+Verification:
+
+- Red/green mobile readiness first failed on the missing watch-card deep-link
+  contract, then passed 91/91.
+- Fresh local verification passed the 414-test mobile/domain suite, root
+  TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
+  and preview route smoke for Home, Bile Watch deep link, and Alone Time detail
+  route.

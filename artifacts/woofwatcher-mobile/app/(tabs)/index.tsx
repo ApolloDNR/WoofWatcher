@@ -76,6 +76,7 @@ interface QuickItem {
 type StatusTileTarget = "mood" | "health" | "diet" | "bond";
 type TodayMetricTarget = "activity" | "meals" | "potty";
 type PhoenixStatusMeterTarget = "energy" | "hunger" | "hydration" | "bile" | "bond";
+type HomeWatchTarget = "health" | "bile" | "alone";
 
 const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
   activity: "walk",
@@ -592,6 +593,19 @@ export default function HomeScreen() {
       return;
     }
     router.push(`/log?type=play&detail=1&intent=${Date.now()}` as never);
+  };
+
+  const openHomeWatchCard = (target: HomeWatchTarget) => {
+    void Haptics.selectionAsync();
+    if (target === "health") {
+      router.push("/health?tab=health" as never);
+      return;
+    }
+    if (target === "bile") {
+      router.push("/health?tab=bile" as never);
+      return;
+    }
+    router.push(`/log?type=alone&detail=1&intent=${Date.now()}` as never);
   };
 
   const openHomeCareIntelligenceNextAction = () => {
@@ -1324,15 +1338,37 @@ export default function HomeScreen() {
 
           <View style={s.watchRow}>
             {[
-              { title: "Health Watch", icon: "health" as PixelIconName, data: health, route: "/health" },
-              { title: "Bile Watch", icon: "bile" as PixelIconName, data: bile, route: "/health" },
-              { title: "Alone Time", icon: "clock" as PixelIconName, data: alone, route: "/log" },
+              {
+                title: "Health Watch",
+                icon: "health" as PixelIconName,
+                data: health,
+                target: "health" as HomeWatchTarget,
+                hint: "Opens Health Watch overview with activity, appetite, stool, hydration, energy, and vomiting signals.",
+              },
+              {
+                title: "Bile Watch",
+                icon: "bile" as PixelIconName,
+                data: bile,
+                target: "bile" as HomeWatchTarget,
+                hint: "Opens the Bile Watch tab for yellow bile patterns, food gaps, and owner notes.",
+              },
+              {
+                title: "Alone Time",
+                icon: "clock" as PixelIconName,
+                data: alone,
+                target: "alone" as HomeWatchTarget,
+                hint: openAloneSession
+                  ? "Opens the return check-in so the household can close the active alone time."
+                  : "Opens the Alone Time detail flow for leaving home or logging a return.",
+              },
             ].map((w) => (
               <Pressable
                 key={w.title}
                 accessibilityRole="button"
                 accessibilityLabel={`${w.title}. ${w.data.status}`}
-                onPress={() => router.push(w.route as never)}
+                accessibilityHint={w.hint}
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={() => openHomeWatchCard(w.target)}
                 style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.72 : 1 }]}
               >
                 <BoardCard style={s.watchCard}>

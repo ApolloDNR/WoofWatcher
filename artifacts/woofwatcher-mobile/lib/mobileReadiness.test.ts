@@ -865,6 +865,24 @@ test("keeps Home Phoenix status meters route-backed instead of decorative", () =
   assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("bond"\)\}/);
 });
 
+test("keeps Home watch cards deep-linked to exact care workflows", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+
+  assert.match(home, /type HomeWatchTarget = "health" \| "bile" \| "alone";/);
+  assert.match(home, /const openHomeWatchCard = \(target: HomeWatchTarget\) =>/);
+  assert.match(home, /router\.push\("\/health\?tab=bile" as never\)/);
+  assert.match(home, /router\.push\(`\/log\?type=alone&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.match(home, /hitSlop=\{MOBILE_INLINE_HIT_SLOP\}/);
+  assert.match(home, /accessibilityHint=\{w\.hint\}/);
+  assert.match(home, /onPress=\{\(\) => openHomeWatchCard\(w\.target\)\}/);
+  assert.match(home, /target: "bile" as HomeWatchTarget/);
+  assert.match(home, /target: "alone" as HomeWatchTarget/);
+  assert.match(health, /useLocalSearchParams<\{\s*tab\?: string \| string\[\];?\s*\}>/);
+  assert.match(health, /const requestedTab: HealthTab = tabParam === "bile" \? "bile" : "health";/);
+  assert.match(health, /useEffect\(\(\) => \{\s*setActiveTab\(requestedTab\);/);
+});
+
 test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {
   const domain = readFileSync(join(process.cwd(), "lib", "care-domain", "src", "care-intelligence.ts"), "utf8");
   const home = readAppFile(join("(tabs)", "index.tsx"));

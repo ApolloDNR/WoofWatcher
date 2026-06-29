@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import React, { useMemo, useRef, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { deriveHealthWatch, normalizeCareEventType } from "@workspace/care-domain";
@@ -139,11 +139,17 @@ function statusActionLabel(type: string): string {
 export default function HealthScreen() {
   const colors = useColors();
   const router = useRouter();
+  const params = useLocalSearchParams<{ tab?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const { state } = useCare();
   const now = Date.now();
   const scrollRef = useRef<ScrollView>(null);
-  const [activeTab, setActiveTab] = useState<HealthTab>("health");
+  const tabParam = Array.isArray(params.tab) ? params.tab[0] : params.tab;
+  const requestedTab: HealthTab = tabParam === "bile" ? "bile" : "health";
+  const [activeTab, setActiveTab] = useState<HealthTab>(() => requestedTab);
+  useEffect(() => {
+    setActiveTab(requestedTab);
+  }, [requestedTab]);
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,

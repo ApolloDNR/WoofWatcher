@@ -1682,6 +1682,20 @@ route smoke for `/`, `/health`, `/log?type=meal&detail=1&intent=smoke`,
 failed before job execution with GitHub's billing/spending-limit annotation, so
 remote CI still cannot provide app proof for this slice.
 
+The Home watch-card deep-link pass made the lower signal row route to exact
+care workflows. `Health Watch` opens the Health overview route, `Bile Watch`
+opens `/health?tab=bile` and Health honors that route param, and `Alone Time`
+opens the typed Alone Time detail-intent flow so owners can start away time or
+complete the return check-in from Home. Red/green verification first failed on
+the missing watch-card contract, then passed mobile readiness 91/91. Fresh
+local verification passed the 414-test mobile/domain behavior suite, root
+TypeScript, mobile TypeScript, PixelLab asset verification `ok=149 missing=0
+invalid=0`, package-local Expo web export to `.expo-smoke` with 223 files,
+preview route smoke for `/`, `/health?tab=bile`, and
+`/log?type=alone&detail=1&intent=smoke`, and `git diff --check` with expected
+Windows CRLF warnings only. The preview server is running at
+`http://127.0.0.1:4194/` for Apollo review.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
