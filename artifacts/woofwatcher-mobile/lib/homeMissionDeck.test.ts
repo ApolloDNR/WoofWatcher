@@ -48,7 +48,7 @@ test("builds a care-RPG mission deck from real open care state", () => {
   assert.match(missions[1].detail, /Level 12/);
   assert.match(missions[1].detail, /18 memories/);
 
-  assert.equal(missions[2].route, "/health");
+  assert.equal(missions[2].route, "/health?tab=bile");
   assert.equal(missions[2].tone, "amber");
   assert.equal(missions[2].cta, "Review");
 
@@ -93,6 +93,7 @@ test("keeps mission copy useful when the day has no urgent open loop", () => {
   assert.match(missions[0].title, /Walk with Apollo/);
 
   assert.equal(missions[2].tone, "sage");
+  assert.equal(missions[2].route, "/health?tab=health");
   assert.equal(missions[2].statusLabel, "Stable");
   assert.equal(missions[3].statusLabel, "Build pass");
 });

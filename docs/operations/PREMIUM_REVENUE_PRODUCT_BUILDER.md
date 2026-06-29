@@ -1696,6 +1696,21 @@ preview route smoke for `/`, `/health?tab=bile`, and
 Windows CRLF warnings only. The preview server is running at
 `http://127.0.0.1:4194/` for Apollo review.
 
+The Home health signal tab-routing pass finished the same exact-route contract
+for the remaining Home health controls. The Health status tile and Energy meter
+open `/health?tab=health`, Bile Risk opens `/health?tab=bile`, and the mission
+deck now routes Health Review to Bile Watch while stable Health Watch opens the
+overview tab. Red/green verification first failed on the old generic mission
+routes, then passed focused Home mission tests 2/2 and mobile readiness 92/92.
+Fresh local verification passed the 415-test mobile/domain behavior suite, root
+TypeScript, mobile TypeScript, PixelLab asset verification `ok=149 missing=0
+invalid=0`, package-local Expo web export to `.expo-smoke` with 223 files, and
+preview route smoke for `/`, `/health?tab=health`, and `/health?tab=bile`.
+This clears local web preview and tab-deep-link proof only; it does not clear
+native iOS/Android device QA, provider-backed sync/storage/AI/payments/push,
+app-store accounts, legal/privacy/support review, CI completion, or Apollo
+launch sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

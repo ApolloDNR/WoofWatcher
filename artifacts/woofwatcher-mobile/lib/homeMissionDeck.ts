@@ -4,6 +4,8 @@ export type HomeMissionRoute =
   | "/adventure"
   | "/calendar"
   | "/health"
+  | "/health?tab=health"
+  | "/health?tab=bile"
   | "/log"
   | "/log?type=meal"
   | `/log?entry=${string}`
@@ -134,7 +136,7 @@ export function buildHomeMissionDeck(input: HomeMissionDeckInput): HomeMission[]
       statusLabel: clean(input.health.status, input.health.needsReview ? "Review" : "Stable"),
       cta: input.health.needsReview ? "Review" : "Open health",
       icon: input.health.needsReview ? "bile" : "health",
-      route: "/health",
+      route: input.health.needsReview ? "/health?tab=bile" : "/health?tab=health",
       tone: input.health.needsReview ? "amber" : "sage",
     },
     {

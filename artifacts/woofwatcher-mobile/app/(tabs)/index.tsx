@@ -563,7 +563,7 @@ export default function HomeScreen() {
       return;
     }
     if (target === "health") {
-      router.push("/health");
+      router.push("/health?tab=health" as never);
       return;
     }
     if (target === "diet") {
@@ -580,8 +580,12 @@ export default function HomeScreen() {
 
   const openPhoenixStatusMeter = (target: PhoenixStatusMeterTarget) => {
     void Haptics.selectionAsync();
-    if (target === "energy" || target === "bile") {
-      router.push("/health");
+    if (target === "energy") {
+      router.push("/health?tab=health" as never);
+      return;
+    }
+    if (target === "bile") {
+      router.push("/health?tab=bile" as never);
       return;
     }
     if (target === "hunger") {

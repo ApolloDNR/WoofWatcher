@@ -2238,3 +2238,33 @@ Verification:
   TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
   and preview route smoke for Home, Bile Watch deep link, and Alone Time detail
   route.
+
+## 2026-06-29 Home Health Signal Tab Routing
+
+The remaining Home health signals now land on the exact Health Watch tab that
+matches the owner's intent:
+
+- Home's Health status tile opens `/health?tab=health`.
+- Home's Energy status meter opens `/health?tab=health`.
+- Home's Bile Risk status meter opens `/health?tab=bile`.
+- The Home mission deck routes `Health Review` to `/health?tab=bile` when bile
+  or watch evidence needs review.
+- The stable `Health Watch` mission routes to `/health?tab=health`.
+
+Design intent:
+
+- Make Health Overview and Bile Watch feel like distinct, intentional modules.
+- Reduce first-screen friction by putting owners exactly where the signal can be
+  understood or updated.
+- Keep the non-diagnostic health experience calm while making the app feel
+  professionally routed rather than stitched together.
+
+Verification:
+
+- Red/green Home mission deck tests first failed on the old generic `/health`
+  route, then passed 2/2 after the tab-specific route change.
+- Mobile readiness passed 92/92 with a guard for the mission deck and Home
+  status-meter route contracts.
+- Fresh local verification passed the 415-test mobile/domain suite, root
+  TypeScript, mobile TypeScript, PixelLab asset verification, Expo web export,
+  and preview route smoke for Home, Health Overview, and Bile Watch routes.

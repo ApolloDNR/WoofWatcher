@@ -805,7 +805,7 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   assert.match(home, /type StatusTileTarget = "mood" \| "health" \| "diet" \| "bond"/);
   assert.match(home, /const openStatusTile = \(target: StatusTileTarget\) =>/);
   assert.match(home, /router\.push\(`\/log\?type=mood&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
-  assert.match(home, /router\.push\("\/health"\)/);
+  assert.match(home, /router\.push\("\/health\?tab=health" as never\)/);
   assert.match(home, /router\.push\("\/more\?section=diet" as never\)/);
   assert.match(home, /router\.push\(`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
   assert.match(home, /accessibilityLabel=\{`\$\{tile\.label\}\. \$\{tile\.value\}\. \$\{tile\.actionLabel\}`\}/);
@@ -850,6 +850,8 @@ test("keeps Home Phoenix status meters route-backed instead of decorative", () =
   assert.match(primitives, /hitSlop=\{MOBILE_INLINE_HIT_SLOP\}/);
   assert.match(home, /type PhoenixStatusMeterTarget = "energy" \| "hunger" \| "hydration" \| "bile" \| "bond";/);
   assert.match(home, /const openPhoenixStatusMeter = \(target: PhoenixStatusMeterTarget\) =>/);
+  assert.match(home, /target === "energy"[\s\S]*router\.push\("\/health\?tab=health" as never\)/);
+  assert.match(home, /target === "bile"[\s\S]*router\.push\("\/health\?tab=bile" as never\)/);
   assert.match(home, /router\.push\(`\/log\?type=meal&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
   assert.match(home, /router\.push\(`\/log\?type=water&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
   assert.match(home, /router\.push\(`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
@@ -881,6 +883,17 @@ test("keeps Home watch cards deep-linked to exact care workflows", () => {
   assert.match(health, /useLocalSearchParams<\{\s*tab\?: string \| string\[\];?\s*\}>/);
   assert.match(health, /const requestedTab: HealthTab = tabParam === "bile" \? "bile" : "health";/);
   assert.match(health, /useEffect\(\(\) => \{\s*setActiveTab\(requestedTab\);/);
+});
+
+test("keeps Home mission health rows tab-specific", () => {
+  const homeMissionDeck = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "homeMissionDeck.ts"),
+    "utf8",
+  );
+
+  assert.match(homeMissionDeck, /"\/health\?tab=bile"/);
+  assert.match(homeMissionDeck, /"\/health\?tab=health"/);
+  assert.match(homeMissionDeck, /route: input\.health\.needsReview \? "\/health\?tab=bile" : "\/health\?tab=health"/);
 });
 
 test("keeps care intelligence wired across Home, Log, More, and the shared domain layer", () => {
