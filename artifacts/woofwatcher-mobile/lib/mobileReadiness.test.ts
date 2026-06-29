@@ -618,6 +618,16 @@ test("keeps route-local action controls on the shared mobile touch target", () =
   assert.match(setup, /laterBtn: \{[\s\S]*minHeight: MIN_MOBILE_TOUCH_TARGET/);
 });
 
+test("keeps Records attachment readiness truthful and local-only", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /recordVault\.localAttachmentSummary\.withAttachment/);
+  assert.match(records, /receipts or documents attached/);
+  assert.match(records, /Needs file:/);
+  assert.match(records, /boundaryLine/);
+  assert.doesNotMatch(records, /provider-backed document storage is ready/i);
+});
+
 test("keeps auth action controls on the shared mobile touch target", () => {
   const authUi = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "auth-ui.tsx"),

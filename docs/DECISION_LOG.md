@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-29: Records Vault Shows Local Attachment Readiness
+
+Decision: Records Vault may summarize local receipt/document attachment readiness from saved record metadata. The shared `summarizeRecordVault` helper should count attachable receipt/document records, local attachments, missing local file titles, and per-section attachment counts, while Mobile Records states that attachments are local until provider-backed document storage is approved.
+
+Reason: Records already let owners attach photos or receipts, but the vault treated those files as invisible metadata. Showing local attachment readiness makes receipts and documents more useful for sitter/vet handoff prep without claiming cloud storage, retention, deletion, document sharing, or provider-backed upload is ready.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed document upload/storage, retention/deletion policy, native file export, server-backed record documents, or cloud sharing becomes active release work.
+
 ### 2026-06-29: Progress Reports Save Print-Ready Artifacts
 
 Decision: Records Progress Reports should save local report-history artifacts through `createProgressReportArtifact` when shared. The artifact may store escaped printable HTML, section metadata, stable filenames, and Mood & Energy owner-reported boundary lines, and Records should use the shared report artifact print view for both Care Pass and Progress Report resend/print-source actions.

@@ -27,6 +27,21 @@ test("summarizes the record vault into credential-critical sections", () => {
   assert.equal(vault.priorityRecords[0].title, "Rabies");
 });
 
+test("summarizes local attachment readiness for receipt and document records", () => {
+  const vault = summarizeRecordVault([
+    { id: "receipt_1", type: "receipt", title: "Wellness receipt", note: "$182 exam", attachmentUri: "file://receipt.jpg" },
+    { id: "receipt_2", type: "receipt", title: "Food receipt", note: "$74 food order" },
+    { id: "doc_1", type: "document", title: "Rabies certificate", attachmentUri: "file://rabies.pdf" },
+    { id: "vaccine_1", type: "vaccine", title: "Rabies", due: "May 2027" },
+  ]);
+
+  assert.equal(vault.localAttachmentSummary.totalAttachable, 3);
+  assert.equal(vault.localAttachmentSummary.withAttachment, 2);
+  assert.equal(vault.localAttachmentSummary.missingAttachment, 1);
+  assert.deepEqual(vault.localAttachmentSummary.missingAttachmentTitles, ["Food receipt"]);
+  assert.equal(vault.sections.find((section) => section.kind === "receipt")?.attachmentCount, 1);
+});
+
 test("flags missing credential-critical records", () => {
   const vault = summarizeRecordVault([{ id: "visit", type: "vet", title: "Wellness Visit" }]);
 

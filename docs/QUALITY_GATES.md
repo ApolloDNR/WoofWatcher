@@ -94,6 +94,8 @@ Current evidence, 2026-06-29: Records Progress Reports now include a Mood & Ener
 
 Current evidence, 2026-06-29: Records Progress Reports now save print-ready report artifacts in Report History. The shared artifact helper stores escaped HTML, stable filenames, section metadata, and Mood & Energy owner-reported boundary lines, and Records can resend or share printable source for both Care Pass and Progress Report artifacts.
 
+Current evidence, 2026-06-29: Records Vault now summarizes local receipt/document attachment readiness from shared record-vault logic. Mobile Records shows per-section attachment counts, missing local file titles, and a boundary that attachments are local until provider-backed document storage is approved.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.
@@ -269,6 +271,8 @@ Current evidence, 2026-06-09: Records Report History now shows whether a Care Pa
 Current evidence, 2026-06-09: Dog ID credentials now render escaped print-ready HTML with stable file names, and mobile Records exposes separate accessible actions for sharing the normal ID card text and printable source.
 
 Current evidence, 2026-06-08: Records now derives expired, due-soon, and missing-critical reminders from the shared record vault and shows the top reminders in mobile Records without treating microchip or policy numbers as dates.
+
+Current evidence, 2026-06-29: Records Vault now treats receipts and documents as local-file-ready records when they have an attachment URI, counts missing local attachments, and keeps provider-backed document storage, retention, and cloud sharing clearly gated.
 
 Current evidence, 2026-06-08: WoofGuide record-review actions can create owner-reviewed calendar reminders from record-vault due status, while Care Pass actions route to preview before sharing.
 

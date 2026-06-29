@@ -86,12 +86,13 @@ Passing evidence:
 - Records Mood Trend now includes an accessible Mood sparkline from `deriveMoodTrendSparkline`, bucketing the selected-period, caregiver-filtered, and care-context-filtered shared evidence without including private/stale logs or changing the non-diagnostic framing.
 - Records Progress Reports now include a report-ready Mood & Energy snapshot from `deriveMoodEnergyReportSnapshot`, carrying shared recent mood evidence, low/steady/high energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language into the share payload.
 - Records Progress Reports now save report-history artifacts with escaped print-ready HTML, stable filenames, section metadata, and Mood & Energy boundary copy, and Report History can resend or share printable source for both Care Pass and Progress Report artifacts.
+- Records Vault now summarizes local receipt/document attachment readiness from shared record-vault logic. Mobile Records shows per-section attachment counts, missing local file titles, and a local-only storage boundary before provider-backed document storage is approved.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
 Current gaps:
 
 - Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists and now confirms saved setup context plus household sync intent before returning to Today or More, the More handoff clears once the owner opens the real invite/join tool, and successful invite-code joins name the active care sync pack, but auth-connected account provisioning, invite approval, and richer multi-household management remain incomplete.
-- Multiple dogs, broader provider-backed role enforcement, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
+- Multiple dogs, broader provider-backed role enforcement, binary PDF generation, server-backed report storage, provider-backed record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
 - Runtime smoke has not been added.
 
 ## Gate 3: Care Domain Correctness
@@ -262,7 +263,7 @@ Current gaps:
 - Need privacy copy and data handling policy.
 - Need role-based access control.
 - Care-log edit/delete audit trail exists in mobile/domain, and synced care-entry deletes now retain server-side audit notes; broader role, record, household, and account audit policy remains open.
-- Need document storage access rules.
+- Need provider-backed document storage access rules.
 - AI usage disclosure, owner care-data export, and non-destructive deletion request preparation exist in mobile; provider-backed policy and destructive deletion still need approval.
 
 ## Gate 9: Deployment And Operations

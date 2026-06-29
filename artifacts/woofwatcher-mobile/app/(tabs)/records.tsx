@@ -873,7 +873,11 @@ export default function RecordsScreen() {
                     </View>
                     <Text style={[s.vaultLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{section.label}</Text>
                     <Text style={[s.vaultMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {section.count > 0 ? `${section.count} on file` : "Add now"}
+                      {section.count > 0
+                        ? section.attachmentCount > 0
+                          ? `${section.count} on file, ${section.attachmentCount} attached`
+                          : `${section.count} on file`
+                        : "Add now"}
                     </Text>
                   </Pressable>
                 );
@@ -885,6 +889,24 @@ export default function RecordsScreen() {
                 <Text style={[s.vaultNoticeText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
                   Missing: {recordVault.missingCritical.join(", ")}
                 </Text>
+              </View>
+            ) : null}
+            {recordVault.localAttachmentSummary.totalAttachable > 0 ? (
+              <View style={[s.vaultNotice, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "33" }]}>
+                <Ionicons name="folder-open-outline" size={16} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.vaultNoticeText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    Local files: {recordVault.localAttachmentSummary.withAttachment}/{recordVault.localAttachmentSummary.totalAttachable} receipts or documents attached
+                  </Text>
+                  {recordVault.localAttachmentSummary.missingAttachment > 0 ? (
+                    <Text style={[s.vaultNoticeSubText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      Needs file: {recordVault.localAttachmentSummary.missingAttachmentTitles.join(", ")}
+                    </Text>
+                  ) : null}
+                  <Text style={[s.vaultNoticeSubText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {recordVault.localAttachmentSummary.boundaryLine}
+                  </Text>
+                </View>
               </View>
             ) : null}
             {recordReminders.length > 0 ? (
@@ -2512,6 +2534,7 @@ const s = StyleSheet.create({
   vaultMeta: { fontSize: 12.5, marginTop: 3 },
   vaultNotice: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 16, padding: 12, marginTop: 10 },
   vaultNoticeText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
+  vaultNoticeSubText: { fontSize: 11.8, lineHeight: 16, marginTop: 4 },
   reminderList: { borderWidth: 1, borderRadius: 18, marginTop: 12, overflow: "hidden" },
   reminderRow: { flexDirection: "row", gap: 10, padding: 12 },
   reminderIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },

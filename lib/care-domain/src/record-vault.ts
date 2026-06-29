@@ -14,12 +14,15 @@ export interface CareRecord {
   title: string;
   due?: string;
   note?: string;
+  attachmentUri?: string;
+  attachmentName?: string;
 }
 
 export interface RecordVaultSection {
   kind: RecordKind;
   label: string;
   count: number;
+  attachmentCount: number;
   status: "On file" | "Missing";
   latest?: string;
   records: CareRecord[];
@@ -30,6 +33,15 @@ export interface RecordVaultSummary {
   sections: RecordVaultSection[];
   missingCritical: string[];
   priorityRecords: CareRecord[];
+  localAttachmentSummary: RecordAttachmentSummary;
+}
+
+export interface RecordAttachmentSummary {
+  totalAttachable: number;
+  withAttachment: number;
+  missingAttachment: number;
+  missingAttachmentTitles: string[];
+  boundaryLine: string;
 }
 
 export type RecordDueStatusKind = "expired" | "due_soon" | "current" | "reference";
@@ -178,6 +190,15 @@ function recordValue(record: CareRecord | undefined): string {
   return [title, due || note].filter(Boolean).join(" - ") || "On file";
 }
 
+function hasLocalAttachment(record: CareRecord): boolean {
+  return clean(record.attachmentUri).length > 0;
+}
+
+function attachmentEligible(record: CareRecord): boolean {
+  const kind = recordKind(record.type);
+  return kind === "receipt" || kind === "document";
+}
+
 function shortDate(iso: string): string {
   const date = new Date(iso);
   if (!Number.isFinite(date.getTime())) return iso;
@@ -305,6 +326,7 @@ export function summarizeRecordVault(records: readonly CareRecord[] = []): Recor
       kind: def.kind,
       label: def.label,
       count: sectionRecords.length,
+      attachmentCount: sectionRecords.filter(hasLocalAttachment).length,
       status: sectionRecords.length > 0 ? "On file" as const : "Missing" as const,
       latest,
       records: sectionRecords,
@@ -319,12 +341,25 @@ export function summarizeRecordVault(records: readonly CareRecord[] = []): Recor
   const priorityRecords = [...normalized].sort(
     (a, b) => priorityKinds.indexOf(recordKind(a.type)) - priorityKinds.indexOf(recordKind(b.type)),
   );
+  const attachable = normalized.filter(attachmentEligible);
+  const missingAttachmentTitles = attachable
+    .filter((record) => !hasLocalAttachment(record))
+    .map((record) => record.title)
+    .filter(Boolean)
+    .slice(0, 3);
 
   return {
     total: normalized.length,
     sections,
     missingCritical,
     priorityRecords,
+    localAttachmentSummary: {
+      totalAttachable: attachable.length,
+      withAttachment: attachable.filter(hasLocalAttachment).length,
+      missingAttachment: attachable.filter((record) => !hasLocalAttachment(record)).length,
+      missingAttachmentTitles,
+      boundaryLine: "Attachments are saved locally on this device until provider-backed document storage is approved.",
+    },
   };
 }
 
