@@ -848,6 +848,15 @@ export default function HomeScreen() {
     router.push(`/log?type=${item.type}&detail=1&intent=${Date.now()}` as never);
   };
 
+  const openActiveWalkFromHomeQuickLog = () => {
+    if (!openWalkSession) return;
+    const activeWalkRoute = openWalkSession.id
+      ? homeLogEntryRoute(openWalkSession.id)
+      : homeLogDetailRoute("walk", Date.now());
+    showToast("Walk already active");
+    router.push(activeWalkRoute as never);
+  };
+
   const logQuick = (item: QuickItem) => {
     if (item.route) {
       router.push(item.route);
@@ -863,8 +872,7 @@ export default function HomeScreen() {
     }
     if (item.type === "walk") {
       if (openWalkSession) {
-        showToast("Walk already active");
-        router.push("/log?type=walk" as never);
+        openActiveWalkFromHomeQuickLog();
         return;
       }
       const entry = buildWalkSessionStartEntry({ caregiver, now });

@@ -1766,6 +1766,25 @@ presence routing proof; it does not clear native iOS/Android device QA,
 provider-backed sync/storage/AI/payments/push, app-store accounts,
 legal/privacy/support review, CI completion, or Apollo launch sign-off.
 
+The Home active-walk quick-tap pass tightened the last broad walk shortcut found
+in the first-screen fast-care loop. If a walk is already active and the owner
+taps Walk in Home Quick Log, the app now opens the exact active walk
+`/log?entry=...` record when possible, with the Walk detail sheet as the
+id-safe fallback for older imported sessions. This preserves the fast tap
+doctrine while keeping the running walk available for finish, duration, route,
+notes, trust review, and audit history. Red/green mobile readiness first failed
+on the old generic `Walk already active` route, then passed 93/93 after
+implementation. Fresh local verification passed root TypeScript, mobile
+TypeScript, the 416-test mobile/domain suite, PixelLab asset verification
+`ok=149 missing=0 invalid=0`, package-local Expo web export to `.expo-smoke`
+with 223 files, `git diff --check` with expected Windows CRLF warnings, and
+route smoke for `/`, `/log?entry=dinner-1`,
+`/log?type=walk&detail=1&intent=123`, and `/more?section=household`. This
+clears only local web preview and first-screen active walk routing proof; it
+does not clear native iOS/Android device QA, provider-backed
+sync/storage/AI/payments/push, app-store accounts, legal/privacy/support
+review, CI completion, or Apollo launch sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

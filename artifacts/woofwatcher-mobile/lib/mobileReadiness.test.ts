@@ -781,6 +781,10 @@ test("keeps Home Quick Log header action as a real route target", () => {
   assert.match(home, /route: openWalkSession\.id \? homeLogEntryRoute\(openWalkSession\.id\) : homeLogDetailRoute\("walk", now\)/);
   assert.match(home, /route: openAloneSession\.id \? homeLogEntryRoute\(openAloneSession\.id\) : homeLogDetailRoute\("alone", now\)/);
   assert.match(home, /route: pendingMeal\.id \? homeLogEntryRoute\(pendingMeal\.id\) : homeLogDetailRoute\("meal", now\)/);
+  assert.match(home, /const openActiveWalkFromHomeQuickLog = \(\) =>/);
+  assert.match(home, /const activeWalkRoute = openWalkSession\.id\s*\?\s*homeLogEntryRoute\(openWalkSession\.id\)\s*:\s*homeLogDetailRoute\("walk", Date\.now\(\)\)/);
+  assert.match(home, /router\.push\(activeWalkRoute as never\)/);
+  assert.match(home, /openActiveWalkFromHomeQuickLog\(\)/);
   assert.match(home, /route: homeLogDetailRoute\("walk", now\)/);
   assert.match(home, /const nextUpRoute = nextPrimary\?\.route \?\? "\/calendar"/);
   assert.match(home, /route: nextUpRoute/);
@@ -791,6 +795,7 @@ test("keeps Home Quick Log header action as a real route target", () => {
   assert.match(home, /router\.push\(`\/log\?entry=\$\{entryId\}` as never\)/);
   assert.match(home, /Undo/);
   assert.match(home, /Add details/);
+  assert.doesNotMatch(home, /showToast\("Walk already active"\);\s*router\.push\("\/log\?type=walk" as never\)/);
   assertStyleUsesSharedTouchTarget(home, "quickHeaderAction");
 });
 

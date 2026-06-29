@@ -2359,3 +2359,35 @@ Verification:
   416-test mobile/domain suite, PixelLab asset verification, Expo web export,
   and preview route smoke for Home, Household focus, exact log entry, Walk
   detail, Alone Time detail, Health Overview, and Bile Watch routes.
+
+## 2026-06-29 Home Active Walk Quick Tap
+
+The Home Quick Log grid now treats an already-active walk as a source-backed
+open care loop:
+
+- Tapping Walk when no walk is active still starts a fast household-visible walk
+  session.
+- Tapping Walk while a walk is already active opens the exact saved walk log
+  through `/log?entry=...` when the id exists.
+- Imported/id-less active walk sessions fall back to the typed Walk detail sheet
+  through `/log?type=walk&detail=1&intent=...`.
+- The `Walk already active` toast remains, but the next view is now the real
+  session that can be finished or corrected.
+
+Design intent:
+
+- Keep the fast tap/long press doctrine intact without creating duplicate walk
+  sessions.
+- Make the first-screen care loop feel deliberate: repeated Walk taps should
+  continue the active session, not start a broad composer detour.
+- Preserve edit history, trust review, route notes, and sticky notes on the
+  original walk record.
+
+Verification:
+
+- Red/green mobile readiness first failed on the old generic active-walk route,
+  then passed 93/93 after implementation.
+- Fresh local verification passed root TypeScript, mobile TypeScript, the
+  416-test mobile/domain suite, PixelLab asset verification, Expo web export,
+  `git diff --check`, and preview route smoke for Home, exact log entry, Walk
+  detail, and Household focus routes.
