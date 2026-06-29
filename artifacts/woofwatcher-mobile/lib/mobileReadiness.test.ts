@@ -1547,6 +1547,20 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
 test("keeps Avatar Studio creator actions on shared mobile touch targets", () => {
   const avatarStudio = readAppFile("portrait.tsx");
 
+  assert.match(avatarStudio, /MOBILE_INLINE_HIT_SLOP/);
+  assert.match(avatarStudio, /const selectStudioTab = \(tab: StudioTab\) =>/);
+  assert.match(avatarStudio, /const setCoatColor = \(swatch: string, primary: boolean\) =>/);
+  assert.match(avatarStudio, /const setFaceMarking = \(marking: AvatarFaceMarkingId\) =>/);
+  assert.match(avatarStudio, /const previewMoodState = \(emote: AvatarEmoteState\) =>/);
+  assert.match(avatarStudio, /accessibilityLabel=\{`Set \$\{marking\.label\} face marking`\}/);
+  assert.match(avatarStudio, /accessibilityHint="Double tap to apply this marking to the pixel twin\."/);
+  assert.match(avatarStudio, /accessibilityLabel="Reset Avatar Studio draft"/);
+  assert.match(avatarStudio, /accessibilityLabel="Save Avatar Studio draft"/);
+  assert.match(avatarStudio, /accessibilityHint="Saves the current pixel twin configuration locally\."/);
+  assert.match(avatarStudio, /onPress=\{\(\) => setCoatColor\(swatch, primary\)\}/);
+  assert.match(avatarStudio, /onPress=\{\(\) => setFaceMarking\(marking\.id\)\}/);
+  assert.match(avatarStudio, /onPress=\{\(\) => previewMoodState\(emote\)\}/);
+
   for (const styleName of ["tab", "secondaryBtn", "primaryBtn", "swatch", "optionPill", "moodChip"]) {
     assertStyleUsesSharedTouchTarget(avatarStudio, styleName);
   }

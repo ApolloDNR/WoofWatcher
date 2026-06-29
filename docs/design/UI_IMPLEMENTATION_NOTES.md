@@ -2060,3 +2060,26 @@ Design intent:
   location sharing, or provider upload is implied.
 - Connect the RPG memory layer to practical handoff/sharing behavior the owner
   can understand immediately.
+
+## 2026-06-29 Avatar Studio Creator Control Polish
+
+Avatar Studio customization controls now feel more like deliberate mobile
+product controls:
+
+- Studio tabs, coat swatches, face markings, and mood preview chips use named
+  handlers instead of anonymous state changes.
+- Color, marking, tab, accessory, template, and mood selection all use haptic
+  feedback where supported.
+- Creator controls use shared inline hit slop in addition to protected 48px
+  touch-target sizing.
+- Face-marking chips, reset, and save actions now expose explicit labels and
+  hints for screen readers.
+- Reset clearly restores the draft; Save clearly persists the current local
+  pixel-twin configuration.
+
+Design intent:
+
+- Make the editor feel confident and intentional, not like a prototype form.
+- Preserve the current PixelLab template-matcher architecture while raising the
+  craft of the live customization experience.
+- Keep customization fun without hiding what is actually local and owner-saved.

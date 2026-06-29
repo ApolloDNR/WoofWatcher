@@ -64,7 +64,12 @@ import {
 } from "@/lib/avatarTemplateSpriteAssets";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
+import {
+  getRouteTopPadding,
+  getStandaloneRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
@@ -378,6 +383,26 @@ export default function PortraitScreen() {
     );
   };
 
+  const selectStudioTab = (tab: StudioTab) => {
+    Haptics.selectionAsync().catch(() => {});
+    setActiveTab(tab);
+  };
+
+  const setCoatColor = (swatch: string, primary: boolean) => {
+    Haptics.selectionAsync().catch(() => {});
+    setDraft((current) => updateConfig(current, primary ? { coatSecondary: swatch } : { coatPrimary: swatch }));
+  };
+
+  const setFaceMarking = (marking: AvatarFaceMarkingId) => {
+    Haptics.selectionAsync().catch(() => {});
+    setDraft((current) => updateConfig(current, { faceMarkingId: marking }));
+  };
+
+  const previewMoodState = (emote: AvatarEmoteState) => {
+    Haptics.selectionAsync().catch(() => {});
+    setPreviewEmote(emote);
+  };
+
   const saveDraft = async () => {
     await saveAvatarConfig({ ...draft, petName, updatedAt: new Date().toISOString() });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -645,7 +670,8 @@ export default function PortraitScreen() {
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={`Avatar Studio ${label}`}
-                onPress={() => setActiveTab(key as StudioTab)}
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={() => selectStudioTab(key as StudioTab)}
                 style={[
                   s.tab,
                   {
@@ -840,12 +866,11 @@ export default function PortraitScreen() {
                     <Pressable
                       key={swatch}
                       accessibilityRole="button"
+                      accessibilityState={{ selected: primary || secondary }}
                       accessibilityLabel={`Set coat color ${swatch}`}
-                      onPress={() =>
-                        setDraft((current) =>
-                          updateConfig(current, primary ? { coatSecondary: swatch } : { coatPrimary: swatch }),
-                        )
-                      }
+                      accessibilityHint={primary ? "Double tap to set this as the secondary coat color." : "Double tap to set this as the primary coat color."}
+                      hitSlop={MOBILE_INLINE_HIT_SLOP}
+                      onPress={() => setCoatColor(swatch, primary)}
                       style={[
                         s.swatch,
                         {
@@ -870,7 +895,10 @@ export default function PortraitScreen() {
                       key={marking.id}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
-                      onPress={() => setDraft((current) => updateConfig(current, { faceMarkingId: marking.id }))}
+                      accessibilityLabel={`Set ${marking.label} face marking`}
+                      accessibilityHint="Double tap to apply this marking to the pixel twin."
+                      hitSlop={MOBILE_INLINE_HIT_SLOP}
+                      onPress={() => setFaceMarking(marking.id)}
                       style={[
                         s.optionPill,
                         {
@@ -963,7 +991,9 @@ export default function PortraitScreen() {
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
                     accessibilityLabel={`Preview ${emoteLabel(emote)} mood`}
-                    onPress={() => setPreviewEmote(emote)}
+                    accessibilityHint="Double tap to update the live care-twin preview mood."
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => previewMoodState(emote)}
                     style={s.moodChip}
                   >
                     <View
@@ -1018,6 +1048,10 @@ export default function PortraitScreen() {
         <View style={s.actionRow}>
           <Pressable
             onPress={resetDraft}
+            accessibilityRole="button"
+            accessibilityLabel="Reset Avatar Studio draft"
+            accessibilityHint="Restores the default pixel twin before saving."
+            hitSlop={MOBILE_INLINE_HIT_SLOP}
             style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: pressed ? 0.65 : 1 }]}
           >
             <Ionicons name="refresh" size={18} color={colors.foreground} />
@@ -1025,6 +1059,10 @@ export default function PortraitScreen() {
           </Pressable>
           <Pressable
             onPress={saveDraft}
+            accessibilityRole="button"
+            accessibilityLabel="Save Avatar Studio draft"
+            accessibilityHint="Saves the current pixel twin configuration locally."
+            hitSlop={MOBILE_INLINE_HIT_SLOP}
             style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}
           >
             <Ionicons name="heart" size={18} color="#FFF9EF" />

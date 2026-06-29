@@ -1599,6 +1599,20 @@ and `/log?entry=smoke`. The first export attempt failed because the smoke script
 needed the bundled Node path on `PATH`; rerunning with that environment set
 passed. The preview server was restarted directly on `http://127.0.0.1:4194/`.
 
+The Avatar Studio creator control polish pass raised the scan/template/customize
+surface toward a finished mobile editor. Studio tabs, coat swatches,
+face-marking chips, mood previews, Reset, and Save now use explicit named
+handlers, haptic selection feedback, shared inline hit slop, screen-reader
+labels, and action hints while preserving the current PixelLab template/config
+data model. Reset now clearly restores the draft, and Save clearly persists the
+current local pixel-twin configuration. Red/green verification first failed on
+the missing creator-control contract, then passed mobile readiness 88/88. Fresh
+local verification passed the 411-test mobile/domain behavior suite, PixelLab
+assets `ok=149 missing=0 invalid=0`, root TypeScript, mobile TypeScript,
+package-local Expo web export to `.expo-smoke` with 223 files, preview route
+smoke for `/` and `/portrait`, and `git diff --check` with only expected
+Windows CRLF warnings.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
