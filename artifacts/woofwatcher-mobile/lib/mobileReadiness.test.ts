@@ -965,6 +965,19 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
   assertStyleUsesSharedTouchTarget(home, "questNextAction");
 });
 
+test("renders Today Command on Home as a real care workflow control", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  assert.match(home, /deriveTodayCommand/);
+  assert.match(home, /const todayCommand = useMemo/);
+  assert.match(home, /Today Command/);
+  assert.match(home, /accessibilityLabel=\{`Today Command\. \$\{todayCommand\.primaryAction\.label\}\. \$\{todayCommand\.primaryAction\.detail\}`\}/);
+  assert.match(home, /accessibilityHint="Opens the exact care workflow behind today's recommended action\."/);
+  assert.match(home, /router\.push\(todayCommand\.primaryAction\.route as never\)/);
+  assert.match(home, /todayCommandPixelIcon\(todayCommand\.primaryAction\.icon\)/);
+  assertStyleUsesSharedTouchTarget(home, "todayCommandCard");
+});
+
 test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () => {
   const health = readAppFile(join("(tabs)", "health.tsx"));
 

@@ -1915,6 +1915,27 @@ failed before producing useful logs. `gh run view --log-failed` returned
 Treat this as the standing GitHub billing/spending-limit pre-job blocker, not as
 product verification evidence or a local app regression.
 
+The Home Today Command pass made the release-plan command model visible and
+source-backed. `deriveTodayCommand` now returns exact source-log routes for
+pending meal outcomes and handoff review, and detail-first meal, walk, and potty
+routes for missing core care actions. Phoenix Home renders a compact `Today
+Command` control under the status tiles with a pixel icon, urgency color,
+concise CTA, screen-reader label/hint, and shared 48px mobile touch target.
+Red/green verification first failed on the old broad `/log` Today Command routes
+and missing Home render, then passed `todayCommand.test.ts` 8/8 and mobile
+readiness 94/94 after implementation. Fresh local verification passed the
+459-test mobile/domain/API/PWA suite, root TypeScript, mobile TypeScript,
+PixelLab asset verification `ok=149 missing=0 invalid=0`, package-local Expo
+web export to `.expo-smoke` with 219 assets, `git diff --check` with expected
+Windows CRLF warnings, and route smoke for `/`,
+`/log?type=meal&detail=1&intent=today-command-meal`,
+`/log?type=walk&detail=1&intent=today-command-walk`,
+`/log?type=potty&detail=1&intent=today-command-potty`, and
+`/log?entry=training_1`. This clears only local web preview routing proof for
+the Home Today Command surface; it does not clear native iOS/Android device QA,
+provider-backed sync/storage/AI/payments/push, app-store accounts,
+legal/privacy/support review, CI completion, or Apollo launch sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

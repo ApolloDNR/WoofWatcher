@@ -61,6 +61,7 @@ import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
+import { deriveTodayCommand, type TodayCommandIcon } from "@/lib/todayCommand";
 
 interface QuickItem {
   key: string;
@@ -198,6 +199,23 @@ function adventureQuestIcon(id: string): PixelIconName {
   return "heart";
 }
 
+function todayCommandPixelIcon(icon: TodayCommandIcon): PixelIconName {
+  if (icon === "bowl") return "meal";
+  if (icon === "paw") return "walk";
+  if (icon === "drop") return "bile";
+  if (icon === "star") return "training";
+  if (icon === "heart") return "heart";
+  if (icon === "bone") return "treat";
+  if (icon === "candy") return "play";
+  if (icon === "bolt") return "energy";
+  if (icon === "sad") return "anxious";
+  if (icon === "vomit") return "vomit";
+  if (icon === "house") return "clock";
+  if (icon === "scale") return "health";
+  if (icon === "pill") return "medication";
+  return "note";
+}
+
 function HomeHeaderAction({
   label,
   accessibilityLabel,
@@ -294,6 +312,19 @@ export default function HomeScreen() {
         now,
       }),
     [state.entries, state.routines, state.caregivers, now],
+  );
+  const todayCommand = useMemo(
+    () =>
+      deriveTodayCommand(
+        {
+          profile: state.profile,
+          entries: state.entries,
+          routines: state.routines,
+          caregivers: state.caregivers,
+        },
+        now,
+      ),
+    [state.caregivers, state.entries, state.profile, state.routines, now],
   );
 
   const petName =
@@ -448,6 +479,22 @@ export default function HomeScreen() {
       ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
       : nextPrimary?.time ?? "Ready when you are";
   const nextUpRoute = nextPrimary?.route ?? "/calendar";
+  const todayCommandTone =
+    todayCommand.primaryAction.urgency === "alert"
+      ? colors.rose
+      : todayCommand.primaryAction.urgency === "watch"
+        ? colors.amber
+        : colors.sage;
+  const todayCommandCta =
+    todayCommand.primaryAction.kind === "sync"
+      ? "Review"
+      : todayCommand.primaryAction.kind === "health"
+        ? "Open"
+        : todayCommand.primaryAction.kind === "routine"
+          ? "Plans"
+          : todayCommand.primaryAction.kind === "update-meal-outcome"
+            ? "Update"
+            : "Start";
 
   const health = status.counts.healthAlert
     ? { status: "Needs Watch", sub: "Recent symptom logged", color: colors.amber }
@@ -1145,6 +1192,42 @@ export default function HomeScreen() {
             ))}
           </View>
 
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Today Command. ${todayCommand.primaryAction.label}. ${todayCommand.primaryAction.detail}`}
+            accessibilityHint="Opens the exact care workflow behind today's recommended action."
+            hitSlop={MOBILE_INLINE_HIT_SLOP}
+            onPress={() => router.push(todayCommand.primaryAction.route as never)}
+            style={({ pressed }) => [
+              s.todayCommandCard,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.ivory,
+                borderColor: pressed ? todayCommandTone : colors.border,
+              },
+            ]}
+          >
+            <View style={[s.todayCommandIcon, { backgroundColor: todayCommandTone + "18" }]}>
+              <PixelIcon name={todayCommandPixelIcon(todayCommand.primaryAction.icon)} size={28} />
+            </View>
+            <View style={s.todayCommandCopy}>
+              <Text style={[s.todayCommandKicker, { color: colors.copper, fontFamily: "Fredoka_600SemiBold" }]}>
+                Today Command
+              </Text>
+              <Text numberOfLines={1} style={[s.todayCommandTitle, { color: colors.navy, fontFamily: "Fredoka_700Bold" }]}>
+                {todayCommand.primaryAction.label}
+              </Text>
+              <Text numberOfLines={2} style={[s.todayCommandDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                {todayCommand.primaryAction.detail}
+              </Text>
+            </View>
+            <View style={[s.todayCommandCta, { backgroundColor: todayCommandTone }]}>
+              <Text style={[s.todayCommandCtaText, { fontFamily: "Inter_800ExtraBold" }]}>
+                {todayCommandCta}
+              </Text>
+              <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
+            </View>
+          </Pressable>
+
           <View style={s.homeSplit}>
             <BoardCard style={[s.nextCard, s.homeSplitCard]}>
               <BoardSectionHeader
@@ -1836,6 +1919,61 @@ const s = StyleSheet.create({
   },
   statusTileLabel: { fontSize: 11, textAlign: "center" },
   statusTileValue: { fontSize: 13, marginTop: 3, textAlign: "center" },
+  todayCommandCard: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#081424",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  todayCommandIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  todayCommandCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  todayCommandKicker: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  todayCommandTitle: {
+    fontSize: 14.5,
+    lineHeight: 17,
+    marginTop: 1,
+  },
+  todayCommandDetail: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  todayCommandCta: {
+    minHeight: 34,
+    borderRadius: 7,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
+  todayCommandCtaText: {
+    color: "#FFF9EF",
+    fontSize: 10,
+  },
 
   missionDeck: {
     marginBottom: 10,

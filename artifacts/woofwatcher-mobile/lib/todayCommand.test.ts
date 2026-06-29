@@ -26,7 +26,7 @@ test("missed meal in the morning creates a log-meal primary action", () => {
   const command = deriveTodayCommand(state(), MORNING);
 
   assert.equal(command.primaryAction.kind, "log-meal");
-  assert.equal(command.primaryAction.route, "/log");
+  assert.equal(command.primaryAction.route, "/log?type=meal&detail=1&intent=today-command-meal");
   assert.equal(command.primaryAction.icon, "bowl");
   assert.match(command.primaryAction.detail, /Breakfast/i);
 });
@@ -58,7 +58,7 @@ test("partial meal log satisfies the meal routine and moves command to the next 
   );
 
   assert.equal(command.primaryAction.kind, "log-walk");
-  assert.equal(command.primaryAction.route, "/log");
+  assert.equal(command.primaryAction.route, "/log?type=walk&detail=1&intent=today-command-walk");
   assert.match(command.primaryAction.detail, /Walk/i);
 });
 
@@ -87,7 +87,7 @@ test("served meal with pending outcome becomes the primary update action", () =>
   );
 
   assert.equal(command.primaryAction.kind, "update-meal-outcome");
-  assert.equal(command.primaryAction.route, "/log");
+  assert.equal(command.primaryAction.route, "/log?entry=meal_served");
   assert.equal(command.primaryAction.icon, "bowl");
   assert.match(command.primaryAction.label, /Update breakfast outcome/i);
   assert.match(command.primaryAction.detail, /served/i);
@@ -195,4 +195,24 @@ test("recent failed sync creates a sync action", () => {
   assert.equal(command.primaryAction.route, "/log");
   assert.equal(command.primaryAction.urgency, "watch");
   assert.equal(command.sync.failed, 1);
+});
+
+test("handoff review opens the exact latest care log when the day is caught up", () => {
+  const command = deriveTodayCommand(
+    state({
+      entries: [
+        { id: "meal_1", type: "meal", title: "Breakfast", caregiver: "Emma", occurredAt: "2026-06-06T07:35:00-07:00", details: { routineId: "breakfast" } },
+        { id: "walk_1", type: "walk", title: "Morning walk", caregiver: "Apollo", occurredAt: "2026-06-06T08:45:00-07:00", details: { routineId: "walk" } },
+        { id: "training_1", type: "training", title: "Training", caregiver: "Emma", occurredAt: "2026-06-06T15:10:00-07:00", details: { routineId: "training" } },
+        { id: "potty_1", type: "potty", title: "Potty", caregiver: "Emma", occurredAt: "2026-06-06T07:20:00-07:00" },
+        { id: "potty_2", type: "potty", title: "Potty", caregiver: "Apollo", occurredAt: "2026-06-06T10:20:00-07:00" },
+        { id: "potty_3", type: "potty", title: "Potty", caregiver: "Emma", occurredAt: "2026-06-06T12:20:00-07:00" },
+      ],
+    }),
+    new Date("2026-06-06T16:00:00-07:00").getTime(),
+  );
+
+  assert.equal(command.primaryAction.kind, "handoff");
+  assert.equal(command.primaryAction.route, "/log?entry=training_1");
+  assert.match(command.primaryAction.label, /Review handoff/i);
 });

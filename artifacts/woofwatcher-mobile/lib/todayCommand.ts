@@ -10,6 +10,8 @@ export type TodayCommandUrgency = "normal" | "watch" | "alert";
 
 export type TodayCommandRoute =
   | "/log"
+  | `/log?entry=${string}`
+  | `/log?type=${string}&detail=1&intent=${string}`
   | "/calendar"
   | "/records"
   | "/woofguide"
@@ -282,6 +284,17 @@ function pendingMealTitle(entry: TodayCommandEntry): string {
   return clean(entry.title) || clean(details.routineLabel) || "Meal";
 }
 
+function entryRoute(entryId: string): `/log?entry=${string}` {
+  return `/log?entry=${encodeURIComponent(entryId)}`;
+}
+
+function detailRoute(
+  type: CareEventType,
+  intent: string,
+): `/log?type=${string}&detail=1&intent=${string}` {
+  return `/log?type=${type}&detail=1&intent=${intent}`;
+}
+
 export function deriveTodayCommand(
   state: TodayCommandState,
   now: number = Date.now(),
@@ -339,7 +352,7 @@ export function deriveTodayCommand(
     label: lastEntry ? "Latest handoff" : "Start handoff",
     detail: describeLastEntry(lastEntry, now),
     caregiver: lastEntry?.caregiver ?? null,
-    route: lastEntry ? "/log" : "/more",
+    route: lastEntry ? entryRoute(lastEntry.id) : "/more",
   };
 
   if (sync.failed > 0 || sync.local > 0) {
@@ -385,7 +398,7 @@ export function deriveTodayCommand(
         kind: "update-meal-outcome",
         label: `Update ${title.toLowerCase()} outcome`,
         detail: `${title} was served. Confirm whether Phoenix ate all, ate some, refused, or is still grazing.`,
-        route: "/log",
+        route: entryRoute(pendingMeal.id),
         urgency: "normal",
         icon: "bowl",
       },
@@ -412,7 +425,7 @@ export function deriveTodayCommand(
         detail: mealRoutine
           ? routineActionDetail(mealRoutine)
           : `${dayStatus.counts.meals.done}/${dayStatus.counts.meals.target} meals logged today.`,
-        route: "/log",
+        route: detailRoute("meal", "today-command-meal"),
         urgency: mealRoutine?.status === "overdue" ? "watch" : "normal",
         icon: "bowl",
       },
@@ -435,7 +448,7 @@ export function deriveTodayCommand(
         detail: walkRoutine
           ? routineActionDetail(walkRoutine)
           : `${dayStatus.counts.walks.done}/${dayStatus.counts.walks.target} walks logged today.`,
-        route: "/log",
+        route: detailRoute("walk", "today-command-walk"),
         urgency: walkRoutine?.status === "overdue" ? "watch" : "normal",
         icon: "paw",
       },
@@ -451,7 +464,7 @@ export function deriveTodayCommand(
         kind: "log-potty",
         label: "Log potty break",
         detail: `${dayStatus.counts.potty.done}/${dayStatus.counts.potty.target} potty breaks logged today.`,
-        route: "/log",
+        route: detailRoute("potty", "today-command-potty"),
         urgency: "normal",
         icon: "drop",
       },
@@ -488,7 +501,7 @@ export function deriveTodayCommand(
       detail: lastEntry
         ? handoff.detail
         : "Add the care profile and routine so the day can run from one place.",
-      route: lastEntry ? "/log" : "/more",
+      route: lastEntry ? entryRoute(lastEntry.id) : "/more",
       urgency: "normal",
       icon: lastEntry ? TYPE_ICON[normalizeCareEventType(lastEntry.type, lastEntry.details)] : "house",
     },

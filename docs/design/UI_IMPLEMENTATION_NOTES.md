@@ -2391,3 +2391,38 @@ Verification:
   416-test mobile/domain suite, PixelLab asset verification, Expo web export,
   `git diff --check`, and preview route smoke for Home, exact log entry, Walk
   detail, and Household focus routes.
+
+## 2026-06-29 Home Today Command Surface
+
+Phoenix Home now turns the previously model-only Today Command into a visible
+owner control:
+
+- A compact `Today Command` strip appears under the four live status tiles.
+- The strip uses the tested `deriveTodayCommand` model, not duplicate Home-only
+  guesswork.
+- Pending meal outcomes route to the exact `/log?entry=...` source log.
+- Missed meal, walk, and potty commands route to the detail-first composer
+  through `/log?type=...&detail=1&intent=today-command-...`.
+- Handoff review routes to the exact latest care log when the day is caught up.
+- The strip uses a mapped pixel icon, urgency color, concise CTA, two-line
+  detail copy, screen-reader label/hint, and the shared 48px mobile touch
+  target.
+
+Design intent:
+
+- Make the release-plan promise of "what should I do now?" visible on Home.
+- Keep the mockup rhythm intact by using a compact command strip instead of a
+  large new dashboard card.
+- Reduce dead ends: every command either opens the source log, the exact detail
+  composer, Plans, Records, More, or Log recovery.
+
+Verification:
+
+- Red/green tests first failed on broad `/log` Today Command routes and the
+  missing Home render, then passed `todayCommand.test.ts` 8/8 and mobile
+  readiness 94/94 after implementation.
+- Fresh local verification passed root TypeScript, mobile TypeScript, the
+  459-test mobile/domain/API/PWA suite, PixelLab asset verification
+  `ok=149 missing=0 invalid=0`, package-local Expo web export, `git diff
+  --check`, and preview route smoke for Home plus Today Command meal, walk,
+  potty, and source-log routes.
