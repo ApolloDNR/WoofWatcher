@@ -36,8 +36,7 @@ test("builds a steady non-diagnostic Health Review Packet", () => {
   assert.ok(packet.vetShareChecklist.includes("Last yellow bile event: None logged"));
   assert.deepEqual(packet.primaryAction, {
     label: "Log health detail",
-    route: "/log",
-    params: { type: "symptom" },
+    route: "/log?type=symptom&detail=1&intent=health-review",
   });
   assert.deepEqual(packet.secondaryAction, {
     label: "Draft vet questions",

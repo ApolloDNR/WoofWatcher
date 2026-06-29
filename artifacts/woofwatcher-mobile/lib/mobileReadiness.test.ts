@@ -987,6 +987,9 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /buildHealthReviewPacketShareText/);
   assert.match(health, /Share health review/);
   assert.match(health, /Share\.share\(\{[\s\S]*message:\s*buildHealthReviewPacketShareText\(healthReviewPacket/);
+  assert.match(health, /action\.route\.startsWith\("\/log\?"\)/);
+  assert.match(health, /router\.push\(action\.route as never\)/);
+  assert.doesNotMatch(health, /router\.push\(\{ pathname: "\/log", params: action\.params \?\? \{\} \}\)/);
   assert.match(health, /Draft vet questions/);
   assert.match(health, /CARE STATUS/);
   assert.match(health, /StatusMeter/);

@@ -1,6 +1,6 @@
 import type { CareHealthStatus } from "@workspace/care-domain";
 
-export type HealthReviewPacketRoute = "/log" | "/woofguide" | "/records";
+export type HealthReviewPacketRoute = `/log?type=${string}&detail=1&intent=${string}` | "/woofguide" | "/records";
 
 export interface HealthReviewPacketAction {
   label: string;
@@ -129,8 +129,7 @@ export function deriveHealthReviewPacket(input: HealthReviewPacketInput): Health
     boundary: `${vetShareLanguage} Not veterinary advice.`,
     primaryAction: {
       label: "Log health detail",
-      route: "/log",
-      params: { type: "symptom" },
+      route: "/log?type=symptom&detail=1&intent=health-review",
     },
     secondaryAction: {
       label: "Draft vet questions",

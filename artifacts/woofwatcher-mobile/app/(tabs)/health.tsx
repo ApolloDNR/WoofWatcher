@@ -402,8 +402,8 @@ export default function HealthScreen() {
   });
 
   function openHealthReviewAction(action: HealthReviewPacketAction): void {
-    if (action.route === "/log") {
-      router.push({ pathname: "/log", params: action.params ?? {} });
+    if (action.route.startsWith("/log?")) {
+      router.push(action.route as never);
       return;
     }
     if (action.route === "/woofguide") {
