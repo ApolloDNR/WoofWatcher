@@ -1981,6 +1981,14 @@ mobile TypeScript, PixelLab verification, Expo web export, route smoke, and
 `git diff --check`. Remaining work is native iOS/Android crop/gait/tap QA plus
 production-scale overlay/emote packs for every launch template.
 
+The Home live-twin HUD polish pass made that runtime visible on the first
+screen. `LivingPhoenixRoom` now displays a compact `PHOENIX TWIN`/`STUDIO RIG`
+title plus a bounded detail line naming the selected template and fitted add-on
+count when accessories are active, instead of always showing the old static
+`PHOENIX ROOM` chip. Local verification passed mobile readiness, the 461-test
+behavior/readiness suite, TypeScript, PixelLab verification, Expo web export,
+and route smoke.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

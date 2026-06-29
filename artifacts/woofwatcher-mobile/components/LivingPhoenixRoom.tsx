@@ -258,6 +258,13 @@ export function LivingPhoenixRoom({
         : null,
     [activeSpriteAction, avatarConfig],
   );
+  const avatarAccessoryCount = avatarRoomRuntime?.activeSlots.length ?? 0;
+  const roomLiveTitle = isStudio ? "STUDIO RIG" : "PHOENIX TWIN";
+  const roomLiveDetail = avatarRoomRuntime
+    ? avatarAccessoryCount > 0
+      ? `${avatarRoomRuntime.templateLabel} - ${avatarAccessoryCount} add-ons`
+      : `${avatarRoomRuntime.templateLabel} rig`
+    : "Pixel room";
   const activeZoneKey = zoneForSpriteAction(activeSpriteAction, plan.zone);
   const zone = ROOM_ZONES[activeZoneKey];
   const focusSpot = FOCUS_SPOTS[activeZoneKey];
@@ -789,7 +796,12 @@ export function LivingPhoenixRoom({
               activeZoneStyle,
             ]}
           />
-          <Text style={styles.liveText}>PHOENIX ROOM</Text>
+          <View style={styles.liveCopy}>
+            <Text style={styles.liveText}>{roomLiveTitle}</Text>
+            <Text numberOfLines={1} style={styles.liveSubText}>
+              {roomLiveDetail}
+            </Text>
+          </View>
         </View>
         {!isStudio ? (
           <Animated.View
@@ -1221,10 +1233,12 @@ const styles = StyleSheet.create({
     zIndex: 6,
   },
   liveChip: {
-    minHeight: 28,
+    maxWidth: 178,
+    minHeight: 38,
     borderRadius: 7,
     borderWidth: 1,
     paddingHorizontal: 9,
+    paddingVertical: 5,
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
@@ -1239,6 +1253,16 @@ const styles = StyleSheet.create({
     fontFamily: "Fredoka_700Bold",
     fontSize: 10,
     letterSpacing: 0.6,
+  },
+  liveCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  liveSubText: {
+    color: "rgba(255,249,239,0.72)",
+    fontFamily: "Inter_700Bold",
+    fontSize: 8.5,
+    marginTop: 1,
   },
   zoneChip: {
     minHeight: 29,

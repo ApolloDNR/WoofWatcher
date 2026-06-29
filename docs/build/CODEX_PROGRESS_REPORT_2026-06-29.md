@@ -83,3 +83,30 @@ Known limits:
   remaining launch templates still need full overlay/emote production packs.
 - The current runtime is local-first and asset-backed. It does not claim live
   AI avatar generation, cloud sync, provider storage, or store approval.
+
+## Home Live Twin HUD
+
+Completed a small Home polish pass so the room itself visibly reflects the
+care-twin runtime that Avatar Studio now controls.
+
+What changed:
+
+- The top-left room HUD now shows `PHOENIX TWIN` on Home and `STUDIO RIG` in
+  Studio previews.
+- The HUD detail line comes from the active Avatar Studio runtime and names the
+  selected template plus fitted add-on count when accessories are active.
+- The live chip has bounded width and clipped detail text so it remains stable
+  on phone-sized screens.
+- Mobile readiness now guards the runtime title/detail contract instead of the
+  old static `PHOENIX ROOM` label.
+
+Verification:
+
+- Mobile readiness passed 94/94.
+- Full local behavior/readiness suite passed 461/461.
+- Root TypeScript passed.
+- Mobile TypeScript passed.
+- PixelLab asset verification passed: `ok=149 missing=0 invalid=0`.
+- Expo web export passed to `.expo-smoke` with 223 files.
+- Preview route smoke passed for `/`, `/portrait`,
+  `/log?type=meal&detail=1&intent=smoke`, `/health?tab=health`, and `/more`.
