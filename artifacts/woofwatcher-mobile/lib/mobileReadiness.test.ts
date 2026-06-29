@@ -844,6 +844,12 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
   assert.match(more, /Care Intelligence/);
   assert.match(more, /careIntelligence\.metrics/);
   assert.match(more, /careIntelligence\.nextAction/);
+  assert.match(domain, /targetEntryId\?: string/);
+  assert.match(domain, /targetRoutineId\?: string/);
+  assert.match(more, /const openCareIntelligenceNextAction = \(\) =>/);
+  assert.match(more, /careIntelligence\.nextAction\.targetEntryId/);
+  assert.match(more, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(careIntelligence\.nextAction\.targetEntryId\)\}` as never\)/);
+  assert.match(more, /onPress=\{openCareIntelligenceNextAction\}/);
 });
 
 test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () => {

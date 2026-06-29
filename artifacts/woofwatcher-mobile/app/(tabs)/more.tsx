@@ -1069,6 +1069,27 @@ export default function MoreScreen() {
   ) || ownerPreviewProofHasPending || storeScreenshotProofStatus.statusLabel === "Pass pending proof";
   const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "Open QA Cockpit";
 
+  const openCareIntelligenceNextAction = () => {
+    Haptics.selectionAsync();
+    if (careIntelligence.nextAction.kind === "retry-sync") {
+      refresh();
+      return;
+    }
+    if (careIntelligence.nextAction.targetEntryId) {
+      router.push(`/log?entry=${encodeURIComponent(careIntelligence.nextAction.targetEntryId)}` as never);
+      return;
+    }
+    if (careIntelligence.nextAction.kind === "handle-routine" || careIntelligence.nextAction.targetRoutineId) {
+      router.push("/calendar");
+      return;
+    }
+    if (careIntelligence.nextAction.kind === "update-meal-outcome") {
+      router.push(`/log?type=meal&detail=1&intent=${Date.now()}` as never);
+      return;
+    }
+    router.push("/log");
+  };
+
   const H_PAD = 20;
 
   return (
@@ -1307,16 +1328,7 @@ export default function MoreScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Care Intelligence next action: ${careIntelligence.nextAction.label}`}
-              onPress={() => {
-                Haptics.selectionAsync();
-                if (careIntelligence.nextAction.kind === "retry-sync") {
-                  refresh();
-                } else if (careIntelligence.nextAction.kind === "handle-routine") {
-                  router.push("/calendar");
-                } else {
-                  router.push("/log");
-                }
-              }}
+              onPress={openCareIntelligenceNextAction}
               style={({ pressed }) => [
                 s.intelligenceAction,
                 { backgroundColor: intelligenceTone, opacity: pressed ? 0.82 : 1 },

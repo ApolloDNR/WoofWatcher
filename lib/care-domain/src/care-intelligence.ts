@@ -47,6 +47,8 @@ export interface CareIntelligenceOpenLoop {
   label: string;
   detail: string;
   priority: "high" | "medium" | "low";
+  targetEntryId?: string;
+  targetRoutineId?: string;
 }
 
 export interface CareIntelligenceNextAction {
@@ -60,6 +62,8 @@ export interface CareIntelligenceNextAction {
   label: string;
   detail: string;
   priority: "high" | "medium" | "low";
+  targetEntryId?: string;
+  targetRoutineId?: string;
 }
 
 export interface CareIntelligence {
@@ -260,6 +264,7 @@ function nextActionFromLoops(
       label: "Retry household sync",
       detail: failed.detail,
       priority: "high",
+      targetEntryId: failed.targetEntryId,
     };
   }
   const pendingMeal = loops.find((loop) => loop.kind === "pending-meal");
@@ -269,6 +274,7 @@ function nextActionFromLoops(
       label: "Update meal outcome",
       detail: pendingMeal.detail,
       priority: pendingMeal.priority,
+      targetEntryId: pendingMeal.targetEntryId,
     };
   }
   const routine = loops.find((loop) => loop.kind === "overdue-routine" || loop.kind === "due-routine");
@@ -278,6 +284,7 @@ function nextActionFromLoops(
       label: routine.label,
       detail: routine.detail,
       priority: routine.priority,
+      targetRoutineId: routine.targetRoutineId,
     };
   }
   const sparse = loops.find((loop) => loop.kind === "low-confidence");
@@ -287,6 +294,7 @@ function nextActionFromLoops(
       label: "Add detail to logs",
       detail: sparse.detail,
       priority: "low",
+      targetEntryId: sparse.targetEntryId,
     };
   }
   if (coreProgress < 70) {
@@ -355,6 +363,7 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
       label: "Sync needs retry",
       detail: entry.syncError ? clean(entry.syncError) : `${entry.title ?? "A care log"} has not reached the household yet.`,
       priority: "high",
+      targetEntryId: entry.id,
     });
   }
   for (const entry of pendingMeals.slice(0, 3)) {
@@ -364,6 +373,7 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
       label: "Meal outcome pending",
       detail: `${entry.title ?? "Meal"} was served. Confirm whether Phoenix ate all, some, refused, or is still grazing.`,
       priority: "medium",
+      targetEntryId: entry.id,
     });
   }
   for (const routine of overdueRoutines.slice(0, 2)) {
@@ -373,6 +383,7 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
       label: `${routine.label} overdue`,
       detail: `${routine.owner || "Care team"} owns ${routine.label}. Log it, skip it, or reassign it.`,
       priority: "high",
+      targetRoutineId: routine.id,
     });
   }
   for (const routine of dueRoutines.slice(0, 2)) {
@@ -382,6 +393,7 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
       label: `${routine.label} due now`,
       detail: `${routine.owner || "Care team"} can close this with a matching log.`,
       priority: "medium",
+      targetRoutineId: routine.id,
     });
   }
   if (lowConfidenceCount > 0) {

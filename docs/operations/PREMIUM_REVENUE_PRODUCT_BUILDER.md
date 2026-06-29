@@ -1613,6 +1613,22 @@ package-local Expo web export to `.expo-smoke` with 223 files, preview route
 smoke for `/` and `/portrait`, and `git diff --check` with only expected
 Windows CRLF warnings.
 
+The Care Intelligence action-routing pass made the open-loop summary in More
+source-backed. `deriveCareIntelligence` now carries exact `targetEntryId` and
+`targetRoutineId` fields on actionable loops, and More's next-action button uses
+those targets before falling back to broad Log or Plans routes. Pending meal
+outcomes now open the original `/log?entry=...` record for outcome updates,
+sticky notes, corrections, trust review, and audit history; failed sync still
+uses retry, and routine work still routes to Plans. Red/green verification first
+failed on the missing target ids and More route helper, then passed focused Care
+Intelligence tests 2/2 and mobile readiness 88/88. Fresh local verification
+passed the 411-test mobile/domain behavior suite, root TypeScript, mobile
+TypeScript, PixelLab assets `ok=149 missing=0 invalid=0`, package-local Expo
+web export to `.expo-smoke` with 223 files, and preview route smoke for `/`,
+`/more`, `/log?entry=dinner-1`, and `/care-twin-qa?qaSurface=home`. The local
+beta doctor still reports `BLOCKED` because this Windows shell exposes
+`pnpm@11.7.0` while the launch path is pinned to `pnpm@10.24.0`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

@@ -2083,3 +2083,33 @@ Design intent:
 - Preserve the current PixelLab template-matcher architecture while raising the
   craft of the live customization experience.
 - Keep customization fun without hiding what is actually local and owner-saved.
+
+## 2026-06-29 Care Intelligence Action Routing
+
+The Care Intelligence card in More now routes open-loop actions to the right
+source of truth:
+
+- Pending meal outcomes open the exact saved meal log through `/log?entry=...`.
+- Failed sync actions keep the retry workflow instead of pretending a route fix
+  can solve provider/network state.
+- Routine actions continue to open Plans/Calendar.
+- The shared domain model now carries `targetEntryId` and `targetRoutineId` so
+  future Home, WoofGuide, and handoff surfaces can use the same exact targets.
+
+Design intent:
+
+- Make the app feel planned and engineered: smart summaries should lead to the
+  exact record that needs owner action.
+- Preserve the routines/logs doctrine: open loops are closed on the original
+  log or routine, not by creating disconnected duplicate evidence.
+- Keep More useful as an owner operations screen, not just a settings drawer.
+
+Verification:
+
+- Focused red/green coverage passed for Care Intelligence and mobile readiness.
+- Fresh local verification passed the 411-test mobile/domain behavior suite,
+  root TypeScript, mobile TypeScript, PixelLab asset verification, Expo web
+  export to `.expo-smoke`, and preview route smoke for Home, More, the targeted
+  pending-log route, and Care Twin QA.
+- The beta doctor is still environment-blocked until the local shell exposes
+  exact `pnpm@10.24.0`; the current bundled CLI is `11.7.0`.

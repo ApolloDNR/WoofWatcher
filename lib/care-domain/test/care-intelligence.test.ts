@@ -89,6 +89,10 @@ test("blends routines, logs, evidence, and sync into care intelligence", () => {
   assert.ok(intelligence.confidenceScore >= 72);
   assert.equal(intelligence.pendingOutcomeCount, 1);
   assert.equal(intelligence.nextAction.kind, "update-meal-outcome");
+  assert.equal(intelligence.nextAction.targetEntryId, "dinner-1");
+  assert.ok(
+    intelligence.openLoops.some((loop) => loop.kind === "pending-meal" && loop.targetEntryId === "dinner-1"),
+  );
   assert.equal(intelligence.metrics[1].label, "Log confidence");
   assert.match(intelligence.subtitle, /care|confirm|outcome|record/i);
 });
@@ -124,6 +128,7 @@ test("penalizes sparse, private, failed, and overdue care records", () => {
 
   assert.equal(intelligence.status, "needs-attention");
   assert.equal(intelligence.nextAction.kind, "retry-sync");
+  assert.equal(intelligence.nextAction.targetEntryId, "failed-note");
   assert.ok(intelligence.score < 60);
   assert.ok(intelligence.openLoops.some((loop) => loop.kind === "failed-sync"));
   assert.ok(intelligence.openLoops.some((loop) => loop.kind === "overdue-routine"));
