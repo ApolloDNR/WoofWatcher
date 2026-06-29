@@ -31,7 +31,7 @@ import {
   type CareSyncOutbox,
   type EntrySyncStatus,
 } from "@/lib/careSync";
-import type { CarePassArtifact } from "@workspace/care-domain";
+import type { ReportArtifact } from "@workspace/care-domain";
 import { useWoofAuth } from "@/lib/auth";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
@@ -101,8 +101,6 @@ export interface CalendarEvent {
   note?: string;
   source: "manual" | "woofguide";
 }
-
-export type ReportArtifact = CarePassArtifact;
 
 export interface Entry {
   id: string;

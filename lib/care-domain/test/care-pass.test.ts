@@ -4,8 +4,11 @@ import assert from "node:assert/strict";
 import {
   buildCarePass,
   createCarePassArtifact,
+  createProgressReportArtifact,
   getCarePassArtifactPrintView,
+  getReportArtifactPrintView,
   renderCarePassPrintHtml,
+  renderProgressReportPrintHtml,
 } from "../src/index.ts";
 
 process.env.TZ = "America/Los_Angeles";
@@ -531,6 +534,44 @@ test("creates a stable report artifact snapshot from a care pass", () => {
   assert.equal(artifact.summary, pass.summary);
   assert.equal(artifact.message, pass.message);
   assert.deepEqual(artifact.sectionTitles, pass.sections.map((section) => section.title));
+});
+
+test("creates print-ready progress report artifacts with mood energy context", () => {
+  const artifact = createProgressReportArtifact({
+    dogName: "Phoenix <script>",
+    periodDays: 30,
+    generatedAt: "Jun 8, 7:30 AM",
+    createdAt: "2026-06-08T06:30:00.000Z",
+    summary: "30-day progress report for caregiver and vet review.",
+    sections: [
+      {
+        title: "Care Summary",
+        lines: ["Total entries logged: 14", "Most active caregiver: Emma (7)"],
+      },
+      {
+        title: "Mood & Energy",
+        lines: [
+          "Mood & Energy snapshot: 2 shared mood check-ins, 3.5/5 average with something worth watching.",
+          "Owner-reported mood and energy context only; not a diagnosis or emergency triage.",
+        ],
+      },
+    ],
+  });
+  const printable = getReportArtifactPrintView(artifact);
+
+  assert.equal(artifact.id, "progress_report_30d_2026-06-08T06-30-00-000Z");
+  assert.equal(artifact.kind, "progress_report");
+  assert.equal(artifact.title, "Phoenix <script> 30-day Progress Report");
+  assert.equal(artifact.periodDays, 30);
+  assert.deepEqual(artifact.sectionTitles, ["Care Summary", "Mood & Energy"]);
+  assert.match(artifact.message, /Mood & Energy snapshot/);
+  assert.equal(artifact.printFileName, "phoenix-script-30-day-progress-report-2026-06-08.html");
+  assert.equal(printable.status, "ready");
+  assert.equal(printable.html, artifact.printHtml);
+  assert.match(renderProgressReportPrintHtml(artifact), /Phoenix &lt;script&gt; 30-day Progress Report/);
+  assert.match(printable.html, /Mood &amp; Energy/);
+  assert.match(printable.html, /not a diagnosis or emergency triage/i);
+  assert.doesNotMatch(printable.html, /Phoenix <script>/);
 });
 
 test("renders a print-ready care pass document with escaped care content", () => {

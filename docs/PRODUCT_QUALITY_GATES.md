@@ -85,6 +85,7 @@ Passing evidence:
 - Records Mood Trend now includes accessible caregiver and care-context filters from the same shared mood evidence boundary, narrowing the summary and 90-day timeline without including private/stale logs or changing the non-diagnostic framing.
 - Records Mood Trend now includes an accessible Mood sparkline from `deriveMoodTrendSparkline`, bucketing the selected-period, caregiver-filtered, and care-context-filtered shared evidence without including private/stale logs or changing the non-diagnostic framing.
 - Records Progress Reports now include a report-ready Mood & Energy snapshot from `deriveMoodEnergyReportSnapshot`, carrying shared recent mood evidence, low/steady/high energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language into the share payload.
+- Records Progress Reports now save report-history artifacts with escaped print-ready HTML, stable filenames, section metadata, and Mood & Energy boundary copy, and Report History can resend or share printable source for both Care Pass and Progress Report artifacts.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
 Current gaps:
@@ -100,7 +101,7 @@ Status: Partially passing.
 Passing evidence:
 
 - Focused tests cover event normalization, day status, care sync, Today Command, setup wizard, diet progress, medication quick-log defaults, medication composer wiring, medication adherence, medication follow-ups, medication history search/outcome filters, water quick-log defaults, hydration summaries, hydration Care Pass language, mobile Records hydration wiring, walk quick-log visibility, walk activity summaries, saved walk route templates, walk activity and Saved Routes Care Pass language, mobile Records walk activity wiring, full Log walk route fields, Full Log search derivation and mobile wiring, potty quick-log visibility, potty composer detail fields, Potty Health summaries, Potty Health color/context review evidence, Potty Health Care Pass language, mobile Records Potty Health wiring, Weekly Care Trends derivation, Care Pass trend language, mobile Records trend wiring, Mood Trend derivation, Mood Trend period summaries, Mood Trend caregiver/context filters, Mood Trend sparkline buckets, mobile Records mood period/filter/sparkline controls, Training Progress derivation, Log composer training fields, trainer Care Pass training language, mobile Records training wiring, Alone Time derivation, Log composer Alone Time fields, Care Pass Alone Time language, mobile Records Alone Time wiring, Weight Trend derivation, Care Pass Weight Trend language, mobile Records Weight Trend wiring, Grooming Care derivation, Log composer grooming fields, Care Pass Grooming Care language, mobile Records Grooming Care wiring, Reminder Center derivation, Calendar wiring, and action routing, Household Responsibility derivation, Calendar/More responsibility wiring, Household Access derivation and More wiring, Care Log Audit Trail derivation and mobile Log wiring, Care Pass medication language, mobile Records medication wiring, health handoff, care pass, Care Pass artifact snapshots, print-ready Care Pass HTML, legacy printable artifact recovery, record vault, pet credential fallbacks, print-ready Dog ID credentials, record due-status, routine board, sticky notes, and WoofGuide action cards.
-- Focused tests also cover report-ready Mood & Energy snapshots from the same shared mood-trend evidence boundary, including Progress Report mobile wiring and non-diagnostic share copy.
+- Focused tests also cover report-ready Mood & Energy snapshots from the same shared mood-trend evidence boundary, including Progress Report mobile wiring, saved artifact creation, print-source escaping, and non-diagnostic share copy.
 - Shared logic lives in `lib/care-domain`.
 
 Current gaps:
@@ -161,6 +162,7 @@ Passing evidence:
 - Records Mood Trend filters now let owners review mood evidence by caregiver and care context while preserving the same household-visible evidence boundary as the period views and timeline.
 - Records Mood Trend sparklines now give owners a compact visual read of selected-period mood check-in density and tone from the same shared evidence boundary, without predictive or diagnostic claims.
 - Progress Reports now show and share a Mood & Energy snapshot from shared mood evidence, keeping energy counts and latest caregiver/context report-ready while avoiding diagnosis, emergency triage, predictive analytics, or live AI claims.
+- Progress Reports now persist print-ready report-history artifacts with the same Mood & Energy boundary, so the paid report workflow is reusable before binary PDF generation or server-backed report storage exists.
 
 Current gaps:
 

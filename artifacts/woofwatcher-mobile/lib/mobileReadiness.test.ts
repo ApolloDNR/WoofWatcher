@@ -1250,7 +1250,7 @@ test("does not keep hidden legacy headers behind board route headers", () => {
 test("keeps Records report history wired for printable Care Pass artifacts", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
-  assert.match(records, /getCarePassArtifactPrintView/);
+  assert.match(records, /getReportArtifactPrintView/);
   assert.match(records, /sharePrintableReportArtifact/);
   assert.match(records, /Print-ready/);
   assert.match(records, /accessibilityLabel=\{`Resend \$\{artifact\.title\}`\}/);
@@ -1272,9 +1272,14 @@ test("keeps Records Care Pass and reports on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Pass"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Report History"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Progress Report"/);
+  assert.match(records, /createProgressReportArtifact/);
+  assert.match(records, /getReportArtifactPrintView/);
+  assert.match(records, /kind === "care_pass"/);
+  assert.match(records, /kind === "progress_report"/);
   assert.match(records, /deriveMoodEnergyReportSnapshot/);
   assert.match(records, /moodReportSnapshot/);
-  assert.match(records, /\.\.\.moodReportSnapshot\.shareLines/);
+  assert.match(records, /title: "Mood & Energy"/);
+  assert.match(records, /lines: moodReportSnapshot\.shareLines/);
   assert.match(records, /Mood & Energy snapshot/);
   assert.match(records, /Mood and Energy report snapshot/);
   assert.match(records, /moodReportSnapshot\.boundaryLine/);

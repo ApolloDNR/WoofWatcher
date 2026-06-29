@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-29: Progress Reports Save Print-Ready Artifacts
+
+Decision: Records Progress Reports should save local report-history artifacts through `createProgressReportArtifact` when shared. The artifact may store escaped printable HTML, section metadata, stable filenames, and Mood & Energy owner-reported boundary lines, and Records should use the shared report artifact print view for both Care Pass and Progress Report resend/print-source actions.
+
+Reason: Progress Reports had report-ready Mood & Energy share text, but the paid report workflow still lost reuse value after the share sheet closed. Saving print-ready artifacts strengthens Report History and the future PDF/storage path without claiming binary PDF generation, native file export, provider-backed storage, diagnosis, emergency triage, or live AI interpretation are complete.
+
+Owner: Codex.
+
+Revisit trigger: Binary PDF generation, native download/export, server-backed report artifact storage, report retention policy, or provider-backed report sharing becomes active release work.
+
 ### 2026-06-29: Progress Reports Use Shared Mood Energy Snapshots
 
 Decision: Records Progress Reports may include a Mood & Energy snapshot when recent shared mood check-ins exist. The snapshot should use `deriveMoodEnergyReportSnapshot`, which reuses the shared mood-trend boundary, excludes private/stale mood logs, includes energy counts plus latest caregiver/context, and carries explicit owner-reported/non-diagnostic language into the share payload.

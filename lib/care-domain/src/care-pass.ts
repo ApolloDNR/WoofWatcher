@@ -95,11 +95,45 @@ export interface CarePassArtifact {
   printHtml?: string;
 }
 
-export interface CarePassArtifactPrintView {
+export interface ProgressReportSection {
+  title: string;
+  lines: string[];
+}
+
+export interface ProgressReportArtifactInput {
+  dogName: string;
+  periodDays: number;
+  generatedAt: string;
+  createdAt?: string;
+  summary: string;
+  sections: readonly ProgressReportSection[];
+}
+
+export interface ProgressReportArtifact {
+  id: string;
+  kind: "progress_report";
+  title: string;
+  generatedAt: string;
+  createdAt: string;
+  summary: string;
+  sections?: ProgressReportSection[];
+  sectionTitles: string[];
+  message: string;
+  periodDays: number;
+  dogName: string;
+  printFileName?: string;
+  printHtml?: string;
+}
+
+export type ReportArtifact = CarePassArtifact | ProgressReportArtifact;
+
+export interface ReportArtifactPrintView {
   fileName: string;
   html: string;
   status: "ready" | "restored";
 }
+
+export type CarePassArtifactPrintView = ReportArtifactPrintView;
 
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
   caregiver: "Caregiver",
@@ -520,13 +554,292 @@ ${sections}
 </html>`;
 }
 
-export function getCarePassArtifactPrintView(artifact: CarePassArtifact): CarePassArtifactPrintView {
+function progressReportMessage(artifact: {
+  title: string;
+  summary: string;
+  generatedAt: string;
+  sections: readonly ProgressReportSection[];
+}): string {
+  return [
+    artifact.title,
+    artifact.summary,
+    `Generated: ${artifact.generatedAt}`,
+    "",
+    ...artifact.sections.flatMap((item) => [
+      item.title,
+      ...item.lines.map((line) => `- ${line}`),
+      "",
+    ]),
+  ].join("\n").trim();
+}
+
+export function renderProgressReportPrintHtml(artifact: ProgressReportArtifact): string {
+  const sections = (artifact.sections?.length
+    ? artifact.sections
+    : artifact.sectionTitles.map((title) => ({ title, lines: [] })))
+    .map((item) => {
+      const escapedTitle = escapeHtml(item.title);
+      const escapedLines = item.lines
+        .map((line) => `<li>${escapeHtml(line)}</li>`)
+        .join("\n          ");
+      return `
+      <section class="section">
+        <h2>${escapedTitle}</h2>
+        ${escapedLines ? `<ul>\n          ${escapedLines}\n        </ul>` : ""}
+      </section>`;
+    })
+    .join("\n");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(artifact.title)}</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1a2332;
+      --muted: #5f6f63;
+      --line: #d4cfc4;
+      --wash: #f7f5f1;
+      --accent: #2e5846;
+      --copper: #c87a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--wash);
+      color: var(--ink);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.48;
+    }
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 40px 32px;
+      background: #ffffff;
+      min-height: 100vh;
+    }
+    header {
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+    .brand {
+      color: var(--copper);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 34px;
+      line-height: 1.08;
+      margin: 0;
+    }
+    .summary {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 10px 0 0;
+    }
+    .generated {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 6px;
+    }
+    .section {
+      break-inside: avoid;
+      border-bottom: 1px solid var(--line);
+      padding: 16px 0;
+    }
+    h2 {
+      color: var(--accent);
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      margin: 0 0 8px;
+    }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    li {
+      margin: 5px 0;
+      font-size: 13.5px;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 11.5px;
+      padding-top: 18px;
+    }
+    @media print {
+      body { background: #ffffff; }
+      main { max-width: none; padding: 24px; }
+      header { margin-bottom: 16px; }
+      .section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">WoofWatcher Progress Report</div>
+      <h1>${escapeHtml(artifact.title)}</h1>
+      <p class="summary">${escapeHtml(artifact.summary)}</p>
+      <div class="generated">Generated ${escapeHtml(artifact.generatedAt)}</div>
+    </header>
+${sections}
+    <footer>
+      WoofWatcher organizes owner-reported care context for household, caregiver, and veterinarian review. It does not diagnose or replace veterinary care.
+    </footer>
+  </main>
+</body>
+</html>`;
+}
+
+function renderLegacyProgressReportPrintHtml(artifact: ProgressReportArtifact): string {
+  const sections = artifact.sectionTitles
+    .map(clean)
+    .filter(notEmpty)
+    .map((title) => `
+      <section class="section">
+        <h2>${escapeHtml(title)}</h2>
+      </section>`)
+    .join("\n");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(artifact.title)}</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1a2332;
+      --muted: #5f6f63;
+      --line: #d4cfc4;
+      --wash: #f7f5f1;
+      --accent: #2e5846;
+      --copper: #c87a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--wash);
+      color: var(--ink);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.48;
+    }
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 40px 32px;
+      background: #ffffff;
+      min-height: 100vh;
+    }
+    header {
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+    .brand {
+      color: var(--copper);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 34px;
+      line-height: 1.08;
+      margin: 0;
+    }
+    .summary {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 10px 0 0;
+    }
+    .generated {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 6px;
+    }
+    .section {
+      break-inside: avoid;
+      border-bottom: 1px solid var(--line);
+      padding: 16px 0;
+    }
+    h2 {
+      color: var(--accent);
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      margin: 0;
+    }
+    pre {
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--wash);
+      padding: 16px;
+      font: 13.5px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 11.5px;
+      padding-top: 18px;
+    }
+    @media print {
+      body { background: #ffffff; }
+      main { max-width: none; padding: 24px; }
+      header { margin-bottom: 16px; }
+      .section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">WoofWatcher Progress Report</div>
+      <h1>${escapeHtml(artifact.title)}</h1>
+      <p class="summary">${escapeHtml(artifact.summary || "Saved progress report.")}</p>
+      <div class="generated">Generated ${escapeHtml(artifact.generatedAt)}</div>
+    </header>
+${sections}
+    <section class="section">
+      <h2>Saved Report Text</h2>
+      <pre>${escapeHtmlBlock(artifact.message)}</pre>
+    </section>
+    <footer>
+      WoofWatcher organizes owner-reported care context for household, caregiver, and veterinarian review. It does not diagnose or replace veterinary care.
+    </footer>
+  </main>
+</body>
+</html>`;
+}
+
+export function getReportArtifactPrintView(artifact: ReportArtifact): ReportArtifactPrintView {
   const storedHtml = typeof artifact.printHtml === "string" && artifact.printHtml.trim().length > 0;
+  if (artifact.kind === "progress_report") {
+    return {
+      fileName: clean(artifact.printFileName) || `${slugify(artifact.title)}-${printDateStamp(artifact.createdAt)}.html`,
+      html: storedHtml ? artifact.printHtml as string : renderLegacyProgressReportPrintHtml(artifact),
+      status: storedHtml ? "ready" : "restored",
+    };
+  }
   return {
     fileName: clean(artifact.printFileName) || `${slugify(artifact.title)}-${printDateStamp(artifact.createdAt)}.html`,
     html: storedHtml ? artifact.printHtml as string : renderLegacyArtifactPrintHtml(artifact),
     status: storedHtml ? "ready" : "restored",
   };
+}
+
+export function getCarePassArtifactPrintView(artifact: CarePassArtifact): CarePassArtifactPrintView {
+  return getReportArtifactPrintView(artifact);
 }
 
 export function buildCarePass(input: CarePassInput): CarePass {
@@ -763,5 +1076,42 @@ export function createCarePassArtifact(
     message: pass.message,
     printFileName: `${slugify(pass.title)}-${dateStamp}.html`,
     printHtml: renderCarePassPrintHtml(pass),
+  };
+}
+
+export function createProgressReportArtifact(input: ProgressReportArtifactInput): ProgressReportArtifact {
+  const createdAt = input.createdAt ?? new Date().toISOString();
+  const safeStamp = clean(createdAt).replace(/[^0-9A-Za-z]+/g, "-").replace(/^-|-$/g, "");
+  const dateStamp = new Date(createdAt).toISOString().slice(0, 10);
+  const periodDays = Math.max(1, Math.floor(input.periodDays));
+  const dogName = clean(input.dogName) || "Dog";
+  const title = `${dogName} ${periodDays}-day Progress Report`;
+  const sections = input.sections
+    .map((item) => section(item.title, item.lines))
+    .filter((item): item is CarePassSection => item !== null);
+  const message = progressReportMessage({
+    title,
+    summary: input.summary,
+    generatedAt: input.generatedAt,
+    sections,
+  });
+  const artifact: ProgressReportArtifact = {
+    id: `progress_report_${periodDays}d_${safeStamp}`,
+    kind: "progress_report",
+    title,
+    generatedAt: input.generatedAt,
+    createdAt,
+    summary: clean(input.summary),
+    sections,
+    sectionTitles: sections.map((item) => item.title),
+    message,
+    periodDays,
+    dogName,
+    printFileName: `${slugify(title)}-${dateStamp}.html`,
+  };
+
+  return {
+    ...artifact,
+    printHtml: renderProgressReportPrintHtml(artifact),
   };
 }

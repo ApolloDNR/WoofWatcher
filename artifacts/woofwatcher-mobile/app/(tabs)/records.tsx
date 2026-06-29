@@ -32,6 +32,7 @@ import {
   buildPetCredential,
   buildCarePass,
   createCarePassArtifact,
+  createProgressReportArtifact,
   deriveAloneTime,
   deriveCareTrends,
   deriveGroomingCare,
@@ -50,16 +51,16 @@ import {
   deriveWalkRouteTemplates,
   deriveWaterHydration,
   deriveWeightTrend,
-  getCarePassArtifactPrintView,
+  getReportArtifactPrintView,
   getPetCredentialPrintView,
   getRecordDueStatus,
   normalizeCareEventType,
   summarizeRecordVault,
   type CarePass,
   type CarePassAudience,
-  type CarePassArtifact,
   type MedicationHistoryOutcomeFilter,
   type RecordKind,
+  type ReportArtifact,
 } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -500,28 +501,57 @@ export default function RecordsScreen() {
 
   const shareReport = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const lines = [
-      `WOOFWATCHER PROGRESS REPORT - Last ${period} days`,
-      `${state.profile.name} (${state.profile.breed})`,
-      "",
-      `Total entries logged: ${report.total}`,
-      `Meals: ${report.meals}`,
-      `Walks: ${report.walks} (${report.walkMinutes} min)`,
-      `Play & training: ${report.play}`,
-      `Potty breaks: ${report.potty}`,
-      `Treats: ${report.treats}`,
-      `Health incidents: ${report.incidents}`,
-      report.topCaregiver ? `Most active caregiver: ${report.topCaregiver.name} (${report.topCaregiver.count})` : "",
-      "",
-      `Current weight: ${current} ${unit} (goal ${goalWeight} ${unit})`,
-      ...moodReportSnapshot.shareLines,
-      "",
-      "Shared from WoofWatcher - patterns for caregiver & vet review.",
-    ]
-      .filter(Boolean)
-      .join("\n");
-    Share.share({ message: lines, title: `${state.profile.name} - ${periodLabel} report` }).catch(() =>
-      Alert.alert("Progress report", lines),
+    const artifact = createProgressReportArtifact({
+      dogName: state.profile.name,
+      periodDays: period,
+      generatedAt: new Date(now).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }),
+      summary: `${periodLabel} progress report for caregiver and vet review.`,
+      sections: [
+        {
+          title: "Care Summary",
+          lines: [
+            `Total entries logged: ${report.total}`,
+            `Meals: ${report.meals}`,
+            `Walks: ${report.walks} (${report.walkMinutes} min)`,
+            `Play & training: ${report.play}`,
+            `Potty breaks: ${report.potty}`,
+            `Treats: ${report.treats}`,
+            `Health incidents: ${report.incidents}`,
+            report.topCaregiver ? `Most active caregiver: ${report.topCaregiver.name} (${report.topCaregiver.count})` : "",
+          ],
+        },
+        {
+          title: "Weight",
+          lines: [`Current weight: ${current} ${unit} (goal ${goalWeight} ${unit})`],
+        },
+        ...(moodReportSnapshot.available
+          ? [
+              {
+                title: "Mood & Energy",
+                lines: moodReportSnapshot.shareLines,
+              },
+            ]
+          : []),
+        {
+          title: "Boundary",
+          lines: ["Shared from WoofWatcher - patterns for caregiver and vet review."],
+        },
+      ],
+    });
+    updateCareDoc((doc) => ({
+      ...doc,
+      reportArtifacts: [
+        artifact,
+        ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
+      ].slice(0, 12),
+    }));
+    Share.share({ message: artifact.message, title: artifact.title }).catch(() =>
+      Alert.alert("Progress report", artifact.message),
     );
   };
 
@@ -581,16 +611,16 @@ export default function RecordsScreen() {
     );
   };
 
-  const shareReportArtifact = (artifact: CarePassArtifact) => {
+  const shareReportArtifact = (artifact: ReportArtifact) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Share.share({ message: artifact.message, title: artifact.title }).catch(() =>
       Alert.alert(artifact.title, artifact.message),
     );
   };
 
-  const sharePrintableReportArtifact = (artifact: CarePassArtifact) => {
+  const sharePrintableReportArtifact = (artifact: ReportArtifact) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const printable = getCarePassArtifactPrintView(artifact);
+    const printable = getReportArtifactPrintView(artifact);
     Share.share({ message: printable.html, title: printable.fileName }).catch(() =>
       Alert.alert(printable.fileName, printable.html),
     );
@@ -2032,8 +2062,10 @@ export default function RecordsScreen() {
               </Text>
             ) : (
               reportArtifacts.map((artifact, index) => {
-                const printable = getCarePassArtifactPrintView(artifact);
+                const printable = getReportArtifactPrintView(artifact);
                 const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
+                const artifactLabel = artifact.kind === "care_pass" ? artifact.audience : "progress";
+                const artifactKindLabel = artifact.kind === "progress_report" ? "Progress Report" : "Care Pass";
                 return (
                   <View
                     key={artifact.id}
@@ -2050,7 +2082,7 @@ export default function RecordsScreen() {
                         {artifact.title}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {shortDate(artifact.createdAt)} - {sectionCount} sections - {printable.status === "ready" ? "Print-ready" : "Print restored"}
+                        {shortDate(artifact.createdAt)} - {artifactKindLabel} - {sectionCount} sections - {printable.status === "ready" ? "Print-ready" : "Print restored"}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
                         {printable.fileName}
@@ -2059,7 +2091,7 @@ export default function RecordsScreen() {
                     <View style={s.reportArtifactActions}>
                       <View style={[s.artifactBadge, { backgroundColor: colors.sage + "14" }]}>
                         <Text style={[s.artifactBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                          {artifact.audience}
+                          {artifactLabel}
                         </Text>
                       </View>
                       <View style={s.reportArtifactButtonRow}>
