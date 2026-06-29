@@ -2085,7 +2085,10 @@ test("keeps Incident Watch visible from Log composer to Records and Care Pass re
   assert.match(records, /Follow-up plan/);
   assert.match(records, /Trainer goals/);
   assert.match(records, /Open Incident Watch follow-up/);
-  assert.match(records, /params: \{ type: "incident" \}/);
+  assert.match(records, /incidentWatch\.latest\?\.id/);
+  assert.match(records, /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(incidentWatch\.latest\.id\)\}` as never\)/);
+  assert.match(records, /router\.push\(`\/log\?type=incident&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/);
+  assert.doesNotMatch(records, /params: \{ type: "incident" \}/);
   assert.match(records, /Incident Watch keeps factual household context/);
   assert.match(carePass, /deriveIncidentWatch/);
   assert.match(carePass, /Incident Watch/);

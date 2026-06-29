@@ -502,7 +502,11 @@ export default function RecordsScreen() {
       setCarePassPreview(buildCarePassFor("trainer"));
       return;
     }
-    router.push({ pathname: "/log", params: { type: "incident" } });
+    if (route === "review-latest" && incidentWatch.latest?.id) {
+      router.push(`/log?entry=${encodeURIComponent(incidentWatch.latest.id)}` as never);
+      return;
+    }
+    router.push(`/log?type=incident&detail=1&intent=${Date.now()}` as never);
   };
 
   const reportArtifacts = useMemo(
