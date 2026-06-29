@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  ImageBackground,
   Modal,
   Platform,
   Pressable,
@@ -30,7 +31,10 @@ import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { parseLocalDate } from "@/lib/time";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -38,10 +42,14 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const PLANS_COMMAND_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.day.source;
+const PLANS_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
+const PLANS_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
 
 const ROUTINE_ICON: Record<string, PulseIconName> = {
   meal: "bowl",
@@ -261,6 +269,19 @@ export default function CalendarScreen() {
       : responsibility.status === "needs-assignment"
         ? colors.amber
         : colors.sage;
+  const completedScheduleCount = scheduleRows.filter((row) => row.status === "done").length;
+  const openScheduleCount = Math.max(0, scheduleRows.length - completedScheduleCount);
+  const nextScheduleRow = scheduleRows.find((row) => row.status !== "done") ?? scheduleRows[0];
+  const nextScheduleStatus = nextScheduleRow ? routineStatusLabel(nextScheduleRow.status) : "Ready";
+  const commandDeckTone =
+    nextScheduleRow?.status === "overdue"
+      ? colors.rose
+      : nextScheduleRow?.status === "due"
+        ? colors.amber
+        : colors.sage;
+  const commandDeckSpeech = nextScheduleRow
+    ? `${nextScheduleRow.label} is next at ${nextScheduleRow.time}.`
+    : "Phoenix has a clear care board.";
 
   // Group upcoming one-off events by date.
   const upcoming = useMemo(() => {
@@ -560,6 +581,81 @@ export default function CalendarScreen() {
               setAddOpen(true);
             }}
           />
+
+          <BoardCard style={s.commandDeckCard}>
+            <ImageBackground
+              source={PLANS_COMMAND_STAGE_ROOM}
+              resizeMode="cover"
+              imageStyle={[s.commandDeckImage, pixelImageStyle]}
+              style={s.commandDeckStage}
+              testID="plans-command-pixel-stage"
+            >
+              <View style={s.commandDeckShade} />
+              <View style={s.commandDeckScanline} />
+              <View style={s.commandDeckTop}>
+                <View style={s.commandDeckBubble}>
+                  <Text style={[s.commandDeckKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                    Plans Command Deck
+                  </Text>
+                  <Text style={[s.commandDeckSpeech, { color: colors.navy, fontFamily: DISPLAY_SEMI }]}>
+                    {commandDeckSpeech}
+                  </Text>
+                  <View style={s.commandDeckBubbleTail} />
+                </View>
+                <View style={[s.commandDeckChip, { backgroundColor: colors.brandNavy + "DD", borderColor: colors.ivory + "55" }]}>
+                  <PixelIcon name={nextScheduleRow ? routinePixelIcon(nextScheduleRow.type) : "clock"} size={17} />
+                  <Text style={[s.commandDeckChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                    {nextScheduleStatus}
+                  </Text>
+                </View>
+              </View>
+
+              <View pointerEvents="none" style={s.commandDeckSprite}>
+                <View style={s.commandDeckSpriteShadow} />
+                <SpriteSheetPlayer
+                  asset={PLANS_COMMAND_STAGE_SPRITE}
+                  track={PLANS_COMMAND_STAGE_TRACK}
+                  width={136}
+                  height={136}
+                  testID="plans-command-pixel-sprite"
+                />
+              </View>
+
+              <View style={[s.commandDeckHud, { backgroundColor: colors.brandNavy + "DC", borderColor: colors.ivory + "44" }]}>
+                <View style={s.commandDeckHudCell}>
+                  <Text style={[s.commandDeckHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>Done</Text>
+                  <Text style={[s.commandDeckHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                    {completedScheduleCount}/{scheduleRows.length}
+                  </Text>
+                </View>
+                <View style={s.commandDeckHudCell}>
+                  <Text style={[s.commandDeckHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>Open</Text>
+                  <Text style={[s.commandDeckHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                    {openScheduleCount}
+                  </Text>
+                </View>
+                <View style={s.commandDeckHudCell}>
+                  <Text style={[s.commandDeckHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>Signal</Text>
+                  <View style={s.commandDeckSignalRow}>
+                    {[0, 1, 2, 3, 4].map((bar) => (
+                      <View
+                        key={bar}
+                        style={[
+                          s.commandDeckSignalBar,
+                          {
+                            height: 6 + bar * 2,
+                            backgroundColor: bar < Math.max(1, Math.min(5, openScheduleCount + 1))
+                              ? commandDeckTone
+                              : colors.ivory + "33",
+                          },
+                        ]}
+                      />
+                    ))}
+                  </View>
+                </View>
+              </View>
+            </ImageBackground>
+          </BoardCard>
 
           <BoardCard style={s.scheduleCard}>
             <View style={s.scheduleTabs}>
@@ -1318,6 +1414,144 @@ const s = StyleSheet.create({
   sugMeta: { fontSize: 12, marginTop: 2 },
   sugNote: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
   sugAdd: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+
+  commandDeckCard: {
+    padding: 12,
+    marginBottom: 12,
+  },
+  commandDeckStage: {
+    minHeight: 238,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "rgba(8,26,42,0.42)",
+    overflow: "hidden",
+    padding: 12,
+  },
+  commandDeckImage: {
+    borderRadius: 8,
+  },
+  commandDeckShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(8,26,42,0.11)",
+  },
+  commandDeckScanline: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.24)",
+    backgroundColor: "rgba(255,249,239,0.025)",
+  },
+  commandDeckTop: {
+    position: "relative",
+    zIndex: 5,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  commandDeckBubble: {
+    maxWidth: "64%",
+    minHeight: 78,
+    borderRadius: 3,
+    borderWidth: 2,
+    borderColor: "#081A2A",
+    backgroundColor: "rgba(255,249,239,0.95)",
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+  },
+  commandDeckKicker: {
+    fontSize: 9.5,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  commandDeckSpeech: {
+    fontSize: 14,
+    lineHeight: 17,
+    marginTop: 4,
+  },
+  commandDeckBubbleTail: {
+    position: "absolute",
+    right: 22,
+    bottom: -8,
+    width: 14,
+    height: 14,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#081A2A",
+    backgroundColor: "rgba(255,249,239,0.95)",
+    transform: [{ rotate: "-45deg" }],
+  },
+  commandDeckChip: {
+    minHeight: 34,
+    borderRadius: 7,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  commandDeckChipText: {
+    fontSize: 10.5,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  commandDeckSprite: {
+    position: "absolute",
+    zIndex: 4,
+    right: 18,
+    bottom: 46,
+    width: 150,
+    height: 150,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  commandDeckSpriteShadow: {
+    position: "absolute",
+    bottom: 17,
+    width: 98,
+    height: 14,
+    borderRadius: 999,
+    backgroundColor: "rgba(8,26,42,0.25)",
+  },
+  commandDeckHud: {
+    position: "absolute",
+    zIndex: 6,
+    left: 12,
+    right: 12,
+    bottom: 12,
+    minHeight: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  commandDeckHudCell: {
+    flex: 1,
+    minWidth: 0,
+  },
+  commandDeckHudLabel: {
+    fontSize: 9.5,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  commandDeckHudValue: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  commandDeckSignalRow: {
+    minHeight: 18,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+    marginTop: 2,
+  },
+  commandDeckSignalBar: {
+    width: 6,
+    borderRadius: 2,
+  },
 
   scheduleCard: { marginBottom: 14 },
   scheduleTabs: {

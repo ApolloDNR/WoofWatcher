@@ -3459,6 +3459,19 @@ test("keeps Plans reminder and routine sections on shared board card anatomy", (
   assert.doesNotMatch(calendar, /reminderCard:/);
 });
 
+test("keeps Plans schedule rooted in a live pixel command stage", () => {
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+
+  assert.match(calendar, /ImageBackground/);
+  assert.match(calendar, /PLANS_COMMAND_STAGE_ROOM/);
+  assert.match(calendar, /CARE_TWIN_ROOM_VARIANT_ASSETS\.day/);
+  assert.match(calendar, /SpriteSheetPlayer/);
+  assert.match(calendar, /getCareTwinSpriteAsset\("idle-breathe"\)/);
+  assert.match(calendar, /CARE_TWIN_SPRITE_MANIFEST\["idle-breathe"\]/);
+  assert.match(calendar, /pixelImageStyle/);
+  assert.match(calendar, /Plans Command Deck/);
+});
+
 test("keeps Plans owner-preview controls on shared mobile touch targets", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
 

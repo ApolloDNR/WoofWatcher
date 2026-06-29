@@ -2084,6 +2084,20 @@ before execution with GitHub's billing/spending-limit annotation. `gh run view
 GitHub account blocker, not as product verification evidence or a local app
 regression.
 
+The Plans command-deck pass moved another core route closer to Apollo's Option B
+mockups without weakening the operating workflow. Plans now renders an
+`ImageBackground` with the Option B day room, hard-pixel rendering, a live
+`idle-breathe` `SpriteSheetPlayer`, next-care speech, completion/open counters,
+and signal bars derived from the schedule state. The existing routine board,
+Reminder Center routing, owner assignment, add/edit/delete routines, and
+recoverable routine quick-log behavior remain intact. Red/green verification
+first failed on the missing pixel-stage contract, then passed mobile readiness
+95/95 after implementation. Fresh local verification passed mobile TypeScript,
+the 464-test API/mobile/PWA/care-domain focused suite, root TypeScript,
+PixelLab verification `ok=149 missing=0 invalid=0`, Expo web export to
+`.expo-smoke` with 219 assets / 223 files, `/calendar` route smoke, and
+`git diff --check`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
