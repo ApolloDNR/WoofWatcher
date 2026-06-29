@@ -56,6 +56,23 @@ export interface MoodTrendSparklineBucket {
   tone: "empty" | "good" | "steady" | "watch";
 }
 
+export interface MoodEnergyReportSnapshotInput extends MoodTrendInput {
+  dogName?: string | null;
+}
+
+export interface MoodEnergyReportSnapshot {
+  available: boolean;
+  total: number;
+  averageLabel: string;
+  status: MoodTrendStatus;
+  statusLabel: string;
+  summaryLine: string;
+  energyLine: string;
+  latestLine: string;
+  boundaryLine: string;
+  shareLines: string[];
+}
+
 export interface MoodTrendBar {
   key: string;
   label: string;
@@ -157,6 +174,12 @@ function nextStepFor(status: MoodTrendStatus, latest: MoodTrendItem | null): str
   return "Keep quick mood check-ins going so Phoenix's care twin and household reports reflect real daily patterns.";
 }
 
+function statusLabelFor(status: MoodTrendStatus): string {
+  if (status === "watch") return "Worth watching";
+  if (status === "steady") return "Steady";
+  return "Needs check-in";
+}
+
 export function deriveMoodTrend(input: MoodTrendInput): MoodTrend {
   const now = input.now ?? Date.now();
   const lookbackDays = input.lookbackDays ?? 30;
@@ -222,6 +245,37 @@ export function deriveMoodTrend(input: MoodTrendInput): MoodTrend {
     summary: summaryFor(total, averageScore, status),
     nextStep: nextStepFor(status, latest),
     latest,
+  };
+}
+
+export function deriveMoodEnergyReportSnapshot(input: MoodEnergyReportSnapshotInput): MoodEnergyReportSnapshot {
+  const trend = deriveMoodTrend({
+    ...input,
+    limit: input.limit ?? 4,
+  });
+  const boundaryLine = "Owner-reported mood and energy context only; not a diagnosis or emergency triage.";
+  const averageLabel = trend.total ? `${trend.averageScore.toFixed(1)}/5` : "No shared check-ins";
+  const statusLabel = statusLabelFor(trend.status);
+  const energyLine = `Energy: ${trend.energy.low} low, ${trend.energy.steady} steady, ${trend.energy.high} high.`;
+  const latestLine = trend.latest
+    ? `Latest: ${trend.latest.moodLabel}${trend.latest.energyLevel ? ` with ${trend.latest.energyLevel} energy` : ""} by ${trend.latest.caregiver}${trend.latest.context ? ` after ${trend.latest.context}` : ""}.`
+    : "Latest: No shared mood check-in yet.";
+  const summaryLine = trend.total
+    ? `Mood & Energy snapshot: ${trend.summary}`
+    : `Mood & Energy snapshot: No shared mood check-ins in the last ${input.lookbackDays ?? 30} days.`;
+  const shareLines = trend.total > 0 ? [summaryLine, energyLine, latestLine, boundaryLine] : [];
+
+  return {
+    available: trend.total > 0,
+    total: trend.total,
+    averageLabel,
+    status: trend.status,
+    statusLabel,
+    summaryLine,
+    energyLine,
+    latestLine,
+    boundaryLine,
+    shareLines,
   };
 }
 

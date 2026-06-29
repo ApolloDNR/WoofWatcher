@@ -1272,6 +1272,12 @@ test("keeps Records Care Pass and reports on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Pass"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Report History"/);
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Progress Report"/);
+  assert.match(records, /deriveMoodEnergyReportSnapshot/);
+  assert.match(records, /moodReportSnapshot/);
+  assert.match(records, /\.\.\.moodReportSnapshot\.shareLines/);
+  assert.match(records, /Mood & Energy snapshot/);
+  assert.match(records, /Mood and Energy report snapshot/);
+  assert.match(records, /moodReportSnapshot\.boundaryLine/);
 });
 
 test("keeps Records vault, diet, and cabinet on shared board card anatomy", () => {

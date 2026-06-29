@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   deriveCareDayStatus,
+  deriveMoodEnergyReportSnapshot,
   deriveMoodTrend,
   deriveMoodTrendPeriods,
   deriveMoodTrendSparkline,
@@ -389,4 +390,77 @@ test("derives mood trend sparkline buckets from filtered shared evidence", () =>
       { index: 3, count: 1, averageScore: 5, watchCount: 0, tone: "good", label: "Now" },
     ],
   );
+});
+
+test("builds a report-ready mood energy snapshot from shared evidence only", () => {
+  const snapshot = deriveMoodEnergyReportSnapshot({
+    now: NOW,
+    lookbackDays: 30,
+    entries: [
+      {
+        id: "recent_low",
+        type: "mood",
+        occurredAt: "2026-06-06T12:00:00.000Z",
+        caregiver: "Emma",
+        mood: "anxious",
+        details: {
+          energyLevel: "low",
+          moodContext: "Visitors",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "recent_happy",
+        type: "mood",
+        occurredAt: "2026-06-05T12:00:00.000Z",
+        caregiver: "Apollo",
+        mood: "happy",
+        details: {
+          energyLevel: "high",
+          moodContext: "After walk",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "private_match",
+        type: "mood",
+        occurredAt: "2026-06-06T10:00:00.000Z",
+        caregiver: "Emma",
+        mood: "happy",
+        details: {
+          energyLevel: "high",
+          moodContext: "Visitors",
+          householdVisible: false,
+        },
+      },
+      {
+        id: "stale_match",
+        type: "mood",
+        occurredAt: "2026-04-01T12:00:00.000Z",
+        caregiver: "Emma",
+        mood: "unwell",
+        details: {
+          energyLevel: "low",
+          moodContext: "Visitors",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  assert.equal(snapshot.available, true);
+  assert.equal(snapshot.total, 2);
+  assert.equal(snapshot.averageLabel, "3.5/5");
+  assert.equal(snapshot.statusLabel, "Worth watching");
+  assert.equal(snapshot.energyLine, "Energy: 1 low, 0 steady, 1 high.");
+  assert.equal(snapshot.latestLine, "Latest: Anxious with low energy by Emma after Visitors.");
+  assert.match(snapshot.summaryLine, /2 shared mood check-ins/);
+  assert.match(snapshot.boundaryLine, /owner-reported mood and energy context/i);
+  assert.match(snapshot.boundaryLine, /not a diagnosis/i);
+  assert.deepEqual(snapshot.shareLines, [
+    "Mood & Energy snapshot: 2 shared mood check-ins, 3.5/5 average with something worth watching.",
+    "Energy: 1 low, 0 steady, 1 high.",
+    "Latest: Anxious with low energy by Emma after Visitors.",
+    "Owner-reported mood and energy context only; not a diagnosis or emergency triage.",
+  ]);
 });

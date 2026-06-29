@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-29: Progress Reports Use Shared Mood Energy Snapshots
+
+Decision: Records Progress Reports may include a Mood & Energy snapshot when recent shared mood check-ins exist. The snapshot should use `deriveMoodEnergyReportSnapshot`, which reuses the shared mood-trend boundary, excludes private/stale mood logs, includes energy counts plus latest caregiver/context, and carries explicit owner-reported/non-diagnostic language into the share payload.
+
+Reason: Mood evidence now feeds Records, Care Pass, WoofGuide, period filters, and sparklines. Progress Reports are the owner-shareable summary surface, so they should carry the same report-ready mood context without rebuilding route-local mood strings or implying diagnosis, emergency triage, predictive analytics, live AI, PDF generation, or provider-backed report storage.
+
+Owner: Codex.
+
+Revisit trigger: Binary PDF generation, server-backed report storage, provider-backed AI interpretation, clinician-reviewed mood language, or predictive analytics becomes active release work.
+
 ### 2026-06-29: Mood Trend Sparklines Stay Evidence-Bounded
 
 Decision: Records Mood Trend may show a compact Mood sparkline for the selected Week, Month, or Quarter view, including caregiver and care-context filters. The sparkline should use `deriveMoodTrendSparkline`, bucket only household-visible mood check-ins that pass the same lookback and filter boundary as `deriveMoodTrend`, and show empty/watch/steady/good buckets without prediction or diagnosis.

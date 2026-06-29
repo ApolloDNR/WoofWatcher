@@ -45,7 +45,7 @@
 
 ## Development Environment
 
-- `pnpm` is callable through the bundled runtime in this worktree, but `pnpm run build:ci` cannot complete in this Windows shell because dependency installation needs registry access in the sandbox and the root `preinstall` script invokes `sh`, which is not available on PATH. Latest local check, 2026-06-29: the sandboxed attempt failed registry fetches with `EACCES` before typecheck/build scripts ran; the escalated retry installed/reused 1276 packages, then stopped at root `preinstall` with `'sh' is not recognized as an internal or external command` before typecheck/build scripts could run.
+- `pnpm` is callable through the bundled runtime in this worktree, but `pnpm run build:ci` cannot complete in this Windows shell because dependency installation needs registry access in the sandbox and the root `preinstall` script invokes `sh`, which is not available on PATH. Latest local check, 2026-06-29: the sandboxed attempt for the Progress Report Mood & Energy snapshot slice failed during dependency fetch with registry `EACCES` before typecheck/build scripts ran. Prior escalated checks installed/reused 1276 packages, then stopped at root `preinstall` with `'sh' is not recognized as an internal or external command` before typecheck/build scripts could run.
 - Codex could not attach to the in-app Browser target during the 2026-06-13 visual QA attempt (`iab` unavailable), so local screenshot/runtime verification is still pending in Fable/Replit or another browser-capable environment.
 
 ## Legal, Privacy, And Safety

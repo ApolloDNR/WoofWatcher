@@ -39,6 +39,7 @@ import {
   deriveMedicationAdherence,
   deriveMedicationFollowUps,
   deriveMedicationHistory,
+  deriveMoodEnergyReportSnapshot,
   deriveMoodTrend,
   deriveMoodTrendPeriods,
   deriveMoodTrendSparkline,
@@ -391,6 +392,16 @@ export default function RecordsScreen() {
       topCaregiver: topCaregiver ? { name: topCaregiver[0], count: topCaregiver[1] } : null,
     };
   }, [state.entries, period, now]);
+  const moodReportSnapshot = useMemo(
+    () =>
+      deriveMoodEnergyReportSnapshot({
+        entries: state.entries,
+        now,
+        lookbackDays: period,
+        dogName: state.profile.name,
+      }),
+    [state.entries, now, period, state.profile.name],
+  );
 
   const dietHistory = useMemo(
     () =>
@@ -503,7 +514,7 @@ export default function RecordsScreen() {
       report.topCaregiver ? `Most active caregiver: ${report.topCaregiver.name} (${report.topCaregiver.count})` : "",
       "",
       `Current weight: ${current} ${unit} (goal ${goalWeight} ${unit})`,
-      moodStats.total ? `Mood average: ${moodStats.averageScore.toFixed(1)}/5 over ${moodStats.total} check-ins` : "",
+      ...moodReportSnapshot.shareLines,
       "",
       "Shared from WoofWatcher - patterns for caregiver & vet review.",
     ]
@@ -2140,6 +2151,36 @@ export default function RecordsScreen() {
                 </View>
               ))}
             </View>
+            {moodReportSnapshot.available ? (
+              <View
+                accessible
+                accessibilityLabel={`Mood and Energy report snapshot. ${moodReportSnapshot.summaryLine} ${moodReportSnapshot.energyLine} ${moodReportSnapshot.boundaryLine}`}
+                style={[s.reportMoodSnapshot, { backgroundColor: colors.background, borderColor: colors.border }]}
+              >
+                <View style={s.reportMoodSnapshotHeader}>
+                  <View>
+                    <Text style={[s.reportMoodSnapshotTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Mood & Energy snapshot</Text>
+                    <Text style={[s.reportMoodSnapshotMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {moodReportSnapshot.statusLabel} - {moodReportSnapshot.averageLabel}
+                    </Text>
+                  </View>
+                  <View style={[s.reportMoodSnapshotBadge, { backgroundColor: colors.amber + "18" }]}>
+                    <Text style={[s.reportMoodSnapshotBadgeText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                      {moodReportSnapshot.total} shared
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[s.reportMoodSnapshotLine, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {moodReportSnapshot.energyLine}
+                </Text>
+                <Text style={[s.reportMoodSnapshotLine, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {moodReportSnapshot.latestLine}
+                </Text>
+                <Text style={[s.reportMoodSnapshotBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {moodReportSnapshot.boundaryLine}
+                </Text>
+              </View>
+            ) : null}
           </BoardCard>
 
           {/* Diet folder */}
@@ -2693,6 +2734,14 @@ const s = StyleSheet.create({
   reportIcon: { width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center", marginBottom: 7 },
   reportValue: { fontSize: 18, letterSpacing: -0.3 },
   reportLabel: { fontSize: 11, marginTop: 2 },
+  reportMoodSnapshot: { borderWidth: 1, borderRadius: 16, padding: 13, marginTop: 12 },
+  reportMoodSnapshotHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 8 },
+  reportMoodSnapshotTitle: { fontSize: 14.5, lineHeight: 18 },
+  reportMoodSnapshotMeta: { fontSize: 11.6, lineHeight: 15, marginTop: 2 },
+  reportMoodSnapshotBadge: { borderRadius: 11, paddingHorizontal: 9, paddingVertical: 6 },
+  reportMoodSnapshotBadgeText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.3 },
+  reportMoodSnapshotLine: { fontSize: 12.4, lineHeight: 17, marginTop: 4 },
+  reportMoodSnapshotBoundary: { fontSize: 11.4, lineHeight: 16, marginTop: 8 },
   dietHead: { flexDirection: "row", alignItems: "center", gap: 12, paddingBottom: 6 },
   subHeading: { fontSize: 11, letterSpacing: 0.6, marginTop: 10, marginBottom: 4 },
   dietNoteRow: { flexDirection: "row", gap: 10, paddingVertical: 7, alignItems: "flex-start" },
