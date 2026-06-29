@@ -148,3 +148,38 @@ Known limits:
   gait feel.
 - The interaction remains local-first and asset-backed. It does not claim live
   AI avatar generation, cloud sync, provider storage, or store approval.
+
+## Native QA Long-Press Coverage
+
+Completed the follow-up release-QA hardening pass for the Home long-press
+interaction.
+
+What changed:
+
+- `MOBILE_RELEASE_QA_SURFACES` now explicitly requires Phoenix Home device
+  testers to verify the long-press Studio handoff on the main dog target.
+- The Phoenix Home QA surface now names the long-press Studio handoff in its
+  device prompt, verification steps, pass criteria, failure escalation, and
+  required evidence.
+- The Owner Preview Core Loop route checklist now asks testers to confirm
+  Home's long-press-to-Studio path alongside status, next care, quick actions,
+  and floating paw navigation.
+- The focused QA route `/care-twin-qa?qaSurface=phoenix-home` remains routable
+  for targeted native proof capture.
+
+Verification:
+
+- Red test: `mobileReleaseQa.test.ts` first failed because Phoenix Home QA did
+  not mention the long-press Studio handoff.
+- Green focused test: `mobileReleaseQa.test.ts` passed 10/10.
+- Full local behavior/readiness suite passed 462/462.
+- Root TypeScript passed.
+- Mobile TypeScript passed.
+- Expo web export passed to `.expo-smoke` with 219 assets / 223 files.
+- Preview route smoke passed for `/care-twin-qa?qaSurface=phoenix-home`, `/`,
+  and `/portrait`.
+
+Known limits:
+
+- This prepares the native QA flow; it does not replace actual iOS/Android
+  long-press, haptics, crop, and gait proof.

@@ -57,6 +57,21 @@ test("routes Incident Composer QA into the detail-first incident flow", () => {
   assert.match(surface.verificationSteps.join("\n"), /detail-first safety composer/);
 });
 
+test("keeps Phoenix Home long-press to Avatar Studio in native QA", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const home = surfaces.find((item) => item.id === "phoenix-home");
+  const ownerLoop = surfaces.find((item) => item.id === "owner-preview-core-loop");
+
+  assert.ok(home);
+  assert.match(home.devicePrompt, /long-press Studio handoff/);
+  assert.match(home.verificationSteps.join("\n"), /Long press the main Phoenix room/);
+  assert.match(home.verificationSteps.join("\n"), /Avatar Studio/);
+  assert.match(home.acceptanceCriteria.join("\n"), /long press opens Avatar Studio/);
+  assert.match(home.requiredEvidence.join("\n"), /long-press-to-Studio/);
+  assert.ok(ownerLoop);
+  assert.match(ownerLoop.routeChecklist?.[0]?.expected ?? "", /long-press-to-Studio/);
+});
+
 test("keeps the Home mission deck as a launch-critical device QA target", () => {
   const surfaces = listMobileReleaseQaSurfaces();
   const surface = surfaces.find((item) => item.id === "home-mission-deck");

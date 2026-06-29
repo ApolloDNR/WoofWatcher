@@ -107,6 +107,9 @@ For every scenario below:
 - The action reads clearly at phone size.
 - The state feels warm and game-like without becoming medically certain.
 - The bottom-center sprite anchor does not visibly jump between frames.
+- On Phoenix Home, tapping the main dog should produce care-twin feedback, while
+  long-pressing the same dog target should open Avatar Studio without losing the
+  current care context.
 
 ## State Matrix
 

@@ -61,7 +61,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     priority: "launch-critical",
     goal: "Prove the first screen answers where Phoenix is, how she feels, what is next, and what can be logged quickly.",
     devicePrompt:
-      "Check header safe area, bottom-nav clearance, one main Phoenix sprite, room crop, quick-log response, and Next Up reachability on iOS and Android.",
+      "Check header safe area, bottom-nav clearance, one main Phoenix sprite, room crop, quick-log response, long-press Studio handoff, and Next Up reachability on iOS and Android.",
     setupSteps: [
       "Use a local preview household with Phoenix sample care data.",
       "Start from the Home tab with no modal or bottom sheet covering the room.",
@@ -70,19 +70,22 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Open Phoenix Home from the Home tab and confirm header, date, bell, and profile controls sit below the safe area.",
       "Confirm Phoenix Home answers presence, feeling, next care, and quick logging without scrolling past the main room.",
       "Tap one safe quick-log tile and confirm the main Phoenix sprite reacts without spawning a second avatar.",
+      "Long press the main Phoenix room and confirm it opens Avatar Studio, then return to Home without losing the current care context.",
       "Scroll to Next Up and confirm the floating paw nav does not cover the next action or quick-log controls.",
     ],
     acceptanceCriteria: [
       "Header controls, room crop, status strip, quick-log actions, and Next Up stay readable on both platforms.",
       "The main Phoenix sprite reacts without a second avatar, duplicate sprite, or pasted-on overlay.",
+      "A long press opens Avatar Studio from the main dog target while a normal tap still feels like care-twin feedback.",
       "The floating paw nav never hides the next action, quick-log controls, or visible care status.",
     ],
     failureEscalation:
-      "Mark Needs tune if there is safe-area clipping, duplicate avatar behavior, hidden controls, unreadable status copy, or a room crop that weakens the premium first impression.",
+      "Mark Needs tune if there is safe-area clipping, duplicate avatar behavior, hidden controls, unreadable status copy, broken long-press-to-Studio routing, or a room crop that weakens the premium first impression.",
     requiredEvidence: [
       "iOS screenshot of Phoenix Home above the fold.",
       "Android screenshot of Phoenix Home above the fold.",
       "Note from one quick-log tap confirming the main sprite reacts without spawning a second avatar.",
+      "Note confirming long-press-to-Studio opens Avatar Studio from the main dog target on at least one native platform.",
     ],
     launchRisk:
       "If Home fails, the app reads as a prototype instead of a trustworthy daily dog-care command center.",
@@ -162,7 +165,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       {
         label: "Home",
         route: "/",
-        expected: "Confirm Phoenix status, next care, quick actions, and floating paw navigation are readable.",
+        expected: "Confirm Phoenix status, next care, quick actions, long-press-to-Studio, and floating paw navigation are readable.",
       },
       {
         label: "Log",
