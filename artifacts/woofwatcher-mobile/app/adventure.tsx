@@ -18,6 +18,7 @@ import {
   buildAdventureMemoryDraft,
   deriveAdventureMode,
   normalizeCareEventType,
+  type AdventureMemory,
   type CareEventType,
   type AdventureQuest,
 } from "@workspace/care-domain";
@@ -84,6 +85,12 @@ function adventureDetails(quest: AdventureQuest, current?: Record<string, unknow
     adventureRewardXp: quest.rewardXp,
     careAdventure: true,
   };
+}
+
+function formatMemoryDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Recently saved";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default function AdventureScreen() {
@@ -226,6 +233,28 @@ export default function AdventureScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Share.share({ message, title: `WoofWatcher Adventure - ${adventure.petName}` }).catch(() =>
       Alert.alert("Adventure Mode", message),
+    );
+  };
+
+  const shareAdventureMemory = (memory: AdventureMemory) => {
+    const humans = memory.humans.length ? memory.humans.join(", ") : "Household";
+    const note = memory.note || `${memory.petName}'s care story grew from a real walk, training win, or play reset.`;
+    const message = [
+      `WoofWatcher Memory - ${memory.petName}`,
+      "",
+      memory.title,
+      note,
+      "",
+      `Saved: ${formatMemoryDate(memory.createdAt)}`,
+      `With: ${humans}`,
+      `Care XP: +${memory.xp}`,
+      "",
+      `Storage: ${memory.storageStatus}. Media: ${memory.mediaStatus}.`,
+      "Photos and provider sync stay private/local until storage rules are approved.",
+    ].join("\n");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Share.share({ message, title: `WoofWatcher Memory - ${memory.petName}` }).catch(() =>
+      Alert.alert("Adventure memory", message),
     );
   };
 
@@ -432,7 +461,21 @@ export default function AdventureScreen() {
           ) : (
             <View style={s.memoryList}>
               {adventure.memories.slice(0, 5).map((memory) => (
-                <View key={memory.id} style={[s.memoryRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Pressable
+                  key={memory.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Share Adventure memory: ${memory.title}`}
+                  accessibilityHint="Shares a private text summary of this saved Adventure memory."
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => shareAdventureMemory(memory)}
+                  style={({ pressed }) => [
+                    s.memoryRow,
+                    {
+                      backgroundColor: pressed ? colors.amber + "10" : colors.background,
+                      borderColor: pressed ? colors.amber : colors.border,
+                    },
+                  ]}
+                >
                   <View style={[s.memoryIcon, { backgroundColor: colors.amber + "18" }]}>
                     <Ionicons name="images-outline" size={16} color={colors.amber} />
                   </View>
@@ -442,7 +485,11 @@ export default function AdventureScreen() {
                       {memory.storageStatus} - {memory.mediaStatus}
                     </Text>
                   </View>
-                </View>
+                  <View style={s.memoryAction}>
+                    <Text style={[s.memoryActionText, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>Share</Text>
+                    <Ionicons name="share-outline" size={14} color={colors.amber} />
+                  </View>
+                </Pressable>
               ))}
             </View>
           )}
@@ -592,9 +639,11 @@ const s = StyleSheet.create({
   proofMeta: { flexDirection: "row", alignItems: "center", gap: 6 },
   proofXp: { fontSize: 13 },
   memoryList: { gap: 8 },
-  memoryRow: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 8, borderWidth: 1, padding: 10 },
+  memoryRow: { minHeight: MIN_MOBILE_TOUCH_TARGET, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 8, borderWidth: 1, padding: 10 },
   memoryIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   memoryTitle: { fontSize: 13 },
   memoryMeta: { fontSize: 11.5, marginTop: 1, textTransform: "capitalize" },
+  memoryAction: { flexDirection: "row", alignItems: "center", gap: 4 },
+  memoryActionText: { fontSize: 10.5, textTransform: "uppercase" },
   emptyText: { fontSize: 13, lineHeight: 19 },
 });

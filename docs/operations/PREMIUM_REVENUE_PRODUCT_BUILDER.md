@@ -1584,6 +1584,21 @@ TypeScript, package-local Expo web export to `.expo-smoke` with 223 files,
 preview route smoke for `/`, `/adventure`, and `/log?entry=smoke`, and
 `git diff --check` with only expected Windows CRLF warnings.
 
+The Adventure Memory Shelf polish pass removed another decorative dead end from
+the care-RPG layer. Saved memories now render as pressable, haptic, accessible
+48px rows with a visible `Share` affordance. Tapping a memory opens a private
+share-sheet summary containing the memory title, note, humans, XP, storage
+status, media status, and a truthful provider-gated photo/sync boundary, so the
+memory is useful without pretending public cloud/photo storage is live.
+Red/green verification first failed on the missing memory-share and touch-target
+contracts, then passed mobile readiness 88/88. Fresh local verification passed
+the 411-test mobile/domain behavior suite, PixelLab assets `ok=149 missing=0
+invalid=0`, root TypeScript, mobile TypeScript, package-local Expo web export
+to `.expo-smoke` with 223 files, and preview route smoke for `/`, `/adventure`,
+and `/log?entry=smoke`. The first export attempt failed because the smoke script
+needed the bundled Node path on `PATH`; rerunning with that environment set
+passed. The preview server was restarted directly on `http://127.0.0.1:4194/`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

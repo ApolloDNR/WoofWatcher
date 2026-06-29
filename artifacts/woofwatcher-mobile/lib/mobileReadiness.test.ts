@@ -2215,6 +2215,11 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(adventure, /const openProofLog = \(entryId: string\) =>/);
   assert.match(adventure, /onPress=\{\(\) => openProofLog\(proof\.entryId\)\}/);
   assert.match(adventure, /accessibilityLabel=\{`Open Adventure proof log: \$\{proof\.label\}`\}/);
+  assert.match(adventure, /const shareAdventureMemory = \(memory: AdventureMemory\) =>/);
+  assert.match(adventure, /Photos and provider sync stay private\/local until storage rules are approved/);
+  assert.match(adventure, /onPress=\{\(\) => shareAdventureMemory\(memory\)\}/);
+  assert.match(adventure, /accessibilityLabel=\{`Share Adventure memory: \$\{memory\.title\}`\}/);
+  assert.match(adventure, /accessibilityHint="Shares a private text summary of this saved Adventure memory\."/);
   assert.match(adventure, /deleteEntry\(questFeedback\.id\)/);
   assert.match(adventure, /provider-gated/);
   assert.match(more, /Adventure Mode/);
@@ -2224,7 +2229,7 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
 test("keeps Adventure Mode actions on shared mobile touch targets", () => {
   const adventure = readAppFile("adventure.tsx");
 
-  for (const styleName of ["primaryBtn", "secondaryBtn", "questActionButton", "questFeedbackButton", "proofRow"]) {
+  for (const styleName of ["primaryBtn", "secondaryBtn", "questActionButton", "questFeedbackButton", "proofRow", "memoryRow"]) {
     assertStyleUsesSharedTouchTarget(adventure, styleName);
   }
 });

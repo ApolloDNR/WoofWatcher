@@ -2038,3 +2038,25 @@ Design intent:
 - Keep the Adventure screen scannable in under five seconds.
 - Avoid vague prototype copy on a core game/care surface.
 - Make every button read like a real next step, not a generic quest command.
+
+## 2026-06-29 Adventure Memory Shelf Polish
+
+Saved Adventure memories now behave like real care-story artifacts:
+
+- Memory rows are pressable instead of static display rows.
+- Each row opens the native share sheet with a private text summary.
+- The share copy includes the saved title, note, humans, XP, storage status,
+  media status, and the provider-gated photo/sync boundary.
+- Rows use the shared 48px mobile touch-target contract and explicit
+  screen-reader labels.
+- A visible `Share` affordance makes the shelf feel like a usable collection,
+  not a decorative archive.
+
+Design intent:
+
+- Make Adventure Mode feel alive and collectible while still grounded in real
+  household care.
+- Preserve privacy by sharing a text summary only; no fake cloud, public feed,
+  location sharing, or provider upload is implied.
+- Connect the RPG memory layer to practical handoff/sharing behavior the owner
+  can understand immediately.
