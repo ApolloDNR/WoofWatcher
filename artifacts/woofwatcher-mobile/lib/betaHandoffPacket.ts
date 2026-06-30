@@ -3,6 +3,10 @@ import {
   type MobileLaunchQaCapturePlan,
   type MobileLaunchQaCaptureTarget,
 } from "./mobileLaunchQaEvidence.ts";
+import {
+  buildMobileQaSessionProofManifestShareText,
+  type MobileQaSessionProofManifest,
+} from "./mobileQaSession.ts";
 import type { LaunchProviderSetupPlan } from "./launchProviderSetup.ts";
 import type { ReleasePacket } from "./releasePacket.ts";
 
@@ -19,6 +23,7 @@ export type BetaHandoffPacketOptions =
   | {
       generatedAtIso?: string;
       providerSetupPlan?: LaunchProviderSetupPlan;
+      proofManifest?: MobileQaSessionProofManifest | null;
     };
 
 function formatList(items: readonly string[], fallback: string): string {
@@ -29,11 +34,13 @@ function formatList(items: readonly string[], fallback: string): string {
 function normalizeOptions(input: BetaHandoffPacketOptions | undefined): {
   generatedAtIso: string;
   providerSetupPlan?: LaunchProviderSetupPlan;
+  proofManifest?: MobileQaSessionProofManifest | null;
 } {
   if (typeof input === "string") return { generatedAtIso: input };
   return {
     generatedAtIso: input?.generatedAtIso ?? new Date().toISOString(),
     providerSetupPlan: input?.providerSetupPlan,
+    proofManifest: input?.proofManifest,
   };
 }
 
@@ -103,7 +110,7 @@ export function buildBetaHandoffPacketShareText(
   capturePlan: MobileLaunchQaCapturePlan,
   optionsOrGeneratedAt?: BetaHandoffPacketOptions,
 ): string {
-  const { generatedAtIso, providerSetupPlan } = normalizeOptions(optionsOrGeneratedAt);
+  const { generatedAtIso, providerSetupPlan, proofManifest } = normalizeOptions(optionsOrGeneratedAt);
   const currentMission = capturePlan.nextTargets[0];
 
   return [
@@ -114,6 +121,7 @@ export function buildBetaHandoffPacketShareText(
     `Public launch verdict: ${releasePacket.verdictLabel}`,
     `Readiness score: ${releasePacket.readinessScore}%`,
     `QA progress: ${capturePlan.completeSurfaces}/${capturePlan.totalSurfaces} surfaces complete, ${capturePlan.openSurfaces} open.`,
+    ...(proofManifest ? ["", buildMobileQaSessionProofManifestShareText(proofManifest)] : []),
     ...formatOwnerPreviewProof(capturePlan),
     "",
     releasePacket.betaSummary,

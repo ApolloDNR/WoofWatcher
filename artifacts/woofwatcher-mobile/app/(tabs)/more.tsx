@@ -73,7 +73,10 @@ import {
 } from "@/lib/mobileLaunchQaEvidence";
 import {
   MOBILE_QA_SESSION_STORAGE_KEY,
+  buildMobileQaSessionProofManifest,
+  buildMobileQaSessionSnapshot,
   parseMobileQaSessionSnapshot,
+  type MobileQaSessionProofManifest,
 } from "@/lib/mobileQaSession";
 import { buildReleasePacket, buildReleasePacketShareText } from "@/lib/releasePacket";
 import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
@@ -507,6 +510,8 @@ export default function MoreScreen() {
     useState<LaunchReadinessNativeQaSummary | null>(null);
   const [nativeQaCapturePlan, setNativeQaCapturePlan] =
     useState<MobileLaunchQaCapturePlan>(() => buildMobileLaunchQaCapturePlan(null));
+  const [savedQaProofManifest, setSavedQaProofManifest] =
+    useState<MobileQaSessionProofManifest | null>(null);
   const [providerSetupOpen, setProviderSetupOpen] = useState(false);
   const [providerDraft, setProviderDraft] = useState<LaunchProviderProfile>(() =>
     normalizeLaunchProviderProfile(state.launchProviderProfile),
@@ -522,11 +527,17 @@ export default function MoreScreen() {
           const savedSession = parseMobileQaSessionSnapshot(raw);
           setSavedNativeQaSummary(deriveNativeQaSummaryFromMobileQaSession(savedSession));
           setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(savedSession));
+          setSavedQaProofManifest(
+            savedSession
+              ? buildMobileQaSessionProofManifest(buildMobileQaSessionSnapshot(savedSession, savedSession.savedAtIso))
+              : null,
+          );
         })
         .catch(() => {
           if (!cancelled) {
             setSavedNativeQaSummary(null);
             setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(null));
+            setSavedQaProofManifest(null);
           }
         });
 
@@ -1062,6 +1073,7 @@ export default function MoreScreen() {
     const message = buildBetaHandoffPacketShareText(launchReleasePacket, nativeQaCapturePlan, {
       generatedAtIso,
       providerSetupPlan: launchProviderSetupPlan,
+      proofManifest: savedQaProofManifest,
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Share.share({ message, title: "WoofWatcher 48-Hour Beta Handoff" }).catch(() =>
@@ -1866,6 +1878,33 @@ export default function MoreScreen() {
                   </View>
                   <Ionicons name="locate-outline" size={17} color={colors.primary} />
                 </Pressable>
+                {savedQaProofManifest ? (
+                  <View
+                    style={[
+                      s.nativeQaOwnerProofRow,
+                      {
+                        borderColor: colors.primary + "44",
+                        backgroundColor: colors.primary + "0D",
+                      },
+                    ]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.nativeQaOwnerProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        Proof manifest
+                      </Text>
+                      <Text style={[s.nativeQaOwnerProofTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                        {savedQaProofManifest.proofId}
+                      </Text>
+                      <Text
+                        numberOfLines={2}
+                        style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                      >
+                        {savedQaProofManifest.totalEvidenceFiles} files. {savedQaProofManifest.platformEvidenceLabel}. Local metadata only.
+                      </Text>
+                    </View>
+                    <Ionicons name="document-text-outline" size={17} color={colors.primary} />
+                  </View>
+                ) : null}
                 <View
                   style={[
                     s.nativeQaOwnerProofRow,

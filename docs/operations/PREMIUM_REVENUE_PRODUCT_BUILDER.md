@@ -2443,6 +2443,24 @@ before execution with `steps: []`. `gh run view --log-failed` returned
 `log not found: 84231097976`. Treat this as the standing GitHub account/pre-job
 blocker, not as product verification evidence or a local app regression.
 
+The More/Beta Handoff proof-manifest surfacing pass makes that same `wwqa-*`
+proof ID visible in the owner launch cockpit and included in the shareable beta
+handoff packet. `buildBetaHandoffPacketShareText` now accepts an optional
+`MobileQaSessionProofManifest`; More rebuilds the manifest from the saved local
+QA session, passes it into Share Beta Handoff, and renders a `Proof manifest`
+row in Native QA Next Captures with the proof ID, evidence file count, platform
+evidence label, and local-metadata-only boundary. Fresh local verification
+passed `betaHandoffPacket.test.ts` 3/3, mobile readiness 100/100, mobile
+TypeScript, root TypeScript, the 478-test API/mobile/PWA/care-domain focused
+suite, PixelLab assets `ok=149 missing=0 invalid=0`, package-local Expo web
+export to `.expo-smoke` with 218 assets / 222 files after prepending bundled
+Node to PATH, live preview route smoke `200` for `/`, `/more`, `/care-twin-qa`,
+`/health`, `/log`, and `/portrait` at `http://127.0.0.1:4194/`, and `git diff
+--check` with expected Windows CRLF warnings only. This improves QA handoff
+traceability; it is still local evidence metadata, not native screenshot proof,
+provider-backed storage, generated PDF output, app-store approval, or public
+launch readiness.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

@@ -5,7 +5,11 @@ import { buildBetaHandoffPacketShareText } from "./betaHandoffPacket.ts";
 import { deriveLaunchProviderSetup } from "./launchProviderSetup.ts";
 import { deriveLaunchReadiness, type LaunchReadinessInput } from "./launchReadiness.ts";
 import { buildMobileLaunchQaCapturePlan } from "./mobileLaunchQaEvidence.ts";
-import type { MobileQaSessionState } from "./mobileQaSession.ts";
+import {
+  buildMobileQaSessionProofManifest,
+  buildMobileQaSessionSnapshot,
+  type MobileQaSessionState,
+} from "./mobileQaSession.ts";
 import { buildReleasePacket } from "./releasePacket.ts";
 import type { MobileReleaseQaSurface } from "./mobileReleaseQa.ts";
 
@@ -182,4 +186,63 @@ test("keeps the beta handoff focused when the current mission is pass pending pr
   assert.match(text, /Owner preview missing: Add QA note for Owner Preview Core Loop\./);
   assert.match(text, /Missing proof: Add QA note for Owner Preview Core Loop\./);
   assert.match(text, /Tester instruction: finish the missing proof before treating this beta mission as complete\./);
+});
+
+test("includes saved QA proof manifest when More shares the beta handoff", () => {
+  const releasePacket = buildReleasePacket(deriveLaunchReadiness(qaFirstInput), {
+    appName: "WoofWatcher",
+    buildName: "two-day owner beta",
+    generatedAtIso: "2026-06-25T12:00:00.000Z",
+  });
+  const session: MobileQaSessionState = {
+    careTwinStatusById: {
+      happy: "pass",
+    },
+    careTwinNotes: {
+      happy: "Happy loop reads clearly on iPhone.",
+    },
+    careTwinEvidenceById: {
+      happy: [
+        {
+          uri: "file:///qa/happy-ios.png",
+          fileName: "happy-ios.png",
+          source: "library",
+          targetPlatform: "ios",
+          capturedAtIso: "2026-06-25T12:01:00.000Z",
+        },
+      ],
+    },
+    surfaceStatusById: {
+      "owner-preview-core-loop": "pass",
+    },
+    surfaceNotes: {
+      "owner-preview-core-loop": "Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass opened.",
+    },
+    surfaceEvidenceById: {
+      "owner-preview-core-loop": [
+        {
+          uri: "file:///qa/android-launch.png",
+          fileName: "android-launch.png",
+          source: "library",
+          targetPlatform: "android",
+          capturedAtIso: "2026-06-25T12:02:00.000Z",
+        },
+      ],
+    },
+  };
+  const snapshot = buildMobileQaSessionSnapshot(session, "2026-06-25T12:03:00.000Z");
+  const proofManifest = buildMobileQaSessionProofManifest(snapshot, "2026-06-25T12:05:00.000Z");
+  const qaPlan = buildMobileLaunchQaCapturePlan(session, [ownerLoopSurface]);
+
+  const text = buildBetaHandoffPacketShareText(releasePacket, qaPlan, {
+    generatedAtIso: "2026-06-25T12:05:00.000Z",
+    proofManifest,
+  });
+
+  assert.match(text, /WoofWatcher QA Proof Manifest/);
+  assert.match(text, new RegExp(`Proof ID: ${proofManifest.proofId}`));
+  assert.match(text, /Care twin: 1 pass, 0 needs tune, 1 evidence file, 1 notes\./);
+  assert.match(text, /Release: 1 pass, 0 needs tune, 1 evidence file, 1 notes\./);
+  assert.match(text, /Platform evidence: iOS 1, Android 1, Web 0, Unknown 0\./);
+  assert.match(text, /does not prove App Store or Play Store approval/);
 });

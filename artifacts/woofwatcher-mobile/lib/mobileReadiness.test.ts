@@ -3965,6 +3965,9 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /AsyncStorage/);
   assert.match(more, /MOBILE_QA_SESSION_STORAGE_KEY/);
   assert.match(more, /parseMobileQaSessionSnapshot/);
+  assert.match(more, /buildMobileQaSessionProofManifest/);
+  assert.match(more, /savedQaProofManifest/);
+  assert.match(more, /setSavedQaProofManifest/);
   assert.match(more, /buildMobileLaunchQaCaptureShareText/);
   assert.match(more, /buildMobileLaunchQaFixBriefShareText/);
   assert.match(more, /buildMobileLaunchQaCapturePlan/);
@@ -3977,6 +3980,9 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /nativeQaPrimaryMissionTarget/);
   assert.match(more, /Native QA Next Captures/);
   assert.match(more, /Primary mission/);
+  assert.match(more, /Proof manifest/);
+  assert.match(more, /savedQaProofManifest\.proofId/);
+  assert.match(more, /savedQaProofManifest\.platformEvidenceLabel/);
   assert.match(
     more,
     /accessibilityLabel=\{`Open primary Native QA mission:/,
@@ -4018,6 +4024,10 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(
     more,
     /Share\.share\(\{[\s\S]*message:\s*buildMobileLaunchQaCaptureShareText\(nativeQaCapturePlan/,
+  );
+  assert.match(
+    more,
+    /proofManifest:\s*savedQaProofManifest/,
   );
   assert.match(more, /nativeQa:\s*savedNativeQaSummary/);
   assert.doesNotMatch(more, /nativeQa:\s*null/);
