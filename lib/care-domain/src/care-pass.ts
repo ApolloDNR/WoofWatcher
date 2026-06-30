@@ -171,6 +171,18 @@ export interface PetCredentialArtifactSummary {
   boundaryLine: string;
 }
 
+export interface ReportArtifactSummary {
+  total: number;
+  carePassCount: number;
+  progressReportCount: number;
+  petCredentialCount: number;
+  latest: ReportArtifact | null;
+  summary: string;
+  latestLine: string;
+  action: string;
+  boundaryLine: string;
+}
+
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
   caregiver: "Caregiver",
   sitter: "Sitter",
@@ -1347,5 +1359,57 @@ export function summarizePetCredentialArtifacts(
     latestLine: `Latest Dog ID Credential saved ${latestDate}${latest.printFileName ? ` as ${latest.printFileName}` : ""}.`,
     action: "Open Records Report History to resend the Dog ID text or share the printable source before handing it to a sitter, trainer, caregiver, or vet.",
     boundaryLine: "Saved Dog ID artifacts are local credential sources; provider-backed credential storage, native PDF/image export, cloud sharing, retention, and deletion policy are not enabled.",
+  };
+}
+
+export function summarizeReportArtifacts(
+  artifacts: readonly ReportArtifact[] = [],
+): ReportArtifactSummary {
+  const saved = artifacts
+    .filter((artifact): artifact is ReportArtifact => Boolean(artifact?.id && artifact.kind))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const latest = saved[0] ?? null;
+  const carePassCount = saved.filter((artifact) => artifact.kind === "care_pass").length;
+  const progressReportCount = saved.filter((artifact) => artifact.kind === "progress_report").length;
+  const petCredentialCount = saved.filter((artifact) => artifact.kind === "pet_credential").length;
+  const total = saved.length;
+
+  const fallback: ReportArtifactSummary = {
+    total,
+    carePassCount,
+    progressReportCount,
+    petCredentialCount,
+    latest,
+    summary: "No local report source has been saved yet.",
+    latestLine: "",
+    action: "Share a Care Pass, Progress Report, or Dog ID from Records to save a reusable local source here.",
+    boundaryLine: "Report History is local until native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are approved.",
+  };
+  if (!latest) return fallback;
+
+  const kindLabel =
+    latest.kind === "progress_report"
+      ? "Progress Report"
+      : latest.kind === "pet_credential"
+        ? "Dog ID Credential"
+        : "Care Pass";
+  const parsed = new Date(latest.createdAt).getTime();
+  const latestDate = Number.isNaN(parsed) ? clean(latest.generatedAt) || "saved locally" : formatDate(parsed);
+  const mix = [
+    carePassCount ? `${carePassCount} Care ${carePassCount === 1 ? "Pass" : "Passes"}` : "",
+    progressReportCount ? `${progressReportCount} Progress ${progressReportCount === 1 ? "Report" : "Reports"}` : "",
+    petCredentialCount ? `${petCredentialCount} Dog ID ${petCredentialCount === 1 ? "source" : "sources"}` : "",
+  ].filter(Boolean);
+
+  return {
+    total,
+    carePassCount,
+    progressReportCount,
+    petCredentialCount,
+    latest,
+    summary: `${total} local report ${total === 1 ? "source" : "sources"} saved for handoff reuse${mix.length ? `: ${mix.join(", ")}.` : "."}`,
+    latestLine: `Latest saved source: ${kindLabel} saved ${latestDate}${latest.printFileName ? ` as ${latest.printFileName}` : ""}.`,
+    action: "Resend or share printable source from Report History before handing care context to a sitter, trainer, caregiver, or vet.",
+    boundaryLine: "Saved report artifacts are local reusable sources; native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled.",
   };
 }

@@ -10,6 +10,7 @@ import {
   getReportArtifactPrintView,
   renderCarePassPrintHtml,
   renderProgressReportPrintHtml,
+  summarizeReportArtifacts,
   summarizePetCredentialArtifacts,
 } from "../src/index.ts";
 
@@ -680,6 +681,42 @@ test("summarizes saved Dog ID credential artifacts for report history review", (
   assert.match(summary.latestLine, /Latest Dog ID Credential saved Jun 7, 2026/);
   assert.match(summary.action, /Report History/);
   assert.match(summary.boundaryLine, /local credential sources/);
+  assert.doesNotMatch(summary.boundaryLine, /cloud storage ready|PDF export ready/i);
+});
+
+test("summarizes saved report artifacts for local handoff readiness", () => {
+  const carePass = createCarePassArtifact(
+    buildCarePass({ ...baseInput(), audience: "sitter" }),
+    "2026-06-08T06:30:00.000Z",
+  );
+  const progress = createProgressReportArtifact({
+    dogName: "Phoenix",
+    periodDays: 30,
+    generatedAt: "Jun 9, 7:30 AM",
+    createdAt: "2026-06-09T06:30:00.000Z",
+    summary: "30-day progress report for caregiver and vet review.",
+    sections: [{ title: "Care Summary", lines: ["Total entries logged: 14"] }],
+  });
+  const credential = createPetCredentialArtifact(
+    {
+      name: "Phoenix",
+      generatedAt: "2026-06-10T06:30:00.000Z",
+      message: "Phoenix Dog ID\nMicrochip: 985112003004551",
+    },
+    "2026-06-10T06:30:00.000Z",
+  );
+
+  const summary = summarizeReportArtifacts([carePass, progress, credential]);
+
+  assert.equal(summary.total, 3);
+  assert.equal(summary.carePassCount, 1);
+  assert.equal(summary.progressReportCount, 1);
+  assert.equal(summary.petCredentialCount, 1);
+  assert.equal(summary.latest?.id, credential.id);
+  assert.match(summary.summary, /3 local report sources saved/);
+  assert.match(summary.latestLine, /Latest saved source: Dog ID Credential/);
+  assert.match(summary.action, /Resend or share printable source/);
+  assert.match(summary.boundaryLine, /local reusable sources/);
   assert.doesNotMatch(summary.boundaryLine, /cloud storage ready|PDF export ready/i);
 });
 

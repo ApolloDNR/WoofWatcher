@@ -56,6 +56,7 @@ import {
   getReportArtifactPrintView,
   getRecordDueStatus,
   normalizeCareEventType,
+  summarizeReportArtifacts,
   summarizeRecordVault,
   type CarePass,
   type CarePassAudience,
@@ -647,6 +648,10 @@ export default function RecordsScreen() {
       [...state.reportArtifacts]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5),
+    [state.reportArtifacts],
+  );
+  const reportHistorySummary = useMemo(
+    () => summarizeReportArtifacts(state.reportArtifacts),
     [state.reportArtifacts],
   );
 
@@ -2192,9 +2197,32 @@ export default function RecordsScreen() {
               title="Report History"
               action={reportArtifacts.length ? `${reportArtifacts.length} saved` : "No saved"}
             />
+            <View
+              accessibilityRole="summary"
+              accessibilityLabel={`Report History readiness. ${reportHistorySummary.summary} ${reportHistorySummary.boundaryLine}`}
+              style={[s.reportHistorySummary, { backgroundColor: colors.sage + "10", borderColor: colors.sage + "24" }]}
+            >
+              <Text style={[s.reportHistorySummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                Local handoff sources
+              </Text>
+              <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {reportHistorySummary.summary}
+              </Text>
+              {reportHistorySummary.latestLine ? (
+                <Text style={[s.rowMeta, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  {reportHistorySummary.latestLine}
+                </Text>
+              ) : null}
+              <Text style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+                {reportHistorySummary.action}
+              </Text>
+              <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {reportHistorySummary.boundaryLine}
+              </Text>
+            </View>
             {reportArtifacts.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Shared Care Passes will appear here for quick resend.
+                Shared Care Passes, Progress Reports, and Dog ID sources will appear here for quick resend.
               </Text>
             ) : (
               reportArtifacts.map((artifact, index) => {
@@ -2849,6 +2877,8 @@ const s = StyleSheet.create({
   carePassIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   carePassLabel: { fontSize: 15 },
   carePassDetail: { fontSize: 12, lineHeight: 16, marginTop: 2, paddingRight: 14 },
+  reportHistorySummary: { borderWidth: 1, borderRadius: 14, padding: 12, marginBottom: 8 },
+  reportHistorySummaryTitle: { fontSize: 14.5, marginBottom: 2 },
   reportArtifactRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13 },
   reportArtifactActions: { alignItems: "flex-end", gap: 8 },
   reportArtifactButtonRow: { flexDirection: "row", alignItems: "center", gap: 6 },

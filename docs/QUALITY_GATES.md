@@ -104,6 +104,8 @@ Current evidence, 2026-06-30: Progress Reports now reuse shared Dog ID credentia
 
 Current evidence, 2026-06-30: Dog ID shares now save reusable local credential artifacts in Report History. `createPetCredentialArtifact` stores escaped printable Dog ID HTML with a stable file name and Mobile Records labels those saved rows as Dog ID Credential while keeping image/PDF export, cloud sharing, provider-backed credential storage, and server-backed report storage gated.
 
+Current evidence, 2026-06-30: Records Report History now summarizes saved local handoff sources across Care Pass, Progress Report, and Dog ID artifacts. `summarizeReportArtifacts` counts the local source mix, identifies the latest reusable source, and Mobile Records keeps native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy explicitly gated.
+
 Current evidence, 2026-06-30: WoofGuide now summarizes saved local Dog ID credential artifacts from Report History. The owner-reviewed `pet_credential_history` draft points owners back to Records for resend or printable-source sharing while keeping provider-backed credential storage, native PDF/image export, cloud sharing, retention, and deletion policy gated.
 
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.

@@ -1325,6 +1325,12 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
   assert.match(records, /getReportArtifactPrintView/);
+  assert.match(records, /summarizeReportArtifacts/);
+  assert.match(records, /reportHistorySummary/);
+  assert.match(records, /Local handoff sources/);
+  assert.match(records, /reportHistorySummary\.boundaryLine/);
+  assert.match(records, /Report History readiness/);
+  assert.match(records, /Care Passes, Progress Reports, and Dog ID sources/);
   assert.match(records, /sharePrintableReportArtifact/);
   assert.match(records, /Print-ready/);
   assert.match(records, /accessibilityLabel=\{`Resend \$\{artifact\.title\}`\}/);

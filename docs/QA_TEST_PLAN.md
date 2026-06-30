@@ -12,6 +12,10 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-30:
 
+- PASS: 285 focused tests with the command above on 2026-06-30, now including shared Report History readiness summaries plus Mobile Records wiring for local Care Pass, Progress Report, and Dog ID handoff sources before native PDF/export or server-backed report storage.
+- PASS: PixelLab asset verifier on 2026-06-30 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the Report History readiness slice.
+- PASS: `git diff --check` on 2026-06-30 after the Report History readiness slice.
+- LIMIT: `pnpm run build:ci` on 2026-06-30 hydrated 1276 packages, then stopped at the root `preinstall` script because `sh` is not available on PATH in this Windows shell before workspace typecheck/build scripts started.
 - PASS: 284 focused tests with the command above on 2026-06-30, now including shared saved Dog ID credential artifact summaries plus WoofGuide `pet_credential_history` review drafts that route owners to Records Report History without claiming provider-backed storage or PDF/image export.
 - PASS: PixelLab asset verifier on 2026-06-30 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the saved Dog ID history slice.
 - PASS: 281 focused tests with the command above on 2026-06-30, now including print-ready Dog ID credential artifacts and Mobile Records readiness for saving Dog ID shares into local Report History as provider-gated credential sources.

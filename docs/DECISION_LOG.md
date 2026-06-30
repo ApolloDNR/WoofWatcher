@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-30: Report History Summarizes Local Handoff Sources
+
+Decision: Records Report History may show a shared local readiness summary across Care Pass, Progress Report, and Dog ID credential artifacts. The summary may count the saved source mix, identify the latest reusable source, and guide owners to resend or share printable source from Report History.
+
+Reason: Care Pass, Progress Report, and Dog ID artifacts now all save local print-ready sources, but owners need one quick way to understand what is reusable before a sitter, trainer, caregiver, or vet handoff. Keeping this in `summarizeReportArtifacts` avoids route-local counting and keeps the boundary explicit that native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled.
+
+Owner: Codex.
+
+Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, cloud sharing, retention/deletion policy, or broader report lifecycle controls become active release work.
+
 ### 2026-06-30: WoofGuide Can Review Saved Dog ID History
 
 Decision: WoofGuide may surface an owner-reviewed `pet_credential_history` draft when local Dog ID credential artifacts already exist in Report History. The draft may summarize how many local credential sources are saved, identify the latest saved Dog ID source, and route the owner back to Records Report History for resend or printable-source sharing.
