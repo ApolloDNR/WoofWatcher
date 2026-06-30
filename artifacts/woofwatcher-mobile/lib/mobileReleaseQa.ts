@@ -424,6 +424,40 @@ function storeScreenshotEvidenceFor(item: StoreScreenshotChecklistItem): string[
   return evidence;
 }
 
+function storeScreenshotRouteChecklistFor(
+  item: StoreScreenshotChecklistItem,
+  route: string,
+): readonly MobileReleaseQaRouteCheck[] {
+  const expected = [
+    `Frame ${item.screen} for the store requirement: ${item.requirement}`,
+    "Use demo-safe data and keep provider, payment, AI, storage, and store approval boundaries visible when they are not complete.",
+  ];
+
+  if (isAvatarStudioStoreScreen(item)) {
+    expected.push("Keep Template-fitted and Pack pending readiness labels visible so the PixelLab overlay truth is clear.");
+  }
+
+  if (isHealthWatchStoreScreen(item)) {
+    expected.push("Keep the Review packet, Vet-share checklist, Draft vet questions, and Not veterinary advice boundary visible.");
+  }
+
+  if (item.status === "blocked") {
+    expected.push("Keep the blocked launch gate visible or write a blocker note instead of staging a misleading finished screenshot.");
+  }
+
+  return [
+    {
+      label: `${item.screen} store frame`,
+      route,
+      expected: expected.join(" "),
+      proof:
+        item.status === "blocked"
+          ? `Attach iOS and Android store screenshots or a blocker note for ${item.screen}; include a store note explaining the blocker.`
+          : `Attach iOS and Android store screenshots for ${item.screen}; include a store note confirming the screenshot stayed provider-safe.`,
+    },
+  ];
+}
+
 function storeScreenshotVerificationStepsFor(
   item: StoreScreenshotChecklistItem,
   route: string,
@@ -537,6 +571,7 @@ export function buildStoreSubmissionScreenshotQaSurfaces(
       acceptanceCriteria: storeScreenshotAcceptanceCriteriaFor(item),
       failureEscalation: storeScreenshotFailureEscalationFor(item),
       requiredEvidence: storeScreenshotEvidenceFor(item),
+      routeChecklist: storeScreenshotRouteChecklistFor(item, route),
       launchRisk: blocked
         ? `Store checklist marks ${item.screen} as blocked; do not submit until the blocker is closed and re-captured.`
         : `If ${item.screen} is missing, the store listing cannot show the product promise with truthful visual proof.`,

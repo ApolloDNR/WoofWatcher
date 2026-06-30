@@ -580,6 +580,9 @@ test("registers the care twin native QA route for device review", () => {
     qaRoute,
     /BoardSectionHeader\s+title="Store Screenshot QA"[\s\S]*<BoardPill\s+label=\{storeSubmissionPacket\.verdictLabel\}/,
   );
+  assert.match(qaRoute, /Store route check/);
+  assert.match(qaRoute, /surface\.routeChecklist\?\.length/);
+  assert.match(qaRoute, /Open store screenshot route item:/);
   assert.match(
     qaRoute,
     /BoardSectionHeader\s+title="Device Review Matrix"[\s\S]*<BoardPill\s+label=\{`\$\{scenarios\.length\} scenes`\}/,
@@ -679,6 +682,7 @@ test("registers the care twin native QA route for device review", () => {
     "betaRunPrimary",
     "betaRunSecondary",
     "betaRunRouteLoopRow",
+    "storeRouteLoopRow",
     "shareButton",
     "attachButton",
     "clearEvidenceButton",

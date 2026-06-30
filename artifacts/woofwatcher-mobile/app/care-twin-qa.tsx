@@ -467,7 +467,7 @@ export default function CareTwinQaScreen() {
 
   const openRouteLoopCheck = (
     routeCheck: { label: string; route: string },
-    target: { surfaceId: string; title: string },
+    target: { surfaceId?: string; id?: string; title: string },
   ) => {
     if (Platform.OS !== "web") {
       Haptics.selectionAsync().catch(() => {});
@@ -1510,6 +1510,62 @@ export default function CareTwinQaScreen() {
               <VerificationStepList colors={colors} label="Store steps" steps={surface.verificationSteps} />
               <VerificationStepList colors={colors} label="Store pass criteria" steps={surface.acceptanceCriteria} />
 
+              {surface.routeChecklist?.length ? (
+                <View style={[s.storeRouteLoopPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={s.betaRunRouteLoopHeader}>
+                    <Ionicons name="git-branch-outline" size={16} color={colors.copper} />
+                    <View style={s.betaRunRouteLoopCopy}>
+                      <Text style={[s.betaRunRouteLoopTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                        Store route check
+                      </Text>
+                      <Text style={[s.betaRunRouteLoopHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        Open the exact surface, frame the store-safe screenshot, then return here to attach proof.
+                      </Text>
+                    </View>
+                  </View>
+                  {surface.routeChecklist.map((routeCheck, index) => (
+                    <Pressable
+                      key={`${surface.id}-${routeCheck.label}-${routeCheck.route}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open store screenshot route item: ${routeCheck.label}`}
+                      onPress={() => openRouteLoopCheck(routeCheck, surface)}
+                      style={({ pressed }) => [
+                        s.storeRouteLoopRow,
+                        {
+                          backgroundColor: pressed ? `${colors.copper}12` : colors.card,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <View style={[s.betaRunRouteLoopIndex, { backgroundColor: `${colors.copper}18` }]}>
+                        <Text style={[s.betaRunRouteLoopIndexText, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                          {index + 1}
+                        </Text>
+                      </View>
+                      <View style={s.betaRunRouteLoopBody}>
+                        <View style={s.betaRunRouteLoopNameLine}>
+                          <Text style={[s.betaRunRouteLoopName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {routeCheck.label}
+                          </Text>
+                          <Text style={[s.betaRunRouteLoopRoute, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                            {routeCheck.route}
+                          </Text>
+                        </View>
+                        <Text style={[s.betaRunRouteLoopExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {routeCheck.expected}
+                        </Text>
+                        {routeCheck.proof ? (
+                          <Text style={[s.betaRunRouteLoopProof, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                            Proof: {routeCheck.proof}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Ionicons name="open-outline" size={15} color={colors.copper} />
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
+
               <View style={s.evidenceList}>
                 {surface.requiredEvidence.map((evidence) => (
                   <View key={evidence} style={s.evidenceRow}>
@@ -2098,6 +2154,21 @@ const s = StyleSheet.create({
     lineHeight: 15,
   },
   betaRunRouteLoopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 10,
+  },
+  storeRouteLoopPanel: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
+  storeRouteLoopRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 9,

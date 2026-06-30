@@ -145,6 +145,60 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.match(surface.launchRisk, /real owner beta journey/);
 });
 
+test("adds route-check proof to store screenshot QA surfaces", () => {
+  const packet: StoreSubmissionPacket = {
+    title: "WoofWatcher Store Submission Packet",
+    buildName: "store-candidate",
+    generatedAtLabel: "2026-06-30",
+    submissionReady: false,
+    verdictLabel: "Submission prep only",
+    metadata: {
+      appName: "WoofWatcher",
+      subtitle: "Real care. Pixel heart.",
+      shortDescription: "Dog care with a living pixel care twin.",
+      fullDescription: "Store-safe dog care proof.",
+      category: "Lifestyle",
+      contentBoundary: "Owner-reviewed care organization only.",
+    },
+    keywords: ["dog care"],
+    screenshotChecklist: [
+      {
+        screen: "Avatar Studio",
+        requirement: "Show the PixelLab template/customization flow truthfully.",
+        status: "needed",
+      },
+      {
+        screen: "Privacy & Launch Gates",
+        requirement: "Show launch-gate truth before submission.",
+        status: "blocked",
+      },
+    ],
+    reviewNotes: ["Prep only."],
+    privacyDisclosures: ["No private data in screenshots."],
+    blockedUntil: ["Native proof is still open."],
+  };
+
+  const surfaces = buildStoreSubmissionScreenshotQaSurfaces(packet);
+  const avatar = surfaces.find((item) => item.id === "store-avatar-studio");
+  const privacy = surfaces.find((item) => item.id === "store-privacy-launch-gates");
+
+  assert.ok(avatar);
+  assert.equal(avatar.route, "/portrait");
+  assert.deepEqual(avatar.routeChecklist?.map((item) => item.label), ["Avatar Studio store frame"]);
+  assert.equal(avatar.routeChecklist?.[0]?.route, "/portrait");
+  assert.match(avatar.routeChecklist?.[0]?.expected ?? "", /PixelLab template\/customization flow/);
+  assert.match(avatar.routeChecklist?.[0]?.expected ?? "", /Template-fitted/);
+  assert.match(avatar.routeChecklist?.[0]?.proof ?? "", /iOS and Android store screenshots/);
+  assert.match(avatar.routeChecklist?.[0]?.proof ?? "", /store note/);
+
+  assert.ok(privacy);
+  assert.equal(privacy.route, "/privacy");
+  assert.equal(privacy.priority, "launch-critical");
+  assert.deepEqual(privacy.routeChecklist?.map((item) => item.label), ["Privacy & Launch Gates store frame"]);
+  assert.match(privacy.routeChecklist?.[0]?.expected ?? "", /blocked launch gate visible/);
+  assert.match(privacy.routeChecklist?.[0]?.proof ?? "", /blocker note/);
+});
+
 test("summarizes mobile release QA review status and screenshot evidence", () => {
   const surfaces = listMobileReleaseQaSurfaces();
   const reviews: MobileReleaseQaReview[] = [
