@@ -279,8 +279,14 @@ const careTwinQaRouteProofFlowIsSourceBacked = includesAll(careTwinQaRouteSource
   "Pass pending proof",
   "Attach proof",
   "care-twin-qa-stage-",
-  "qaReturn=care-twin-qa",
+  "buildMobileLaunchQaReturnRoute",
 ])
+  && includesAll(mobileLaunchQaEvidenceSource, [
+    "buildMobileLaunchQaReturnRoute",
+    "qaReturn=care-twin-qa",
+    "qaSurface=${encodeURIComponent(surfaceId)}",
+    "qaTitle=${encodeURIComponent(title)}",
+  ])
   && includesAll(mobileReleaseQaSource, [
     "Owner Preview Core Loop",
     "iOS Quick Log or Log screenshot.",

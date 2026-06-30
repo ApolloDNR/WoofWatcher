@@ -2605,6 +2605,32 @@ before execution with `steps: []`. `gh run view --log-failed` returned
 runner pre-job blocker, not product verification evidence or a local app
 regression.
 
+The return-aware QA target route pass removed a handoff trap in the native QA
+flow. `mobileLaunchQaEvidence.ts` now builds a shared
+`buildMobileLaunchQaReturnRoute` and every `MobileLaunchQaCaptureTarget` carries
+`qaReturnRoute`. Focused target shares, the full native capture plan, store
+screenshot proof, and Needs tune fix briefs now include `Open with QA return`
+routes, while `/care-twin-qa` uses the same helper for its open-target buttons.
+This means Apollo, Fable/Replit, or a device tester can open a target with the
+QA return banner already armed, capture proof, and return to the exact mission
+card instead of manually hunting back through the app.
+
+Fresh local verification for the return-aware QA target route pass passed
+`mobileLaunchQaEvidence.test.ts` 20/20, `mobileReadiness.test.ts` 101/101, the
+483-test API/mobile/PWA/care-domain focused suite, root TypeScript, mobile
+TypeScript, PixelLab assets `ok=149 missing=0 invalid=0`, package-local Expo web
+export to `.expo-smoke` with 218 assets / 222 files after prepending bundled
+Node and pnpm to PATH, live preview route smoke `200` for `/`,
+`/care-twin-qa?qaSurface=store-health-watch`, the return-aware
+`/health?qaReturn=care-twin-qa&qaSurface=store-health-watch&qaTitle=Store%3A%20Health%20Watch`,
+and `/portrait` at `http://127.0.0.1:4194/`, and `git diff --check` with
+expected Windows CRLF warnings only. The JSON mobile beta doctor still reports
+`BLOCKED` only because the local bundled pnpm is `11.7.0` while the repo is
+pinned to `10.24.0`; its source-backed launch, proof, avatar sprite, Care Pass
+storage, and truth-boundary checks pass. This does not clear actual native
+iOS/Android proof, provider-backed sync/storage/AI/payments/push, generated PDF
+output, CI completion, app-store approval, or Apollo launch sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

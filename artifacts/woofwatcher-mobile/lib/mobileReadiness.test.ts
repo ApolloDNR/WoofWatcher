@@ -553,6 +553,7 @@ test("registers the care twin native QA route for device review", () => {
   const qaRoute = readAppFile("care-twin-qa.tsx");
   const qaSession = readMobileLibFile("mobileQaSession.ts");
   const releaseQa = readMobileLibFile("mobileReleaseQa.ts");
+  const qaEvidence = readMobileLibFile("mobileLaunchQaEvidence.ts");
   const careTwinReport = readMobileLibFile("careTwinQaReport.ts");
   const boardPrimitives = readFileSync(
     join(
@@ -736,9 +737,11 @@ test("registers the care twin native QA route for device review", () => {
   }
   assert.match(qaRoute, /Open Next Surface/);
   assert.match(qaRoute, /buildQaReturnRoute/);
-  assert.match(qaRoute, /qaReturn=care-twin-qa/);
-  assert.match(qaRoute, /qaSurface=\$\{encodeURIComponent\(surfaceId\)\}/);
-  assert.match(qaRoute, /qaTitle=\$\{encodeURIComponent\(target\.title\)\}/);
+  assert.match(qaRoute, /buildMobileLaunchQaReturnRoute/);
+  assert.match(qaEvidence, /buildMobileLaunchQaReturnRoute/);
+  assert.match(qaEvidence, /qaReturn=care-twin-qa/);
+  assert.match(qaEvidence, /qaSurface=\$\{encodeURIComponent\(surfaceId\)\}/);
+  assert.match(qaEvidence, /qaTitle=\$\{encodeURIComponent\(title\)\}/);
   assert.match(
     qaRoute,
     /accessibilityLabel=\{[\s\S]*Open next beta QA surface:/,

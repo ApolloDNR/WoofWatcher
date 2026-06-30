@@ -7,6 +7,7 @@ import {
   buildMobileLaunchQaCapturePlan,
   buildMobileLaunchQaFocusedTarget,
   buildMobileLaunchQaFocusedTargetShareText,
+  buildMobileLaunchQaReturnRoute,
   deriveNativeQaSummaryFromMobileQaSession,
   listMobileLaunchQaSurfaces,
   mobileLaunchQaCaptureTargetStatusLabel,
@@ -44,6 +45,17 @@ const focusedSurfaces: readonly MobileReleaseQaSurface[] = [
     launchRisk: "Care Pass needs proof.",
   },
 ];
+
+test("builds return-aware QA target routes for plain and parameterized routes", () => {
+  assert.equal(
+    buildMobileLaunchQaReturnRoute("/", "phoenix-home", "Phoenix Home"),
+    "/?qaReturn=care-twin-qa&qaSurface=phoenix-home&qaTitle=Phoenix%20Home",
+  );
+  assert.equal(
+    buildMobileLaunchQaReturnRoute("/health?tab=bile", "store-health-watch", "Store: Health Watch"),
+    "/health?tab=bile&qaReturn=care-twin-qa&qaSurface=store-health-watch&qaTitle=Store%3A%20Health%20Watch",
+  );
+});
 
 test("derives a launch native QA summary from saved mobile QA session proof", () => {
   const session: MobileQaSessionState = {
@@ -158,6 +170,7 @@ test("builds a prioritized capture plan from missing native QA evidence", () => 
       surfaceId: "care-pass",
       title: "Care Pass",
       route: "/records",
+      qaReturnRoute: "/records?qaReturn=care-twin-qa&qaSurface=care-pass&qaTitle=Care%20Pass",
       priority: "release-polish",
       status: "pass",
       missingEvidence: ["Attach 1 screenshot for Care Pass."],
@@ -352,6 +365,7 @@ test("builds a shareable native QA capture script for Apollo and device testers"
   assert.match(text, /Generated: 2026-06-21T09:30:00.000Z/);
   assert.match(text, /Progress: 0\/2 complete, 2 open/);
   assert.match(text, /1\. Home \(\/\)/);
+  assert.match(text, /Open with QA return: \/\?qaReturn=care-twin-qa&qaSurface=home&qaTitle=Home/);
   assert.match(text, /Priority: launch-critical/);
   assert.match(text, /Missing: Attach 1 iOS screenshot for Home\. Attach 1 Android screenshot for Home\./);
   assert.match(text, /Setup: Use a local preview household with Phoenix sample care data\./);
@@ -421,6 +435,7 @@ test("keeps store screenshot proof visible even when normal native targets fill 
 
   assert.match(text, /Store screenshot proof: Store proof open/);
   assert.match(text, /Next store screenshot: Store: Health Watch \(\/health\)/);
+  assert.match(text, /Next store screenshot route: \/health\?qaReturn=care-twin-qa&qaSurface=store-health-watch&qaTitle=Store%3A%20Health%20Watch/);
   assert.match(text, /Store screenshot missing: Attach 1 iOS screenshot for Store: Health Watch/);
 });
 
@@ -491,6 +506,7 @@ test("builds a focused target checklist for phone and handoff QA", () => {
   assert.match(text, /Target: Store: Health Watch/);
   assert.match(text, /Focused cockpit: \/care-twin-qa\?qaSurface=store-health-watch/);
   assert.match(text, /Open route: \/health/);
+  assert.match(text, /Open with QA return: \/health\?qaReturn=care-twin-qa&qaSurface=store-health-watch&qaTitle=Store%3A%20Health%20Watch/);
   assert.match(text, /Proof needed: Attach 1 iOS screenshot for Store: Health Watch\./);
   assert.match(text, /Attached proof: 0 screenshot/);
   assert.match(text, /Pass when: Health Review Packet shows owner prompts/);
@@ -764,6 +780,7 @@ test("builds a focused fix brief for the first Needs tune target", () => {
   assert.match(text, /Generated: 2026-06-25T12:30:00.000Z/);
   assert.match(text, /Fix first: Care Pass/);
   assert.match(text, /Route: \/records/);
+  assert.match(text, /Open with QA return: \/records\?qaReturn=care-twin-qa&qaSurface=care-pass&qaTitle=Care%20Pass/);
   assert.match(text, /QA note: Care Pass share button clips under the floating paw nav\./);
   assert.match(text, /Missing proof: No required proof is missing/);
   assert.match(text, /Done when: Care Pass preview is readable and shareable\./);

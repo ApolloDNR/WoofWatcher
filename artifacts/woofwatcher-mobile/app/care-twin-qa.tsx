@@ -52,6 +52,7 @@ import {
   buildMobileLaunchQaFixBriefShareText,
   buildMobileLaunchQaFocusedTarget,
   buildMobileLaunchQaFocusedTargetShareText,
+  buildMobileLaunchQaReturnRoute,
 } from "@/lib/mobileLaunchQaEvidence";
 import {
   deriveCareTwinChoreography,
@@ -222,9 +223,8 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 }
 
 function buildQaReturnRoute(target: { route: string; id?: string; surfaceId?: string; title: string }): string {
-  const separator = target.route.includes("?") ? "&" : "?";
   const surfaceId = target.surfaceId ?? target.id ?? "qa-surface";
-  return `${target.route}${separator}qaReturn=care-twin-qa&qaSurface=${encodeURIComponent(surfaceId)}&qaTitle=${encodeURIComponent(target.title)}`;
+  return buildMobileLaunchQaReturnRoute(target.route, surfaceId, target.title);
 }
 
 export default function CareTwinQaScreen() {

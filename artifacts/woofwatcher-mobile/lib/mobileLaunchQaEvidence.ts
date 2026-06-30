@@ -17,6 +17,7 @@ export interface MobileLaunchQaCaptureTarget {
   surfaceId: string;
   title: string;
   route: string;
+  qaReturnRoute: string;
   priority: MobileReleaseQaSurface["priority"];
   status: MobileReleaseQaReview["status"];
   missingEvidence: string[];
@@ -161,6 +162,11 @@ function pluralLabel(value: number, label: string): string {
   return `${value} ${label}${value === 1 ? "" : "s"}`;
 }
 
+export function buildMobileLaunchQaReturnRoute(route: string, surfaceId: string, title: string): string {
+  const separator = route.includes("?") ? "&" : "?";
+  return `${route}${separator}qaReturn=care-twin-qa&qaSurface=${encodeURIComponent(surfaceId)}&qaTitle=${encodeURIComponent(title)}`;
+}
+
 function missingEvidenceForSurface(
   surface: MobileReleaseQaSurface,
   review: MobileReleaseQaReview,
@@ -220,6 +226,7 @@ function captureTargetForSurface(
     surfaceId: surface.id,
     title: surface.title,
     route: surface.route,
+    qaReturnRoute: buildMobileLaunchQaReturnRoute(surface.route, surface.id, surface.title),
     priority: surface.priority,
     status: review.status,
     missingEvidence,
@@ -508,6 +515,7 @@ export function buildMobileLaunchQaFocusedTargetShareText(
     `Target: ${target.title}`,
     `Focused cockpit: ${focusedRoute}`,
     `Open route: ${target.route}`,
+    `Open with QA return: ${target.qaReturnRoute}`,
     `Priority: ${target.priority}`,
     `Status: ${statusLabel}`,
     `Goal: ${surface.goal}`,
@@ -563,6 +571,7 @@ export function buildMobileLaunchQaFixBriefShareText(
     "",
     `Fix first: ${target.title}`,
     `Route: ${target.route}`,
+    `Open with QA return: ${target.qaReturnRoute}`,
     `Priority: ${target.priority}`,
     `Status: ${mobileLaunchQaCaptureTargetStatusLabel(target)}`,
     `QA note: ${target.note?.trim() || "No route note saved yet. Add the first visible issue in /care-twin-qa before handing this off."}`,
@@ -629,6 +638,11 @@ export function buildMobileLaunchQaCaptureShareText(
         ? `${plan.storeScreenshotProofStatus.nextTarget.title} (${plan.storeScreenshotProofStatus.nextTarget.route})`
         : "No store screenshot target is open."
     }`,
+    `Next store screenshot route: ${
+      plan.storeScreenshotProofStatus.nextTarget
+        ? plan.storeScreenshotProofStatus.nextTarget.qaReturnRoute
+        : "No store screenshot target is open."
+    }`,
     `Store screenshot missing: ${
       plan.storeScreenshotProofStatus.missingEvidence.length
         ? plan.storeScreenshotProofStatus.missingEvidence.join(" ")
@@ -644,6 +658,7 @@ export function buildMobileLaunchQaCaptureShareText(
 
   plan.nextTargets.forEach((target, index) => {
     lines.push(`${index + 1}. ${target.title} (${target.route})`);
+    lines.push(`   Open with QA return: ${target.qaReturnRoute}`);
     lines.push(`   Priority: ${target.priority}`);
     lines.push(`   Status: ${mobileLaunchQaCaptureTargetStatusLabel(target)}`);
     lines.push(`   Missing: ${target.missingEvidence.join(" ") || "No missing evidence."}`);
