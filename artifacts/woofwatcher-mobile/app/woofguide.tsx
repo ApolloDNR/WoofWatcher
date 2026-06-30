@@ -6,6 +6,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  ImageBackground,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -15,7 +16,6 @@ import {
   Text,
   TextInput,
   View,
-  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -27,6 +27,9 @@ import {
 import { useColors } from "@/hooks/useColors";
 import { useCare, CareState } from "@/context/CareContext";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import {
   getDockedComposerBottomPadding,
   getKeyboardAvoidingVerticalOffset,
@@ -34,6 +37,7 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 import {
   deriveWoofGuideActions,
   type WoofGuideActionCard,
@@ -50,6 +54,11 @@ const ACTION_ICON: Record<WoofGuideActionIcon, IoniconName> = {
   records: "folder-open-outline",
   spark: "sparkles-outline",
 };
+
+const DISPLAY_SEMI = "PressStart2P_400Regular";
+const WOOFGUIDE_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.night.source;
+const WOOFGUIDE_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
+const WOOFGUIDE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
 
 interface Message {
   id: string;
@@ -178,6 +187,36 @@ export default function WoofGuideScreen() {
   ], [name]);
 
   const actionCards = useMemo(() => deriveWoofGuideActions(state), [state]);
+  const ownerDraftCount = actionCards.filter((action) => action.draft).length;
+  const watchActionCount = actionCards.filter(
+    (action) => action.urgency === "watch" || action.urgency === "alert",
+  ).length;
+  const guideSignal = Math.max(1, Math.min(5, actionCards.length || 1));
+  const guideSpeech =
+    actionCards[0]?.detail ??
+    `Ask about ${name}'s care. I can summarize logs and prepare owner-reviewed next steps.`;
+  const guideHud = [
+    {
+      label: "Actions",
+      value: String(actionCards.length),
+      tone: colors.primary,
+    },
+    {
+      label: "Review",
+      value: String(ownerDraftCount),
+      tone: ownerDraftCount > 0 ? colors.amber : colors.sage,
+    },
+    {
+      label: "Watch",
+      value: String(watchActionCount),
+      tone: watchActionCount > 0 ? colors.amber : colors.sage,
+    },
+    {
+      label: "Boundary",
+      value: "Vet-safe",
+      tone: colors.blueSignal,
+    },
+  ];
 
   const sendMessage = useCallback(async (text: string) => {
     const q = text.trim();
@@ -302,14 +341,115 @@ export default function WoofGuideScreen() {
           ListEmptyComponent={
             !loading ? (
               <View style={s.emptyArea}>
-                <View style={s.emptyIconContainer}>
-                  <Image source={require("@/assets/avatar/phoenix/approved/phoenix-woofguide-bust-v2.png")} style={s.avatar} />
-                </View>
+                <BoardCard padded={false} style={s.guideStageCard}>
+                  <ImageBackground
+                    source={WOOFGUIDE_STAGE_ROOM}
+                    resizeMode="cover"
+                    imageStyle={[s.guideStageImage, pixelImageStyle]}
+                    style={s.guideStage}
+                    testID="woofguide-pixel-guidance-stage"
+                  >
+                    <View style={s.guideStageShade} />
+                    <View style={s.guideStageScanline} />
+                    <View style={s.guideStageTop}>
+                      <View style={s.guideBubble}>
+                        <Text style={[s.guideKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                          WoofGuide Console
+                        </Text>
+                        <Text
+                          numberOfLines={3}
+                          style={[s.guideSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                        >
+                          {guideSpeech}
+                        </Text>
+                        <View style={s.guideBubbleTail} />
+                      </View>
+                      <View style={[s.guideReviewChip, { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" }]}>
+                        <Ionicons name="checkmark-done-circle-outline" size={15} color={colors.amber} />
+                        <Text style={[s.guideReviewChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                          Owner review
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View pointerEvents="none" style={s.guideSprite}>
+                      <View style={s.guideSpriteShadow} />
+                      <SpriteSheetPlayer
+                        asset={WOOFGUIDE_STAGE_SPRITE}
+                        track={WOOFGUIDE_STAGE_TRACK}
+                        width={132}
+                        height={132}
+                        testID="woofguide-pixel-guidance-sprite"
+                      />
+                    </View>
+
+                    <View style={[s.guideHud, { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" }]}>
+                      {guideHud.map((metric) => (
+                        <View key={metric.label} style={s.guideHudCell}>
+                          <Text style={[s.guideHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
+                            {metric.label}
+                          </Text>
+                          <Text
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            style={[s.guideHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                          >
+                            {metric.value}
+                          </Text>
+                          <View style={s.guideSignalRow}>
+                            {[0, 1, 2, 3, 4].map((bar) => (
+                              <View
+                                key={bar}
+                                style={[
+                                  s.guideSignalBar,
+                                  {
+                                    height: 5 + bar * 2,
+                                    backgroundColor: bar < guideSignal ? metric.tone : colors.ivory + "2F",
+                                  },
+                                ]}
+                              />
+                            ))}
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={s.guideStageFooter}>
+                      <View style={[s.guideBoundaryCard, { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" }]}>
+                        <Text style={[s.guideBoundaryLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                          Not veterinary advice
+                        </Text>
+                        <Text
+                          numberOfLines={1}
+                          style={[s.guideBoundaryValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                        >
+                          Drafts stay owner-reviewed
+                        </Text>
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Ask first WoofGuide quick question from guidance console"
+                        onPress={() => {
+                          void sendMessage(quickQuestions[0]);
+                        }}
+                        style={({ pressed }) => [
+                          s.guideStageAction,
+                          { backgroundColor: colors.sage, opacity: pressed ? 0.82 : 1 },
+                        ]}
+                      >
+                        <Text style={[s.guideStageActionText, { fontFamily: "Inter_800ExtraBold" }]}>
+                          Ask WoofGuide
+                        </Text>
+                        <Ionicons name="arrow-forward" size={15} color={colors.ivory} />
+                      </Pressable>
+                    </View>
+                  </ImageBackground>
+                </BoardCard>
                 <BoardCard style={s.guideIntroCard}>
                   <BoardRouteHeader
                     kicker="WoofGuide"
                     title="Owner-reviewed guidance"
-                    subtitle={`Ask about ${name}'s care, diet, anxiety, and patterns. Never a vet replacement.`}
+                    subtitle={`WoofGuide summarizes ${name}'s logs, drafts safe next steps, and keeps health language non-diagnostic. Not veterinary advice.`}
                     icon="chatbubbles-outline"
                     style={s.guideIntroHeader}
                   />
@@ -491,13 +631,137 @@ export default function WoofGuideScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  emptyArea: { alignItems: "center", paddingTop: 40, gap: 10 },
-  emptyIconContainer: { width: 80, height: 80, borderRadius: 40, overflow: "hidden", marginBottom: 8, borderWidth: 4, borderColor: "#fff", shadowColor: "#2E5846", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
-  avatar: { width: "100%", height: "100%" },
+  emptyArea: { alignItems: "center", paddingTop: 20, gap: 10 },
+  guideStageCard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 4, overflow: "hidden" },
+  guideStage: { minHeight: 356, overflow: "hidden", justifyContent: "space-between" },
+  guideStageImage: { borderRadius: 8 },
+  guideStageShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(8,20,36,0.18)",
+  },
+  guideStageScanline: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+  },
+  guideStageTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+    padding: 14,
+    zIndex: 3,
+  },
+  guideBubble: {
+    maxWidth: "68%",
+    minHeight: 104,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#142033",
+    backgroundColor: "rgba(255,249,239,0.94)",
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+  },
+  guideKicker: { fontSize: 8.5, lineHeight: 13, textTransform: "uppercase" },
+  guideSpeech: { fontSize: 11.5, lineHeight: 19, marginTop: 6 },
+  guideBubbleTail: {
+    position: "absolute",
+    bottom: -10,
+    left: 30,
+    width: 18,
+    height: 18,
+    backgroundColor: "rgba(255,249,239,0.94)",
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#142033",
+    transform: [{ rotate: "45deg" }],
+  },
+  guideReviewChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    maxWidth: 118,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    paddingHorizontal: 9,
+  },
+  guideReviewChipText: { flexShrink: 1, fontSize: 10.5, lineHeight: 13 },
+  guideSprite: {
+    position: "absolute",
+    right: 18,
+    bottom: 118,
+    width: 132,
+    height: 132,
+    zIndex: 2,
+  },
+  guideSpriteShadow: {
+    position: "absolute",
+    left: 24,
+    right: 24,
+    bottom: 5,
+    height: 16,
+    borderRadius: 999,
+    backgroundColor: "rgba(8,20,36,0.24)",
+  },
+  guideHud: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 86,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    flexDirection: "row",
+    gap: 8,
+    zIndex: 3,
+  },
+  guideHudCell: { flex: 1, minWidth: 0 },
+  guideHudLabel: { fontSize: 7, lineHeight: 11, textTransform: "uppercase" },
+  guideHudValue: { fontSize: 12, lineHeight: 15, marginTop: 3 },
+  guideSignalRow: {
+    height: 17,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+    marginTop: 5,
+  },
+  guideSignalBar: { width: 5, borderRadius: 2 },
+  guideStageFooter: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    zIndex: 4,
+  },
+  guideBoundaryCard: {
+    flex: 1,
+    minHeight: 62,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  guideBoundaryLabel: { fontSize: 10, lineHeight: 13, textTransform: "uppercase" },
+  guideBoundaryValue: { fontSize: 10.5, lineHeight: 14, marginTop: 5 },
+  guideStageAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    paddingHorizontal: 12,
+  },
+  guideStageActionText: { color: "#FFF9EF", fontSize: 11.5, lineHeight: 15 },
   guideIntroCard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 8 },
   guideIntroHeader: { marginBottom: 0 },
-  emptyTitle: { fontSize: 20 },
-  emptySub: { fontSize: 15, textAlign: "center", paddingHorizontal: 24, lineHeight: 22 },
   quickQuestionBoard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 8 },
   quickQuestionGrid: { gap: 10 },
   quickChip: { borderRadius: 14, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 14 },

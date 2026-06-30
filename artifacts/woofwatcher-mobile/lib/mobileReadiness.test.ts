@@ -1949,6 +1949,21 @@ test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
   assert.doesNotMatch(guide, /actionRow: \{[^\n]*shadowOpacity/);
 });
 
+test("keeps WoofGuide rooted in a live pixel guidance stage", () => {
+  const guide = readAppFile("woofguide.tsx");
+
+  assert.match(guide, /ImageBackground/);
+  assert.match(guide, /WOOFGUIDE_STAGE_ROOM/);
+  assert.match(guide, /CARE_TWIN_ROOM_VARIANT_ASSETS\.night/);
+  assert.match(guide, /SpriteSheetPlayer/);
+  assert.match(guide, /getCareTwinSpriteAsset\("idle-breathe"\)/);
+  assert.match(guide, /CARE_TWIN_SPRITE_MANIFEST\["idle-breathe"\]/);
+  assert.match(guide, /pixelImageStyle/);
+  assert.match(guide, /WoofGuide Console/);
+  assert.match(guide, /Owner review/);
+  assert.match(guide, /Not veterinary advice/);
+});
+
 test("keeps WoofGuide prompt, send, and owner-review actions on shared mobile touch targets", () => {
   const guide = readAppFile("woofguide.tsx");
 
