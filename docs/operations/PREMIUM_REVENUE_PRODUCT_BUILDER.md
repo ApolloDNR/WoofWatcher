@@ -2575,6 +2575,29 @@ was manually dispatched as GitHub Actions run `28468154370`, but job
 GitHub billing/spending-limit pre-job blocker, not product verification evidence
 or a local app regression.
 
+The production auth entry is now a board-accurate CareTwin gateway instead of a
+generic sign-in form. `AuthShell` renders the WoofWatcher mark, active PixelLab
+day room, hard-pixel Phoenix avatar, `Real care. Pixel heart.` speech, current
+provider/local-preview status, and trust tiles for Provider account,
+Local-first care, and CareTwin readiness. Sign-in and sign-up copy no longer
+claims shared sync is complete; it says the account layer is ready while care
+data stays local-first until production sync providers are configured. Primary
+and Google auth actions also expose explicit button roles and labels.
+
+Fresh local verification for the auth gateway polish passed
+`mobileReadiness.test.ts` 101/101, mobile TypeScript, root TypeScript, the
+482-test API/mobile/PWA/care-domain focused suite, PixelLab assets
+`ok=149 missing=0 invalid=0`, package-local Expo web export to `.expo-smoke`
+with 218 assets / 222 files after prepending bundled Node and pnpm to PATH,
+live preview route smoke `200` for `/`, `/sign-in`, `/setup`, and `/portrait`
+at `http://127.0.0.1:4194/`, and `git diff --check` with expected Windows CRLF
+warnings only. The JSON mobile beta doctor still reports `BLOCKED` only because
+the local bundled pnpm is `11.7.0` while the repo is pinned to `10.24.0`; its
+source-backed launch, proof, avatar sprite, Care Pass storage, and truth
+boundary checks pass. This does not clear production provider-backed account
+sync, native iOS/Android auth/setup proof, generated PDF output, payments, push,
+live AI, app-store approval, or Apollo launch sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

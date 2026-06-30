@@ -103,7 +103,7 @@ export default function SignUpScreen() {
     return (
       <AuthShell
         title="Check your email"
-        subtitle={`We sent a verification code to ${emailAddress}. Enter it below to finish setting up your account.`}
+        subtitle={`We sent a verification code to ${emailAddress}. Enter it below to protect your household care space.`}
       >
         <FormError message={formError} />
         <Field
@@ -147,7 +147,7 @@ export default function SignUpScreen() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Start a shared care log your whole household can keep in sync."
+      subtitle="Create the account layer for Phoenix's care twin. Care data stays local-first until production sync providers are configured."
     >
       <FormError message={formError} />
       <Field

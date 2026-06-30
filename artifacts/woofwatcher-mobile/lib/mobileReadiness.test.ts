@@ -311,6 +311,36 @@ test("keeps local Clerk placeholders from blanking the web preview", () => {
   );
 });
 
+test("keeps auth entry styled as the truthful CareTwin gateway", () => {
+  const authUi = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "auth-ui.tsx",
+    ),
+    "utf8",
+  );
+  const signIn = readAppFile(join("(auth)", "sign-in.tsx"));
+  const signUp = readAppFile(join("(auth)", "sign-up.tsx"));
+
+  assert.match(authUi, /PIXEL_ROOM_SOURCE/);
+  assert.match(authUi, /PIXEL_DOG_SOURCE/);
+  assert.match(authUi, /pixelImageStyle/);
+  assert.match(authUi, /WoofWatcher CareTwin account gateway/);
+  assert.match(authUi, /CARETWIN ACCOUNT GATEWAY/);
+  assert.match(authUi, /Real care\. Pixel heart\./);
+  assert.match(authUi, /Provider account/);
+  assert.match(authUi, /Local-first care/);
+  assert.match(authUi, /CareTwin ready/);
+  assert.match(authUi, /isClerkConfigured \? "Account ready" : "Local preview"/);
+  assert.match(authUi, /accessibilityRole="button"/);
+  assert.match(authUi, /accessibilityLabel=\{label\}/);
+  assert.match(signIn, /account layer ready for shared sync/);
+  assert.match(signUp, /Care data stays local-first until production sync providers are configured/);
+});
+
 test("keeps critical mobile actions accessible to screen readers", () => {
   const privacy = readAppFile("privacy.tsx");
   const premium = readAppFile("premium.tsx");

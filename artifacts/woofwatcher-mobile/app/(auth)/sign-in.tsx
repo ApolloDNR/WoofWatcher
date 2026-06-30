@@ -91,7 +91,7 @@ export default function SignInScreen() {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Sign in to keep your pack's care in sync across every device."
+      subtitle="Return to your household care space, review Phoenix's open loops, and keep the account layer ready for shared sync."
     >
       <FormError message={formError} />
       <Field
