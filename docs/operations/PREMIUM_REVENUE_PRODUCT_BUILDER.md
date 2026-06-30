@@ -2251,8 +2251,10 @@ all open the same primary target. `/care-twin-qa` uses the same mission for the
 condition in-card. Fresh local verification passed the Native QA model tests
 19/19, mobile readiness 100/100, mobile TypeScript, the 473-test
 API/mobile/PWA/care-domain focused suite, PixelLab verification `ok=149
-missing=0 invalid=0`, and `git diff --check` with expected Windows CRLF warnings
-only. `scripts/mobile-beta-doctor.mjs --json` is still blocked in this shell
+missing=0 invalid=0`, package-local Expo web export to `.expo-smoke` with 218
+assets / 222 files, live preview route smoke `200` for `/` and `/care-twin-qa`
+at `http://127.0.0.1:4194/`, and `git diff --check` with expected Windows CRLF
+warnings only. `scripts/mobile-beta-doctor.mjs --json` is still blocked in this shell
 because Corepack is not on PATH and bundled pnpm is `11.7.0` while the repo pins
 `pnpm@10.24.0`; this is dependency-environment proof, not an app regression.
 
