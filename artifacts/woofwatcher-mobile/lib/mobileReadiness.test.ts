@@ -592,6 +592,11 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /MOBILE_QA_SESSION_STORAGE_KEY/);
   assert.match(qaRoute, /parseMobileQaSessionSnapshot/);
   assert.match(qaRoute, /buildMobileQaSessionSnapshot/);
+  assert.match(qaRoute, /buildMobileQaSessionProofManifest/);
+  assert.match(qaRoute, /buildMobileQaSessionProofManifestShareText/);
+  assert.match(qaRoute, /qaProofManifest\.proofId/);
+  assert.match(qaRoute, /Proof manifest:/);
+  assert.match(qaRoute, /store approval and provider proof stay separate/);
   assert.match(qaRoute, /Saved locally/);
   assert.match(qaRoute, /Motion recipe/);
   assert.match(qaRoute, /choreography\.qaSummary/);
@@ -730,6 +735,10 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaSession, /surfaceEvidenceById/);
   assert.match(qaSession, /cleanQaScreenshotEvidence/);
   assert.match(qaSession, /screenshotEvidence/);
+  assert.match(qaSession, /MobileQaSessionProofManifest/);
+  assert.match(qaSession, /proofFingerprint/);
+  assert.match(qaSession, /buildMobileQaSessionProofManifestShareText/);
+  assert.match(qaSession, /does not prove App Store or Play Store approval/);
   assert.match(releaseQa, /attachedScreenshots/);
   assert.match(releaseQa, /requiredIosScreenshots/);
   assert.match(releaseQa, /attachedIosScreenshots/);

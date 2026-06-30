@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildMobileQaSessionProofManifest,
+  buildMobileQaSessionProofManifestShareText,
   buildMobileQaSessionSnapshot,
   MOBILE_QA_SESSION_STORAGE_KEY,
   parseMobileQaSessionSnapshot,
@@ -172,4 +174,97 @@ test("ignores corrupt and invalid mobile QA session data", () => {
   assert.equal(parsed?.careTwinEvidenceById.health?.[0]?.targetPlatform, "unknown");
   assert.deepEqual(parsed?.surfaceStatusById, { "phoenix-home": "pass" });
   assert.deepEqual(parsed?.surfaceNotes, {});
+});
+
+test("builds a deterministic handoff proof manifest for saved device QA", () => {
+  const snapshot = buildMobileQaSessionSnapshot(
+    {
+      careTwinStatusById: {
+        happy: "pass",
+        health: "needs-review",
+      },
+      careTwinNotes: {
+        health: "Health-watch crop needs Android retest.",
+      },
+      careTwinEvidenceById: {
+        happy: [
+          {
+            uri: "file:///qa/ios-happy-idle.png",
+            fileName: "ios-happy-idle.png",
+            source: "library",
+            targetPlatform: "ios",
+            capturedAtIso: "2026-06-20T13:00:05.000Z",
+          },
+        ],
+      },
+      surfaceStatusById: {
+        "owner-preview-core-loop": "pass",
+        "store-home": "pass",
+      },
+      surfaceNotes: {
+        "owner-preview-core-loop": "Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass reached.",
+      },
+      surfaceEvidenceById: {
+        "owner-preview-core-loop": [
+          {
+            uri: "file:///qa/android-launch-readiness.png",
+            fileName: "android-launch-readiness.png",
+            source: "library",
+            targetPlatform: "android",
+            capturedAtIso: "2026-06-20T13:00:10.000Z",
+          },
+        ],
+        "store-home": [
+          {
+            uri: "file:///qa/store-home-web.png",
+            fileName: "store-home-web.png",
+            source: "library",
+            targetPlatform: "web",
+            capturedAtIso: "2026-06-20T13:00:15.000Z",
+          },
+        ],
+      },
+    },
+    "2026-06-20T13:00:00.000Z",
+  );
+
+  const manifest = buildMobileQaSessionProofManifest(snapshot, "2026-06-20T13:05:00.000Z");
+  const sameManifest = buildMobileQaSessionProofManifest(snapshot, "2026-06-20T13:10:00.000Z");
+  const text = buildMobileQaSessionProofManifestShareText(manifest);
+
+  assert.match(manifest.proofId, /^wwqa-[a-z0-9]+$/);
+  assert.equal(manifest.proofId, sameManifest.proofId);
+  assert.equal(manifest.savedAtIso, "2026-06-20T13:00:00.000Z");
+  assert.equal(manifest.generatedAtIso, "2026-06-20T13:05:00.000Z");
+  assert.deepEqual(manifest.careTwin, {
+    totalReviews: 2,
+    passed: 1,
+    needsTune: 1,
+    unreviewed: 0,
+    notes: 1,
+    evidenceFiles: 1,
+    iosEvidence: 1,
+    androidEvidence: 0,
+    webEvidence: 0,
+    unknownEvidence: 0,
+  });
+  assert.deepEqual(manifest.release, {
+    totalReviews: 2,
+    passed: 2,
+    needsTune: 0,
+    unreviewed: 0,
+    notes: 1,
+    evidenceFiles: 2,
+    iosEvidence: 0,
+    androidEvidence: 1,
+    webEvidence: 1,
+    unknownEvidence: 0,
+  });
+  assert.equal(manifest.totalEvidenceFiles, 3);
+  assert.equal(manifest.platformEvidenceLabel, "iOS 1, Android 1, Web 1, Unknown 0");
+  assert.match(text, /WoofWatcher QA Proof Manifest/);
+  assert.match(text, /Proof ID: wwqa-/);
+  assert.match(text, /Care twin: 1 pass, 1 needs tune, 1 evidence file/);
+  assert.match(text, /Release: 2 pass, 0 needs tune, 2 evidence files/);
+  assert.match(text, /does not prove App Store or Play Store approval/);
 });

@@ -40,6 +40,8 @@ import {
   type MobileReleaseQaSurface,
 } from "@/lib/mobileReleaseQa";
 import {
+  buildMobileQaSessionProofManifest,
+  buildMobileQaSessionProofManifestShareText,
   buildMobileQaSessionSnapshot,
   MOBILE_QA_SESSION_STORAGE_KEY,
   parseMobileQaSessionSnapshot,
@@ -321,6 +323,25 @@ export default function CareTwinQaScreen() {
     () => summarizeMobileReleaseQaReviews(releaseQaSurfaces, releaseReviews),
     [releaseQaSurfaces, releaseReviews],
   );
+  const qaSessionSnapshot = useMemo(
+    () =>
+      buildMobileQaSessionSnapshot(
+        {
+          careTwinStatusById: qaStatusById,
+          careTwinNotes: qaNotes,
+          careTwinEvidenceById: qaEvidenceById,
+          surfaceStatusById,
+          surfaceNotes,
+          surfaceEvidenceById,
+        },
+        qaSessionSavedAt ?? new Date().toISOString(),
+      ),
+    [qaEvidenceById, qaNotes, qaSessionSavedAt, qaStatusById, surfaceEvidenceById, surfaceNotes, surfaceStatusById],
+  );
+  const qaProofManifest = useMemo(
+    () => buildMobileQaSessionProofManifest(qaSessionSnapshot),
+    [qaSessionSnapshot],
+  );
   const betaCapturePlan = useMemo(
     () =>
       buildMobileLaunchQaCapturePlan(
@@ -532,7 +553,9 @@ export default function CareTwinQaScreen() {
 
   const shareQaSummary = async () => {
     const reviewedAtIso = new Date().toISOString();
+    const proofManifest = buildMobileQaSessionProofManifest(qaSessionSnapshot, reviewedAtIso);
     const message = [
+      buildMobileQaSessionProofManifestShareText(proofManifest),
       buildMobileLaunchQaCaptureShareText(betaCapturePlan, reviewedAtIso),
       buildMobileReleaseQaShareText(releaseQaSurfaces, releaseReviews, reviewedAtIso),
       buildStoreSubmissionPacketShareText(storeSubmissionPacket),
@@ -1242,6 +1265,8 @@ export default function CareTwinQaScreen() {
             <QaBadge label={`${releaseSummary.passed}/${releaseSummary.total} release`} tone={releaseSummary.passed === releaseSummary.total ? colors.sage : colors.amber} />
             <QaBadge label={`${releaseSummary.passedWithRequiredProof} proof-backed`} tone={releaseSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
             <QaBadge label={`${releaseSummary.passPendingProof} release pending`} tone={releaseSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
+            <QaBadge label={`Proof ${qaProofManifest.proofId}`} tone={colors.brandNavy} />
+            <QaBadge label={`${qaProofManifest.totalEvidenceFiles} manifest files`} tone={qaProofManifest.totalEvidenceFiles > 0 ? colors.sage : colors.amber} />
             <QaBadge label={`${readyCount}/${scenarios.length} layered`} tone={readyCount === scenarios.length ? colors.sage : colors.amber} />
             <QaBadge label={`${qaSummary.passed} pass`} tone={colors.sage} />
             <QaBadge label={`${qaSummary.passedWithNativeProof} native proof`} tone={qaSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
@@ -1256,6 +1281,9 @@ export default function CareTwinQaScreen() {
           </View>
           <Text style={[s.platformEvidenceText, { color: releaseScreenshotEvidenceComplete ? colors.sage : colors.amber, fontFamily: "Inter_700Bold" }]}>
             Platform proof: {releasePlatformEvidenceLabel}. {releaseMissingEvidenceLabel}.
+          </Text>
+          <Text style={[s.savedSessionText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+            Proof manifest: {qaProofManifest.proofId} - {qaProofManifest.platformEvidenceLabel}. Local metadata only; store approval and provider proof stay separate.
           </Text>
           <Text style={[s.savedSessionText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
             Local QA session: {formatSavedAt(qaSessionSavedAt)}

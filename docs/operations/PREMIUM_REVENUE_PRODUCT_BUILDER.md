@@ -2418,6 +2418,25 @@ failed before execution with `steps: []`. `gh run view --log-failed` returned
 `log not found: 84225618354`. Treat this as the standing GitHub account/pre-job
 blocker, not as product verification evidence or a local app regression.
 
+The QA proof-manifest handoff pass adds a stable local proof ID to saved
+`/care-twin-qa` evidence so Apollo, native-device testers, Replit, or Fable can
+discuss the same evidence set without overclaiming. `mobileQaSession.ts` now
+builds a deterministic `wwqa-*` manifest from saved care-twin, release, and
+store QA evidence; summarizes pass, needs-tune, unreviewed, notes, and
+iOS/Android/Web evidence counts; and emits share text with explicit boundaries
+that local metadata is not App Store or Play Store approval, native screenshot
+proof, provider-backed storage, live AI, payments, push, generated PDF output,
+or public launch readiness. `/care-twin-qa` shows the proof ID, evidence file
+count, platform summary, and includes the manifest at the top of the shared QA
+report. Fresh local verification passed `mobileQaSession.test.ts` 4/4, mobile
+readiness 100/100, mobile TypeScript, root TypeScript, the 477-test
+API/mobile/PWA/care-domain focused suite, PixelLab assets `ok=149 missing=0
+invalid=0`, package-local Expo web export to `.expo-smoke` with 218 assets / 222
+files after prepending bundled Node to PATH, route smoke `200` for `/`,
+`/care-twin-qa`, `/health`, `/log`, and `/portrait` at
+`http://127.0.0.1:4194/`, and the JSON mobile beta doctor still truthfully
+blocked only on pnpm `11.7.0` versus required `10.24.0`.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
