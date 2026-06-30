@@ -293,6 +293,28 @@ check(
     : "keep /care-twin-qa and the release QA matrix wired to owner-loop device proof",
 );
 
+const releaseQaProofGateIsSourceBacked = includesAll(mobileReleaseQaSource, [
+  "mobileReleaseQaMissingEvidenceForSurface",
+  "mobileReleaseQaReviewStatusLabel",
+  "passedWithRequiredProof",
+  "passPendingProof",
+  "Pass pending proof",
+  "Missing proof:",
+])
+  && includesAll(careTwinQaRouteSource, [
+    "mobileReleaseQaMissingEvidenceForSurface(surface, review)",
+    "mobileReleaseQaReviewStatusLabel(surface, review)",
+    "surfacePassPendingProof",
+    "Pass pending release proof",
+  ]);
+check(
+  "release QA proof gate is source-backed",
+  releaseQaProofGateIsSourceBacked,
+  releaseQaProofGateIsSourceBacked
+    ? "release/store QA passes remain pending until required screenshot and note proof exists"
+    : "keep release/store QA pass labels gated on required screenshots and QA notes",
+);
+
 const nativeQaNeedsTuneFixBriefIsSourceBacked = includesAll(mobileLaunchQaEvidenceSource, [
   "buildMobileLaunchQaFixBriefShareText",
   "firstNeedsTuneTarget",
