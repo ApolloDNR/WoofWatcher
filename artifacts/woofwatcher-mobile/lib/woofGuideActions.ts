@@ -1,4 +1,5 @@
 import {
+  derivePetCredentialReadiness,
   deriveHealthWatch,
   deriveMoodTrend,
   deriveRecordReminders,
@@ -69,6 +70,18 @@ export interface WoofGuideActionCaregiver {
 export interface WoofGuideActionState {
   profile?: {
     name?: string;
+    breed?: string;
+    careFocus?: string;
+    vetBoundary?: string;
+    microchipNumber?: string;
+    insuranceProvider?: string;
+    insurancePolicy?: string;
+    primaryVet?: string;
+    emergencyContact?: string;
+    weight?: {
+      current?: number;
+      unit?: string;
+    };
   };
   dietProfile?: WoofGuideActionDiet;
   caregivers?: readonly WoofGuideActionCaregiver[];
@@ -77,7 +90,14 @@ export interface WoofGuideActionState {
   records?: readonly WoofGuideActionRecord[];
 }
 
-export type WoofGuideDraftKind = "log_entry" | "reminder" | "vet_note" | "care_pass" | "mood_summary" | "records_attachment_prep";
+export type WoofGuideDraftKind =
+  | "log_entry"
+  | "reminder"
+  | "vet_note"
+  | "care_pass"
+  | "mood_summary"
+  | "records_attachment_prep"
+  | "pet_credential_prep";
 
 export interface WoofGuideDraftEntry {
   type: string;
@@ -298,6 +318,33 @@ function recordsAttachmentPrepDraft(state: WoofGuideActionState): WoofGuideActio
   };
 }
 
+function petCredentialPrepDraft(state: WoofGuideActionState): WoofGuideActionDraft | undefined {
+  const readiness = derivePetCredentialReadiness({
+    profile: state.profile,
+    caregivers: state.caregivers,
+    records: state.records,
+  });
+  if (readiness.status === "ready" || readiness.readyCount === 0) return undefined;
+
+  const name = dogName(state);
+  return {
+    kind: "pet_credential_prep",
+    title: "Review Dog ID prep",
+    body: [
+      `${name} Dog ID Prep`,
+      "",
+      readiness.summary,
+      readiness.availableLabels.length ? `Ready fields: ${readiness.availableLabels.join(", ")}.` : "",
+      readiness.missingLabels.length ? `Missing fields: ${readiness.missingLabels.join(", ")}.` : "",
+      readiness.boundaryLine,
+      "",
+      "Next step: Open Records, add the missing credential details, then review the Dog ID card and printable source before sharing.",
+    ].filter(Boolean).join("\n"),
+    cta: "Insert Dog ID prep",
+    safety: "Owner-reviewed prep only; Dog ID image/PDF export and provider-backed credential storage are not enabled.",
+  };
+}
+
 export function deriveWoofGuideActions(
   state: WoofGuideActionState,
   now: number = Date.now(),
@@ -306,6 +353,7 @@ export function deriveWoofGuideActions(
   const health = deriveHealthWatch({ entries: state.entries, routines: state.routines, now });
   const moodDraft = moodSummaryDraft(state, now);
   const attachmentPrepDraft = recordsAttachmentPrepDraft(state);
+  const credentialPrepDraft = petCredentialPrepDraft(state);
   const moodUrgency = moodDraft
     ? deriveMoodTrend({ entries: state.entries, now, lookbackDays: 30, limit: 1 }).status === "watch"
       ? "watch"
@@ -393,6 +441,18 @@ export function deriveWoofGuideActions(
       icon: "records",
       route: "/records",
       draft: attachmentPrepDraft,
+    });
+  }
+
+  if (credentialPrepDraft) {
+    actions.push({
+      id: "dog-id-prep",
+      label: "Prep Dog ID",
+      detail: credentialPrepDraft.body.split("\n").find((line) => line.includes("Dog ID needs")) ?? "Review missing Dog ID fields before sharing.",
+      urgency: "watch",
+      icon: "records",
+      route: "/records",
+      draft: credentialPrepDraft,
     });
   }
 

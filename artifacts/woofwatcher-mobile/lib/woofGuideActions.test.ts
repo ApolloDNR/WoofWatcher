@@ -207,3 +207,45 @@ test("creates an owner-reviewed records attachment prep draft without claiming c
   assert.match(prepAction?.draft?.body ?? "", /saved locally on this device/i);
   assert.match(prepAction?.draft?.safety ?? "", /cloud storage is not enabled/i);
 });
+
+test("creates an owner-reviewed Dog ID prep draft from shared credential readiness", () => {
+  const actions = deriveWoofGuideActions(
+    {
+      profile: {
+        name: "Phoenix",
+        breed: "Shepherd mix",
+        primaryVet: "River City Vet",
+      },
+      dietProfile: {
+        primaryFood: "Sensitive kibble",
+        normalPortion: "1 cup",
+        mealSchedule: "7 AM and 6 PM",
+      },
+      caregivers: [{ name: "Apollo", role: "Owner" }],
+      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
+      records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" }],
+      entries: [
+        {
+          id: "breakfast",
+          type: "meal",
+          title: "Breakfast",
+          caregiver: "Apollo",
+          occurredAt: "2026-06-06T14:00:00.000Z",
+          details: { householdVisible: true },
+        },
+      ],
+    },
+    NOW,
+  );
+
+  const dogIdAction = actions.find((action) => action.id === "dog-id-prep");
+
+  assert.equal(dogIdAction?.route, "/records");
+  assert.equal(dogIdAction?.urgency, "watch");
+  assert.equal(dogIdAction?.draft?.kind, "pet_credential_prep");
+  assert.match(dogIdAction?.detail ?? "", /Dog ID needs/i);
+  assert.match(dogIdAction?.draft?.body ?? "", /Phoenix Dog ID Prep/);
+  assert.match(dogIdAction?.draft?.body ?? "", /Missing fields:/);
+  assert.match(dogIdAction?.draft?.body ?? "", /provider-backed credential\/PDF storage is approved/i);
+  assert.match(dogIdAction?.draft?.safety ?? "", /Owner-reviewed prep only/i);
+});

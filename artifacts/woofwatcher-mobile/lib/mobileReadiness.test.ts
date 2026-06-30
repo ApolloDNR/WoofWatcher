@@ -889,6 +889,27 @@ test("keeps WoofGuide records attachment prep owner-reviewed and local-only", ()
   assert.doesNotMatch(prepBranch, /addEntry|updateCareDoc/);
 });
 
+test("keeps WoofGuide Dog ID prep owner-reviewed and provider-gated", () => {
+  const guide = readAppFile("woofguide.tsx");
+  const actions = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "woofGuideActions.ts"),
+    "utf8",
+  );
+
+  assert.match(actions, /derivePetCredentialReadiness/);
+  assert.match(actions, /id: "dog-id-prep"/);
+  assert.match(actions, /kind: "pet_credential_prep"/);
+  assert.match(actions, /provider-backed credential storage are not enabled/);
+  assert.match(actions, /route: "\/records"/);
+  assert.match(guide, /draft\.kind === "pet_credential_prep"/);
+  assert.match(guide, /content: draft\.body/);
+  const prepBranch = guide.slice(
+    guide.indexOf('draft.kind === "pet_credential_prep"'),
+    guide.indexOf('draft.kind === "care_pass"'),
+  );
+  assert.doesNotMatch(prepBranch, /addEntry|updateCareDoc/);
+});
+
 test("keeps Premium value, plan, and entitlement surfaces on shared board anatomy", () => {
   const premium = readAppFile("premium.tsx");
 

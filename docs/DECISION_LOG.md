@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-30: WoofGuide Can Draft Dog ID Prep
+
+Decision: WoofGuide may surface an owner-reviewed `pet_credential_prep` suggested action when shared Dog ID credential readiness shows some available context but missing fields before sharing. The draft may list ready and missing credential fields, route the owner to Records, and insert only a reviewed assistant note.
+
+Reason: Records now shows Dog ID readiness, but owners also need a guided prep prompt before sharing credentials with sitters, trainers, family members, or vets. Reusing `derivePetCredentialReadiness` keeps WoofGuide aligned with Records while avoiding claims about image/PDF export, provider-backed credential storage, cloud sharing, retention, deletion, live AI, or unsupervised record changes.
+
+Owner: Codex.
+
+Revisit trigger: Credential image/PDF export, provider-backed document or credential storage, native export/download, persisted report drafts, permission-aware assistant writes, cloud sharing, or storage retention/deletion policy becomes active release work.
+
 ### 2026-06-30: Dog ID Export Shows Credential Readiness
 
 Decision: Mobile Records should show a Dog ID readiness summary before owners share the normal Dog ID text or printable source. The summary should use shared `derivePetCredentialReadiness` logic, count ready-versus-total credential fields, list missing Dog ID fields, and repeat that Dog ID export is a local printable source until provider-backed credential/PDF storage is approved.

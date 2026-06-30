@@ -154,6 +154,7 @@ Latest completed local runtime/accessibility hardening:
 - Care Pass and Progress Reports now carry Records Attachment Prep handoff lines from the shared record-vault summary. Reports show attached-versus-attachable receipt/document counts, missing local file titles, and the local-only storage boundary without claiming provider-backed document storage, binary PDF export, retention, deletion, or cloud sharing is ready.
 - WoofGuide now creates owner-reviewed Records Attachment Prep drafts from the same local record-vault summary. The suggested action appears only when receipt/document records are missing local files, routes owners to Records, inserts only a reviewed assistant note, and states that cloud storage is not enabled until provider-backed document storage is approved.
 - Records Dog ID now shows credential readiness before image/PDF/provider-backed credential export. `derivePetCredentialReadiness` combines Dog Profile fallbacks and saved records, counts ready-versus-missing credential fields, and Mobile Records lists missing Dog ID fields while repeating the local printable-source boundary.
+- WoofGuide now creates owner-reviewed Dog ID Prep drafts from the same shared credential readiness. The suggested action appears only when some Dog ID context exists but credential fields are missing, routes owners to Records, inserts only a reviewed assistant note, and keeps image/PDF export plus provider-backed credential storage gated.
 
 Next highest-impact work:
 
