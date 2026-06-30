@@ -267,6 +267,16 @@ screenshots use the same platform-aware evidence controls as the release
 workflow checklist, including explicit iOS and Android screenshot slots, route
 targets, Pass/Needs tune controls, store-safe prompts, and share-report output.
 
+Current evidence, 2026-06-30: Mobile Release QA and Store Screenshot QA now use
+proof-gated Pass labels. A surface marked Pass remains `Pass pending proof`
+until every required iOS screenshot, Android screenshot, flexible screenshot,
+and QA note is attached. `/care-twin-qa` renders an amber `Pass pending release
+proof` gate on affected release/store cards, the share report lists missing
+proof per surface, and `mobileReleaseQa.test.ts` plus `mobileReadiness.test.ts`
+protect the label, summary, share text, and route wiring. This protects launch
+truth only; actual native screenshot proof still has to be captured on iOS and
+Android.
+
 Current evidence, 2026-06-21: saved `/care-twin-qa` release evidence now feeds
 More's Launch Readiness cockpit. `mobileLaunchQaEvidence.ts` builds the combined
 launch/store QA surface set, derives `LaunchReadinessNativeQaSummary` from the

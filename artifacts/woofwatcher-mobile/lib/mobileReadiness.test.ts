@@ -632,6 +632,10 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /releaseSummary\.attachedAndroidScreenshots/);
   assert.match(qaRoute, /formatMobileReleaseQaPlatformEvidence/);
   assert.match(qaRoute, /formatMobileReleaseQaMissingEvidence/);
+  assert.match(qaRoute, /mobileReleaseQaReviewStatusLabel/);
+  assert.match(qaRoute, /mobileReleaseQaMissingEvidenceForSurface/);
+  assert.match(qaRoute, /surfacePassPendingProof/);
+  assert.match(qaRoute, /Pass pending release proof/);
   assert.match(qaRoute, /mobileReleaseQaScreenshotEvidenceComplete/);
   assert.match(qaRoute, /Native proof open/);
   assert.match(qaRoute, /Platform proof:/);

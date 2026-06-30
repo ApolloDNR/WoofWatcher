@@ -30,6 +30,8 @@ import {
   formatMobileReleaseQaMissingEvidence,
   formatMobileReleaseQaPlatformEvidence,
   listMobileReleaseQaSurfaces,
+  mobileReleaseQaMissingEvidenceForSurface,
+  mobileReleaseQaReviewStatusLabel,
   mobileReleaseQaScreenshotEvidenceComplete,
   mobileReleaseQaStatusLabel,
   summarizeMobileReleaseQaReviews,
@@ -1238,6 +1240,8 @@ export default function CareTwinQaScreen() {
           </View>
           <View style={s.summaryGrid}>
             <QaBadge label={`${releaseSummary.passed}/${releaseSummary.total} release`} tone={releaseSummary.passed === releaseSummary.total ? colors.sage : colors.amber} />
+            <QaBadge label={`${releaseSummary.passedWithRequiredProof} proof-backed`} tone={releaseSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
+            <QaBadge label={`${releaseSummary.passPendingProof} release pending`} tone={releaseSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
             <QaBadge label={`${readyCount}/${scenarios.length} layered`} tone={readyCount === scenarios.length ? colors.sage : colors.amber} />
             <QaBadge label={`${qaSummary.passed} pass`} tone={colors.sage} />
             <QaBadge label={`${qaSummary.passedWithNativeProof} native proof`} tone={qaSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
@@ -1287,6 +1291,14 @@ export default function CareTwinQaScreen() {
           const reviewStatus = surfaceStatusById[surface.id] ?? "unreviewed";
           const reviewTone = statusTone(reviewStatus, colors);
           const attachedScreenshots = surfaceEvidenceById[surface.id] ?? [];
+          const review: MobileReleaseQaReview = {
+            surfaceId: surface.id,
+            status: reviewStatus,
+            note: surfaceNotes[surface.id],
+            screenshotEvidence: attachedScreenshots,
+          };
+          const surfaceMissingEvidence = mobileReleaseQaMissingEvidenceForSurface(surface, review);
+          const surfacePassPendingProof = reviewStatus === "pass" && surfaceMissingEvidence.length > 0;
 
           return (
             <BoardCard key={surface.id} style={s.surfaceCard}>
@@ -1304,7 +1316,10 @@ export default function CareTwinQaScreen() {
                     </Text>
                   </View>
                 </View>
-                <QaBadge label={mobileReleaseQaStatusLabel(reviewStatus)} tone={reviewTone} />
+                <QaBadge
+                  label={mobileReleaseQaReviewStatusLabel(surface, review)}
+                  tone={surfacePassPendingProof ? colors.amber : reviewTone}
+                />
               </View>
 
               <Text style={[s.surfaceGoal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
@@ -1346,6 +1361,26 @@ export default function CareTwinQaScreen() {
                   }))
                 }
               />
+
+              {surfacePassPendingProof ? (
+                <View style={[s.betaRunProofGate, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}66` }]}>
+                  <View style={s.betaRunProofGateHeader}>
+                    <Ionicons name="lock-closed-outline" size={16} color={colors.amber} />
+                    <Text style={[s.betaRunProofGateTitle, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                      Pass pending release proof
+                    </Text>
+                  </View>
+                  <Text style={[s.betaRunProofGateText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    This surface is marked Pass, but the required screenshot or note evidence is still missing.
+                  </Text>
+                  <View style={s.betaRunProofGateRow}>
+                    <View style={[s.betaRunProofGateDot, { backgroundColor: colors.amber }]} />
+                    <Text style={[s.betaRunProofGateItem, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                      {surfaceMissingEvidence.join(" ")}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
 
               <Text style={[s.launchRisk, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
                 Release risk: {surface.launchRisk}
@@ -1477,6 +1512,14 @@ export default function CareTwinQaScreen() {
           const reviewStatus = surfaceStatusById[surface.id] ?? "unreviewed";
           const reviewTone = statusTone(reviewStatus, colors);
           const attachedScreenshots = surfaceEvidenceById[surface.id] ?? [];
+          const review: MobileReleaseQaReview = {
+            surfaceId: surface.id,
+            status: reviewStatus,
+            note: surfaceNotes[surface.id],
+            screenshotEvidence: attachedScreenshots,
+          };
+          const surfaceMissingEvidence = mobileReleaseQaMissingEvidenceForSurface(surface, review);
+          const surfacePassPendingProof = reviewStatus === "pass" && surfaceMissingEvidence.length > 0;
 
           return (
             <BoardCard key={surface.id} style={s.surfaceCard}>
@@ -1494,7 +1537,10 @@ export default function CareTwinQaScreen() {
                     </Text>
                   </View>
                 </View>
-                <QaBadge label={mobileReleaseQaStatusLabel(reviewStatus)} tone={reviewTone} />
+                <QaBadge
+                  label={mobileReleaseQaReviewStatusLabel(surface, review)}
+                  tone={surfacePassPendingProof ? colors.amber : reviewTone}
+                />
               </View>
 
               <Text style={[s.surfaceGoal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
@@ -1592,6 +1638,26 @@ export default function CareTwinQaScreen() {
                   }))
                 }
               />
+
+              {surfacePassPendingProof ? (
+                <View style={[s.betaRunProofGate, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}66` }]}>
+                  <View style={s.betaRunProofGateHeader}>
+                    <Ionicons name="lock-closed-outline" size={16} color={colors.amber} />
+                    <Text style={[s.betaRunProofGateTitle, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                      Pass pending release proof
+                    </Text>
+                  </View>
+                  <Text style={[s.betaRunProofGateText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    This surface is marked Pass, but the required screenshot or note evidence is still missing.
+                  </Text>
+                  <View style={s.betaRunProofGateRow}>
+                    <View style={[s.betaRunProofGateDot, { backgroundColor: colors.amber }]} />
+                    <Text style={[s.betaRunProofGateItem, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                      {surfaceMissingEvidence.join(" ")}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
 
               <Text style={[s.launchRisk, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
                 Release risk: {surface.launchRisk}

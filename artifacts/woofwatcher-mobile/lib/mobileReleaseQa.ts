@@ -37,6 +37,8 @@ export interface MobileReleaseQaReview {
 export interface MobileReleaseQaSummary {
   total: number;
   passed: number;
+  passedWithRequiredProof: number;
+  passPendingProof: number;
   needsReview: number;
   unreviewed: number;
   requiredScreenshots: number;
@@ -597,6 +599,54 @@ function screenshotRequirementPlatform(value: string): "ios" | "android" | "any"
   return "any";
 }
 
+function evidenceRequiresNote(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return normalized.startsWith("note ") || normalized.startsWith("note:") || normalized.includes("note confirming");
+}
+
+function pluralLabel(value: number, label: string): string {
+  return `${value} ${label}${value === 1 ? "" : "s"}`;
+}
+
+export function mobileReleaseQaMissingEvidenceForSurface(
+  surface: MobileReleaseQaSurface,
+  review: MobileReleaseQaReview,
+): string[] {
+  const requiredPlatforms = surface.requiredEvidence
+    .map(screenshotRequirementPlatform)
+    .filter((platform): platform is "ios" | "android" | "any" => !!platform);
+  const requiredIos = requiredPlatforms.filter((platform) => platform === "ios").length;
+  const requiredAndroid = requiredPlatforms.filter((platform) => platform === "android").length;
+  const requiredAny = requiredPlatforms.filter((platform) => platform === "any").length;
+  const evidence = review.screenshotEvidence ?? [];
+  const requiresNote = surface.requiredEvidence.some(evidenceRequiresNote);
+  const hasNote = Boolean(review.note?.trim());
+  const attachedIos = evidence.filter((item) => item.targetPlatform === "ios").length;
+  const attachedAndroid = evidence.filter((item) => item.targetPlatform === "android").length;
+  const platformSpecificUsed = Math.min(requiredIos, attachedIos) + Math.min(requiredAndroid, attachedAndroid);
+  const flexibleAvailable = Math.max(0, evidence.length - platformSpecificUsed);
+  const missingIos = Math.max(0, requiredIos - attachedIos);
+  const missingAndroid = Math.max(0, requiredAndroid - attachedAndroid);
+  const missingAny = Math.max(0, requiredAny - flexibleAvailable);
+  const missing: string[] = [];
+
+  if (missingIos > 0) missing.push(`Attach ${pluralLabel(missingIos, "iOS screenshot")} for ${surface.title}.`);
+  if (missingAndroid > 0) {
+    missing.push(`Attach ${pluralLabel(missingAndroid, "Android screenshot")} for ${surface.title}.`);
+  }
+  if (missingAny > 0) missing.push(`Attach ${pluralLabel(missingAny, "screenshot")} for ${surface.title}.`);
+  if (requiresNote && !hasNote) missing.push(`Add QA note for ${surface.title}.`);
+
+  if (!missing.length && review.status === "unreviewed") {
+    missing.push(`Mark Pass or Needs tune for ${surface.title}.`);
+  }
+  if (!missing.length && review.status === "needs-review") {
+    missing.push(`Resolve Needs tune notes for ${surface.title}.`);
+  }
+
+  return missing;
+}
+
 export function listMobileReleaseQaSurfaces(): readonly MobileReleaseQaSurface[] {
   return MOBILE_RELEASE_QA_SURFACES;
 }
@@ -612,12 +662,31 @@ export function mobileReleaseQaStatusLabel(status: MobileReleaseQaReviewStatus):
   }
 }
 
+export function mobileReleaseQaReviewStatusLabel(
+  surface: MobileReleaseQaSurface,
+  review: MobileReleaseQaReview,
+): string {
+  if (review.status === "pass" && mobileReleaseQaMissingEvidenceForSurface(surface, review).length > 0) {
+    return "Pass pending proof";
+  }
+
+  return mobileReleaseQaStatusLabel(review.status);
+}
+
 export function summarizeMobileReleaseQaReviews(
   surfaces: readonly MobileReleaseQaSurface[],
   reviews: readonly MobileReleaseQaReview[],
 ): MobileReleaseQaSummary {
-  const statuses = surfaces.map((surface) => reviewFor(reviews, surface.id).status);
+  const surfaceReviews = surfaces.map((surface) => ({
+    surface,
+    review: reviewFor(reviews, surface.id),
+  }));
+  const statuses = surfaceReviews.map(({ review }) => review.status);
   const passed = statuses.filter((status) => status === "pass").length;
+  const passPendingProof = surfaceReviews.filter(
+    ({ surface, review }) =>
+      review.status === "pass" && mobileReleaseQaMissingEvidenceForSurface(surface, review).length > 0,
+  ).length;
   const needsReview = statuses.filter((status) => status === "needs-review").length;
   const requiredScreenshotPlatforms = surfaces.flatMap((surface) =>
     surface.requiredEvidence
@@ -646,6 +715,8 @@ export function summarizeMobileReleaseQaReviews(
   return {
     total: surfaces.length,
     passed,
+    passedWithRequiredProof: passed - passPendingProof,
+    passPendingProof,
     needsReview,
     unreviewed: Math.max(0, surfaces.length - passed - needsReview),
     requiredScreenshots,
@@ -698,7 +769,7 @@ export function buildMobileReleaseQaShareText(
   const lines = [
     "WoofWatcher Mobile Release QA",
     `Reviewed: ${reviewedAtIso}`,
-    `Summary: ${summary.passed}/${summary.total} passed, ${summary.needsReview} needs tune, ${summary.unreviewed} unreviewed.`,
+    `Summary: ${summary.passed}/${summary.total} passed, ${summary.passedWithRequiredProof} proof-backed pass, ${summary.passPendingProof} pass pending proof, ${summary.needsReview} needs tune, ${summary.unreviewed} unreviewed.`,
     `Required screenshot slots: ${summary.requiredScreenshots}.`,
     `Screenshot evidence: ${summary.attachedScreenshots} attached, ${summary.missingScreenshots} still missing.`,
     `Platform evidence: ${formatMobileReleaseQaPlatformEvidence(summary)}.`,
@@ -710,15 +781,20 @@ export function buildMobileReleaseQaShareText(
   for (const surface of surfaces) {
     const review = reviewFor(reviews, surface.id);
     const note = review.note?.trim();
+    const missingEvidence = mobileReleaseQaMissingEvidenceForSurface(surface, review);
 
     lines.push(
-      `- ${surface.title}: ${mobileReleaseQaStatusLabel(review.status)} | route=${surface.route} | priority=${surface.priority}`,
+      `- ${surface.title}: ${mobileReleaseQaReviewStatusLabel(surface, review)} | route=${surface.route} | priority=${surface.priority}`,
     );
     lines.push(`  Goal: ${surface.goal}`);
     lines.push(`  Setup: ${surface.setupSteps.join(" ")}`);
     lines.push(`  Steps: ${surface.verificationSteps.join(" ")}`);
     lines.push(`  Pass criteria: ${surface.acceptanceCriteria.join(" ")}`);
     lines.push(`  Needs tune if: ${surface.failureEscalation}`);
+
+    if (missingEvidence.length && review.status === "pass") {
+      lines.push(`  Missing proof: ${missingEvidence.join(" ")}`);
+    }
 
     if (note) {
       lines.push(`  Note: ${note}`);

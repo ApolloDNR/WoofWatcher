@@ -7,7 +7,9 @@ import {
   formatMobileReleaseQaMissingEvidence,
   formatMobileReleaseQaPlatformEvidence,
   listMobileReleaseQaSurfaces,
+  mobileReleaseQaMissingEvidenceForSurface,
   mobileReleaseQaFlexibleScreenshotSlotsSatisfied,
+  mobileReleaseQaReviewStatusLabel,
   mobileReleaseQaScreenshotEvidenceComplete,
   mobileReleaseQaStatusLabel,
   summarizeMobileReleaseQaReviews,
@@ -231,6 +233,8 @@ test("summarizes mobile release QA review status and screenshot evidence", () =>
 
   assert.equal(summary.total, surfaces.length);
   assert.equal(summary.passed, 1);
+  assert.equal(summary.passedWithRequiredProof, 0);
+  assert.equal(summary.passPendingProof, 1);
   assert.equal(summary.needsReview, 1);
   assert.equal(summary.unreviewed, surfaces.length - 2);
   assert.ok(summary.requiredScreenshots >= surfaces.length);
@@ -245,6 +249,90 @@ test("summarizes mobile release QA review status and screenshot evidence", () =>
   assert.equal(mobileReleaseQaScreenshotEvidenceComplete(summary), false);
   assert.match(formatMobileReleaseQaMissingEvidence(summary), /Missing/);
   assert.match(formatMobileReleaseQaPlatformEvidence(summary), /iOS 2\/\d+, Android 0\/\d+, flexible 0\/\d+/);
+});
+
+test("keeps passed release QA surfaces pending until required proof and notes are attached", () => {
+  const surface = {
+    id: "owner-preview-core-loop",
+    title: "Owner Preview Core Loop",
+    route: "/",
+    priority: "launch-critical",
+    goal: "Verify the owner loop.",
+    devicePrompt: "Run the owner route loop.",
+    setupSteps: ["Use local preview data."],
+    verificationSteps: ["Open Home.", "Open Log.", "Open More."],
+    acceptanceCriteria: ["No route dead-ends."],
+    failureEscalation: "Mark Needs tune if any route clips or dead-ends.",
+    requiredEvidence: [
+      "iOS screenshot of Quick Log or Log.",
+      "Android screenshot of Launch Readiness from More.",
+      "Note confirming Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+    ],
+    launchRisk: "This is the beta owner path.",
+  } as const;
+  const pendingPass: MobileReleaseQaReview = {
+    surfaceId: "owner-preview-core-loop",
+    status: "pass",
+    screenshotEvidence: [
+      {
+        uri: "file:///qa/ios-log.png",
+        fileName: "ios-log.png",
+        source: "library",
+        targetPlatform: "ios",
+        capturedAtIso: "2026-06-30T12:00:00.000Z",
+      },
+    ],
+  };
+  const completePass: MobileReleaseQaReview = {
+    surfaceId: "owner-preview-core-loop",
+    status: "pass",
+    note: "Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+    screenshotEvidence: [
+      {
+        uri: "file:///qa/ios-log.png",
+        fileName: "ios-log.png",
+        source: "library",
+        targetPlatform: "ios",
+        capturedAtIso: "2026-06-30T12:00:00.000Z",
+      },
+      {
+        uri: "file:///qa/android-launch-readiness.png",
+        fileName: "android-launch-readiness.png",
+        source: "library",
+        targetPlatform: "android",
+        capturedAtIso: "2026-06-30T12:02:00.000Z",
+      },
+    ],
+  };
+
+  assert.equal(mobileReleaseQaReviewStatusLabel(surface, pendingPass), "Pass pending proof");
+  assert.deepEqual(mobileReleaseQaMissingEvidenceForSurface(surface, pendingPass), [
+    "Attach 1 Android screenshot for Owner Preview Core Loop.",
+    "Add QA note for Owner Preview Core Loop.",
+  ]);
+  assert.equal(mobileReleaseQaReviewStatusLabel(surface, completePass), "Pass");
+  assert.deepEqual(mobileReleaseQaMissingEvidenceForSurface(surface, completePass), []);
+
+  assert.deepEqual(summarizeMobileReleaseQaReviews([surface], [pendingPass]), {
+    total: 1,
+    passed: 1,
+    passedWithRequiredProof: 0,
+    passPendingProof: 1,
+    needsReview: 0,
+    unreviewed: 0,
+    requiredScreenshots: 2,
+    requiredIosScreenshots: 1,
+    requiredAndroidScreenshots: 1,
+    requiredAnyScreenshots: 0,
+    attachedScreenshots: 1,
+    attachedIosScreenshots: 1,
+    attachedAndroidScreenshots: 0,
+    attachedOtherScreenshots: 0,
+    missingScreenshots: 1,
+    missingIosScreenshots: 0,
+    missingAndroidScreenshots: 1,
+    missingAnyScreenshots: 0,
+  });
 });
 
 test("keeps flexible screenshot slots separate from required iOS and Android proof", () => {
@@ -430,7 +518,9 @@ test("builds a release QA share report with the screenshot boundary intact", () 
   const text = buildMobileReleaseQaShareText(surfaces, reviews, "2026-06-20T12:00:00.000Z");
 
   assert.match(text, /WoofWatcher Mobile Release QA/);
-  assert.match(text, /Phoenix Home: Pass/);
+  assert.match(text, /Summary: 1\/\d+ passed, 0 proof-backed pass, 1 pass pending proof/);
+  assert.match(text, /Phoenix Home: Pass pending proof/);
+  assert.match(text, /Missing proof: Attach 1 Android screenshot for Phoenix Home/);
   assert.match(text, /Records Incident Watch: Needs tune/);
   assert.match(text, /Follow-up row needs larger touch target/);
   assert.match(text, /Required screenshot slots:/);
@@ -453,4 +543,24 @@ test("uses owner-readable release QA labels", () => {
   assert.equal(mobileReleaseQaStatusLabel("pass"), "Pass");
   assert.equal(mobileReleaseQaStatusLabel("needs-review"), "Needs tune");
   assert.equal(mobileReleaseQaStatusLabel("unreviewed"), "Unreviewed");
+  assert.equal(
+    mobileReleaseQaReviewStatusLabel(
+      {
+        id: "home",
+        title: "Home",
+        route: "/",
+        priority: "launch-critical",
+        goal: "Check Home.",
+        devicePrompt: "Open Home.",
+        setupSteps: ["Open Home."],
+        verificationSteps: ["Review Home."],
+        acceptanceCriteria: ["Home is readable."],
+        failureEscalation: "Mark Needs tune if Home clips.",
+        requiredEvidence: ["iOS screenshot of Home."],
+        launchRisk: "Home is the first impression.",
+      },
+      { surfaceId: "home", status: "pass" },
+    ),
+    "Pass pending proof",
+  );
 });
