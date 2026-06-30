@@ -2460,3 +2460,36 @@ Verification:
   459-test mobile/domain/API/PWA suite, PixelLab asset verification
   `ok=149 missing=0 invalid=0`, package-local Expo web export, and preview
   route smoke for Home, Avatar Studio, Log detail, Health, and More.
+
+## 2026-06-30 Health Watch Design-System Recovery
+
+Apollo rejected the current mobile UI as too crowded, overlapping, and hard to
+navigate. The design direction now prioritizes the dark RPG board and Paw
+Friends simplicity reference saved under `docs/design/reference/`.
+
+Health Watch is the first recovery slice:
+
+- The hero now uses one pixel stage plus one compact care-status panel.
+- The duplicate top metric rail and old status meter rail were removed.
+- Dense health signals now render as scannable rows instead of cramped
+  two-column cards.
+- Bile Watch content stays inside the Bile Watch tab instead of repeating under
+  the Health tab.
+- The 7-day rhythm chart moved into Health Snapshot so it supports the page
+  without crowding the hero.
+- Review Packet now previews the most important prompts and checklist items
+  instead of dumping everything into the first screen.
+
+Design rule locked from this pass:
+
+- Primary mobile screens must follow: route header, pixel scene, one status or
+  command panel, one selected module, one action row, supporting detail below.
+- Do not repeat the same data in multiple cards on one screen.
+- Use list rows for operational health/care data when a grid would force text
+  overlap.
+
+Verification:
+
+- Focused Avatar Studio/readiness tests passed 109/109.
+- Mobile TypeScript passed with `tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`.
+- Broader focused mobile/domain/API/PWA suite passed 484/484.

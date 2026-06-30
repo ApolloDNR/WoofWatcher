@@ -45,8 +45,10 @@ Apollo's current selected UI references are versioned here:
 - `docs/design/reference/woofwatcher-pixel-reference-board-04.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-05-neo-retro-digital-pet.png`
 - `docs/design/reference/woofwatcher-pixel-reference-board-06-ecosystem-supporting-pages.png`
+- `docs/design/reference/woofwatcher-dark-rpg-board-2026-06-30.png`
+- `docs/design/reference/paw-friends-mobile-simplicity-reference-2026-06-30.png`
 
-Use board 05 as the primary Phoenix Home/avatar target and board 06 as the supporting-pages ecosystem target. Use board 04 as the primary shell/layout target and boards 02/03 as the component vocabulary target.
+Use board 05 as the primary Phoenix Home/avatar target and board 06 as the supporting-pages ecosystem target. Use the 2026-06-30 dark RPG board as the overall app-store-level emotional target, and use the Paw Friends reference for mobile simplicity, spacing, and navigation restraint. Use board 04 as the primary shell/layout target and boards 02/03 as the component vocabulary target.
 
 ## Needed For v1.5
 

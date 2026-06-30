@@ -3,6 +3,8 @@ import test from "node:test";
 
 import { AVATAR_TEMPLATES, createDefaultAvatarConfig } from "./avatarStudio.ts";
 import {
+  getAvatarStudioMotionPreviewState,
+  listAvatarStudioMotionPreviewStates,
   deriveAvatarPreviewAccessories,
   deriveAvatarPreviewMood,
   deriveAvatarPreviewMotion,
@@ -124,4 +126,29 @@ test("uses live template sprite packs for every non-Phoenix launch template", ()
     assert.equal(motion.label, "Live template sprite pack");
     assert.equal(motion.spriteAction, null);
   }
+});
+
+test("defines Avatar Studio motion preview states for the living care twin", () => {
+  const states = listAvatarStudioMotionPreviewStates();
+
+  assert.deepEqual(
+    states.map((state) => [state.id, state.spriteAction, state.templateSpriteAction]),
+    [
+      ["idle", "idle-breathe", "idle-tail-wag"],
+      ["walk", "walk-loop", "walk-loop"],
+      ["meal", "eat-loop", "idle-tail-wag"],
+      ["water", "drink-loop", "idle-tail-wag"],
+      ["rest", "sleep-loop", "idle-tail-wag"],
+      ["comfort", "comfort-loop", "idle-tail-wag"],
+      ["health", "health-watch", "idle-tail-wag"],
+      ["celebrate", "celebrate-hop", "walk-loop"],
+    ],
+  );
+
+  assert.equal(getAvatarStudioMotionPreviewState("walk").emote, "excited");
+  assert.equal(getAvatarStudioMotionPreviewState("meal").statusLabel, "Bowl loop");
+  assert.match(
+    getAvatarStudioMotionPreviewState("health").accessibilityLabel,
+    /health watch animation/i,
+  );
 });

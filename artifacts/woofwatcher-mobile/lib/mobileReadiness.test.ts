@@ -1595,6 +1595,7 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
     "heroActionSecondary",
     "reviewPacketShare",
     "healthHeaderAction",
+    "healthSignalRow",
   ]) {
     assertStyleUsesSharedTouchTarget(health, styleName);
   }
@@ -1632,7 +1633,10 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /getCareTwinSpriteAsset\("health-watch"\)/);
   assert.match(health, /CARE_TWIN_SPRITE_MANIFEST\["health-watch"\]/);
   assert.match(health, /pixelImageStyle/);
-  assert.match(health, /StatusMeter/);
+  assert.match(health, /healthHeroPanel/);
+  assert.match(health, /healthScoreToken/);
+  assert.match(health, /heroSignalRail/);
+  assert.match(health, /healthSignalList/);
   assert.match(health, /statusScoreTrack/);
   assert.match(health, /healthRhythmBars/);
   assert.match(health, /Health observations, not diagnosis/);
@@ -1648,7 +1652,9 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /accessibilityLabel="Open health owner notes"/);
   assert.match(health, /openHealthStatusRoute/);
   assert.match(health, /statusActionLabel/);
-  assert.match(health, /statusCardAction/);
+  assert.match(health, /healthSignalActionPill/);
+  assert.doesNotMatch(health, /metricGridTop/);
+  assert.doesNotMatch(health, /StatusMeter/);
   assert.match(
     health,
     /router\.push\(`\/log\?type=\$\{type\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/,
@@ -2359,6 +2365,11 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /deriveAvatarPreviewMood/);
   assert.match(avatarStudio, /deriveAvatarPreviewMotion/);
   assert.match(avatarStudio, /previewEmote/);
+  assert.match(avatarPreviewModel, /AvatarStudioMotionPreviewState/);
+  assert.match(avatarPreviewModel, /listAvatarStudioMotionPreviewStates/);
+  assert.match(avatarPreviewModel, /getAvatarStudioMotionPreviewState/);
+  assert.match(avatarPreviewModel, /health-watch/);
+  assert.match(avatarPreviewModel, /drink-loop/);
   assert.match(avatarStudio, /SpriteSheetPlayer/);
   assert.match(avatarStudio, /CARE_TWIN_SPRITE_MANIFEST/);
   assert.match(avatarStudio, /getCareTwinSpriteAsset/);
