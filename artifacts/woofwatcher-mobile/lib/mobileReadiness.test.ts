@@ -1292,9 +1292,14 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
   assert.match(records, /getPetCredentialPrintView/);
+  assert.match(records, /derivePetCredentialReadiness/);
+  assert.match(records, /credentialReadiness/);
   assert.match(records, /sharePrintableCredential/);
   assert.match(records, /accessibilityLabel="Share dog ID card"/);
   assert.match(records, /accessibilityLabel="Share printable dog ID source"/);
+  assert.match(records, /\{credentialReadiness\.readyCount\}\/\{credentialReadiness\.totalCount\} Dog ID fields ready/);
+  assert.match(records, /credentialReadiness\.missingLabels\.join\(", "\)/);
+  assert.match(records, /credentialReadiness\.boundaryLine/);
 });
 
 test("keeps Records Care Pass and reports on shared board card anatomy", () => {

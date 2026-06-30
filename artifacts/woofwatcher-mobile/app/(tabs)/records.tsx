@@ -44,6 +44,7 @@ import {
   deriveMoodTrend,
   deriveMoodTrendPeriods,
   deriveMoodTrendSparkline,
+  derivePetCredentialReadiness,
   derivePottyHealth,
   deriveRecordReminders,
   deriveTrainingProgress,
@@ -421,6 +422,15 @@ export default function RecordsScreen() {
   const credential = useMemo(
     () =>
       buildPetCredential({
+        profile: state.profile,
+        caregivers: state.caregivers,
+        records: state.records,
+      }),
+    [state.profile, state.caregivers, state.records],
+  );
+  const credentialReadiness = useMemo(
+    () =>
+      derivePetCredentialReadiness({
         profile: state.profile,
         caregivers: state.caregivers,
         records: state.records,
@@ -852,6 +862,37 @@ export default function RecordsScreen() {
               <Text numberOfLines={2} style={[s.idFooterText, { color: colors.cream, fontFamily: "Inter_500Medium" }]}>
                 Vaccines: {credential.vaccines}
               </Text>
+            </View>
+            <View
+              style={[
+                s.credentialReadiness,
+                {
+                  backgroundColor: credentialReadiness.status === "ready" ? "rgba(109,163,111,0.18)" : "rgba(216,168,82,0.18)",
+                  borderColor: credentialReadiness.status === "ready" ? "rgba(109,163,111,0.45)" : "rgba(216,168,82,0.45)",
+                },
+              ]}
+            >
+              <Ionicons
+                name={credentialReadiness.status === "ready" ? "checkmark-circle-outline" : "alert-circle-outline"}
+                size={17}
+                color={credentialReadiness.status === "ready" ? colors.sage : colors.amber}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={[s.credentialReadinessTitle, { color: "#FFFFFF", fontFamily: "Inter_700Bold" }]}>
+                  {credentialReadiness.readyCount}/{credentialReadiness.totalCount} Dog ID fields ready
+                </Text>
+                <Text style={[s.credentialReadinessText, { color: colors.cream, fontFamily: "Inter_500Medium" }]}>
+                  {credentialReadiness.summary}
+                </Text>
+                {credentialReadiness.missingLabels.length ? (
+                  <Text style={[s.credentialReadinessText, { color: colors.cream, fontFamily: "Inter_400Regular" }]}>
+                    Needs: {credentialReadiness.missingLabels.join(", ")}
+                  </Text>
+                ) : null}
+                <Text style={[s.credentialReadinessBoundary, { color: colors.cream, fontFamily: "Inter_400Regular" }]}>
+                  {credentialReadiness.boundaryLine}
+                </Text>
+              </View>
             </View>
           </BoardCard>
 
@@ -2534,6 +2575,10 @@ const s = StyleSheet.create({
   idFieldValue: { fontSize: 13.5, lineHeight: 18, marginTop: 3 },
   idFooter: { borderTopWidth: 1, marginTop: 16, paddingTop: 12 },
   idFooterText: { fontSize: 12.5, lineHeight: 17 },
+  credentialReadiness: { flexDirection: "row", alignItems: "flex-start", gap: 9, borderWidth: 1, borderRadius: 16, padding: 12, marginTop: 12 },
+  credentialReadinessTitle: { fontSize: 12.8, lineHeight: 17 },
+  credentialReadinessText: { fontSize: 11.8, lineHeight: 16, marginTop: 3 },
+  credentialReadinessBoundary: { fontSize: 11.2, lineHeight: 15, marginTop: 5, opacity: 0.82 },
 
   vaultGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   vaultCard: {

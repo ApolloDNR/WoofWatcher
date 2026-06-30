@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-30: Dog ID Export Shows Credential Readiness
+
+Decision: Mobile Records should show a Dog ID readiness summary before owners share the normal Dog ID text or printable source. The summary should use shared `derivePetCredentialReadiness` logic, count ready-versus-total credential fields, list missing Dog ID fields, and repeat that Dog ID export is a local printable source until provider-backed credential/PDF storage is approved.
+
+Reason: Dog ID printable HTML already exists, but owners need to know whether the credential is actually ready for a sitter, trainer, family member, or vet before sharing. Keeping readiness in `lib/care-domain` lets profile fallbacks and saved records use the same rules while avoiding claims about image/PDF generation, provider-backed credential storage, cloud sharing, retention, or deletion.
+
+Owner: Codex.
+
+Revisit trigger: Credential card image/PDF export, provider-backed document storage, cloud sharing, server-backed report storage, native file download, or storage retention/deletion policy becomes active release work.
+
 ### 2026-06-29: WoofGuide Can Draft Local Records Attachment Prep
 
 Decision: WoofGuide may surface an owner-reviewed `records_attachment_prep` suggested action when the Records Vault local attachment summary shows missing local receipt/document files. The draft may list attached-versus-attachable counts, name missing local file titles, route the owner to Records, and insert only a reviewed assistant note.

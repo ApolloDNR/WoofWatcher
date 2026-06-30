@@ -119,6 +119,16 @@ export interface PetCredentialPrintView {
   html: string;
 }
 
+export interface PetCredentialReadiness {
+  status: "ready" | "needs_info";
+  readyCount: number;
+  totalCount: number;
+  availableLabels: string[];
+  missingLabels: string[];
+  summary: string;
+  boundaryLine: string;
+}
+
 const SECTION_DEFS: { kind: RecordKind; label: string; critical?: boolean }[] = [
   { kind: "vaccine", label: "Vaccines", critical: true },
   { kind: "vet", label: "Vet Visits" },
@@ -487,6 +497,44 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
     vaccines,
     generatedAt,
     message,
+  };
+}
+
+function credentialValueReady(value: string): boolean {
+  const normalized = clean(value).toLowerCase();
+  return Boolean(normalized) && normalized !== "not on file" && normalized !== "breed not set" && normalized !== "household";
+}
+
+export function derivePetCredentialReadiness(input: PetCredentialInput = {}): PetCredentialReadiness {
+  const credential = buildPetCredential(input);
+  const checks = [
+    { label: "Breed", value: credential.breed },
+    { label: "Weight", value: credential.weight },
+    { label: "Primary caregiver", value: credential.primaryCaregiver },
+    { label: "Primary vet", value: credential.primaryVet },
+    { label: "Emergency contact", value: credential.emergencyContact },
+    { label: "Microchip", value: credential.microchip },
+    { label: "Insurance", value: credential.insurance },
+    { label: "Vaccines", value: credential.vaccines },
+  ];
+  const availableLabels = checks.filter((item) => credentialValueReady(item.value)).map((item) => item.label);
+  const missingLabels = checks.filter((item) => !credentialValueReady(item.value)).map((item) => item.label);
+  const readyCount = availableLabels.length;
+  const totalCount = checks.length;
+  const status = missingLabels.length ? "needs_info" : "ready";
+  const summary =
+    status === "ready"
+      ? `${credential.name} Dog ID is ready with ${readyCount} of ${totalCount} credential fields.`
+      : `${credential.name} Dog ID needs ${missingLabels.length} credential fields before sharing: ${missingLabels.join(", ")}.`;
+
+  return {
+    status,
+    readyCount,
+    totalCount,
+    availableLabels,
+    missingLabels,
+    summary,
+    boundaryLine: "Dog ID is a local printable source until provider-backed credential/PDF storage is approved.",
   };
 }
 

@@ -12,6 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-29:
 
+- PASS: 277 focused tests with the command above on 2026-06-30, now including shared Dog ID credential readiness plus mobile Records readiness copy for ready/missing fields and the local printable-source boundary.
 - PASS: 275 focused tests with the command above on 2026-06-29, now including WoofGuide owner-reviewed Records Attachment Prep coverage plus mobile readiness for the local-only, non-mutating draft path.
 - PASS: 273 focused tests with the command above on 2026-06-29, now including Care Pass `Records Attachment Prep` coverage and mobile Progress Report readiness for local receipt/document attachment prep without claiming provider-backed document storage.
 - PASS: PixelLab asset verifier on 2026-06-29 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
@@ -58,6 +59,7 @@ Latest local evidence, 2026-06-29:
 - PASS: Care-domain tests now protect Care Pass Mood & Energy handoff context. `buildCarePass` reuses `deriveMoodTrend` so sitter/trainer/vet reports include shared recent mood check-ins, energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language while excluding private and stale mood logs.
 - PASS: WoofGuide action tests and mobile readiness now protect owner-reviewed Mood & Energy summaries. `deriveWoofGuideActions` reuses `deriveMoodTrend`, excludes private/stale mood logs, produces a non-diagnostic `mood_summary` draft with source entry ids, and the WoofGuide screen inserts only the reviewed assistant message without changing care records.
 - PASS: WoofGuide action tests and mobile readiness now protect owner-reviewed Records Attachment Prep. `deriveWoofGuideActions` reuses `summarizeRecordVault`, creates a `records_attachment_prep` draft only when local receipt/document files are missing, routes owners to Records, and inserts only a reviewed assistant message while stating that cloud storage is not enabled.
+- PASS: Record Vault tests and mobile readiness now protect Dog ID credential readiness. `derivePetCredentialReadiness` combines dog profile fallbacks and saved records, counts ready versus missing credential fields, and Mobile Records shows that Dog ID remains a local printable source until provider-backed credential/PDF storage is approved.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -146,7 +148,7 @@ Latest local evidence, 2026-06-29:
 - Care Pass audience checklists and Health Pattern Review next steps.
 - Record vault and due status.
 - Record reminders for expired, due-soon, missing-critical, and reference-only records.
-- Pet credential fallbacks, escaped print-ready Dog ID credential HTML, and Records printable Dog ID sharing.
+- Pet credential fallbacks, Dog ID credential readiness, escaped print-ready Dog ID credential HTML, and Records printable Dog ID sharing.
 - Sticky notes.
 - WoofGuide deterministic actions and owner-reviewed draft payloads for meal logs, record reminders, vet notes, and Care Pass review.
 - Setup wizard.
@@ -202,7 +204,7 @@ Latest local evidence, 2026-06-29:
 30. Preview a vet or sitter Care Pass and confirm Potty Health summarizes stool color and potty context without making medical claims.
 31. Add sticky note to a log.
 32. Add vaccine, insurance, microchip, vet, receipt, and document records.
-33. Confirm Records shows expired, due-soon, and missing-critical reminders but does not warn on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.
+33. Confirm Records shows expired, due-soon, missing-critical reminders, and Dog ID readiness without warning on reference-only microchip/policy values; share the Dog ID card text and printable Dog ID source.
 34. Preview and share sitter/vet/trainer/caregiver Care Pass.
 35. Confirm Care Pass includes the audience checklist, Health Pattern Review, and non-diagnostic boundary before sharing.
 36. Confirm report history stores shared Care Pass with printable export metadata, separate resend action, and printable-source share action.

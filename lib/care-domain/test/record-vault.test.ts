@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildPetCredential,
+  derivePetCredentialReadiness,
   deriveRecordReminders,
   getPetCredentialPrintView,
   getRecordDueStatus,
@@ -90,6 +91,49 @@ test("uses dog profile credential fields when records are not uploaded yet", () 
   assert.equal(credential.emergencyContact, "Apollo - 555-0100");
   assert.match(credential.message, /Primary vet: Alameda Wellness Vet/);
   assert.match(credential.message, /Emergency contact: Apollo - 555-0100/);
+});
+
+test("derives Dog ID credential readiness from profile fallbacks and saved records", () => {
+  const readiness = derivePetCredentialReadiness({
+    profile: {
+      name: "Phoenix",
+      breed: "German Shepherd Mix",
+      weight: { current: 68, unit: "lb" },
+      primaryVet: "Alameda Wellness Vet",
+      emergencyContact: "Apollo - 555-0100",
+      microchipNumber: "985112003004551",
+    },
+    caregivers: [{ name: "Apollo", role: "Owner" }],
+    records: [
+      { id: "insurance", type: "insurance", title: "Lemonade", due: "Policy WW-1042" },
+      { id: "rabies", type: "vaccine", title: "Rabies", due: "May 2028" },
+    ],
+  });
+
+  assert.equal(readiness.status, "ready");
+  assert.equal(readiness.readyCount, readiness.totalCount);
+  assert.deepEqual(readiness.missingLabels, []);
+  assert.match(readiness.summary, /ready with 8 of 8/i);
+  assert.match(readiness.boundaryLine, /local printable source/i);
+});
+
+test("flags missing Dog ID credential fields before sharing", () => {
+  const readiness = derivePetCredentialReadiness({
+    profile: { name: "Phoenix", breed: "German Shepherd Mix" },
+    records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "May 2028" }],
+  });
+
+  assert.equal(readiness.status, "needs_info");
+  assert.ok(readiness.readyCount < readiness.totalCount);
+  assert.deepEqual(readiness.missingLabels, [
+    "Weight",
+    "Primary caregiver",
+    "Primary vet",
+    "Emergency contact",
+    "Microchip",
+    "Insurance",
+  ]);
+  assert.match(readiness.summary, /needs 6 credential fields/i);
 });
 
 test("renders a print-ready dog ID credential with escaped details", () => {

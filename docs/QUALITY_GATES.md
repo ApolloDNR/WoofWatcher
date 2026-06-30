@@ -272,6 +272,8 @@ Current evidence, 2026-06-09: Records Report History now shows whether a Care Pa
 
 Current evidence, 2026-06-09: Dog ID credentials now render escaped print-ready HTML with stable file names, and mobile Records exposes separate accessible actions for sharing the normal ID card text and printable source.
 
+Current evidence, 2026-06-30: Dog ID credentials now show shared readiness before sharing. `derivePetCredentialReadiness` combines Dog Profile fallback fields and saved records, counts ready-versus-total credential fields, lists missing fields in Mobile Records, and repeats that the Dog ID is a local printable source until provider-backed credential/PDF storage is approved.
+
 Current evidence, 2026-06-08: Records now derives expired, due-soon, and missing-critical reminders from the shared record vault and shows the top reminders in mobile Records without treating microchip or policy numbers as dates.
 
 Current evidence, 2026-06-29: Records Vault now treats receipts and documents as local-file-ready records when they have an attachment URI, counts missing local attachments, and keeps provider-backed document storage, retention, and cloud sharing clearly gated.
