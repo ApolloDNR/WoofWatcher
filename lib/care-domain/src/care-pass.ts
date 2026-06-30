@@ -162,6 +162,15 @@ export interface ReportArtifactPrintView {
 
 export type CarePassArtifactPrintView = ReportArtifactPrintView;
 
+export interface PetCredentialArtifactSummary {
+  total: number;
+  latest: PetCredentialArtifact | null;
+  summary: string;
+  latestLine: string;
+  action: string;
+  boundaryLine: string;
+}
+
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
   caregiver: "Caregiver",
   sitter: "Sitter",
@@ -213,6 +222,14 @@ function formatDateTime(ms: number): string {
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+  });
+}
+
+function formatDate(ms: number): string {
+  return new Date(ms).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 }
 
@@ -1300,5 +1317,35 @@ export function createPetCredentialArtifact(
     dogName: credential.name,
     printFileName: printable.fileName,
     printHtml: printable.html,
+  };
+}
+
+export function summarizePetCredentialArtifacts(
+  artifacts: readonly ReportArtifact[] = [],
+): PetCredentialArtifactSummary {
+  const credentials = artifacts
+    .filter((artifact): artifact is PetCredentialArtifact => artifact.kind === "pet_credential")
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const latest = credentials[0] ?? null;
+  const total = credentials.length;
+  const fallback: PetCredentialArtifactSummary = {
+    total,
+    latest,
+    summary: "No local Dog ID credential source has been saved yet.",
+    latestLine: "",
+    action: "Share the Dog ID card or printable source from Records to save a local credential source in Report History.",
+    boundaryLine: "Dog ID credentials remain local printable sources until provider-backed credential storage, native PDF/image export, and cloud sharing are approved.",
+  };
+  if (!latest) return fallback;
+
+  const created = new Date(latest.createdAt).getTime();
+  const latestDate = Number.isNaN(created) ? clean(latest.generatedAt) || "saved locally" : formatDate(created);
+  return {
+    total,
+    latest,
+    summary: `${total} local Dog ID credential ${total === 1 ? "source" : "sources"} saved for resend or printable-source sharing.`,
+    latestLine: `Latest Dog ID Credential saved ${latestDate}${latest.printFileName ? ` as ${latest.printFileName}` : ""}.`,
+    action: "Open Records Report History to resend the Dog ID text or share the printable source before handing it to a sitter, trainer, caregiver, or vet.",
+    boundaryLine: "Saved Dog ID artifacts are local credential sources; provider-backed credential storage, native PDF/image export, cloud sharing, retention, and deletion policy are not enabled.",
   };
 }

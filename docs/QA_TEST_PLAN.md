@@ -12,6 +12,8 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-30:
 
+- PASS: 284 focused tests with the command above on 2026-06-30, now including shared saved Dog ID credential artifact summaries plus WoofGuide `pet_credential_history` review drafts that route owners to Records Report History without claiming provider-backed storage or PDF/image export.
+- PASS: PixelLab asset verifier on 2026-06-30 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the saved Dog ID history slice.
 - PASS: 281 focused tests with the command above on 2026-06-30, now including print-ready Dog ID credential artifacts and Mobile Records readiness for saving Dog ID shares into local Report History as provider-gated credential sources.
 - PASS: PixelLab asset verifier on 2026-06-30 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: 280 focused tests with the command above on 2026-06-30, now including mobile Progress Report Dog ID Prep readiness so saved report artifacts carry credential fields plus the provider-gated local printable-source boundary.
@@ -20,7 +22,8 @@ Latest local evidence, 2026-06-30:
 - PASS: 277 focused tests with the command above on 2026-06-30, now including shared Dog ID credential readiness plus mobile Records readiness copy for ready/missing fields and the local printable-source boundary.
 - PASS: 275 focused tests with the command above on 2026-06-29, now including WoofGuide owner-reviewed Records Attachment Prep coverage plus mobile readiness for the local-only, non-mutating draft path.
 - PASS: 273 focused tests with the command above on 2026-06-29, now including Care Pass `Records Attachment Prep` coverage and mobile Progress Report readiness for local receipt/document attachment prep without claiming provider-backed document storage.
-- LIMIT: `pnpm run build:ci` on 2026-06-30 could not complete in this Windows shell. The latest local attempt stopped during package hydration with registry `EACCES` / `fetch failed` before workspace typecheck/build scripts started; earlier fuller attempts also stopped at the root `preinstall` script because `sh` is not available on PATH.
+- LIMIT: GitHub Actions `WoofWatcher Verify` run `28460926161` for commit `6233e99` failed in 4 seconds before executing the `Install, Test, Typecheck, Build` job. The job had `steps: []`, and `gh run view --log-failed` returned `log not found: 84348244511`, matching the standing pre-execution billing/spending-limit blocker rather than a code regression.
+- LIMIT: `pnpm run build:ci` on 2026-06-30 could not complete in this Windows shell. The latest local attempt stopped during dependency hydration with registry `EACCES`, `fetch failed`, and `UND_ERR_DESTROYED` before workspace typecheck/build scripts started; earlier fuller attempts also stopped at the root `preinstall` script because `sh` is not available on PATH.
 - PASS: 273 focused tests with the command above, now including API route contract readiness for authenticated household scoping, care-state optimistic conflicts, household-isolated care-entry writes, and the `/care-entries?limit=` contract across OpenAPI, zod, and the generated React client.
 - PASS: 259 focused tests with the local zero-dependency suite on 2026-06-22, including API route readiness for server-retained care-entry delete audit notes and mobile Log duplicate-audit suppression for server-backed deletes.
 - PASS: 259 focused tests with the local zero-dependency suite on 2026-06-23, including API readiness for atomic care-state optimistic writes that update by household id and version, then return a refreshed 409 conflict response if another device wins the race.

@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-30: WoofGuide Can Review Saved Dog ID History
+
+Decision: WoofGuide may surface an owner-reviewed `pet_credential_history` draft when local Dog ID credential artifacts already exist in Report History. The draft may summarize how many local credential sources are saved, identify the latest saved Dog ID source, and route the owner back to Records Report History for resend or printable-source sharing.
+
+Reason: Dog ID shares now create local report-history artifacts, but owners need a guided way to find and reuse that saved credential source before handing context to a sitter, trainer, caregiver, or vet. Reusing `summarizePetCredentialArtifacts` keeps WoofGuide aligned with Records without implying native PDF/image export, provider-backed credential storage, cloud sharing, server-backed report storage, retention, deletion, live AI, or unsupervised assistant actions are ready.
+
+Owner: Codex.
+
+Revisit trigger: Native credential PDF/image export, provider-backed credential or document storage, server-backed report artifacts, cloud sharing, persisted assistant drafts, permission-aware assistant writes, or storage retention/deletion policy becomes active release work.
+
 ### 2026-06-30: Dog ID Shares Can Create Local Report-History Artifacts
 
 Decision: Records Dog ID card and printable-source shares may save a `pet_credential` report artifact in local Report History. The artifact may store escaped printable Dog ID HTML, stable file names, a Dog ID section title, and the owner-readable Dog ID message for resend or printable-source sharing.

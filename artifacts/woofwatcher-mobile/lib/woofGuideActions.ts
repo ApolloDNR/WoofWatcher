@@ -5,7 +5,9 @@ import {
   deriveRecordReminders,
   getRecordDueStatus,
   normalizeCareEventType,
+  summarizePetCredentialArtifacts,
   summarizeRecordVault,
+  type ReportArtifact,
 } from "../../../lib/care-domain/src/index.ts";
 
 export type WoofGuideActionUrgency = "normal" | "watch" | "alert";
@@ -88,6 +90,7 @@ export interface WoofGuideActionState {
   entries: readonly WoofGuideActionEntry[];
   routines: readonly WoofGuideActionRoutine[];
   records?: readonly WoofGuideActionRecord[];
+  reportArtifacts?: readonly ReportArtifact[];
 }
 
 export type WoofGuideDraftKind =
@@ -97,7 +100,8 @@ export type WoofGuideDraftKind =
   | "care_pass"
   | "mood_summary"
   | "records_attachment_prep"
-  | "pet_credential_prep";
+  | "pet_credential_prep"
+  | "pet_credential_history";
 
 export interface WoofGuideDraftEntry {
   type: string;
@@ -345,6 +349,27 @@ function petCredentialPrepDraft(state: WoofGuideActionState): WoofGuideActionDra
   };
 }
 
+function petCredentialHistoryDraft(state: WoofGuideActionState): WoofGuideActionDraft | undefined {
+  const summary = summarizePetCredentialArtifacts(state.reportArtifacts ?? []);
+  if (!summary.latest) return undefined;
+
+  const name = dogName(state);
+  return {
+    kind: "pet_credential_history",
+    title: "Review saved Dog ID source",
+    body: [
+      `${name} Dog ID Report History`,
+      "",
+      summary.summary,
+      summary.latestLine,
+      summary.action,
+      summary.boundaryLine,
+    ].filter(Boolean).join("\n"),
+    cta: "Open Report History",
+    safety: "Owner-reviewed resend only; credential storage, PDF/image export, cloud sharing, retention, and deletion policy are not enabled.",
+  };
+}
+
 export function deriveWoofGuideActions(
   state: WoofGuideActionState,
   now: number = Date.now(),
@@ -354,6 +379,7 @@ export function deriveWoofGuideActions(
   const moodDraft = moodSummaryDraft(state, now);
   const attachmentPrepDraft = recordsAttachmentPrepDraft(state);
   const credentialPrepDraft = petCredentialPrepDraft(state);
+  const credentialHistoryDraft = petCredentialHistoryDraft(state);
   const moodUrgency = moodDraft
     ? deriveMoodTrend({ entries: state.entries, now, lookbackDays: 30, limit: 1 }).status === "watch"
       ? "watch"
@@ -453,6 +479,19 @@ export function deriveWoofGuideActions(
       icon: "records",
       route: "/records",
       draft: credentialPrepDraft,
+    });
+  }
+
+  if (credentialHistoryDraft) {
+    const credentialHistory = summarizePetCredentialArtifacts(state.reportArtifacts ?? []);
+    actions.push({
+      id: "dog-id-history",
+      label: "Review Dog ID source",
+      detail: credentialHistory.summary,
+      urgency: "normal",
+      icon: "records",
+      route: "/records",
+      draft: credentialHistoryDraft,
     });
   }
 

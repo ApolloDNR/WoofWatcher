@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
+import { createPetCredentialArtifact } from "../../../lib/care-domain/src/index.ts";
 import { deriveWoofGuideActions } from "./woofGuideActions.ts";
 
 const NOW = new Date("2026-06-06T15:00:00-07:00").getTime();
@@ -248,4 +249,58 @@ test("creates an owner-reviewed Dog ID prep draft from shared credential readine
   assert.match(dogIdAction?.draft?.body ?? "", /Missing fields:/);
   assert.match(dogIdAction?.draft?.body ?? "", /provider-backed credential\/PDF storage is approved/i);
   assert.match(dogIdAction?.draft?.safety ?? "", /Owner-reviewed prep only/i);
+});
+
+test("surfaces saved Dog ID credential history without claiming provider storage", () => {
+  const artifact = createPetCredentialArtifact(
+    {
+      name: "Phoenix",
+      generatedAt: "2026-06-08T06:30:00.000Z",
+      message: "Phoenix Dog ID\nPrimary vet: River City Vet",
+    },
+    "2026-06-08T06:30:00.000Z",
+  );
+  const actions = deriveWoofGuideActions(
+    {
+      profile: {
+        name: "Phoenix",
+        breed: "Shepherd mix",
+        primaryVet: "River City Vet",
+        emergencyContact: "Apollo - 555-0100",
+        microchipNumber: "985112003004551",
+        insuranceProvider: "Lemonade",
+        insurancePolicy: "WW-1042",
+      },
+      dietProfile: {
+        primaryFood: "Sensitive kibble",
+        normalPortion: "1 cup",
+        mealSchedule: "7 AM and 6 PM",
+      },
+      caregivers: [{ name: "Apollo", role: "Owner" }],
+      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
+      records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" }],
+      reportArtifacts: [artifact],
+      entries: [
+        {
+          id: "breakfast",
+          type: "meal",
+          title: "Breakfast",
+          caregiver: "Apollo",
+          occurredAt: "2026-06-06T14:00:00.000Z",
+          details: { householdVisible: true },
+        },
+      ],
+    },
+    NOW,
+  );
+
+  const historyAction = actions.find((action) => action.id === "dog-id-history");
+
+  assert.equal(historyAction?.route, "/records");
+  assert.equal(historyAction?.urgency, "normal");
+  assert.equal(historyAction?.draft?.kind, "pet_credential_history");
+  assert.match(historyAction?.detail ?? "", /local Dog ID credential/i);
+  assert.match(historyAction?.draft?.body ?? "", /Report History/);
+  assert.match(historyAction?.draft?.body ?? "", /local credential sources/i);
+  assert.doesNotMatch(historyAction?.draft?.body ?? "", /cloud storage ready|PDF export ready/i);
 });

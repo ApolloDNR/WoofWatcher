@@ -10,6 +10,7 @@ import {
   getReportArtifactPrintView,
   renderCarePassPrintHtml,
   renderProgressReportPrintHtml,
+  summarizePetCredentialArtifacts,
 } from "../src/index.ts";
 
 process.env.TZ = "America/Los_Angeles";
@@ -651,6 +652,35 @@ test("creates print-ready Dog ID credential artifacts for local report history",
   assert.match(printable.html, /WoofWatcher organizes owner-reported credential context/);
   assert.doesNotMatch(printable.html, /Phoenix <script>/);
   assert.doesNotMatch(artifact.message, /cloud storage ready|PDF export ready/i);
+});
+
+test("summarizes saved Dog ID credential artifacts for report history review", () => {
+  const oldArtifact = createPetCredentialArtifact(
+    {
+      name: "Phoenix",
+      generatedAt: "2026-06-07T06:30:00.000Z",
+      message: "Phoenix Dog ID\nMicrochip: 985112003004551",
+    },
+    "2026-06-07T06:30:00.000Z",
+  );
+  const latestArtifact = createPetCredentialArtifact(
+    {
+      name: "Phoenix",
+      generatedAt: "2026-06-08T06:30:00.000Z",
+      message: "Phoenix Dog ID\nPrimary vet: Alameda Wellness Vet",
+    },
+    "2026-06-08T06:30:00.000Z",
+  );
+
+  const summary = summarizePetCredentialArtifacts([oldArtifact, latestArtifact]);
+
+  assert.equal(summary.total, 2);
+  assert.equal(summary.latest?.id, latestArtifact.id);
+  assert.match(summary.summary, /2 local Dog ID credential sources saved/);
+  assert.match(summary.latestLine, /Latest Dog ID Credential saved Jun 7, 2026/);
+  assert.match(summary.action, /Report History/);
+  assert.match(summary.boundaryLine, /local credential sources/);
+  assert.doesNotMatch(summary.boundaryLine, /cloud storage ready|PDF export ready/i);
 });
 
 test("renders a print-ready care pass document with escaped care content", () => {
