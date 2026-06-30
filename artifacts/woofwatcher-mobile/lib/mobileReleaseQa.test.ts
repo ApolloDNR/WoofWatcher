@@ -26,6 +26,7 @@ test("lists the launch-critical mobile QA surfaces for the next native pass", ()
   assert.ok(ids.includes("owner-preview-core-loop"));
   assert.ok(ids.includes("care-twin-state-lab"));
   assert.ok(ids.includes("avatar-studio"));
+  assert.ok(ids.includes("avatar-sprite-production-review"));
   assert.ok(ids.includes("incident-composer"));
   assert.ok(ids.includes("records-incident-watch"));
   assert.ok(surfaces.every((surface) => surface.requiredEvidence.length > 0));
@@ -46,6 +47,40 @@ test("lists the launch-critical mobile QA surfaces for the next native pass", ()
   );
   assert.ok(surfaces.every((surface) => (surface as { failureEscalation?: string }).failureEscalation?.length));
   assert.ok(surfaces.every((surface) => surface.launchRisk.length > 0));
+});
+
+test("adds a source-backed Avatar Sprite Production Review surface", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const surface = surfaces.find((item) => item.id === "avatar-sprite-production-review");
+
+  assert.ok(surface);
+  assert.equal(surface.route, "/portrait");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /12\/12 PixelLab live template sprite packs/);
+  assert.match(surface.goal, /phone-size crop, gait, anchor stability, and game feel/);
+  assert.match(surface.devicePrompt, /iOS and Android/);
+  assert.match(surface.devicePrompt, /real game sprites/);
+  assert.match(surface.setupSteps.join("\n"), /24 registered template sprite slots/);
+  assert.match(surface.setupSteps.join("\n"), /Shepherd\/Phoenix/);
+  assert.match(surface.setupSteps.join("\n"), /Mixed Breed/);
+  assert.match(surface.verificationSteps.join("\n"), /idle-tail-wag loop and the walk-loop/);
+  assert.match(surface.verificationSteps.join("\n"), /duplicate sprite, second avatar/);
+  assert.match(surface.verificationSteps.join("\n"), /bottom-center anchor/);
+  assert.match(surface.verificationSteps.join("\n"), /walk gait feels like a video-game loop/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /Pass pending proof/);
+  assert.match(surface.failureEscalation, /weak gait/);
+  assert.match(surface.failureEscalation, /accessory overlay/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Avatar Studio with Shepherd\/Phoenix/);
+  assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Avatar Studio with a non-Phoenix live template/);
+  assert.match(surface.requiredEvidence.join("\n"), /Note listing any weak gait/);
+  assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
+    "Avatar Studio sprite stage",
+    "Care Twin State Lab",
+  ]);
+  assert.equal(surface.routeChecklist?.[0]?.route, "/portrait");
+  assert.equal(surface.routeChecklist?.[1]?.route, "/care-twin-qa?qaSurface=care-twin-state-lab");
+  assert.match(surface.routeChecklist?.[0]?.proof ?? "", /gait\/crop note/);
+  assert.match(surface.launchRisk, /video-game avatar/);
 });
 
 test("routes Incident Composer QA into the detail-first incident flow", () => {

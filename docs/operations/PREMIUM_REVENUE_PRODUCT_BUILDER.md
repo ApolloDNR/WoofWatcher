@@ -2487,6 +2487,34 @@ before execution with `steps: []`. `gh run view --log-failed` returned
 `log not found: 84239132933`. Treat this as the standing GitHub account/pre-job
 blocker, not as product verification evidence or a local app regression.
 
+The Avatar Sprite Production Review pass turns the "make it feel like a video
+game" requirement into a source-backed native QA target. `avatarSpriteProductionQa.ts`
+now builds a production review summary from the actual Avatar Studio template
+catalog and PixelLab sprite registry: 12/12 launch templates, 24 live template
+sprite slots, required checks for hard-pixel crispness, single-dog rendering,
+bottom-center anchor stability, idle motion, walk gait, phone crop, and overlay
+fit, plus an explicit boundary that local sprite metadata is not native proof.
+`mobileReleaseQa.ts` exposes that summary as the launch-critical `Avatar Sprite
+Production Review` card with route-backed rows to `/portrait` and
+`/care-twin-qa?qaSurface=care-twin-state-lab`; `/care-twin-qa` and More inherit
+it through the existing release QA capture plan. The mobile beta doctor now
+emits `avatar sprite production review is source-backed` as a PASS check while
+still truthfully blocking overall beta readiness on pnpm `11.7.0` versus the
+pinned `10.24.0`.
+
+Fresh local verification for the Avatar Sprite Production Review slice passed
+the red/green focused helper and release QA tests, the focused doctor/readiness
+suite at 114/114, the full 480-test API/mobile/PWA/care-domain focused suite,
+mobile TypeScript, root TypeScript, PixelLab assets `ok=149 missing=0 invalid=0`,
+package-local Expo web export to `.expo-smoke` with 218 assets / 222 files
+after prepending bundled Node to PATH, live preview route smoke `200` for `/`,
+`/care-twin-qa?qaSurface=avatar-sprite-production-review`, `/portrait`, `/more`,
+and `/health` at `http://127.0.0.1:4194/`, and `git diff --check` with expected
+Windows CRLF warnings only. This clears only local source-backed QA cockpit and
+web preview proof; it does not clear actual native iOS/Android gait/crop proof,
+provider-backed storage, CI completion, store approval, payments, push, live AI,
+generated PDF output, or Apollo launch sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

@@ -4311,6 +4311,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.checks?.some(
       (check) =>
+        check.label === "avatar sprite production review is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
         check.label === "unsupported bundled pnpm candidate" &&
         check.detail?.includes("pnpm"),
     ),

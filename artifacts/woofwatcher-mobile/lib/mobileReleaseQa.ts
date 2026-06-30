@@ -1,5 +1,6 @@
 import type { QaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
 import { qaScreenshotEvidenceNames } from "./qaScreenshotEvidence.ts";
+import { buildAvatarSpriteProductionQaSummary } from "./avatarSpriteProductionQa.ts";
 import type { StoreSubmissionPacket, StoreScreenshotChecklistItem } from "./storeSubmissionPacket.ts";
 
 export type MobileReleaseQaReviewStatus = "unreviewed" | "pass" | "needs-review";
@@ -54,6 +55,8 @@ export interface MobileReleaseQaSummary {
   missingAndroidScreenshots: number;
   missingAnyScreenshots: number;
 }
+
+const AVATAR_SPRITE_PRODUCTION_QA = buildAvatarSpriteProductionQaSummary();
 
 export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
   {
@@ -283,6 +286,58 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     ],
     launchRisk:
       "Avatar Studio is the product hook; fake readiness or blurry assets will break the care-twin promise.",
+  },
+  {
+    id: "avatar-sprite-production-review",
+    title: "Avatar Sprite Production Review",
+    route: "/portrait",
+    priority: "launch-critical",
+    goal: `Review ${AVATAR_SPRITE_PRODUCTION_QA.liveTemplatePacks}/${AVATAR_SPRITE_PRODUCTION_QA.totalTemplates} PixelLab live template sprite packs for phone-size crop, gait, anchor stability, and game feel.`,
+    devicePrompt:
+      "Open Avatar Studio on iOS and Android, switch through every live template, and inspect idle plus walk loops as real game sprites before store screenshots or launch approval.",
+    setupSteps: [
+      `Confirm PixelLab asset verification passed and ${AVATAR_SPRITE_PRODUCTION_QA.totalSpriteSlots} registered template sprite slots are packaged.`,
+      `Review these templates: ${AVATAR_SPRITE_PRODUCTION_QA.templates.map((template) => template.label).join(", ")}.`,
+      "Start with Shepherd/Phoenix, then switch to Retriever, Husky/Spitz, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy Breed, Slender, and Mixed Breed without covering the live stage.",
+      "Keep unfinished provider, store, and native proof gates visible; do not treat local sprite metadata as screenshot proof.",
+    ],
+    verificationSteps: [
+      "For each template, inspect the idle-tail-wag loop and the walk-loop at phone size.",
+      ...AVATAR_SPRITE_PRODUCTION_QA.requiredChecks,
+      "Mark Needs tune for the first weak gait, clipped crop, blurred sprite, duplicate avatar, or overlay collision and write the template name in the QA note.",
+    ],
+    acceptanceCriteria: [
+      `${AVATAR_SPRITE_PRODUCTION_QA.liveTemplatePacks}/${AVATAR_SPRITE_PRODUCTION_QA.totalTemplates} launch templates expose both idle and walk sprite slots before native review.`,
+      "Every template reads as a crisp pixel care twin on a small phone, not a softened still portrait.",
+      "Idle, walk, and overlay behavior stays stable inside the Avatar Studio stage with one visible dog.",
+      "The QA card remains Pass pending proof until iOS and Android screenshots plus the required gait/crop note are attached.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if any template has weak gait, identity drift, duplicate avatar behavior, cropped paws/tail/ears, blurred pixel scaling, unreadable phone-size silhouette, or an accessory overlay covering the face.",
+    requiredEvidence: [
+      "iOS screenshot of Avatar Studio with Shepherd/Phoenix live sprite.",
+      "Android screenshot of Avatar Studio with a non-Phoenix live template selected.",
+      "Note listing any weak gait, crop, duplicate-avatar, or accessory overlay issue by template.",
+    ],
+    routeChecklist: [
+      {
+        label: "Avatar Studio sprite stage",
+        route: "/portrait",
+        expected:
+          "Switch through every live template and confirm crisp pixel scaling, one dog, visible idle/walk motion, and truthful Template-fitted or Pack pending labels.",
+        proof:
+          "Attach iOS and Android Avatar Studio screenshots plus a gait/crop note before marking proof-backed.",
+      },
+      {
+        label: "Care Twin State Lab",
+        route: "/care-twin-qa?qaSurface=care-twin-state-lab",
+        expected:
+          "Review the Phoenix state matrix after Avatar Studio so Home care-twin reactions and template sprite quality stay aligned.",
+        proof:
+          "Attach state-matrix screenshots separately; Avatar Studio proof does not replace care-twin state proof.",
+      },
+    ],
+    launchRisk: AVATAR_SPRITE_PRODUCTION_QA.launchRisk,
   },
   {
     id: "incident-composer",

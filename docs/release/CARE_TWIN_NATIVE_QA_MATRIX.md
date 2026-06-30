@@ -7,6 +7,8 @@ Source of truth in code:
 - `artifacts/woofwatcher-mobile/lib/careTwinAssets.ts`
 - `CARE_TWIN_RUNTIME_QA_SCENARIOS`
 - `evaluateCareTwinRuntimeQaScenario`
+- `artifacts/woofwatcher-mobile/lib/avatarSpriteProductionQa.ts`
+- `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
 - `artifacts/woofwatcher-mobile/lib/mobileReleaseQa.ts`
 - `artifacts/woofwatcher-mobile/app/care-twin-qa.tsx`
 
@@ -85,6 +87,16 @@ required"; it should show the derived missing iOS, Android, or flexible
 evidence counts from the saved `/care-twin-qa` session. If the QA session is
 empty, More intentionally keeps native proof blocked.
 
+As of 2026-06-30, Mobile Release QA also includes `Avatar Sprite Production
+Review`, a launch-critical surface generated from the actual PixelLab template
+sprite registry. It checks all 12 launch dog templates and 24 registered
+template sprite slots, then sends testers to Avatar Studio and the Care Twin
+State Lab with route-backed proof rows. This review is specifically for the
+game-feel layer: crisp hard-pixel sprites, one visible dog, bottom-center
+anchor stability, idle breathing/tail-wag motion, walk-loop gait, phone-size
+crop, and accessory overlay fit. It remains `Pass pending proof` until iOS and
+Android Avatar Studio screenshots plus a gait/crop QA note are attached.
+
 Each state card also shows a Motion recipe and a Motion proof panel generated
 from the same choreography and motion-recipe model Home uses. Reviewers should
 confirm the primary loop, ambient micro-loops, tap reaction, bob, sway, tilt,
@@ -135,6 +147,10 @@ For every scenario below:
 - iPhone small viewport screenshot of `/care-twin-qa` Health Watch state.
 - Android small viewport screenshot of `/care-twin-qa` bedtime/sleep state.
 - Avatar Studio screenshot with one live template selected.
+- Avatar Sprite Production Review screenshot pair: iOS with Shepherd/Phoenix
+  live sprite selected, Android with a non-Phoenix live template selected, plus
+  a note naming any weak gait, crop, duplicate-avatar, or accessory overlay
+  issue by template.
 - Incident Composer screenshot showing trigger, exposure, injury/action, follow-up, notes, and household visibility fields fitting without keyboard overlap.
 - Records Incident Watch screenshot showing trend signal, follow-up tasks, trainer goals, and non-diagnostic boundary language.
 - Trainer Care Pass screenshot or shared text snippet showing Incident Watch trend/follow-up/goal lines.

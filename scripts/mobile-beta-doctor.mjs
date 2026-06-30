@@ -219,6 +219,7 @@ check("PixelLab verifier exists", existsSync(pixellabVerifier), "run pnpm --filt
 const betaHandoffPacketPath = join(mobileRoot, "lib", "betaHandoffPacket.ts");
 const mobileLaunchQaEvidencePath = join(mobileRoot, "lib", "mobileLaunchQaEvidence.ts");
 const mobileReleaseQaPath = join(mobileRoot, "lib", "mobileReleaseQa.ts");
+const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
 const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
@@ -226,6 +227,7 @@ const carePassDomainPath = join(root, "lib", "care-domain", "src", "care-pass.ts
 const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
 const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath) ? readFileSync(mobileLaunchQaEvidencePath, "utf8") : "";
 const mobileReleaseQaSource = existsSync(mobileReleaseQaPath) ? readFileSync(mobileReleaseQaPath, "utf8") : "";
+const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
 const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
@@ -313,6 +315,33 @@ check(
   releaseQaProofGateIsSourceBacked
     ? "release/store QA passes remain pending until required screenshot and note proof exists"
     : "keep release/store QA pass labels gated on required screenshots and QA notes",
+);
+
+const avatarSpriteProductionReviewIsSourceBacked = includesAll(avatarSpriteProductionQaSource, [
+  "buildAvatarSpriteProductionQaSummary",
+  "AVATAR_SPRITE_PRODUCTION_REQUIRED_CHECKS",
+  "Local sprite metadata only",
+  "iOS and Android screenshots",
+  "bottom-center anchor",
+  "walk gait feels like a video-game loop",
+])
+  && includesAll(mobileReleaseQaSource, [
+    "avatar-sprite-production-review",
+    "Avatar Sprite Production Review",
+    "Pass pending proof",
+    "gait/crop note",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "focusedQaTarget",
+    "Attach focused QA proof",
+    "Pass pending release proof",
+  ]);
+check(
+  "avatar sprite production review is source-backed",
+  avatarSpriteProductionReviewIsSourceBacked,
+  avatarSpriteProductionReviewIsSourceBacked
+    ? "PixelLab live template sprite/gait review is wired through the release QA cockpit"
+    : "keep Avatar Sprite Production Review wired to sprite registry, proof gating, and focused /care-twin-qa capture",
 );
 
 const nativeQaNeedsTuneFixBriefIsSourceBacked = includesAll(mobileLaunchQaEvidenceSource, [
