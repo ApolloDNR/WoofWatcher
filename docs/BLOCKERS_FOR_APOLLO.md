@@ -38,6 +38,7 @@
 - Latest check, 2026-06-29: `WoofWatcher Verify` run `28397976106` for commit `284dc0b` failed in 3 seconds before executing `Install, Test, Typecheck, Build`; the job `84141617033` had `steps: []`, and `gh run view --log-failed` returned `log not found: 84141617033`, matching the same pre-execution billing/spending-limit blocker shape.
 - Latest check, 2026-06-30: `WoofWatcher Verify` run `28414398931` for commit `00f8f34` failed in 4 seconds before executing `Install, Test, Typecheck, Build`; the job `84194078005` had `steps: []`, and `gh run view --log-failed` returned `log not found: 84194078005`, matching the same pre-execution billing/spending-limit blocker shape.
 - Latest check, 2026-06-30: `WoofWatcher Verify` run `28420802623` for commit `c3c5f63` failed in 4 seconds before executing `Install, Test, Typecheck, Build`; the job `84213339988` had `steps: []`, and `gh run view --log-failed` returned `log not found: 84213339988`, matching the same pre-execution billing/spending-limit blocker shape.
+- Latest check, 2026-06-30: `WoofWatcher Verify` run `28428374964` for commit `9b487be` failed in 4 seconds before executing `Install, Test, Typecheck, Build`; the job `84236829728` had `steps: []`, and `gh run view --log-failed` returned `log not found: 84236829728`, matching the same pre-execution billing/spending-limit blocker shape.
 - Clerk production configuration.
 - Database/Supabase production configuration.
 - Storage provider for records and generated reports.
