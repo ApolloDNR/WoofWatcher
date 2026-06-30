@@ -3983,6 +3983,8 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /Proof manifest/);
   assert.match(more, /savedQaProofManifest\.proofId/);
   assert.match(more, /savedQaProofManifest\.platformEvidenceLabel/);
+  assert.match(more, /accessibilityLabel=\{`Share beta handoff proof manifest/);
+  assert.match(more, /onPress=\{shareBetaHandoffPacket\}/);
   assert.match(
     more,
     /accessibilityLabel=\{`Open primary Native QA mission:/,

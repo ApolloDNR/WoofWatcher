@@ -1879,7 +1879,10 @@ export default function MoreScreen() {
                   <Ionicons name="locate-outline" size={17} color={colors.primary} />
                 </Pressable>
                 {savedQaProofManifest ? (
-                  <View
+                  <Pressable
+                    accessibilityLabel={`Share beta handoff proof manifest ${savedQaProofManifest.proofId}`}
+                    accessibilityRole="button"
+                    onPress={shareBetaHandoffPacket}
                     style={[
                       s.nativeQaOwnerProofRow,
                       {
@@ -1902,8 +1905,8 @@ export default function MoreScreen() {
                         {savedQaProofManifest.totalEvidenceFiles} files. {savedQaProofManifest.platformEvidenceLabel}. Local metadata only.
                       </Text>
                     </View>
-                    <Ionicons name="document-text-outline" size={17} color={colors.primary} />
-                  </View>
+                    <Ionicons name="share-social-outline" size={17} color={colors.primary} />
+                  </Pressable>
                 ) : null}
                 <View
                   style={[

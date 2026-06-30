@@ -2468,6 +2468,19 @@ Remote verification for More/Beta Handoff proof-manifest surfacing commit
 GitHub account/pre-job blocker, not as product verification evidence or a local
 app regression.
 
+The proof-manifest no-dead-end polish pass made More's saved manifest row
+actionable instead of decorative. When a saved QA proof manifest exists, Native
+QA Next Captures renders it as an accessible button with the current `wwqa-*`
+proof ID in the label, a share icon, and `shareBetaHandoffPacket` as the action
+so Apollo/testers can immediately share the handoff packet that contains the
+manifest. Fresh local verification passed mobile readiness 100/100, mobile
+TypeScript, root TypeScript, the 478-test API/mobile/PWA/care-domain focused
+suite, PixelLab assets `ok=149 missing=0 invalid=0`, package-local Expo web
+export to `.expo-smoke` with 218 assets / 222 files after prepending bundled
+Node to PATH, live preview route smoke `200` for `/`, `/more`, `/care-twin-qa`,
+`/health`, `/log`, and `/portrait` at `http://127.0.0.1:4194/`, and `git diff
+--check` with expected Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
