@@ -597,6 +597,10 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /choreography\.qaSummary/);
   assert.match(qaRoute, /choreography\.tapReaction\.action/);
   assert.match(qaRoute, /motionRecipe\.qaHint/);
+  assert.match(qaRoute, /careTwinQaReviewStatusLabel/);
+  assert.match(qaRoute, /careTwinQaMissingNativeProof/);
+  assert.match(qaRoute, /scenarioPassPendingProof/);
+  assert.match(qaRoute, /Pass pending native proof/);
   assert.match(qaRoute, /Motion proof/);
   assert.match(qaRoute, /Stage framing proof/);
   assert.match(qaRoute, /result\.stageFraming/);

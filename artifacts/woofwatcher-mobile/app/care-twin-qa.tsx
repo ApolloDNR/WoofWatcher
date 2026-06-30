@@ -18,7 +18,8 @@ import {
 } from "@/lib/careTwinAssets";
 import {
   buildCareTwinQaShareText,
-  careTwinQaStatusLabel,
+  careTwinQaMissingNativeProof,
+  careTwinQaReviewStatusLabel,
   summarizeCareTwinQaReviews,
   type CareTwinQaReview,
   type CareTwinQaReviewStatus,
@@ -1239,6 +1240,8 @@ export default function CareTwinQaScreen() {
             <QaBadge label={`${releaseSummary.passed}/${releaseSummary.total} release`} tone={releaseSummary.passed === releaseSummary.total ? colors.sage : colors.amber} />
             <QaBadge label={`${readyCount}/${scenarios.length} layered`} tone={readyCount === scenarios.length ? colors.sage : colors.amber} />
             <QaBadge label={`${qaSummary.passed} pass`} tone={colors.sage} />
+            <QaBadge label={`${qaSummary.passedWithNativeProof} native proof`} tone={qaSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
+            <QaBadge label={`${qaSummary.passPendingProof} pending proof`} tone={qaSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
             <QaBadge label={`${qaSummary.needsReview} needs tune`} tone={colors.amber} />
             <QaBadge label={`${qaSummary.unreviewed} unreviewed`} tone={colors.mutedForeground} />
             <QaBadge label={`${attachedEvidenceFiles} evidence files`} tone={releaseScreenshotEvidenceComplete ? colors.sage : colors.amber} />
@@ -1673,6 +1676,14 @@ export default function CareTwinQaScreen() {
           const motionRecipeSummary = describeMotionRecipeForSpriteAction(result.actualAction);
           const stageFraming = result.stageFraming;
           const attachedScreenshots = qaEvidenceById[result.scenario.id] ?? [];
+          const scenarioReview: CareTwinQaReview = {
+            scenarioId: result.scenario.id,
+            status: reviewStatus,
+            note: qaNotes[result.scenario.id],
+            screenshotEvidence: attachedScreenshots,
+          };
+          const scenarioMissingEvidence = careTwinQaMissingNativeProof(scenarioReview);
+          const scenarioPassPendingProof = scenarioMissingEvidence.length > 0;
 
           return (
             <BoardCard key={result.scenario.id} style={s.scenarioCard}>
@@ -1691,8 +1702,8 @@ export default function CareTwinQaScreen() {
                   </View>
                 </View>
                 <QaBadge
-                  label={careTwinQaStatusLabel(reviewStatus)}
-                  tone={reviewTone}
+                  label={careTwinQaReviewStatusLabel(scenarioReview)}
+                  tone={scenarioPassPendingProof ? colors.amber : reviewTone}
                 />
               </View>
 
@@ -1794,6 +1805,26 @@ export default function CareTwinQaScreen() {
                   }))
                 }
               />
+
+              {scenarioPassPendingProof ? (
+                <View style={[s.betaRunProofGate, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}66` }]}>
+                  <View style={s.betaRunProofGateHeader}>
+                    <Ionicons name="lock-closed-outline" size={16} color={colors.amber} />
+                    <Text style={[s.betaRunProofGateTitle, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                      Pass pending native proof
+                    </Text>
+                  </View>
+                  <Text style={[s.betaRunProofGateText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    This care-twin state is marked Pass, but it still needs iOS or Android screenshot evidence before it counts as launch proof.
+                  </Text>
+                  <View style={s.betaRunProofGateRow}>
+                    <View style={[s.betaRunProofGateDot, { backgroundColor: colors.amber }]} />
+                    <Text style={[s.betaRunProofGateItem, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                      {scenarioMissingEvidence.join(" ")}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
 
               <View style={s.reviewGrid}>
                 <ReviewButton
