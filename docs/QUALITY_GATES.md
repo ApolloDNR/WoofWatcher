@@ -102,6 +102,8 @@ Current evidence, 2026-06-30: Care Pass reports now reuse shared Dog ID credenti
 
 Current evidence, 2026-06-30: Progress Reports now reuse shared Dog ID credential readiness for report-history prep. Mobile Records saves Dog ID ready-versus-missing lines and the local printable-source boundary into print-ready Progress Report artifacts without claiming native PDF export, provider-backed credential storage, or server-backed report storage is ready.
 
+Current evidence, 2026-06-30: Dog ID shares now save reusable local credential artifacts in Report History. `createPetCredentialArtifact` stores escaped printable Dog ID HTML with a stable file name and Mobile Records labels those saved rows as Dog ID Credential while keeping image/PDF export, cloud sharing, provider-backed credential storage, and server-backed report storage gated.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.

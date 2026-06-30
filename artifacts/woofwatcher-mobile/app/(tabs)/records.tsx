@@ -32,6 +32,7 @@ import {
   buildPetCredential,
   buildCarePass,
   createCarePassArtifact,
+  createPetCredentialArtifact,
   createProgressReportArtifact,
   deriveAloneTime,
   deriveCareTrends,
@@ -53,7 +54,6 @@ import {
   deriveWaterHydration,
   deriveWeightTrend,
   getReportArtifactPrintView,
-  getPetCredentialPrintView,
   getRecordDueStatus,
   normalizeCareEventType,
   summarizeRecordVault,
@@ -595,16 +595,30 @@ export default function RecordsScreen() {
     );
   };
 
+  const saveCredentialArtifact = () => {
+    const artifact = createPetCredentialArtifact(credential);
+    updateCareDoc((doc) => ({
+      ...doc,
+      reportArtifacts: [
+        artifact,
+        ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
+      ].slice(0, 12),
+    }));
+    return artifact;
+  };
+
   const shareCredential = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Share.share({ message: credential.message, title: `${credential.name} Dog ID` }).catch(() =>
-      Alert.alert(`${credential.name} Dog ID`, credential.message),
+    const artifact = saveCredentialArtifact();
+    Share.share({ message: artifact.message, title: artifact.title }).catch(() =>
+      Alert.alert(artifact.title, artifact.message),
     );
   };
 
   const sharePrintableCredential = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const printable = getPetCredentialPrintView(credential);
+    const artifact = saveCredentialArtifact();
+    const printable = getReportArtifactPrintView(artifact);
     Share.share({ message: printable.html, title: printable.fileName }).catch(() =>
       Alert.alert(printable.fileName, printable.html),
     );
@@ -2186,8 +2200,18 @@ export default function RecordsScreen() {
               reportArtifacts.map((artifact, index) => {
                 const printable = getReportArtifactPrintView(artifact);
                 const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
-                const artifactLabel = artifact.kind === "care_pass" ? artifact.audience : "progress";
-                const artifactKindLabel = artifact.kind === "progress_report" ? "Progress Report" : "Care Pass";
+                const artifactLabel =
+                  artifact.kind === "care_pass"
+                    ? artifact.audience
+                    : artifact.kind === "pet_credential"
+                      ? "dog id"
+                      : "progress";
+                const artifactKindLabel =
+                  artifact.kind === "progress_report"
+                    ? "Progress Report"
+                    : artifact.kind === "pet_credential"
+                      ? "Dog ID Credential"
+                      : "Care Pass";
                 return (
                   <View
                     key={artifact.id}

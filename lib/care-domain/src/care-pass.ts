@@ -7,7 +7,12 @@ import { deriveGroomingCare, type GroomingCareItem } from "./grooming-care.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
 import { deriveMoodTrend, type MoodTrendItem } from "./mood-trend.ts";
 import { derivePottyHealth } from "./potty-health.ts";
-import { derivePetCredentialReadiness, summarizeRecordVault } from "./record-vault.ts";
+import {
+  derivePetCredentialReadiness,
+  getPetCredentialPrintView,
+  summarizeRecordVault,
+  type PetCredential,
+} from "./record-vault.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
 import { deriveWaterHydration } from "./water.ts";
 import { deriveWalkActivity, deriveWalkRouteTemplates, type WalkRouteTemplate } from "./walk-activity.ts";
@@ -133,7 +138,21 @@ export interface ProgressReportArtifact {
   printHtml?: string;
 }
 
-export type ReportArtifact = CarePassArtifact | ProgressReportArtifact;
+export interface PetCredentialArtifact {
+  id: string;
+  kind: "pet_credential";
+  title: string;
+  generatedAt: string;
+  createdAt: string;
+  summary: string;
+  sectionTitles: string[];
+  message: string;
+  dogName: string;
+  printFileName?: string;
+  printHtml?: string;
+}
+
+export type ReportArtifact = CarePassArtifact | ProgressReportArtifact | PetCredentialArtifact;
 
 export interface ReportArtifactPrintView {
   fileName: string;
@@ -862,12 +881,110 @@ ${sections}
 </html>`;
 }
 
+function renderLegacyPetCredentialPrintHtml(artifact: PetCredentialArtifact): string {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(artifact.title)}</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1a2332;
+      --muted: #5f6f63;
+      --line: #d4cfc4;
+      --wash: #f7f5f1;
+      --accent: #2e5846;
+      --copper: #c87a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--wash);
+      color: var(--ink);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.48;
+    }
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 40px 28px;
+      background: #ffffff;
+      min-height: 100vh;
+    }
+    header {
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+    .brand {
+      color: var(--copper);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 34px;
+      line-height: 1.08;
+      margin: 0;
+    }
+    .summary {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 10px 0 0;
+    }
+    pre {
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--wash);
+      padding: 16px;
+      font: 13.5px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 11.5px;
+      padding-top: 18px;
+    }
+    @media print {
+      body { background: #ffffff; }
+      main { max-width: none; padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">WoofWatcher Dog ID</div>
+      <h1>${escapeHtml(artifact.title)}</h1>
+      <p class="summary">${escapeHtml(artifact.summary || "Saved Dog ID credential source.")}</p>
+    </header>
+    <pre>${escapeHtmlBlock(artifact.message)}</pre>
+    <footer>
+      WoofWatcher organizes owner-reported credential context for handoff and veterinarian review. It does not replace veterinary care or official records.
+    </footer>
+  </main>
+</body>
+</html>`;
+}
+
 export function getReportArtifactPrintView(artifact: ReportArtifact): ReportArtifactPrintView {
   const storedHtml = typeof artifact.printHtml === "string" && artifact.printHtml.trim().length > 0;
   if (artifact.kind === "progress_report") {
     return {
       fileName: clean(artifact.printFileName) || `${slugify(artifact.title)}-${printDateStamp(artifact.createdAt)}.html`,
       html: storedHtml ? artifact.printHtml as string : renderLegacyProgressReportPrintHtml(artifact),
+      status: storedHtml ? "ready" : "restored",
+    };
+  }
+  if (artifact.kind === "pet_credential") {
+    return {
+      fileName: clean(artifact.printFileName) || `${slugify(artifact.title)}-${printDateStamp(artifact.createdAt)}.html`,
+      html: storedHtml ? artifact.printHtml as string : renderLegacyPetCredentialPrintHtml(artifact),
       status: storedHtml ? "ready" : "restored",
     };
   }
@@ -1161,5 +1278,27 @@ export function createProgressReportArtifact(input: ProgressReportArtifactInput)
   return {
     ...artifact,
     printHtml: renderProgressReportPrintHtml(artifact),
+  };
+}
+
+export function createPetCredentialArtifact(
+  credential: PetCredential,
+  createdAt: string = new Date().toISOString(),
+): PetCredentialArtifact {
+  const safeStamp = clean(createdAt).replace(/[^0-9A-Za-z]+/g, "-").replace(/^-|-$/g, "");
+  const title = `${credential.name} Dog ID`;
+  const printable = getPetCredentialPrintView(credential);
+  return {
+    id: `pet_credential_${safeStamp}`,
+    kind: "pet_credential",
+    title,
+    generatedAt: credential.generatedAt,
+    createdAt,
+    summary: "Local Dog ID credential source for caregiver and veterinarian review.",
+    sectionTitles: ["Dog ID"],
+    message: credential.message,
+    dogName: credential.name,
+    printFileName: printable.fileName,
+    printHtml: printable.html,
   };
 }

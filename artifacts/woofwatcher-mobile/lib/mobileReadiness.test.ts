@@ -1312,12 +1312,16 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
 test("keeps Records dog ID wired for printable credential sharing", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
-  assert.match(records, /getPetCredentialPrintView/);
+  assert.match(records, /getReportArtifactPrintView\(artifact\)/);
+  assert.match(records, /createPetCredentialArtifact/);
   assert.match(records, /derivePetCredentialReadiness/);
   assert.match(records, /credentialReadiness/);
+  assert.match(records, /saveCredentialArtifact/);
   assert.match(records, /sharePrintableCredential/);
   assert.match(records, /accessibilityLabel="Share dog ID card"/);
   assert.match(records, /accessibilityLabel="Share printable dog ID source"/);
+  assert.match(records, /kind === "pet_credential"/);
+  assert.match(records, /Dog ID Credential/);
   assert.match(records, /\{credentialReadiness\.readyCount\}\/\{credentialReadiness\.totalCount\} Dog ID fields ready/);
   assert.match(records, /credentialReadiness\.missingLabels\.join\(", "\)/);
   assert.match(records, /credentialReadiness\.boundaryLine/);

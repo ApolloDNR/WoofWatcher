@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-30: Dog ID Shares Can Create Local Report-History Artifacts
+
+Decision: Records Dog ID card and printable-source shares may save a `pet_credential` report artifact in local Report History. The artifact may store escaped printable Dog ID HTML, stable file names, a Dog ID section title, and the owner-readable Dog ID message for resend or printable-source sharing.
+
+Reason: Records already has Dog ID readiness, WoofGuide prep, Care Pass prep, and Progress Report prep, but direct Dog ID sharing was not reusable after the share sheet closed. Saving a local credential artifact strengthens the report-history path while avoiding claims that native image/PDF export, cloud sharing, provider-backed credential storage, server-backed report storage, retention, or deletion policy are ready.
+
+Owner: Codex.
+
+Revisit trigger: Native credential image/PDF export, provider-backed document or credential storage, server-backed report artifacts, cloud sharing, native export/download, or storage retention/deletion policy becomes active release work.
+
 ### 2026-06-30: Progress Reports Can Carry Dog ID Prep
 
 Decision: Records Progress Reports may include a `Dog ID Prep` section derived from shared `derivePetCredentialReadiness`. The section may show ready-versus-missing Dog ID credential fields and the local printable-source boundary in the saved report-history artifact before an owner shares the report.

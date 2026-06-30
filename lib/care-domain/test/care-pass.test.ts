@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildCarePass,
   createCarePassArtifact,
+  createPetCredentialArtifact,
   createProgressReportArtifact,
   getCarePassArtifactPrintView,
   getReportArtifactPrintView,
@@ -615,6 +616,41 @@ test("creates print-ready progress report artifacts with mood energy context", (
   assert.match(printable.html, /Mood &amp; Energy/);
   assert.match(printable.html, /not a diagnosis or emergency triage/i);
   assert.doesNotMatch(printable.html, /Phoenix <script>/);
+});
+
+test("creates print-ready Dog ID credential artifacts for local report history", () => {
+  const artifact = createPetCredentialArtifact(
+    {
+      name: "Phoenix <script>",
+      breed: "German Shepherd mix",
+      weight: "68 lb",
+      careFocus: "Keep meals calm.",
+      primaryCaregiver: "Emma",
+      primaryVet: "Alameda Wellness Vet",
+      emergencyContact: "Apollo - 555-0100",
+      microchip: "985112003004551",
+      insurance: "Lemonade - WW-1042",
+      vaccines: "Rabies - May 2028",
+      generatedAt: "2026-06-08T06:30:00.000Z",
+      message: "Phoenix <script> Dog ID\nMicrochip: 985112003004551",
+    },
+    "2026-06-08T06:30:00.000Z",
+  );
+  const printable = getReportArtifactPrintView(artifact);
+
+  assert.equal(artifact.id, "pet_credential_2026-06-08T06-30-00-000Z");
+  assert.equal(artifact.kind, "pet_credential");
+  assert.equal(artifact.title, "Phoenix <script> Dog ID");
+  assert.equal(artifact.summary, "Local Dog ID credential source for caregiver and veterinarian review.");
+  assert.deepEqual(artifact.sectionTitles, ["Dog ID"]);
+  assert.match(artifact.message, /Microchip: 985112003004551/);
+  assert.equal(artifact.printFileName, "phoenix-script-dog-id-2026-06-08.html");
+  assert.equal(printable.status, "ready");
+  assert.equal(printable.html, artifact.printHtml);
+  assert.match(printable.html, /Phoenix &lt;script&gt; Dog ID/);
+  assert.match(printable.html, /WoofWatcher organizes owner-reported credential context/);
+  assert.doesNotMatch(printable.html, /Phoenix <script>/);
+  assert.doesNotMatch(artifact.message, /cloud storage ready|PDF export ready/i);
 });
 
 test("renders a print-ready care pass document with escaped care content", () => {
