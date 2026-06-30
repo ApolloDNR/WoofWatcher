@@ -637,6 +637,8 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /nextBetaMission\.doneCondition/);
   assert.match(qaRoute, /Owner route loop/);
   assert.match(qaRoute, /nextBetaTarget\.routeChecklist/);
+  assert.match(qaRoute, /openRouteLoopCheck/);
+  assert.match(qaRoute, /Open owner route loop item:/);
   assert.match(qaRoute, /routeCheck\.expected/);
   assert.match(qaRoute, /routeCheck\.proof/);
   assert.match(qaRoute, /Mission note/);
@@ -676,6 +678,7 @@ test("registers the care twin native QA route for device review", () => {
     "betaRunPlatformOption",
     "betaRunPrimary",
     "betaRunSecondary",
+    "betaRunRouteLoopRow",
     "shareButton",
     "attachButton",
     "clearEvidenceButton",

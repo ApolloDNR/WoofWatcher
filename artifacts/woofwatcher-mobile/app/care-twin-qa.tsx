@@ -465,6 +465,22 @@ export default function CareTwinQaScreen() {
     router.push(buildQaReturnRoute(surface) as never);
   };
 
+  const openRouteLoopCheck = (
+    routeCheck: { label: string; route: string },
+    target: { surfaceId: string; title: string },
+  ) => {
+    if (Platform.OS !== "web") {
+      Haptics.selectionAsync().catch(() => {});
+    }
+    router.push(
+      buildQaReturnRoute({
+        route: routeCheck.route,
+        surfaceId: target.surfaceId,
+        title: `${target.title}: ${routeCheck.label}`,
+      }) as never,
+    );
+  };
+
   const pickScreenshotEvidence = async (fallbackFileName: string): Promise<QaScreenshotEvidence | null> => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -941,7 +957,19 @@ export default function CareTwinQaScreen() {
                     </View>
                   </View>
                   {nextBetaTarget.routeChecklist.map((routeCheck, index) => (
-                    <View key={`${routeCheck.label}-${routeCheck.route}`} style={s.betaRunRouteLoopRow}>
+                    <Pressable
+                      key={`${routeCheck.label}-${routeCheck.route}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open owner route loop item: ${routeCheck.label}`}
+                      onPress={() => openRouteLoopCheck(routeCheck, nextBetaTarget)}
+                      style={({ pressed }) => [
+                        s.betaRunRouteLoopRow,
+                        {
+                          backgroundColor: pressed ? `${colors.copper}12` : colors.card,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
                       <View style={[s.betaRunRouteLoopIndex, { backgroundColor: `${colors.copper}18` }]}>
                         <Text style={[s.betaRunRouteLoopIndexText, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
                           {index + 1}
@@ -965,7 +993,8 @@ export default function CareTwinQaScreen() {
                           </Text>
                         ) : null}
                       </View>
-                    </View>
+                      <Ionicons name="open-outline" size={15} color={colors.copper} />
+                    </Pressable>
                   ))}
                 </View>
               ) : null}
@@ -2072,6 +2101,10 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 9,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 10,
   },
   betaRunRouteLoopIndex: {
     width: 24,
