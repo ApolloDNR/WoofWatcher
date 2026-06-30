@@ -50,10 +50,29 @@ export interface MobileLaunchQaStoreScreenshotProofStatus {
   missingEvidence: string[];
 }
 
+export type MobileLaunchQaPrimaryMissionKind =
+  | "needs-tune"
+  | "proof-pending"
+  | "owner-preview"
+  | "store-screenshot"
+  | "next-capture"
+  | "complete";
+
+export interface MobileLaunchQaPrimaryMission {
+  kind: MobileLaunchQaPrimaryMissionKind;
+  label: string;
+  detail: string;
+  ctaLabel: string;
+  target: MobileLaunchQaCaptureTarget | null;
+  missingEvidence: string[];
+  doneCondition: string;
+}
+
 export interface MobileLaunchQaCapturePlan {
   totalSurfaces: number;
   openSurfaces: number;
   completeSurfaces: number;
+  primaryMission: MobileLaunchQaPrimaryMission;
   nextTargets: MobileLaunchQaCaptureTarget[];
   firstNeedsTuneTarget: MobileLaunchQaCaptureTarget | null;
   ownerPreviewProofStatus: MobileLaunchQaOwnerPreviewProofStatus;
@@ -293,6 +312,121 @@ function storeScreenshotProofStatusFor(
   };
 }
 
+function firstMissionDetail(target: MobileLaunchQaCaptureTarget): string {
+  return (
+    target.note?.trim() ||
+    target.missingEvidence[0] ||
+    target.setupSteps[0] ||
+    target.verificationSteps[0] ||
+    target.failureEscalation
+  );
+}
+
+function primaryMissionFor(
+  targets: readonly MobileLaunchQaCaptureTarget[],
+  ownerPreviewProofStatus: MobileLaunchQaOwnerPreviewProofStatus,
+  storeScreenshotProofStatus: MobileLaunchQaStoreScreenshotProofStatus,
+): MobileLaunchQaPrimaryMission {
+  const firstNeedsTuneTarget = targets.find((target) => target.status === "needs-review");
+
+  if (firstNeedsTuneTarget) {
+    return {
+      kind: "needs-tune",
+      label: `Fix ${firstNeedsTuneTarget.title}`,
+      detail: firstMissionDetail(firstNeedsTuneTarget),
+      ctaLabel: "Fix Needs Tune",
+      target: firstNeedsTuneTarget,
+      missingEvidence: firstNeedsTuneTarget.missingEvidence,
+      doneCondition:
+        "Fix the noted issue, attach confirmation proof if required, update the Mission note, and mark the target Pass in /care-twin-qa.",
+    };
+  }
+
+  const firstProofPendingTarget = targets.find(
+    (target) => target.status === "pass" && target.missingEvidence.length > 0,
+  );
+
+  if (firstProofPendingTarget) {
+    return {
+      kind: "proof-pending",
+      label: `Finish proof for ${firstProofPendingTarget.title}`,
+      detail: firstProofPendingTarget.missingEvidence.join(" "),
+      ctaLabel: "Finish Proof",
+      target: firstProofPendingTarget,
+      missingEvidence: firstProofPendingTarget.missingEvidence,
+      doneCondition:
+        "Attach the required proof, save any required Mission note, and keep the target marked Pass in /care-twin-qa.",
+    };
+  }
+
+  const ownerPreviewTarget = targets.find((target) => target.surfaceId === OWNER_PREVIEW_CORE_LOOP_ID);
+
+  if (ownerPreviewTarget) {
+    return {
+      kind: "owner-preview",
+      label: ownerPreviewTarget.title,
+      detail:
+        ownerPreviewTarget.missingEvidence[0] ||
+        "Run the real owner loop before isolated polish: Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass.",
+      ctaLabel: "Run Owner Preview",
+      target: ownerPreviewTarget,
+      missingEvidence: ownerPreviewTarget.missingEvidence,
+      doneCondition:
+        "iOS/Android proof is attached, the owner route-loop QA note is saved, and the Owner Preview Core Loop is marked Pass.",
+    };
+  }
+
+  if (ownerPreviewProofStatus.status === "missing") {
+    return {
+      kind: "owner-preview",
+      label: "Restore Owner Preview Core Loop",
+      detail: ownerPreviewProofStatus.missingEvidence.join(" "),
+      ctaLabel: "Open QA Cockpit",
+      target: null,
+      missingEvidence: ownerPreviewProofStatus.missingEvidence,
+      doneCondition: "Owner Preview Core Loop is restored to the native QA plan before launch proof is accepted.",
+    };
+  }
+
+  if (storeScreenshotProofStatus.nextTarget) {
+    return {
+      kind: "store-screenshot",
+      label: storeScreenshotProofStatus.nextTarget.title,
+      detail: storeScreenshotProofStatus.missingEvidence.join(" ") || firstMissionDetail(storeScreenshotProofStatus.nextTarget),
+      ctaLabel: "Capture Store Proof",
+      target: storeScreenshotProofStatus.nextTarget,
+      missingEvidence: storeScreenshotProofStatus.missingEvidence,
+      doneCondition:
+        "Truthful App Store and Play Store screenshots are attached for the target and it is marked Pass in /care-twin-qa.",
+    };
+  }
+
+  const nextCaptureTarget = targets[0] ?? null;
+
+  if (nextCaptureTarget) {
+    return {
+      kind: "next-capture",
+      label: nextCaptureTarget.title,
+      detail: firstMissionDetail(nextCaptureTarget),
+      ctaLabel: "Open Next Surface",
+      target: nextCaptureTarget,
+      missingEvidence: nextCaptureTarget.missingEvidence,
+      doneCondition:
+        "Required iOS/Android proof is attached, any Mission note is saved, and the target is marked Pass or Needs tune.",
+    };
+  }
+
+  return {
+    kind: "complete",
+    label: "QA evidence complete",
+    detail: "All listed launch QA surfaces have local evidence. Share the QA summary and keep public store approval separate.",
+    ctaLabel: "Share QA Summary",
+    target: null,
+    missingEvidence: [],
+    doneCondition: "Share the QA report, beta handoff, and store packet only after Apollo reviews the saved proof.",
+  };
+}
+
 export function buildMobileLaunchQaFocusedTarget(
   session: MobileQaSessionState | null | undefined,
   surfaceId: string,
@@ -336,13 +470,16 @@ export function buildMobileLaunchQaCapturePlan(
       if (priorityDelta !== 0) return priorityDelta;
       return (surfaceOrder.get(first.surfaceId) ?? 0) - (surfaceOrder.get(second.surfaceId) ?? 0);
     });
+  const firstNeedsTuneTarget = targets.find((target) => target.status === "needs-review") ?? null;
+  const primaryMission = primaryMissionFor(targets, ownerPreviewProofStatus, storeScreenshotProofStatus);
 
   return {
     totalSurfaces: surfaces.length,
     openSurfaces: targets.length,
     completeSurfaces: Math.max(0, surfaces.length - targets.length),
+    primaryMission,
     nextTargets: targets.slice(0, 4),
-    firstNeedsTuneTarget: targets.find((target) => target.status === "needs-review") ?? null,
+    firstNeedsTuneTarget,
     ownerPreviewProofStatus,
     storeScreenshotProofStatus,
   };
@@ -471,6 +608,14 @@ export function buildMobileLaunchQaCaptureShareText(
     "WoofWatcher Native QA Capture Plan",
     `Generated: ${generatedAtIso}`,
     `Progress: ${plan.completeSurfaces}/${plan.totalSurfaces} complete, ${plan.openSurfaces} open.`,
+    `Primary mission: ${plan.primaryMission.label}.`,
+    `Primary action: ${plan.primaryMission.ctaLabel}.`,
+    `Primary missing: ${
+      plan.primaryMission.missingEvidence.length
+        ? plan.primaryMission.missingEvidence.join(" ")
+        : "No missing proof is attached to the primary mission."
+    }`,
+    `Primary done when: ${plan.primaryMission.doneCondition}`,
     `Owner preview proof: ${plan.ownerPreviewProofStatus.statusLabel}.`,
     `Owner preview missing: ${
       plan.ownerPreviewProofStatus.missingEvidence.length

@@ -192,6 +192,90 @@ test("prioritizes launch-critical unreviewed targets before release-polish targe
   assert.equal(plan.nextTargets[1]?.surfaceId, "care-pass");
 });
 
+test("promotes the owner preview core loop as the primary mission before isolated captures", () => {
+  const surfaces: readonly MobileReleaseQaSurface[] = [
+    focusedSurfaces[0],
+    {
+      id: "owner-preview-core-loop",
+      title: "Owner Preview Core Loop",
+      route: "/",
+      priority: "launch-critical",
+      goal: "Prove a real owner can move through the main beta loop without dead ends.",
+      devicePrompt: "Run the owner route loop on iOS and Android.",
+      setupSteps: ["Use local preview data with no private real household details visible."],
+      verificationSteps: ["Open Home, Log, Plans, Health, and More in order from the bottom navigation."],
+      acceptanceCriteria: ["The bottom-nav loop never hides the active action or routes to a blank screen."],
+      failureEscalation: "Mark Needs tune if any core route is confusing, clipped, or a dead end.",
+      requiredEvidence: [
+        "iOS screenshot of Quick Log or Log.",
+        "Android screenshot of Launch Readiness from More.",
+        "Note confirming Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass had no dead ends.",
+      ],
+      launchRisk: "If this loop is not proven, the real owner beta journey is untrusted.",
+    },
+    focusedSurfaces[1],
+  ];
+
+  const plan = buildMobileLaunchQaCapturePlan(null, surfaces);
+
+  assert.equal(plan.nextTargets[0]?.surfaceId, "home");
+  assert.equal(plan.primaryMission.kind, "owner-preview");
+  assert.equal(plan.primaryMission.target?.surfaceId, "owner-preview-core-loop");
+  assert.match(plan.primaryMission.label, /Owner Preview Core Loop/);
+  assert.match(plan.primaryMission.doneCondition, /iOS\/Android proof/);
+});
+
+test("uses the first Needs tune route as the primary mission before new proof capture", () => {
+  const session: MobileQaSessionState = {
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {
+      "care-pass": "needs-review",
+    },
+    surfaceNotes: {
+      "care-pass": "Care Pass share action is hidden behind the paw nav on Android.",
+    },
+    surfaceEvidenceById: {},
+  };
+
+  const plan = buildMobileLaunchQaCapturePlan(session, focusedSurfaces);
+
+  assert.equal(plan.primaryMission.kind, "needs-tune");
+  assert.equal(plan.primaryMission.target?.surfaceId, "care-pass");
+  assert.match(plan.primaryMission.ctaLabel, /Fix/);
+  assert.match(plan.primaryMission.detail, /Care Pass share action/);
+});
+
+test("keeps pass-pending-proof targets as the primary mission until evidence is attached", () => {
+  const session: MobileQaSessionState = {
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {
+      home: "pass",
+    },
+    surfaceNotes: {},
+    surfaceEvidenceById: {
+      home: [
+        {
+          uri: "file:///qa/ios-home.png",
+          fileName: "ios-home.png",
+          source: "library",
+          targetPlatform: "ios",
+          capturedAtIso: "2026-06-29T09:00:00.000Z",
+        },
+      ],
+    },
+  };
+
+  const plan = buildMobileLaunchQaCapturePlan(session, focusedSurfaces);
+
+  assert.equal(plan.primaryMission.kind, "proof-pending");
+  assert.equal(plan.primaryMission.target?.surfaceId, "home");
+  assert.match(plan.primaryMission.detail, /Attach 1 Android screenshot for Home/);
+});
+
 test("preserves release surface order inside each priority group", () => {
   const surfaces: readonly MobileReleaseQaSurface[] = [
     {

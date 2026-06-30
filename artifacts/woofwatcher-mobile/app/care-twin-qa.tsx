@@ -369,7 +369,8 @@ export default function CareTwinQaScreen() {
         : colors.copper
     : colors.mutedForeground;
   const focusedQaEvidence = focusedQaTarget ? surfaceEvidenceById[focusedQaTarget.target.surfaceId] ?? [] : [];
-  const nextBetaTarget = betaCapturePlan.nextTargets[0];
+  const nextBetaMission = betaCapturePlan.primaryMission;
+  const nextBetaTarget = nextBetaMission.target ?? betaCapturePlan.nextTargets[0];
   const nextBetaTargetMissingEvidence = nextBetaTarget?.missingEvidence ?? [];
   const nextBetaTargetHasMissingEvidence = nextBetaTargetMissingEvidence.length > 0;
   const nextBetaTargetPassPendingProof = nextBetaTarget?.status === "pass" && nextBetaTargetHasMissingEvidence;
@@ -841,7 +842,7 @@ export default function CareTwinQaScreen() {
               </Text>
               <Text style={[s.betaRunText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                 {nextBetaTarget
-                  ? `Start with ${nextBetaTarget.title}.`
+                  ? `Start with ${nextBetaMission.label}. ${nextBetaMission.detail}`
                   : "All listed launch surfaces have local QA evidence."}
               </Text>
             </View>
@@ -869,10 +870,10 @@ export default function CareTwinQaScreen() {
                   <Ionicons name="phone-portrait-outline" size={17} color={colors.copper} />
                   <View style={s.betaRunMissionCopy}>
                     <Text style={[s.betaRunMissionKicker, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-                      Next device mission
+                      Primary device mission
                     </Text>
                     <Text style={[s.betaRunMissionTitle, { color: colors.foreground, fontFamily: DISPLAY }]} numberOfLines={1}>
-                      {nextBetaTarget.title}
+                      {nextBetaMission.label}
                     </Text>
                   </View>
                 </View>
@@ -1011,6 +1012,14 @@ export default function CareTwinQaScreen() {
                   {nextBetaTarget.failureEscalation}
                 </Text>
               </View>
+              <View style={[s.betaRunEscalation, { backgroundColor: `${colors.sage}12`, borderColor: `${colors.sage}55` }]}>
+                <Text style={[s.betaRunEscalationLabel, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+                  Done condition
+                </Text>
+                <Text style={[s.betaRunEscalationText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  {nextBetaMission.doneCondition}
+                </Text>
+              </View>
               <View style={s.betaRunMissionActions}>
                 <Pressable
                   accessibilityRole="button"
@@ -1099,8 +1108,8 @@ export default function CareTwinQaScreen() {
                   </View>
                 </View>
               </View>
-              <Text style={[s.betaRunMissionDoneText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                Local QA evidence is complete for this checklist. Share the report, then keep public store approval separate from beta proof.
+                <Text style={[s.betaRunMissionDoneText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {nextBetaMission.detail}
               </Text>
             </View>
           )}

@@ -827,6 +827,11 @@ export default function MoreScreen() {
     { icon: "bone", label: "Treats", value: dietProfile.treatsAllowed },
     { icon: "vomit", label: "Avoid", value: dietProfile.avoid },
   ];
+  const nativeQaPrimaryMission = nativeQaCapturePlan.primaryMission;
+  const nativeQaPrimaryMissionTarget =
+    nativeQaPrimaryMission.target ??
+    nativeQaCapturePlan.nextTargets[0] ??
+    nativeQaCapturePlan.storeScreenshotProofStatus.nextTarget;
 
   const links: { icon: PulseIconName; iconName: keyof typeof Ionicons.glyphMap; label: string; sub: string; onPress: () => void }[] = [
     {
@@ -898,7 +903,7 @@ export default function MoreScreen() {
             sub: "Internal device review for Phoenix room states and sprite loops",
             onPress: () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0]) as never);
+              router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
             },
           },
         ]
@@ -961,7 +966,7 @@ export default function MoreScreen() {
     tone: launchStatusTone(tile.status, colors),
     onPress:
       tile.key === "native-qa"
-        ? () => router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0]) as never)
+        ? () => router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never)
         : tile.key === "storage" || tile.key === "store-approval"
           ? () => router.push("/privacy")
           : tile.key === "woofguide-ai"
@@ -1094,7 +1099,7 @@ export default function MoreScreen() {
     switch (launchReadinessPlan.nextGate.action) {
       case "open-native-qa":
         Haptics.selectionAsync();
-        router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0]) as never);
+        router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
         return;
       case "share-native-qa-fix-brief":
         shareNativeQaFixBrief();
@@ -1315,7 +1320,7 @@ export default function MoreScreen() {
                   onPress={() => {
                     Haptics.selectionAsync();
                     if (launchReleasePacket.betaShipStatus === "qa-first") {
-                      router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0] ?? storeScreenshotProofStatus.nextTarget) as never);
+                      router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
                       return;
                     }
                     shareBetaHandoffPacket();
@@ -1829,6 +1834,38 @@ export default function MoreScreen() {
                     </Text>
                   </View>
                 </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open primary Native QA mission: ${nativeQaPrimaryMission.label}. ${nativeQaPrimaryMission.detail}`}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+                  }}
+                  style={({ pressed }) => [
+                    s.nativeQaOwnerProofRow,
+                    {
+                      borderColor: colors.primary + "66",
+                      backgroundColor: pressed ? colors.primary + "18" : colors.primary + "10",
+                      opacity: pressed ? 0.76 : 1,
+                    },
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.nativeQaOwnerProofLabel, { color: colors.primary, fontFamily: "Inter_800ExtraBold" }]}>
+                      Primary mission
+                    </Text>
+                    <Text style={[s.nativeQaOwnerProofTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                      {nativeQaPrimaryMission.label}
+                    </Text>
+                    <Text
+                      numberOfLines={2}
+                      style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                    >
+                      {nativeQaPrimaryMission.detail}
+                    </Text>
+                  </View>
+                  <Ionicons name="locate-outline" size={17} color={colors.primary} />
+                </Pressable>
                 <View
                   style={[
                     s.nativeQaOwnerProofRow,
@@ -1981,7 +2018,7 @@ export default function MoreScreen() {
                     }
                     onPress={() => {
                       Haptics.selectionAsync();
-                      router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0] ?? storeScreenshotProofStatus.nextTarget) as never);
+                      router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
                     }}
                     style={({ pressed }) => [
                       s.nativeQaCaptureCockpitAction,
@@ -2138,7 +2175,7 @@ export default function MoreScreen() {
                     }
                     onPress={
                       launchReleasePacket.betaShipStatus === "qa-first"
-                        ? () => router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0] ?? storeScreenshotProofStatus.nextTarget) as never)
+                        ? () => router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never)
                         : shareBetaHandoffPacket
                     }
                     style={({ pressed }) => [

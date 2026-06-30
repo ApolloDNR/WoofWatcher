@@ -544,7 +544,7 @@ test("registers the care twin native QA route for device review", () => {
   assert.doesNotMatch(qaRoute, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(
     more,
-    /buildCareTwinQaFocusRoute\(nativeQaCapturePlan\.nextTargets\[0\]\)/,
+    /buildCareTwinQaFocusRoute\(nativeQaPrimaryMissionTarget\)/,
   );
   assert.match(more, /__DEV__/);
   assert.match(qaRoute, /listCareTwinRuntimeQaScenarios/);
@@ -629,9 +629,12 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Native proof open/);
   assert.match(qaRoute, /Platform proof:/);
   assert.match(qaRoute, /48-hour beta run/);
+  assert.match(qaRoute, /nextBetaMission/);
+  assert.match(qaRoute, /betaCapturePlan\.primaryMission/);
   assert.match(qaRoute, /nextBetaTarget/);
   assert.match(qaRoute, /nextBetaSurface/);
-  assert.match(qaRoute, /Next device mission/);
+  assert.match(qaRoute, /Primary device mission/);
+  assert.match(qaRoute, /nextBetaMission\.doneCondition/);
   assert.match(qaRoute, /Owner route loop/);
   assert.match(qaRoute, /nextBetaTarget\.routeChecklist/);
   assert.match(qaRoute, /routeCheck\.expected/);
@@ -3946,7 +3949,14 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /setSavedNativeQaSummary/);
   assert.match(more, /nativeQaCapturePlan/);
   assert.match(more, /setNativeQaCapturePlan/);
+  assert.match(more, /nativeQaPrimaryMission/);
+  assert.match(more, /nativeQaPrimaryMissionTarget/);
   assert.match(more, /Native QA Next Captures/);
+  assert.match(more, /Primary mission/);
+  assert.match(
+    more,
+    /accessibilityLabel=\{`Open primary Native QA mission:/,
+  );
   assert.match(more, /Share QA Plan/);
   assert.match(more, /nativeQaCapturePlan\.nextTargets/);
   assert.match(more, /nativeQaCaptureNeedsTuneTarget/);
