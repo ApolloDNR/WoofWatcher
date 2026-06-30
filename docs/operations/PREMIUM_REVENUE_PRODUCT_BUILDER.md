@@ -2437,6 +2437,12 @@ files after prepending bundled Node to PATH, route smoke `200` for `/`,
 `http://127.0.0.1:4194/`, and the JSON mobile beta doctor still truthfully
 blocked only on pnpm `11.7.0` versus required `10.24.0`.
 
+Remote verification for QA proof-manifest handoff commit `34f9eca` was manually
+dispatched as GitHub Actions run `28426606118`, but job `84231097976` failed
+before execution with `steps: []`. `gh run view --log-failed` returned
+`log not found: 84231097976`. Treat this as the standing GitHub account/pre-job
+blocker, not as product verification evidence or a local app regression.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
