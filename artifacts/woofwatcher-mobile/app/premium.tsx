@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef } from "react";
 import {
   Alert,
   Animated,
+  ImageBackground,
   Platform,
   Pressable,
   ScrollView,
@@ -24,10 +24,18 @@ import {
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { MIN_MOBILE_TOUCH_TARGET, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const PIXEL_DISPLAY = "PressStart2P_400Regular";
+const PREMIUM_VALUE_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.day.source;
+const PREMIUM_VALUE_STAGE_SPRITE = getCareTwinSpriteAsset("celebrate-hop");
+const PREMIUM_VALUE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["celebrate-hop"];
 
 function signalIcon(key: PremiumValueSignal["key"]): keyof typeof Ionicons.glyphMap {
   if (key === "household") return "people-outline";
@@ -71,6 +79,16 @@ export default function PremiumScreen() {
     preview.plans.find((plan) => plan.id === preview.recommendedPlanId) ?? preview.plans[1];
   const includedEntitlements = preview.entitlements.included.slice(0, 3);
   const lockedEntitlements = preview.entitlements.locked.slice(0, 5);
+  const premiumStageSpeech =
+    lockedEntitlements[0]
+      ? `${recommendedPlan.name} unlocks ${lockedEntitlements[0].label.toLowerCase()} when checkout is approved.`
+      : `${recommendedPlan.name} is ready to review once launch gates close.`;
+  const premiumStageHud = [
+    { label: "Plan", value: recommendedPlan.name, tone: colors.primary },
+    { label: "Price", value: recommendedPlan.monthlyPrice, tone: colors.amber },
+    { label: "Signals", value: String(preview.valueSignals.length), tone: colors.sage },
+    { label: "Gate", value: "Checkout", tone: colors.amber },
+  ];
 
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(18)).current;
@@ -106,32 +124,125 @@ export default function PremiumScreen() {
         contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
-          <LinearGradient
-            colors={[colors.midnight, colors.primary, colors.sage]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={s.hero}
-          >
-            <View style={s.heroTop}>
-              <View style={s.heroMark}>
-                <Ionicons name="diamond-outline" size={21} color="#FFFFFF" />
+          <BoardCard padded={false} style={s.premiumValueStageCard}>
+            <ImageBackground
+              source={PREMIUM_VALUE_STAGE_ROOM}
+              resizeMode="cover"
+              imageStyle={[s.premiumValueStageImage, pixelImageStyle]}
+              style={s.premiumValueStage}
+              testID="premium-value-pixel-stage"
+            >
+              <View style={s.premiumValueStageShade} />
+              <View style={s.premiumValueStageScanline} />
+
+              <View style={s.premiumValueStageTop}>
+                <View style={s.premiumValueBubble}>
+                  <Text style={[s.premiumValueKicker, { color: colors.copper, fontFamily: PIXEL_DISPLAY }]}>
+                    Plus Value Console
+                  </Text>
+                  <Text
+                    numberOfLines={3}
+                    style={[s.premiumValueSpeech, { color: colors.brandNavy, fontFamily: PIXEL_DISPLAY }]}
+                  >
+                    {premiumStageSpeech}
+                  </Text>
+                  <View style={s.premiumValueBubbleTail} />
+                </View>
+                <View
+                  style={[
+                    s.premiumValueChip,
+                    { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" },
+                  ]}
+                >
+                  <Ionicons name="lock-closed-outline" size={15} color={colors.amber} />
+                  <Text style={[s.premiumValueChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                    Checkout gated
+                  </Text>
+                </View>
               </View>
-              <View style={[s.planBadge, { backgroundColor: "rgba(255,255,255,0.16)" }]}>
-                <Text style={[s.planBadgeText, { fontFamily: "Inter_700Bold" }]}>
-                  {recommendedPlan.badge}
-                </Text>
+
+              <View pointerEvents="none" style={s.premiumValueSprite}>
+                <View style={s.premiumValueSpriteShadow} />
+                <SpriteSheetPlayer
+                  asset={PREMIUM_VALUE_STAGE_SPRITE}
+                  track={PREMIUM_VALUE_STAGE_TRACK}
+                  width={136}
+                  height={136}
+                  testID="premium-value-pixel-sprite"
+                />
               </View>
-            </View>
-            <Text style={[s.heroTitle, { fontFamily: DISPLAY }]}>WoofWatcher Plus</Text>
-            <Text style={[s.heroSub, { fontFamily: "Inter_500Medium" }]}>
-              Premium dog care built around advanced meals, Health Watch, shared household routines, records, and reports.
-            </Text>
-            <View style={s.recoRow}>
-              <Text style={[s.recoLabel, { fontFamily: "Inter_600SemiBold" }]}>Recommended</Text>
-              <Text style={[s.recoPlan, { fontFamily: DISPLAY_SEMI }]}>{recommendedPlan.name}</Text>
-              <Text style={[s.recoPrice, { fontFamily: "Inter_700Bold" }]}>{recommendedPlan.monthlyPrice}</Text>
-            </View>
-          </LinearGradient>
+
+              <View
+                style={[
+                  s.premiumValueHud,
+                  { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" },
+                ]}
+              >
+                {premiumStageHud.map((metric) => (
+                  <View key={metric.label} style={s.premiumValueHudCell}>
+                    <Text style={[s.premiumValueHudLabel, { color: colors.ivory, fontFamily: PIXEL_DISPLAY }]}>
+                      {metric.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[s.premiumValueHudValue, { color: metric.tone, fontFamily: "Inter_800ExtraBold" }]}
+                    >
+                      {metric.value}
+                    </Text>
+                    <View style={s.premiumValueSignalRow}>
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <View
+                          key={`${metric.label}-${index}`}
+                          style={[
+                            s.premiumValueSignalBar,
+                            {
+                              backgroundColor:
+                                index < Math.min(5, preview.valueSignals.length || 1)
+                                  ? metric.tone
+                                  : colors.ivory + "30",
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <View style={s.premiumValueFooter}>
+                <View
+                  style={[
+                    s.premiumValuePlanCard,
+                    { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" },
+                  ]}
+                >
+                  <Text style={[s.premiumValuePlanLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                    Recommended
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[s.premiumValuePlanValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                  >
+                    {recommendedPlan.name} · {recommendedPlan.monthlyPrice}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open premium launch checklist from value console"
+                  onPress={showLaunchChecklist}
+                  style={({ pressed }) => [
+                    s.premiumValueAction,
+                    { backgroundColor: colors.sage, opacity: pressed ? 0.82 : 1 },
+                  ]}
+                >
+                  <Text style={[s.premiumValueActionText, { fontFamily: "Inter_800ExtraBold" }]}>
+                    Launch checklist
+                  </Text>
+                  <Ionicons name="arrow-forward" size={15} color={colors.ivory} />
+                </Pressable>
+              </View>
+            </ImageBackground>
+          </BoardCard>
 
           <View style={[s.notice, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "45" }]}>
             <Ionicons name="lock-closed-outline" size={16} color={colors.amber} />
@@ -321,36 +432,177 @@ function PlanCard({
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  hero: {
-    borderRadius: 26,
-    padding: 22,
-    minHeight: 260,
-    justifyContent: "space-between",
+  premiumValueStageCard: {
     overflow: "hidden",
+    borderRadius: 8,
   },
-  heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  heroMark: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.16)",
+  premiumValueStage: {
+    minHeight: 372,
+    overflow: "hidden",
+    justifyContent: "space-between",
+  },
+  premiumValueStageImage: {
+    borderRadius: 8,
+  },
+  premiumValueStageShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(8, 20, 36, 0.14)",
+  },
+  premiumValueStageScanline: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderColor: "rgba(255, 249, 239, 0.22)",
+  },
+  premiumValueStageTop: {
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  premiumValueBubble: {
+    position: "relative",
+    flex: 1,
+    maxWidth: 248,
+    borderWidth: 2,
+    borderColor: "#142033",
+    backgroundColor: "rgba(255, 249, 239, 0.94)",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    shadowColor: "#081424",
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 5 },
+  },
+  premiumValueKicker: {
+    fontSize: 8,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  premiumValueSpeech: {
+    fontSize: 11,
+    lineHeight: 18,
+    marginTop: 6,
+  },
+  premiumValueBubbleTail: {
+    position: "absolute",
+    width: 16,
+    height: 16,
+    left: 22,
+    bottom: -9,
+    backgroundColor: "rgba(255, 249, 239, 0.94)",
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#142033",
+    transform: [{ rotate: "45deg" }],
+  },
+  premiumValueChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  premiumValueChipText: {
+    fontSize: 11,
+    textTransform: "uppercase",
+  },
+  premiumValueSprite: {
+    position: "absolute",
+    right: 20,
+    bottom: 134,
+    width: 146,
+    height: 146,
     alignItems: "center",
     justifyContent: "center",
   },
-  planBadge: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  planBadgeText: { color: "#FFFFFF", fontSize: 12 },
-  heroTitle: { color: "#FFFFFF", fontSize: 34, letterSpacing: 0, marginTop: 28 },
-  heroSub: { color: "rgba(255,255,255,0.84)", fontSize: 15, lineHeight: 22, marginTop: 10 },
-  recoRow: {
+  premiumValueSpriteShadow: {
+    position: "absolute",
+    width: 112,
+    height: 24,
+    borderRadius: 999,
+    bottom: 10,
+    backgroundColor: "rgba(8, 20, 36, 0.24)",
+  },
+  premiumValueHud: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 86,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    flexDirection: "row",
+    gap: 8,
+  },
+  premiumValueHudCell: {
+    flex: 1,
+    minWidth: 0,
+  },
+  premiumValueHudLabel: {
+    fontSize: 7,
+    lineHeight: 11,
+    textTransform: "uppercase",
+    opacity: 0.72,
+  },
+  premiumValueHudValue: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 3,
+  },
+  premiumValueSignalRow: {
+    flexDirection: "row",
+    gap: 2,
+    marginTop: 6,
+  },
+  premiumValueSignalBar: {
+    flex: 1,
+    height: 6,
+    borderRadius: 2,
+  },
+  premiumValueFooter: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 14,
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "stretch",
+  },
+  premiumValuePlanCard: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    justifyContent: "center",
+  },
+  premiumValuePlanLabel: {
+    fontSize: 10,
+    textTransform: "uppercase",
+  },
+  premiumValuePlanValue: {
+    fontSize: 15,
+    marginTop: 2,
+  },
+  premiumValueAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    flexWrap: "wrap",
-    marginTop: 24,
+    justifyContent: "center",
+    gap: 6,
   },
-  recoLabel: { color: "rgba(255,255,255,0.72)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6 },
-  recoPlan: { color: "#FFFFFF", fontSize: 20 },
-  recoPrice: { color: "#FFFFFF", fontSize: 13 },
+  premiumValueActionText: {
+    color: "#FFF9EF",
+    fontSize: 12,
+  },
   notice: { flexDirection: "row", gap: 9, borderWidth: 1, borderRadius: 17, padding: 14, marginTop: 14 },
   noticeText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
   premiumBoard: { marginTop: 18 },

@@ -2195,6 +2195,22 @@ before execution with `steps: []`. `gh run view --log-failed` returned
 `log not found: 84188359018`. Treat this as the standing GitHub account/pre-job
 blocker, not as product verification evidence or a local app regression.
 
+The Premium pixel value-console pass moved the revenue surface into the same
+Option B product world without pretending checkout is live. Premium now opens
+with the dogless day room, a live `celebrate-hop` `SpriteSheetPlayer`,
+hard-pixel rendering, `Plus Value Console` speech tied to the recommended plan
+and locked entitlement, a `Checkout gated` chip, source-backed Plan/Price/
+Signals/Gate HUD metrics, and a launch-checklist CTA. Existing premium value
+signals, plan cards, launch entitlements, the disabled-payments notice, and
+Free-plan state remain intact. Red/green verification first failed on the
+missing pixel-stage contract, then passed mobile readiness 100/100 after
+implementation. Fresh local verification passed mobile TypeScript, the 469-test
+behavior/readiness suite, root TypeScript, PixelLab verification `ok=149
+missing=0 invalid=0`, Expo web export to `.expo-smoke` with 218 assets / 222
+files, `/premium` route smoke, and `git diff --check`. No payment provider,
+checkout action, subscription activation, app-store approval, or store billing
+claim was added.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

@@ -2014,6 +2014,21 @@ test("keeps Premium value, plan, and entitlement surfaces on shared board anatom
   assert.doesNotMatch(premium, /signalCard:/);
 });
 
+test("keeps Premium rooted in a launch-safe pixel value stage", () => {
+  const premium = readAppFile("premium.tsx");
+
+  assert.match(premium, /ImageBackground/);
+  assert.match(premium, /PREMIUM_VALUE_STAGE_ROOM/);
+  assert.match(premium, /CARE_TWIN_ROOM_VARIANT_ASSETS\.day/);
+  assert.match(premium, /SpriteSheetPlayer/);
+  assert.match(premium, /getCareTwinSpriteAsset\("celebrate-hop"\)/);
+  assert.match(premium, /CARE_TWIN_SPRITE_MANIFEST\["celebrate-hop"\]/);
+  assert.match(premium, /pixelImageStyle/);
+  assert.match(premium, /Plus Value Console/);
+  assert.match(premium, /Checkout gated/);
+  assert.match(premium, /Launch checklist/);
+});
+
 test("keeps Privacy export and launch safety surfaces on shared board anatomy", () => {
   const privacy = readAppFile("privacy.tsx");
 
