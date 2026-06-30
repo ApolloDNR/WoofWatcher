@@ -288,6 +288,15 @@ export default function WoofGuideScreen() {
       return;
     }
 
+    if (draft.kind === "report_history") {
+      setMessages((prev) => [
+        { id: `draft_${Date.now()}`, role: "assistant", content: draft.body },
+        ...prev,
+      ]);
+      setReviewAction(null);
+      return;
+    }
+
     if (draft.kind === "pet_credential_history") {
       setMessages((prev) => [
         { id: `draft_${Date.now()}`, role: "assistant", content: draft.body },

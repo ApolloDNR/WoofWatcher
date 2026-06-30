@@ -932,6 +932,27 @@ test("keeps WoofGuide saved Dog ID history owner-reviewed and provider-gated", (
   assert.doesNotMatch(historyBranch, /addEntry|updateCareDoc/);
 });
 
+test("keeps WoofGuide saved report history owner-reviewed and provider-gated", () => {
+  const guide = readAppFile("woofguide.tsx");
+  const actions = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "woofGuideActions.ts"),
+    "utf8",
+  );
+
+  assert.match(actions, /summarizeReportArtifacts/);
+  assert.match(actions, /id: "report-history"/);
+  assert.match(actions, /kind: "report_history"/);
+  assert.match(actions, /server-backed report storage, cloud sharing/);
+  assert.match(actions, /route: "\/records"/);
+  assert.match(guide, /draft\.kind === "report_history"/);
+  assert.match(guide, /content: draft\.body/);
+  const historyBranch = guide.slice(
+    guide.indexOf('draft.kind === "report_history"'),
+    guide.indexOf('draft.kind === "pet_credential_history"'),
+  );
+  assert.doesNotMatch(historyBranch, /addEntry|updateCareDoc/);
+});
+
 test("keeps Premium value, plan, and entitlement surfaces on shared board anatomy", () => {
   const premium = readAppFile("premium.tsx");
 

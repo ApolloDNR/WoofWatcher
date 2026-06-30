@@ -108,6 +108,8 @@ Current evidence, 2026-06-30: Records Report History now summarizes saved local 
 
 Current evidence, 2026-06-30: WoofGuide now summarizes saved local Dog ID credential artifacts from Report History. The owner-reviewed `pet_credential_history` draft points owners back to Records for resend or printable-source sharing while keeping provider-backed credential storage, native PDF/image export, cloud sharing, retention, and deletion policy gated.
 
+Current evidence, 2026-06-30: WoofGuide now summarizes saved local report-history readiness from the same shared Report History helper. The owner-reviewed `report_history` draft appears when reusable Care Pass or Progress Report sources exist, routes owners to Records Report History for resend or printable-source sharing, inserts only reviewed assistant text, and keeps native PDF export, server-backed report storage, cloud sharing, retention, deletion, and unsupervised assistant actions gated.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.

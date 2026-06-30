@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { createPetCredentialArtifact } from "../../../lib/care-domain/src/index.ts";
+import {
+  buildCarePass,
+  createCarePassArtifact,
+  createPetCredentialArtifact,
+  createProgressReportArtifact,
+} from "../../../lib/care-domain/src/index.ts";
 import { deriveWoofGuideActions } from "./woofGuideActions.ts";
 
 const NOW = new Date("2026-06-06T15:00:00-07:00").getTime();
@@ -303,4 +308,81 @@ test("surfaces saved Dog ID credential history without claiming provider storage
   assert.match(historyAction?.draft?.body ?? "", /Report History/);
   assert.match(historyAction?.draft?.body ?? "", /local credential sources/i);
   assert.doesNotMatch(historyAction?.draft?.body ?? "", /cloud storage ready|PDF export ready/i);
+});
+
+test("surfaces saved report history without claiming native or server-backed export", () => {
+  const carePass = createCarePassArtifact(
+    buildCarePass({
+      audience: "sitter",
+      profile: { name: "Phoenix" },
+      routines: [{ id: "walk", type: "walk", label: "Morning walk", time: "8:00 AM" }],
+      entries: [
+        {
+          id: "walk-log",
+          type: "walk",
+          title: "Morning walk",
+          caregiver: "Apollo",
+          occurredAt: "2026-06-06T14:00:00.000Z",
+          details: { householdVisible: true },
+        },
+      ],
+      records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" }],
+    }),
+    "2026-06-08T06:30:00.000Z",
+  );
+  const progressReport = createProgressReportArtifact({
+    dogName: "Phoenix",
+    periodDays: 30,
+    generatedAt: "Jun 9, 7:30 AM",
+    createdAt: "2026-06-09T06:30:00.000Z",
+    summary: "30-day progress report for caregiver and vet review.",
+    sections: [{ title: "Care Summary", lines: ["Total entries logged: 14"] }],
+  });
+
+  const actions = deriveWoofGuideActions(
+    {
+      profile: {
+        name: "Phoenix",
+        breed: "Shepherd mix",
+        primaryVet: "River City Vet",
+        emergencyContact: "Apollo - 555-0100",
+        microchipNumber: "985112003004551",
+        insuranceProvider: "Lemonade",
+        insurancePolicy: "WW-1042",
+      },
+      dietProfile: {
+        primaryFood: "Sensitive kibble",
+        normalPortion: "1 cup",
+        mealSchedule: "7 AM and 6 PM",
+      },
+      caregivers: [{ name: "Apollo", role: "Owner" }],
+      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
+      records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" }],
+      reportArtifacts: [carePass, progressReport],
+      entries: [
+        {
+          id: "breakfast",
+          type: "meal",
+          title: "Breakfast",
+          caregiver: "Apollo",
+          occurredAt: "2026-06-06T14:00:00.000Z",
+          details: { householdVisible: true },
+        },
+      ],
+    },
+    NOW,
+  );
+
+  const reportAction = actions.find((action) => action.id === "report-history");
+
+  assert.equal(reportAction?.route, "/records");
+  assert.equal(reportAction?.urgency, "normal");
+  assert.equal(reportAction?.draft?.kind, "report_history");
+  assert.match(reportAction?.detail ?? "", /2 local report sources saved/);
+  assert.match(reportAction?.draft?.body ?? "", /Phoenix Report History Review/);
+  assert.match(reportAction?.draft?.body ?? "", /Care Pass/);
+  assert.match(reportAction?.draft?.body ?? "", /Progress Report/);
+  assert.match(reportAction?.draft?.body ?? "", /Resend or share printable source/);
+  assert.match(reportAction?.draft?.safety ?? "", /server-backed report storage/);
+  assert.doesNotMatch(reportAction?.draft?.body ?? "", /cloud storage ready|PDF export ready/i);
 });

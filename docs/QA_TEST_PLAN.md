@@ -12,6 +12,10 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-30:
 
+- PASS: 287 focused tests with the command above on 2026-06-30, now including WoofGuide owner-reviewed `report_history` drafts that reuse saved local Care Pass and Progress Report source readiness without claiming native PDF export, server-backed report storage, cloud sharing, retention, deletion, or unsupervised assistant actions.
+- PASS: PixelLab asset verifier on 2026-06-30 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the WoofGuide report-history readiness slice.
+- PASS: `git diff --check` on 2026-06-30 after the WoofGuide report-history readiness slice.
+- LIMIT: `pnpm run build:ci` on 2026-06-30 stopped during dependency install with registry `EACCES` and `fetch failed` before workspace typecheck/build scripts started.
 - PASS: 285 focused tests with the command above on 2026-06-30, now including shared Report History readiness summaries plus Mobile Records wiring for local Care Pass, Progress Report, and Dog ID handoff sources before native PDF/export or server-backed report storage.
 - PASS: PixelLab asset verifier on 2026-06-30 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the Report History readiness slice.
 - PASS: `git diff --check` on 2026-06-30 after the Report History readiness slice.

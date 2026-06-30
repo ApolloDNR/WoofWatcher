@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-30: WoofGuide Can Review Saved Report History
+
+Decision: WoofGuide may surface an owner-reviewed `report_history` draft when local Care Pass or Progress Report sources already exist in Report History. The draft may summarize the reusable local source mix, identify the latest saved source, and route the owner back to Records Report History for resend or printable-source sharing.
+
+Reason: Records now summarizes local handoff sources across Care Pass, Progress Report, and Dog ID artifacts, but owners also need assistant-guided handoff prep when they are deciding what to share with a sitter, trainer, caregiver, or vet. Reusing `summarizeReportArtifacts` keeps WoofGuide aligned with Records while avoiding claims about native PDF export, server-backed report storage, cloud sharing, retention, deletion, live AI, persisted report drafts, or unsupervised assistant actions.
+
+Owner: Codex.
+
+Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, cloud sharing, persisted assistant drafts, permission-aware assistant writes, or storage retention/deletion policy becomes active release work.
+
 ### 2026-06-30: Report History Summarizes Local Handoff Sources
 
 Decision: Records Report History may show a shared local readiness summary across Care Pass, Progress Report, and Dog ID credential artifacts. The summary may count the saved source mix, identify the latest reusable source, and guide owners to resend or share printable source from Report History.

@@ -6,6 +6,7 @@ import {
   getRecordDueStatus,
   normalizeCareEventType,
   summarizePetCredentialArtifacts,
+  summarizeReportArtifacts,
   summarizeRecordVault,
   type ReportArtifact,
 } from "../../../lib/care-domain/src/index.ts";
@@ -101,6 +102,7 @@ export type WoofGuideDraftKind =
   | "mood_summary"
   | "records_attachment_prep"
   | "pet_credential_prep"
+  | "report_history"
   | "pet_credential_history";
 
 export interface WoofGuideDraftEntry {
@@ -370,6 +372,27 @@ function petCredentialHistoryDraft(state: WoofGuideActionState): WoofGuideAction
   };
 }
 
+function reportHistoryDraft(state: WoofGuideActionState): WoofGuideActionDraft | undefined {
+  const summary = summarizeReportArtifacts(state.reportArtifacts ?? []);
+  if (!summary.latest || (summary.carePassCount === 0 && summary.progressReportCount === 0)) return undefined;
+
+  const name = dogName(state);
+  return {
+    kind: "report_history",
+    title: "Review saved handoff sources",
+    body: [
+      `${name} Report History Review`,
+      "",
+      summary.summary,
+      summary.latestLine,
+      summary.action,
+      summary.boundaryLine,
+    ].filter(Boolean).join("\n"),
+    cta: "Open Report History",
+    safety: "Owner-reviewed resend only; native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled.",
+  };
+}
+
 export function deriveWoofGuideActions(
   state: WoofGuideActionState,
   now: number = Date.now(),
@@ -379,6 +402,7 @@ export function deriveWoofGuideActions(
   const moodDraft = moodSummaryDraft(state, now);
   const attachmentPrepDraft = recordsAttachmentPrepDraft(state);
   const credentialPrepDraft = petCredentialPrepDraft(state);
+  const savedReportHistoryDraft = reportHistoryDraft(state);
   const credentialHistoryDraft = petCredentialHistoryDraft(state);
   const moodUrgency = moodDraft
     ? deriveMoodTrend({ entries: state.entries, now, lookbackDays: 30, limit: 1 }).status === "watch"
@@ -479,6 +503,19 @@ export function deriveWoofGuideActions(
       icon: "records",
       route: "/records",
       draft: credentialPrepDraft,
+    });
+  }
+
+  if (savedReportHistoryDraft) {
+    const reportHistory = summarizeReportArtifacts(state.reportArtifacts ?? []);
+    actions.push({
+      id: "report-history",
+      label: "Review saved reports",
+      detail: reportHistory.summary,
+      urgency: "normal",
+      icon: "records",
+      route: "/records",
+      draft: savedReportHistoryDraft,
     });
   }
 
