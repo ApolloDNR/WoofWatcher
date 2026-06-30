@@ -91,6 +91,11 @@ test("keeps launch readiness truthful when native QA and providers are still ope
   assert.equal(plan.status, "native-qa-required");
   assert.equal(plan.storeLaunchReady, false);
   assert.equal(plan.badgeLabel, "NATIVE QA OPEN");
+  assert.equal(plan.nextGate.kind, "native-qa");
+  assert.equal(plan.nextGate.action, "share-native-qa-fix-brief");
+  assert.match(plan.nextGate.label, /Needs tune/i);
+  assert.match(plan.nextGate.detail, /1 route/i);
+  assert.equal(plan.nextGate.ctaLabel, "Share Fix Brief");
   assert.match(plan.summary, /internal review/i);
   assert.ok(plan.blockers.some((blocker) => /Native iOS\/Android QA/i.test(blocker)));
   assert.ok(plan.blockers.some((blocker) => /storage/i.test(blocker)));
@@ -114,6 +119,9 @@ test("does not call WoofWatcher store-ready until every local, provider, and app
   assert.equal(plan.status, "store-ready");
   assert.equal(plan.storeLaunchReady, true);
   assert.equal(plan.badgeLabel, "STORE READY");
+  assert.equal(plan.nextGate.kind, "store-submission");
+  assert.equal(plan.nextGate.action, "share-store-packet");
+  assert.equal(plan.nextGate.ctaLabel, "Share Store Packet");
   assert.equal(plan.blockers.length, 0);
   assert.ok(plan.tiles.every((tile) => tile.status === "ready"));
   assert.match(plan.summary, /ready for release submission/i);
@@ -133,6 +141,9 @@ test("surfaces sync and local foundation gaps before provider approval", () => {
 
   assert.equal(plan.status, "provider-gated");
   assert.equal(plan.storeLaunchReady, false);
+  assert.equal(plan.nextGate.kind, "local-foundation");
+  assert.equal(plan.nextGate.action, "share-beta-handoff");
+  assert.match(plan.nextGate.label, /Expo\/EAS/i);
   assert.ok(plan.blockers.some((blocker) => /EAS/i.test(blocker)));
   assert.ok(plan.blockers.some((blocker) => /PixelLab/i.test(blocker)));
 
@@ -158,6 +169,9 @@ test("distinguishes owner-staged support packets from final legal and store appr
 
   assert.equal(plan.status, "approval-required");
   assert.equal(plan.storeLaunchReady, false);
+  assert.equal(plan.nextGate.kind, "owner-approval");
+  assert.equal(plan.nextGate.action, "share-launch-packet");
+  assert.match(plan.nextGate.label, /owner/i);
 
   const approvalTile = plan.tiles.find((tile) => tile.key === "store-approval");
   assert.equal(approvalTile?.status, "review");
@@ -165,6 +179,20 @@ test("distinguishes owner-staged support packets from final legal and store appr
   assert.match(approvalTile?.detail ?? "", /final legal/i);
   assert.ok(plan.blockers.some((blocker) => /Privacy\/legal owner packet/i.test(blocker)));
   assert.ok(plan.blockers.some((blocker) => /Support runbook owner packet/i.test(blocker)));
+});
+
+test("points launch readiness at native QA when no device proof exists yet", () => {
+  const plan = deriveLaunchReadiness({
+    ...fullyApprovedInput,
+    nativeQa: null,
+  });
+
+  assert.equal(plan.status, "internal-preview");
+  assert.equal(plan.nextGate.kind, "native-qa");
+  assert.equal(plan.nextGate.action, "open-native-qa");
+  assert.equal(plan.nextGate.ctaLabel, "Open QA Cockpit");
+  assert.match(plan.nextGate.label, /iOS \+ Android proof/i);
+  assert.match(plan.nextGate.detail, /real device screenshots/i);
 });
 
 test("provides owner-readable badge labels for launch status", () => {

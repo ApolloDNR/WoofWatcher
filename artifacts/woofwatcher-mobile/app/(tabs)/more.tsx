@@ -51,6 +51,7 @@ import { buildBetaHandoffPacketShareText } from "@/lib/betaHandoffPacket";
 import {
   deriveLaunchReadiness,
   type LaunchReadinessNativeQaSummary,
+  type LaunchReadinessNextGateAction,
   type LaunchReadinessOverallStatus,
   type LaunchReadinessTileKey,
   type LaunchReadinessTileStatus,
@@ -206,6 +207,30 @@ function launchBadgeTone(
   if (status === "approval-required") return colors.copper;
   if (status === "provider-gated") return colors.rose;
   return colors.amber;
+}
+
+function launchNextGateIcon(action: LaunchReadinessNextGateAction): keyof typeof Ionicons.glyphMap {
+  switch (action) {
+    case "open-native-qa":
+    case "share-native-qa-fix-brief":
+      return "phone-portrait-outline";
+    case "open-provider-setup":
+      return "construct-outline";
+    case "open-privacy":
+      return "shield-checkmark-outline";
+    case "open-premium":
+      return "diamond-outline";
+    case "open-woofguide":
+      return "sparkles-outline";
+    case "open-avatar-studio":
+      return "color-palette-outline";
+    case "share-beta-handoff":
+      return "rocket-outline";
+    case "share-launch-packet":
+      return "share-social-outline";
+    case "share-store-packet":
+      return "storefront-outline";
+  }
 }
 
 function buildCareTwinQaFocusRoute(target: Pick<MobileLaunchQaCaptureTarget, "surfaceId"> | null | undefined): string {
@@ -948,6 +973,7 @@ export default function MoreScreen() {
                 : undefined,
   }));
   const readinessBadgeTone = launchBadgeTone(launchReadinessPlan.status, colors);
+  const launchNextGateIconName = launchNextGateIcon(launchReadinessPlan.nextGate.action);
   const launchReleasePacket = useMemo(
     () =>
       buildReleasePacket(launchReadinessPlan, {
@@ -1064,6 +1090,47 @@ export default function MoreScreen() {
     }).catch(() => Alert.alert("Needs Tune Fix Brief", message));
   };
 
+  const openLaunchNextGate = () => {
+    switch (launchReadinessPlan.nextGate.action) {
+      case "open-native-qa":
+        Haptics.selectionAsync();
+        router.push(buildCareTwinQaFocusRoute(nativeQaCapturePlan.nextTargets[0]) as never);
+        return;
+      case "share-native-qa-fix-brief":
+        shareNativeQaFixBrief();
+        return;
+      case "open-provider-setup":
+        Haptics.selectionAsync();
+        openProviderSetup();
+        return;
+      case "open-privacy":
+        Haptics.selectionAsync();
+        router.push("/privacy" as never);
+        return;
+      case "open-premium":
+        Haptics.selectionAsync();
+        router.push("/premium" as never);
+        return;
+      case "open-woofguide":
+        Haptics.selectionAsync();
+        router.push("/woofguide" as never);
+        return;
+      case "open-avatar-studio":
+        Haptics.selectionAsync();
+        router.push("/portrait" as never);
+        return;
+      case "share-beta-handoff":
+        shareBetaHandoffPacket();
+        return;
+      case "share-store-packet":
+        shareStoreSubmissionPacket();
+        return;
+      case "share-launch-packet":
+        shareLaunchPacket();
+        return;
+    }
+  };
+
   const nativeQaCaptureNeedsTuneTarget = nativeQaCapturePlan.firstNeedsTuneTarget;
   const ownerPreviewProofStatus = nativeQaCapturePlan.ownerPreviewProofStatus;
   const storeScreenshotProofStatus = nativeQaCapturePlan.storeScreenshotProofStatus;
@@ -1093,7 +1160,7 @@ export default function MoreScreen() {
       ? "Beta packet is ready. Review, then share."
       : launchReleasePacket.betaShipStatus === "qa-first"
         ? "Capture native QA proof before launch."
-        : launchReadinessPlan.nextActions[0] ?? "Clear launch gates without pretending providers are live.";
+        : launchReadinessPlan.nextGate.detail;
   const moreCommandHud = [
     {
       label: "Launch",
@@ -1581,6 +1648,40 @@ export default function MoreScreen() {
                 {launchReadinessPlan.summary} {launchReadinessPlan.nextActions[0] ?? "Prepare the final store packet after Apollo approval."}
               </Text>
             </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Next launch gate: ${launchReadinessPlan.nextGate.label}. ${launchReadinessPlan.nextGate.detail}`}
+              onPress={openLaunchNextGate}
+              style={({ pressed }) => [
+                s.launchNextGate,
+                {
+                  backgroundColor: readinessBadgeTone + "10",
+                  borderColor: readinessBadgeTone + "3D",
+                  opacity: pressed ? 0.78 : 1,
+                },
+              ]}
+            >
+              <View style={[s.launchNextGateIcon, { backgroundColor: readinessBadgeTone + "18" }]}>
+                <Ionicons name={launchNextGateIconName} size={18} color={readinessBadgeTone} />
+              </View>
+              <View style={s.launchNextGateBody}>
+                <Text style={[s.launchNextGateKicker, { color: readinessBadgeTone, fontFamily: "Inter_800ExtraBold" }]}>
+                  Next launch gate
+                </Text>
+                <Text style={[s.launchNextGateTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {launchReadinessPlan.nextGate.label}
+                </Text>
+                <Text style={[s.launchNextGateDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {launchReadinessPlan.nextGate.detail}
+                </Text>
+                <View style={s.launchNextGateCta}>
+                  <Text style={[s.launchNextGateCtaText, { color: readinessBadgeTone, fontFamily: "Inter_800ExtraBold" }]}>
+                    {launchReadinessPlan.nextGate.ctaLabel}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={15} color={readinessBadgeTone} />
+                </View>
+              </View>
+            </Pressable>
             <View style={[s.providerSetupPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <View style={s.providerSetupHeader}>
                 <View style={[s.providerSetupScore, { backgroundColor: providerSetupTone + "16" }]}>
@@ -3552,6 +3653,29 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   launchNoticeText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  launchNextGate: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  launchNextGateIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launchNextGateBody: { flex: 1 },
+  launchNextGateKicker: { fontSize: 9.4, lineHeight: 12, textTransform: "uppercase" },
+  launchNextGateTitle: { fontSize: 14.2, lineHeight: 18, marginTop: 3 },
+  launchNextGateDetail: { fontSize: 11.4, lineHeight: 16, marginTop: 4 },
+  launchNextGateCta: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
+  launchNextGateCtaText: { fontSize: 11.5, lineHeight: 15 },
   providerSetupPanel: {
     marginTop: 12,
     borderRadius: 8,

@@ -15,6 +15,25 @@ export type LaunchReadinessTileKey =
   | "plus-payments"
   | "store-approval";
 
+export type LaunchReadinessNextGateKind =
+  | "native-qa"
+  | "local-foundation"
+  | "provider-setup"
+  | "owner-approval"
+  | "store-submission";
+
+export type LaunchReadinessNextGateAction =
+  | "open-native-qa"
+  | "share-native-qa-fix-brief"
+  | "open-provider-setup"
+  | "open-privacy"
+  | "open-premium"
+  | "open-woofguide"
+  | "open-avatar-studio"
+  | "share-beta-handoff"
+  | "share-launch-packet"
+  | "share-store-packet";
+
 export interface LaunchReadinessNativeQaSummary {
   total: number;
   passed: number;
@@ -74,12 +93,21 @@ export interface LaunchReadinessTile {
   status: LaunchReadinessTileStatus;
 }
 
+export interface LaunchReadinessNextGate {
+  kind: LaunchReadinessNextGateKind;
+  action: LaunchReadinessNextGateAction;
+  label: string;
+  detail: string;
+  ctaLabel: string;
+}
+
 export interface LaunchReadinessPlan {
   status: LaunchReadinessOverallStatus;
   badgeLabel: string;
   storeLaunchReady: boolean;
   summary: string;
   tiles: LaunchReadinessTile[];
+  nextGate: LaunchReadinessNextGate;
   blockers: string[];
   nextActions: string[];
 }
@@ -370,6 +398,208 @@ function nativeBlockers(nativeQa: LaunchReadinessNativeQaSummary | null | undefi
   ];
 }
 
+function nativeNextGate(nativeQa: LaunchReadinessNativeQaSummary | null | undefined): LaunchReadinessNextGate | null {
+  if (nativeQaComplete(nativeQa)) return null;
+
+  if (!nativeQa) {
+    return {
+      kind: "native-qa",
+      action: "open-native-qa",
+      label: "Capture iOS + Android proof",
+      detail:
+        "Open Care Twin QA and attach real device screenshots before sharing the build outside owner/internal review.",
+      ctaLabel: "Open QA Cockpit",
+    };
+  }
+
+  if (nativeQa.needsReview > 0) {
+    return {
+      kind: "native-qa",
+      action: "share-native-qa-fix-brief",
+      label: "Resolve Needs tune routes",
+      detail: `${plural(nativeQa.needsReview, "route")} marked Needs tune. Share the fix brief, repair the first visible issue, then retest in Care Twin QA.`,
+      ctaLabel: "Share Fix Brief",
+    };
+  }
+
+  if (nativeQa.missingScreenshots > 0) {
+    return {
+      kind: "native-qa",
+      action: "open-native-qa",
+      label: "Attach missing device screenshots",
+      detail: `Need iOS ${nativeQa.missingIosScreenshots}, Android ${nativeQa.missingAndroidScreenshots}, and flexible ${nativeQa.missingAnyScreenshots} screenshots for store-facing proof.`,
+      ctaLabel: "Continue QA",
+    };
+  }
+
+  if (nativeQa.unreviewed > 0) {
+    return {
+      kind: "native-qa",
+      action: "open-native-qa",
+      label: "Review remaining QA surfaces",
+      detail: `${plural(nativeQa.unreviewed, "surface")} still needs Pass or Needs tune before this build can move forward.`,
+      ctaLabel: "Open QA Cockpit",
+    };
+  }
+
+  return {
+    kind: "native-qa",
+    action: "open-native-qa",
+    label: "Finish native QA proof",
+    detail: "Care Twin QA still has an unresolved device-proof gate. Reopen the cockpit and refresh the saved evidence.",
+    ctaLabel: "Open QA Cockpit",
+  };
+}
+
+function localNextGate(local: LaunchReadinessLocalInput): LaunchReadinessNextGate | null {
+  if (!local.careWorkflowsReady) {
+    return {
+      kind: "local-foundation",
+      action: "open-native-qa",
+      label: "Verify core care workflows",
+      detail: "Run Home, Log, Plans, Health, More, Care Pass, Avatar Studio, and WoofGuide through the QA cockpit.",
+      ctaLabel: "Open QA Cockpit",
+    };
+  }
+
+  if (!local.easProfilesReady) {
+    return {
+      kind: "local-foundation",
+      action: "share-beta-handoff",
+      label: "Verify Expo/EAS profiles",
+      detail: "Confirm the Expo release setup, build profiles, and dependency proof before handing the beta to testers.",
+      ctaLabel: "Share Beta Handoff",
+    };
+  }
+
+  if (!local.pixelAssetsReady) {
+    return {
+      kind: "local-foundation",
+      action: "open-avatar-studio",
+      label: "Verify PixelLab production assets",
+      detail: "Run the pixel asset verifier and confirm Phoenix sprites, room scenes, badges, and icon assets are not placeholders.",
+      ctaLabel: "Open Avatar Studio",
+    };
+  }
+
+  if (!local.privacyExportReady) {
+    return {
+      kind: "local-foundation",
+      action: "open-privacy",
+      label: "Verify privacy export and deletion",
+      detail: "Confirm export, deletion, storage-disclosure, and account-safety surfaces before public accounts are enabled.",
+      ctaLabel: "Open Privacy",
+    };
+  }
+
+  return null;
+}
+
+function providerNextGate(
+  provider: LaunchReadinessProviderInput,
+  syncTile: LaunchReadinessTile,
+): LaunchReadinessNextGate | null {
+  if (syncTile.status === "review") {
+    return {
+      kind: "provider-setup",
+      action: "open-provider-setup",
+      label: "Resolve Care Sync attention",
+      detail: syncTile.detail,
+      ctaLabel: "Edit Provider Plan",
+    };
+  }
+
+  if (!provider.authConfigured || !provider.databaseConfigured) {
+    return {
+      kind: "provider-setup",
+      action: "open-provider-setup",
+      label: "Configure production care sync",
+      detail: "Production auth and household database sync must be configured before logs can be treated as release-stable.",
+      ctaLabel: "Edit Provider Plan",
+    };
+  }
+
+  if (!provider.storageProviderConfigured) {
+    return {
+      kind: "provider-setup",
+      action: "open-provider-setup",
+      label: "Approve records storage",
+      detail: storageQueueDetail(provider.storageQueue),
+      ctaLabel: "Edit Provider Plan",
+    };
+  }
+
+  if (queueUploadReady(provider.storageQueue) > 0) {
+    return {
+      kind: "provider-setup",
+      action: "open-provider-setup",
+      label: "Verify attachment migration",
+      detail: storageQueueDetail(provider.storageQueue),
+      ctaLabel: "Edit Provider Plan",
+    };
+  }
+
+  if (!provider.aiProviderConfigured) {
+    return {
+      kind: "provider-setup",
+      action: "open-woofguide",
+      label: "Approve WoofGuide AI policy",
+      detail: "Provider key, model behavior, owner review, and veterinary-boundary disclosures must be configured truthfully.",
+      ctaLabel: "Open WoofGuide",
+    };
+  }
+
+  if (!provider.paymentsEnabled) {
+    return {
+      kind: "provider-setup",
+      action: "open-premium",
+      label: "Approve Plus checkout",
+      detail: "Subscriptions, refunds, support, entitlements, and app-store billing obligations must be approved before checkout goes live.",
+      ctaLabel: "Open Premium",
+    };
+  }
+
+  return null;
+}
+
+function approvalNextGate(provider: LaunchReadinessProviderInput): LaunchReadinessNextGate | null {
+  const approvalGaps = approvalBlockers(provider);
+  if (!approvalGaps.length) return null;
+
+  return {
+    kind: "owner-approval",
+    action: "share-launch-packet",
+    label: "Complete owner and store approvals",
+    detail: approvalGaps[0],
+    ctaLabel: "Share Launch Packet",
+  };
+}
+
+function readyNextGate(): LaunchReadinessNextGate {
+  return {
+    kind: "store-submission",
+    action: "share-store-packet",
+    label: "Prepare store submission packet",
+    detail: "All current readiness gates are closed. Package the App Store and Play Store submission materials for final owner sign-off.",
+    ctaLabel: "Share Store Packet",
+  };
+}
+
+function deriveNextGate(
+  input: LaunchReadinessInput,
+  local: LaunchReadinessLocalInput,
+  provider: LaunchReadinessProviderInput,
+  syncTile: LaunchReadinessTile,
+): LaunchReadinessNextGate {
+  return (
+    nativeNextGate(input.nativeQa) ??
+    localNextGate(local) ??
+    providerNextGate(provider, syncTile) ??
+    approvalNextGate(provider) ??
+    readyNextGate()
+  );
+}
+
 export function deriveLaunchReadiness(input: LaunchReadinessInput): LaunchReadinessPlan {
   const local = input.local ?? {};
   const provider = input.provider ?? {};
@@ -410,6 +640,7 @@ export function deriveLaunchReadiness(input: LaunchReadinessInput): LaunchReadin
 
   const nextActions = blockers.slice(0, 4).map((blocker) => `Close: ${blocker}`);
   if (!nextActions.length) nextActions.push("Prepare App Store and Play Store release submission packet.");
+  const nextGate = deriveNextGate(input, local, provider, syncTile);
 
   return {
     status,
@@ -417,6 +648,7 @@ export function deriveLaunchReadiness(input: LaunchReadinessInput): LaunchReadin
     storeLaunchReady,
     summary,
     tiles,
+    nextGate,
     blockers,
     nextActions,
   };

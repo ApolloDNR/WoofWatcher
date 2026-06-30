@@ -3822,6 +3822,12 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /supportRunbookOwnerReviewed/);
   assert.match(more, /launchReadinessPlan\.badgeLabel/);
   assert.match(more, /launchReadinessPlan\.summary/);
+  assert.match(more, /launchReadinessPlan\.nextGate/);
+  assert.match(more, /Next launch gate/);
+  assert.match(more, /openLaunchNextGate/);
+  assert.match(more, /launchNextGateIcon/);
+  assert.match(more, /accessibilityLabel=\{`Next launch gate:/);
+  assert.match(more, /launchReadinessPlan\.nextGate\.ctaLabel/);
   assert.match(more, /launchReleasePacket\.betaShipStatus/);
   assert.match(more, /launchReleasePacket\.betaVerdictLabel/);
   assert.match(more, /launchReleasePacket\.betaSummary/);
@@ -3903,6 +3909,10 @@ test("keeps More household, tools, and diet sections on shared board card anatom
     /No App Store or Play Store submission is approved by this checklist/,
   );
   assert.match(launchModel, /storageQueue/);
+  assert.match(launchModel, /LaunchReadinessNextGateAction/);
+  assert.match(launchModel, /deriveNextGate/);
+  assert.match(launchModel, /share-beta-handoff/);
+  assert.match(launchModel, /open-avatar-studio/);
   assert.match(launchModel, /local file/);
   assert.match(launchModel, /Device proof required/);
   assert.match(launchModel, /Native iOS\/Android QA evidence is not attached/);

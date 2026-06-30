@@ -2217,6 +2217,23 @@ before execution with `steps: []`. `gh run view --log-failed` returned
 `log not found: 84191529946`. Treat this as the standing GitHub account/pre-job
 blocker, not as product verification evidence or a local app regression.
 
+The Launch Readiness next-gate pass made More behave like a real launch cockpit
+instead of a passive checklist. `deriveLaunchReadiness` now returns a focused
+`nextGate` object with an owner-readable kind, action, label, detail, and CTA for
+native QA proof, Needs tune fix briefs, local Expo/EAS and PixelLab foundations,
+provider setup, owner approval, and store packet prep. More renders this as a
+pressable `Next launch gate` card under Launch Readiness and routes/shares the
+right next action: QA cockpit, Needs tune fix brief, Provider Launch Setup,
+Privacy, Premium, WoofGuide, Avatar Studio, beta handoff, launch packet, or
+store packet. Red/green verification first failed on missing `nextGate` and
+More UI hooks, then passed after implementation. Fresh local verification passed
+launch readiness tests 6/6, mobile readiness 100/100, the 470-test
+behavior/readiness suite, root TypeScript, mobile TypeScript, PixelLab
+verification `ok=149 missing=0 invalid=0`, Expo web export to `.expo-smoke` with
+218 assets / 222 files, and `git diff --check`. This does not clear native
+iOS/Android device proof, provider-backed services, app-store approval, legal/
+support approval, CI completion, or Apollo launch sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
