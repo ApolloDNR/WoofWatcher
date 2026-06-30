@@ -209,7 +209,7 @@ test("promotes the owner preview core loop as the primary mission before isolate
       requiredEvidence: [
         "iOS screenshot of Quick Log or Log.",
         "Android screenshot of Launch Readiness from More.",
-        "Note confirming Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass had no dead ends.",
+        "Note confirming Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
       ],
       launchRisk: "If this loop is not proven, the real owner beta journey is untrusted.",
     },
@@ -516,6 +516,7 @@ test("preserves owner preview route-loop details in the capture plan and share s
       "Plans:/calendar",
       "Health:/health",
       "More:/more",
+      "Adventure:/adventure",
       "Records:/records",
       "Avatar Studio:/portrait",
       "Care Pass:/records",
@@ -523,6 +524,7 @@ test("preserves owner preview route-loop details in the capture plan and share s
   );
   assert.match(target?.routeChecklist?.[1]?.expected ?? "", /Quick-log one safe care event/);
   assert.match(target?.routeChecklist?.[4]?.proof ?? "", /Android Launch Readiness screenshot/);
+  assert.match(target?.routeChecklist?.[5]?.expected ?? "", /private care quests/);
 
   const text = buildMobileLaunchQaCaptureShareText(plan, "2026-06-25T09:30:00.000Z");
 
@@ -530,6 +532,7 @@ test("preserves owner preview route-loop details in the capture plan and share s
   assert.match(text, /Home \(\/\): Confirm Phoenix status/);
   assert.match(text, /Log \(\/log\): Quick-log one safe care event/);
   assert.match(text, /More \(\/more\): Open Launch Readiness/);
+  assert.match(text, /Adventure \(\/adventure\): Confirm private care quests/);
   assert.match(text, /Care Pass \(\/records\): Confirm sitter\/vet\/trainer handoff/);
 });
 
@@ -581,7 +584,7 @@ test("keeps note-required owner preview evidence open until the QA note is writt
     ...sessionWithoutNote,
     surfaceNotes: {
       "owner-preview-core-loop":
-        "Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass were reachable without dead ends. Care Pass Report History storage status stayed truthful.",
+        "Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass were reachable without dead ends. Care Pass Report History storage status stayed truthful.",
     },
   };
 
@@ -679,7 +682,7 @@ test("keeps owner preview beta proof visible even when it is outside the visible
       requiredEvidence: [
         "iOS screenshot of Quick Log or Log.",
         "Android screenshot of More Launch Readiness.",
-        "Note confirming Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass had no dead ends.",
+        "Note confirming Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
       ],
       launchRisk: "This is the beta's real owner path.",
     },

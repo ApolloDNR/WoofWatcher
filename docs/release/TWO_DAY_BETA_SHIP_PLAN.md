@@ -15,7 +15,7 @@ Ship a polished Expo/PWA beta candidate that Apollo can preview, share with a sm
 The beta can include:
 
 - Local-first Phoenix care workflows.
-- Home, Log, Plans, Health, More, Records, Reports, Care Pass, Avatar Studio, WoofGuide, and Launch Readiness.
+- Home, Log, Plans, Health, More, Adventure, Records, Reports, Care Pass, Avatar Studio, WoofGuide, and Launch Readiness.
 - Meal served-to-outcome lifecycle.
 - Potty parent/outcome model.
 - Household pulse, Access Pass drafts, My Care Today, care logs, reminders, records, and report packets.
@@ -36,14 +36,14 @@ The beta must not claim:
 1. Keep the app compiling, exporting, and opening as an Expo/PWA beta.
 2. Make Launch Readiness distinguish internal beta readiness from public launch readiness.
 3. Capture or prepare the native iOS/Android QA path through `/care-twin-qa`.
-4. Keep the core workflows navigable and fast: Home, Log, Plans, Health, More.
+4. Keep the core workflows navigable and fast: Home, Log, Plans, Health, More, and Adventure.
 5. Preserve all truth boundaries around provider setup, payments, AI, storage, and store submission.
 6. Commit and push each verified beta-shipping slice.
 
 ## Owner/Test Checklist
 
 - Open the Expo/PWA beta on phone-size viewport.
-- Visit Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass.
+- Visit Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass.
 - From More, open Launch Readiness.
 - Read the 48-hour beta card's next actions.
 - Tap `Open QA Cockpit` if the card says device proof is still needed.
@@ -54,7 +54,7 @@ The beta must not claim:
 - Use the `48-hour beta run` card to start with the next required launch-critical surface.
 - Use the large cockpit actions first: platform tag, `Open Next Surface`, `Attach proof`, `Pass`, `Needs tune`, `Share QA`, and per-surface `Open surface` are all intended to be phone-sized beta controls.
 - If the card shows `Owner route loop`, follow that ordered checklist before marking the mission Pass; it is the beta's real owner journey, not an optional note.
-- When the current mission is `Owner Preview Core Loop`, use the bottom nav to open Home, Log, Plans, Health, and More in order, then confirm Records, Avatar Studio, and Care Pass are reachable from More without dead ends.
+- When the current mission is `Owner Preview Core Loop`, use the bottom nav to open Home, Log, Plans, Health, and More in order, then confirm Adventure, Records, Avatar Studio, and Care Pass are reachable from More or Home without dead ends.
 - On Home, confirm the header/menu action, Avatar Studio hero entry, household presence panel, Adventure inline action, pixel-room crop, and bottom-nav fit feel phone-sized, useful, and aligned with the premium neo-retro care-twin promise.
 - In the owner-preview loop, quick-log one safe care event or open the detail sheet, then undo it or leave a QA note if you do not want the test log to stay in local preview data.
 - On Log, confirm the care-type tabs, Undo/Add details, meal outcome, potty outcome, trust review, walk finish, and alone-time return controls feel phone-sized and easy to tap.
@@ -71,7 +71,7 @@ The beta must not claim:
 - If the target screen shows `Return to QA Cockpit`, use that banner after capture instead of manually hunting for the QA route.
 - Capture at least one iOS screenshot and one Android screenshot when devices/simulators are available.
 - For the owner-preview loop, capture the iOS screenshot on Quick Log or Log and the Android screenshot on More's Launch Readiness panel.
-- The shareable QA script should include the same route loop: Home, Log, Plans, Health, More, Records, Avatar Studio, Care Pass.
+- The shareable QA script should include the same route loop: Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, Care Pass.
 - In `/care-twin-qa`, set `Tag screenshot evidence` to iOS or Android before attaching the screenshot from Photos.
 - Attach screenshots from Photos to the current mission through the 48-hour beta card's `Attach proof` control, or to the matching QA surface farther down the cockpit.
 - Confirm the attached file shows the expected counted platform label.

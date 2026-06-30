@@ -46,7 +46,7 @@ const ownerLoopSurface: MobileReleaseQaSurface = {
   requiredEvidence: [
     "iOS screenshot of Quick Log or Log.",
     "Android screenshot of More Launch Readiness.",
-    "Note confirming Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass had no dead ends.",
+    "Note confirming Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
   ],
   launchRisk: "This is the beta's real owner path.",
   routeChecklist: [
@@ -67,6 +67,12 @@ const ownerLoopSurface: MobileReleaseQaSurface = {
       route: "/more",
       expected: "Open Launch Readiness and confirm proof status.",
       proof: "Android screenshot.",
+    },
+    {
+      label: "Adventure",
+      route: "/adventure",
+      expected: "Confirm private care quests and memory proof are reachable.",
+      proof: "Mission note.",
     },
   ],
 };

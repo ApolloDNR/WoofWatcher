@@ -289,8 +289,8 @@ The owner route-loop guide pass made that proof path visible inside the cockpit.
 `/care-twin-qa` now renders an `Owner route loop` panel in the 48-hour beta run
 card when the current target is the Owner Preview Core Loop. The same route
 checklist is carried into the capture plan and share script, so Apollo or a
-helper can test Home, Log, Plans, Health, More, Records, Avatar Studio, and Care
-Pass in order without drifting from the app's live QA model. This is still a
+helper can test Home, Log, Plans, Health, More, Adventure, Records, Avatar
+Studio, and Care Pass in order without drifting from the app's live QA model. This is still a
 native-capture guide; real iOS/Android screenshots and human approval remain the
 next release gate.
 
@@ -2264,10 +2264,33 @@ before execution with `steps: []`. `gh run view --log-failed` returned
 `log not found: 84200466442`. Treat this as the standing GitHub account/pre-job
 blocker, not as product verification evidence or a local app regression.
 
+The Owner Preview Adventure QA pass made the beta route loop match the current
+care-RPG product promise. `MOBILE_RELEASE_QA_SURFACES` now requires Adventure
+Mode in the Owner Preview Core Loop, tells iOS/Android testers to open it from
+Home or More, and checks that private care quests, proof rows, and the memory
+shelf are reachable without implying public maps, cloud sharing, native proof,
+or provider-backed storage. The capture-plan primary mission, share script,
+beta handoff fixture, two-day beta ship plan, and automation queue now carry the
+same route order: Home, Log, Plans, Health, More, Adventure, Records, Avatar
+Studio, and Care Pass. Focused local verification passed `mobileReleaseQa.test.ts`
+10/10, `mobileLaunchQaEvidence.test.ts` 19/19, and `betaHandoffPacket.test.ts`
+2/2 after the expected red test first caught the old route checklist omission.
+Fresh local closeout verification also passed mobile readiness 100/100, launch
+readiness 6/6, release packet 5/5, store submission packet 3/3, mobile
+TypeScript, root TypeScript, the 473-test API/mobile/PWA/care-domain focused
+suite, PixelLab assets `ok=149 missing=0 invalid=0`, package-local Expo web
+export to `.expo-smoke` with 218 assets / 222 files after prepending bundled
+Node to PATH, live preview route smoke `200` for `/`, `/care-twin-qa`,
+`/adventure`, and `/log` at `http://127.0.0.1:4194/`, and `git diff --check`
+with expected Windows CRLF warnings only. The JSON mobile beta doctor remains
+truthfully `BLOCKED` because Corepack is not on PATH and the
+available bundled pnpm is `11.7.0` while the repo pins `pnpm@10.24.0`; this is
+dependency-environment proof, not an app regression.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
-2. Run native iOS/Android simulator or device QA with More's focused `/care-twin-qa?qaSurface=...` links and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with More's `Next launch gate` or `Native QA Next Captures > Primary mission`. For the `Owner Preview Core Loop`, read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Records, Avatar Studio, Care Pass, and Adventure without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the focused card or 48-hour mission card, write the required note, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, use More's `Share Beta Handoff` action after saved proof is current, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, mark the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue as Needs tune, use More's `Share Fix Brief`, and fix that first route before moving on.
+2. Run native iOS/Android simulator or device QA with More's focused `/care-twin-qa?qaSurface=...` links and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with More's `Next launch gate` or `Native QA Next Captures > Primary mission`. For the `Owner Preview Core Loop`, read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the focused card or 48-hour mission card, write the required note, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, use More's `Share Beta Handoff` action after saved proof is current, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, mark the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue as Needs tune, use More's `Share Fix Brief`, and fix that first route before moving on.
 3. Fill the Provider Launch Setup sheet only as real providers are configured: Clerk, Supabase/Postgres, storage buckets/rules, AI key/model policy, app-store payments, push, Apple/Google accounts, and self-serve deletion. Share the provider plan for Apollo/Fable/Replit handoff, but do not treat it as store approval.
 4. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 5. Continue screen-by-screen polish, accessibility traversal, and visual regression.

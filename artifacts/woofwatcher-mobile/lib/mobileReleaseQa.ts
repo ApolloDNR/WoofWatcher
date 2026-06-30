@@ -131,9 +131,9 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     title: "Owner Preview Core Loop",
     route: "/",
     priority: "launch-critical",
-    goal: "Prove a real owner can move through the main beta loop without dead ends: Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass.",
+    goal: "Prove a real owner can move through the main beta loop without dead ends: Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass.",
     devicePrompt:
-      "Run the bottom-nav owner preview on iOS and Android: log one safe care event, inspect tomorrow's plan, review Health Watch, open Launch Readiness from More, and confirm records/Care Pass/Avatar Studio remain reachable.",
+      "Run the bottom-nav owner preview on iOS and Android: log one safe care event, inspect tomorrow's plan, review Health Watch, open Launch Readiness from More, open Adventure Mode, and confirm records/Care Pass/Avatar Studio remain reachable.",
     setupSteps: [
       "Use local preview data with no private real household details visible.",
       "Start on Home with the floating paw navigation visible.",
@@ -144,21 +144,22 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "In Log, quick-log one safe care event or open the detail sheet, then undo or leave a QA note if you do not want to persist it.",
       "In Plans, confirm upcoming care rows are readable and the add/edit flow is reachable without covering the paw nav.",
       "In Health, confirm Health Watch and Bile Watch, plus the Review packet, Vet-share checklist, and Draft vet questions action stay non-diagnostic and readable on the phone.",
+      "Open Adventure Mode from More or Home and confirm private care quests, proof rows, and the memory shelf are reachable without implying public maps or cloud sharing.",
       "In More, open Launch Readiness, Records, Avatar Studio, and Care Pass/Reports paths and confirm no route is a dead end.",
       "In Records, confirm Care Pass Report History storage status says Saved on this device or Ready to upload, not provider-backed upload unless the provider gate is actually closed.",
     ],
     acceptanceCriteria: [
       "The bottom-nav loop never hides the active action, gets stuck behind a modal, or routes to a blank screen.",
-      "Quick Log, Plans, Health, More, Records, Avatar Studio, and Care Pass each expose a clear next action.",
+      "Quick Log, Plans, Health, More, Adventure Mode, Records, Avatar Studio, and Care Pass each expose a clear next action.",
       "Launch Readiness keeps internal beta, provider setup, store approval, payments, AI, and storage boundaries truthful.",
       "Care Pass Report History shows Saved on this device or Ready to upload without implying cloud-backed storage before upload rules exist.",
     ],
     failureEscalation:
-      "Mark Needs tune if any core route is confusing, clipped by the paw nav, blocked by keyboard/modal overlap, missing a next action, or claims provider/store/payment/AI/storage readiness that is not actually configured.",
+      "Mark Needs tune if any core route is confusing, clipped by the paw nav, blocked by keyboard/modal overlap, missing a next action, Adventure Mode becomes a dead end, or claims provider/store/payment/AI/storage readiness that is not actually configured.",
     requiredEvidence: [
       "iOS screenshot of Quick Log or Log after opening the owner preview loop.",
       "Android screenshot of Launch Readiness from More after completing the owner preview loop.",
-      "Note confirming Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass were reachable without dead ends.",
+      "Note confirming Home, Log, Plans, Health, More, Adventure Mode, Records, Avatar Studio, and Care Pass were reachable without dead ends.",
       "QA note confirming Care Pass Report History storage status stayed truthful.",
     ],
     routeChecklist: [
@@ -188,6 +189,11 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         route: "/more",
         expected: "Open Launch Readiness and confirm beta/public launch boundaries stay truthful.",
         proof: "Android Launch Readiness screenshot.",
+      },
+      {
+        label: "Adventure",
+        route: "/adventure",
+        expected: "Confirm private care quests, proof rows, XP, and memory shelf are reachable without claiming public maps or cloud sharing.",
       },
       {
         label: "Records",

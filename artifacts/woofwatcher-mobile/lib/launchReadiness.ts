@@ -457,7 +457,7 @@ function localNextGate(local: LaunchReadinessLocalInput): LaunchReadinessNextGat
       kind: "local-foundation",
       action: "open-native-qa",
       label: "Verify core care workflows",
-      detail: "Run Home, Log, Plans, Health, More, Care Pass, Avatar Studio, and WoofGuide through the QA cockpit.",
+      detail: "Run Home, Log, Plans, Health, More, Adventure, Care Pass, Avatar Studio, and WoofGuide through the QA cockpit.",
       ctaLabel: "Open QA Cockpit",
     };
   }

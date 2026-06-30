@@ -106,7 +106,9 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.equal(surface.priority, "launch-critical");
   assert.match(surface.goal, /main beta loop/);
   assert.match(surface.goal, /Home, Log, Plans, Health, More/);
+  assert.match(surface.goal, /Adventure/);
   assert.match(surface.devicePrompt, /bottom-nav owner preview/);
+  assert.match(surface.devicePrompt, /Adventure Mode/);
   assert.match(surface.devicePrompt, /Launch Readiness/);
   assert.match(surface.setupSteps.join("\n"), /provider, payment, storage, AI, and store gates/);
   assert.match(surface.verificationSteps.join("\n"), /Open Home, Log, Plans, Health, and More in order/);
@@ -114,26 +116,32 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.match(surface.verificationSteps.join("\n"), /Health Watch and Bile Watch/);
   assert.match(surface.verificationSteps.join("\n"), /Review packet/);
   assert.match(surface.verificationSteps.join("\n"), /Draft vet questions/);
+  assert.match(surface.verificationSteps.join("\n"), /Adventure Mode/);
   assert.match(surface.verificationSteps.join("\n"), /Records, Avatar Studio, and Care Pass/);
   assert.match(surface.verificationSteps.join("\n"), /Report History storage status/);
   assert.match(surface.acceptanceCriteria.join("\n"), /bottom-nav loop never hides the active action/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /Adventure Mode/);
   assert.match(surface.acceptanceCriteria.join("\n"), /provider setup, store approval, payments, AI, and storage boundaries/);
   assert.match(surface.acceptanceCriteria.join("\n"), /Saved on this device|Ready to upload/);
   assert.match(surface.failureEscalation, /keyboard\/modal overlap/);
+  assert.match(surface.failureEscalation, /Adventure/);
   assert.match(surface.failureEscalation, /claims provider\/store\/payment\/AI\/storage readiness/);
   assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Quick Log or Log/);
   assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Launch Readiness/);
+  assert.match(surface.requiredEvidence.join("\n"), /Adventure Mode/);
   assert.match(surface.requiredEvidence.join("\n"), /without dead ends/);
   assert.match(surface.requiredEvidence.join("\n"), /Report History storage status/);
   assert.deepEqual(
     surface.routeChecklist?.map((item) => item.label),
-    ["Home", "Log", "Plans", "Health", "More", "Records", "Avatar Studio", "Care Pass"],
+    ["Home", "Log", "Plans", "Health", "More", "Adventure", "Records", "Avatar Studio", "Care Pass"],
   );
   assert.match(surface.routeChecklist?.[1]?.expected ?? "", /Quick-log one safe care event/);
   assert.match(surface.routeChecklist?.[4]?.proof ?? "", /Launch Readiness/);
-  assert.match(surface.routeChecklist?.[7]?.expected ?? "", /sitter\/vet\/trainer handoff/);
-  assert.match(surface.routeChecklist?.[7]?.expected ?? "", /Report History storage status/);
-  assert.match(surface.routeChecklist?.[7]?.proof ?? "", /Care Pass Report History storage status/);
+  assert.equal(surface.routeChecklist?.[5]?.route, "/adventure");
+  assert.match(surface.routeChecklist?.[5]?.expected ?? "", /private care quests/);
+  assert.match(surface.routeChecklist?.[8]?.expected ?? "", /sitter\/vet\/trainer handoff/);
+  assert.match(surface.routeChecklist?.[8]?.expected ?? "", /Report History storage status/);
+  assert.match(surface.routeChecklist?.[8]?.proof ?? "", /Care Pass Report History storage status/);
   assert.match(surface.launchRisk, /real owner beta journey/);
 });
 

@@ -367,7 +367,7 @@ function primaryMissionFor(
       label: ownerPreviewTarget.title,
       detail:
         ownerPreviewTarget.missingEvidence[0] ||
-        "Run the real owner loop before isolated polish: Home, Log, Plans, Health, More, Records, Avatar Studio, and Care Pass.",
+        "Run the real owner loop before isolated polish: Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass.",
       ctaLabel: "Run Owner Preview",
       target: ownerPreviewTarget,
       missingEvidence: ownerPreviewTarget.missingEvidence,
