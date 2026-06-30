@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Alert,
   Animated,
+  ImageBackground,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -87,10 +88,17 @@ import {
 } from "@/lib/quickLogEntry";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { relativeTime, dayKey, dayLabel } from "@/lib/time";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const LOG_COMMAND_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.day.source;
+const LOG_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("ear-perk");
+const LOG_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["ear-perk"];
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 const QUICK_LOG_DOCTRINE: Array<{
@@ -1907,6 +1915,58 @@ export default function LogScreen() {
         : null,
     [launcherDetailAction],
   );
+  const selectedLauncherAction = useMemo(
+    () =>
+      launcherActions.find(
+        (action) => selectedLauncherKey === launcherActionKey(action),
+      ) ?? null,
+    [launcherActions, selectedLauncherKey],
+  );
+  const selectedLauncherPresentation = useMemo(
+    () =>
+      selectedLauncherAction
+        ? describeQuickLogLauncherAction(selectedLauncherAction.type, selectedLauncherAction.label)
+        : null,
+    [selectedLauncherAction],
+  );
+  const selectedLauncherRequiresDetail = selectedLauncherPresentation?.detailRequired ?? false;
+  const logCommandOpenLoops =
+    state.entries.filter(isPendingMealEntry).length +
+    (openAloneSession ? 1 : 0) +
+    (openWalkSession ? 1 : 0);
+  const logCommandSignal = Math.max(1, Math.min(5, Math.round(careIntelligence.score / 20)));
+  const logCommandSpeech = selectedLauncherAction
+    ? selectedLauncherRequiresDetail
+      ? `${selectedLauncherAction.label} needs a detail sheet before saving.`
+      : `Tap ${selectedLauncherAction.label} for fast care. Hold for proof, notes, and corrections.`
+    : "Tap to log fast. Hold any action when care needs proof, context, or a later update.";
+  const logCommandHud = [
+    {
+      label: "Today",
+      value: String(todaySnapshot.total),
+      tone: colors.copper,
+    },
+    {
+      label: "Care IQ",
+      value: `${careIntelligence.score}%`,
+      tone:
+        careIntelligence.status === "needs-attention"
+          ? colors.amber
+          : careIntelligence.status === "excellent"
+            ? colors.sage
+            : colors.primary,
+    },
+    {
+      label: "Open",
+      value: String(logCommandOpenLoops),
+      tone: logCommandOpenLoops > 0 ? colors.amber : colors.sage,
+    },
+    {
+      label: "Sync",
+      value: syncOutbox.total > 0 ? `${syncOutbox.total}` : "Ready",
+      tone: syncOutbox.status === "needs-retry" ? colors.amber : colors.primary,
+    },
+  ];
 
   const selectLauncherAction = (action: LauncherAction) => {
     Haptics.selectionAsync();
@@ -2104,6 +2164,128 @@ export default function LogScreen() {
               router.push("/health?tab=health" as never);
             }}
           />
+
+          <BoardCard padded={false} style={s.logCommandStageCard}>
+            <ImageBackground
+              source={LOG_COMMAND_STAGE_ROOM}
+              resizeMode="cover"
+              imageStyle={[s.logCommandStageImage, pixelImageStyle]}
+              style={s.logCommandStage}
+              testID="quick-log-command-pixel-stage"
+            >
+              <View style={s.logCommandStageShade} />
+              <View style={s.logCommandStageScanline} />
+              <View style={s.logCommandStageTop}>
+                <View style={s.logCommandBubble}>
+                  <Text style={[s.logCommandKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                    Quick Care Console
+                  </Text>
+                  <Text
+                    numberOfLines={3}
+                    style={[s.logCommandSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                  >
+                    {logCommandSpeech}
+                  </Text>
+                  <View style={s.logCommandBubbleTail} />
+                </View>
+                <View style={[s.logCommandChip, { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" }]}>
+                  <PixelIcon name={selectedLauncherAction?.icon ?? "heart"} size={17} />
+                  <Text style={[s.logCommandChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                    {selectedLauncherRequiresDetail ? "Details" : "Tap Ready"}
+                  </Text>
+                </View>
+              </View>
+
+              <View pointerEvents="none" style={s.logCommandSprite}>
+                <View style={s.logCommandSpriteShadow} />
+                <SpriteSheetPlayer
+                  asset={LOG_COMMAND_STAGE_SPRITE}
+                  track={LOG_COMMAND_STAGE_TRACK}
+                  width={132}
+                  height={132}
+                  testID="quick-log-command-pixel-sprite"
+                />
+              </View>
+
+              <View style={[s.logCommandHud, { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" }]}>
+                {logCommandHud.map((metric) => (
+                  <View key={metric.label} style={s.logCommandHudCell}>
+                    <Text style={[s.logCommandHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
+                      {metric.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      style={[s.logCommandHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                    >
+                      {metric.value}
+                    </Text>
+                    <View style={s.logCommandSignalRow}>
+                      {[0, 1, 2, 3, 4].map((bar) => (
+                        <View
+                          key={bar}
+                          style={[
+                            s.logCommandSignalBar,
+                            {
+                              height: 5 + bar * 2,
+                              backgroundColor: bar < logCommandSignal ? metric.tone : colors.ivory + "2F",
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <View style={s.logCommandFooter}>
+                <View style={[s.logCommandMission, { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" }]}>
+                  <Text style={[s.logCommandMissionLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                    Selected
+                  </Text>
+                  <Text numberOfLines={1} style={[s.logCommandMissionValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
+                    {selectedLauncherAction?.label ?? selectedLabel}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    selectedLauncherAction
+                      ? `${selectedLauncherRequiresDetail ? "Open details for" : "Quick log"} ${selectedLauncherAction.label}`
+                      : "Open full Quick Log composer"
+                  }
+                  onPress={() => {
+                    if (selectedLauncherAction) {
+                      handleQuickLauncherAction(selectedLauncherAction);
+                      return;
+                    }
+                    Haptics.selectionAsync();
+                    scrollRef.current?.scrollTo({ y: 620, animated: true });
+                  }}
+                  style={({ pressed }) => [
+                    s.logCommandAction,
+                    {
+                      backgroundColor: selectedLauncherRequiresDetail ? colors.amber : colors.sage,
+                      opacity: pressed ? 0.82 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={selectedLauncherRequiresDetail ? "reader-outline" : "flash-outline"}
+                    size={15}
+                    color={colors.ivory}
+                  />
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    style={[s.logCommandActionText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                  >
+                    {selectedLauncherRequiresDetail ? "Add Details" : "Quick Log"}
+                  </Text>
+                </Pressable>
+              </View>
+            </ImageBackground>
+          </BoardCard>
 
           <BoardCard style={s.launcherCard}>
             <View style={s.launcherTabs}>
@@ -4488,6 +4670,169 @@ const s = StyleSheet.create({
   syncBtn: { width: 40, height: 40, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
+
+  logCommandStageCard: {
+    marginTop: 6,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  logCommandStage: {
+    minHeight: 360,
+    padding: 12,
+    justifyContent: "space-between",
+  },
+  logCommandStageImage: {
+    borderRadius: 8,
+  },
+  logCommandStageShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(8,20,36,0.2)",
+  },
+  logCommandStageScanline: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,249,239,0.05)",
+  },
+  logCommandStageTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  logCommandBubble: {
+    maxWidth: "68%",
+    minHeight: 78,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#081424",
+    backgroundColor: "rgba(255,249,239,0.94)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  logCommandKicker: {
+    fontSize: 9,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  logCommandSpeech: {
+    fontSize: 13,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+  logCommandBubbleTail: {
+    position: "absolute",
+    left: 26,
+    bottom: -10,
+    width: 16,
+    height: 16,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#081424",
+    backgroundColor: "rgba(255,249,239,0.94)",
+    transform: [{ rotate: "45deg" }],
+  },
+  logCommandChip: {
+    minHeight: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  logCommandChipText: {
+    fontSize: 10,
+    lineHeight: 13,
+    textTransform: "uppercase",
+  },
+  logCommandSprite: {
+    position: "absolute",
+    right: 28,
+    bottom: 92,
+    width: 150,
+    height: 134,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  logCommandSpriteShadow: {
+    position: "absolute",
+    bottom: 8,
+    width: 116,
+    height: 22,
+    borderRadius: 999,
+    backgroundColor: "rgba(8,20,36,0.34)",
+  },
+  logCommandHud: {
+    alignSelf: "stretch",
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    flexDirection: "row",
+    gap: 7,
+    marginTop: 138,
+  },
+  logCommandHudCell: {
+    flex: 1,
+    minWidth: 0,
+  },
+  logCommandHudLabel: {
+    fontSize: 9,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  logCommandHudValue: {
+    fontSize: 13,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  logCommandSignalRow: {
+    height: 18,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 2,
+    marginTop: 4,
+  },
+  logCommandSignalBar: {
+    width: 5,
+    borderRadius: 2,
+  },
+  logCommandFooter: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 9,
+    marginTop: 10,
+  },
+  logCommandMission: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  logCommandMissionLabel: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  logCommandMissionValue: {
+    fontSize: 13,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  logCommandAction: {
+    minWidth: 118,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  logCommandActionText: {
+    fontSize: 12.5,
+    lineHeight: 16,
+  },
 
   signalStrip: {
     flexDirection: "row",

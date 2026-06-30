@@ -3498,6 +3498,19 @@ test("keeps More rooted in a live pixel launch command stage", () => {
   assert.match(more, /Launch Command Hub/);
 });
 
+test("keeps Quick Log rooted in a live pixel composer stage", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(log, /ImageBackground/);
+  assert.match(log, /LOG_COMMAND_STAGE_ROOM/);
+  assert.match(log, /CARE_TWIN_ROOM_VARIANT_ASSETS\.day/);
+  assert.match(log, /SpriteSheetPlayer/);
+  assert.match(log, /getCareTwinSpriteAsset\("ear-perk"\)/);
+  assert.match(log, /CARE_TWIN_SPRITE_MANIFEST\["ear-perk"\]/);
+  assert.match(log, /pixelImageStyle/);
+  assert.match(log, /Quick Care Console/);
+});
+
 test("keeps Plans owner-preview controls on shared mobile touch targets", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
 
