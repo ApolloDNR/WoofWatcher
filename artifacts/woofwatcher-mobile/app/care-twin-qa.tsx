@@ -704,9 +704,9 @@ export default function CareTwinQaScreen() {
                     }))
                   }
                 />
-                <VerificationStepList colors={colors} label="Setup first" steps={focusedQaTarget.target.setupSteps.slice(0, 2)} />
-                <VerificationStepList colors={colors} label="Verify on device" steps={focusedQaTarget.target.verificationSteps.slice(0, 2)} />
-                <VerificationStepList colors={colors} label="Pass when" steps={focusedQaTarget.target.acceptanceCriteria.slice(0, 2)} />
+                <VerificationStepList colors={colors} label="Setup first" steps={focusedQaTarget.target.setupSteps.slice(0, 4)} />
+                <VerificationStepList colors={colors} label="Game-feel checklist" steps={focusedQaTarget.target.verificationSteps.slice(0, 6)} />
+                <VerificationStepList colors={colors} label="Pass when" steps={focusedQaTarget.target.acceptanceCriteria.slice(0, 4)} />
                 <View style={[s.betaRunEscalation, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
                   <Text style={[s.betaRunEscalationLabel, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
                     Mark Needs tune if

@@ -2523,6 +2523,16 @@ spending limit needs to be increased." `gh run view --log-failed` returned
 `log not found: 84362376140`. Treat this as the standing GitHub account/pre-job
 blocker, not as product verification evidence or a local app regression.
 
+The focused QA checklist polish made `/care-twin-qa?qaSurface=...` more useful
+for phone-side review. Focused targets now show four setup items, a six-item
+`Game-feel checklist`, and four pass criteria instead of truncating each section
+to two lines. This keeps Avatar Sprite Production Review's crisp-pixel,
+single-dog, gait, crop, and overlay checks visible when Apollo or a native helper
+opens the focused link. Fresh local verification passed `mobileReadiness.test.ts`
+100/100, mobile TypeScript, route smoke `200` for
+`/care-twin-qa?qaSurface=avatar-sprite-production-review`, and `git diff --check`
+with expected Windows CRLF warnings only.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.

@@ -4066,6 +4066,10 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   );
   assert.match(careTwinQaRoute, /evidence=\{focusedQaEvidence\}/);
   assert.match(careTwinQaRoute, /Attach focused QA proof/);
+  assert.match(careTwinQaRoute, /label="Game-feel checklist"/);
+  assert.match(careTwinQaRoute, /focusedQaTarget\.target\.verificationSteps\.slice\(0,\s*6\)/);
+  assert.match(careTwinQaRoute, /focusedQaTarget\.target\.setupSteps\.slice\(0,\s*4\)/);
+  assert.match(careTwinQaRoute, /focusedQaTarget\.target\.acceptanceCriteria\.slice\(0,\s*4\)/);
   assert.match(careTwinQaRoute, /Share target checklist/);
   assert.match(
     careTwinQaRoute,
