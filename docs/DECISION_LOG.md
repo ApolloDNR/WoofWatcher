@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-30: Progress Reports Can Carry Dog ID Prep
+
+Decision: Records Progress Reports may include a `Dog ID Prep` section derived from shared `derivePetCredentialReadiness`. The section may show ready-versus-missing Dog ID credential fields and the local printable-source boundary in the saved report-history artifact before an owner shares the report.
+
+Reason: Records, WoofGuide, and Care Pass now use the same credential readiness helper, but Progress Reports are the reusable report-history surface. Carrying Dog ID Prep into saved report artifacts keeps report handoffs aligned with Records while avoiding claims that image/PDF export, provider-backed credential storage, binary PDF generation, native export/download, server-backed report storage, cloud sharing, retention, or deletion are ready.
+
+Owner: Codex.
+
+Revisit trigger: Credential image/PDF export, provider-backed document or credential storage, native export/download, binary PDF generation, server-backed report artifacts, cloud sharing, or storage retention/deletion policy becomes active release work.
+
 ### 2026-06-30: Care Pass Can Carry Dog ID Prep
 
 Decision: Care Pass reports may include a `Dog ID Prep` section derived from shared `derivePetCredentialReadiness`. The section may show ready-versus-missing Dog ID credential fields and the local printable-source boundary before the owner shares a sitter, trainer, caregiver, or vet handoff.

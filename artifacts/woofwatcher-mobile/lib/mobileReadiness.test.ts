@@ -1344,6 +1344,11 @@ test("keeps Records Care Pass and reports on shared board card anatomy", () => {
   assert.match(records, /title: "Records Attachment Prep"/);
   assert.match(records, /Local files: \$\{recordVault\.localAttachmentSummary\.withAttachment\}\/\$\{recordVault\.localAttachmentSummary\.totalAttachable\}/);
   assert.match(records, /recordVault\.localAttachmentSummary\.boundaryLine/);
+  assert.match(records, /title: "Dog ID Prep"/);
+  assert.match(records, /Dog ID fields: \$\{credentialReadiness\.readyCount\}\/\$\{credentialReadiness\.totalCount\} ready\./);
+  assert.match(records, /Needs Dog ID \$\{credentialReadiness\.missingLabels\.length === 1 \? "field" : "fields"\}: \$\{credentialReadiness\.missingLabels\.join\(", "\)\}\./);
+  assert.match(records, /credentialReadiness\.boundaryLine/);
+  assert.match(records, /Dog ID report prep/);
 });
 
 test("keeps Records vault, diet, and cabinet on shared board card anatomy", () => {

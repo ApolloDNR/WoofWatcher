@@ -100,6 +100,8 @@ Current evidence, 2026-06-29: Care Pass and Progress Reports now reuse the Recor
 
 Current evidence, 2026-06-30: Care Pass reports now reuse shared Dog ID credential readiness for report handoff prep. Sitter/vet/trainer/caregiver reports can show ready-versus-missing Dog ID fields and the local printable-source boundary without claiming image/PDF export, provider-backed credential storage, or cloud sharing is ready.
 
+Current evidence, 2026-06-30: Progress Reports now reuse shared Dog ID credential readiness for report-history prep. Mobile Records saves Dog ID ready-versus-missing lines and the local printable-source boundary into print-ready Progress Report artifacts without claiming native PDF export, provider-backed credential storage, or server-backed report storage is ready.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.
@@ -311,6 +313,8 @@ Current evidence, 2026-06-29: Records Mood Trend now adds a filtered sparkline f
 Current evidence, 2026-06-29: Progress Reports now include report-ready Mood & Energy lines before binary PDF/server-backed reports exist. The share payload includes only shared recent mood evidence, low/steady/high energy counts, latest caregiver/context, and an owner-reported boundary that states the snapshot is not diagnosis or emergency triage.
 
 Current evidence, 2026-06-29: Progress Reports now join saved Report History before binary PDF/server-backed report storage exists. Printable Progress Report artifacts carry escaped source HTML, stable filenames, section titles, and the same Mood & Energy non-diagnostic lines used by the share payload.
+
+Current evidence, 2026-06-30: Progress Reports now include Dog ID Prep lines before native credential/PDF export or server-backed report storage. Printable Progress Report artifacts carry ready-versus-missing Dog ID credential fields and the local printable-source boundary from shared credential readiness.
 
 Current evidence, 2026-06-14: Mobile Records now presents Care Pass audience previews, saved report artifacts, and Progress Report controls as shared board sections with accessible resend, printable-source, and share actions preserved for sitter/vet/trainer handoff workflows.
 

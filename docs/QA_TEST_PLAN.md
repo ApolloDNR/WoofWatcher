@@ -12,13 +12,14 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-30:
 
+- PASS: 280 focused tests with the command above on 2026-06-30, now including mobile Progress Report Dog ID Prep readiness so saved report artifacts carry credential fields plus the provider-gated local printable-source boundary.
 - PASS: 280 focused tests with the command above on 2026-06-30, now including Care Pass Dog ID Prep coverage from shared credential readiness before provider-backed credential/PDF storage.
 - PASS: 279 focused tests with the command above on 2026-06-30, now including WoofGuide owner-reviewed Dog ID Prep coverage plus mobile readiness for the provider-gated, non-mutating draft path.
 - PASS: 277 focused tests with the command above on 2026-06-30, now including shared Dog ID credential readiness plus mobile Records readiness copy for ready/missing fields and the local printable-source boundary.
 - PASS: 275 focused tests with the command above on 2026-06-29, now including WoofGuide owner-reviewed Records Attachment Prep coverage plus mobile readiness for the local-only, non-mutating draft path.
 - PASS: 273 focused tests with the command above on 2026-06-29, now including Care Pass `Records Attachment Prep` coverage and mobile Progress Report readiness for local receipt/document attachment prep without claiming provider-backed document storage.
 - PASS: PixelLab asset verifier on 2026-06-30 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
-- LIMIT: `pnpm run build:ci` on 2026-06-30 could not complete in this Windows shell. The latest local attempt installed/reused 1276 packages, then stopped at the root `preinstall` script because `sh` is not available on PATH before typecheck/build scripts started.
+- LIMIT: `pnpm run build:ci` on 2026-06-30 could not complete in this Windows shell. The latest local attempt stopped during package hydration with registry `EACCES` / `fetch failed` before workspace typecheck/build scripts started; earlier fuller attempts also stopped at the root `preinstall` script because `sh` is not available on PATH.
 - PASS: 273 focused tests with the command above, now including API route contract readiness for authenticated household scoping, care-state optimistic conflicts, household-isolated care-entry writes, and the `/care-entries?limit=` contract across OpenAPI, zod, and the generated React client.
 - PASS: 259 focused tests with the local zero-dependency suite on 2026-06-22, including API route readiness for server-retained care-entry delete audit notes and mobile Log duplicate-audit suppression for server-backed deletes.
 - PASS: 259 focused tests with the local zero-dependency suite on 2026-06-23, including API readiness for atomic care-state optimistic writes that update by household id and version, then return a refreshed 409 conflict response if another device wins the race.
@@ -62,6 +63,7 @@ Latest local evidence, 2026-06-30:
 - PASS: WoofGuide action tests and mobile readiness now protect owner-reviewed Mood & Energy summaries. `deriveWoofGuideActions` reuses `deriveMoodTrend`, excludes private/stale mood logs, produces a non-diagnostic `mood_summary` draft with source entry ids, and the WoofGuide screen inserts only the reviewed assistant message without changing care records.
 - PASS: WoofGuide action tests and mobile readiness now protect owner-reviewed Records Attachment Prep. `deriveWoofGuideActions` reuses `summarizeRecordVault`, creates a `records_attachment_prep` draft only when local receipt/document files are missing, routes owners to Records, and inserts only a reviewed assistant message while stating that cloud storage is not enabled.
 - PASS: Record Vault tests and mobile readiness now protect Dog ID credential readiness. `derivePetCredentialReadiness` combines dog profile fallbacks and saved records, counts ready versus missing credential fields, and Mobile Records shows that Dog ID remains a local printable source until provider-backed credential/PDF storage is approved.
+- PASS: Mobile readiness now protects Progress Report Dog ID Prep. Records saves ready-versus-missing credential fields and the local printable-source boundary into Progress Report artifacts before image/PDF export, provider-backed credential storage, or server-backed report storage is approved.
 - PASS: PixelLab asset verifier checks 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid.
 - PASS: focused Avatar Studio readiness and mobile static QA now verify animated family-pack labels, the dedicated template-strip registry, and live accessory/mood/sprite readiness for Retriever, Husky, and Doodle.
 - PASS: Avatar Studio pack manifest coverage now locks the live Shepherd pack, the full animated non-shepherd launch-pack set, and the PixelLab verifier to one source of truth.
@@ -259,4 +261,4 @@ Latest local evidence, 2026-06-30:
 - Document upload/security tests.
 - Self-serve provider-backed account deletion tests.
 - Payment/paywall tests when monetization is enabled.
-- Local `pnpm run build:ci` remains blocked in this Windows shell because the root preinstall script invokes `sh`, which is not available on PATH. Focused tests and PixelLab verification remain the reliable local gates here.
+- Local `pnpm run build:ci` remains blocked in this Windows shell. The latest attempt stopped on registry `EACCES` / `fetch failed` before scripts started, and earlier fuller attempts stopped because the root preinstall script invokes `sh`, which is not available on PATH. Focused tests and PixelLab verification remain the reliable local gates here.

@@ -156,6 +156,7 @@ Latest completed local runtime/accessibility hardening:
 - Records Dog ID now shows credential readiness before image/PDF/provider-backed credential export. `derivePetCredentialReadiness` combines Dog Profile fallbacks and saved records, counts ready-versus-missing credential fields, and Mobile Records lists missing Dog ID fields while repeating the local printable-source boundary.
 - WoofGuide now creates owner-reviewed Dog ID Prep drafts from the same shared credential readiness. The suggested action appears only when some Dog ID context exists but credential fields are missing, routes owners to Records, inserts only a reviewed assistant note, and keeps image/PDF export plus provider-backed credential storage gated.
 - Care Pass reports now carry Dog ID Prep from the same shared credential readiness. The report builder shows ready-versus-missing credential fields and the local printable-source boundary in sitter/vet/trainer/caregiver handoffs without claiming image/PDF export, provider-backed credential storage, retention, deletion, or cloud sharing is ready.
+- Progress Reports now carry Dog ID Prep from the same shared credential readiness. Mobile Records saves ready-versus-missing Dog ID fields and the local printable-source boundary into print-ready Progress Report artifacts while image/PDF export, provider-backed credential storage, binary PDF export, and server-backed report storage remain gated.
 
 Next highest-impact work:
 

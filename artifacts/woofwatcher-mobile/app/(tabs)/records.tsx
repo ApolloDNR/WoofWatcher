@@ -437,6 +437,7 @@ export default function RecordsScreen() {
       }),
     [state.profile, state.caregivers, state.records],
   );
+  const showCredentialReportPrep = credentialReadiness.readyCount > 0;
 
   const openRecordForm = (kind: RecordKind = "vaccine") => {
     setRecordType(kind);
@@ -544,6 +545,21 @@ export default function RecordsScreen() {
               {
                 title: "Mood & Energy",
                 lines: moodReportSnapshot.shareLines,
+              },
+            ]
+          : []),
+        ...(showCredentialReportPrep
+          ? [
+              {
+                title: "Dog ID Prep",
+                lines: [
+                  `Dog ID fields: ${credentialReadiness.readyCount}/${credentialReadiness.totalCount} ready.`,
+                  credentialReadiness.availableLabels.length ? `Ready: ${credentialReadiness.availableLabels.join(", ")}.` : "",
+                  credentialReadiness.missingLabels.length
+                    ? `Needs Dog ID ${credentialReadiness.missingLabels.length === 1 ? "field" : "fields"}: ${credentialReadiness.missingLabels.join(", ")}.`
+                    : "Dog ID fields are ready for review before sharing.",
+                  credentialReadiness.boundaryLine,
+                ],
               },
             ]
           : []),
@@ -990,6 +1006,35 @@ export default function RecordsScreen() {
                     </View>
                   );
                 })}
+              </View>
+            ) : null}
+            {showCredentialReportPrep ? (
+              <View
+                accessible
+                accessibilityLabel={`Dog ID report prep. ${credentialReadiness.summary} ${credentialReadiness.boundaryLine}`}
+                style={[s.reportMoodSnapshot, { backgroundColor: colors.background, borderColor: colors.border }]}
+              >
+                <View style={s.reportMoodSnapshotHeader}>
+                  <View>
+                    <Text style={[s.reportMoodSnapshotTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Dog ID report prep</Text>
+                    <Text style={[s.reportMoodSnapshotMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {credentialReadiness.readyCount}/{credentialReadiness.totalCount} fields ready
+                    </Text>
+                  </View>
+                  <View style={[s.reportMoodSnapshotBadge, { backgroundColor: colors.sage + "18" }]}>
+                    <Text style={[s.reportMoodSnapshotBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                      Local source
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[s.reportMoodSnapshotLine, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {credentialReadiness.missingLabels.length
+                    ? `Needs Dog ID ${credentialReadiness.missingLabels.length === 1 ? "field" : "fields"}: ${credentialReadiness.missingLabels.join(", ")}.`
+                    : "Dog ID fields are ready for review before sharing."}
+                </Text>
+                <Text style={[s.reportMoodSnapshotBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {credentialReadiness.boundaryLine}
+                </Text>
               </View>
             ) : null}
           </BoardCard>
