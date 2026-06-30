@@ -70,11 +70,20 @@ The 2026-06-30 Health Watch pass is the first proof of this plan:
 - The 7-day rhythm chart moved into Health Snapshot, where it is useful but not visually loud.
 - Review Packet was trimmed to the top prompts and checklist items.
 
+## Quick Log Recovery Slice
+
+The 2026-06-30 Quick Log pass is the second proof of this plan:
+
+- The pixel command stage was tightened so the speech bubble, live sprite, HUD, and action footer no longer compete for the same space.
+- The action grid now appears before the teaching rail, matching the Paw Friends-style priority of action first, explanation second.
+- A compact `Quick Log Flow` header explains tap, hold, and detail-first safety behavior without turning the screen into a tutorial wall.
+- Today support metrics sit between the action console and the full detail composer, so the primary flow stays fast but the care context is still visible.
+- The full composer is treated as a secondary detail dock, preserving advanced meal, potty, medication, vomit, notes, trust, and edit behavior without making it the first visual focus.
+- A mobile readiness test now protects this screen recipe from regressing back into a crowded stack.
+
 ## Next Design Passes
 
-1. Quick Log: reduce visual noise, add clear tap vs long-press hierarchy, and make the detail sheet feel premium.
-2. Plans: make the daily schedule feel like missions/responsibilities instead of a task dump.
-3. More: split into grouped menu sections with stronger hierarchy and less wall-of-options feel.
-4. Records: turn dense record sections into scannable credential/vault rows.
-5. Home: final pass against the dark RPG board after Health/Log/Plans share the same system.
-
+1. Plans: make the daily schedule feel like missions/responsibilities instead of a task dump.
+2. More: split into grouped menu sections with stronger hierarchy and less wall-of-options feel.
+3. Records: turn dense record sections into scannable credential/vault rows.
+4. Home: final pass against the dark RPG board after Health/Log/Plans share the same system.

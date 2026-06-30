@@ -1914,6 +1914,30 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   }
 });
 
+test("keeps Quick Log aligned to the mobile design-system recovery recipe", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const gridIndex = log.indexOf("<View style={s.launcherGrid}>");
+  const doctrineIndex = log.indexOf("<View style={s.launcherDoctrineRail}>");
+  const supportRailIndex = log.indexOf("<View style={s.quickLogSupportRail}>");
+  const composerIndex = log.indexOf("{/* Composer card */}");
+
+  assert.match(log, /quickLogActionConsole/);
+  assert.match(log, /quickLogActionConsoleHeader/);
+  assert.match(log, /quickLogSupportRail/);
+  assert.match(log, /quickLogDetailDock/);
+  assert.match(log, /logCommandStage:[\s\S]*minHeight: 338/);
+  assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "54%"/);
+  assert.match(log, /logCommandSprite:[\s\S]*right: 8/);
+  assert.ok(
+    gridIndex > 0 && doctrineIndex > gridIndex,
+    "Quick Log should show the action grid before the teaching rail",
+  );
+  assert.ok(
+    supportRailIndex > 0 && supportRailIndex < composerIndex,
+    "Quick Log should keep support metrics between the action console and detail dock",
+  );
+});
+
 test("keeps mood logging structured for energy, context, and household visibility", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const moodConfig = log.slice(

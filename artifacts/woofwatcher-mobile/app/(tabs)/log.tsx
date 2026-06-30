@@ -2201,8 +2201,8 @@ export default function LogScreen() {
                 <SpriteSheetPlayer
                   asset={LOG_COMMAND_STAGE_SPRITE}
                   track={LOG_COMMAND_STAGE_TRACK}
-                  width={132}
-                  height={132}
+                  width={118}
+                  height={118}
                   testID="quick-log-command-pixel-sprite"
                 />
               </View>
@@ -2288,6 +2288,22 @@ export default function LogScreen() {
           </BoardCard>
 
           <BoardCard style={s.launcherCard}>
+            <View style={s.quickLogActionConsole}>
+              <View style={s.quickLogActionConsoleHeader}>
+                <View style={s.quickLogActionTitleBlock}>
+                  <Text style={[s.quickLogActionKicker, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                    QUICK LOG FLOW
+                  </Text>
+                  <Text style={[s.quickLogActionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    Tap fast. Hold when it matters.
+                  </Text>
+                  <Text style={[s.quickLogActionSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Medication, vomit, and incidents ask for details first.
+                  </Text>
+                </View>
+                <BoardPill label="Under 5 sec" icon="flash-outline" tone={colors.sage} />
+              </View>
+
             <View style={s.launcherTabs}>
               {LAUNCHER_TABS.map((tab) => {
                 const active = launcherTab === tab.key;
@@ -2321,34 +2337,6 @@ export default function LogScreen() {
                       {tab.label}
                     </Text>
                   </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={s.launcherDoctrineRail}>
-              {QUICK_LOG_DOCTRINE.map((item) => {
-                const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.brandNavy;
-                return (
-                  <View
-                    key={item.label}
-                    style={[
-                      s.launcherDoctrineCard,
-                      {
-                        backgroundColor: toneColor + "0F",
-                        borderColor: toneColor + "33",
-                      },
-                    ]}
-                  >
-                    <Ionicons name={item.icon} size={14} color={toneColor} />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text numberOfLines={1} style={[s.launcherDoctrineLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                        {item.label}
-                      </Text>
-                      <Text numberOfLines={1} style={[s.launcherDoctrineDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                        {item.detail}
-                      </Text>
-                    </View>
-                  </View>
                 );
               })}
             </View>
@@ -2431,6 +2419,34 @@ export default function LogScreen() {
                       </Text>
                     </View>
                   </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={s.launcherDoctrineRail}>
+              {QUICK_LOG_DOCTRINE.map((item) => {
+                const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.brandNavy;
+                return (
+                  <View
+                    key={item.label}
+                    style={[
+                      s.launcherDoctrineCard,
+                      {
+                        backgroundColor: toneColor + "0F",
+                        borderColor: toneColor + "33",
+                      },
+                    ]}
+                  >
+                    <Ionicons name={item.icon} size={14} color={toneColor} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text numberOfLines={1} style={[s.launcherDoctrineLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                        {item.label}
+                      </Text>
+                      <Text numberOfLines={1} style={[s.launcherDoctrineDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        {item.detail}
+                      </Text>
+                    </View>
+                  </View>
                 );
               })}
             </View>
@@ -2670,9 +2686,10 @@ export default function LogScreen() {
               </Text>
               <Ionicons name="chevron-forward" size={16} color={colors.ivory} />
             </Pressable>
+            </View>
           </BoardCard>
 
-          <View style={s.signalStrip}>
+          <View style={s.quickLogSupportRail}>
             {todaySignalCards.map((card) => (
               <View
                 key={card.label}
@@ -2796,6 +2813,7 @@ export default function LogScreen() {
 
           {/* Composer card */}
           <BoardCard style={s.composerHero}>
+            <View style={s.quickLogDetailDock}>
             <View style={[s.composerHeroBanner, { backgroundColor: colors.brandNavy, borderColor: colors.shellNavy }]}>
               <View style={[s.composerHeroIcon, { backgroundColor: selectedTone + "22", borderColor: selectedTone + "66" }]}>
                 <PulseIcon name={selectedIcon} size={30} />
@@ -2837,9 +2855,10 @@ export default function LogScreen() {
                     style={[s.composerTrustText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
                   >
                     {item.label}
-                  </Text>
-                </View>
-              ))}
+                </Text>
+              </View>
+            ))}
+            </View>
             </View>
 
             <BoardSectionHeader
@@ -4677,7 +4696,7 @@ const s = StyleSheet.create({
     overflow: "hidden",
   },
   logCommandStage: {
-    minHeight: 360,
+    minHeight: 338,
     padding: 12,
     justifyContent: "space-between",
   },
@@ -4699,7 +4718,7 @@ const s = StyleSheet.create({
     gap: 10,
   },
   logCommandBubble: {
-    maxWidth: "68%",
+    maxWidth: "54%",
     minHeight: 78,
     borderRadius: 8,
     borderWidth: 2,
@@ -4746,10 +4765,10 @@ const s = StyleSheet.create({
   },
   logCommandSprite: {
     position: "absolute",
-    right: 28,
-    bottom: 92,
-    width: 150,
-    height: 134,
+    right: 8,
+    bottom: 104,
+    width: 126,
+    height: 122,
     alignItems: "center",
     justifyContent: "flex-end",
   },
@@ -4768,7 +4787,7 @@ const s = StyleSheet.create({
     padding: 10,
     flexDirection: "row",
     gap: 7,
-    marginTop: 138,
+    marginTop: 112,
   },
   logCommandHudCell: {
     flex: 1,
@@ -4834,7 +4853,7 @@ const s = StyleSheet.create({
     lineHeight: 16,
   },
 
-  signalStrip: {
+  quickLogSupportRail: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
@@ -4900,8 +4919,36 @@ const s = StyleSheet.create({
 
   launcherCard: {
     marginBottom: 12,
-    gap: 13,
-    padding: 13,
+    padding: 12,
+  },
+  quickLogActionConsole: {
+    gap: 10,
+  },
+  quickLogActionConsoleHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  quickLogActionTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  quickLogActionKicker: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.35,
+  },
+  quickLogActionTitle: {
+    fontSize: 18,
+    lineHeight: 22,
+    marginTop: 2,
+  },
+  quickLogActionSub: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
   },
   launcherTabs: {
     flexDirection: "row",
@@ -4923,6 +4970,7 @@ const s = StyleSheet.create({
   launcherDoctrineRail: {
     flexDirection: "row",
     gap: 6,
+    marginTop: 2,
   },
   launcherDoctrineCard: {
     flex: 1,
@@ -4952,7 +5000,7 @@ const s = StyleSheet.create({
   },
   launcherTile: {
     width: "31.5%",
-    minHeight: 82,
+    minHeight: 76,
     borderWidth: 1,
     borderRadius: 8,
     alignItems: "center",
@@ -4963,8 +5011,8 @@ const s = StyleSheet.create({
     position: "relative",
   },
   launcherIconHalo: {
-    width: 42,
-    height: 42,
+    width: 38,
+    height: 38,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
@@ -5001,7 +5049,7 @@ const s = StyleSheet.create({
   moodPanel: {
     borderWidth: 1,
     borderRadius: 9,
-    padding: 10,
+    padding: 9,
   },
   moodDetailPanel: {
     borderWidth: 1,
@@ -5177,6 +5225,10 @@ const s = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 3,
+  },
+  quickLogDetailDock: {
+    gap: 10,
+    marginBottom: 12,
   },
   composerHeroBanner: {
     flexDirection: "row",

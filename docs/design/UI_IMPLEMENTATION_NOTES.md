@@ -2493,3 +2493,42 @@ Verification:
 - Focused Avatar Studio/readiness tests passed 109/109.
 - Mobile TypeScript passed with `tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`.
 - Broader focused mobile/domain/API/PWA suite passed 484/484.
+
+## 2026-06-30 Quick Log Design-System Recovery
+
+Quick Log is the second mobile design-system recovery slice after Health Watch.
+The goal was to keep the advanced logging engine intact while making the first
+screen feel like the reference boards: fast, intentional, and readable.
+
+What changed:
+
+- The pixel command stage now uses a smaller live `ear-perk` sprite footprint,
+  a narrower speech bubble, and a shorter HUD offset so the dog, bubble, and
+  console stop visually colliding on phone-sized screens.
+- The primary launcher card is now a `Quick Log Flow` action console with a
+  concise product rule: tap for safe defaults, hold for details, and detail-first
+  for medication, vomit, and incidents.
+- The action grid appears before the teaching rail, so the first thing a user
+  sees after the hero is the thing they can do.
+- Today support metrics were moved into a named `quickLogSupportRail` between
+  the action console and the full composer.
+- The full composer remains available for rich meal, potty, medication, vomit,
+  trust, sticky-note, and edit workflows, but it now reads as a secondary detail
+  dock instead of a second competing dashboard.
+
+Design rule locked from this pass:
+
+- Fast action surfaces should put the command grid before instructional copy.
+- Detail-heavy forms belong below the first-screen command loop unless safety
+  requires detail-first behavior.
+- Pixel sprites and speech bubbles must have explicit responsive bounds; they
+  cannot share the same visual space by accident.
+
+Verification:
+
+- Mobile readiness passed 102/102, including the new Quick Log recovery guard.
+- Mobile TypeScript passed with `tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`.
+- Broader focused mobile/domain/API/PWA suite passed 485/485.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files.
+- Live preview route smoke passed for `/`, `/health`, and `/log` at
+  `http://127.0.0.1:4194/`.
