@@ -7,7 +7,7 @@ import { deriveGroomingCare, type GroomingCareItem } from "./grooming-care.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
 import { deriveMoodTrend, type MoodTrendItem } from "./mood-trend.ts";
 import { derivePottyHealth } from "./potty-health.ts";
-import { summarizeRecordVault } from "./record-vault.ts";
+import { derivePetCredentialReadiness, summarizeRecordVault } from "./record-vault.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
 import { deriveWaterHydration } from "./water.ts";
 import { deriveWalkActivity, deriveWalkRouteTemplates, type WalkRouteTemplate } from "./walk-activity.ts";
@@ -20,6 +20,11 @@ export interface CarePassProfile {
   breed?: string;
   careFocus?: string;
   vetBoundary?: string;
+  microchipNumber?: string;
+  insuranceProvider?: string;
+  insurancePolicy?: string;
+  primaryVet?: string;
+  emergencyContact?: string;
   weight?: {
     current?: number;
     goal?: string;
@@ -279,6 +284,25 @@ function recordAttachmentPrepLines(records: readonly CarePassRecord[]): string[]
       ? `Needs local file: ${summary.missingAttachmentTitles.join(", ")}.`
       : "Receipts and documents in this report have local files ready on this device.",
     summary.boundaryLine,
+  ];
+}
+
+function petCredentialPrepLines(input: {
+  profile?: CarePassProfile;
+  caregivers?: readonly CareHandoffCaregiver[];
+  records?: readonly CarePassRecord[];
+}): string[] {
+  const readiness = derivePetCredentialReadiness(input);
+  if (readiness.readyCount === 0 && readiness.missingLabels.length === readiness.totalCount) {
+    return [];
+  }
+  return [
+    `Dog ID fields: ${readiness.readyCount}/${readiness.totalCount} ready.`,
+    readiness.availableLabels.length ? `Ready: ${readiness.availableLabels.join(", ")}.` : "",
+    readiness.missingLabels.length
+      ? `Needs Dog ID ${readiness.missingLabels.length === 1 ? "field" : "fields"}: ${readiness.missingLabels.join(", ")}.`
+      : "Dog ID fields are ready for review before sharing.",
+    readiness.boundaryLine,
   ];
 }
 
@@ -888,6 +912,11 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const groomingCare = deriveGroomingCare({ entries, now, lookbackDays: 45 });
   const moodTrend = deriveMoodTrend({ entries, now, lookbackDays: 30, limit: 3 });
   const recordAttachmentPrep = recordAttachmentPrepLines(records);
+  const petCredentialPrep = petCredentialPrepLines({
+    profile,
+    caregivers: input.caregivers ?? [],
+    records,
+  });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -1030,6 +1059,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
       )),
       ...medicationFollowUps.map((item) => `${item.label}: ${item.detail} Action: ${item.action}`),
     ]),
+    section("Dog ID Prep", petCredentialPrep),
     section("Records Attachment Prep", recordAttachmentPrep),
     section(
       "Health Pattern Review",

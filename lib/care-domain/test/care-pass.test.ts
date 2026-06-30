@@ -349,6 +349,29 @@ test("care pass includes local record attachment prep without claiming cloud sto
   assert.doesNotMatch(pass.message, /cloud/i);
 });
 
+test("care pass includes Dog ID credential prep before sharing handoffs", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    profile: {
+      ...baseInput().profile,
+      emergencyContact: "Apollo - 555-0100",
+    },
+    records: [
+      { id: "microchip", type: "microchip", title: "HomeAgain", note: "985112003004551" },
+      { id: "insurance", type: "insurance", title: "Lemonade", note: "Policy WW-1042" },
+      { id: "rabies", type: "vaccine", title: "Rabies", due: "May 2026", note: "Up to date" },
+    ],
+  });
+
+  const section = pass.sections.find((item) => item.title === "Dog ID Prep");
+  assert.ok(section);
+  assert.match(pass.message, /Dog ID fields: 7\/8 ready/);
+  assert.match(pass.message, /Needs Dog ID field: Primary vet/);
+  assert.match(pass.message, /Dog ID is a local printable source until provider-backed credential\/PDF storage is approved/);
+  assert.doesNotMatch(pass.message, /image export ready/i);
+});
+
 test("care pass includes potty health context for sitter and vet review", () => {
   const pass = buildCarePass({
     ...baseInput(),

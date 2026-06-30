@@ -51,7 +51,7 @@
 
 ## Development Environment
 
-- `pnpm` is callable through the bundled runtime in this worktree, but `pnpm run build:ci` cannot complete in this Windows shell. Latest local check, 2026-06-30: the attempt stopped during `pnpm install` because registry tarball fetches returned `EACCES` before typecheck/build scripts started. Earlier 2026-06-29 evidence reached the root `preinstall` script after installing/reusing 1276 packages, then stopped because `sh` is not available on PATH. Direct care-domain typecheck passed in the earlier saved Progress Report artifact slice, but direct mobile typecheck still fails outside the normal build pipeline because referenced package declaration outputs are not built in this partial install (`TS6305`) and the PixelLab script cannot resolve Node type declarations.
+- `pnpm` is callable through the bundled runtime in this worktree, but `pnpm run build:ci` cannot complete in this Windows shell. Latest local check, 2026-06-30: the attempt installed/reused 1276 packages, then stopped at the root `preinstall` script because `sh` is not available on PATH before typecheck/build scripts started. Direct care-domain typecheck passed in the earlier saved Progress Report artifact slice, but direct mobile typecheck still fails outside the normal build pipeline because referenced package declaration outputs are not built in this partial install (`TS6305`) and the PixelLab script cannot resolve Node type declarations.
 - Codex could not attach to the in-app Browser target during the 2026-06-13 visual QA attempt (`iab` unavailable), so local screenshot/runtime verification is still pending in Fable/Replit or another browser-capable environment.
 
 ## Legal, Privacy, And Safety

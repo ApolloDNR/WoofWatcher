@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-30: Care Pass Can Carry Dog ID Prep
+
+Decision: Care Pass reports may include a `Dog ID Prep` section derived from shared `derivePetCredentialReadiness`. The section may show ready-versus-missing Dog ID credential fields and the local printable-source boundary before the owner shares a sitter, trainer, caregiver, or vet handoff.
+
+Reason: Records and WoofGuide now use the same credential readiness helper, but Care Pass is the handoff surface that owners actually share. Reusing the shared readiness model keeps reports aligned with Records while avoiding claims that image/PDF export, provider-backed credential storage, cloud sharing, retention, deletion, live AI, or unsupervised record changes are ready.
+
+Owner: Codex.
+
+Revisit trigger: Credential image/PDF export, provider-backed document or credential storage, native export/download, server-backed report artifacts, cloud sharing, or storage retention/deletion policy becomes active release work.
+
 ### 2026-06-30: WoofGuide Can Draft Dog ID Prep
 
 Decision: WoofGuide may surface an owner-reviewed `pet_credential_prep` suggested action when shared Dog ID credential readiness shows some available context but missing fields before sharing. The draft may list ready and missing credential fields, route the owner to Records, and insert only a reviewed assistant note.
