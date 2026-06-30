@@ -2703,6 +2703,14 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.doesNotMatch(avatarStudio, /True AI scanning plugs in later/);
   assert.match(avatarStudio, /PixelLab template match/);
   assert.match(avatarStudio, /Provider scanning can plug in later/);
+  assert.match(avatarStudio, /buildAvatarSpriteProductionQaSummary/);
+  assert.match(avatarStudio, /buildAvatarSpriteProductionTemplateReview/);
+  assert.match(avatarStudio, /Sprite production review/);
+  assert.match(avatarStudio, /Game-feel checks/);
+  assert.match(avatarStudio, /productionTemplateReview\.nativeProofStatus/);
+  assert.match(avatarStudio, /Open sprite QA cockpit/);
+  assert.match(avatarStudio, /pathname: "\/care-twin-qa"/);
+  assert.match(avatarStudio, /qaSurface: "avatar-sprite-production-review"/);
   assert.doesNotMatch(
     avatarStudio,
     /heroPreview: \{[^\n]*(shadowOpacity|elevation)/,
@@ -2761,6 +2769,7 @@ test("keeps Avatar Studio creator actions on shared mobile touch targets", () =>
     "swatch",
     "optionPill",
     "moodChip",
+    "productionQaButton",
   ]) {
     assertStyleUsesSharedTouchTarget(avatarStudio, styleName);
   }

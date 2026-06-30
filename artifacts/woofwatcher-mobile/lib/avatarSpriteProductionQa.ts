@@ -47,6 +47,15 @@ export interface AvatarSpriteProductionQaSummary {
   launchRisk: string;
 }
 
+export interface AvatarSpriteProductionTemplateReview {
+  template: AvatarSpriteProductionQaTemplate;
+  headline: string;
+  actionSummary: string;
+  proofStatusLabel: string;
+  gameFeelChecks: string[];
+  nativeProofStatus: string;
+}
+
 const SPRITE_ACTION_ORDER: AvatarTemplateSpriteAction[] = ["idle-tail-wag", "walk-loop"];
 
 export const AVATAR_SPRITE_PRODUCTION_REQUIRED_CHECKS = [
@@ -120,5 +129,28 @@ export function buildAvatarSpriteProductionQaSummary(): AvatarSpriteProductionQa
       "Local sprite metadata only. iOS and Android screenshots plus human gait/crop review are still required before native QA, store screenshots, or public launch approval.",
     launchRisk:
       "If sprite gait, phone-size crop, duplicate-avatar behavior, or overlay fit is not reviewed on real devices, the care twin can feel less like a premium video-game avatar and more like a pasted prototype.",
+  };
+}
+
+export function buildAvatarSpriteProductionTemplateReview(
+  templateId: AvatarTemplateId,
+): AvatarSpriteProductionTemplateReview {
+  const summary = buildAvatarSpriteProductionQaSummary();
+  const template = summary.templates.find((item) => item.templateId === templateId);
+  if (!template) {
+    throw new Error(`Unknown avatar template for production QA: ${templateId}`);
+  }
+
+  return {
+    template,
+    headline: `${template.label}: ${template.actions.length}/${SPRITE_ACTION_ORDER.length} live loops registered`,
+    actionSummary: template.actions
+      .map((action) => `${action.label}: ${action.frameCount} frames at ${action.fps} fps`)
+      .join("; "),
+    proofStatusLabel: template.spritePackReady
+      ? "Ready for native review"
+      : "Sprite pack missing",
+    gameFeelChecks: summary.requiredChecks.slice(0, 4),
+    nativeProofStatus: summary.nativeBoundary,
   };
 }

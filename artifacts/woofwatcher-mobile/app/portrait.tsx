@@ -36,6 +36,10 @@ import {
   deriveAvatarPreviewMotion,
 } from "@/lib/avatarPreviewModel";
 import {
+  buildAvatarSpriteProductionQaSummary,
+  buildAvatarSpriteProductionTemplateReview,
+} from "@/lib/avatarSpriteProductionQa";
+import {
   AVATAR_ACCESSORIES,
   AVATAR_EMOTE_STATES,
   AVATAR_SCAN_WORKFLOW_STEPS,
@@ -301,6 +305,14 @@ export default function PortraitScreen() {
       ).length,
     [],
   );
+  const avatarSpriteProductionSummary = useMemo(
+    () => buildAvatarSpriteProductionQaSummary(),
+    [],
+  );
+  const productionTemplateReview = useMemo(
+    () => buildAvatarSpriteProductionTemplateReview(draft.templateId),
+    [draft.templateId],
+  );
   const selectedTemplateBase = getAvatarTemplateBaseSource(draft.templateId);
   const selectedTemplateEmote = getAvatarTemplateEmoteSource(
     draft.templateId,
@@ -472,6 +484,14 @@ export default function PortraitScreen() {
   const previewMoodState = (emote: AvatarEmoteState) => {
     Haptics.selectionAsync().catch(() => {});
     setPreviewEmote(emote);
+  };
+
+  const openAvatarSpriteProductionQa = () => {
+    Haptics.selectionAsync().catch(() => {});
+    router.push({
+      pathname: "/care-twin-qa",
+      params: { qaSurface: "avatar-sprite-production-review" },
+    });
   };
 
   const saveDraft = async () => {
@@ -1323,132 +1343,406 @@ export default function PortraitScreen() {
         ) : null}
 
         {activeTab === "template" ? (
-          <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader
-              title="Choose base template"
-              accessory={
-                <BoardPill
-                  label={`${liveTemplateCount}/${AVATAR_TEMPLATES.length} live`}
-                  tone={colors.primary}
-                />
-              }
-            />
-            <View style={s.templateGrid}>
-              {AVATAR_TEMPLATES.map((template) => {
-                const active = draft.templateId === template.id;
-                const tone = templateColor(template.id);
-                const liveSprite = hasAvatarTemplateSpritePack(template.id);
-                return (
-                  <Pressable
-                    key={template.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={`Choose ${template.label} avatar template`}
-                    onPress={() => selectTemplate(template.id)}
+          <>
+            <BoardCard style={s.avatarBoard}>
+              <BoardSectionHeader
+                title="Choose base template"
+                accessory={
+                  <BoardPill
+                    label={`${liveTemplateCount}/${AVATAR_TEMPLATES.length} live`}
+                    tone={colors.primary}
+                  />
+                }
+              />
+              <View style={s.templateGrid}>
+                {AVATAR_TEMPLATES.map((template) => {
+                  const active = draft.templateId === template.id;
+                  const tone = templateColor(template.id);
+                  const liveSprite = hasAvatarTemplateSpritePack(template.id);
+                  return (
+                    <Pressable
+                      key={template.id}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={`Choose ${template.label} avatar template`}
+                      onPress={() => selectTemplate(template.id)}
+                      style={[
+                        s.templateTile,
+                        {
+                          backgroundColor: active
+                            ? tone + "20"
+                            : colors.background,
+                          borderColor: active ? tone : colors.border,
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          s.templateArtWrap,
+                          {
+                            backgroundColor: active
+                              ? colors.ivory
+                              : tone + "12",
+                            borderColor: active ? tone : colors.border,
+                          },
+                        ]}
+                      >
+                        <Image
+                          source={getAvatarTemplateDisplaySource(template.id)}
+                          style={[s.templateArt, pixelImageStyle]}
+                          contentFit="contain"
+                          transition={140}
+                        />
+                        <View
+                          style={[
+                            s.templateLiveBadge,
+                            {
+                              backgroundColor: liveSprite
+                                ? colors.brandNavy
+                                : colors.ivory,
+                              borderColor: liveSprite
+                                ? colors.brandNavy
+                                : colors.border,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.templateLiveBadgeText,
+                              {
+                                color: liveSprite
+                                  ? "#FFF9EF"
+                                  : colors.mutedForeground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            {liveSprite ? "Live" : "Still"}
+                          </Text>
+                        </View>
+                        {active ? (
+                          <View
+                            style={[s.templateCheck, { backgroundColor: tone }]}
+                          >
+                            <Ionicons
+                              name="checkmark"
+                              size={13}
+                              color="#FFF9EF"
+                            />
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text
+                        style={[
+                          s.templateTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {template.label}
+                      </Text>
+                      <Text
+                        style={[
+                          s.templateSub,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        {template.subtitle}
+                      </Text>
+                      <Text
+                        style={[
+                          s.templateSpriteNote,
+                          {
+                            color: liveSprite ? tone : colors.mutedForeground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {liveSprite
+                          ? "Breathes and walks in preview"
+                          : "Sprite rig in production"}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </BoardCard>
+
+            <BoardCard style={s.avatarBoard}>
+              <BoardSectionHeader
+                title="Sprite production review"
+                accessory={
+                  <BoardPill
+                    label={productionTemplateReview.proofStatusLabel}
+                    tone={colors.sage}
+                  />
+                }
+              />
+              <View
+                accessibilityLabel={`Avatar sprite production review for ${selectedTemplate.label}`}
+                style={[
+                  s.productionReviewPanel,
+                  {
+                    backgroundColor: colors.secondary,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    s.productionHeadline,
+                    { color: colors.foreground, fontFamily: DISPLAY },
+                  ]}
+                >
+                  {productionTemplateReview.headline}
+                </Text>
+                <Text
+                  style={[
+                    s.productionCopy,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  {productionTemplateReview.template.nativeReviewPrompt}
+                </Text>
+                <View style={s.productionMetricGrid}>
+                  <View
                     style={[
-                      s.templateTile,
+                      s.productionMetricCard,
                       {
-                        backgroundColor: active
-                          ? tone + "20"
-                          : colors.background,
-                        borderColor: active ? tone : colors.border,
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.productionMetricValue,
+                        { color: colors.foreground, fontFamily: DISPLAY },
+                      ]}
+                    >
+                      {avatarSpriteProductionSummary.liveTemplatePacks}/
+                      {avatarSpriteProductionSummary.totalTemplates}
+                    </Text>
+                    <Text
+                      style={[
+                        s.productionMetricKicker,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      LIVE TEMPLATES
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      s.productionMetricCard,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.productionMetricValue,
+                        { color: colors.foreground, fontFamily: DISPLAY },
+                      ]}
+                    >
+                      {avatarSpriteProductionSummary.totalSpriteSlots}
+                    </Text>
+                    <Text
+                      style={[
+                        s.productionMetricKicker,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      SPRITE SLOTS
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      s.productionMetricCard,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.productionMetricValue,
+                        { color: colors.foreground, fontFamily: DISPLAY },
+                      ]}
+                    >
+                      {productionTemplateReview.template.bodyClass}
+                    </Text>
+                    <Text
+                      style={[
+                        s.productionMetricKicker,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      BODY CLASS
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={s.productionActionList}>
+                {productionTemplateReview.template.actions.map((action) => (
+                  <View
+                    key={action.action}
+                    style={[
+                      s.productionActionRow,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
                       },
                     ]}
                   >
                     <View
                       style={[
-                        s.templateArtWrap,
-                        {
-                          backgroundColor: active ? colors.ivory : tone + "12",
-                          borderColor: active ? tone : colors.border,
-                        },
+                        s.productionActionIcon,
+                        { backgroundColor: colors.ivory },
                       ]}
                     >
-                      <Image
-                        source={getAvatarTemplateDisplaySource(template.id)}
-                        style={[s.templateArt, pixelImageStyle]}
-                        contentFit="contain"
-                        transition={140}
+                      <Ionicons
+                        name={
+                          action.action === "walk-loop"
+                            ? "walk-outline"
+                            : "pulse-outline"
+                        }
+                        size={18}
+                        color={colors.primary}
                       />
-                      <View
+                    </View>
+                    <View style={s.productionActionCopy}>
+                      <Text
                         style={[
-                          s.templateLiveBadge,
+                          s.productionActionTitle,
                           {
-                            backgroundColor: liveSprite
-                              ? colors.brandNavy
-                              : colors.ivory,
-                            borderColor: liveSprite
-                              ? colors.brandNavy
-                              : colors.border,
+                            color: colors.foreground,
+                            fontFamily: "Inter_800ExtraBold",
                           },
                         ]}
                       >
-                        <Text
-                          style={[
-                            s.templateLiveBadgeText,
-                            {
-                              color: liveSprite
-                                ? "#FFF9EF"
-                                : colors.mutedForeground,
-                              fontFamily: "Inter_700Bold",
-                            },
-                          ]}
-                        >
-                          {liveSprite ? "Live" : "Still"}
-                        </Text>
-                      </View>
-                      {active ? (
-                        <View
-                          style={[s.templateCheck, { backgroundColor: tone }]}
-                        >
-                          <Ionicons
-                            name="checkmark"
-                            size={13}
-                            color="#FFF9EF"
-                          />
-                        </View>
-                      ) : null}
+                        {action.label}
+                      </Text>
+                      <Text
+                        style={[
+                          s.productionActionMeta,
+                          {
+                            color: colors.copper,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        {action.frameCount} frames | {action.fps} fps |{" "}
+                        {action.anchor}
+                      </Text>
+                      <Text
+                        style={[
+                          s.productionActionNotes,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        {action.notes}
+                      </Text>
                     </View>
+                  </View>
+                ))}
+              </View>
+
+              <View style={s.productionCheckList}>
+                <Text
+                  style={[
+                    s.productionCheckTitle,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
+                  ]}
+                >
+                  Game-feel checks
+                </Text>
+                {productionTemplateReview.gameFeelChecks.map((check) => (
+                  <View key={check} style={s.productionCheckRow}>
+                    <Ionicons
+                      name="scan-circle-outline"
+                      size={17}
+                      color={colors.sage}
+                    />
                     <Text
                       style={[
-                        s.templateTitle,
-                        {
-                          color: colors.foreground,
-                          fontFamily: "Inter_700Bold",
-                        },
-                      ]}
-                    >
-                      {template.label}
-                    </Text>
-                    <Text
-                      style={[
-                        s.templateSub,
+                        s.productionCheckText,
                         {
                           color: colors.mutedForeground,
-                          fontFamily: "Inter_500Medium",
+                          fontFamily: "Inter_600SemiBold",
                         },
                       ]}
                     >
-                      {template.subtitle}
+                      {check}
                     </Text>
-                    <Text
-                      style={[
-                        s.templateSpriteNote,
-                        {
-                          color: liveSprite ? tone : colors.mutedForeground,
-                          fontFamily: "Inter_700Bold",
-                        },
-                      ]}
-                    >
-                      {liveSprite
-                        ? "Breathes and walks in preview"
-                        : "Sprite rig in production"}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </BoardCard>
+                  </View>
+                ))}
+              </View>
+
+              <Text
+                style={[
+                  s.productionBoundary,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                {productionTemplateReview.nativeProofStatus}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open Avatar sprite production QA cockpit"
+                accessibilityHint="Opens the focused native QA checklist for sprite gait and phone crop review."
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={openAvatarSpriteProductionQa}
+                style={({ pressed }) => [
+                  s.productionQaButton,
+                  {
+                    backgroundColor: colors.brandNavy,
+                    opacity: pressed ? 0.78 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    s.productionQaButtonText,
+                    { fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
+                  Open sprite QA cockpit
+                </Text>
+                <Ionicons name="arrow-forward" size={17} color="#FFF9EF" />
+              </Pressable>
+            </BoardCard>
+          </>
         ) : null}
 
         {activeTab === "customize" ? (
@@ -2359,6 +2653,92 @@ const s = StyleSheet.create({
   templateTitle: { fontSize: 13.5 },
   templateSub: { fontSize: 11.5, lineHeight: 16 },
   templateSpriteNote: { fontSize: 10.5, lineHeight: 14, marginTop: "auto" },
+  productionReviewPanel: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  productionHeadline: { fontSize: 19, lineHeight: 23 },
+  productionCopy: { fontSize: 12.5, lineHeight: 18 },
+  productionMetricGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 2,
+  },
+  productionMetricCard: {
+    flexBasis: "30%",
+    flexGrow: 1,
+    minHeight: 64,
+    borderRadius: 7,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+    justifyContent: "center",
+  },
+  productionMetricValue: { fontSize: 17, lineHeight: 20 },
+  productionMetricKicker: {
+    fontSize: 8.5,
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+  },
+  productionActionList: { gap: 8, marginTop: 12 },
+  productionActionRow: {
+    minHeight: Math.max(92, MIN_MOBILE_TOUCH_TARGET),
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    flexDirection: "row",
+    gap: 10,
+  },
+  productionActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  productionActionCopy: { flex: 1, minWidth: 0, gap: 3 },
+  productionActionTitle: { fontSize: 12.5 },
+  productionActionMeta: {
+    fontSize: 10,
+    textTransform: "uppercase",
+  },
+  productionActionNotes: { fontSize: 11.5, lineHeight: 16 },
+  productionCheckList: { gap: 8, marginTop: 12 },
+  productionCheckTitle: {
+    fontSize: 11.5,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  productionCheckRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  productionCheckText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
+  productionBoundary: {
+    fontSize: 11.5,
+    lineHeight: 17,
+    marginTop: 12,
+  },
+  productionQaButton: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  productionQaButtonText: {
+    color: "#FFF9EF",
+    fontSize: 13,
+    textTransform: "uppercase",
+  },
   swatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   swatch: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,

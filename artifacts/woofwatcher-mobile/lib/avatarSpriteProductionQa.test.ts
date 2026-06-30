@@ -1,7 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildAvatarSpriteProductionQaSummary } from "./avatarSpriteProductionQa.ts";
+import {
+  buildAvatarSpriteProductionQaSummary,
+  buildAvatarSpriteProductionTemplateReview,
+} from "./avatarSpriteProductionQa.ts";
 
 test("builds a source-backed avatar sprite production QA summary", () => {
   const summary = buildAvatarSpriteProductionQaSummary();
@@ -35,4 +38,18 @@ test("builds a source-backed avatar sprite production QA summary", () => {
   assert.ok(summary.requiredChecks.some((check) => /bottom-center/i.test(check)));
   assert.ok(summary.requiredChecks.some((check) => /gait/i.test(check)));
   assert.ok(summary.requiredChecks.some((check) => /iOS and Android/i.test(check)));
+});
+
+test("builds the selected template production review card from registered sprite slots", () => {
+  const review = buildAvatarSpriteProductionTemplateReview("shepherd");
+
+  assert.equal(review.template.templateId, "shepherd");
+  assert.match(review.headline, /Shepherd: 2\/2 live loops registered/);
+  assert.match(review.proofStatusLabel, /Ready for native review/);
+  assert.match(review.actionSummary, /Shepherd live idle: 8 frames at 7 fps/);
+  assert.match(review.actionSummary, /Shepherd walk loop: 8 frames at 9 fps/);
+  assert.equal(review.gameFeelChecks.length, 4);
+  assert.match(review.gameFeelChecks.join("\n"), /crisp hard-pixel sprite/);
+  assert.match(review.nativeProofStatus, /Local sprite metadata only/);
+  assert.match(review.nativeProofStatus, /iOS and Android screenshots/);
 });

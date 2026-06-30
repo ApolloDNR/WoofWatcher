@@ -2540,6 +2540,34 @@ annotation, and `gh run view --log-failed` returned
 `log not found: 84366081750`. Treat this as an external account/pre-job blocker,
 not a local regression.
 
+The Avatar Studio sprite-review surface pass moved the PixelLab game-feel review
+into the actual creator workflow instead of leaving it only in release QA. The
+selected-template helper `buildAvatarSpriteProductionTemplateReview` now derives
+the chosen template's production review from the live sprite registry, and
+`/portrait` renders a `Sprite production review` card below the template picker.
+That card shows 12/12 live templates, 24 sprite slots, the selected body class,
+idle and walk loop frame/fps/anchor notes, four game-feel checks, the
+local-metadata-only native proof boundary, and an accessible `Open sprite QA
+cockpit` action that routes by object to `/care-twin-qa` with
+`qaSurface=avatar-sprite-production-review`. This gives Apollo, Fable, Replit,
+or a native tester an exact screen-level place to review whether the avatar feels
+like a video-game dog instead of a softened still portrait.
+
+Fresh local verification for the Avatar Studio sprite-review surface passed
+`avatarSpriteProductionQa.test.ts` 2/2, `mobileReadiness.test.ts` 100/100,
+mobile TypeScript, root TypeScript, the 481-test API/mobile/PWA/care-domain
+focused suite, PixelLab assets `ok=149 missing=0 invalid=0`, package-local Expo
+web export to `.expo-smoke` with 218 assets / 222 files after prepending bundled
+Node and pnpm to PATH, live preview route smoke `200` for `/`, `/portrait`, and
+`/care-twin-qa?qaSurface=avatar-sprite-production-review` at
+`http://127.0.0.1:4194/`, and `git diff --check` with expected Windows CRLF
+warnings only. The JSON mobile beta doctor still reports `BLOCKED` only because
+the local bundled pnpm is `11.7.0` while the repo is pinned to `10.24.0`; its
+release proof, avatar sprite production review, and truth-boundary checks pass.
+This does not clear actual native iOS/Android gait/crop proof, provider-backed
+storage, CI completion, store approval, payments, push, live AI, generated PDF
+output, or Apollo launch sign-off.
+
 Next highest-impact work:
 
 1. Run `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, and package install/export from a dependency-complete environment now that the root `preinstall` guard no longer requires `sh -c`, the root package manager is pinned to `pnpm@10.24.0`, the mobile app declares Metro web export platforms, and the doctor verifies Node 24, exact pnpm 10.24.0 CLI usage, plus native EAS iOS/Android profile coverage. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then record TypeScript/export evidence.
