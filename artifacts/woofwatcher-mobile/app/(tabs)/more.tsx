@@ -107,6 +107,17 @@ type HouseholdMemberSummary = {
   role?: string | null;
 };
 
+interface MoreDirectoryItem {
+  id: string;
+  iconName: keyof typeof Ionicons.glyphMap;
+  eyebrow: string;
+  label: string;
+  detail: string;
+  actionLabel: string;
+  tone: string;
+  onPress: () => void;
+}
+
 type LaunchProviderFlagKey = keyof Pick<
   LaunchProviderProfile,
   | "authConfigured"
@@ -1222,6 +1233,58 @@ export default function MoreScreen() {
     router.push("/log");
   };
 
+  const moreDirectoryItems: MoreDirectoryItem[] = [
+    {
+      id: "care-today",
+      iconName: "sparkles-outline",
+      eyebrow: "Care today",
+      label: careIntelligence.nextAction.label,
+      detail: careIntelligence.subtitle,
+      actionLabel: "Open",
+      tone: intelligenceTone,
+      onPress: openCareIntelligenceNextAction,
+    },
+    {
+      id: "household",
+      iconName: "people-outline",
+      eyebrow: "Household",
+      label: householdResponsibility.title,
+      detail: householdResponsibility.nextStep,
+      actionLabel: "Review",
+      tone: responsibilityTone,
+      onPress: () => {
+        Haptics.selectionAsync();
+        router.push("/more?section=household" as never);
+      },
+    },
+    {
+      id: "records-passes",
+      iconName: "folder-open-outline",
+      eyebrow: "Records & passes",
+      label: "Care vault",
+      detail: "Records, reports, Care Pass, and export-ready handoffs.",
+      actionLabel: "Open",
+      tone: colors.primary,
+      onPress: () => {
+        Haptics.selectionAsync();
+        router.push("/records" as never);
+      },
+    },
+    {
+      id: "launch-qa",
+      iconName: "phone-portrait-outline",
+      eyebrow: "Launch QA",
+      label: nativeQaPrimaryMission.label,
+      detail: nativeQaPrimaryMission.detail,
+      actionLabel: nativeQaCaptureCockpitActionLabel,
+      tone: betaShipTone,
+      onPress: () => {
+        Haptics.selectionAsync();
+        router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+      },
+    },
+  ];
+
   const H_PAD = 20;
 
   return (
@@ -1360,6 +1423,58 @@ export default function MoreScreen() {
                 </Pressable>
               </View>
             </ImageBackground>
+          </BoardCard>
+
+          <BoardCard style={s.moreDirectoryCard}>
+            <BoardSectionHeader
+              title="Command Directory"
+              accessory={<BoardPill label="4 hubs" tone={colors.copper} />}
+            />
+            <View style={s.moreDirectoryList}>
+              {moreDirectoryItems.map((item, index) => (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.eyebrow}: ${item.label}. ${item.detail}`}
+                  onPress={item.onPress}
+                  style={({ pressed }) => [
+                    s.moreDirectoryRow,
+                    index < moreDirectoryItems.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                    },
+                    {
+                      opacity: pressed ? 0.72 : 1,
+                    },
+                  ]}
+                >
+                  <View style={[s.moreDirectoryIcon, { backgroundColor: item.tone + "18" }]}>
+                    <Ionicons name={item.iconName} size={19} color={item.tone} />
+                  </View>
+                  <View style={s.moreDirectoryCopy}>
+                    <Text style={[s.moreDirectoryEyebrow, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                      {item.eyebrow}
+                    </Text>
+                    <Text numberOfLines={1} style={[s.moreDirectoryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      {item.label}
+                    </Text>
+                    <Text numberOfLines={2} style={[s.moreDirectoryDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      {item.detail}
+                    </Text>
+                  </View>
+                  <View style={[s.moreDirectoryAction, { borderColor: item.tone + "35", backgroundColor: item.tone + "10" }]}>
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      style={[s.moreDirectoryActionText, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}
+                    >
+                      {item.actionLabel}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={14} color={item.tone} />
+                  </View>
+                </Pressable>
+              ))}
+            </View>
           </BoardCard>
 
           {householdFocus && (
@@ -3639,6 +3754,60 @@ const s = StyleSheet.create({
 
   sectionLink: { fontSize: 14 },
   moreBoardCard: { marginTop: 14 },
+  moreDirectoryCard: { marginTop: 14 },
+  moreDirectoryList: {
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  moreDirectoryRow: {
+    minHeight: 86,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    paddingVertical: 12,
+  },
+  moreDirectoryIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moreDirectoryCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  moreDirectoryEyebrow: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  moreDirectoryTitle: {
+    fontSize: 14.5,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  moreDirectoryDetail: {
+    fontSize: 11.4,
+    lineHeight: 15,
+    marginTop: 3,
+  },
+  moreDirectoryAction: {
+    minWidth: 76,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
+  moreDirectoryActionText: {
+    fontSize: 11,
+    lineHeight: 14,
+  },
   boardDivider: { borderTopWidth: 1, marginTop: 14 },
 
   rosterSummary: {

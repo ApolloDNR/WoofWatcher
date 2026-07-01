@@ -2609,3 +2609,40 @@ Verification:
   Missions, Mission Schedule, and Reminder Center text were present.
 - Screenshot capture still timed out in local browser tooling, so native/browser
   visual proof remains a QA task.
+
+## 2026-07-01 More Command Directory Pass
+
+More is the fourth route in the design-system recovery. The goal was to keep
+the deep launch, household, access, roster, tools, and diet systems intact while
+making the page feel navigable instead of like a wall of admin panels.
+
+What changed:
+
+- Added a `MoreDirectoryItem` model and a `Command Directory` board directly
+  under the pixel Launch Command Hub.
+- The directory gives the first screen four clear workflow exits:
+  - Care Today from the live Care Intelligence next action.
+  - Household from the household responsibility next step.
+  - Records & passes for the vault/report/Care Pass surface.
+  - Launch QA for the current native QA primary mission.
+- Preserved the existing launch readiness, provider setup, Native QA captures,
+  CareTwin roster, household access, Access Pass, My Care Today, tools, and diet
+  behavior below the new navigation layer.
+- Added a readiness guard so More cannot regress back into an ungrouped deep
+  panel list without test coverage catching it.
+
+Design rule locked from this pass:
+
+- Deep system pages need a first-screen command directory when they contain more
+  than one product domain. Users should choose the hub they need before scanning
+  launch gates, provider setup, records, household access, and tools.
+
+Verification:
+
+- Mobile readiness passed 104/104, including the new More command-directory
+  guard.
+- Mobile TypeScript passed.
+- Broader focused mobile/domain/API/PWA suite passed 487/487.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files.
+- Route smoke passed for More, Home, Plans, and Health at
+  `http://127.0.0.1:4194/`.

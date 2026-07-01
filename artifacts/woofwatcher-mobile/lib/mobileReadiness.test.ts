@@ -3886,6 +3886,29 @@ test("keeps CareTwin roster readiness visible without fake multi-dog switching",
   assert.match(more, /Multi-dog switching is staged/);
 });
 
+test("keeps More organized around a grouped command directory", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  assert.match(more, /interface MoreDirectoryItem/);
+  assert.match(more, /const moreDirectoryItems: MoreDirectoryItem\[\] = \[/);
+  assert.match(more, /Command Directory/);
+  assert.match(more, /Care today/);
+  assert.match(more, /Household/);
+  assert.match(more, /Records & passes/);
+  assert.match(more, /Launch QA/);
+  assert.match(more, /careIntelligence\.nextAction\.label/);
+  assert.match(more, /householdResponsibility\.nextStep/);
+  assert.match(more, /router\.push\("\/more\?section=household" as never\)/);
+  assert.match(more, /router\.push\("\/records" as never\)/);
+  assert.match(
+    more,
+    /router\.push\(buildCareTwinQaFocusRoute\(nativeQaPrimaryMissionTarget\) as never\)/,
+  );
+  assert.match(more, /style=\{s\.moreDirectoryCard\}/);
+  assert.match(more, /s\.moreDirectoryRow/);
+  assert.match(more, /accessibilityLabel=\{`\$\{item\.eyebrow\}: \$\{item\.label\}\. \$\{item\.detail\}`\}/);
+});
+
 test("keeps More household, tools, and diet sections on shared board card anatomy", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const launchModel = readMobileLibFile("launchReadiness.ts");

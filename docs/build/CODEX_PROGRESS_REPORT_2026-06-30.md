@@ -140,3 +140,41 @@ Preview:
 - Local screenshot capture through the in-app browser still timed out on
   `Page.captureScreenshot`, so visual proof remains pending real browser/device
   screenshots even though the live route is navigable.
+
+## 2026-07-01 More Command Directory Slice
+
+More received the next design-system recovery pass so the screen has a clear
+front door before exposing the deep launch and household systems.
+
+What changed:
+
+- Added a typed `MoreDirectoryItem` model and a `Command Directory` board under
+  the pixel Launch Command Hub.
+- Added four first-screen, route-backed workflow exits:
+  - Care Today, using the current Care Intelligence next action.
+  - Household, using the household responsibility summary and `/more?section=household`.
+  - Records & passes, routing to `/records`.
+  - Launch QA, routing to the focused `/care-twin-qa` mission.
+- Kept the existing CareTwin roster, Care Intelligence, Launch Readiness,
+  provider setup, Native QA captures, household access, Access Pass, My Care
+  Today, Tools & Sharing, and Diet Profile behavior intact below the directory.
+- Added mobile readiness coverage for the grouped More hierarchy.
+
+Verification:
+
+- Mobile readiness passed 104/104.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`.
+- Broader focused mobile/domain/API/PWA suite passed 487/487.
+- `git diff --check` passed with expected Windows CRLF warnings only.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Static preview route smoke passed for `/more`, `/health`, `/calendar`, and
+  `/` at `http://127.0.0.1:4194/`.
+
+Preview:
+
+- The local static preview server remains available at
+  `http://127.0.0.1:4194/`.
+- This pass improves local web/mobile structure only; native iOS/Android visual
+  QA screenshots and Apollo launch sign-off remain required.
