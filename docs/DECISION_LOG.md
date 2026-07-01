@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-07-01: Report History Audience Prep Guidance Is Shared
+
+Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared audience-prep line from `summarizeReportArtifacts`. The line may tell owners which saved Care Pass, Progress Report, or Dog ID source best fits sitter, caregiver, trainer, vet, owner-review, or emergency credential handoffs before resending, but it must not imply provider-backed storage, native export, cloud sharing, retention, deletion, or unsupervised assistant actions are ready.
+
+Reason: Report History now stores multiple local source kinds. Owners need a quick check that the reusable local source matches the recipient before they resend or share printable source, and keeping the line in shared care-domain logic prevents Records and WoofGuide from drifting.
+
+Owner: Codex.
+
+Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, persisted assistant report drafts, permission-aware assistant writes, cloud sharing, share revocation, or storage retention/deletion policy become active release work.
+
 ### 2026-07-01: Report History Pre-Share Review Guidance Is Shared
 
 Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared pre-share review line from `summarizeReportArtifacts`. The line may tell owners to review the latest local source for stale routines, medications, records, and audience before resending, but it must not imply provider-backed storage, native export, cloud sharing, retention, deletion, or unsupervised assistant actions are ready.

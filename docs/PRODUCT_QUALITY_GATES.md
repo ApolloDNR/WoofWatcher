@@ -244,6 +244,7 @@ Current gaps:
 - Alone Time derivation, private-log exclusion, Log composer duration/return-state/trigger/support/recovery fields, Care Pass handoff language, and Records Alone Time wiring are covered by focused tests.
 - Weight Trend derivation, private-log exclusion, profile baseline fallback, goal parsing, Care Pass report language, and Records chart wiring are covered by focused tests.
 - Grooming Care derivation, private-log exclusion, Log composer type/duration/coat/products/next-due fields, Care Pass report language, and Records Grooming Care wiring are covered by focused tests.
+- Saved Report History audience-prep guidance is covered by focused domain, Records readiness, and WoofGuide action tests so Care Pass, Progress Report, and Dog ID sources tell owners which sitter/caregiver/trainer/vet/owner-review/credential handoff they fit before resend while provider-backed export/storage/lifecycle claims remain gated.
 - Reminder Center derivation, urgency sorting, private-log exclusion through the underlying care helpers, notification-readiness copy, Calendar wiring, row action routing, and Log type preselection are covered by focused tests.
 - Household Responsibility derivation and Calendar/More responsibility wiring are covered by focused tests.
 - Household Access derivation and More wiring are covered by focused tests.

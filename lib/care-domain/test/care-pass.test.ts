@@ -718,12 +718,16 @@ test("summarizes saved report artifacts for local handoff readiness", () => {
   assert.match(summary.summary, /3 local report sources saved/);
   assert.match(summary.latestLine, /Latest saved source: Dog ID Credential/);
   assert.match(summary.action, /Resend or share printable source/);
+  assert.match(summary.audienceLine, /Match the source to the audience/);
+  assert.match(summary.audienceLine, /Care Passes fit sitter, caregiver, trainer, or vet handoffs/);
+  assert.match(summary.audienceLine, /Progress Reports fit longer owner-review check-ins/);
+  assert.match(summary.audienceLine, /Dog ID sources fit quick identity, emergency-contact, and credential review/);
   assert.match(summary.reviewLine, /Review the latest local source/);
   assert.match(summary.reviewLine, /routines, medications, records, and audience/);
   assert.match(summary.cleanupLine, /Remove obsolete local sources only after review/);
   assert.match(summary.cleanupLine, /does not revoke shares/);
   assert.match(summary.boundaryLine, /local reusable sources/);
-  assert.doesNotMatch(`${summary.reviewLine} ${summary.cleanupLine} ${summary.boundaryLine}`, /cloud storage ready|PDF export ready/i);
+  assert.doesNotMatch(`${summary.audienceLine} ${summary.reviewLine} ${summary.cleanupLine} ${summary.boundaryLine}`, /cloud storage ready|PDF export ready/i);
 });
 
 test("describes report artifact print-source readiness without claiming provider lifecycle", () => {
