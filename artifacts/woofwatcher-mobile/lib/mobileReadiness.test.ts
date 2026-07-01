@@ -1723,7 +1723,7 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /Health Snapshot/);
   assert.match(health, /Pattern Board/);
   assert.match(health, /Review packet/);
-  assert.match(health, /Calm patterns\. Clear owner notes\. No diagnosis\./);
+  assert.match(health, /Owner notes\. No diagnosis\./);
   assert.match(health, /healthCommandActions/);
   assert.match(health, /healthCommandDeck/);
   assert.match(health, /Quick health log: \$\{action\.label\}\. \$\{action\.detail\}/);
@@ -2209,9 +2209,9 @@ test("keeps Quick Log aligned to the mobile design-system recovery recipe", () =
   assert.match(log, /quickLogActionConsoleHeader/);
   assert.match(log, /quickLogSupportRail/);
   assert.match(log, /quickLogDetailDock/);
-  assert.match(log, /logCommandStage:[\s\S]*width: "100%"[\s\S]*minHeight: 200/);
-  assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "60%"/);
-  assert.match(log, /logCommandSprite:[\s\S]*right: 18/);
+  assert.match(log, /logCommandStage:[\s\S]*width: "100%"[\s\S]*minHeight: 148/);
+  assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "58%"/);
+  assert.match(log, /logCommandSprite:[\s\S]*right: 12/);
   assert.match(log, /logCommandDock/);
   assert.match(log, /Tap saves\. Hold opens details\./);
   assert.doesNotMatch(
@@ -2632,7 +2632,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /<BoardCard style=\{s\.tipBoard\} tone="soft"/);
   assert.match(
     avatarStudio,
-    /Upload photos to help us suggest your dog's pixel care twin/,
+    /Choose a pixel twin, then customize\./,
   );
   assert.match(avatarStudio, /AVATAR_SCAN_WORKFLOW_STEPS/);
   assert.match(avatarStudio, /scanPipelineGrid/);
@@ -2698,6 +2698,9 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   );
   assert.match(avatarStudio, /templatePixelFloor/);
   assert.match(avatarStudio, /templateLiveChip/);
+  assert.match(avatarStudio, /savedScrim:[\s\S]*height: "24%"/);
+  assert.match(avatarStudio, /savedName:\s*\{ color: "#FFF9EF", fontSize: 17\.5/);
+  assert.match(avatarStudio, /<Text numberOfLines=\{1\} style=\{\[s\.savedSub/);
   assert.match(avatarPreviewModel, /Animated Phoenix pack/);
   assert.match(avatarPreviewModel, /Live template sprite pack/);
   assert.match(avatarPreviewModel, /Starter still preview/);

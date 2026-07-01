@@ -108,6 +108,27 @@ The 2026-07-01 Log/Records stage-dock pass fixes the most visible remaining over
 - Both routes are protected by mobile readiness checks that prevent the old `marginTop`/absolute overlay HUD pattern from returning.
 - Chrome proof exists at `tmp/route-log-compact-stage-dock-final.png` and `tmp/route-records-credential-dock-final.png`; native iOS/Android screenshots are still required before store-ready design sign-off.
 
+## Compact Route Visual QA Slice
+
+The later 2026-07-01 compact visual QA pass tightened the screens Apollo
+flagged as still not App Store quality:
+
+- Quick Log now keeps the animated command scene as flavor, not the whole
+  screen. The sprite, speech bubble, and command dock are smaller so the first
+  quick-action grid is visible immediately.
+- Health Watch now treats the first Health Snapshot as the primary utility
+  panel, with four priority rows before the pixel room. Deeper report content
+  stays below the fold instead of colliding with the floating paw nav.
+- Avatar Studio now follows the `one dog, one room, one truth label` rule:
+  one main pixel dog, one small identity card, one small template-built badge,
+  and one concise PixelLab caption. Duplicate HUDs and long hero summaries are
+  not allowed on the first viewport.
+- Clean export proof was captured at
+  `tmp/design-audit-2026-07-01-final/home.png`,
+  `tmp/design-audit-2026-07-01-final/log.png`,
+  `tmp/design-audit-2026-07-01-final/health.png`, and
+  `tmp/design-audit-2026-07-01-final/avatar-studio-final.png`.
+
 ## Next Design Passes
 
 1. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.

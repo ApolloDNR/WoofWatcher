@@ -2183,7 +2183,7 @@ export default function LogScreen() {
                     Quick Care Console
                   </Text>
                   <Text
-                    numberOfLines={3}
+                    numberOfLines={2}
                     style={[s.logCommandSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
                   >
                     {logCommandSpeech}
@@ -2203,8 +2203,8 @@ export default function LogScreen() {
                 <SpriteSheetPlayer
                   asset={LOG_COMMAND_STAGE_SPRITE}
                   track={LOG_COMMAND_STAGE_TRACK}
-                  width={128}
-                  height={128}
+                  width={104}
+                  height={104}
                   testID="quick-log-command-pixel-sprite"
                 />
               </View>
@@ -4696,14 +4696,14 @@ const s = StyleSheet.create({
     width: "100%",
     maxWidth: "100%",
     marginTop: 6,
-    marginBottom: 12,
+    marginBottom: 10,
     overflow: "hidden",
   },
   logCommandStage: {
     width: "100%",
-    minHeight: 200,
+    minHeight: 148,
     overflow: "hidden",
-    padding: 10,
+    padding: 9,
     justifyContent: "flex-start",
   },
   logCommandStageImage: {
@@ -4721,17 +4721,17 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 7,
   },
   logCommandBubble: {
-    maxWidth: "60%",
-    minHeight: 64,
+    maxWidth: "58%",
+    minHeight: 54,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "#081424",
     backgroundColor: "rgba(255,249,239,0.94)",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   logCommandKicker: {
     fontSize: 9,
@@ -4739,8 +4739,8 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   logCommandSpeech: {
-    fontSize: 12.5,
-    lineHeight: 16,
+    fontSize: 11.5,
+    lineHeight: 14,
     marginTop: 3,
   },
   logCommandBubbleTail: {
@@ -4756,51 +4756,51 @@ const s = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   logCommandChip: {
-    maxWidth: 112,
+    maxWidth: 104,
     flexShrink: 1,
-    minHeight: 38,
+    minHeight: 34,
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
   logCommandChipText: {
-    fontSize: 10,
+    fontSize: 9.2,
     lineHeight: 13,
     textTransform: "uppercase",
   },
   logCommandSprite: {
     position: "absolute",
-    right: 18,
-    bottom: 12,
-    width: 128,
-    height: 128,
+    right: 12,
+    bottom: 7,
+    width: 104,
+    height: 104,
     alignItems: "center",
     justifyContent: "flex-end",
   },
   logCommandSpriteShadow: {
     position: "absolute",
-    bottom: 9,
-    width: 112,
-    height: 24,
+    bottom: 7,
+    width: 92,
+    height: 18,
     borderRadius: 999,
     backgroundColor: "rgba(8,20,36,0.34)",
   },
   logCommandDock: {
     borderTopWidth: 1,
     paddingHorizontal: 8,
-    paddingTop: 7,
-    paddingBottom: 8,
-    gap: 7,
+    paddingTop: 6,
+    paddingBottom: 7,
+    gap: 6,
   },
   logCommandHud: {
     alignSelf: "stretch",
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 5,
     flexDirection: "row",
     gap: 5,
   },
@@ -4833,7 +4833,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "stretch",
     gap: 7,
-    marginTop: 10,
+    marginTop: 4,
   },
   logCommandMission: {
     flex: 1,

@@ -422,3 +422,46 @@ Remaining:
 - This is local web/mobile proof only. Actual iOS and Android screenshots,
   exact pnpm 10.24 beta doctor proof, CI completion, provider-backed services,
   generated PDF output, store approval, and Apollo launch sign-off remain open.
+
+## 2026-07-01 Compact Route Visual QA Polish
+
+Apollo called out the current preview as still too ugly, overlapping, and
+confusing. This pass used the exported mobile preview as the design QA source
+and tightened the worst first-viewport issues across Quick Log, Health Watch,
+and Avatar Studio.
+
+What changed:
+
+- Quick Log's pixel command stage is shorter, with a smaller live sprite,
+  tighter speech bubble, and a compact dock so the action grid appears sooner.
+- Health Watch now uses shorter boundary copy, compact route spacing, and a
+  first Health Snapshot that shows the four highest-priority signals before
+  the pixel stage instead of forcing the whole report under the floating nav.
+- Avatar Studio now starts with a shorter header, a cleaner pixel room, one
+  main dog, a reduced identity card, no duplicate template HUD, and a compact
+  `Live PixelLab sprite rig.` caption instead of a truncated debug-style
+  summary.
+- Mobile readiness coverage was updated to protect the new Quick Log command
+  sizing, Health compact hierarchy, and Avatar Studio hero-caption guardrails.
+
+Verification:
+
+- Focused mobile/design proof passed 134/134:
+  `mobileReadiness.test.ts`, `mobileReleaseQa.test.ts`, and
+  `avatarStudio.test.ts`.
+- Expo web export passed twice to `artifacts/woofwatcher-mobile/.expo-smoke`
+  with 218 assets / 222 files after prepending bundled Node to `PATH`.
+- Clean static preview served the exported build at `http://127.0.0.1:4196/`.
+- Playwright drove installed Chrome against the exported preview and captured:
+  - `tmp/design-audit-2026-07-01-final/home.png`
+  - `tmp/design-audit-2026-07-01-final/log.png`
+  - `tmp/design-audit-2026-07-01-final/health.png`
+  - `tmp/design-audit-2026-07-01-final/avatar-studio-final.png`
+
+Remaining:
+
+- This is still local web/mobile proof, not native iOS/Android device proof.
+- Continue native screenshots, safe-area review, gesture/haptic timing, exact
+  pnpm 10.24 beta doctor proof, CI completion, provider-backed
+  sync/storage/AI/payments/push, generated PDF output, store approval, and
+  Apollo launch sign-off before calling the app launch-ready.

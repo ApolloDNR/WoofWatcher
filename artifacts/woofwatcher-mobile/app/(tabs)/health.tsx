@@ -424,11 +424,13 @@ export default function HealthScreen() {
         <BoardRouteHeader
           kicker="Health"
           title="Health Watch"
-          subtitle="Calm patterns. Clear owner notes. No diagnosis."
+          subtitle="Owner notes. No diagnosis."
           icon="heart-outline"
           actionIcon="folder-open-outline"
           actionLabel="Open Records from Health Watch"
           onAction={() => router.push("/records")}
+          plain
+          style={s.routeHeaderCompact}
         />
 
         <View style={[s.tabRail, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -472,6 +474,7 @@ export default function HealthScreen() {
           <BoardCard style={[s.sectionCard, s.primaryHealthCard]}>
             <BoardSectionHeader
               title="Health Snapshot"
+              style={s.healthSnapshotHeader}
               accessory={
                 <HealthHeaderAction
                   label="7-day view"
@@ -519,7 +522,7 @@ export default function HealthScreen() {
                       style={[
                         s.healthRhythmBar,
                         {
-                          height: 10 + Math.round(day.value * 30),
+                          height: 8 + Math.round(day.value * 22),
                           backgroundColor: day.tone,
                           borderColor: day.tone,
                         },
@@ -533,7 +536,7 @@ export default function HealthScreen() {
               </View>
             </View>
             <View style={s.healthSignalList}>
-              {healthRows.map((row) => (
+              {healthRows.slice(0, 4).map((row) => (
                 <Pressable
                   key={row.label}
                   accessibilityRole="button"
@@ -998,13 +1001,16 @@ export default function HealthScreen() {
 const s = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1 },
+  routeHeaderCompact: {
+    marginBottom: 10,
+  },
   tabRail: {
     flexDirection: "row",
     gap: 4,
     borderWidth: 1,
     borderRadius: 10,
     padding: 4,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   tabPill: {
     flex: 1,
@@ -1018,7 +1024,7 @@ const s = StyleSheet.create({
 
   heroCard: {
     padding: 10,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   healthStage: {
     minHeight: 148,
@@ -1196,8 +1202,8 @@ const s = StyleSheet.create({
   healthRhythmPanel: {
     borderWidth: 1,
     borderRadius: 8,
-    padding: 9,
-    marginTop: 9,
+    padding: 8,
+    marginTop: 7,
   },
   healthRhythmHeader: {
     flexDirection: "row",
@@ -1215,11 +1221,11 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   healthRhythmBars: {
-    minHeight: 48,
+    minHeight: 36,
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 7,
-    marginTop: 9,
+    marginTop: 7,
   },
   healthRhythmColumn: {
     flex: 1,
@@ -1362,38 +1368,43 @@ const s = StyleSheet.create({
   },
   heroActionSecondaryText: { color: "#FFF9EF", fontSize: 13 },
 
-  sectionCard: { marginTop: 14 },
+  sectionCard: { marginTop: 10 },
   primaryHealthCard: {
     marginTop: 0,
+    padding: 10,
+  },
+  healthSnapshotHeader: {
+    marginBottom: 8,
+    paddingBottom: 6,
   },
   healthStatusSummary: {
     borderWidth: 1,
     borderRadius: 8,
-    padding: 9,
+    padding: 8,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
   healthScoreTokenCompact: {
-    width: 70,
-    minHeight: 76,
+    width: 62,
+    minHeight: 66,
   },
   healthScoreValueCompact: {
-    fontSize: 27,
-    lineHeight: 29,
+    fontSize: 24,
+    lineHeight: 26,
   },
   healthStatusCopy: {
     flex: 1,
     minWidth: 0,
   },
   healthStatusTitle: {
-    fontSize: 19,
-    lineHeight: 22,
+    fontSize: 17,
+    lineHeight: 20,
     marginTop: 1,
   },
   healthStatusBody: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11.2,
+    lineHeight: 15,
     marginTop: 3,
   },
   statusScoreTrackCompact: {
@@ -1607,22 +1618,22 @@ const s = StyleSheet.create({
   bileBarLabel: { fontSize: 9.5 },
 
   healthSignalList: {
-    gap: 7,
-    marginTop: 9,
+    gap: 6,
+    marginTop: 7,
   },
   healthSignalRow: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     flexDirection: "row",
     alignItems: "center",
-    gap: 9,
+    gap: 8,
   },
   statusIcon: {
-    width: 34,
-    height: 34,
+    width: 30,
+    height: 30,
     borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
@@ -1641,21 +1652,21 @@ const s = StyleSheet.create({
   healthSignalTitle: {
     flex: 1,
     minWidth: 0,
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 12.5,
+    lineHeight: 16,
   },
   healthSignalStatus: {
     maxWidth: 72,
-    fontSize: 12.5,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 15,
     textAlign: "right",
   },
   healthSignalDetail: {
-    fontSize: 11.5,
-    lineHeight: 15,
+    fontSize: 11,
+    lineHeight: 14,
   },
   healthSignalActionPill: {
-    width: 58,
+    width: 52,
     minHeight: 28,
     borderWidth: 1,
     borderRadius: 7,

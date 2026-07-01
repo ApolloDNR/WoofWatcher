@@ -528,8 +528,8 @@ export default function PortraitScreen() {
       >
         <BoardRouteHeader
           kicker="Avatar Studio"
-          title="Create the care twin"
-          subtitle="Upload photos to help us suggest your dog's pixel care twin, then approve and customize it."
+          title="Avatar Studio"
+          subtitle="Choose a pixel twin, then customize."
           back
           onBack={() => router.back()}
           actionIcon="checkmark"
@@ -949,60 +949,6 @@ export default function PortraitScreen() {
                       {previewIsSprite ? "PIXELLAB SPRITE" : "STILL PREVIEW"}
                     </Text>
                   </View>
-                  <View
-                    style={[
-                      s.templateHeroHud,
-                      {
-                        backgroundColor: "rgba(255,249,239,0.94)",
-                        borderColor: colors.navy,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        s.templateHeroKicker,
-                        {
-                          color: previewMood.chipColor,
-                          fontFamily: "Inter_700Bold",
-                        },
-                      ]}
-                    >
-                      {previewMotionLabel}
-                    </Text>
-                    <Text
-                      style={[
-                        s.templateHeroTitle,
-                        { color: colors.navy, fontFamily: DISPLAY },
-                      ]}
-                    >
-                      {selectedTemplate.label}
-                    </Text>
-                    <Text
-                      style={[
-                        s.templateHeroMood,
-                        {
-                          color: colors.mutedForeground,
-                          fontFamily: "Inter_700Bold",
-                        },
-                      ]}
-                    >
-                      {emoteLabel(previewEmote)}
-                      {previewAccessories.length
-                        ? ` | ${previewAccessories.length} chosen style${previewAccessories.length === 1 ? "" : "s"}`
-                        : ""}
-                    </Text>
-                    <Text
-                      style={[
-                        s.templateHeroFit,
-                        {
-                          color: colors.mutedForeground,
-                          fontFamily: "Inter_700Bold",
-                        },
-                      ]}
-                    >
-                      {accessoryFitBadge}
-                    </Text>
-                  </View>
                 </View>
               ) : (
                 <LivingPhoenixRoom
@@ -1102,14 +1048,11 @@ export default function PortraitScreen() {
                 tone={draft.scanAssisted ? colors.sage : colors.amber}
                 active
               />
-              <Text style={[s.savedName, { fontFamily: DISPLAY }]}>
+              <Text numberOfLines={1} adjustsFontSizeToFit style={[s.savedName, { fontFamily: DISPLAY }]}>
                 {petName}'s Pixel Twin
               </Text>
-              <Text style={[s.savedSub, { fontFamily: "Inter_600SemiBold" }]}>
-                {previewIsSprite
-                  ? `${previewMotionLabel}. Live PixelLab sprite rig. `
-                  : "Still preview until a live animation pack exists. "}
-                {avatarSummary}
+              <Text numberOfLines={1} style={[s.savedSub, { fontFamily: "Inter_600SemiBold" }]}>
+                {previewIsSprite ? "Live PixelLab sprite rig." : "Still preview until a live animation pack exists."}
               </Text>
             </View>
           </BoardCard>
@@ -2217,7 +2160,7 @@ const s = StyleSheet.create({
   workingHint: { fontSize: 13, lineHeight: 18 },
   heroPreview: {
     overflow: "hidden",
-    aspectRatio: 0.88,
+    aspectRatio: 0.9,
     marginBottom: 12,
     backgroundColor: "#081424",
     position: "relative",
@@ -2414,22 +2357,22 @@ const s = StyleSheet.create({
   templateSpeech: {
     position: "absolute",
     left: 24,
-    top: 60,
-    maxWidth: "62%",
+    top: 58,
+    maxWidth: "56%",
     borderRadius: 6,
     borderWidth: 2,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
-  templateSpeechText: { fontSize: 17, lineHeight: 21 },
+  templateSpeechText: { fontSize: 15, lineHeight: 19 },
   templateLiveChip: {
     position: "absolute",
-    left: 16,
-    bottom: 82,
-    minHeight: 28,
+    left: 12,
+    bottom: 14,
+    minHeight: 25,
     borderRadius: 4,
     borderWidth: 2,
-    paddingHorizontal: 9,
+    paddingHorizontal: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -2441,18 +2384,19 @@ const s = StyleSheet.create({
   },
   templateLiveChipText: {
     color: "#FFF9EF",
-    fontSize: 9,
+    fontSize: 8.4,
     letterSpacing: 0.8,
   },
   templateHeroHud: {
     position: "absolute",
-    right: 16,
-    bottom: 80,
-    minWidth: 104,
+    right: 12,
+    bottom: 44,
+    minWidth: 96,
+    maxWidth: 142,
     borderRadius: 6,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     gap: 2,
   },
   templateHeroKicker: {
@@ -2461,28 +2405,28 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   templateHeroTitle: { fontSize: 17, lineHeight: 20 },
-  templateHeroMood: { fontSize: 11, lineHeight: 14 },
-  templateHeroFit: { fontSize: 9.5, lineHeight: 12, maxWidth: 148 },
+  templateHeroMood: { fontSize: 10, lineHeight: 13 },
+  templateHeroFit: { fontSize: 8.8, lineHeight: 11, maxWidth: 126 },
   pixelFrameOverlay: {
     position: "absolute",
-    left: 14,
-    top: 14,
-    right: 14,
+    left: 12,
+    top: 12,
+    right: 12,
     alignItems: "flex-end",
   },
   pixelIdCard: {
-    width: 184,
-    minHeight: 76,
+    width: 154,
+    minHeight: 62,
     borderRadius: 2,
     borderWidth: 2,
-    padding: 8,
+    padding: 6,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   pixelHead: {
-    width: 54,
-    height: 54,
+    width: 42,
+    height: 42,
     borderRadius: 2,
     borderWidth: 2,
     borderColor: "#081424",
@@ -2490,15 +2434,15 @@ const s = StyleSheet.create({
   },
   pixelIdCopy: { flex: 1, minWidth: 0, gap: 2 },
   pixelIdKicker: {
-    fontSize: 8,
+    fontSize: 7.5,
     letterSpacing: 0.6,
     textTransform: "uppercase",
   },
-  pixelIdName: { fontSize: 16, lineHeight: 18 },
+  pixelIdName: { fontSize: 13.5, lineHeight: 16 },
   pixelLevelRow: { flexDirection: "row", gap: 3, marginTop: 3 },
   pixelLevelPip: {
-    width: 14,
-    height: 7,
+    width: 12,
+    height: 6,
     borderRadius: 1,
     borderWidth: 1,
     borderColor: "rgba(8,20,36,0.22)",
@@ -2508,17 +2452,17 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: "52%",
+    height: "24%",
   },
   heroCopy: {
     position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 16,
-    gap: 7,
+    left: 14,
+    width: "56%",
+    bottom: 10,
+    gap: 3,
   },
-  savedName: { color: "#FFF9EF", fontSize: 25 },
-  savedSub: { color: "rgba(255,249,239,0.82)", fontSize: 12.5, lineHeight: 17 },
+  savedName: { color: "#FFF9EF", fontSize: 17.5, lineHeight: 20 },
+  savedSub: { color: "rgba(255,249,239,0.82)", fontSize: 9.4, lineHeight: 12 },
   tabRow: {
     flexDirection: "row",
     gap: 7,
