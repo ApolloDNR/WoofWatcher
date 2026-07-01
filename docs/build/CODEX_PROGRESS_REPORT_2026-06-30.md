@@ -59,3 +59,43 @@ Remote:
 - More needs grouped navigation hierarchy and less wall-of-options density.
 - Records needs a vault/credential scanability pass.
 - Home needs final dark RPG board alignment after the core utility screens share this stricter design system.
+
+## Later Health Watch Polish Slice
+
+Apollo called out the current design as too ugly, overlapping, and confusing,
+so Health Watch received a second, stricter mobile layout pass.
+
+What changed:
+
+- Replaced the centered/plain Health header with a normal app header:
+  `Health`, `Health Watch`, and the explicit boundary subtitle
+  `Calm patterns. Clear owner notes. No diagnosis.`
+- Added a compact Health command deck inside the first card for Appetite,
+  Potty, Vomit, and Water, each routing to the correct detailed health/log flow.
+- Reduced the Health pixel stage height and sprite footprint so the live
+  health-watch sprite, speech bubble, HUD, and card content have clearer
+  boundaries on phone screens.
+- Reworked Health Snapshot rows into a two-line row anatomy: icon, title/status
+  line, detail line, and a small `Log` action pill. This removes the cramped
+  one-line label/status/action collision.
+- Tightened the Review Packet spacing so it reads as a professional vet-share
+  module below the primary Health status, not a competing dashboard.
+- Added readiness guards for the Health command deck and safer signal row
+  anatomy.
+
+Verification:
+
+- Mobile readiness passed 102/102.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`.
+- Broader focused mobile/domain/API/PWA suite passed 485/485.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files.
+- Static preview route smoke passed for `/`, `/health`, `/log`, and
+  `/calendar` at `http://127.0.0.1:4194/`.
+
+Preview:
+
+- The local static preview server is running at `http://127.0.0.1:4194/`.
+- Local screenshot capture through Playwright and Chrome headless was blocked
+  by local browser tooling timeouts / no screenshot file output, so visual proof
+  still needs Apollo or a later device/browser QA capture.

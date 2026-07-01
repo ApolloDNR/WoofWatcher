@@ -1608,6 +1608,10 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /Health Snapshot/);
   assert.match(health, /Pattern Board/);
   assert.match(health, /Review packet/);
+  assert.match(health, /Calm patterns\. Clear owner notes\. No diagnosis\./);
+  assert.match(health, /healthCommandActions/);
+  assert.match(health, /healthCommandDeck/);
+  assert.match(health, /Quick health log: \$\{action\.label\}\. \$\{action\.detail\}/);
   assert.match(health, /healthReviewPacket\.languagePill/);
   assert.match(health, /healthReviewPacket\.prompts/);
   assert.match(health, /healthReviewPacket\.vetShareChecklist/);
@@ -1636,6 +1640,8 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /healthHeroPanel/);
   assert.match(health, /healthScoreToken/);
   assert.match(health, /heroSignalRail/);
+  assert.match(health, /healthSignalCopy/);
+  assert.match(health, /healthSignalTitleLine/);
   assert.match(health, /healthSignalList/);
   assert.match(health, /statusScoreTrack/);
   assert.match(health, /healthRhythmBars/);

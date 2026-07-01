@@ -2532,3 +2532,39 @@ Verification:
 - Expo web export refreshed `.expo-smoke` with 218 assets / 222 files.
 - Live preview route smoke passed for `/`, `/health`, and `/log` at
   `http://127.0.0.1:4194/`.
+
+## 2026-06-30 Health Watch Second Polish Pass
+
+Apollo's latest feedback made the design bar explicit: the app must feel like a
+planned App Store product, not a stack of useful but crowded widgets. Health
+Watch now follows the stricter mobile recipe more closely.
+
+What changed:
+
+- The route header now behaves like the rest of the app shell instead of a
+  centered floating title.
+- A new `healthCommandActions` deck puts the four most common health follow-ups
+  directly after the status boundary: Appetite, Potty, Vomit, and Water.
+- The Health pixel stage is shorter and the live sprite is bounded more tightly
+  so the stage does not dominate the whole first screen.
+- Health Snapshot rows now use `healthSignalCopy` and
+  `healthSignalTitleLine` to give label, status, detail, and action their own
+  space.
+- Review Packet spacing was compressed so it supports vet handoff without
+  pushing the whole route into a wall of cards.
+
+Design rule locked from this pass:
+
+- If a row has icon, title, status, detail, and action, title/status must share
+  one line, detail must sit below, and the action must be a short verb. Full
+  action sentences belong in accessibility labels or detail views, not cramped
+  visible row chrome.
+
+Verification:
+
+- Mobile readiness passed 102/102.
+- Mobile TypeScript passed.
+- Broader focused mobile/domain/API/PWA suite passed 485/485.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files.
+- Route smoke passed for Home, Health, Log, and Plans at
+  `http://127.0.0.1:4194/`.

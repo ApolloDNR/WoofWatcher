@@ -70,6 +70,13 @@ The 2026-06-30 Health Watch pass is the first proof of this plan:
 - The 7-day rhythm chart moved into Health Snapshot, where it is useful but not visually loud.
 - Review Packet was trimmed to the top prompts and checklist items.
 
+The later Health polish pass tightened the route further:
+
+- The route header now matches the rest of the mobile app shell instead of using a centered/plain treatment.
+- A compact Health command deck gives Appetite, Potty, Vomit, and Water their own fast routes before deeper review content.
+- Health signal rows use two-line anatomy plus a short `Log` pill so title, status, detail, and action no longer fight on one line.
+- The Health pixel stage and sprite footprint are smaller, keeping the first screen useful instead of dominated by one illustration.
+
 ## Quick Log Recovery Slice
 
 The 2026-06-30 Quick Log pass is the second proof of this plan:
@@ -87,3 +94,4 @@ The 2026-06-30 Quick Log pass is the second proof of this plan:
 2. More: split into grouped menu sections with stronger hierarchy and less wall-of-options feel.
 3. Records: turn dense record sections into scannable credential/vault rows.
 4. Home: final pass against the dark RPG board after Health/Log/Plans share the same system.
+5. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.

@@ -328,6 +328,36 @@ export default function HealthScreen() {
       actionLabel: statusActionLabel("symptom"),
     },
   ];
+  const healthCommandActions = [
+    {
+      label: "Appetite",
+      detail: "Food context",
+      icon: "meal" as PixelIconName,
+      tone: colors.sage,
+      routeType: "meal",
+    },
+    {
+      label: "Potty",
+      detail: "Stool detail",
+      icon: "poo" as PixelIconName,
+      tone: colors.amber,
+      routeType: "potty",
+    },
+    {
+      label: "Vomit",
+      detail: "Health note",
+      icon: "vomit" as PixelIconName,
+      tone: colors.rose,
+      routeType: "symptom",
+    },
+    {
+      label: "Water",
+      detail: "Hydration",
+      icon: "bile" as PixelIconName,
+      tone: colors.blueSignal,
+      routeType: "water",
+    },
+  ];
 
   const healthReviewPacket = deriveHealthReviewPacket({
     dogName: state.profile.name || "Phoenix",
@@ -389,9 +419,10 @@ export default function HealthScreen() {
         showsVerticalScrollIndicator={false}
       >
         <BoardRouteHeader
+          kicker="Health"
           title="Health Watch"
-          centered
-          plain
+          subtitle="Calm patterns. Clear owner notes. No diagnosis."
+          icon="heart-outline"
           actionIcon="folder-open-outline"
           actionLabel="Open Records from Health Watch"
           onAction={() => router.push("/records")}
@@ -550,6 +581,36 @@ export default function HealthScreen() {
             <Text style={[s.healthBoundaryMiniText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
               Health observations, not diagnosis. Use patterns to prepare better vet questions.
             </Text>
+          </View>
+
+          <View style={s.healthCommandDeck}>
+            {healthCommandActions.map((action) => (
+              <Pressable
+                key={action.label}
+                accessibilityRole="button"
+                accessibilityLabel={`Quick health log: ${action.label}. ${action.detail}`}
+                onPress={() => openHealthStatusRoute(action.routeType)}
+                style={({ pressed }) => [
+                  s.healthCommandTile,
+                  {
+                    backgroundColor: pressed ? action.tone + "18" : colors.background,
+                    borderColor: pressed ? action.tone + "77" : colors.border,
+                  },
+                ]}
+              >
+                <View style={[s.healthCommandIcon, { backgroundColor: action.tone + "18" }]}>
+                  <PixelIcon name={action.icon} size={23} />
+                </View>
+                <View style={s.healthCommandCopy}>
+                  <Text style={[s.healthCommandLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                    {action.label}
+                  </Text>
+                  <Text style={[s.healthCommandDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {action.detail}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
           </View>
 
           <View style={s.heroActions}>
@@ -833,16 +894,20 @@ export default function HealthScreen() {
                 <View style={[s.statusIcon, { backgroundColor: row.tone + "16" }]}>
                   <PixelIcon name={row.icon} size={24} />
                 </View>
-                <Text style={[s.healthSignalTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                  {row.label}
-                </Text>
-                <Text style={[s.healthSignalStatus, { color: row.tone, fontFamily: DISPLAY_SEMI }]}>{row.status}</Text>
-                <Text style={[s.healthSignalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {row.detail}
-                </Text>
+                <View style={s.healthSignalCopy}>
+                  <View style={s.healthSignalTitleLine}>
+                    <Text style={[s.healthSignalTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                      {row.label}
+                    </Text>
+                    <Text style={[s.healthSignalStatus, { color: row.tone, fontFamily: DISPLAY_SEMI }]}>{row.status}</Text>
+                  </View>
+                  <Text style={[s.healthSignalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {row.detail}
+                  </Text>
+                </View>
                 <View style={[s.healthSignalActionPill, { backgroundColor: row.tone + "10", borderColor: row.tone + "44" }]}>
                   <Text style={[s.healthSignalAction, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
-                    {row.actionLabel}
+                    Log
                   </Text>
                   <Text style={[s.healthSignalActionArrow, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
                     ›
@@ -933,7 +998,7 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   healthStage: {
-    minHeight: 238,
+    minHeight: 206,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "rgba(8,26,42,0.42)",
@@ -1009,10 +1074,10 @@ const s = StyleSheet.create({
   healthStageSprite: {
     position: "absolute",
     zIndex: 4,
-    right: 20,
-    bottom: 46,
-    width: 146,
-    height: 146,
+    right: 8,
+    bottom: 42,
+    width: 132,
+    height: 132,
     alignItems: "center",
     justifyContent: "flex-end",
   },
@@ -1165,6 +1230,44 @@ const s = StyleSheet.create({
     fontSize: 12.2,
     lineHeight: 17,
   },
+  healthCommandDeck: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  healthCommandTile: {
+    flexGrow: 1,
+    flexBasis: "47.5%",
+    minHeight: 62,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  healthCommandIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  healthCommandCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  healthCommandLabel: {
+    fontSize: 12.5,
+    lineHeight: 16,
+  },
+  healthCommandDetail: {
+    fontSize: 10.5,
+    lineHeight: 13,
+    marginTop: 1,
+  },
   heroTop: {
     flexDirection: "row",
     gap: 10,
@@ -1270,17 +1373,17 @@ const s = StyleSheet.create({
   },
   reviewPromptStack: {
     gap: 7,
-    marginTop: 11,
+    marginTop: 9,
   },
   reviewPromptRow: {
-    minHeight: 48,
+    minHeight: 44,
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
     flexDirection: "row",
     alignItems: "center",
-    gap: 9,
+    gap: 8,
   },
   reviewPromptBullet: {
     width: 28,
@@ -1299,8 +1402,8 @@ const s = StyleSheet.create({
   reviewChecklistPanel: {
     borderRadius: 8,
     borderWidth: 1,
-    padding: 10,
-    marginTop: 11,
+    padding: 9,
+    marginTop: 9,
   },
   reviewChecklistTitle: {
     fontSize: 13,
@@ -1328,15 +1431,15 @@ const s = StyleSheet.create({
     lineHeight: 17,
   },
   reviewPacketBoundary: {
-    minHeight: 48,
+    minHeight: 44,
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginTop: 11,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    marginTop: 9,
     flexDirection: "row",
     alignItems: "center",
-    gap: 9,
+    gap: 8,
   },
   reviewPacketBoundaryText: {
     flex: 1,
@@ -1350,7 +1453,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 10,
+    marginTop: 9,
     paddingHorizontal: 10,
   },
   reviewPacketShareText: {
@@ -1360,7 +1463,7 @@ const s = StyleSheet.create({
   reviewPacketActions: {
     flexDirection: "row",
     gap: 8,
-    marginTop: 12,
+    marginTop: 9,
   },
   reviewPacketPrimary: {
     flex: 1,
@@ -1451,7 +1554,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 9,
     flexDirection: "row",
     alignItems: "center",
     gap: 9,
@@ -1463,6 +1566,17 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  healthSignalCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  healthSignalTitleLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
   healthSignalTitle: {
     flex: 1,
     minWidth: 0,
@@ -1470,13 +1584,12 @@ const s = StyleSheet.create({
     lineHeight: 17,
   },
   healthSignalStatus: {
-    minWidth: 54,
-    fontSize: 13,
-    lineHeight: 17,
+    maxWidth: 72,
+    fontSize: 12.5,
+    lineHeight: 16,
     textAlign: "right",
   },
   healthSignalDetail: {
-    display: "none",
     fontSize: 11.5,
     lineHeight: 15,
   },
