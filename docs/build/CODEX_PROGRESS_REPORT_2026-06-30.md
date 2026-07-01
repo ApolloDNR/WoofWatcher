@@ -547,3 +547,29 @@ Remaining:
 - Exact pnpm 10.24 beta doctor proof, provider-backed sync/storage/AI/payments/
   push, generated PDF output, CI completion, store approval, public launch, and
   Apollo sign-off remain blocked until real artifacts exist.
+
+## 2026-07-01 Branch CI Doctor Assertion Repair
+
+After pushing the Quick Log and Health polish, branch run `28527740311` reached
+the real focused test step and failed one brittle assertion in
+`mobileReadiness.test.ts`.
+
+What changed:
+
+- The machine-readable mobile beta doctor test still requires a Corepack status
+  check.
+- It now expects `Corepack available for pnpm bootstrap` in `warnings` only when
+  that check is not `PASS`.
+- This preserves the intended truth boundary: local shells can remain blocked
+  and warn about Corepack, while CI-ready environments do not have to emit a
+  fake warning.
+
+Verification:
+
+- `mobileReadiness.test.ts` passed 112/112.
+- The CI-equivalent focused suite passed 496/496 with the bundled Node runtime.
+
+Remaining:
+
+- Rerun `WoofWatcher Verify` on `automation/premium-revenue-product-builder`
+  after pushing this assertion repair.

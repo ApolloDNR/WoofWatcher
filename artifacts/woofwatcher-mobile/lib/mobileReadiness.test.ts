@@ -4837,9 +4837,16 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
       "blocked beta doctor should name the missing dependency/export gate",
     );
   }
-  assert.ok(
-    payload.warnings?.includes("Corepack available for pnpm bootstrap"),
+  const corepackCheck = payload.checks?.find(
+    (check) => check.label === "Corepack available for pnpm bootstrap",
   );
+  assert.ok(corepackCheck, "mobile beta doctor should report Corepack status");
+  if (corepackCheck.status !== "PASS") {
+    assert.ok(
+      payload.warnings?.includes("Corepack available for pnpm bootstrap"),
+      "Corepack should only appear in warnings when the doctor cannot use it",
+    );
+  }
   assert.deepEqual(payload.proofCommands, [
     "corepack prepare pnpm@10.24.0 --activate",
     "pnpm install",
