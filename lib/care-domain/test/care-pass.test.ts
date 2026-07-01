@@ -10,6 +10,7 @@ import {
   getReportArtifactPrintView,
   renderCarePassPrintHtml,
   renderProgressReportPrintHtml,
+  describeReportArtifactSource,
   summarizeReportArtifacts,
   summarizePetCredentialArtifacts,
 } from "../src/index.ts";
@@ -718,6 +719,35 @@ test("summarizes saved report artifacts for local handoff readiness", () => {
   assert.match(summary.action, /Resend or share printable source/);
   assert.match(summary.boundaryLine, /local reusable sources/);
   assert.doesNotMatch(summary.boundaryLine, /cloud storage ready|PDF export ready/i);
+});
+
+test("describes report artifact print-source readiness without claiming provider lifecycle", () => {
+  const readyProgress = createProgressReportArtifact({
+    dogName: "Phoenix",
+    periodDays: 30,
+    generatedAt: "Jun 9, 7:30 AM",
+    createdAt: "2026-06-09T06:30:00.000Z",
+    summary: "30-day progress report for caregiver and vet review.",
+    sections: [{ title: "Care Summary", lines: ["Total entries logged: 14"] }],
+  });
+  const restoredCarePass = {
+    ...createCarePassArtifact(
+      buildCarePass({ ...baseInput(), audience: "sitter" }),
+      "2026-06-08T06:30:00.000Z",
+    ),
+    printHtml: undefined,
+  };
+
+  const ready = describeReportArtifactSource(readyProgress);
+  const restored = describeReportArtifactSource(restoredCarePass);
+
+  assert.equal(ready.kindLabel, "Progress Report");
+  assert.match(ready.metadataLine, /Progress Report - 1 section - Print-ready source/);
+  assert.match(ready.fileLine, /phoenix-30-day-progress-report-2026-06-09.html/);
+  assert.match(ready.lifecycleLine, /Local printable source only/);
+  assert.match(restored.metadataLine, /Care Pass - .* - Restored printable source/);
+  assert.match(restored.lifecycleLine, /native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled/);
+  assert.doesNotMatch(`${ready.lifecycleLine} ${restored.lifecycleLine}`, /cloud storage ready|PDF export ready/i);
 });
 
 test("renders a print-ready care pass document with escaped care content", () => {

@@ -940,8 +940,11 @@ test("keeps WoofGuide saved report history owner-reviewed and provider-gated", (
   );
 
   assert.match(actions, /summarizeReportArtifacts/);
+  assert.match(actions, /describeReportArtifactSource/);
   assert.match(actions, /id: "report-history"/);
   assert.match(actions, /kind: "report_history"/);
+  assert.match(actions, /latestSource\.metadataLine/);
+  assert.match(actions, /latestSource\.lifecycleLine/);
   assert.match(actions, /server-backed report storage, cloud sharing/);
   assert.match(actions, /route: "\/records"/);
   assert.match(guide, /draft\.kind === "report_history"/);
@@ -1346,14 +1349,17 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
   assert.match(records, /getReportArtifactPrintView/);
+  assert.match(records, /describeReportArtifactSource/);
   assert.match(records, /summarizeReportArtifacts/);
   assert.match(records, /reportHistorySummary/);
   assert.match(records, /Local handoff sources/);
   assert.match(records, /reportHistorySummary\.boundaryLine/);
+  assert.match(records, /sourceDescriptor\.metadataLine/);
+  assert.match(records, /sourceDescriptor\.fileLine/);
+  assert.match(records, /sourceDescriptor\.lifecycleLine/);
   assert.match(records, /Report History readiness/);
   assert.match(records, /Care Passes, Progress Reports, and Dog ID sources/);
   assert.match(records, /sharePrintableReportArtifact/);
-  assert.match(records, /Print-ready/);
   assert.match(records, /accessibilityLabel=\{`Resend \$\{artifact\.title\}`\}/);
   assert.match(records, /accessibilityLabel=\{`Share printable report source for \$\{artifact\.title\}`\}/);
 });
@@ -1370,7 +1376,7 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
   assert.match(records, /accessibilityLabel="Share dog ID card"/);
   assert.match(records, /accessibilityLabel="Share printable dog ID source"/);
   assert.match(records, /kind === "pet_credential"/);
-  assert.match(records, /Dog ID Credential/);
+  assert.match(records, /sourceDescriptor\.metadataLine/);
   assert.match(records, /\{credentialReadiness\.readyCount\}\/\{credentialReadiness\.totalCount\} Dog ID fields ready/);
   assert.match(records, /credentialReadiness\.missingLabels\.join\(", "\)/);
   assert.match(records, /credentialReadiness\.boundaryLine/);
@@ -1384,8 +1390,9 @@ test("keeps Records Care Pass and reports on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Progress Report"/);
   assert.match(records, /createProgressReportArtifact/);
   assert.match(records, /getReportArtifactPrintView/);
+  assert.match(records, /describeReportArtifactSource/);
   assert.match(records, /kind === "care_pass"/);
-  assert.match(records, /kind === "progress_report"/);
+  assert.match(records, /sourceDescriptor\.lifecycleLine/);
   assert.match(records, /deriveMoodEnergyReportSnapshot/);
   assert.match(records, /moodReportSnapshot/);
   assert.match(records, /title: "Mood & Energy"/);

@@ -183,6 +183,13 @@ export interface ReportArtifactSummary {
   boundaryLine: string;
 }
 
+export interface ReportArtifactSourceDescription {
+  kindLabel: string;
+  metadataLine: string;
+  fileLine: string;
+  lifecycleLine: string;
+}
+
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
   caregiver: "Caregiver",
   sitter: "Sitter",
@@ -1026,6 +1033,26 @@ export function getReportArtifactPrintView(artifact: ReportArtifact): ReportArti
 
 export function getCarePassArtifactPrintView(artifact: CarePassArtifact): CarePassArtifactPrintView {
   return getReportArtifactPrintView(artifact);
+}
+
+export function describeReportArtifactSource(artifact: ReportArtifact): ReportArtifactSourceDescription {
+  const printable = getReportArtifactPrintView(artifact);
+  const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
+  const kindLabel =
+    artifact.kind === "progress_report"
+      ? "Progress Report"
+      : artifact.kind === "pet_credential"
+        ? "Dog ID Credential"
+        : "Care Pass";
+  const sectionLabel = `${sectionCount} ${sectionCount === 1 ? "section" : "sections"}`;
+  const printStatus = printable.status === "ready" ? "Print-ready source" : "Restored printable source";
+
+  return {
+    kindLabel,
+    metadataLine: `${kindLabel} - ${sectionLabel} - ${printStatus}`,
+    fileLine: `Printable source: ${printable.fileName}`,
+    lifecycleLine: "Local printable source only; native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled.",
+  };
 }
 
 export function buildCarePass(input: CarePassInput): CarePass {

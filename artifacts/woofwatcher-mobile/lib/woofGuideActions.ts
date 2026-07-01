@@ -3,6 +3,7 @@ import {
   deriveHealthWatch,
   deriveMoodTrend,
   deriveRecordReminders,
+  describeReportArtifactSource,
   getRecordDueStatus,
   normalizeCareEventType,
   summarizePetCredentialArtifacts,
@@ -377,6 +378,7 @@ function reportHistoryDraft(state: WoofGuideActionState): WoofGuideActionDraft |
   if (!summary.latest || (summary.carePassCount === 0 && summary.progressReportCount === 0)) return undefined;
 
   const name = dogName(state);
+  const latestSource = describeReportArtifactSource(summary.latest);
   return {
     kind: "report_history",
     title: "Review saved handoff sources",
@@ -385,7 +387,10 @@ function reportHistoryDraft(state: WoofGuideActionState): WoofGuideActionDraft |
       "",
       summary.summary,
       summary.latestLine,
+      latestSource.metadataLine,
+      latestSource.fileLine,
       summary.action,
+      latestSource.lifecycleLine,
       summary.boundaryLine,
     ].filter(Boolean).join("\n"),
     cta: "Open Report History",

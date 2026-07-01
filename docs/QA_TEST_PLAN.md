@@ -12,6 +12,10 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-06-30:
 
+- PASS: 288 focused tests with the command above on 2026-06-30, now including the shared `describeReportArtifactSource` descriptor that keeps Records Report History rows and WoofGuide report-history drafts aligned on artifact kind, section count, print-ready/restored status, printable file name, and local-only lifecycle copy.
+- PASS: PixelLab asset verifier on 2026-06-30 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the report-source descriptor slice.
+- PASS: `git diff --check` on 2026-06-30 after the report-source descriptor slice; only existing CRLF normalization warnings were printed.
+- LIMIT: `pnpm run build:ci` on 2026-06-30 first failed in the sandbox with registry `EACCES`/`fetch failed`. The escalated retry hydrated all 1276 packages, then stopped at the root `preinstall` script because `sh` is not available on PATH before workspace typecheck/build scripts started.
 - PASS: 287 focused tests with the command above on 2026-06-30, now including WoofGuide owner-reviewed `report_history` drafts that reuse saved local Care Pass and Progress Report source readiness without claiming native PDF export, server-backed report storage, cloud sharing, retention, deletion, or unsupervised assistant actions.
 - PASS: PixelLab asset verifier on 2026-06-30 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the WoofGuide report-history readiness slice.
 - PASS: `git diff --check` on 2026-06-30 after the WoofGuide report-history readiness slice.

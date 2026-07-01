@@ -48,6 +48,7 @@ import {
   derivePetCredentialReadiness,
   derivePottyHealth,
   deriveRecordReminders,
+  describeReportArtifactSource,
   deriveTrainingProgress,
   deriveWalkActivity,
   deriveWalkRouteTemplates,
@@ -2226,20 +2227,13 @@ export default function RecordsScreen() {
               </Text>
             ) : (
               reportArtifacts.map((artifact, index) => {
-                const printable = getReportArtifactPrintView(artifact);
-                const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
+                const sourceDescriptor = describeReportArtifactSource(artifact);
                 const artifactLabel =
                   artifact.kind === "care_pass"
                     ? artifact.audience
                     : artifact.kind === "pet_credential"
                       ? "dog id"
                       : "progress";
-                const artifactKindLabel =
-                  artifact.kind === "progress_report"
-                    ? "Progress Report"
-                    : artifact.kind === "pet_credential"
-                      ? "Dog ID Credential"
-                      : "Care Pass";
                 return (
                   <View
                     key={artifact.id}
@@ -2256,10 +2250,13 @@ export default function RecordsScreen() {
                         {artifact.title}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {shortDate(artifact.createdAt)} - {artifactKindLabel} - {sectionCount} sections - {printable.status === "ready" ? "Print-ready" : "Print restored"}
+                        {shortDate(artifact.createdAt)} - {sourceDescriptor.metadataLine}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-                        {printable.fileName}
+                        {sourceDescriptor.fileLine}
+                      </Text>
+                      <Text numberOfLines={2} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {sourceDescriptor.lifecycleLine}
                       </Text>
                     </View>
                     <View style={s.reportArtifactActions}>

@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-06-30: Report Source Rows Use Shared Lifecycle Copy
+
+Decision: Records Report History rows and WoofGuide saved report-history drafts should describe reusable Care Pass, Progress Report, and Dog ID sources through `describeReportArtifactSource`. The descriptor may expose the owner-readable source kind, section count, print-ready versus restored printable-source status, printable file name, and local-only lifecycle boundary.
+
+Reason: Report History now spans multiple local artifact kinds, and route-local row strings can drift from WoofGuide draft copy. Keeping source metadata in shared care-domain logic lets owners see what can be resent or shared as printable source without implying native PDF export, server-backed report storage, cloud sharing, retention, deletion, or lifecycle controls are enabled.
+
+Owner: Codex.
+
+Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, report retention/deletion policy, cloud sharing, or broader report lifecycle controls become active release work.
+
 ### 2026-06-30: WoofGuide Can Review Saved Report History
 
 Decision: WoofGuide may surface an owner-reviewed `report_history` draft when local Care Pass or Progress Report sources already exist in Report History. The draft may summarize the reusable local source mix, identify the latest saved source, and route the owner back to Records Report History for resend or printable-source sharing.
