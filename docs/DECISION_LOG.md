@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-07-01: Report History Can Remove Local Sources Only
+
+Decision: Records Report History may expose a confirmed remove action for saved Care Pass, Progress Report, and Dog ID report-history artifacts. The confirmation copy should come from shared `describeReportArtifactRemoval`, and the action may only filter the selected local artifact from the care document.
+
+Reason: Owners can now save and reuse local handoff sources, but they also need a truthful way to remove an obsolete or mistaken local source without implying provider-backed deletion, share revocation, retention lifecycle controls, native PDF export, or server-backed report storage are enabled.
+
+Owner: Codex.
+
+Revisit trigger: Server-backed report artifacts, native PDF/image export, cloud sharing, provider-backed retention/deletion policy, audit lifecycle controls, or share revocation become active release work.
+
 ### 2026-06-30: Report Source Rows Use Shared Lifecycle Copy
 
 Decision: Records Report History rows and WoofGuide saved report-history drafts should describe reusable Care Pass, Progress Report, and Dog ID sources through `describeReportArtifactSource`. The descriptor may expose the owner-readable source kind, section count, print-ready versus restored printable-source status, printable file name, and local-only lifecycle boundary.

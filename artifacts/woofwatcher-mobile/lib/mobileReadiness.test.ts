@@ -1349,6 +1349,7 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
   assert.match(records, /getReportArtifactPrintView/);
+  assert.match(records, /describeReportArtifactRemoval/);
   assert.match(records, /describeReportArtifactSource/);
   assert.match(records, /summarizeReportArtifacts/);
   assert.match(records, /reportHistorySummary/);
@@ -1360,8 +1361,12 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /Report History readiness/);
   assert.match(records, /Care Passes, Progress Reports, and Dog ID sources/);
   assert.match(records, /sharePrintableReportArtifact/);
+  assert.match(records, /removeReportArtifact/);
   assert.match(records, /accessibilityLabel=\{`Resend \$\{artifact\.title\}`\}/);
   assert.match(records, /accessibilityLabel=\{`Share printable report source for \$\{artifact\.title\}`\}/);
+  assert.match(records, /accessibilityLabel=\{describeReportArtifactRemoval\(artifact\)\.accessibilityLabel\}/);
+  assert.match(records, /Removes only the local reusable report source/);
+  assert.match(records, /reportArtifacts: doc\.reportArtifacts\.filter\(\(item\) => item\.id !== artifact\.id\)/);
 });
 
 test("keeps Records dog ID wired for printable credential sharing", () => {

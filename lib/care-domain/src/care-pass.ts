@@ -190,6 +190,13 @@ export interface ReportArtifactSourceDescription {
   lifecycleLine: string;
 }
 
+export interface ReportArtifactRemovalCopy {
+  title: string;
+  body: string;
+  confirmLabel: string;
+  accessibilityLabel: string;
+}
+
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
   caregiver: "Caregiver",
   sitter: "Sitter",
@@ -1052,6 +1059,16 @@ export function describeReportArtifactSource(artifact: ReportArtifact): ReportAr
     metadataLine: `${kindLabel} - ${sectionLabel} - ${printStatus}`,
     fileLine: `Printable source: ${printable.fileName}`,
     lifecycleLine: "Local printable source only; native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled.",
+  };
+}
+
+export function describeReportArtifactRemoval(artifact: ReportArtifact): ReportArtifactRemovalCopy {
+  const source = describeReportArtifactSource(artifact);
+  return {
+    title: `Remove ${source.kindLabel} source?`,
+    body: `Remove "${artifact.title}" from local Report History. This only removes the local reusable source on this care document; it does not delete anything from cloud storage, revoke a share, or change provider-backed retention because those lifecycle controls are not enabled yet.`,
+    confirmLabel: "Remove local source",
+    accessibilityLabel: `Remove local ${source.kindLabel} source for ${artifact.title}`,
   };
 }
 

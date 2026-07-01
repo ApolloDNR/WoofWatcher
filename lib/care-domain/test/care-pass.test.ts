@@ -10,6 +10,7 @@ import {
   getReportArtifactPrintView,
   renderCarePassPrintHtml,
   renderProgressReportPrintHtml,
+  describeReportArtifactRemoval,
   describeReportArtifactSource,
   summarizeReportArtifacts,
   summarizePetCredentialArtifacts,
@@ -748,6 +749,27 @@ test("describes report artifact print-source readiness without claiming provider
   assert.match(restored.metadataLine, /Care Pass - .* - Restored printable source/);
   assert.match(restored.lifecycleLine, /native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled/);
   assert.doesNotMatch(`${ready.lifecycleLine} ${restored.lifecycleLine}`, /cloud storage ready|PDF export ready/i);
+});
+
+test("builds local report artifact removal copy without claiming provider deletion", () => {
+  const artifact = createProgressReportArtifact({
+    dogName: "Phoenix",
+    periodDays: 30,
+    generatedAt: "Jun 9, 7:30 AM",
+    createdAt: "2026-06-09T06:30:00.000Z",
+    summary: "30-day progress report for caregiver and vet review.",
+    sections: [{ title: "Care Summary", lines: ["Total entries logged: 14"] }],
+  });
+
+  const copy = describeReportArtifactRemoval(artifact);
+
+  assert.equal(copy.title, "Remove Progress Report source?");
+  assert.match(copy.body, /Phoenix 30-day Progress Report/);
+  assert.match(copy.body, /local reusable source/);
+  assert.match(copy.body, /does not delete anything from cloud storage/);
+  assert.match(copy.confirmLabel, /Remove local source/);
+  assert.match(copy.accessibilityLabel, /Remove local Progress Report source/);
+  assert.doesNotMatch(`${copy.title} ${copy.body} ${copy.confirmLabel}`, /server deletion enabled|cloud deletion ready/i);
 });
 
 test("renders a print-ready care pass document with escaped care content", () => {

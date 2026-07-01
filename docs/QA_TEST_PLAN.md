@@ -10,8 +10,12 @@ Run focused behavior tests:
 
 CI must pass `WoofWatcher Verify` on `main`.
 
-Latest local evidence, 2026-06-30:
+Latest local evidence, 2026-07-01:
 
+- PASS: 289 focused tests with the command above on 2026-07-01, now including shared `describeReportArtifactRemoval` copy and Mobile Records wiring for removing only a selected local Report History source without claiming cloud deletion, share revocation, server retention, native PDF export, or provider-backed lifecycle controls are enabled.
+- PASS: PixelLab asset verifier on 2026-07-01 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the local Report History source removal slice.
+- PASS: `git diff --check` on 2026-07-01 after the local Report History source removal slice; only existing CRLF normalization warnings were printed.
+- LIMIT: `git fetch origin main` on 2026-07-01 still failed in the detached automation worktree with the known stale bad-ref/geometric-repack/worktree cleanup issue, but `git ls-remote origin refs/heads/main`, local `HEAD`, and local `origin/main` all matched `30a9aaac8eb504a29304c85de71f7126b22526b9` before implementation.
 - PASS: API readiness on 2026-06-30 now protects care-entry delete audit notes from passing nullable caregiver names into the shared care-domain deletion audit helper.
 - PASS: Direct workspace TypeScript project build on 2026-06-30 with `node node_modules\typescript\bin\tsc --build`, after repairing the API delete-audit caregiver nullability issue surfaced by GitHub Actions run `28489548081`.
 - PASS: 288 focused tests with the command above on 2026-06-30, now including the shared `describeReportArtifactSource` descriptor that keeps Records Report History rows and WoofGuide report-history drafts aligned on artifact kind, section count, print-ready/restored status, printable file name, and local-only lifecycle copy.

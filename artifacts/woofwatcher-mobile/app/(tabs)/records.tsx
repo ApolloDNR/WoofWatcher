@@ -48,6 +48,7 @@ import {
   derivePetCredentialReadiness,
   derivePottyHealth,
   deriveRecordReminders,
+  describeReportArtifactRemoval,
   describeReportArtifactSource,
   deriveTrainingProgress,
   deriveWalkActivity,
@@ -684,6 +685,24 @@ export default function RecordsScreen() {
     Share.share({ message: printable.html, title: printable.fileName }).catch(() =>
       Alert.alert(printable.fileName, printable.html),
     );
+  };
+
+  const removeReportArtifact = (artifact: ReportArtifact) => {
+    const removal = describeReportArtifactRemoval(artifact);
+    Alert.alert(removal.title, removal.body, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: removal.confirmLabel,
+        style: "destructive",
+        onPress: () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          updateCareDoc((doc) => ({
+            ...doc,
+            reportArtifacts: doc.reportArtifacts.filter((item) => item.id !== artifact.id),
+          }));
+        },
+      },
+    ]);
   };
 
   // Mount animation
@@ -2289,6 +2308,19 @@ export default function RecordsScreen() {
                           ]}
                         >
                           <Ionicons name="print-outline" size={15} color={colors.copper} />
+                        </Pressable>
+                        <Pressable
+                          onPress={() => removeReportArtifact(artifact)}
+                          accessibilityRole="button"
+                          accessibilityLabel={describeReportArtifactRemoval(artifact).accessibilityLabel}
+                          accessibilityHint="Removes only the local reusable report source from this care document."
+                          hitSlop={MOBILE_INLINE_HIT_SLOP}
+                          style={({ pressed }) => [
+                            s.artifactIconButton,
+                            { backgroundColor: colors.rose + "14", opacity: pressed ? 0.75 : 1 },
+                          ]}
+                        >
+                          <Ionicons name="trash-outline" size={15} color={colors.rose} />
                         </Pressable>
                       </View>
                     </View>
