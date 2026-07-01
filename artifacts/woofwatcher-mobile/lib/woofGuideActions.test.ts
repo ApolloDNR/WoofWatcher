@@ -383,6 +383,8 @@ test("surfaces saved report history without claiming native or server-backed exp
   assert.match(reportAction?.draft?.body ?? "", /Care Pass/);
   assert.match(reportAction?.draft?.body ?? "", /Progress Report/);
   assert.match(reportAction?.draft?.body ?? "", /Resend or share printable source/);
+  assert.match(reportAction?.draft?.body ?? "", /Confirm the saved source still has the local evidence this audience needs/);
+  assert.match(reportAction?.draft?.body ?? "", /Dog ID fields, receipt\/document attachments, and report sections/);
   assert.match(reportAction?.draft?.body ?? "", /Review the latest local source/);
   assert.match(reportAction?.draft?.body ?? "", /routines, medications, records, and audience/);
   assert.match(reportAction?.draft?.body ?? "", /Remove obsolete local sources only after review/);

@@ -2219,7 +2219,7 @@ export default function RecordsScreen() {
             />
             <View
               accessibilityRole="summary"
-              accessibilityLabel={`Report History readiness. ${reportHistorySummary.summary} ${reportHistorySummary.boundaryLine}`}
+              accessibilityLabel={`Report History readiness. ${reportHistorySummary.summary} ${reportHistorySummary.readinessLine} ${reportHistorySummary.boundaryLine}`}
               style={[s.reportHistorySummary, { backgroundColor: colors.sage + "10", borderColor: colors.sage + "24" }]}
             >
               <Text style={[s.reportHistorySummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -2235,6 +2235,9 @@ export default function RecordsScreen() {
               ) : null}
               <Text style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
                 {reportHistorySummary.action}
+              </Text>
+              <Text style={[s.rowMeta, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {reportHistorySummary.readinessLine}
               </Text>
               <Text style={[s.rowMeta, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                 {reportHistorySummary.reviewLine}

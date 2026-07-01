@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-07-01: Report History Handoff Readiness Guidance Is Shared
+
+Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared handoff readiness line from `summarizeReportArtifacts`. The line may tell owners to confirm the saved local source still has the audience's needed Dog ID fields, receipt/document attachments, and report sections as applicable before resending, but it must not imply provider-backed storage, native PDF export, cloud sharing, retention, deletion, or unsupervised assistant actions are ready.
+
+Reason: Report History now supports reusable local sources, printable-source sharing, review guidance, cleanup guidance, and selected local-source removal. Owners need one consistent readiness check that focuses on the evidence in the source itself before a sitter, trainer, caregiver, family member, or vet receives it.
+
+Owner: Codex.
+
+Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, persisted assistant report drafts, permission-aware assistant writes, cloud sharing, share revocation, or storage retention/deletion policy become active release work.
+
 ### 2026-07-01: Report History Pre-Share Review Guidance Is Shared
 
 Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared pre-share review line from `summarizeReportArtifacts`. The line may tell owners to review the latest local source for stale routines, medications, records, and audience before resending, but it must not imply provider-backed storage, native export, cloud sharing, retention, deletion, or unsupervised assistant actions are ready.
