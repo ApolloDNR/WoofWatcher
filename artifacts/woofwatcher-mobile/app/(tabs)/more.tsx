@@ -29,6 +29,7 @@ import {
   useUpdateHouseholdMember,
   useUpdateMe,
   getGetMeQueryKey,
+  getListHouseholdAuditEventsQueryKey,
   type HouseholdAuditEvent,
   type Member,
   type UpdateHouseholdMemberBody,
@@ -213,13 +214,19 @@ export default function MoreScreen() {
     setupHandoffIntent && setupHandoffIntent !== completedSetupHandoffIntent ? setupHandoffIntent : null;
   const [selectedAuditAction, setSelectedAuditAction] = useState<(typeof AUDIT_ACTION_FILTERS)[number]["value"]>("all");
   const [selectedAuditLifecycle, setSelectedAuditLifecycle] = useState<(typeof AUDIT_LIFECYCLE_FILTERS)[number]["value"]>("all");
+  const householdAuditParams = {
+    limit: 8,
+    action: selectedAuditAction === "all" ? undefined : selectedAuditAction,
+    lifecycleState: selectedAuditLifecycle === "all" ? undefined : selectedAuditLifecycle,
+  };
   const householdAudit = useListHouseholdAuditEvents(
+    householdAuditParams,
     {
-      limit: 8,
-      action: selectedAuditAction === "all" ? undefined : selectedAuditAction,
-      lifecycleState: selectedAuditLifecycle === "all" ? undefined : selectedAuditLifecycle,
+      query: {
+        queryKey: getListHouseholdAuditEventsQueryKey(householdAuditParams),
+        enabled: Boolean(household?.id),
+      },
     },
-    { query: { enabled: Boolean(household?.id) } },
   );
   const households = me.data?.households ?? (household ? [household] : []);
   const members = me.data?.members ?? [];
