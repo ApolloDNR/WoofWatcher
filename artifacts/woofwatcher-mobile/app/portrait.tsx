@@ -320,8 +320,6 @@ export default function PortraitScreen() {
   );
   const selectedTemplateStillSource =
     selectedTemplateEmote ?? selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
-  const selectedTemplateCardSource =
-    selectedTemplateEmote ?? selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
   const previewAccessories = useMemo(
     () => deriveAvatarPreviewAccessories(draft),
     [draft],
@@ -653,48 +651,6 @@ export default function PortraitScreen() {
                   />
                   <View
                     style={[
-                      s.templateConsoleBar,
-                      {
-                        backgroundColor: "rgba(255,249,239,0.92)",
-                        borderColor: colors.navy,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        s.templateConsoleTitle,
-                        { color: colors.navy, fontFamily: DISPLAY },
-                      ]}
-                    >
-                      CARE TWIN STUDIO
-                    </Text>
-                    <View style={s.templateConsoleMeters}>
-                      <View
-                        style={[
-                          s.templateConsoleMeter,
-                          {
-                            backgroundColor: previewIsSprite
-                              ? colors.sage
-                              : colors.amber,
-                          },
-                        ]}
-                      />
-                      <View
-                        style={[
-                          s.templateConsoleMeter,
-                          { backgroundColor: colors.stone },
-                        ]}
-                      />
-                      <View
-                        style={[
-                          s.templateConsoleMeter,
-                          { backgroundColor: colors.stone },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                  <View
-                    style={[
                       s.templateMoodAura,
                       { backgroundColor: previewMood.auraColor },
                     ]}
@@ -921,34 +877,6 @@ export default function PortraitScreen() {
                       {heroSpeech}
                     </Text>
                   </View>
-                  <View
-                    style={[
-                      s.templateLiveChip,
-                      {
-                        backgroundColor: colors.navy,
-                        borderColor: colors.copper,
-                      },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        s.templateLiveDot,
-                        {
-                          backgroundColor: previewIsSprite
-                            ? colors.sage
-                            : colors.amber,
-                        },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        s.templateLiveChipText,
-                        { fontFamily: "Inter_700Bold" },
-                      ]}
-                    >
-                      {previewIsSprite ? "PIXELLAB SPRITE" : "STILL PREVIEW"}
-                    </Text>
-                  </View>
                 </View>
               ) : (
                 <LivingPhoenixRoom
@@ -971,68 +899,6 @@ export default function PortraitScreen() {
                   avatarConfig={draft}
                 />
               )}
-            </View>
-            <View style={s.pixelFrameOverlay} pointerEvents="none">
-              <View
-                style={[
-                  s.pixelIdCard,
-                  {
-                    backgroundColor: "rgba(255,249,239,0.94)",
-                    borderColor: colors.navy,
-                  },
-                ]}
-              >
-                <Image
-                  source={selectedTemplateCardSource}
-                  style={[s.pixelHead, pixelImageStyle]}
-                  contentFit="contain"
-                  transition={160}
-                />
-                <View style={s.pixelIdCopy}>
-                  <Text
-                    style={[
-                      s.pixelIdKicker,
-                      { color: colors.copper, fontFamily: "Inter_700Bold" },
-                    ]}
-                  >
-                    CARE TWIN
-                  </Text>
-                  <Text
-                    style={[
-                      s.pixelIdName,
-                      { color: colors.navy, fontFamily: DISPLAY },
-                    ]}
-                  >
-                    {selectedTemplate.label}
-                  </Text>
-                  <View style={s.pixelLevelRow}>
-                    <View
-                      style={[
-                        s.pixelLevelPip,
-                        { backgroundColor: colors.sage },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        s.pixelLevelPip,
-                        { backgroundColor: colors.sage },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        s.pixelLevelPip,
-                        { backgroundColor: colors.sage },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        s.pixelLevelPip,
-                        { backgroundColor: colors.stone },
-                      ]}
-                    />
-                  </View>
-                </View>
-              </View>
             </View>
             <LinearGradient
               colors={["transparent", "rgba(8,26,42,0.84)"]}
@@ -2160,8 +2026,8 @@ const s = StyleSheet.create({
   workingHint: { fontSize: 13, lineHeight: 18 },
   heroPreview: {
     overflow: "hidden",
-    aspectRatio: 0.9,
-    marginBottom: 12,
+    aspectRatio: 0.96,
+    marginBottom: 10,
     backgroundColor: "#081424",
     position: "relative",
   },
@@ -2173,35 +2039,6 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
     backgroundColor: "#EDE7DC",
-  },
-  templateConsoleBar: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    top: 12,
-    minHeight: 34,
-    borderRadius: 3,
-    borderWidth: 2,
-    paddingHorizontal: 11,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    zIndex: 5,
-  },
-  templateConsoleTitle: {
-    fontSize: 11,
-    letterSpacing: 1,
-  },
-  templateConsoleMeters: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  templateConsoleMeter: {
-    width: 19,
-    height: 8,
-    borderRadius: 1,
-    borderWidth: 1,
-    borderColor: "rgba(8,20,36,0.24)",
   },
   templatePixelFloor: {
     position: "absolute",
@@ -2357,36 +2194,14 @@ const s = StyleSheet.create({
   templateSpeech: {
     position: "absolute",
     left: 24,
-    top: 58,
-    maxWidth: "56%",
+    top: 24,
+    maxWidth: "52%",
     borderRadius: 6,
     borderWidth: 2,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
   templateSpeechText: { fontSize: 15, lineHeight: 19 },
-  templateLiveChip: {
-    position: "absolute",
-    left: 12,
-    bottom: 14,
-    minHeight: 25,
-    borderRadius: 4,
-    borderWidth: 2,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  templateLiveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 2,
-  },
-  templateLiveChipText: {
-    color: "#FFF9EF",
-    fontSize: 8.4,
-    letterSpacing: 0.8,
-  },
   templateHeroHud: {
     position: "absolute",
     right: 12,
@@ -2407,46 +2222,6 @@ const s = StyleSheet.create({
   templateHeroTitle: { fontSize: 17, lineHeight: 20 },
   templateHeroMood: { fontSize: 10, lineHeight: 13 },
   templateHeroFit: { fontSize: 8.8, lineHeight: 11, maxWidth: 126 },
-  pixelFrameOverlay: {
-    position: "absolute",
-    left: 12,
-    top: 12,
-    right: 12,
-    alignItems: "flex-end",
-  },
-  pixelIdCard: {
-    width: 154,
-    minHeight: 62,
-    borderRadius: 2,
-    borderWidth: 2,
-    padding: 6,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  pixelHead: {
-    width: 42,
-    height: 42,
-    borderRadius: 2,
-    borderWidth: 2,
-    borderColor: "#081424",
-    backgroundColor: "#F7F2E8",
-  },
-  pixelIdCopy: { flex: 1, minWidth: 0, gap: 2 },
-  pixelIdKicker: {
-    fontSize: 7.5,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  pixelIdName: { fontSize: 13.5, lineHeight: 16 },
-  pixelLevelRow: { flexDirection: "row", gap: 3, marginTop: 3 },
-  pixelLevelPip: {
-    width: 12,
-    height: 6,
-    borderRadius: 1,
-    borderWidth: 1,
-    borderColor: "rgba(8,20,36,0.22)",
-  },
   savedScrim: {
     position: "absolute",
     left: 0,
@@ -2457,7 +2232,7 @@ const s = StyleSheet.create({
   heroCopy: {
     position: "absolute",
     left: 14,
-    width: "56%",
+    width: "64%",
     bottom: 10,
     gap: 3,
   },
@@ -2466,7 +2241,7 @@ const s = StyleSheet.create({
   tabRow: {
     flexDirection: "row",
     gap: 7,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   tab: {
     flex: 1,
@@ -2477,28 +2252,28 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   tabText: { fontSize: 11.5 },
-  avatarBoard: { marginBottom: 12 },
+  avatarBoard: { marginBottom: 10 },
   copy: { fontSize: 13, lineHeight: 19 },
   scanTruthRail: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginTop: 12,
+    marginTop: 10,
   },
   scanPipelineGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginTop: 12,
+    marginTop: 10,
   },
   scanPipelineCard: {
     flexBasis: "48%",
     flexGrow: 1,
-    minHeight: 108,
+    minHeight: 92,
     borderRadius: 8,
     borderWidth: 1,
-    padding: 10,
-    gap: 6,
+    padding: 9,
+    gap: 4,
   },
   scanPipelineNumber: {
     width: 24,
@@ -2508,8 +2283,8 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   scanPipelineNumberText: { color: "#FFF9EF", fontSize: 11 },
-  scanPipelineLabel: { fontSize: 12.5 },
-  scanPipelineDetail: { fontSize: 11.5, lineHeight: 16 },
+  scanPipelineLabel: { fontSize: 12 },
+  scanPipelineDetail: { fontSize: 10.8, lineHeight: 14 },
   traitGrid: { gap: 8, marginTop: 12 },
   traitChip: {
     minHeight: 38,

@@ -655,3 +655,38 @@ Remaining:
 - Keep provider-backed sync/storage/AI/payments/push, generated PDF output,
   store approval, public launch, and Apollo sign-off blocked until real
   artifacts exist.
+
+## 2026-07-01 Avatar Studio Hero Declutter
+
+The next route visual consistency slice focused on Avatar Studio because it is
+the product promise surface: bring the real dog into WoofWatcher's pixel care
+world.
+
+What changed:
+
+- Removed the extra in-room `CARE TWIN STUDIO` console bar.
+- Removed the top-right pixel ID card that competed with the dog and room.
+- Removed the separate `PIXELLAB SPRITE` live chip and kept the single bottom
+  truth label: `Live PixelLab sprite rig.`
+- Shortened the hero frame slightly and tightened the scan-workflow cards so
+  the first viewport has less instructional crowding.
+- Added a readiness regression that prevents Avatar Studio from returning to
+  stacked HUD overlays on the first hero.
+
+Verification:
+
+- The new readiness guard failed first against the old stacked HUD hero, then
+  passed after the cleanup.
+- `mobileReadiness.test.ts` passed 112/112.
+- `avatarStudio.test.ts` passed 8/8.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`.
+- Expo web export smoke passed to `.expo-smoke` with 218 assets / 222 files.
+- The broad focused API/mobile/PWA/care-domain suite passed 497/497 with the
+  bundled Node runtime.
+
+Remaining:
+
+- Fresh local/native screenshots still need to be captured for `/portrait`.
+- Native iOS/Android route visual consistency proof remains required before
+  design sign-off.

@@ -189,6 +189,30 @@ Design rule:
 - If a route still feels crowded, fix the route hierarchy first; do not enlarge
   the bottom nav to compensate.
 
+## Avatar Studio Hero Declutter
+
+The 2026-07-01 Avatar Studio pass applies the same route-clarity rule to the
+care-twin creation surface:
+
+- The first hero follows `one dog, one room, one bottom truth label`.
+- The old in-room console bar, top-right ID card, and separate live-chip overlay
+  were removed because they fought the dog and made the screen feel like a
+  mockup collage instead of a focused app surface.
+- The bottom label now carries the production truth: `Template-built` or
+  `Scan-assisted`, the dog name, and `Live PixelLab sprite rig.` or the still
+  preview boundary.
+- The scan workflow cards are shorter so the first owner action sits higher on
+  compact phones.
+- A mobile readiness guard rejects the old stacked HUD pattern.
+
+Design rule:
+
+- Avatar Studio may show production truth, but not by stacking multiple HUDs on
+  top of the dog.
+- PixelLab template matching must stay truthful and owner-approved.
+- Native iOS/Android screenshots and a gait/crop note remain required before
+  store-ready avatar sign-off.
+
 ## Next Design Passes
 
 1. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.

@@ -2698,13 +2698,12 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /getAvatarTemplateSpritePreview/);
   assert.match(avatarStudio, /avatar-studio-live-sprite-preview/);
   assert.match(avatarStudio, /avatar-studio-pixel-sprite-viewport/);
-  assert.match(avatarStudio, /PIXELLAB SPRITE/);
+  assert.match(avatarStudio, /Live PixelLab sprite rig\./);
   assert.doesNotMatch(
     avatarStudio,
     /templateHeroDogGhost:\s*\{\s*opacity:\s*0/,
   );
   assert.match(avatarStudio, /templatePixelFloor/);
-  assert.match(avatarStudio, /templateLiveChip/);
   assert.match(avatarStudio, /savedScrim:[\s\S]*height: "24%"/);
   assert.match(avatarStudio, /savedName:\s*\{ color: "#FFF9EF", fontSize: 17\.5/);
   assert.match(avatarStudio, /<Text numberOfLines=\{1\} style=\{\[s\.savedSub/);
@@ -3080,6 +3079,12 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /Open sprite QA cockpit/);
   assert.match(avatarStudio, /pathname: "\/care-twin-qa"/);
   assert.match(avatarStudio, /qaSurface: "avatar-sprite-production-review"/);
+  assert.doesNotMatch(
+    avatarStudio,
+    /CARE TWIN STUDIO|templateConsoleBar|pixelFrameOverlay|templateLiveChip/,
+    "Avatar Studio hero should keep one dog, one room, and one bottom truth label instead of stacked HUD overlays",
+  );
+  assert.match(avatarStudio, /Live PixelLab sprite rig\./);
   assert.doesNotMatch(
     avatarStudio,
     /heroPreview: \{[^\n]*(shadowOpacity|elevation)/,
