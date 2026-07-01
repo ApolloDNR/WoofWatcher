@@ -2685,3 +2685,37 @@ Verification:
   `http://127.0.0.1:4194/`.
 - In-app browser DOM verification on `/records` confirmed Vault Command, Dog
   ID, Record Vault, Care Pass, and Reports are present.
+
+## 2026-07-01 Home Care Status Board Pass
+
+Home is the flagship world screen, so the polish goal was to remove loose
+first-screen widgets without disrupting the living care twin or real care
+commands.
+
+What changed:
+
+- Grouped the Happiness, Energy, Hunger, and Bond status tiles into a dedicated
+  `Care Status` board.
+- Added a live presence pill to the section header, using the same source state
+  as Household/Alone/Walk presence.
+- Kept every status tile route-backed: mood/bond into Log, energy into Health,
+  and hunger into Diet/Profile.
+- Preserved the existing order: Phoenix Room, presence, Care Status, Today
+  Command, Next Up, Quick Log, and Today's Missions.
+
+Design rule locked from this pass:
+
+- Home can feel playful, but the first screen needs clear section names. Live
+  status tiles should not float as orphaned widgets; they belong under a named
+  care-state board that answers "how is Phoenix right now?"
+
+Verification:
+
+- Mobile readiness passed 106/106, including the new Home care-status guard.
+- Mobile TypeScript passed.
+- Broader focused mobile/domain/API/PWA suite passed 489/489.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files.
+- Route smoke passed for Home, Log, Plans, Health, Records, and More at
+  `http://127.0.0.1:4194/`.
+- In-app browser DOM verification on Home confirmed Phoenix Room, Care Status,
+  Today Command, and Today's Missions are present.

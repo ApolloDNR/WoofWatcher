@@ -219,3 +219,41 @@ Preview:
   `http://127.0.0.1:4194/records`.
 - This pass improves local web/mobile structure only; native iOS/Android visual
   QA screenshots and Apollo launch sign-off remain required.
+
+## 2026-07-01 Home Care Status Board Slice
+
+Home received the final first-screen design recovery pass in this route group.
+The goal was to make the flagship screen read like a planned care world rather
+than a room followed by loose metrics.
+
+What changed:
+
+- Wrapped the Happiness, Energy, Hunger, and Bond tiles in a `Care Status`
+  board.
+- Added a source-backed presence pill to the Care Status header:
+  `Alone`, `On walk`, or `With [caregiver]`.
+- Kept the existing interaction model intact: each status tile still opens its
+  exact care workflow, and Today Command, Next Up, Quick Log, and Today's
+  Missions remain in their current order.
+- Added mobile readiness coverage for the first-screen Care Status hierarchy.
+
+Verification:
+
+- Mobile readiness passed 106/106.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  through the bundled Node runtime.
+- Broader focused mobile/domain/API/PWA suite passed 489/489.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Static preview route smoke passed for `/`, `/log`, `/calendar`, `/health`,
+  `/records`, and `/more` at `http://127.0.0.1:4194/`.
+- The in-app browser was opened to `http://127.0.0.1:4194/`; DOM verification
+  found Phoenix Room, Care Status, Today Command, and Today's Missions.
+
+Preview:
+
+- The local static preview server remains available at
+  `http://127.0.0.1:4194/`.
+- This pass improves local web/mobile structure only; native iOS/Android visual
+  QA screenshots and Apollo launch sign-off remain required.

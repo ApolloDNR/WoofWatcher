@@ -613,6 +613,16 @@ export default function HomeScreen() {
           : todayCommand.primaryAction.kind === "update-meal-outcome"
             ? "Update"
             : "Start";
+  const careStatusTone = openAloneSession
+    ? colors.amber
+    : openWalkSession
+      ? colors.sage
+      : colors.copper;
+  const careStatusLabel = openAloneSession
+    ? "Alone"
+    : openWalkSession
+      ? "On walk"
+      : `With ${caregiver}`;
 
   const health = status.counts.healthAlert
     ? {
@@ -1404,66 +1414,72 @@ export default function HomeScreen() {
             <Ionicons name="chevron-forward" size={17} color={colors.navy} />
           </Pressable>
 
-          <View
-            style={[
-              s.statusTiles,
-              {
-                gap: homeFirstScreenLayout.statusTileGap,
-                marginBottom: homeFirstScreenLayout.statusTileMarginBottom,
-              },
-            ]}
-          >
-            {statusTiles.map((tile) => (
-              <Pressable
-                key={tile.label}
-                accessibilityRole="button"
-                accessibilityLabel={`${tile.label}. ${tile.value}. ${tile.actionLabel}`}
-                onPress={() => openStatusTile(tile.target)}
-                style={({ pressed }) => [
-                  s.statusTile,
-                  {
-                    minHeight: homeFirstScreenLayout.statusTileMinHeight,
-                    backgroundColor: pressed ? colors.secondary : colors.card,
-                    borderColor: colors.border,
-                    opacity: pressed ? 0.78 : 1,
-                    transform: [{ scale: pressed ? 0.98 : 1 }],
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    s.statusTileIcon,
+          <BoardCard style={s.careStatusCard}>
+            <BoardSectionHeader
+              title="Care Status"
+              accessory={<BoardPill label={careStatusLabel} tone={careStatusTone} />}
+            />
+            <View
+              style={[
+                s.statusTiles,
+                {
+                  gap: homeFirstScreenLayout.statusTileGap,
+                  marginBottom: 0,
+                },
+              ]}
+            >
+              {statusTiles.map((tile) => (
+                <Pressable
+                  key={tile.label}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${tile.label}. ${tile.value}. ${tile.actionLabel}`}
+                  onPress={() => openStatusTile(tile.target)}
+                  style={({ pressed }) => [
+                    s.statusTile,
                     {
-                      width: homeFirstScreenLayout.statusTileIconBoxSize,
-                      height: homeFirstScreenLayout.statusTileIconBoxSize,
-                      backgroundColor: tile.tone + "16",
+                      minHeight: homeFirstScreenLayout.statusTileMinHeight,
+                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      borderColor: colors.border,
+                      opacity: pressed ? 0.78 : 1,
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
                     },
                   ]}
                 >
-                  <PixelIcon
-                    name={tile.icon}
-                    size={homeFirstScreenLayout.statusTileIconSize}
-                  />
-                </View>
-                <Text
-                  style={[
-                    s.statusTileLabel,
-                    { color: colors.navy, fontFamily: "Inter_700Bold" },
-                  ]}
-                >
-                  {tile.label}
-                </Text>
-                <Text
-                  style={[
-                    s.statusTileValue,
-                    { color: tile.tone, fontFamily: "Inter_700Bold" },
-                  ]}
-                >
-                  {tile.value}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+                  <View
+                    style={[
+                      s.statusTileIcon,
+                      {
+                        width: homeFirstScreenLayout.statusTileIconBoxSize,
+                        height: homeFirstScreenLayout.statusTileIconBoxSize,
+                        backgroundColor: tile.tone + "16",
+                      },
+                    ]}
+                  >
+                    <PixelIcon
+                      name={tile.icon}
+                      size={homeFirstScreenLayout.statusTileIconSize}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      s.statusTileLabel,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    {tile.label}
+                  </Text>
+                  <Text
+                    style={[
+                      s.statusTileValue,
+                      { color: tile.tone, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    {tile.value}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </BoardCard>
 
           <Pressable
             accessibilityRole="button"
@@ -2447,6 +2463,10 @@ const s = StyleSheet.create({
   presenceCopy: { flex: 1, minWidth: 0 },
   presenceText: { fontSize: 14 },
   presenceSub: { fontSize: 11, marginTop: 2 },
+  careStatusCard: {
+    marginTop: 0,
+    marginBottom: 10,
+  },
   statusTiles: {
     flexDirection: "row",
     gap: 8,

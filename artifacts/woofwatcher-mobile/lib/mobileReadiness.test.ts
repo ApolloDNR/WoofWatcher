@@ -1166,6 +1166,33 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
   assert.match(home, /Today's Missions/);
 });
 
+test("keeps Home first-screen status grouped as a care status board", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const careStatusIndex = home.indexOf("<BoardCard style={s.careStatusCard}>");
+  const todayCommandIndex = home.indexOf("Today Command");
+
+  assert.notEqual(careStatusIndex, -1, "Home should group status tiles in a board");
+  assert.ok(
+    careStatusIndex < todayCommandIndex,
+    "Care Status should stay above the Today Command",
+  );
+  assert.match(home, /const careStatusTone = openAloneSession/);
+  assert.match(home, /const careStatusLabel = openAloneSession/);
+  assert.match(
+    home,
+    /<BoardCard style=\{s\.careStatusCard\}>[\s\S]*BoardSectionHeader\s+title="Care Status"/,
+  );
+  assert.match(
+    home,
+    /<BoardPill label=\{careStatusLabel\} tone=\{careStatusTone\}/,
+  );
+  assert.match(home, /s\.statusTiles/);
+  assert.match(
+    home,
+    /backgroundColor: pressed \? colors\.secondary : colors\.background/,
+  );
+});
+
 test("keeps Home Quick Log header action as a real route target", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));
