@@ -267,3 +267,25 @@ Design rule:
 2. Route Visual Consistency: mark the first route with overlap, clipped copy, hidden primary action, duplicate-avatar behavior, bottom-nav collision, or mockup drift as Needs tune.
 3. Home and Log: continue first-viewport density polish from the current 390x844 proof.
 4. Polish pass: use the one-room/one-status-panel rule on any remaining route where a HUD, credential card, or duplicated metric rail is fighting the pixel scene.
+
+## Health Declutter Follow-Up
+
+The 2026-07-01 Health declutter pass converts the route from a stacked widget
+composition into a clearer app-store screen.
+
+- Removed the repeated hero signal rail.
+- Removed the separate medical-boundary mini block from the first viewport.
+- Removed the secondary Health command deck.
+- Kept one room, one status/rhythm panel, one action row, one signal list, and
+  one review packet.
+- Tightened the Health sprite and room stage so the dog feels present without
+  crowding the serious health workflow.
+
+Recovery rule:
+
+- Every route must have a single lead job. Health's lead job is calm
+  interpretation and handoff readiness, not a second Quick Log screen.
+- If a screen begins to feel like a collage, delete duplicate chrome before
+  adding polish.
+- Visual proof still needs real iOS/Android screenshots or repaired screenshot
+  capture before UI sign-off.

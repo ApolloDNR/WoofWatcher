@@ -1725,9 +1725,6 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /Pattern Board/);
   assert.match(health, /Review packet/);
   assert.match(health, /Owner notes\. No diagnosis\./);
-  assert.match(health, /healthCommandActions/);
-  assert.match(health, /healthCommandDeck/);
-  assert.match(health, /Quick health log: \$\{action\.label\}\. \$\{action\.detail\}/);
   assert.match(health, /healthReviewPacket\.languagePill/);
   assert.match(health, /healthReviewPacket\.prompts/);
   assert.match(health, /healthReviewPacket\.vetShareChecklist/);
@@ -1755,13 +1752,12 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /pixelImageStyle/);
   assert.match(health, /healthHeroPanel/);
   assert.match(health, /healthScoreToken/);
-  assert.match(health, /heroSignalRail/);
   assert.match(health, /healthSignalCopy/);
   assert.match(health, /healthSignalTitleLine/);
   assert.match(health, /healthSignalList/);
   assert.match(health, /statusScoreTrack/);
   assert.match(health, /healthRhythmBars/);
-  assert.match(health, /Health observations, not diagnosis/);
+  assert.match(health, /healthActionRow/);
   assert.match(health, /Log health note/);
   assert.match(health, /7-day bile log/);
   assert.match(health, /function HealthHeaderAction/);
@@ -1775,6 +1771,9 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /openHealthStatusRoute/);
   assert.match(health, /statusActionLabel/);
   assert.match(health, /healthSignalActionPill/);
+  assert.doesNotMatch(health, /heroSignalRail/);
+  assert.doesNotMatch(health, /healthCommandDeck/);
+  assert.doesNotMatch(health, /healthCommandActions/);
   assert.doesNotMatch(health, /metricGridTop/);
   assert.doesNotMatch(health, /StatusMeter/);
   assert.match(
@@ -1802,19 +1801,19 @@ test("keeps Health Watch as one flagship pixel room with one status panel", () =
   );
   assert.doesNotMatch(
     health,
-    /primaryHealthCard|healthScoreTokenCompact|statusScoreTrackCompact|healthStageHud/,
-    "Health Watch should not keep duplicate compact snapshot or stage HUD layers",
+    /primaryHealthCard|healthScoreTokenCompact|statusScoreTrackCompact|healthStageHud|heroSignalRail|healthCommandDeck/,
+    "Health Watch should not keep duplicate compact snapshot, stage HUD, signal rail, or detached command deck layers",
   );
   assert.match(health, /Health Snapshot/);
   assert.match(health, /healthStatusTitle/);
   assert.match(health, /healthHeroPanel/);
   assert.match(health, /resizeMode="stretch"[\s\S]*style=\{s\.healthStage\}/);
-  assert.match(health, /width=\{116\}/);
-  assert.match(health, /height=\{116\}/);
+  assert.match(health, /width=\{104\}/);
+  assert.match(health, /height=\{104\}/);
   assert.match(
     getStyleBlock(health, "healthStage"),
-    /minHeight:\s*18[0-9]/,
-    "Health pixel room should stay large enough for delight but compact enough to avoid fighting the paw nav",
+    /minHeight:\s*16[0-9]/,
+    "Health pixel room should stay expressive but leave first-screen space for useful health rows",
   );
 });
 
@@ -2083,14 +2082,14 @@ test("keeps compact mobile proof and mission cards from clipping", () => {
     "More pixel stage should stay bounded to the phone viewport",
   );
   assert.match(
-    getStyleBlock(health, "heroSignalRail"),
-    /flexWrap:\s*"wrap"/,
-    "Health status cards should wrap instead of clipping on compact phones",
+    getStyleBlock(health, "healthActionRow"),
+    /flexDirection:\s*"row"[\s\S]*gap:\s*8/,
+    "Health action row should stay compact and predictable on phones",
   );
   assert.match(
-    getStyleBlock(health, "heroSignal"),
-    /flexBasis:\s*"31%"[\s\S]*minWidth:\s*92/,
-    "Health status cards should have explicit compact sizing rules",
+    getStyleBlock(health, "healthStageSprite"),
+    /width:\s*104[\s\S]*height:\s*104/,
+    "Health care-twin sprite should stay compact enough to avoid crowding the status panel",
   );
 });
 

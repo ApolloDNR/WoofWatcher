@@ -331,37 +331,6 @@ export default function HealthScreen() {
       actionLabel: statusActionLabel("symptom"),
     },
   ];
-  const healthCommandActions = [
-    {
-      label: "Appetite",
-      detail: "Food context",
-      icon: "meal" as PixelIconName,
-      tone: colors.sage,
-      routeType: "meal",
-    },
-    {
-      label: "Potty",
-      detail: "Stool detail",
-      icon: "poo" as PixelIconName,
-      tone: colors.amber,
-      routeType: "potty",
-    },
-    {
-      label: "Vomit",
-      detail: "Health note",
-      icon: "vomit" as PixelIconName,
-      tone: colors.rose,
-      routeType: "symptom",
-    },
-    {
-      label: "Water",
-      detail: "Hydration",
-      icon: "bile" as PixelIconName,
-      tone: colors.blueSignal,
-      routeType: "water",
-    },
-  ];
-
   const healthReviewPacket = deriveHealthReviewPacket({
     dogName: state.profile.name || "Phoenix",
     healthStatus: healthWatch.status,
@@ -501,8 +470,8 @@ export default function HealthScreen() {
               <SpriteSheetPlayer
                 asset={HEALTH_WATCH_STAGE_SPRITE}
                 track={HEALTH_WATCH_STAGE_TRACK}
-                width={116}
-                height={116}
+                width={104}
+                height={104}
                 testID="health-watch-pixel-sprite"
               />
             </View>
@@ -542,40 +511,6 @@ export default function HealthScreen() {
                 </View>
                 <Text style={[s.statusSupportCopy, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                   {statusSupportCopy}
-                </Text>
-              </View>
-            </View>
-
-            <View style={s.heroSignalRail}>
-              <View style={[s.heroSignal, { borderColor: bileTone + "55" }]}>
-                <Text style={[s.heroSignalLabel, { color: colors.mutedForeground, fontFamily: "Inter_800ExtraBold" }]}>
-                  Bile risk
-                </Text>
-                <Text style={[s.heroSignalValue, { color: bileTone, fontFamily: DISPLAY_SEMI }]}>{bileStatus}</Text>
-                <Text style={[s.heroSignalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {bileEntries[0] ? `Last ${formatDateTime(bileEntries[0].occurredAt)}` : "No yellow bile logged"}
-                </Text>
-              </View>
-              <View style={[s.heroSignal, { borderColor: colors.copper + "55" }]}>
-                <Text style={[s.heroSignalLabel, { color: colors.mutedForeground, fontFamily: "Inter_800ExtraBold" }]}>
-                  Food gap
-                </Text>
-                <Text style={[s.heroSignalValue, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
-                  {mealGaps ? `${mealGaps.toFixed(1)}h` : "Learning"}
-                </Text>
-                <Text style={[s.heroSignalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Longest meal gap
-                </Text>
-              </View>
-              <View style={[s.heroSignal, { borderColor: colors.sage + "55" }]}>
-                <Text style={[s.heroSignalLabel, { color: colors.mutedForeground, fontFamily: "Inter_800ExtraBold" }]}>
-                  Review
-                </Text>
-                <Text style={[s.heroSignalValue, { color: scoreTone, fontFamily: DISPLAY_SEMI }]}>
-                  {statusMedallionLabel}
-                </Text>
-                <Text style={[s.heroSignalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Owner notes only
                 </Text>
               </View>
             </View>
@@ -656,44 +591,7 @@ export default function HealthScreen() {
             ) : null}
           </View>
 
-          <View style={[s.healthBoundaryMini, { backgroundColor: colors.secondary, borderColor: colors.sage + "55" }]}>
-            <PixelIcon name="health" size={20} />
-            <Text style={[s.healthBoundaryMiniText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-              Health observations, not diagnosis. Use patterns to prepare better vet questions.
-            </Text>
-          </View>
-
-          <View style={s.healthCommandDeck}>
-            {healthCommandActions.map((action) => (
-              <Pressable
-                key={action.label}
-                accessibilityRole="button"
-                accessibilityLabel={`Quick health log: ${action.label}. ${action.detail}`}
-                onPress={() => openHealthStatusRoute(action.routeType)}
-                style={({ pressed }) => [
-                  s.healthCommandTile,
-                  {
-                    backgroundColor: pressed ? action.tone + "18" : colors.background,
-                    borderColor: pressed ? action.tone + "77" : colors.border,
-                  },
-                ]}
-              >
-                <View style={[s.healthCommandIcon, { backgroundColor: action.tone + "18" }]}>
-                  <PixelIcon name={action.icon} size={23} />
-                </View>
-                <View style={s.healthCommandCopy}>
-                  <Text style={[s.healthCommandLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                    {action.label}
-                  </Text>
-                  <Text style={[s.healthCommandDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {action.detail}
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
-          </View>
-
-          <View style={s.heroActions}>
+          <View style={s.healthActionRow}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Log a health note"
@@ -994,7 +892,7 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   healthStage: {
-    minHeight: 184,
+    minHeight: 168,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "rgba(8,26,42,0.42)",
@@ -1072,15 +970,15 @@ const s = StyleSheet.create({
     zIndex: 4,
     right: 12,
     bottom: 6,
-    width: 116,
-    height: 116,
+    width: 104,
+    height: 104,
     alignItems: "center",
     justifyContent: "flex-end",
   },
   healthStageSpriteShadow: {
     position: "absolute",
     bottom: 12,
-    width: 82,
+    width: 72,
     height: 12,
     borderRadius: 999,
     backgroundColor: "rgba(8,26,42,0.28)",
@@ -1179,61 +1077,6 @@ const s = StyleSheet.create({
   healthRhythmLabel: {
     fontSize: 9.5,
   },
-  healthBoundaryMini: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-  },
-  healthBoundaryMiniText: {
-    flex: 1,
-    minWidth: 0,
-    fontSize: 12.2,
-    lineHeight: 17,
-  },
-  healthCommandDeck: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 12,
-  },
-  healthCommandTile: {
-    flexGrow: 1,
-    flexBasis: "47.5%",
-    minHeight: 62,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 9,
-    paddingVertical: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  healthCommandIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 7,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  healthCommandCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  healthCommandLabel: {
-    fontSize: 12.5,
-    lineHeight: 16,
-  },
-  healthCommandDetail: {
-    fontSize: 10.5,
-    lineHeight: 13,
-    marginTop: 1,
-  },
   heroTop: {
     flexDirection: "row",
     gap: 10,
@@ -1262,29 +1105,10 @@ const s = StyleSheet.create({
   },
   scoreValue: { fontSize: 24, lineHeight: 27 },
   scoreLabel: { fontSize: 9, letterSpacing: 0.5, marginTop: 1 },
-  heroSignalRail: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 7,
-  },
-  heroSignal: {
-    flexGrow: 1,
-    flexBasis: "31%",
-    minWidth: 92,
-    minHeight: 64,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 7,
-    backgroundColor: "rgba(255,249,239,0.07)",
-  },
-  heroSignalLabel: { fontSize: 9.5, textTransform: "uppercase" },
-  heroSignalValue: { fontSize: 12.5, marginTop: 3 },
-  heroSignalDetail: { fontSize: 9.2, lineHeight: 12, marginTop: 2 },
-  heroActions: {
+  healthActionRow: {
     flexDirection: "row",
     gap: 8,
-    marginTop: 12,
+    marginTop: 10,
   },
   heroActionPrimary: {
     flex: 1,

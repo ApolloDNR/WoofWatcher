@@ -2942,3 +2942,44 @@ Verification:
   `output/playwright/woofwatcher-home-log-density-2026-07-01-readable-nav/home.png`
   and
   `output/playwright/woofwatcher-home-log-density-2026-07-01-readable-nav/log.png`.
+
+## 2026-07-01 Health Design-System Declutter
+
+Apollo's current design review called out the route-level problem directly:
+Health Watch felt ugly, overlapped, and overcomplicated. This pass tightens the
+route back to a serious product screen with a neo-retro care-twin heart.
+
+What changed:
+
+- Health now keeps one flagship room and one primary status/rhythm panel.
+- The duplicated hero signal rail was removed; the same information now belongs
+  in the readable signal list and review packet.
+- The separate medical-boundary mini block was removed from the first viewport
+  because it added another text block without advancing the task. The route
+  still uses non-diagnostic language and sends users to logs, records, and the
+  review packet.
+- The secondary health command deck was removed. The first viewport now has one
+  clean action row: `Log health note` and `Records`.
+- The Health sprite and stage were tightened so the dog remains alive without
+  pushing the useful health content below the fold.
+
+Design rule locked from this pass:
+
+- Health Watch is not a widget collage. Use one room, one status panel, one
+  action row, one signal list, and one review packet before adding anything
+  else.
+- If a signal is already present in the status panel or signal list, do not
+  repeat it as a separate HUD rail.
+- The pixel dog can add warmth, but the health route must scan like a calm,
+  trustworthy app-store health screen.
+
+Verification:
+
+- `mobileReadiness.test.ts` passed 112/112 after an intentional red test for the
+  removed rail/deck pattern.
+- Mobile TypeScript passed.
+- Expo web export refreshed `.expo-smoke` with 219 assets / 223 files.
+- `git diff --check` passed with expected Windows CRLF warnings only.
+- Chrome loaded the route DOM locally, but headless screenshot capture did not
+  emit a PNG in this pass. Fresh visual proof remains blocked until screenshot
+  capture or native device proof is available.
