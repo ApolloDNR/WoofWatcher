@@ -19,22 +19,45 @@ import {
 test("derives iOS tabbed route padding from the floating paw and safe area", () => {
   const metrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34 });
 
-  assert.equal(metrics.tabBarHeight, 72);
+  assert.equal(metrics.tabBarHeight, 66);
   assert.equal(metrics.tabBarBottom, 8);
-  assert.equal(metrics.centerFabBottom, 60);
-  assert.equal(metrics.centerFabSize, 64);
-  assert.equal(metrics.contentBottomPadding, 142);
-  assert.equal(getTabbedRouteBottomPadding({ platform: "ios", bottomInset: 34 }), 142);
+  assert.equal(metrics.centerFabBottom, 52);
+  assert.equal(metrics.centerFabSize, 56);
+  assert.equal(metrics.contentBottomPadding, 124);
+  assert.equal(getTabbedRouteBottomPadding({ platform: "ios", bottomInset: 34 }), 124);
 });
 
 test("keeps Android and web tabbed routes clear of the floating nav without wasting space", () => {
-  assert.equal(getTabbedRouteBottomPadding({ platform: "android", bottomInset: 0 }), 130);
-  assert.equal(getTabbedRouteBottomPadding({ platform: "web", bottomInset: 99 }), 130);
+  assert.equal(getTabbedRouteBottomPadding({ platform: "android", bottomInset: 0 }), 110);
+  assert.equal(getTabbedRouteBottomPadding({ platform: "web", bottomInset: 99 }), 110);
 
   const webMetrics = getFloatingTabChromeMetrics({ platform: "web", bottomInset: 99 });
-  assert.equal(webMetrics.tabBarHeight, 78);
-  assert.equal(webMetrics.tabBarBottom, 12);
-  assert.equal(webMetrics.centerFabBottom, 36);
+  assert.equal(webMetrics.tabBarHeight, 66);
+  assert.equal(webMetrics.tabBarBottom, 8);
+  assert.equal(webMetrics.centerFabBottom, 26);
+});
+
+test("keeps the floating paw chrome compact enough for first-screen command cards", () => {
+  for (const platform of ["android", "web"]) {
+    const metrics = getFloatingTabChromeMetrics({ platform, bottomInset: 0 });
+    const bottomChromeClearance = Math.max(
+      metrics.tabBarBottom + metrics.tabBarHeight,
+      metrics.centerFabBottom + metrics.centerFabSize,
+    );
+
+    assert.ok(bottomChromeClearance <= 86, `${platform} bottom chrome should not eat the route`);
+    assert.ok(metrics.centerFabSize >= MIN_MOBILE_TOUCH_TARGET, `${platform} center paw stays tappable`);
+    assert.ok(metrics.tabBarHeight >= 64, `${platform} tab bar keeps labels readable`);
+  }
+
+  const iosMetrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34 });
+  const iosBottomChromeClearance = Math.max(
+    iosMetrics.tabBarBottom + iosMetrics.tabBarHeight,
+    iosMetrics.centerFabBottom + iosMetrics.centerFabSize,
+  );
+
+  assert.ok(iosBottomChromeClearance <= 110);
+  assert.ok(iosMetrics.centerFabSize >= MIN_MOBILE_TOUCH_TARGET);
 });
 
 test("keeps standalone routes independent from the bottom tab chrome", () => {

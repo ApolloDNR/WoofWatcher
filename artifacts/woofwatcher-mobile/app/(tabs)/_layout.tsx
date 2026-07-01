@@ -48,6 +48,9 @@ function CenterPaw() {
         style={({ pressed }) => [
           s.fab,
           {
+            width: chrome.centerFabSize,
+            height: chrome.centerFabSize,
+            borderRadius: chrome.centerFabSize / 2,
             backgroundColor: colors.copperBright,
             borderColor: colors.card,
             shadowColor: colors.brandNavy,
@@ -55,7 +58,7 @@ function CenterPaw() {
           },
         ]}
       >
-        <PixelIcon name="walk" size={34} />
+        <PixelIcon name="walk" size={30} />
       </Pressable>
     </View>
   );
@@ -77,11 +80,11 @@ export default function TabLayout() {
           tabBarActiveTintColor: colors.copperBright,
           tabBarInactiveTintColor: colors.foreground,
           tabBarActiveBackgroundColor: "transparent",
-          tabBarLabelStyle: { fontFamily: "Inter_700Bold", fontSize: 10.5 },
+          tabBarLabelStyle: { fontFamily: "Inter_700Bold", fontSize: 10 },
           tabBarItemStyle: {
-            paddingTop: 6,
-            marginVertical: 8,
-            marginHorizontal: 3,
+            paddingTop: 4,
+            marginVertical: 6,
+            marginHorizontal: 2,
             borderRadius: colors.pixelUi.radius.card,
           },
           tabBarStyle: {
@@ -94,8 +97,8 @@ export default function TabLayout() {
             borderTopWidth: 0,
             borderRadius: chrome.tabBarRadius,
             elevation: 12,
-            paddingTop: 5,
-            paddingHorizontal: 8,
+            paddingTop: 4,
+            paddingHorizontal: 7,
             borderWidth: 1,
             borderColor: colors.border,
             shadowColor: colors.brandNavy,
@@ -208,16 +211,13 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   fab: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 5,
-    boxShadow: "0 12px 28px rgba(8, 20, 36, 0.28)",
-    shadowOpacity: 0.32,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 7 },
+    borderWidth: 4,
+    boxShadow: "0 10px 24px rgba(8, 20, 36, 0.24)",
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
     elevation: 10,
   },
 });

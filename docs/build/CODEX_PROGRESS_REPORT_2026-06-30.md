@@ -610,3 +610,46 @@ CI follow-up:
 - Earlier same-day current branch failures were `28527740311`
   (machine-readable beta doctor warning assertion) and `28528291630`
   (`TS5097` API server typecheck).
+
+## 2026-07-01 Compact Bottom-Nav Chrome Recovery
+
+Apollo's latest design review called out the remaining App Store polish problem:
+the app was closer to the saved neo-retro pixel direction, but the floating paw
+nav still felt oversized and was visually swallowing the lower half of important
+mobile command cards.
+
+What changed:
+
+- Reduced the shared mobile tab-bar height and web bottom offset in
+  `mobileLayout.ts`.
+- Reduced the center paw FAB from the previous oversized chrome to a tighter
+  app-store-style command button while preserving the WoofWatcher identity.
+- Widened the horizontal inset slightly so the floating nav reads intentional
+  instead of cramped.
+- Lowered tabbed-route bottom padding because the chrome now needs less reserved
+  space.
+- Updated `_layout.tsx` so the visible FAB, icon, labels, tab padding, and
+  shadow follow the shared compact metrics.
+- Added regression coverage that keeps the floating paw chrome compact enough
+  for first-screen command cards.
+
+Verification:
+
+- `mobileLayout.test.ts` passed 8/8 after the intended red/green update.
+- `mobileReadiness.test.ts` passed 112/112.
+- Mobile TypeScript passed with `tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`.
+- Expo web export smoke passed to `.expo-smoke` with 218 assets / 222 files.
+- Static preview route smoke returned `200` for `http://127.0.0.1:4194/` and
+  `http://127.0.0.1:4197/`.
+- The broad focused API/mobile/PWA/care-domain suite passed 497/497 with the
+  bundled Node runtime.
+
+Remaining:
+
+- Fresh screenshot proof is still pending because the in-app browser screenshot
+  control timed out during this pass.
+- Next design proof should run route visual consistency on Home, Log, Plans,
+  Health, Records, More, and Avatar Studio in actual iOS/Android frames.
+- Keep provider-backed sync/storage/AI/payments/push, generated PDF output,
+  store approval, public launch, and Apollo sign-off blocked until real
+  artifacts exist.

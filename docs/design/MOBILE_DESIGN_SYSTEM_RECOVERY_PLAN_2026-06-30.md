@@ -164,6 +164,31 @@ visually off against the saved Option B boards:
   successfully without writing PNG files during this pass. Native iOS/Android
   visual proof remains required before design sign-off.
 
+## Compact Bottom Nav Chrome Recovery
+
+The 2026-07-01 compact bottom-nav pass fixes the global chrome issue Apollo
+called out after reviewing the mobile preview:
+
+- The floating paw nav is now treated as app chrome, not a large game overlay.
+- Shared mobile metrics use a shorter tab bar, smaller center paw FAB, tighter
+  web bottom offset, and slightly wider horizontal inset.
+- Tab labels, tab item spacing, FAB icon size, and shadow weight were reduced
+  to match the calmer premium mobile app direction.
+- Route bottom padding was lowered only after the chrome was compacted, so the
+  app keeps usable breathing room without forcing first-screen command cards
+  too far below the fold.
+- `mobileLayout.test.ts` now guards against the old oversized paw chrome coming
+  back and requires the command-card route height to stay within the intended
+  compact budget.
+
+Design rule:
+
+- Bottom navigation should feel like a stable game-controller dock.
+- It must never hide the first actionable row on Home, Log, Plans, Health,
+  Records, More, or Avatar Studio.
+- If a route still feels crowded, fix the route hierarchy first; do not enlarge
+  the bottom nav to compensate.
+
 ## Next Design Passes
 
 1. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.
