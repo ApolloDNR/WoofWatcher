@@ -201,7 +201,7 @@ router.delete(
         ? deletedEntryDetails.title.trim()
         : deleted.type;
     const auditEntry = buildCareLogDeletionAuditEntry({
-      caregiver: caregiverName,
+      caregiver: caregiverName ?? undefined,
       occurredAt: new Date().toISOString(),
       entry: {
         id: deleted.id,

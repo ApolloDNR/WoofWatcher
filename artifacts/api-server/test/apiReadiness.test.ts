@@ -368,6 +368,7 @@ test("keeps care-entry deletes retained as household audit notes", () => {
   );
 
   assert.match(careEntries, /buildCareLogDeletionAuditEntry/);
+  assert.match(careEntries, /caregiver: caregiverName \?\? undefined/);
   assert.match(careEntries, /deletedEntryTitle/);
   assert.match(careEntries, /auditSubjectId/);
   assert.match(careEntries, /deletedEntrySnapshot/);
