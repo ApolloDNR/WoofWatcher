@@ -1940,8 +1940,8 @@ export default function LogScreen() {
   const logCommandSpeech = selectedLauncherAction
     ? selectedLauncherRequiresDetail
       ? `${selectedLauncherAction.label} needs a detail sheet before saving.`
-      : `Tap ${selectedLauncherAction.label} for fast care. Hold for proof, notes, and corrections.`
-    : "Tap to log fast. Hold any action when care needs proof, context, or a later update.";
+      : `Tap ${selectedLauncherAction.label}. Hold for proof, notes, and corrections.`
+    : "Tap fast. Hold for proof, notes, or later updates.";
   const logCommandHud = [
     {
       label: "Today",
@@ -2203,13 +2203,15 @@ export default function LogScreen() {
                 <SpriteSheetPlayer
                   asset={LOG_COMMAND_STAGE_SPRITE}
                   track={LOG_COMMAND_STAGE_TRACK}
-                  width={118}
-                  height={118}
+                  width={128}
+                  height={128}
                   testID="quick-log-command-pixel-sprite"
                 />
               </View>
 
-              <View style={[s.logCommandHud, { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" }]}>
+            </ImageBackground>
+            <View style={[s.logCommandDock, { backgroundColor: colors.ivory + "F3", borderColor: colors.border }]}>
+              <View style={[s.logCommandHud, { backgroundColor: colors.brandNavy, borderColor: colors.brandNavy + "22" }]}>
                 {logCommandHud.map((metric) => (
                   <View key={metric.label} style={s.logCommandHudCell}>
                     <Text style={[s.logCommandHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
@@ -2241,7 +2243,7 @@ export default function LogScreen() {
               </View>
 
               <View style={s.logCommandFooter}>
-                <View style={[s.logCommandMission, { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" }]}>
+                <View style={[s.logCommandMission, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
                   <Text style={[s.logCommandMissionLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
                     Selected
                   </Text>
@@ -2286,7 +2288,7 @@ export default function LogScreen() {
                   </Text>
                 </Pressable>
               </View>
-            </ImageBackground>
+            </View>
           </BoardCard>
 
           <BoardCard style={s.launcherCard}>
@@ -2296,11 +2298,8 @@ export default function LogScreen() {
                   <Text style={[s.quickLogActionKicker, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
                     QUICK LOG FLOW
                   </Text>
-                  <Text style={[s.quickLogActionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    Tap fast. Hold when it matters.
-                  </Text>
-                  <Text style={[s.quickLogActionSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    Medication, vomit, and incidents ask for details first.
+                  <Text numberOfLines={1} style={[s.quickLogActionSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Tap saves. Hold opens details.
                   </Text>
                 </View>
                 <BoardPill label="Under 5 sec" icon="flash-outline" tone={colors.sage} />
@@ -4702,10 +4701,10 @@ const s = StyleSheet.create({
   },
   logCommandStage: {
     width: "100%",
-    minHeight: 330,
+    minHeight: 200,
     overflow: "hidden",
     padding: 10,
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
   },
   logCommandStageImage: {
     borderRadius: 8,
@@ -4725,8 +4724,8 @@ const s = StyleSheet.create({
     gap: 8,
   },
   logCommandBubble: {
-    maxWidth: "58%",
-    minHeight: 72,
+    maxWidth: "60%",
+    minHeight: 64,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "#081424",
@@ -4740,8 +4739,8 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   logCommandSpeech: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 12.5,
+    lineHeight: 16,
     marginTop: 3,
   },
   logCommandBubbleTail: {
@@ -4774,29 +4773,36 @@ const s = StyleSheet.create({
   },
   logCommandSprite: {
     position: "absolute",
-    right: 2,
-    bottom: 104,
-    width: 112,
-    height: 112,
+    right: 18,
+    bottom: 12,
+    width: 128,
+    height: 128,
     alignItems: "center",
     justifyContent: "flex-end",
   },
   logCommandSpriteShadow: {
     position: "absolute",
-    bottom: 8,
-    width: 98,
-    height: 22,
+    bottom: 9,
+    width: 112,
+    height: 24,
     borderRadius: 999,
     backgroundColor: "rgba(8,20,36,0.34)",
+  },
+  logCommandDock: {
+    borderTopWidth: 1,
+    paddingHorizontal: 8,
+    paddingTop: 7,
+    paddingBottom: 8,
+    gap: 7,
   },
   logCommandHud: {
     alignSelf: "stretch",
     borderRadius: 8,
     borderWidth: 1,
-    padding: 9,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     flexDirection: "row",
     gap: 5,
-    marginTop: 104,
   },
   logCommandHudCell: {
     flex: 1,
@@ -4808,19 +4814,19 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   logCommandHudValue: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 12,
+    lineHeight: 15,
     marginTop: 2,
   },
   logCommandSignalRow: {
-    height: 18,
+    height: 10,
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 2,
-    marginTop: 4,
+    marginTop: 3,
   },
   logCommandSignalBar: {
-    width: 5,
+    width: 4,
     borderRadius: 2,
   },
   logCommandFooter: {
@@ -4929,10 +4935,10 @@ const s = StyleSheet.create({
 
   launcherCard: {
     marginBottom: 12,
-    padding: 12,
+    padding: 10,
   },
   quickLogActionConsole: {
-    gap: 10,
+    gap: 8,
   },
   quickLogActionConsoleHeader: {
     flexDirection: "row",
@@ -4956,9 +4962,9 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   quickLogActionSub: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
+    fontSize: 11.5,
+    lineHeight: 14,
+    marginTop: 1,
   },
   launcherTabs: {
     flexDirection: "row",
@@ -4966,7 +4972,7 @@ const s = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(8, 20, 36, 0.08)",
-    padding: 3,
+    padding: 2,
   },
   launcherTab: {
     flex: 1,

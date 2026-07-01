@@ -2209,9 +2209,16 @@ test("keeps Quick Log aligned to the mobile design-system recovery recipe", () =
   assert.match(log, /quickLogActionConsoleHeader/);
   assert.match(log, /quickLogSupportRail/);
   assert.match(log, /quickLogDetailDock/);
-  assert.match(log, /logCommandStage:[\s\S]*width: "100%"[\s\S]*minHeight: 330/);
-  assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "58%"/);
-  assert.match(log, /logCommandSprite:[\s\S]*right: 2/);
+  assert.match(log, /logCommandStage:[\s\S]*width: "100%"[\s\S]*minHeight: 200/);
+  assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "60%"/);
+  assert.match(log, /logCommandSprite:[\s\S]*right: 18/);
+  assert.match(log, /logCommandDock/);
+  assert.match(log, /Tap saves\. Hold opens details\./);
+  assert.doesNotMatch(
+    getStyleBlock(log, "logCommandHud"),
+    /marginTop:\s*104/,
+    "Quick Log HUD should live in the dock instead of floating over the scene",
+  );
   assert.ok(
     gridIndex > 0 && doctrineIndex > gridIndex,
     "Quick Log should show the action grid before the teaching rail",
@@ -3935,6 +3942,22 @@ test("keeps Records rooted in a live pixel credential stage", () => {
   assert.match(records, /CARE_TWIN_SPRITE_MANIFEST\["tail-wag"\]/);
   assert.match(records, /pixelImageStyle/);
   assert.match(records, /Records Command Vault/);
+  assert.match(records, /recordsCredentialDock/);
+  assert.match(
+    getStyleBlock(records, "recordsCredentialStage"),
+    /minHeight:\s*232/,
+    "Records stage should stay compact on the first phone viewport",
+  );
+  assert.doesNotMatch(
+    getStyleBlock(records, "recordsCredentialIdPlate"),
+    /position:\s*"absolute"/,
+    "Dog ID should sit in a dock instead of overlapping the pixel room",
+  );
+  assert.doesNotMatch(
+    getStyleBlock(records, "recordsCredentialHud"),
+    /position:\s*"absolute"/,
+    "Records HUD should sit in a dock instead of overlapping the pixel room",
+  );
 });
 
 test("keeps More rooted in a live pixel launch command stage", () => {

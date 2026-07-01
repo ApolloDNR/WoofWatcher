@@ -98,9 +98,19 @@ The 2026-07-01 More compact command pass tightens the app's navigation hub:
 - Command Directory rows are denser while preserving shared touch-target rules, making Care Today, Household, Records & Passes, Design QA, and Launch QA easier to scan.
 - The route is protected by mobile readiness checks for compact stage height, pinned HUD/footer, centered subtitle behavior, and dense directory rows.
 
+## Log And Records Stage-Dock Slice
+
+The 2026-07-01 Log/Records stage-dock pass fixes the most visible remaining overlap from the route visual consistency pass:
+
+- Quick Log keeps the animated pixel scene, but the care-IQ HUD and selected action now sit in a separated command dock below the room instead of floating over the dog.
+- Quick Log trims the tutorial copy to one line: `Tap saves. Hold opens details.` The first quick-action row now appears above the floating paw nav in the 390x844 preview.
+- Records keeps the Records Command Vault pixel scene, but the Dog ID plate and saved/ready/alerts HUD now sit in a dock below the scene instead of covering the sprite and room.
+- Both routes are protected by mobile readiness checks that prevent the old `marginTop`/absolute overlay HUD pattern from returning.
+- Chrome proof exists at `tmp/route-log-compact-stage-dock-final.png` and `tmp/route-records-credential-dock-final.png`; native iOS/Android screenshots are still required before store-ready design sign-off.
+
 ## Next Design Passes
 
-1. Log: reduce stage/HUD competition and keep the fast action grid above the floating nav.
-2. Records: reduce credential-stage overlap so the Dog ID card and live sprite do not fight for the same focal point.
-3. Home: keep refining dark-RPG alignment after the core route tops share the same system.
-4. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.
+1. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.
+2. Route Visual Consistency: mark the first route with overlap, clipped copy, hidden primary action, duplicate-avatar behavior, bottom-nav collision, or mockup drift as Needs tune.
+3. Home and Avatar Studio: continue dark-RPG/game-feel alignment once native screenshots identify the highest-impact remaining drift.
+4. Polish pass: use the stage-dock rule on any remaining route where a HUD or credential card is fighting the pixel scene.

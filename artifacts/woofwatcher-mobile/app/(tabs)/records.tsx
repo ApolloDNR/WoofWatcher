@@ -737,7 +737,7 @@ export default function RecordsScreen() {
             icon="folder-open-outline"
           />
 
-          <BoardCard style={s.recordsCredentialStageCard}>
+          <BoardCard padded={false} style={s.recordsCredentialStageCard}>
             <ImageBackground
               source={RECORDS_CREDENTIAL_STAGE_ROOM}
               resizeMode="cover"
@@ -775,8 +775,9 @@ export default function RecordsScreen() {
                   testID="records-credential-pixel-sprite"
                 />
               </View>
-
-              <View style={[s.recordsCredentialIdPlate, { backgroundColor: colors.ivory + "F2", borderColor: colors.navy + "22" }]}>
+            </ImageBackground>
+            <View style={[s.recordsCredentialDock, { backgroundColor: colors.ivory + "F4", borderColor: colors.border }]}>
+              <View style={[s.recordsCredentialIdPlate, { backgroundColor: colors.ivory, borderColor: colors.navy + "22" }]}>
                 <View style={[s.recordsCredentialIdBadge, { backgroundColor: recordsVaultTone + "1F" }]}>
                   <Ionicons name="paw" size={16} color={recordsVaultTone} />
                 </View>
@@ -793,7 +794,7 @@ export default function RecordsScreen() {
                 </View>
               </View>
 
-              <View style={[s.recordsCredentialHud, { backgroundColor: colors.brandNavy + "DC", borderColor: colors.ivory + "44" }]}>
+              <View style={[s.recordsCredentialHud, { backgroundColor: colors.brandNavy, borderColor: colors.brandNavy + "22" }]}>
                 {[
                   { label: "Saved", value: String(recordVault.total) },
                   { label: "Ready", value: `${recordsVaultScore}%` },
@@ -805,7 +806,7 @@ export default function RecordsScreen() {
                   </View>
                 ))}
               </View>
-            </ImageBackground>
+            </View>
           </BoardCard>
 
           <BoardCard style={s.recordsCommandCard}>
@@ -2549,9 +2550,9 @@ const s = StyleSheet.create({
   },
   recordsCredentialStage: {
     width: "100%",
-    minHeight: 312,
+    minHeight: 232,
     overflow: "hidden",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
   },
   recordsCredentialStageImage: {
     borderRadius: 22,
@@ -2627,8 +2628,8 @@ const s = StyleSheet.create({
   },
   recordsCredentialSprite: {
     position: "absolute",
-    right: 12,
-    bottom: 84,
+    right: 20,
+    bottom: 10,
     zIndex: 2,
     alignItems: "center",
     justifyContent: "flex-end",
@@ -2641,12 +2642,14 @@ const s = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "rgba(7, 18, 30, 0.25)",
   },
+  recordsCredentialDock: {
+    borderTopWidth: 1,
+    paddingHorizontal: 10,
+    paddingTop: 9,
+    paddingBottom: 10,
+    gap: 8,
+  },
   recordsCredentialIdPlate: {
-    zIndex: 4,
-    position: "absolute",
-    left: 12,
-    right: 12,
-    bottom: 74,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -2682,16 +2685,11 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   recordsCredentialHud: {
-    zIndex: 4,
-    position: "absolute",
-    left: 12,
-    right: 12,
-    bottom: 14,
     flexDirection: "row",
     borderWidth: 1,
-    borderRadius: 17,
+    borderRadius: 14,
     paddingHorizontal: 10,
-    paddingVertical: 9,
+    paddingVertical: 8,
   },
   recordsCredentialHudCell: {
     flex: 1,
