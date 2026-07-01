@@ -728,8 +728,10 @@ Verification:
 - The broad focused API/mobile/PWA/care-domain suite passed 497/497.
 - Expo web export smoke passed to `.expo-smoke` with 218 assets / 222 files.
 - `git diff --check` passed with expected Windows CRLF warnings only.
+- Branch CI passed: `WoofWatcher Verify` run `28536210206` completed
+  `success` on `automation/premium-revenue-product-builder` at commit
+  `557e544`.
 
 Remaining:
 
-- Commit/push this Health slice, rerun branch CI, and capture fresh `/health`
-  screenshot/native proof after the commit.
+- Capture fresh `/health` screenshot/native proof after the commit.
