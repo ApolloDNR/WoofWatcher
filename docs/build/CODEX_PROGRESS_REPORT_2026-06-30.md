@@ -178,3 +178,44 @@ Preview:
   `http://127.0.0.1:4194/`.
 - This pass improves local web/mobile structure only; native iOS/Android visual
   QA screenshots and Apollo launch sign-off remain required.
+
+## 2026-07-01 Records Vault Command Slice
+
+Records received the next design-system recovery pass so the screen starts with
+owner actions before the dense vault evidence.
+
+What changed:
+
+- Added a typed `RecordsCommandItem` model and a `Vault Command` board under the
+  live Records Command Vault pixel stage.
+- Added four first-screen, behavior-backed workflow exits:
+  - Dog ID, wired to `shareCredential`.
+  - Record vault, wired to `openRecordForm("document")`.
+  - Care Pass, wired to `openCarePassPreview("vet")`.
+  - Reports, wired to `shareReport`.
+- Kept the existing Dog ID card, Record Vault, reminders, trend panels,
+  medication history, Care Pass options, report history, progress report, and
+  records cabinet below the new command layer.
+- Added mobile readiness coverage for the Records vault-command hierarchy.
+
+Verification:
+
+- Mobile readiness passed 105/105.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  through the bundled Node runtime.
+- Broader focused mobile/domain/API/PWA suite passed 488/488.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Static preview route smoke passed for `/records`, `/more`, `/health`, and
+  `/` at `http://127.0.0.1:4194/`.
+- The in-app browser was opened to `http://127.0.0.1:4194/records`; DOM
+  verification found Vault Command, Dog ID, Record Vault, Care Pass, and
+  Reports.
+
+Preview:
+
+- The local static preview server remains available at
+  `http://127.0.0.1:4194/records`.
+- This pass improves local web/mobile structure only; native iOS/Android visual
+  QA screenshots and Apollo launch sign-off remain required.

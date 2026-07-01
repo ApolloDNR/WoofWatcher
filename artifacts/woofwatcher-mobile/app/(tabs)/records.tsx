@@ -87,6 +87,17 @@ const RECORDS_CREDENTIAL_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["tail-wag"];
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
+interface RecordsCommandItem {
+  id: string;
+  icon: IoniconName;
+  eyebrow: string;
+  label: string;
+  detail: string;
+  actionLabel: string;
+  tone: string;
+  onPress: () => void;
+}
+
 const HEALTH_ICON: Record<string, PulseIconName> = {
   vomit: "vomit",
   symptom: "vomit",
@@ -664,6 +675,50 @@ export default function RecordsScreen() {
       : recordReminders.length > 0
         ? colors.copper
         : colors.sage;
+  const recordsCommandItems: RecordsCommandItem[] = [
+    {
+      id: "dog-id",
+      icon: "card-outline",
+      eyebrow: "Dog ID",
+      label: `${credential.name} credential`,
+      detail: `${credentialReadinessPercent}% ready for sitter, vet, and emergency handoff.`,
+      actionLabel: "Share",
+      tone: recordsVaultTone,
+      onPress: shareCredential,
+    },
+    {
+      id: "record-vault",
+      icon: "folder-open-outline",
+      eyebrow: "Record vault",
+      label: `${recordVault.total} records saved`,
+      detail: recordVault.missingCritical.length
+        ? `File ${recordVault.missingCritical[0].toLowerCase()} next.`
+        : recordReminders[0]?.label ?? "Vaccines, visits, receipts, insurance, chip, and meds.",
+      actionLabel: "Add",
+      tone: recordVault.missingCritical.length ? colors.amber : colors.sage,
+      onPress: () => openRecordForm("document"),
+    },
+    {
+      id: "care-pass",
+      icon: "document-text-outline",
+      eyebrow: "Care Pass",
+      label: "Vet or sitter packet",
+      detail: "Generate owner-reviewed care summaries from records and logs.",
+      actionLabel: "Build",
+      tone: colors.copper,
+      onPress: () => openCarePassPreview("vet"),
+    },
+    {
+      id: "reports",
+      icon: "analytics-outline",
+      eyebrow: "Reports",
+      label: `${periodLabel} progress`,
+      detail: `${report.total} logs and ${recordReminders.length} record reminders are ready to review.`,
+      actionLabel: "Share",
+      tone: colors.primary,
+      onPress: shareReport,
+    },
+  ];
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -749,6 +804,34 @@ export default function RecordsScreen() {
                 ))}
               </View>
             </ImageBackground>
+          </BoardCard>
+
+          <BoardCard style={s.recordsCommandCard}>
+            <BoardSectionHeader title="Vault Command" accessory={<BoardPill label={`${recordsVaultScore}% ready`} tone={recordsVaultTone} />} />
+            <View style={s.recordsCommandList}>
+              {recordsCommandItems.map((item) => (
+                <Pressable
+                  key={item.id}
+                  onPress={item.onPress}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  style={[s.recordsCommandRow, { borderColor: colors.border }]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.label}. ${item.detail}. ${item.actionLabel}`}
+                >
+                  <View style={[s.recordsCommandIcon, { backgroundColor: item.tone + "18" }]}>
+                    <Ionicons name={item.icon} size={18} color={item.tone} />
+                  </View>
+                  <View style={s.recordsCommandCopy}>
+                    <Text style={[s.recordsCommandEyebrow, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}>{item.eyebrow}</Text>
+                    <Text style={[s.recordsCommandTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{item.label}</Text>
+                    <Text style={[s.recordsCommandDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
+                  </View>
+                  <View style={[s.recordsCommandAction, { backgroundColor: item.tone + "14" }]}>
+                    <Text style={[s.recordsCommandActionText, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}>{item.actionLabel}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
           </BoardCard>
 
           {/* Care highlights strip */}
@@ -2615,6 +2698,63 @@ const s = StyleSheet.create({
   },
   recordsCredentialHudValue: {
     fontSize: 16,
+  },
+
+  recordsCommandCard: {
+    marginTop: 0,
+    marginBottom: 14,
+  },
+  recordsCommandList: {
+    gap: 9,
+  },
+  recordsCommandRow: {
+    minHeight: 84,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 11,
+    paddingVertical: 11,
+  },
+  recordsCommandIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recordsCommandCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  recordsCommandEyebrow: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  recordsCommandTitle: {
+    fontSize: 14.6,
+    lineHeight: 19,
+    marginTop: 2,
+  },
+  recordsCommandDetail: {
+    fontSize: 11.7,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  recordsCommandAction: {
+    minWidth: 52,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 9,
+  },
+  recordsCommandActionText: {
+    fontSize: 11,
+    lineHeight: 14,
   },
 
   idCard: {

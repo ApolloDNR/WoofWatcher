@@ -3003,6 +3003,25 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
   assert.match(records, /accessibilityLabel="Share printable dog ID source"/);
 });
 
+test("keeps Records organized around a vault command hierarchy", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(records, /interface RecordsCommandItem/);
+  assert.match(records, /const recordsCommandItems: RecordsCommandItem\[\] = \[/);
+  assert.match(records, /Vault Command/);
+  assert.match(records, /Dog ID/);
+  assert.match(records, /Record vault/);
+  assert.match(records, /Care Pass/);
+  assert.match(records, /Reports/);
+  assert.match(records, /onPress: shareCredential/);
+  assert.match(records, /onPress: \(\) => openRecordForm\("document"\)/);
+  assert.match(records, /onPress: \(\) => openCarePassPreview\("vet"\)/);
+  assert.match(records, /onPress: shareReport/);
+  assert.match(records, /style=\{s\.recordsCommandCard\}/);
+  assert.match(records, /s\.recordsCommandRow/);
+  assert.match(records, /accessibilityLabel=\{`\$\{item\.label\}\. \$\{item\.detail\}\. \$\{item\.actionLabel\}`\}/);
+});
+
 test("keeps Records Care Pass and reports on shared board card anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 

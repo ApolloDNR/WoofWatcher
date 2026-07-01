@@ -2646,3 +2646,42 @@ Verification:
 - Expo web export refreshed `.expo-smoke` with 218 assets / 222 files.
 - Route smoke passed for More, Home, Plans, and Health at
   `http://127.0.0.1:4194/`.
+
+## 2026-07-01 Records Vault Command Pass
+
+Records is the fifth route in the design-system recovery. The goal was to keep
+the serious vault, credential, Care Pass, and report behavior while giving the
+page a clearer first-screen command layer.
+
+What changed:
+
+- Added a typed `RecordsCommandItem` model and a `Vault Command` board directly
+  under the live pixel credential stage.
+- Added four real workflow actions:
+  - Dog ID, sharing the printable dog credential.
+  - Record vault, opening the record filing flow.
+  - Care Pass, opening the vet packet builder.
+  - Reports, sharing the current progress report.
+- Kept the existing dog ID card, record vault, reminders, trends, diet,
+  medication, Care Pass, reports, and records cabinet sections intact below the
+  command layer.
+- Added readiness coverage so Records cannot regress into a dense evidence
+  stack without a first-screen command hierarchy.
+
+Design rule locked from this pass:
+
+- A records screen should lead with what the owner can do next: share the dog
+  ID, file a missing record, build a Care Pass, or share a report. Evidence
+  panels can stay deep, but the first screen needs command-level clarity.
+
+Verification:
+
+- Mobile readiness passed 105/105, including the new Records vault-command
+  guard.
+- Mobile TypeScript passed.
+- Broader focused mobile/domain/API/PWA suite passed 488/488.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files.
+- Route smoke passed for Records, More, Health, and Home at
+  `http://127.0.0.1:4194/`.
+- In-app browser DOM verification on `/records` confirmed Vault Command, Dog
+  ID, Record Vault, Care Pass, and Reports are present.
