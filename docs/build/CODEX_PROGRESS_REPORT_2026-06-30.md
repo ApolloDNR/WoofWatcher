@@ -465,3 +465,44 @@ Remaining:
   pnpm 10.24 beta doctor proof, CI completion, provider-backed
   sync/storage/AI/payments/push, generated PDF output, store approval, and
   Apollo launch sign-off before calling the app launch-ready.
+
+## 2026-07-01 Plans Compact Schedule-First Recovery
+
+The earlier Plans route still felt like a tall poster before a useful schedule:
+the pixel scene, speech bubble, dog sprite, HUD, and mission rows pushed the
+actual routine list too far down the first phone viewport.
+
+What changed:
+
+- Kept the live Plans Command Deck but reduced its stage height from 238px to
+  168px.
+- Reduced the Plans sprite from 136px to 104px, tightened the speech bubble and
+  HUD, and kept the status signal inside the compact stage.
+- Moved `Mission Schedule` above `Today's Missions` so the real care plan is the
+  primary work surface.
+- Tightened mission rows, icons, detail lines, and action chips so secondary
+  mission context no longer crowds the first route.
+- Preserved routine edit, routine completion logging, Reminder Center routing,
+  household responsibility, and WoofGuide discovery behavior.
+- Added mobile readiness coverage for schedule-first order, compact stage
+  height, and compact mission rows.
+
+Verification:
+
+- `mobileReadiness.test.ts` passed 112/112.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  through the bundled Node runtime.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Static preview route smoke returned `200` for `/calendar`, `/`, `/log`, and
+  `/health` at `http://127.0.0.1:4196/`.
+
+Remaining:
+
+- The first export attempt failed because the smoke script could not resolve
+  bare `node` on Windows PATH; the bundled-Node PATH rerun passed.
+- Fresh in-app browser screenshot capture timed out during this pass. Earlier
+  Plans proof at `tmp/route-plans-visualqa-20260701.png` was used to identify
+  the oversized layout, but updated native/iOS/Android or repaired browser
+  screenshot proof is still required before visual sign-off.

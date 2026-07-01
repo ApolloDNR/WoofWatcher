@@ -691,8 +691,8 @@ export default function CalendarScreen() {
                 <SpriteSheetPlayer
                   asset={PLANS_COMMAND_STAGE_SPRITE}
                   track={PLANS_COMMAND_STAGE_TRACK}
-                  width={136}
-                  height={136}
+                  width={104}
+                  height={104}
                   testID="plans-command-pixel-sprite"
                 />
               </View>
@@ -731,52 +731,6 @@ export default function CalendarScreen() {
                 </View>
               </View>
             </ImageBackground>
-          </BoardCard>
-
-          <BoardCard style={s.planMissionBoard}>
-            <BoardSectionHeader
-              title="Today's Missions"
-              accessory={<BoardPill label={`${completedScheduleCount}/${scheduleRows.length} done`} tone={commandDeckTone} />}
-            />
-            <View style={s.planMissionList}>
-              {planMissionRows.map((mission, index) => (
-                <Pressable
-                  key={mission.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open ${mission.eyebrow}: ${mission.title}`}
-                  onPress={mission.onPress}
-                  style={({ pressed }) => [
-                    s.planMissionRow,
-                    {
-                      backgroundColor: pressed ? mission.tone + "10" : colors.background,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <View style={[s.planMissionIcon, { backgroundColor: mission.tone + "18" }]}>
-                    <PixelIcon name={mission.icon} size={24} />
-                  </View>
-                  <View style={s.planMissionCopy}>
-                    <Text style={[s.planMissionEyebrow, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
-                      {mission.eyebrow}
-                    </Text>
-                    <Text numberOfLines={1} style={[s.planMissionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                      {mission.title}
-                    </Text>
-                    <Text numberOfLines={2} style={[s.planMissionDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {mission.detail}
-                    </Text>
-                  </View>
-                  <View style={[s.planMissionAction, { backgroundColor: mission.tone + "16" }]}>
-                    <Text style={[s.planMissionActionText, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
-                      {mission.actionLabel}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={13} color={mission.tone} />
-                  </View>
-                  {index < planMissionRows.length - 1 ? <View style={[s.planMissionDivider, { backgroundColor: colors.border }]} /> : null}
-                </Pressable>
-              ))}
-            </View>
           </BoardCard>
 
           <BoardCard style={s.scheduleCard}>
@@ -898,6 +852,52 @@ export default function CalendarScreen() {
                 Add Plan
               </Text>
             </Pressable>
+          </BoardCard>
+
+          <BoardCard style={s.planMissionBoard}>
+            <BoardSectionHeader
+              title="Today's Missions"
+              accessory={<BoardPill label={`${completedScheduleCount}/${scheduleRows.length} done`} tone={commandDeckTone} />}
+            />
+            <View style={s.planMissionList}>
+              {planMissionRows.map((mission, index) => (
+                <Pressable
+                  key={mission.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ${mission.eyebrow}: ${mission.title}`}
+                  onPress={mission.onPress}
+                  style={({ pressed }) => [
+                    s.planMissionRow,
+                    {
+                      backgroundColor: pressed ? mission.tone + "10" : colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View style={[s.planMissionIcon, { backgroundColor: mission.tone + "18" }]}>
+                    <PixelIcon name={mission.icon} size={22} />
+                  </View>
+                  <View style={s.planMissionCopy}>
+                    <Text style={[s.planMissionEyebrow, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                      {mission.eyebrow}
+                    </Text>
+                    <Text numberOfLines={1} style={[s.planMissionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      {mission.title}
+                    </Text>
+                    <Text numberOfLines={1} style={[s.planMissionDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {mission.detail}
+                    </Text>
+                  </View>
+                  <View style={[s.planMissionAction, { backgroundColor: mission.tone + "16" }]}>
+                    <Text style={[s.planMissionActionText, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                      {mission.actionLabel}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={13} color={mission.tone} />
+                  </View>
+                  {index < planMissionRows.length - 1 ? <View style={[s.planMissionDivider, { backgroundColor: colors.border }]} /> : null}
+                </Pressable>
+              ))}
+            </View>
           </BoardCard>
 
           {/* WoofGuide discovery banner */}
@@ -1550,16 +1550,16 @@ const s = StyleSheet.create({
   sugAdd: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 11, alignItems: "center", justifyContent: "center" },
 
   commandDeckCard: {
-    padding: 12,
-    marginBottom: 12,
+    padding: 10,
+    marginBottom: 10,
   },
   commandDeckStage: {
-    minHeight: 238,
+    minHeight: 168,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "rgba(8,26,42,0.42)",
     overflow: "hidden",
-    padding: 12,
+    padding: 10,
   },
   commandDeckImage: {
     borderRadius: 8,
@@ -1580,34 +1580,34 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 10,
+    gap: 8,
   },
   commandDeckBubble: {
-    maxWidth: "64%",
-    minHeight: 78,
+    maxWidth: "61%",
+    minHeight: 58,
     borderRadius: 3,
     borderWidth: 2,
     borderColor: "#081A2A",
     backgroundColor: "rgba(255,249,239,0.95)",
-    paddingHorizontal: 11,
-    paddingVertical: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
   },
   commandDeckKicker: {
-    fontSize: 9.5,
+    fontSize: 8.5,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   commandDeckSpeech: {
-    fontSize: 14,
-    lineHeight: 17,
-    marginTop: 4,
+    fontSize: 12.5,
+    lineHeight: 15,
+    marginTop: 3,
   },
   commandDeckBubbleTail: {
     position: "absolute",
-    right: 22,
-    bottom: -8,
-    width: 14,
-    height: 14,
+    right: 20,
+    bottom: -7,
+    width: 12,
+    height: 12,
     borderLeftWidth: 2,
     borderBottomWidth: 2,
     borderColor: "#081A2A",
@@ -1615,10 +1615,10 @@ const s = StyleSheet.create({
     transform: [{ rotate: "-45deg" }],
   },
   commandDeckChip: {
-    minHeight: 34,
+    minHeight: 31,
     borderRadius: 7,
     borderWidth: 1,
-    paddingHorizontal: 9,
+    paddingHorizontal: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
@@ -1632,31 +1632,31 @@ const s = StyleSheet.create({
     position: "absolute",
     zIndex: 4,
     right: 18,
-    bottom: 46,
-    width: 150,
-    height: 150,
+    bottom: 36,
+    width: 116,
+    height: 116,
     alignItems: "center",
     justifyContent: "flex-end",
   },
   commandDeckSpriteShadow: {
     position: "absolute",
-    bottom: 17,
-    width: 98,
-    height: 14,
+    bottom: 13,
+    width: 76,
+    height: 11,
     borderRadius: 999,
     backgroundColor: "rgba(8,26,42,0.25)",
   },
   commandDeckHud: {
     position: "absolute",
     zIndex: 6,
-    left: 12,
-    right: 12,
-    bottom: 12,
-    minHeight: 44,
+    left: 10,
+    right: 10,
+    bottom: 10,
+    minHeight: 38,
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1667,16 +1667,16 @@ const s = StyleSheet.create({
     minWidth: 0,
   },
   commandDeckHudLabel: {
-    fontSize: 9.5,
+    fontSize: 8.5,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   commandDeckHudValue: {
-    fontSize: 13,
-    marginTop: 2,
+    fontSize: 12,
+    marginTop: 1,
   },
   commandDeckSignalRow: {
-    minHeight: 18,
+    minHeight: 15,
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 3,
@@ -1688,27 +1688,27 @@ const s = StyleSheet.create({
   },
 
   planMissionBoard: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   planMissionList: {
-    gap: 8,
+    gap: 6,
   },
   planMissionRow: {
     position: "relative",
-    minHeight: 74,
-    borderRadius: 14,
+    minHeight: 58,
+    borderRadius: 12,
     borderWidth: 1,
-    paddingHorizontal: 11,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     overflow: "hidden",
   },
   planMissionIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1718,24 +1718,24 @@ const s = StyleSheet.create({
     minWidth: 0,
   },
   planMissionEyebrow: {
-    fontSize: 9.5,
+    fontSize: 8.5,
     letterSpacing: 0.6,
     textTransform: "uppercase",
   },
   planMissionTitle: {
-    fontSize: 15,
-    marginTop: 2,
+    fontSize: 13.5,
+    marginTop: 1,
   },
   planMissionDetail: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 1,
   },
   planMissionAction: {
-    width: 76,
+    width: 66,
     flexShrink: 0,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 6,
     flexDirection: "row",
     alignItems: "center",
@@ -1750,14 +1750,14 @@ const s = StyleSheet.create({
   },
   planMissionDivider: {
     position: "absolute",
-    left: 64,
+    left: 56,
     right: 12,
     bottom: -5,
     height: 1,
     opacity: 0.8,
   },
 
-  scheduleCard: { marginBottom: 14 },
+  scheduleCard: { marginBottom: 10 },
   scheduleCardHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1781,7 +1781,7 @@ const s = StyleSheet.create({
   scheduleTabs: {
     flexDirection: "row",
     gap: 6,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   scheduleTab: {
     flex: 1,
@@ -1794,11 +1794,11 @@ const s = StyleSheet.create({
   scheduleTabText: { fontSize: 12.5 },
   scheduleList: { marginTop: 2 },
   scheduleRow: {
-    minHeight: 48,
+    minHeight: 44,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 9,
+    paddingVertical: 7,
   },
   scheduleTime: {
     width: 66,

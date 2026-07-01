@@ -2053,7 +2053,7 @@ test("keeps compact mobile proof and mission cards from clipping", () => {
   );
   assert.match(
     getStyleBlock(plans, "planMissionAction"),
-    /width:\s*76[\s\S]*flexShrink:\s*0/,
+    /width:\s*66[\s\S]*flexShrink:\s*0/,
     "Plan action chips should keep a compact fixed width on phones",
   );
   assert.match(
@@ -3932,6 +3932,20 @@ test("keeps Plans organized around a mission-first mobile hierarchy", () => {
   assert.match(calendar, /planMissionBoard/);
   assert.match(calendar, /planMissionAction/);
   assert.match(calendar, /router\.push\("\/more" as never\)/);
+  assert.ok(
+    calendar.indexOf("Mission Schedule") < calendar.indexOf("Today's Missions"),
+    "Plans should put the actionable schedule before secondary mission context",
+  );
+  assert.match(
+    getStyleBlock(calendar, "commandDeckStage"),
+    /minHeight:\s*168/,
+    "Plans command stage should stay compact enough for schedule-first mobile use",
+  );
+  assert.match(
+    getStyleBlock(calendar, "planMissionRow"),
+    /minHeight:\s*58/,
+    "Plans mission rows should stay compact after the schedule moves up",
+  );
 });
 
 test("keeps Records rooted in a live pixel credential stage", () => {

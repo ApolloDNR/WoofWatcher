@@ -129,6 +129,22 @@ flagged as still not App Store quality:
   `tmp/design-audit-2026-07-01-final/health.png`, and
   `tmp/design-audit-2026-07-01-final/avatar-studio-final.png`.
 
+## Plans Schedule-First Slice
+
+The 2026-07-01 Plans compact pass applies the same rule to schedule-heavy
+screens:
+
+- Plans keeps a pixel command scene, but the command scene is compact context,
+  not the main product.
+- `Mission Schedule` now appears before `Today's Missions` so the owner sees
+  the actual care plan before secondary explanations.
+- The command stage, speech bubble, sprite, HUD, mission rows, and action chips
+  are all smaller to avoid poster-like first screens.
+- Mission rows use one-line detail copy. If a task needs more context, the
+  existing detail/edit flow owns it.
+- This route is protected by readiness tests for schedule-first order, compact
+  command-stage height, and compact mission rows.
+
 ## Next Design Passes
 
 1. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.
