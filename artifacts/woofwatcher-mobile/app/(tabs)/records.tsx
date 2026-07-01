@@ -573,17 +573,19 @@ export default function RecordsScreen() {
   };
 
   // Mount animation
-  const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(16)).current;
+  const isWebRoutePreview = (Platform.OS as string) === "web";
+  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
+  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
   useEffect(() => {
+    if (isWebRoutePreview) return;
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: Platform.OS !== "web" }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
+      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
     ]).start();
-  }, [fade, slide]);
+  }, [fade, isWebRoutePreview, slide]);
 
   // Chart geometry
-  const H_PAD = 20;
+  const H_PAD = isWebRoutePreview ? 0 : 20;
   const cardPad = 18;
   const chartW = width - H_PAD * 2 - cardPad * 2;
   const chartH = 140;
@@ -2537,13 +2539,17 @@ const s = StyleSheet.create({
   shareInlineGroup: { flexDirection: "row", alignItems: "center", gap: 14 },
 
   recordsCredentialStageCard: {
+    alignSelf: "stretch",
+    width: "100%",
+    maxWidth: "100%",
     marginTop: 2,
     marginBottom: 14,
     padding: 0,
     overflow: "hidden",
   },
   recordsCredentialStage: {
-    minHeight: 318,
+    width: "100%",
+    minHeight: 312,
     overflow: "hidden",
     justifyContent: "space-between",
   },
@@ -2564,11 +2570,11 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 10,
-    padding: 14,
+    gap: 8,
+    padding: 12,
   },
   recordsCredentialBubble: {
-    maxWidth: "66%",
+    maxWidth: "62%",
     borderWidth: 2,
     borderColor: "#18314A",
     backgroundColor: "rgba(255,249,239,0.96)",
@@ -2603,6 +2609,8 @@ const s = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   recordsCredentialChip: {
+    maxWidth: 112,
+    flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -2610,7 +2618,6 @@ const s = StyleSheet.create({
     borderRadius: 13,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    maxWidth: 132,
   },
   recordsCredentialChipText: {
     flexShrink: 1,
@@ -2620,7 +2627,7 @@ const s = StyleSheet.create({
   },
   recordsCredentialSprite: {
     position: "absolute",
-    right: 28,
+    right: 12,
     bottom: 84,
     zIndex: 2,
     alignItems: "center",
@@ -2637,8 +2644,8 @@ const s = StyleSheet.create({
   recordsCredentialIdPlate: {
     zIndex: 4,
     position: "absolute",
-    left: 14,
-    right: 14,
+    left: 12,
+    right: 12,
     bottom: 74,
     flexDirection: "row",
     alignItems: "center",
@@ -2677,8 +2684,8 @@ const s = StyleSheet.create({
   recordsCredentialHud: {
     zIndex: 4,
     position: "absolute",
-    left: 14,
-    right: 14,
+    left: 12,
+    right: 12,
     bottom: 14,
     flexDirection: "row",
     borderWidth: 1,
@@ -2745,7 +2752,8 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   recordsCommandAction: {
-    minWidth: 52,
+    width: 58,
+    flexShrink: 0,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 13,
     alignItems: "center",
@@ -2753,7 +2761,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 9,
   },
   recordsCommandActionText: {
-    fontSize: 11,
+    fontSize: 10.5,
     lineHeight: 14,
   },
 

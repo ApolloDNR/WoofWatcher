@@ -1176,14 +1176,17 @@ export default function HomeScreen() {
     router.push("/portrait");
   };
 
-  const fade = useRef(new Animated.Value(0)).current;
+  const isWebRoutePreview = (Platform.OS as string) === "web";
+  const routeHorizontalPadding = isWebRoutePreview ? 0 : 16;
+  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   useEffect(() => {
+    if (isWebRoutePreview) return;
     Animated.timing(fade, {
       toValue: 1,
       duration: 450,
-      useNativeDriver: Platform.OS !== "web",
+      useNativeDriver: !isWebRoutePreview,
     }).start();
-  }, [fade]);
+  }, [fade, isWebRoutePreview]);
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -1192,7 +1195,7 @@ export default function HomeScreen() {
         contentContainerStyle={{
           paddingTop: topPadding,
           paddingBottom: bottomPadding,
-          paddingHorizontal: 16,
+          paddingHorizontal: routeHorizontalPadding,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -2359,8 +2362,8 @@ const s = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    top: -6,
-    right: -5,
+    top: 0,
+    right: 4,
     minWidth: 18,
     height: 18,
     borderRadius: 9,

@@ -304,3 +304,45 @@ Preview:
   iOS/Android screenshots, exact pnpm 10.24 doctor proof, CI completion,
   provider-backed services, store approval, and Apollo launch sign-off remain
   required.
+
+## 2026-07-01 Compact Web Preview Shell Recovery
+
+After the route-level design recovery, headless and browser visual QA still
+showed a major preview defect: the 390px mobile capture was showing a left navy
+margin and cutting off the right side of the phone. This made otherwise valid
+route work look broken.
+
+What changed:
+
+- Reworked the web `AppFrame` to clamp the exported HTML/body/root to the
+  visible viewport.
+- Added `visualViewport`-aware sizing so compact captures use the actual phone
+  viewport instead of a hidden wider layout canvas.
+- Left-anchored compact preview widths while keeping larger desktop previews
+  centered.
+- Removed extra tab-route horizontal padding in web preview mode and ensured
+  Home, Log, Health, More, Records, Plans, Premium, and Care Twin QA do not
+  start invisible during native entry animations.
+- Pulled Home's notification badge back inside the alert button.
+
+Verification:
+
+- `mobileReadiness.test.ts` passed 110/110.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  through the bundled Node runtime.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Headless Chrome captured current 390x844 web proof for:
+  - Home: `tmp/route-home-final-badge.png`
+  - Log: `tmp/route-log-anchorfix.png`
+  - Health: `tmp/route-health-anchorfix.png`
+  - More: `tmp/route-more-anchorfix.png`
+
+Remaining:
+
+- The compact web frame is now usable for local route polish, but it is still
+  not native iOS/Android screenshot proof.
+- Continue native `Route Visual Consistency` QA, exact pnpm 10.24 beta doctor
+  proof, CI completion, provider-backed services, PDF output, store approval,
+  and Apollo sign-off before calling this launch-complete.

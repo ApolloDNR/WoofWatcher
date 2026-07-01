@@ -311,6 +311,35 @@ test("keeps local Clerk placeholders from blanking the web preview", () => {
   );
 });
 
+test("keeps the web preview frame inside compact mobile screenshots", () => {
+  const layout = readAppFile("_layout.tsx");
+  const backdropBlock = getStyleBlock(layout, "webBackdrop");
+  const frameBlock = getStyleBlock(layout, "webFrame");
+
+  assert.match(backdropBlock, /paddingHorizontal:\s*0/);
+  assert.match(backdropBlock, /paddingVertical:\s*18/);
+  assert.match(backdropBlock, /alignSelf:\s*"flex-start"/);
+  assert.match(backdropBlock, /overflow:\s*"hidden"/);
+  assert.doesNotMatch(
+    backdropBlock,
+    /padding:\s*18/,
+    "horizontal backdrop padding makes a 390px capture crop the phone frame",
+  );
+  assert.match(layout, /useWindowDimensions/);
+  assert.match(layout, /visualViewport/);
+  assert.match(layout, /node\.style\.width = "100vw"/);
+  assert.match(layout, /node\.style\.maxWidth = "100vw"/);
+  assert.match(layout, /webDocument\.body\.style\.margin = "0"/);
+  assert.match(layout, /const viewportWidth = webViewport\?\.width \?\? width/);
+  assert.match(layout, /const shouldAnchorCompactPreview = viewportWidth <= 520/);
+  assert.match(layout, /alignItems: shouldAnchorCompactPreview \? "flex-start" : "center"/);
+  assert.match(layout, /const frameWidth = Math\.min\(viewportWidth,\s*390\)/);
+  assert.match(layout, /const frameHeight = Math\.min\(viewportHeight,\s*932\)/);
+  assert.match(layout, /width: frameWidth/);
+  assert.match(layout, /maxHeight: frameHeight/);
+  assert.match(frameBlock, /minWidth:\s*0/);
+});
+
 test("keeps auth entry styled as the truthful CareTwin gateway", () => {
   const authUi = readFileSync(
     join(
@@ -1837,6 +1866,135 @@ test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
   assert.match(records, /<BoardCard[\s\S]*WOOFWATCHER DOG ID/);
 });
 
+test("keeps web route previews visible before native entry animation starts", () => {
+  const routeSources: Record<string, string> = {
+    home: readAppFile(join("(tabs)", "index.tsx")),
+    log: readAppFile(join("(tabs)", "log.tsx")),
+    plans: readAppFile(join("(tabs)", "calendar.tsx")),
+    records: readAppFile(join("(tabs)", "records.tsx")),
+    more: readAppFile(join("(tabs)", "more.tsx")),
+    premium: readAppFile("premium.tsx"),
+  };
+
+  for (const [route, source] of Object.entries(routeSources)) {
+    assert.match(
+      source,
+      /const isWebRoutePreview = \(Platform\.OS as string\) === "web"/,
+      `${route} should define a typed web-preview guard`,
+    );
+    assert.match(
+      source,
+      /new Animated\.Value\(isWebRoutePreview \? 1 : 0\)/,
+      `${route} should render visible immediately in web previews`,
+    );
+    assert.match(
+      source,
+      /if \(isWebRoutePreview\) return;/,
+      `${route} should skip native-style entrance animation on web`,
+    );
+  }
+
+  for (const [route, source] of Object.entries({
+    log: routeSources.log,
+    plans: routeSources.plans,
+    records: routeSources.records,
+    more: routeSources.more,
+    premium: routeSources.premium,
+  })) {
+    assert.match(
+      source,
+      /new Animated\.Value\(isWebRoutePreview \? 0 : (?:16|18)\)/,
+      `${route} should keep web slide offset at rest for deterministic captures`,
+    );
+  }
+});
+
+test("keeps tab route web padding from widening the phone frame", () => {
+  const routeSources: Record<string, string> = {
+    log: readAppFile(join("(tabs)", "log.tsx")),
+    plans: readAppFile(join("(tabs)", "calendar.tsx")),
+    records: readAppFile(join("(tabs)", "records.tsx")),
+    more: readAppFile(join("(tabs)", "more.tsx")),
+  };
+
+  for (const [route, source] of Object.entries(routeSources)) {
+    assert.match(
+      source,
+      /const H_PAD = isWebRoutePreview \? 0 : 20/,
+      `${route} should remove horizontal ScrollView padding on web preview`,
+    );
+    assert.match(
+      source,
+      /contentContainerStyle=\{\{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD \}\}/,
+      `${route} should route ScrollView padding through H_PAD`,
+    );
+  }
+
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+  assert.match(home, /const routeHorizontalPadding = isWebRoutePreview \? 0 : 16/);
+  assert.match(health, /const routeHorizontalPadding = isWebRoutePreview \? 0 : 18/);
+  assert.match(home, /paddingHorizontal: routeHorizontalPadding/);
+  assert.match(health, /paddingHorizontal: routeHorizontalPadding/);
+});
+
+test("keeps compact mobile proof and mission cards from clipping", () => {
+  const qaRoute = readAppFile("care-twin-qa.tsx");
+  const plans = readAppFile(join("(tabs)", "calendar.tsx"));
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+
+  assert.match(
+    getStyleBlock(qaRoute, "betaRunMissionHeader"),
+    /flexWrap:\s*"wrap"/,
+    "QA mission headers should wrap long target names and status badges",
+  );
+  assert.match(
+    qaRoute,
+    /style=\{\[s\.betaRunMissionTitle[\s\S]*numberOfLines=\{2\}/,
+    "focused QA target titles should have a second line before truncating",
+  );
+  assert.match(
+    getStyleBlock(qaRoute, "betaRunStepText"),
+    /minWidth:\s*0/,
+    "QA proof copy should shrink inside its card instead of overflowing",
+  );
+  assert.match(
+    getStyleBlock(qaRoute, "badge"),
+    /maxWidth:\s*"100%"/,
+    "QA badges should stay inside compact card headers",
+  );
+  assert.match(
+    getStyleBlock(plans, "planMissionAction"),
+    /width:\s*76[\s\S]*flexShrink:\s*0/,
+    "Plan action chips should keep a compact fixed width on phones",
+  );
+  assert.match(
+    getStyleBlock(readAppFile(join("(tabs)", "log.tsx")), "logCommandStageCard"),
+    /width:\s*"100%"[\s\S]*maxWidth:\s*"100%"/,
+    "Quick Log pixel stage should stay bounded to the phone viewport",
+  );
+  assert.match(
+    getStyleBlock(readAppFile(join("(tabs)", "records.tsx")), "recordsCredentialStageCard"),
+    /width:\s*"100%"[\s\S]*maxWidth:\s*"100%"/,
+    "Records pixel stage should stay bounded to the phone viewport",
+  );
+  assert.match(
+    getStyleBlock(readAppFile(join("(tabs)", "more.tsx")), "moreCommandStageCard"),
+    /width:\s*"100%"[\s\S]*maxWidth:\s*"100%"/,
+    "More pixel stage should stay bounded to the phone viewport",
+  );
+  assert.match(
+    getStyleBlock(health, "heroSignalRail"),
+    /flexWrap:\s*"wrap"/,
+    "Health status cards should wrap instead of clipping on compact phones",
+  );
+  assert.match(
+    getStyleBlock(health, "heroSignal"),
+    /flexBasis:\s*"31%"[\s\S]*minWidth:\s*92/,
+    "Health status cards should have explicit compact sizing rules",
+  );
+});
+
 test("keeps Quick Log composer card boundaries separate from search controls", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const composerBlock = log.slice(
@@ -1963,9 +2121,9 @@ test("keeps Quick Log aligned to the mobile design-system recovery recipe", () =
   assert.match(log, /quickLogActionConsoleHeader/);
   assert.match(log, /quickLogSupportRail/);
   assert.match(log, /quickLogDetailDock/);
-  assert.match(log, /logCommandStage:[\s\S]*minHeight: 338/);
-  assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "54%"/);
-  assert.match(log, /logCommandSprite:[\s\S]*right: 8/);
+  assert.match(log, /logCommandStage:[\s\S]*width: "100%"[\s\S]*minHeight: 330/);
+  assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "58%"/);
+  assert.match(log, /logCommandSprite:[\s\S]*right: 2/);
   assert.ok(
     gridIndex > 0 && doctrineIndex > gridIndex,
     "Quick Log should show the action grid before the teaching rail",

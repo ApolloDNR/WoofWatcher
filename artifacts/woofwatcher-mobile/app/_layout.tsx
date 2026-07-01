@@ -22,7 +22,7 @@ import { LinkPreviewContextProvider } from "expo-router/build/link/preview/LinkP
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { Platform, StyleSheet, useColorScheme, View } from "react-native";
+import { Platform, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -140,12 +140,103 @@ function RootLayoutNav() {
   );
 }
 
+type WebViewport = { width: number; height: number };
+
+function getWebViewport(): WebViewport | null {
+  const viewport = (globalThis as unknown as { visualViewport?: { width: number; height: number } }).visualViewport;
+  if (!viewport) return null;
+  return { width: viewport.width, height: viewport.height };
+}
+
+function useWebViewportClamp() {
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+
+    const webDocument = (globalThis as unknown as {
+      document?: {
+        body?: HTMLElement;
+        documentElement?: HTMLElement;
+        getElementById?: (id: string) => HTMLElement | null;
+      };
+    }).document;
+
+    const nodes = [
+      webDocument?.documentElement,
+      webDocument?.body,
+      webDocument?.getElementById?.("root"),
+    ].filter((node): node is HTMLElement => Boolean(node));
+
+    const previous = nodes.map((node) => ({
+      node,
+      margin: node.style.margin,
+      minWidth: node.style.minWidth,
+      width: node.style.width,
+      maxWidth: node.style.maxWidth,
+      overflowX: node.style.overflowX,
+    }));
+
+    for (const node of nodes) {
+      node.style.minWidth = "0";
+      node.style.width = "100vw";
+      node.style.maxWidth = "100vw";
+      node.style.overflowX = "hidden";
+    }
+
+    if (webDocument?.body) webDocument.body.style.margin = "0";
+
+    return () => {
+      for (const style of previous) {
+        style.node.style.margin = style.margin;
+        style.node.style.minWidth = style.minWidth;
+        style.node.style.width = style.width;
+        style.node.style.maxWidth = style.maxWidth;
+        style.node.style.overflowX = style.overflowX;
+      }
+    };
+  }, []);
+}
+
 function AppFrame() {
+  useWebViewportClamp();
+
   if (Platform.OS !== "web") return <RootLayoutNav />;
 
+  const { width, height } = useWindowDimensions();
+  const [webViewport, setWebViewport] = React.useState<WebViewport | null>(() => getWebViewport());
+
+  useEffect(() => {
+    const viewport = (globalThis as unknown as {
+      visualViewport?: {
+        addEventListener: (type: "resize", listener: () => void) => void;
+        removeEventListener: (type: "resize", listener: () => void) => void;
+      };
+    }).visualViewport;
+    if (!viewport) return;
+
+    const syncViewport = () => setWebViewport(getWebViewport());
+    syncViewport();
+    viewport.addEventListener("resize", syncViewport);
+    return () => viewport.removeEventListener("resize", syncViewport);
+  }, []);
+
+  const viewportWidth = webViewport?.width ?? width;
+  const viewportHeight = webViewport?.height ?? height;
+  const shouldAnchorCompactPreview = viewportWidth <= 520;
+  const frameWidth = Math.min(viewportWidth, 390);
+  const frameHeight = Math.min(viewportHeight, 932);
+
   return (
-    <View style={styles.webBackdrop}>
-      <View style={styles.webFrame}>
+    <View
+      style={[
+        styles.webBackdrop,
+        {
+          width: viewportWidth,
+          minHeight: viewportHeight,
+          alignItems: shouldAnchorCompactPreview ? "flex-start" : "center",
+        },
+      ]}
+    >
+      <View style={[styles.webFrame, { width: frameWidth, maxHeight: frameHeight }]}>
         <RootLayoutNav />
       </View>
     </View>
@@ -215,13 +306,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#081A2A",
-    padding: 18,
+    alignSelf: "flex-start",
+    minWidth: 0,
+    overflow: "hidden",
+    paddingHorizontal: 0,
+    paddingVertical: 18,
   },
   webFrame: {
     flex: 1,
-    width: "100%",
-    maxWidth: 430,
-    maxHeight: 932,
+    minWidth: 0,
     overflow: "hidden",
     backgroundColor: "#FFF9EF",
     borderColor: "rgba(255, 249, 239, 0.18)",

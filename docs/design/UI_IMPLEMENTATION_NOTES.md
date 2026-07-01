@@ -2759,3 +2759,40 @@ Verification:
 - In-app browser DOM verification confirmed the QA route lists Home, Log,
   Plans, Health, Records, and More, and More exposes `Design QA` under Command
   Directory.
+
+## 2026-07-01 Compact Preview Shell Recovery
+
+Visual QA against `http://127.0.0.1:4194/` showed the app was not just crowded;
+the exported web preview was physically shifted inside a hidden wide canvas.
+At 390px captures, the phone frame started about 47px from the left and cut off
+the right side of Home, Log, Health, and More.
+
+What changed:
+
+- The web shell now clamps `html`, `body`, and `#root` to `100vw`, clears body
+  margin, and hides horizontal overflow.
+- `AppFrame` prefers `visualViewport` sizing on web, so the preview frame uses
+  the visible phone viewport instead of a wider React Native Web layout value.
+- Compact preview widths at or below 520px anchor the phone frame to the left;
+  wider desktop previews stay centered.
+- The phone frame remains capped at 390px wide and 932px tall for mobile-first
+  review.
+- Home's notification badge was pulled inside the alert button so it no longer
+  looks clipped at the screen edge.
+
+Design rule locked from this pass:
+
+- A beautiful route does not matter if the preview shell crops it. Any visual
+  QA capture under 430px must show the full phone frame before route-level
+  polish is judged.
+
+Verification:
+
+- `mobileReadiness.test.ts` passed 110/110.
+- Mobile TypeScript passed.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Headless Chrome screenshot proof at 390x844 confirmed the compact frame no
+  longer cuts off the right side for Home, Log, Health, and More:
+  `tmp/route-home-final-badge.png`, `tmp/route-log-anchorfix.png`,
+  `tmp/route-health-anchorfix.png`, and `tmp/route-more-anchorfix.png`.

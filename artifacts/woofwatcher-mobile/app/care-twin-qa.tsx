@@ -635,7 +635,7 @@ export default function CareTwinQaScreen() {
                   <Text style={[s.betaRunMissionKicker, { color: focusedQaTargetTone, fontFamily: "Inter_800ExtraBold" }]}>
                     Focused QA Target
                   </Text>
-                  <Text style={[s.betaRunMissionTitle, { color: colors.foreground, fontFamily: DISPLAY }]} numberOfLines={1}>
+                  <Text style={[s.betaRunMissionTitle, { color: colors.foreground, fontFamily: DISPLAY }]} numberOfLines={2}>
                     {focusedQaTarget?.target.title ?? "Target not found"}
                   </Text>
                 </View>
@@ -652,7 +652,7 @@ export default function CareTwinQaScreen() {
                     <Text style={[s.betaRunMissionMetaLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       Route
                     </Text>
-                    <Text style={[s.betaRunMissionMetaValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]} numberOfLines={1}>
+                    <Text style={[s.betaRunMissionMetaValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]} numberOfLines={2}>
                       {focusedQaTarget.target.route}
                     </Text>
                   </View>
@@ -2195,6 +2195,7 @@ const s = StyleSheet.create({
   },
   betaRunStepText: {
     flex: 1,
+    minWidth: 0,
     fontSize: 12,
     lineHeight: 17,
   },
@@ -2206,12 +2207,15 @@ const s = StyleSheet.create({
   },
   betaRunMissionHeader: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 10,
   },
   betaRunMissionTitleWrap: {
     flex: 1,
+    flexGrow: 1,
+    flexBasis: 180,
     minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
@@ -2238,7 +2242,8 @@ const s = StyleSheet.create({
   },
   betaRunMissionMeta: {
     flexGrow: 1,
-    minWidth: "30%",
+    flexBasis: "31%",
+    minWidth: 92,
     borderRadius: 9,
     borderWidth: 1,
     paddingHorizontal: 10,
@@ -2759,6 +2764,7 @@ const s = StyleSheet.create({
     fontSize: 12,
   },
   badge: {
+    maxWidth: "100%",
     minHeight: 28,
     borderRadius: 8,
     borderWidth: 1,
@@ -2769,6 +2775,7 @@ const s = StyleSheet.create({
   badgeText: {
     fontSize: 11,
     letterSpacing: 0,
+    textAlign: "center",
   },
   scenarioCard: {
     gap: 13,

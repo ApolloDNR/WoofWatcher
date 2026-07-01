@@ -792,14 +792,16 @@ export default function MoreScreen() {
   };
 
   // Mount animation
-  const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(16)).current;
+  const isWebRoutePreview = (Platform.OS as string) === "web";
+  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
+  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
   useEffect(() => {
+    if (isWebRoutePreview) return;
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: Platform.OS !== "web" }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
+      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
     ]).start();
-  }, [fade, slide]);
+  }, [fade, isWebRoutePreview, slide]);
 
   const generateCarePass = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -1304,7 +1306,7 @@ export default function MoreScreen() {
     },
   ];
 
-  const H_PAD = 20;
+  const H_PAD = isWebRoutePreview ? 0 : 20;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -3565,12 +3567,17 @@ const s = StyleSheet.create({
   subtitle: { fontSize: 14, marginTop: 3 },
 
   moreCommandStageCard: {
+    alignSelf: "stretch",
+    width: "100%",
+    maxWidth: "100%",
     marginTop: 6,
     overflow: "hidden",
   },
   moreCommandStage: {
-    minHeight: 360,
-    padding: 12,
+    width: "100%",
+    minHeight: 342,
+    overflow: "hidden",
+    padding: 10,
     justifyContent: "space-between",
   },
   moreCommandStageImage: {
@@ -3588,11 +3595,11 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 10,
+    gap: 8,
   },
   moreCommandBubble: {
-    maxWidth: "68%",
-    minHeight: 78,
+    maxWidth: "62%",
+    minHeight: 72,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "#081424",
@@ -3623,6 +3630,8 @@ const s = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   moreCommandChip: {
+    maxWidth: 112,
+    flexShrink: 1,
     minHeight: 38,
     borderRadius: 8,
     borderWidth: 1,
@@ -3638,17 +3647,17 @@ const s = StyleSheet.create({
   },
   moreCommandSprite: {
     position: "absolute",
-    right: 28,
+    right: 8,
     bottom: 92,
-    width: 150,
-    height: 134,
+    width: 124,
+    height: 124,
     alignItems: "center",
     justifyContent: "flex-end",
   },
   moreCommandSpriteShadow: {
     position: "absolute",
     bottom: 8,
-    width: 116,
+    width: 98,
     height: 22,
     borderRadius: 999,
     backgroundColor: "rgba(8,20,36,0.34)",
@@ -3657,10 +3666,10 @@ const s = StyleSheet.create({
     alignSelf: "stretch",
     borderRadius: 8,
     borderWidth: 1,
-    padding: 10,
+    padding: 9,
     flexDirection: "row",
-    gap: 7,
-    marginTop: 138,
+    gap: 5,
+    marginTop: 126,
   },
   moreCommandHudCell: {
     flex: 1,
@@ -3690,7 +3699,7 @@ const s = StyleSheet.create({
   moreCommandFooter: {
     flexDirection: "row",
     alignItems: "stretch",
-    gap: 9,
+    gap: 7,
     marginTop: 10,
   },
   moreCommandMission: {
@@ -3712,17 +3721,18 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   moreCommandAction: {
-    minWidth: 118,
+    width: 106,
+    flexShrink: 0,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 9,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 7,
   },
   moreCommandActionText: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     lineHeight: 16,
   },
 

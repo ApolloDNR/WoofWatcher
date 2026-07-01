@@ -48,6 +48,7 @@ function HealthHeaderAction({
   onPress: () => void;
 }) {
   const colors = useColors();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -160,6 +161,8 @@ export default function HealthScreen() {
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
+  const isWebRoutePreview = (Platform.OS as string) === "web";
+  const routeHorizontalPadding = isWebRoutePreview ? 0 : 18;
 
   const healthWatch = useMemo(
     () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
@@ -414,7 +417,7 @@ export default function HealthScreen() {
             surface: "tabbed",
           }),
           paddingBottom: bottomPadding,
-          paddingHorizontal: 18,
+          paddingHorizontal: routeHorizontalPadding,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -1298,11 +1301,13 @@ const s = StyleSheet.create({
   scoreLabel: { fontSize: 9, letterSpacing: 0.5, marginTop: 1 },
   heroSignalRail: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 7,
   },
   heroSignal: {
-    flex: 1,
-    minWidth: 0,
+    flexGrow: 1,
+    flexBasis: "31%",
+    minWidth: 92,
     minHeight: 64,
     borderRadius: 8,
     borderWidth: 1,

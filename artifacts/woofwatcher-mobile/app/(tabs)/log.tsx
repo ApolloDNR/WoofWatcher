@@ -1152,14 +1152,16 @@ export default function LogScreen() {
   }, [detailEntry, detailType]);
 
   // Mount animation
-  const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(16)).current;
+  const isWebRoutePreview = (Platform.OS as string) === "web";
+  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
+  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
   useEffect(() => {
+    if (isWebRoutePreview) return;
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: Platform.OS !== "web" }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
+      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
     ]).start();
-  }, [fade, slide]);
+  }, [fade, isWebRoutePreview, slide]);
 
   const buildEntry = useCallback((): Omit<Entry, "id"> | null => {
     if (!config) return null;
@@ -2139,7 +2141,7 @@ export default function LogScreen() {
     }
   };
 
-  const H_PAD = 20;
+  const H_PAD = isWebRoutePreview ? 0 : 20;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -4691,13 +4693,18 @@ const s = StyleSheet.create({
   subtitle: { fontSize: 14, marginTop: 2 },
 
   logCommandStageCard: {
+    alignSelf: "stretch",
+    width: "100%",
+    maxWidth: "100%",
     marginTop: 6,
     marginBottom: 12,
     overflow: "hidden",
   },
   logCommandStage: {
-    minHeight: 338,
-    padding: 12,
+    width: "100%",
+    minHeight: 330,
+    overflow: "hidden",
+    padding: 10,
     justifyContent: "space-between",
   },
   logCommandStageImage: {
@@ -4715,11 +4722,11 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 10,
+    gap: 8,
   },
   logCommandBubble: {
-    maxWidth: "54%",
-    minHeight: 78,
+    maxWidth: "58%",
+    minHeight: 72,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "#081424",
@@ -4750,6 +4757,8 @@ const s = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   logCommandChip: {
+    maxWidth: 112,
+    flexShrink: 1,
     minHeight: 38,
     borderRadius: 8,
     borderWidth: 1,
@@ -4765,17 +4774,17 @@ const s = StyleSheet.create({
   },
   logCommandSprite: {
     position: "absolute",
-    right: 8,
+    right: 2,
     bottom: 104,
-    width: 126,
-    height: 122,
+    width: 112,
+    height: 112,
     alignItems: "center",
     justifyContent: "flex-end",
   },
   logCommandSpriteShadow: {
     position: "absolute",
     bottom: 8,
-    width: 116,
+    width: 98,
     height: 22,
     borderRadius: 999,
     backgroundColor: "rgba(8,20,36,0.34)",
@@ -4784,10 +4793,10 @@ const s = StyleSheet.create({
     alignSelf: "stretch",
     borderRadius: 8,
     borderWidth: 1,
-    padding: 10,
+    padding: 9,
     flexDirection: "row",
-    gap: 7,
-    marginTop: 112,
+    gap: 5,
+    marginTop: 104,
   },
   logCommandHudCell: {
     flex: 1,
@@ -4817,7 +4826,7 @@ const s = StyleSheet.create({
   logCommandFooter: {
     flexDirection: "row",
     alignItems: "stretch",
-    gap: 9,
+    gap: 7,
     marginTop: 10,
   },
   logCommandMission: {
@@ -4839,17 +4848,18 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   logCommandAction: {
-    minWidth: 118,
+    width: 106,
+    flexShrink: 0,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 9,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 7,
   },
   logCommandActionText: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     lineHeight: 16,
   },
 

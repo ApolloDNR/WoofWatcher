@@ -618,22 +618,24 @@ export default function CalendarScreen() {
     calendarEvents.some((e) => e.title === sug.title && e.date === sug.date);
 
   // Mount animation
-  const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(16)).current;
+  const isWebRoutePreview = (Platform.OS as string) === "web";
+  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
+  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
   useEffect(() => {
     return () => {
       if (routineFeedbackTimer.current) clearTimeout(routineFeedbackTimer.current);
     };
   }, []);
   useEffect(() => {
+    if (isWebRoutePreview) return;
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: Platform.OS !== "web" }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
+      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
     ]).start();
-  }, [fade, slide]);
+  }, [fade, isWebRoutePreview, slide]);
 
   const dateLabel = new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
-  const H_PAD = 20;
+  const H_PAD = isWebRoutePreview ? 0 : 20;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -1712,6 +1714,7 @@ const s = StyleSheet.create({
   },
   planMissionCopy: {
     flex: 1,
+    flexShrink: 1,
     minWidth: 0,
   },
   planMissionEyebrow: {
@@ -1729,17 +1732,19 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   planMissionAction: {
-    minWidth: 66,
+    width: 76,
+    flexShrink: 0,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
   },
   planMissionActionText: {
-    fontSize: 10,
+    fontSize: 9,
+    lineHeight: 11,
     letterSpacing: 0.4,
     textTransform: "uppercase",
   },
