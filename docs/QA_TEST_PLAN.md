@@ -12,6 +12,7 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-07-01:
 
+- PASS: GitHub Actions `WoofWatcher Verify` run `28495997661` on 2026-07-01 for commit `46df8b9` completed the real `Install, Test, Typecheck, Build` job successfully after the Mobile More query-key and Expo typecheck-scope repair.
 - PASS: 289 focused tests with the command above on 2026-07-01, now including shared `describeReportArtifactRemoval` copy and Mobile Records wiring for removing only a selected local Report History source without claiming cloud deletion, share revocation, server retention, native PDF export, or provider-backed lifecycle controls are enabled.
 - PASS: PixelLab asset verifier on 2026-07-01 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the local Report History source removal slice.
 - PASS: `git diff --check` on 2026-07-01 after the local Report History source removal slice; only existing CRLF normalization warnings were printed.
