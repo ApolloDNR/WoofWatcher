@@ -109,7 +109,7 @@ export function BoardRouteHeader({
             {title}
           </Text>
           {subtitle ? (
-            <Text style={[styles.routeSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            <Text style={[styles.routeSubtitle, centered && styles.routeSubtitleCentered, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {subtitle}
             </Text>
           ) : null}
@@ -585,6 +585,9 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     lineHeight: 18,
     marginTop: 2,
+  },
+  routeSubtitleCentered: {
+    textAlign: "center",
   },
   pill: {
     alignSelf: "flex-start",

@@ -1319,9 +1319,10 @@ export default function MoreScreen() {
           <BoardRouteHeader
             kicker="WOOFWATCHER"
             title="More"
-            subtitle={`Profile, household, roster, launch gates, and every care tool for ${petName}`}
+            subtitle={`${petName}'s care tools, records, household, and launch gates.`}
             centered
             plain
+            style={s.moreRouteHeader}
           />
 
           <BoardCard padded={false} style={s.moreCommandStageCard}>
@@ -1360,8 +1361,8 @@ export default function MoreScreen() {
                 <SpriteSheetPlayer
                   asset={MORE_COMMAND_STAGE_SPRITE}
                   track={MORE_COMMAND_STAGE_TRACK}
-                  width={132}
-                  height={132}
+                  width={112}
+                  height={112}
                   testID="more-launch-command-pixel-sprite"
                 />
               </View>
@@ -3565,6 +3566,9 @@ const s = StyleSheet.create({
   header: { marginBottom: 18 },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 3 },
+  moreRouteHeader: {
+    paddingHorizontal: 20,
+  },
 
   moreCommandStageCard: {
     alignSelf: "stretch",
@@ -3575,9 +3579,10 @@ const s = StyleSheet.create({
   },
   moreCommandStage: {
     width: "100%",
-    minHeight: 342,
+    minHeight: 294,
     overflow: "hidden",
     padding: 10,
+    position: "relative",
     justifyContent: "space-between",
   },
   moreCommandStageImage: {
@@ -3647,10 +3652,10 @@ const s = StyleSheet.create({
   },
   moreCommandSprite: {
     position: "absolute",
-    right: 8,
-    bottom: 92,
-    width: 124,
-    height: 124,
+    right: 12,
+    bottom: 86,
+    width: 112,
+    height: 112,
     alignItems: "center",
     justifyContent: "flex-end",
   },
@@ -3663,13 +3668,15 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(8,20,36,0.34)",
   },
   moreCommandHud: {
-    alignSelf: "stretch",
+    position: "absolute",
+    left: 10,
+    right: 10,
+    bottom: 70,
     borderRadius: 8,
     borderWidth: 1,
     padding: 9,
     flexDirection: "row",
     gap: 5,
-    marginTop: 126,
   },
   moreCommandHudCell: {
     flex: 1,
@@ -3697,10 +3704,13 @@ const s = StyleSheet.create({
     borderRadius: 2,
   },
   moreCommandFooter: {
+    position: "absolute",
+    left: 10,
+    right: 10,
+    bottom: 10,
     flexDirection: "row",
     alignItems: "stretch",
     gap: 7,
-    marginTop: 10,
   },
   moreCommandMission: {
     flex: 1,
@@ -3783,17 +3793,17 @@ const s = StyleSheet.create({
 
   sectionLink: { fontSize: 14 },
   moreBoardCard: { marginTop: 14 },
-  moreDirectoryCard: { marginTop: 14 },
+  moreDirectoryCard: { marginTop: 12 },
   moreDirectoryList: {
     borderRadius: 8,
     overflow: "hidden",
   },
   moreDirectoryRow: {
-    minHeight: 86,
+    minHeight: 76,
     flexDirection: "row",
     alignItems: "center",
     gap: 11,
-    paddingVertical: 12,
+    paddingVertical: 9,
   },
   moreDirectoryIcon: {
     width: 42,

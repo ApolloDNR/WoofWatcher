@@ -88,10 +88,19 @@ The 2026-06-30 Quick Log pass is the second proof of this plan:
 - The full composer is treated as a secondary detail dock, preserving advanced meal, potty, medication, vomit, notes, trust, and edit behavior without making it the first visual focus.
 - A mobile readiness test now protects this screen recipe from regressing back into a crowded stack.
 
+## More Command Hub Recovery Slice
+
+The 2026-07-01 More compact command pass tightens the app's navigation hub:
+
+- The route header now has centered, padded subtitle behavior so preview/native frames no longer read as edge-aligned accidents.
+- The Launch Command stage is shorter and keeps its HUD/footer pinned inside the scene, which prevents the illustration from pushing the real directory below the useful first viewport.
+- The live pixel sprite remains present, but the stage is treated as navigation context instead of the whole screen.
+- Command Directory rows are denser while preserving shared touch-target rules, making Care Today, Household, Records & Passes, Design QA, and Launch QA easier to scan.
+- The route is protected by mobile readiness checks for compact stage height, pinned HUD/footer, centered subtitle behavior, and dense directory rows.
+
 ## Next Design Passes
 
-1. Plans: make the daily schedule feel like missions/responsibilities instead of a task dump.
-2. More: split into grouped menu sections with stronger hierarchy and less wall-of-options feel.
-3. Records: turn dense record sections into scannable credential/vault rows.
-4. Home: final pass against the dark RPG board after Health/Log/Plans share the same system.
-5. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.
+1. Log: reduce stage/HUD competition and keep the fast action grid above the floating nav.
+2. Records: reduce credential-stage overlap so the Dog ID card and live sprite do not fight for the same focal point.
+3. Home: keep refining dark-RPG alignment after the core route tops share the same system.
+4. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.

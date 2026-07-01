@@ -1890,6 +1890,16 @@ test("extends the mobile pixel board system across core v1.5 routes", () => {
   ]) {
     assert.match(primitives, new RegExp(`export function ${exportedName}`));
   }
+  assert.match(
+    primitives,
+    /centered && styles\.routeSubtitleCentered/,
+    "centered board route headers should center subtitles with their titles",
+  );
+  assert.match(
+    getStyleBlock(primitives, "routeSubtitleCentered"),
+    /textAlign:\s*"center"/,
+    "centered board route subtitles should not drift left on compact route tops",
+  );
 
   for (const [route, source] of Object.entries(coreRoutes)) {
     assert.match(
@@ -4202,6 +4212,33 @@ test("keeps More organized around a grouped command directory", () => {
   assert.match(more, /style=\{s\.moreDirectoryCard\}/);
   assert.match(more, /s\.moreDirectoryRow/);
   assert.match(more, /accessibilityLabel=\{`\$\{item\.eyebrow\}: \$\{item\.label\}\. \$\{item\.detail\}`\}/);
+  assert.match(more, /style=\{s\.moreRouteHeader\}/);
+  assert.match(more, /\$\{petName\}'s care tools, records, household, and launch gates\./);
+  assert.match(
+    getStyleBlock(more, "moreRouteHeader"),
+    /paddingHorizontal:\s*20/,
+    "More route header should keep readable side padding in web preview and native frames",
+  );
+  assert.match(
+    getStyleBlock(more, "moreCommandStage"),
+    /minHeight:\s*294/,
+    "More command stage should stay compact enough to reveal navigation below it",
+  );
+  assert.match(
+    getStyleBlock(more, "moreCommandHud"),
+    /position:\s*"absolute"[\s\S]*bottom:\s*70/,
+    "More stage HUD should be pinned inside the scene instead of adding vertical bulk",
+  );
+  assert.match(
+    getStyleBlock(more, "moreCommandFooter"),
+    /position:\s*"absolute"[\s\S]*bottom:\s*10/,
+    "More stage footer should stay inside the compact launch scene",
+  );
+  assert.match(
+    getStyleBlock(more, "moreDirectoryRow"),
+    /minHeight:\s*76[\s\S]*paddingVertical:\s*9/,
+    "More command directory rows should stay dense while preserving tap targets",
+  );
 });
 
 test("keeps More household, tools, and diet sections on shared board card anatomy", () => {
