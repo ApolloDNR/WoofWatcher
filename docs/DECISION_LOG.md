@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-07-01: Report History Cleanup Guidance Is Shared
+
+Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared cleanup line from `summarizeReportArtifacts`. The line may tell owners to remove obsolete local sources only after review and must state that local cleanup does not revoke shares or change provider retention.
+
+Reason: Report History now supports local source removal, but the cleanup guidance needs to stay aligned with saved-report readiness, WoofGuide review drafts, and provider-gated lifecycle copy. Keeping the line in shared care-domain logic prevents Records and WoofGuide from drifting into different claims about cloud deletion, share revocation, retention, native export, or server-backed report storage.
+
+Owner: Codex.
+
+Revisit trigger: Server-backed report artifacts, native PDF/image export, cloud sharing, provider-backed retention/deletion policy, audit lifecycle controls, or share revocation become active release work.
+
 ### 2026-07-01: Report History Can Remove Local Sources Only
 
 Decision: Records Report History may expose a confirmed remove action for saved Care Pass, Progress Report, and Dog ID report-history artifacts. The confirmation copy should come from shared `describeReportArtifactRemoval`, and the action may only filter the selected local artifact from the care document.

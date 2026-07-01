@@ -180,6 +180,7 @@ export interface ReportArtifactSummary {
   summary: string;
   latestLine: string;
   action: string;
+  cleanupLine: string;
   boundaryLine: string;
 }
 
@@ -1427,6 +1428,7 @@ export function summarizeReportArtifacts(
     summary: "No local report source has been saved yet.",
     latestLine: "",
     action: "Share a Care Pass, Progress Report, or Dog ID from Records to save a reusable local source here.",
+    cleanupLine: "Cleanup appears after local report sources are saved; provider-backed lifecycle controls remain gated.",
     boundaryLine: "Report History is local until native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are approved.",
   };
   if (!latest) return fallback;
@@ -1454,6 +1456,7 @@ export function summarizeReportArtifacts(
     summary: `${total} local report ${total === 1 ? "source" : "sources"} saved for handoff reuse${mix.length ? `: ${mix.join(", ")}.` : "."}`,
     latestLine: `Latest saved source: ${kindLabel} saved ${latestDate}${latest.printFileName ? ` as ${latest.printFileName}` : ""}.`,
     action: "Resend or share printable source from Report History before handing care context to a sitter, trainer, caregiver, or vet.",
+    cleanupLine: "Remove obsolete local sources only after review; this updates local Report History and does not revoke shares or change provider retention.",
     boundaryLine: "Saved report artifacts are local reusable sources; native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled.",
   };
 }

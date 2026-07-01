@@ -390,6 +390,7 @@ function reportHistoryDraft(state: WoofGuideActionState): WoofGuideActionDraft |
       latestSource.metadataLine,
       latestSource.fileLine,
       summary.action,
+      summary.cleanupLine,
       latestSource.lifecycleLine,
       summary.boundaryLine,
     ].filter(Boolean).join("\n"),

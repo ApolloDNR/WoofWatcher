@@ -12,6 +12,10 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-07-01:
 
+- PASS: 289 focused tests with the command above on 2026-07-01, now including shared Report History cleanup guidance from `summarizeReportArtifacts` and Mobile Records/WoofGuide wiring so owners see that removing obsolete local sources does not revoke shares or change provider retention.
+- PASS: PixelLab asset verifier on 2026-07-01 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the Report History cleanup guidance slice.
+- PASS: `git diff --check` on 2026-07-01 after the Report History cleanup guidance slice; only existing CRLF normalization warnings were printed.
+- LIMIT: Direct workspace TypeScript build could not start on 2026-07-01 because `node_modules\typescript\bin\tsc` is missing in this detached checkout (`MODULE_NOT_FOUND`). Focused tests and PixelLab verification passed locally; full CI remains the authoritative typecheck/build gate after push.
 - PASS: GitHub Actions `WoofWatcher Verify` run `28495997661` on 2026-07-01 for commit `46df8b9` completed the real `Install, Test, Typecheck, Build` job successfully after the Mobile More query-key and Expo typecheck-scope repair.
 - PASS: 289 focused tests with the command above on 2026-07-01, now including shared `describeReportArtifactRemoval` copy and Mobile Records wiring for removing only a selected local Report History source without claiming cloud deletion, share revocation, server retention, native PDF export, or provider-backed lifecycle controls are enabled.
 - PASS: PixelLab asset verifier on 2026-07-01 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the local Report History source removal slice.

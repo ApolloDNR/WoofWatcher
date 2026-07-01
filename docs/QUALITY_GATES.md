@@ -112,6 +112,8 @@ Current evidence, 2026-06-30: WoofGuide now summarizes saved local report-histor
 
 Current evidence, 2026-06-30: Records Report History rows and WoofGuide saved report-history drafts now reuse `describeReportArtifactSource` for the latest source label, section count, print-ready/restored status, printable file name, and local-only lifecycle copy so both surfaces explain reusable handoff sources without claiming native PDF export, server-backed report storage, cloud sharing, retention, or deletion policy is enabled.
 
+Current evidence, 2026-07-01: Records and WoofGuide saved-report review now reuse `summarizeReportArtifacts.cleanupLine` so cleanup guidance tells owners to remove obsolete local sources only after review and clarifies that local cleanup does not revoke shares or change provider retention.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.

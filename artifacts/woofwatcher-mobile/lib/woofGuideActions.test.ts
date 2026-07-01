@@ -383,6 +383,8 @@ test("surfaces saved report history without claiming native or server-backed exp
   assert.match(reportAction?.draft?.body ?? "", /Care Pass/);
   assert.match(reportAction?.draft?.body ?? "", /Progress Report/);
   assert.match(reportAction?.draft?.body ?? "", /Resend or share printable source/);
+  assert.match(reportAction?.draft?.body ?? "", /Remove obsolete local sources only after review/);
+  assert.match(reportAction?.draft?.body ?? "", /does not revoke shares/);
   assert.match(reportAction?.draft?.safety ?? "", /server-backed report storage/);
   assert.doesNotMatch(reportAction?.draft?.body ?? "", /cloud storage ready|PDF export ready/i);
 });

@@ -2236,6 +2236,9 @@ export default function RecordsScreen() {
               <Text style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
                 {reportHistorySummary.action}
               </Text>
+              <Text style={[s.rowMeta, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {reportHistorySummary.cleanupLine}
+              </Text>
               <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 {reportHistorySummary.boundaryLine}
               </Text>
