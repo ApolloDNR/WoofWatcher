@@ -2873,3 +2873,37 @@ Verification:
 - Static preview route smoke passed for `/`, `/log`, `/calendar`, `/health`,
   `/records`, and `/more` at `http://127.0.0.1:4194/`.
 - Chrome screenshot proof: `tmp/route-home-compact-hero-final.png`.
+
+## 2026-07-01 Route Visual Polish Checkpoint
+
+This pass tightened the mobile design-system rhythm after native-sized proof
+showed that route content was improving but still felt too tall and collage-like
+in places.
+
+What changed:
+
+- Shared board primitives now use a more compact route-header and card rhythm:
+  smaller title/subtitle spacing, tighter padded cards, and denser section
+  headers.
+- Plans keeps the pixel command stage, but the dog sprite, due badge, speech
+  bubble, and HUD now occupy separate readable zones instead of colliding.
+- Records now uses the wide PixelLab 400x300 room for the credential vault, so
+  the first stage reads as a complete room instead of a stretched blank wall.
+- Records stage chrome was tightened around one readable speech bubble, one
+  status badge, one dog sprite, and one command dock.
+
+Design rule locked from this pass:
+
+- Pixel scenes should feel alive, but the useful route content must remain
+  primary. If a room, dog, speech bubble, and HUD cannot all breathe, reduce the
+  chrome before adding another layer.
+
+Verification:
+
+- `mobileReadiness.test.ts` plus `mobileLayout.test.ts` passed 120/120.
+- Mobile TypeScript passed.
+- Expo web export refreshed `.expo-smoke` with 219 assets / 223 files.
+- `git diff --check` passed with expected Windows CRLF warnings only.
+- Headless Chrome proof at 390x844:
+  `output/playwright/woofwatcher-visual-audit-2026-07-01-final/01-plans.png`,
+  `02-records.png`, `03-health.png`, and `04-avatar-studio.png`.

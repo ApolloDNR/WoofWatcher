@@ -516,12 +516,12 @@ const styles = StyleSheet.create({
   routeHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 12,
   },
   routeHeaderCentered: {
     minHeight: 46,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   qaReturnBanner: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -567,23 +567,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   routeKicker: {
-    fontSize: 10,
+    fontSize: 9.5,
     letterSpacing: 0,
     textTransform: "uppercase",
-    marginBottom: 2,
+    marginBottom: 1,
   },
   routeTitle: {
-    fontSize: 26,
-    lineHeight: 30,
+    fontSize: 24,
+    lineHeight: 28,
     letterSpacing: 0,
   },
   routeTitleCentered: {
-    fontSize: 22,
-    lineHeight: 26,
+    fontSize: 21,
+    lineHeight: 25,
   },
   routeSubtitle: {
-    fontSize: 12.5,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
     marginTop: 2,
   },
   routeSubtitleCentered: {
@@ -645,15 +645,15 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   cardPadded: {
-    padding: 14,
+    padding: 12,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-    marginBottom: 12,
-    paddingBottom: 8,
+    marginBottom: 10,
+    paddingBottom: 7,
     borderBottomWidth: 1,
   },
   sectionTitle: {

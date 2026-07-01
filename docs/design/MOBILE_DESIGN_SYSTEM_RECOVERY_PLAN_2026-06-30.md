@@ -240,9 +240,30 @@ Design rule:
 - Keep medical language non-diagnostic and route actions to real logging,
   records, or review-packet workflows.
 
+## Route Visual Polish Checkpoint
+
+The 2026-07-01 route visual polish checkpoint tightened the shared mobile board
+system after fresh 390x844 proof across Plans, Records, Health, and Avatar
+Studio.
+
+- Shared board primitives use a denser header/card rhythm closer to the Option B
+  boards.
+- Plans keeps the command deck but separates speech, dog, badge, and HUD zones.
+- Records uses the wide PixelLab 400x300 room so the credential stage reads as a
+  complete pixel room.
+- Records stage chrome follows one speech bubble, one status badge, one dog, and
+  one dock.
+- Headless Chrome proof lives at
+  `output/playwright/woofwatcher-visual-audit-2026-07-01-final/`.
+
+Design rule:
+
+- The pixel scene should sell the care-twin fantasy, but the route should still
+  scan like a professional app screen. Tighten chrome before adding more HUD.
+
 ## Next Design Passes
 
 1. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.
 2. Route Visual Consistency: mark the first route with overlap, clipped copy, hidden primary action, duplicate-avatar behavior, bottom-nav collision, or mockup drift as Needs tune.
-3. Home and Avatar Studio: continue dark-RPG/game-feel alignment once native screenshots identify the highest-impact remaining drift.
+3. Home and Log: continue first-viewport density polish from the current 390x844 proof.
 4. Polish pass: use the one-room/one-status-panel rule on any remaining route where a HUD, credential card, or duplicated metric rail is fighting the pixel scene.

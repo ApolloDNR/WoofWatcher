@@ -75,13 +75,13 @@ import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
-import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
-const RECORDS_CREDENTIAL_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.day.source;
+const RECORDS_CREDENTIAL_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-pixellab-400x300.png");
 const RECORDS_CREDENTIAL_STAGE_SPRITE = getCareTwinSpriteAsset("tail-wag");
 const RECORDS_CREDENTIAL_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["tail-wag"];
 
@@ -740,7 +740,7 @@ export default function RecordsScreen() {
           <BoardCard padded={false} style={s.recordsCredentialStageCard}>
             <ImageBackground
               source={RECORDS_CREDENTIAL_STAGE_ROOM}
-              resizeMode="cover"
+              resizeMode="stretch"
               imageStyle={[s.recordsCredentialStageImage, pixelImageStyle]}
               style={s.recordsCredentialStage}
               testID="records-credential-pixel-stage"
@@ -770,8 +770,8 @@ export default function RecordsScreen() {
                 <SpriteSheetPlayer
                   asset={RECORDS_CREDENTIAL_STAGE_SPRITE}
                   track={RECORDS_CREDENTIAL_STAGE_TRACK}
-                  width={132}
-                  height={132}
+                  width={108}
+                  height={108}
                   testID="records-credential-pixel-sprite"
                 />
               </View>
@@ -2550,7 +2550,7 @@ const s = StyleSheet.create({
   },
   recordsCredentialStage: {
     width: "100%",
-    minHeight: 232,
+    minHeight: 190,
     overflow: "hidden",
     justifyContent: "flex-start",
   },
@@ -2572,15 +2572,15 @@ const s = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 8,
-    padding: 12,
+    padding: 10,
   },
   recordsCredentialBubble: {
-    maxWidth: "62%",
+    maxWidth: "61%",
     borderWidth: 2,
     borderColor: "#18314A",
     backgroundColor: "rgba(255,249,239,0.96)",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     shadowColor: "#071523",
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.16,
@@ -2588,14 +2588,14 @@ const s = StyleSheet.create({
     elevation: 4,
   },
   recordsCredentialKicker: {
-    fontSize: 10,
+    fontSize: 9,
     textTransform: "uppercase",
     letterSpacing: 0.7,
     marginBottom: 2,
   },
   recordsCredentialSpeech: {
-    fontSize: 15,
-    lineHeight: 19,
+    fontSize: 13,
+    lineHeight: 17,
   },
   recordsCredentialBubbleTail: {
     position: "absolute",
@@ -2610,15 +2610,15 @@ const s = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   recordsCredentialChip: {
-    maxWidth: 112,
+    maxWidth: 104,
     flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     borderWidth: 1,
     borderRadius: 13,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
   },
   recordsCredentialChipText: {
     flexShrink: 1,
@@ -2628,8 +2628,8 @@ const s = StyleSheet.create({
   },
   recordsCredentialSprite: {
     position: "absolute",
-    right: 20,
-    bottom: 10,
+    right: 22,
+    bottom: 8,
     zIndex: 2,
     alignItems: "center",
     justifyContent: "flex-end",
@@ -2637,17 +2637,17 @@ const s = StyleSheet.create({
   recordsCredentialSpriteShadow: {
     position: "absolute",
     bottom: 3,
-    width: 92,
-    height: 16,
+    width: 78,
+    height: 13,
     borderRadius: 999,
     backgroundColor: "rgba(7, 18, 30, 0.25)",
   },
   recordsCredentialDock: {
     borderTopWidth: 1,
-    paddingHorizontal: 10,
-    paddingTop: 9,
-    paddingBottom: 10,
-    gap: 8,
+    paddingHorizontal: 9,
+    paddingTop: 8,
+    paddingBottom: 9,
+    gap: 7,
   },
   recordsCredentialIdPlate: {
     flexDirection: "row",

@@ -3954,7 +3954,7 @@ test("keeps Plans organized around a mission-first mobile hierarchy", () => {
   );
   assert.match(
     getStyleBlock(calendar, "commandDeckStage"),
-    /minHeight:\s*168/,
+    /minHeight:\s*146/,
     "Plans command stage should stay compact enough for schedule-first mobile use",
   );
   assert.match(
@@ -3969,16 +3969,21 @@ test("keeps Records rooted in a live pixel credential stage", () => {
 
   assert.match(records, /ImageBackground/);
   assert.match(records, /RECORDS_CREDENTIAL_STAGE_ROOM/);
-  assert.match(records, /CARE_TWIN_ROOM_VARIANT_ASSETS\.day/);
+  assert.match(records, /phoenix-room-day-pixellab-400x300\.png/);
   assert.match(records, /SpriteSheetPlayer/);
   assert.match(records, /getCareTwinSpriteAsset\("tail-wag"\)/);
   assert.match(records, /CARE_TWIN_SPRITE_MANIFEST\["tail-wag"\]/);
   assert.match(records, /pixelImageStyle/);
+  assert.match(
+    records,
+    /resizeMode="stretch"/,
+    "Records should frame the full pixel room instead of cropping into an oversized background detail",
+  );
   assert.match(records, /Records Command Vault/);
   assert.match(records, /recordsCredentialDock/);
   assert.match(
     getStyleBlock(records, "recordsCredentialStage"),
-    /minHeight:\s*232/,
+    /minHeight:\s*190/,
     "Records stage should stay compact on the first phone viewport",
   );
   assert.doesNotMatch(

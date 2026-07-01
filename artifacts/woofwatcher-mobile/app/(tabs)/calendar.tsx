@@ -691,8 +691,8 @@ export default function CalendarScreen() {
                 <SpriteSheetPlayer
                   asset={PLANS_COMMAND_STAGE_SPRITE}
                   track={PLANS_COMMAND_STAGE_TRACK}
-                  width={104}
-                  height={104}
+                  width={88}
+                  height={88}
                   testID="plans-command-pixel-sprite"
                 />
               </View>
@@ -1554,7 +1554,7 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   commandDeckStage: {
-    minHeight: 168,
+    minHeight: 146,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "rgba(8,26,42,0.42)",
@@ -1583,14 +1583,14 @@ const s = StyleSheet.create({
     gap: 8,
   },
   commandDeckBubble: {
-    maxWidth: "61%",
-    minHeight: 58,
+    maxWidth: "63%",
+    minHeight: 50,
     borderRadius: 3,
     borderWidth: 2,
     borderColor: "#081A2A",
     backgroundColor: "rgba(255,249,239,0.95)",
-    paddingHorizontal: 9,
-    paddingVertical: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
   commandDeckKicker: {
     fontSize: 8.5,
@@ -1598,8 +1598,8 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   commandDeckSpeech: {
-    fontSize: 12.5,
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 14,
     marginTop: 3,
   },
   commandDeckBubbleTail: {
@@ -1615,10 +1615,10 @@ const s = StyleSheet.create({
     transform: [{ rotate: "-45deg" }],
   },
   commandDeckChip: {
-    minHeight: 31,
+    minHeight: 29,
     borderRadius: 7,
     borderWidth: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
@@ -1631,32 +1631,32 @@ const s = StyleSheet.create({
   commandDeckSprite: {
     position: "absolute",
     zIndex: 4,
-    right: 18,
-    bottom: 36,
-    width: 116,
-    height: 116,
+    right: 22,
+    bottom: 46,
+    width: 94,
+    height: 94,
     alignItems: "center",
     justifyContent: "flex-end",
   },
   commandDeckSpriteShadow: {
     position: "absolute",
-    bottom: 13,
-    width: 76,
-    height: 11,
+    bottom: 8,
+    width: 66,
+    height: 10,
     borderRadius: 999,
     backgroundColor: "rgba(8,26,42,0.25)",
   },
   commandDeckHud: {
     position: "absolute",
     zIndex: 6,
-    left: 10,
-    right: 10,
-    bottom: 10,
-    minHeight: 38,
+    left: 12,
+    right: 12,
+    bottom: 8,
+    minHeight: 34,
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
