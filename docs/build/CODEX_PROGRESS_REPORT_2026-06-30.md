@@ -99,3 +99,44 @@ Preview:
 - Local screenshot capture through Playwright and Chrome headless was blocked
   by local browser tooling timeouts / no screenshot file output, so visual proof
   still needs Apollo or a later device/browser QA capture.
+
+## Later Plans Mission Hierarchy Slice
+
+Plans received the next design-system recovery pass so the screen reads like a
+care mission cockpit instead of a loose schedule stack.
+
+What changed:
+
+- Added a `PlanMissionRow` model and `Today's Missions` board beneath the pixel
+  Plans Command Deck.
+- The new mission board connects:
+  - next scheduled care item
+  - household responsibility state
+  - lead Reminder Center action
+- Added a `Mission Schedule` header with open-count pill before the
+  Today/Tomorrow/Week tabs.
+- Preserved route-backed behavior for routine editing, one-tap done logging,
+  Reminder Center actions, Daily Routine owner loads, and household
+  responsibility metrics.
+- Added readiness coverage for the mission-first Plans hierarchy.
+
+Verification:
+
+- Mobile readiness passed 103/103.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`.
+- Broader focused mobile/domain/API/PWA suite passed 486/486.
+- `git diff --check` passed with expected Windows CRLF warnings only.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Static preview route smoke passed for `/`, `/calendar`, `/health`, and `/log`
+  at `http://127.0.0.1:4194/`.
+- The in-app browser was opened to `http://127.0.0.1:4194/calendar`; DOM
+  verification found the command deck, Today's Missions, Mission Schedule, and
+  Reminder Center content.
+
+Preview:
+
+- Local screenshot capture through the in-app browser still timed out on
+  `Page.captureScreenshot`, so visual proof remains pending real browser/device
+  screenshots even though the live route is navigable.

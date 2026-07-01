@@ -3612,6 +3612,21 @@ test("keeps Plans schedule rooted in a live pixel command stage", () => {
   assert.match(calendar, /Plans Command Deck/);
 });
 
+test("keeps Plans organized around a mission-first mobile hierarchy", () => {
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+
+  assert.match(calendar, /interface PlanMissionRow/);
+  assert.match(calendar, /const planMissionRows: PlanMissionRow\[\] = \[\]/);
+  assert.match(calendar, /nextScheduleRoutine/);
+  assert.match(calendar, /careReminderCenter\.items\[0\]/);
+  assert.match(calendar, /responsibility\.nextStep/);
+  assert.match(calendar, /Today's Missions/);
+  assert.match(calendar, /Mission Schedule/);
+  assert.match(calendar, /planMissionBoard/);
+  assert.match(calendar, /planMissionAction/);
+  assert.match(calendar, /router\.push\("\/more" as never\)/);
+});
+
 test("keeps Records rooted in a live pixel credential stage", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 

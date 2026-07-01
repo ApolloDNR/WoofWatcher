@@ -159,6 +159,17 @@ interface SuggestedEvent {
   note?: string;
 }
 
+interface PlanMissionRow {
+  id: string;
+  eyebrow: string;
+  title: string;
+  detail: string;
+  icon: PixelIconName;
+  tone: string;
+  actionLabel: string;
+  onPress: () => void;
+}
+
 export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -269,6 +280,7 @@ export default function CalendarScreen() {
       : responsibility.status === "needs-assignment"
         ? colors.amber
         : colors.sage;
+  const responsibilityIsCovered = responsibility.status === "balanced" || responsibility.status === "steady";
   const completedScheduleCount = scheduleRows.filter((row) => row.status === "done").length;
   const openScheduleCount = Math.max(0, scheduleRows.length - completedScheduleCount);
   const nextScheduleRow = scheduleRows.find((row) => row.status !== "done") ?? scheduleRows[0];
@@ -540,6 +552,68 @@ export default function CalendarScreen() {
     setSuggestions((prev) => prev.filter((s) => s !== sug));
   };
 
+  const nextScheduleRoutine = nextScheduleRow
+    ? routineBoard.items.find((item) => item.id === nextScheduleRow.id)
+    : null;
+  const leadReminder = careReminderCenter.items[0] ?? null;
+  const planMissionRows: PlanMissionRow[] = [];
+
+  if (nextScheduleRow) {
+    planMissionRows.push({
+      id: "next-plan",
+      eyebrow: "Next Mission",
+      title: nextScheduleRow.label,
+      detail: `${nextScheduleRow.time} - ${nextScheduleRow.detail}`,
+      icon: routinePixelIcon(nextScheduleRow.type),
+      tone: commandDeckTone,
+      actionLabel: nextScheduleRoutine ? "Open" : nextScheduleStatus,
+      onPress: () => {
+        Haptics.selectionAsync();
+        if (nextScheduleRoutine) openBoardRoutine(nextScheduleRoutine);
+      },
+    });
+  }
+
+  planMissionRows.push({
+    id: "household-sync",
+    eyebrow: "Household Sync",
+    title: responsibilityIsCovered ? "Care board is covered" : "Needs owner attention",
+    detail: responsibility.nextStep,
+    icon: "heart",
+    tone: responsibilityTone,
+    actionLabel: responsibilityIsCovered ? "Synced" : "Review",
+    onPress: () => {
+      Haptics.selectionAsync();
+      router.push("/more" as never);
+    },
+  });
+
+  planMissionRows.push(
+    leadReminder
+      ? {
+          id: "lead-reminder",
+          eyebrow: "Reminder",
+          title: leadReminder.label,
+          detail: leadReminder.action,
+          icon: leadReminder.kind === "medication" ? "medication" : "clock",
+          tone: reminderTone,
+          actionLabel: "Resolve",
+          onPress: () => openReminderAction(leadReminder),
+        }
+      : {
+          id: "clear-reminder",
+          eyebrow: "Reminder",
+          title: "No owner reminders",
+          detail: careReminderCenter.summary,
+          icon: "happy",
+          tone: colors.sage,
+          actionLabel: "Clear",
+          onPress: () => {
+            Haptics.selectionAsync();
+          },
+        },
+  );
+
   const isAdded = (sug: SuggestedEvent) =>
     calendarEvents.some((e) => e.title === sug.title && e.date === sug.date);
 
@@ -657,7 +731,65 @@ export default function CalendarScreen() {
             </ImageBackground>
           </BoardCard>
 
+          <BoardCard style={s.planMissionBoard}>
+            <BoardSectionHeader
+              title="Today's Missions"
+              accessory={<BoardPill label={`${completedScheduleCount}/${scheduleRows.length} done`} tone={commandDeckTone} />}
+            />
+            <View style={s.planMissionList}>
+              {planMissionRows.map((mission, index) => (
+                <Pressable
+                  key={mission.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ${mission.eyebrow}: ${mission.title}`}
+                  onPress={mission.onPress}
+                  style={({ pressed }) => [
+                    s.planMissionRow,
+                    {
+                      backgroundColor: pressed ? mission.tone + "10" : colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View style={[s.planMissionIcon, { backgroundColor: mission.tone + "18" }]}>
+                    <PixelIcon name={mission.icon} size={24} />
+                  </View>
+                  <View style={s.planMissionCopy}>
+                    <Text style={[s.planMissionEyebrow, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                      {mission.eyebrow}
+                    </Text>
+                    <Text numberOfLines={1} style={[s.planMissionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      {mission.title}
+                    </Text>
+                    <Text numberOfLines={2} style={[s.planMissionDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {mission.detail}
+                    </Text>
+                  </View>
+                  <View style={[s.planMissionAction, { backgroundColor: mission.tone + "16" }]}>
+                    <Text style={[s.planMissionActionText, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                      {mission.actionLabel}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={13} color={mission.tone} />
+                  </View>
+                  {index < planMissionRows.length - 1 ? <View style={[s.planMissionDivider, { backgroundColor: colors.border }]} /> : null}
+                </Pressable>
+              ))}
+            </View>
+          </BoardCard>
+
           <BoardCard style={s.scheduleCard}>
+            <View style={s.scheduleCardHeader}>
+              <View style={s.scheduleHeaderCopy}>
+                <Text style={[s.scheduleEyebrow, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>Mission Schedule</Text>
+                <Text style={[s.scheduleHeaderTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {scheduleTab === "today" ? "Today's care plan" : scheduleTab === "tomorrow" ? "Tomorrow preview" : "Weekly rhythm"}
+                </Text>
+              </View>
+              <BoardPill
+                label={openScheduleCount === 0 ? "Clear" : `${openScheduleCount} open`}
+                tone={openScheduleCount === 0 ? colors.sage : commandDeckTone}
+              />
+            </View>
             <View style={s.scheduleTabs}>
               {[
                 { key: "today" as const, label: "Today" },
@@ -1553,7 +1685,94 @@ const s = StyleSheet.create({
     borderRadius: 2,
   },
 
+  planMissionBoard: {
+    marginBottom: 12,
+  },
+  planMissionList: {
+    gap: 8,
+  },
+  planMissionRow: {
+    position: "relative",
+    minHeight: 74,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 11,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    overflow: "hidden",
+  },
+  planMissionIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  planMissionCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  planMissionEyebrow: {
+    fontSize: 9.5,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  planMissionTitle: {
+    fontSize: 15,
+    marginTop: 2,
+  },
+  planMissionDetail: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  planMissionAction: {
+    minWidth: 66,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  planMissionActionText: {
+    fontSize: 10,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  planMissionDivider: {
+    position: "absolute",
+    left: 64,
+    right: 12,
+    bottom: -5,
+    height: 1,
+    opacity: 0.8,
+  },
+
   scheduleCard: { marginBottom: 14 },
+  scheduleCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 12,
+  },
+  scheduleHeaderCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  scheduleEyebrow: {
+    fontSize: 10,
+    letterSpacing: 0.65,
+    textTransform: "uppercase",
+  },
+  scheduleHeaderTitle: {
+    fontSize: 17,
+    marginTop: 2,
+  },
   scheduleTabs: {
     flexDirection: "row",
     gap: 6,

@@ -2568,3 +2568,44 @@ Verification:
 - Expo web export refreshed `.expo-smoke` with 218 assets / 222 files.
 - Route smoke passed for Home, Health, Log, and Plans at
   `http://127.0.0.1:4194/`.
+
+## 2026-06-30 Plans Mission Hierarchy Pass
+
+Plans is the third route in the design-system recovery. The goal was to make
+the schedule feel like a care mission cockpit instead of a stack of unrelated
+planning cards.
+
+What changed:
+
+- Added a `PlanMissionRow` model and a `Today's Missions` board directly under
+  the pixel command stage.
+- The mission board connects the next schedule item, household responsibility
+  status, and lead Reminder Center item into one first-screen decision layer.
+- Added a `Mission Schedule` header with an open-count pill before the
+  Today/Tomorrow/Week tabs.
+- Preserved all existing routine behavior: open routine edit, one-tap done
+  logging, undo/add-details recovery, Reminder Center routing, owner load
+  chips, and Daily Routine responsibility metrics.
+- Opened the in-app browser to `http://127.0.0.1:4194/calendar` for live
+  review after export.
+
+Design rule locked from this pass:
+
+- A planning screen should lead with the next mission and ownership state
+  before showing the full schedule. The user should understand what matters
+  now in one glance, then scan the routine board below.
+- Reminder, responsibility, and schedule data should be connected in one
+  command layer when they answer the same question: "What needs care next?"
+
+Verification:
+
+- Mobile readiness passed 103/103, including the new mission-hierarchy guard.
+- Mobile TypeScript passed.
+- Broader focused mobile/domain/API/PWA suite passed 486/486.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files.
+- Route smoke passed for Home, Plans, Health, and Log at
+  `http://127.0.0.1:4194/`.
+- DOM verification on the in-app browser confirmed the command deck, Today's
+  Missions, Mission Schedule, and Reminder Center text were present.
+- Screenshot capture still timed out in local browser tooling, so native/browser
+  visual proof remains a QA task.
