@@ -573,3 +573,32 @@ Remaining:
 
 - Rerun `WoofWatcher Verify` on `automation/premium-revenue-product-builder`
   after pushing this assertion repair.
+
+## 2026-07-01 API Server Typecheck CI Repair
+
+The next branch run, `28528291630`, passed the focused test blocker and then
+failed during `pnpm run build:ci` at the API server typecheck step:
+
+- `src/lib/household-sharing-cleanup.ts(4,8): error TS5097`
+- `src/lib/household-sharing-cleanup.ts(8,8): error TS5097`
+
+What changed:
+
+- Kept the `.ts` source imports in `household-sharing-cleanup.ts` so Node's
+  `--experimental-strip-types` focused tests can resolve the TypeScript source.
+- Added `allowImportingTsExtensions: true` to
+  `artifacts/api-server/tsconfig.json`, matching the package's no-emit
+  typecheck path.
+
+Verification:
+
+- Direct API typecheck passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/api-server/tsconfig.json --noEmit`.
+- The CI-equivalent focused suite passed 496/496 with the bundled Node runtime.
+
+Remaining:
+
+- Direct local API build did not run in this Windows worktree because the local
+  install is missing esbuild's optional native package `@esbuild/win32-x64`.
+- Push this repair and rerun `WoofWatcher Verify` on
+  `automation/premium-revenue-product-builder`.
