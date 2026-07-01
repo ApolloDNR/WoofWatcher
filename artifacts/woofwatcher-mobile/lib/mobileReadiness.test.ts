@@ -1803,8 +1803,14 @@ test("keeps Health Snapshot ahead of the pixel stage on compact phones", () => {
   assert.match(health, /healthScoreTokenCompact/);
   assert.match(health, /healthStatusTitle/);
   assert.match(health, /statusScoreTrackCompact/);
-  assert.match(health, /width=\{96\}/);
-  assert.match(health, /height=\{96\}/);
+  assert.match(health, /resizeMode="stretch"[\s\S]*style=\{s\.healthStage\}/);
+  assert.match(health, /width=\{86\}/);
+  assert.match(health, /height=\{86\}/);
+  assert.match(
+    getStyleBlock(health, "healthStage"),
+    /minHeight:\s*124/,
+    "Health pixel room should stay compact enough to avoid fighting the paw nav",
+  );
 });
 
 test("locks the mobile pixel UI foundation to Apollo's reference boards", () => {
@@ -2210,8 +2216,9 @@ test("keeps Quick Log aligned to the mobile design-system recovery recipe", () =
   assert.match(log, /quickLogSupportRail/);
   assert.match(log, /quickLogDetailDock/);
   assert.match(log, /logCommandStage:[\s\S]*width: "100%"[\s\S]*minHeight: 148/);
-  assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "58%"/);
-  assert.match(log, /logCommandSprite:[\s\S]*right: 12/);
+  assert.match(log, /resizeMode="stretch"[\s\S]*testID="quick-log-command-pixel-stage"/);
+  assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "62%"/);
+  assert.match(log, /logCommandSprite:[\s\S]*right: 5/);
   assert.match(log, /logCommandDock/);
   assert.match(log, /Tap saves\. Hold opens details\./);
   assert.doesNotMatch(

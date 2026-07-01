@@ -581,7 +581,7 @@ export default function HealthScreen() {
         <BoardCard style={s.heroCard}>
           <ImageBackground
             source={HEALTH_WATCH_STAGE_ROOM}
-            resizeMode="cover"
+            resizeMode="stretch"
             imageStyle={[s.healthStageImage, pixelImageStyle]}
             style={s.healthStage}
           >
@@ -609,8 +609,8 @@ export default function HealthScreen() {
               <SpriteSheetPlayer
                 asset={HEALTH_WATCH_STAGE_SPRITE}
                 track={HEALTH_WATCH_STAGE_TRACK}
-                width={96}
-                height={96}
+                width={86}
+                height={86}
                 testID="health-watch-pixel-sprite"
               />
             </View>
@@ -1023,24 +1023,24 @@ const s = StyleSheet.create({
   tabText: { fontSize: 12.5 },
 
   heroCard: {
-    padding: 10,
+    padding: 8,
     marginBottom: 10,
   },
   healthStage: {
-    minHeight: 148,
+    minHeight: 124,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "rgba(8,26,42,0.42)",
     overflow: "hidden",
-    padding: 9,
-    marginBottom: 10,
+    padding: 8,
+    marginBottom: 8,
   },
   healthStageImage: {
     borderRadius: 8,
   },
   healthStageShade: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(8,26,42,0.16)",
+    backgroundColor: "rgba(8,26,42,0.08)",
   },
   healthStageScanline: {
     ...StyleSheet.absoluteFillObject,
@@ -1058,7 +1058,7 @@ const s = StyleSheet.create({
   },
   healthStageBubble: {
     maxWidth: "58%",
-    minHeight: 52,
+    minHeight: 46,
     borderRadius: 3,
     borderWidth: 2,
     borderColor: "#081A2A",
@@ -1103,17 +1103,17 @@ const s = StyleSheet.create({
   healthStageSprite: {
     position: "absolute",
     zIndex: 4,
-    right: 10,
-    bottom: 38,
-    width: 96,
-    height: 96,
+    right: 8,
+    bottom: 28,
+    width: 86,
+    height: 86,
     alignItems: "center",
     justifyContent: "flex-end",
   },
   healthStageSpriteShadow: {
     position: "absolute",
-    bottom: 11,
-    width: 70,
+    bottom: 9,
+    width: 64,
     height: 10,
     borderRadius: 999,
     backgroundColor: "rgba(8,26,42,0.28)",
@@ -1123,12 +1123,12 @@ const s = StyleSheet.create({
     zIndex: 6,
     left: 12,
     right: 12,
-    bottom: 12,
-    minHeight: 36,
+    bottom: 8,
+    minHeight: 32,
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 9,
-    paddingVertical: 6,
+    paddingVertical: 5,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",

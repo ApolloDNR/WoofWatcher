@@ -145,6 +145,25 @@ screens:
 - This route is protected by readiness tests for schedule-first order, compact
   command-stage height, and compact mission rows.
 
+## Quick Log And Health Artwork Chrome Polish
+
+The later 2026-07-01 artwork/chrome pass tightened two routes that still felt
+visually off against the saved Option B boards:
+
+- Quick Log now uses stretch-framed pixel room artwork instead of a cover crop
+  that turned the command scene into a blank wall.
+- The Quick Log live Phoenix sprite is larger, lower, and closer to the scene
+  floor, with a lighter shade layer and a wider speech bubble.
+- Health keeps the utility-first hierarchy from the previous recovery pass, but
+  the support pixel room is more compact: lower stage height, smaller sprite,
+  lighter shade, shorter speech bubble, and tighter health HUD.
+- These changes preserve the stage-dock rule: real care actions and health
+  status remain primary, and the game-feel layer supports the workflow instead
+  of fighting it.
+- Fresh screenshot proof is still pending because local Chrome exited
+  successfully without writing PNG files during this pass. Native iOS/Android
+  visual proof remains required before design sign-off.
+
 ## Next Design Passes
 
 1. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.

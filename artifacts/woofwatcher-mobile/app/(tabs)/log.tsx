@@ -2170,7 +2170,7 @@ export default function LogScreen() {
           <BoardCard padded={false} style={s.logCommandStageCard}>
             <ImageBackground
               source={LOG_COMMAND_STAGE_ROOM}
-              resizeMode="cover"
+              resizeMode="stretch"
               imageStyle={[s.logCommandStageImage, pixelImageStyle]}
               style={s.logCommandStage}
               testID="quick-log-command-pixel-stage"
@@ -2203,8 +2203,8 @@ export default function LogScreen() {
                 <SpriteSheetPlayer
                   asset={LOG_COMMAND_STAGE_SPRITE}
                   track={LOG_COMMAND_STAGE_TRACK}
-                  width={104}
-                  height={104}
+                  width={120}
+                  height={120}
                   testID="quick-log-command-pixel-sprite"
                 />
               </View>
@@ -4711,7 +4711,7 @@ const s = StyleSheet.create({
   },
   logCommandStageShade: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(8,20,36,0.2)",
+    backgroundColor: "rgba(8,20,36,0.08)",
   },
   logCommandStageScanline: {
     ...StyleSheet.absoluteFillObject,
@@ -4724,8 +4724,8 @@ const s = StyleSheet.create({
     gap: 7,
   },
   logCommandBubble: {
-    maxWidth: "58%",
-    minHeight: 54,
+    maxWidth: "62%",
+    minHeight: 50,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "#081424",
@@ -4773,18 +4773,18 @@ const s = StyleSheet.create({
   },
   logCommandSprite: {
     position: "absolute",
-    right: 12,
-    bottom: 7,
-    width: 104,
-    height: 104,
+    right: 5,
+    bottom: 0,
+    width: 120,
+    height: 120,
     alignItems: "center",
     justifyContent: "flex-end",
   },
   logCommandSpriteShadow: {
     position: "absolute",
-    bottom: 7,
-    width: 92,
-    height: 18,
+    bottom: 8,
+    width: 106,
+    height: 20,
     borderRadius: 999,
     backgroundColor: "rgba(8,20,36,0.34)",
   },

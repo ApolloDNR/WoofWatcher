@@ -506,3 +506,44 @@ Remaining:
   Plans proof at `tmp/route-plans-visualqa-20260701.png` was used to identify
   the oversized layout, but updated native/iOS/Android or repaired browser
   screenshot proof is still required before visual sign-off.
+
+## 2026-07-01 Quick Log And Health Artwork Chrome Polish
+
+The next visual pass targeted the remaining mismatch on `/log` and `/health`:
+the app was functionally stronger, but the artwork framing still drifted from
+the saved neo-retro pixel boards.
+
+What changed:
+
+- Quick Log now stretch-frames the approved pixel-room artwork so the command
+  scene shows more of the room instead of cropping into a blank wall.
+- The Quick Log live Phoenix sprite is larger, lower in the scene, and paired
+  with a lighter shade layer plus a wider speech bubble.
+- Health keeps `Health Snapshot` as the primary first-screen utility panel, but
+  its support pixel room is more compact and less likely to collide with the
+  floating paw nav.
+- The Health support sprite, stage, speech bubble, and HUD were tightened so the
+  route feels more like a useful health screen with a pixel heart, not a poster.
+- Mobile readiness coverage was updated to lock the new Quick Log and Health
+  artwork/chrome constraints.
+
+Verification:
+
+- `mobileReadiness.test.ts` passed 112/112.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  through the bundled Node runtime.
+- The combined mobile/care-domain focused suite passed 456/456.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Static preview route smoke returned `200` for `/`, `/log`, and `/health` at
+  `http://127.0.0.1:4197/`.
+
+Remaining:
+
+- Local Chrome screenshot commands exited `0` but produced no PNG files, so this
+  slice still needs repaired screenshot capture or native iOS/Android visual
+  proof.
+- Exact pnpm 10.24 beta doctor proof, provider-backed sync/storage/AI/payments/
+  push, generated PDF output, CI completion, store approval, public launch, and
+  Apollo sign-off remain blocked until real artifacts exist.
