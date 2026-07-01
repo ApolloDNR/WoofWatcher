@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-07-01: Report History Pre-Share Review Guidance Is Shared
+
+Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared pre-share review line from `summarizeReportArtifacts`. The line may tell owners to review the latest local source for stale routines, medications, records, and audience before resending, but it must not imply provider-backed storage, native export, cloud sharing, retention, deletion, or unsupervised assistant actions are ready.
+
+Reason: Report History now supports reusable local sources, printable-source sharing, source cleanup, and WoofGuide review. Owners need one consistent reminder to check whether the saved local handoff source still matches the dog, audience, routines, medications, and records before it leaves the app.
+
+Owner: Codex.
+
+Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, persisted assistant report drafts, permission-aware assistant writes, cloud sharing, share revocation, or storage retention/deletion policy become active release work.
+
 ### 2026-07-01: Report History Cleanup Guidance Is Shared
 
 Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared cleanup line from `summarizeReportArtifacts`. The line may tell owners to remove obsolete local sources only after review and must state that local cleanup does not revoke shares or change provider retention.
