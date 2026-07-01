@@ -1730,6 +1730,11 @@ test("locks the mobile pixel UI foundation to Apollo's reference boards", () => 
   assert.ok(existsSync(primitivesPath), "board primitives should exist");
 
   const primitives = readFileSync(primitivesPath, "utf8");
+  assert.match(primitives, /borderBottomWidth:\s*2/);
+  assert.match(primitives, /numberOfLines=\{1\}/);
+  assert.match(primitives, /minHeight:\s*28/);
+  assert.match(primitives, /borderBottomColor:\s*colors\.border/);
+  assert.doesNotMatch(primitives, /sectionTitle:\s*\{[\s\S]*letterSpacing:\s*0\.6/);
   for (const exportedName of [
     "BoardCard",
     "BoardSectionHeader",
@@ -3938,14 +3943,22 @@ test("keeps More organized around a grouped command directory", () => {
   assert.match(more, /interface MoreDirectoryItem/);
   assert.match(more, /const moreDirectoryItems: MoreDirectoryItem\[\] = \[/);
   assert.match(more, /Command Directory/);
+  assert.match(more, /BoardPill label="5 hubs"/);
   assert.match(more, /Care today/);
   assert.match(more, /Household/);
   assert.match(more, /Records & passes/);
+  assert.match(more, /Design QA/);
   assert.match(more, /Launch QA/);
+  assert.match(more, /Route polish pass/);
+  assert.match(more, /routeVisualConsistencyTarget/);
   assert.match(more, /careIntelligence\.nextAction\.label/);
   assert.match(more, /householdResponsibility\.nextStep/);
   assert.match(more, /router\.push\("\/more\?section=household" as never\)/);
   assert.match(more, /router\.push\("\/records" as never\)/);
+  assert.match(
+    more,
+    /router\.push\(buildCareTwinQaFocusRoute\(routeVisualConsistencyTarget\) as never\)/,
+  );
   assert.match(
     more,
     /router\.push\(buildCareTwinQaFocusRoute\(nativeQaPrimaryMissionTarget\) as never\)/,

@@ -105,9 +105,9 @@ const pixelUi = {
   borderWidth: 1,
   hairline: "#D7CEC0",
   shadow: {
-    opacity: 0.08,
-    radius: 10,
-    y: 5,
+    opacity: 0.05,
+    radius: 6,
+    y: 3,
   },
 };
 

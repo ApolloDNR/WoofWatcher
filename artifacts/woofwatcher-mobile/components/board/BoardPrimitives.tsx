@@ -246,7 +246,7 @@ export function BoardCard({
   const colors = useColors();
   const navy = tone === "navy";
   const backgroundColor = navy ? colors.brandNavy : tone === "soft" ? colors.accent : colors.card;
-  const borderColor = navy ? colors.shellNavy : colors.border;
+  const borderColor = navy ? colors.copper + "66" : tone === "soft" ? colors.stone : colors.border;
 
   return (
     <View
@@ -285,14 +285,20 @@ export function BoardSectionHeader({
 }) {
   const colors = useColors();
   return (
-    <View style={[styles.sectionHeader, style]}>
-      <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }, textStyle]}>
+    <View style={[styles.sectionHeader, { borderBottomColor: colors.border }, style]}>
+      <Text
+        numberOfLines={1}
+        style={[styles.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }, textStyle]}
+      >
         {title}
       </Text>
       {accessory ? (
         accessory
       ) : action ? (
-        <Text style={[styles.sectionAction, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text
+          numberOfLines={1}
+          style={[styles.sectionAction, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+        >
           {action}
         </Text>
       ) : null}
@@ -584,9 +590,9 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     borderWidth: 1,
     borderRadius: 5,
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    minHeight: 28,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
@@ -632,24 +638,30 @@ const styles = StyleSheet.create({
   },
   card: {
     borderWidth: 1,
-    elevation: 2,
+    borderBottomWidth: 2,
+    elevation: 1,
   },
   cardPadded: {
-    padding: 12,
+    padding: 14,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-    marginBottom: 10,
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
   },
   sectionTitle: {
+    flexShrink: 1,
+    minWidth: 0,
     fontSize: 13,
-    letterSpacing: 0.6,
+    letterSpacing: 0,
     textTransform: "uppercase",
   },
   sectionAction: {
+    flexShrink: 0,
     fontSize: 11,
   },
   meterRow: {

@@ -854,6 +854,12 @@ export default function MoreScreen() {
     nativeQaPrimaryMission.target ??
     nativeQaCapturePlan.nextTargets[0] ??
     nativeQaCapturePlan.storeScreenshotProofStatus.nextTarget;
+  const routeVisualConsistencyTarget =
+    nativeQaCapturePlan.nextTargets.find((target) => target.surfaceId === "route-visual-consistency") ??
+    ({ surfaceId: "route-visual-consistency" } as Pick<MobileLaunchQaCaptureTarget, "surfaceId">);
+  const routeVisualConsistencyDetail =
+    nativeQaCapturePlan.nextTargets.find((target) => target.surfaceId === "route-visual-consistency")?.missingEvidence[0] ??
+    "Run the six-route design pass before native screenshots.";
 
   const links: { icon: PulseIconName; iconName: keyof typeof Ionicons.glyphMap; label: string; sub: string; onPress: () => void }[] = [
     {
@@ -1271,6 +1277,19 @@ export default function MoreScreen() {
       },
     },
     {
+      id: "design-qa",
+      iconName: "color-palette-outline",
+      eyebrow: "Design QA",
+      label: "Route polish pass",
+      detail: routeVisualConsistencyDetail,
+      actionLabel: "Review",
+      tone: colors.copper,
+      onPress: () => {
+        Haptics.selectionAsync();
+        router.push(buildCareTwinQaFocusRoute(routeVisualConsistencyTarget) as never);
+      },
+    },
+    {
       id: "launch-qa",
       iconName: "phone-portrait-outline",
       eyebrow: "Launch QA",
@@ -1428,7 +1447,7 @@ export default function MoreScreen() {
           <BoardCard style={s.moreDirectoryCard}>
             <BoardSectionHeader
               title="Command Directory"
-              accessory={<BoardPill label="4 hubs" tone={colors.copper} />}
+              accessory={<BoardPill label="5 hubs" tone={colors.copper} />}
             />
             <View style={s.moreDirectoryList}>
               {moreDirectoryItems.map((item, index) => (

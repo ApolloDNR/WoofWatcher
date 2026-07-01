@@ -24,6 +24,7 @@ test("lists the launch-critical mobile QA surfaces for the next native pass", ()
   assert.ok(ids.includes("phoenix-home"));
   assert.ok(ids.includes("home-mission-deck"));
   assert.ok(ids.includes("owner-preview-core-loop"));
+  assert.ok(ids.includes("route-visual-consistency"));
   assert.ok(ids.includes("care-twin-state-lab"));
   assert.ok(ids.includes("avatar-studio"));
   assert.ok(ids.includes("avatar-sprite-production-review"));
@@ -81,6 +82,37 @@ test("adds a source-backed Avatar Sprite Production Review surface", () => {
   assert.equal(surface.routeChecklist?.[1]?.route, "/care-twin-qa?qaSurface=care-twin-state-lab");
   assert.match(surface.routeChecklist?.[0]?.proof ?? "", /gait\/crop note/);
   assert.match(surface.launchRisk, /video-game avatar/);
+});
+
+test("keeps route visual consistency as a launch-critical design QA gate", () => {
+  const surface = listMobileReleaseQaSurfaces().find((item) => item.id === "route-visual-consistency");
+
+  assert.ok(surface);
+  assert.equal(surface.title, "Route Visual Consistency");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /one planned premium neo-retro app/);
+  assert.match(surface.devicePrompt, /Home, Log, Plans, Health, Records, and More/);
+  assert.match(
+    surface.acceptanceCriteria.join("\n"),
+    /No first-screen text, card, sprite, tab, or bottom navigation element overlaps/,
+  );
+  assert.match(surface.failureEscalation, /Option B pixel app boards/);
+  assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
+    "Home",
+    "Log",
+    "Plans",
+    "Health",
+    "Records",
+    "More",
+  ]);
+  assert.match(
+    surface.requiredEvidence.join("\n"),
+    /iOS screenshot of Home, Log, Plans, Health, Records, and More route tops/,
+  );
+  assert.match(
+    surface.requiredEvidence.join("\n"),
+    /Android screenshot of Home, Log, Plans, Health, Records, and More route tops/,
+  );
 });
 
 test("routes Incident Composer QA into the detail-first incident flow", () => {

@@ -221,6 +221,82 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If this loop is not proven, WoofWatcher may look polished in isolated screens while still failing the real owner beta journey.",
   },
   {
+    id: "route-visual-consistency",
+    title: "Route Visual Consistency",
+    route: "/more",
+    priority: "launch-critical",
+    goal: "Prove the main mobile routes feel like one planned premium neo-retro app instead of separate prototypes.",
+    devicePrompt:
+      "Run Home, Log, Plans, Health, Records, and More on a small iOS and Android phone. Check the same screen recipe on each route: pixel stage, command board, primary action, safe bottom nav, and no overlapping text.",
+    setupSteps: [
+      "Use the current Option B visual direction: navy shell, cream HUD panels, copper accents, pixel Phoenix, and short operational labels.",
+      "Start with local preview data only and keep provider, payment, AI, storage, and native proof gates truthful.",
+      "Open the route through bottom navigation or a visible command row, not through a hidden debug path.",
+    ],
+    verificationSteps: [
+      "Open Home and confirm Phoenix Room, Care Status, Today Command, and Today's Missions read as one first-screen command center.",
+      "Open Log and confirm Quick Log Flow, action tiles, and the detail dock do not fight for the same visual priority.",
+      "Open Plans and confirm Today's Missions leads before the detailed schedule.",
+      "Open Health and confirm Health Watch keeps calm non-diagnostic copy with no duplicate metric rails or clipped rows.",
+      "Open Records and confirm Vault Command gives owners clean exits before the dense evidence sections.",
+      "Open More and confirm Command Directory gives a simple map before launch, household, roster, and provider panels.",
+      "On each route, check header spacing, card spacing, bottom-nav clearance, text wrapping, and one obvious next action.",
+    ],
+    acceptanceCriteria: [
+      "Every core route starts with one clear pixel or command stage and one practical command board.",
+      "Home, Log, Plans, Health, Records, and More use the same board anatomy, compact section headers, and route-to-route spacing rhythm.",
+      "No first-screen text, card, sprite, tab, or bottom navigation element overlaps on a compact phone.",
+      "Each route exposes a real next action that opens a care workflow, QA workflow, record, report, or route with no dead end.",
+    ],
+    failureEscalation:
+      "Mark Needs tune for the first route with crowded hierarchy, clipped copy, duplicate avatar behavior, hidden primary action, bottom-nav overlap, or a visual style that drifts away from the Option B pixel app boards.",
+    requiredEvidence: [
+      "iOS screenshot of Home, Log, Plans, Health, Records, and More route tops.",
+      "Android screenshot of Home, Log, Plans, Health, Records, and More route tops.",
+      "Note listing the first route with overlap, confusing hierarchy, or mockup drift, or confirming no route-to-route design break was found.",
+    ],
+    routeChecklist: [
+      {
+        label: "Home",
+        route: "/",
+        expected:
+          "Phoenix Room, Care Status, Today Command, Today's Missions, and Quick Log read as one planned first screen.",
+      },
+      {
+        label: "Log",
+        route: "/log",
+        expected:
+          "Quick Log Flow leads with tap and long-press actions, then the detail dock supports richer logs without taking over the route.",
+      },
+      {
+        label: "Plans",
+        route: "/calendar",
+        expected:
+          "Today's Missions gives the owner the next responsibility before Mission Schedule shows the full day.",
+      },
+      {
+        label: "Health",
+        route: "/health",
+        expected:
+          "Health Watch stays calm, non-diagnostic, readable, and free of duplicate metric rails or clipped review rows.",
+      },
+      {
+        label: "Records",
+        route: "/records",
+        expected:
+          "Vault Command gives clean exits for Dog ID, Record Vault, Care Pass, and Reports before dense record evidence.",
+      },
+      {
+        label: "More",
+        route: "/more",
+        expected:
+          "Command Directory maps the app before launch QA, household, provider setup, roster, tools, and diet panels.",
+      },
+    ],
+    launchRisk:
+      "If this pass is skipped, the app can have strong individual features but still feel visually crowded, confusing, or unplanned in an App Store preview.",
+  },
+  {
     id: "care-twin-state-lab",
     title: "Care Twin State Lab",
     route: "/care-twin-qa",

@@ -2719,3 +2719,43 @@ Verification:
   `http://127.0.0.1:4194/`.
 - In-app browser DOM verification on Home confirmed Phoenix Room, Care Status,
   Today Command, and Today's Missions are present.
+
+## 2026-07-01 Route Visual Consistency Pass
+
+This pass turned the final visual recovery into a source-backed QA workflow
+instead of another subjective design note.
+
+What changed:
+
+- Added a launch-critical `Route Visual Consistency` QA surface to the mobile
+  release QA model.
+- The focused QA target checks Home, Log, Plans, Health, Records, and More for
+  the same screen recipe: pixel or command stage, practical command board,
+  clear next action, bottom-nav clearance, and no first-screen overlap.
+- Added a `Design QA` row to More's first-screen `Command Directory`, so route
+  polish is reachable from normal navigation.
+- Tightened shared board primitives:
+  - framed cards now have a stronger bottom rule and lighter shadow;
+  - section headers have a bottom rule and one-line title/action behavior;
+  - header pills are compact display chips instead of oversized touch targets;
+  - board shadow tokens are quieter and less generic.
+
+Design rule locked from this pass:
+
+- Route polish is now a product workflow. If Home, Log, Plans, Health, Records,
+  and More do not feel like one planned mobile app, the `Route Visual
+  Consistency` QA target should be marked Needs tune before store screenshots or
+  Fable/Replit polish.
+
+Verification:
+
+- `mobileReleaseQa.test.ts` passed 14/14.
+- Mobile readiness passed 106/106.
+- Mobile TypeScript passed.
+- Broader focused mobile/domain/API/PWA suite passed 490/490.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files.
+- Route smoke passed for Home, Log, Plans, Health, Records, More, and the
+  focused Route Visual Consistency QA target.
+- In-app browser DOM verification confirmed the QA route lists Home, Log,
+  Plans, Health, Records, and More, and More exposes `Design QA` under Command
+  Directory.

@@ -257,3 +257,50 @@ Preview:
   `http://127.0.0.1:4194/`.
 - This pass improves local web/mobile structure only; native iOS/Android visual
   QA screenshots and Apollo launch sign-off remain required.
+
+## 2026-07-01 Route Visual Consistency QA Slice
+
+The final route-to-route design recovery pass now has a durable product surface.
+Instead of relying on chat critique, the app now carries a launch-critical QA
+target for whether the six main routes feel like one planned premium mobile app.
+
+What changed:
+
+- Added `Route Visual Consistency` to `MOBILE_RELEASE_QA_SURFACES`.
+- The QA surface checks Home, Log, Plans, Health, Records, and More for:
+  - one pixel or command stage;
+  - one practical command board;
+  - compact section headers and consistent card rhythm;
+  - bottom-nav clearance;
+  - no clipped or overlapping first-screen text;
+  - no dead-end primary action.
+- Added `Design QA` to More's first-screen `Command Directory`, routed to the
+  focused QA cockpit for `route-visual-consistency`.
+- Tightened shared board primitives with crisper framed cards, compact header
+  pills, one-line header behavior, and lighter shadows.
+
+Verification:
+
+- `mobileReleaseQa.test.ts` passed 14/14.
+- Mobile readiness passed 106/106.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  through the bundled Node runtime.
+- Broader focused mobile/domain/API/PWA suite passed 490/490.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Static preview route smoke passed for `/`, `/log`, `/calendar`, `/health`,
+  `/records`, `/more`, and `/care-twin-qa?qaSurface=route-visual-consistency`
+  at `http://127.0.0.1:4194/`.
+- The in-app browser was opened to the focused QA target and `/more`; DOM
+  verification found Route Visual Consistency, the six route checklist labels,
+  and the More `Design QA` command row.
+
+Preview:
+
+- The local static preview server remains available at
+  `http://127.0.0.1:4194/more`.
+- This pass improves local web/mobile design governance only; native
+  iOS/Android screenshots, exact pnpm 10.24 doctor proof, CI completion,
+  provider-backed services, store approval, and Apollo launch sign-off remain
+  required.
