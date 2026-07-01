@@ -19,8 +19,8 @@ import {
 test("derives iOS tabbed route padding from the floating paw and safe area", () => {
   const metrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34 });
 
-  assert.equal(metrics.tabBarHeight, 66);
-  assert.equal(metrics.tabBarBottom, 8);
+  assert.equal(metrics.tabBarHeight, 72);
+  assert.equal(metrics.tabBarBottom, 12);
   assert.equal(metrics.centerFabBottom, 52);
   assert.equal(metrics.centerFabSize, 56);
   assert.equal(metrics.contentBottomPadding, 124);
@@ -32,8 +32,8 @@ test("keeps Android and web tabbed routes clear of the floating nav without wast
   assert.equal(getTabbedRouteBottomPadding({ platform: "web", bottomInset: 99 }), 110);
 
   const webMetrics = getFloatingTabChromeMetrics({ platform: "web", bottomInset: 99 });
-  assert.equal(webMetrics.tabBarHeight, 66);
-  assert.equal(webMetrics.tabBarBottom, 8);
+  assert.equal(webMetrics.tabBarHeight, 72);
+  assert.equal(webMetrics.tabBarBottom, 12);
   assert.equal(webMetrics.centerFabBottom, 26);
 });
 
@@ -47,7 +47,7 @@ test("keeps the floating paw chrome compact enough for first-screen command card
 
     assert.ok(bottomChromeClearance <= 86, `${platform} bottom chrome should not eat the route`);
     assert.ok(metrics.centerFabSize >= MIN_MOBILE_TOUCH_TARGET, `${platform} center paw stays tappable`);
-    assert.ok(metrics.tabBarHeight >= 64, `${platform} tab bar keeps labels readable`);
+    assert.ok(metrics.tabBarHeight >= 72, `${platform} tab bar keeps labels readable`);
   }
 
   const iosMetrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34 });

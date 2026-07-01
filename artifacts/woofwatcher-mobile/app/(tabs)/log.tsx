@@ -2203,8 +2203,8 @@ export default function LogScreen() {
                 <SpriteSheetPlayer
                   asset={LOG_COMMAND_STAGE_SPRITE}
                   track={LOG_COMMAND_STAGE_TRACK}
-                  width={120}
-                  height={120}
+                  width={68}
+                  height={68}
                   testID="quick-log-command-pixel-sprite"
                 />
               </View>
@@ -2243,14 +2243,6 @@ export default function LogScreen() {
               </View>
 
               <View style={s.logCommandFooter}>
-                <View style={[s.logCommandMission, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
-                  <Text style={[s.logCommandMissionLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-                    Selected
-                  </Text>
-                  <Text numberOfLines={1} style={[s.logCommandMissionValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
-                    {selectedLauncherAction?.label ?? selectedLabel}
-                  </Text>
-                </View>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={
@@ -4695,15 +4687,15 @@ const s = StyleSheet.create({
     alignSelf: "stretch",
     width: "100%",
     maxWidth: "100%",
-    marginTop: 6,
-    marginBottom: 10,
+    marginTop: 3,
+    marginBottom: 8,
     overflow: "hidden",
   },
   logCommandStage: {
     width: "100%",
-    minHeight: 148,
+    minHeight: 82,
     overflow: "hidden",
-    padding: 9,
+    padding: 7,
     justifyContent: "flex-start",
   },
   logCommandStageImage: {
@@ -4721,27 +4713,27 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 7,
+    gap: 6,
   },
   logCommandBubble: {
-    maxWidth: "62%",
-    minHeight: 50,
+    maxWidth: "68%",
+    minHeight: 38,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "#081424",
     backgroundColor: "rgba(255,249,239,0.94)",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
   logCommandKicker: {
-    fontSize: 9,
-    lineHeight: 12,
+    fontSize: 8.4,
+    lineHeight: 10,
     textTransform: "uppercase",
   },
   logCommandSpeech: {
-    fontSize: 11.5,
-    lineHeight: 14,
-    marginTop: 3,
+    fontSize: 10.2,
+    lineHeight: 12,
+    marginTop: 1,
   },
   logCommandBubbleTail: {
     position: "absolute",
@@ -4756,15 +4748,15 @@ const s = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   logCommandChip: {
-    maxWidth: 104,
+    maxWidth: 90,
     flexShrink: 1,
-    minHeight: 34,
+    minHeight: 28,
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 9,
+    paddingHorizontal: 7,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
   },
   logCommandChipText: {
     fontSize: 9.2,
@@ -4773,100 +4765,80 @@ const s = StyleSheet.create({
   },
   logCommandSprite: {
     position: "absolute",
-    right: 5,
-    bottom: 0,
-    width: 120,
-    height: 120,
+    right: 12,
+    bottom: -2,
+    width: 68,
+    height: 68,
     alignItems: "center",
     justifyContent: "flex-end",
   },
   logCommandSpriteShadow: {
     position: "absolute",
-    bottom: 8,
-    width: 106,
-    height: 20,
+    bottom: 3,
+    width: 58,
+    height: 11,
     borderRadius: 999,
     backgroundColor: "rgba(8,20,36,0.34)",
   },
   logCommandDock: {
     borderTopWidth: 1,
-    paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: 7,
+    paddingHorizontal: 6,
+    paddingVertical: 5,
     gap: 6,
+    flexDirection: "row",
+    alignItems: "stretch",
   },
   logCommandHud: {
-    alignSelf: "stretch",
+    flex: 1,
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     flexDirection: "row",
-    gap: 5,
+    gap: 4,
   },
   logCommandHudCell: {
     flex: 1,
     minWidth: 0,
   },
   logCommandHudLabel: {
-    fontSize: 9,
-    lineHeight: 12,
+    fontSize: 7.6,
+    lineHeight: 9,
     textTransform: "uppercase",
   },
   logCommandHudValue: {
-    fontSize: 12,
-    lineHeight: 15,
-    marginTop: 2,
+    fontSize: 10,
+    lineHeight: 12,
+    marginTop: 1,
   },
   logCommandSignalRow: {
-    height: 10,
+    height: 8,
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 2,
-    marginTop: 3,
+    marginTop: 2,
   },
   logCommandSignalBar: {
-    width: 4,
-    borderRadius: 2,
+    width: 3,
+    borderRadius: 1.5,
   },
   logCommandFooter: {
-    flexDirection: "row",
-    alignItems: "stretch",
-    gap: 7,
-    marginTop: 4,
+    width: 96,
+    flexShrink: 0,
   },
-  logCommandMission: {
+  logCommandAction: {
     flex: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
-    borderWidth: 1,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  logCommandMissionLabel: {
-    fontSize: 9.5,
-    lineHeight: 12,
-    textTransform: "uppercase",
-  },
-  logCommandMissionValue: {
-    fontSize: 13,
-    lineHeight: 17,
-    marginTop: 2,
-  },
-  logCommandAction: {
-    width: 106,
-    flexShrink: 0,
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
-    paddingHorizontal: 9,
+    paddingHorizontal: 7,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 7,
+    gap: 6,
   },
   logCommandActionText: {
-    fontSize: 11.5,
-    lineHeight: 16,
+    fontSize: 10.4,
+    lineHeight: 14,
   },
 
   quickLogSupportRail: {

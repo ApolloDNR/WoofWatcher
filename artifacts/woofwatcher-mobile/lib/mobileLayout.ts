@@ -21,10 +21,10 @@ export interface FloatingTabChromeMetrics {
 export const MIN_MOBILE_TOUCH_TARGET = 48;
 export const MOBILE_INLINE_HIT_SLOP = 10;
 
-const TAB_BAR_NATIVE_HEIGHT = 66;
-const TAB_BAR_WEB_HEIGHT = 66;
-const TAB_BAR_NATIVE_BOTTOM = 8;
-const TAB_BAR_WEB_BOTTOM = 8;
+const TAB_BAR_NATIVE_HEIGHT = 72;
+const TAB_BAR_WEB_HEIGHT = 72;
+const TAB_BAR_NATIVE_BOTTOM = 12;
+const TAB_BAR_WEB_BOTTOM = 12;
 const TAB_BAR_HORIZONTAL_INSET = 16;
 const TAB_BAR_RADIUS = 26;
 const CENTER_FAB_SIZE = 56;

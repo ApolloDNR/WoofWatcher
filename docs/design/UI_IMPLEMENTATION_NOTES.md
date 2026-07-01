@@ -2907,3 +2907,38 @@ Verification:
 - Headless Chrome proof at 390x844:
   `output/playwright/woofwatcher-visual-audit-2026-07-01-final/01-plans.png`,
   `02-records.png`, `03-health.png`, and `04-avatar-studio.png`.
+
+## 2026-07-01 Home/Log First-Viewport Density
+
+This pass addressed the next visible route drift after the broader visual polish
+checkpoint: Home and Log still had too much competing chrome above the floating
+paw nav, and the bottom navigation labels were clipping inside the phone frame.
+
+What changed:
+
+- Home now shows only the four immediate Quick Log actions in the first-screen
+  card: Meal, Walk, Potty, and Water. The full action matrix remains on `/log`.
+- Quick Log keeps the live pixel command scene, but the stage, sprite, speech
+  bubble, HUD, and primary action dock are shorter so the actual tap targets
+  appear sooner.
+- The duplicate selected-action mission panel was removed from Quick Log; the
+  selected action now lives in the one-row command dock.
+- The shared mobile tab chrome now has a taller 72px bar, 12px bottom offset,
+  label line-height, and internal bottom padding so labels are readable in the
+  390x844 phone proof.
+
+Design rule locked from this pass:
+
+- Home should answer "what can I do now?" with a short immediate set, while Log
+  owns the full action grid. Shared navigation must remain readable before route
+  cards compete for more vertical space.
+
+Verification:
+
+- `mobileReadiness.test.ts` plus `mobileLayout.test.ts` passed 120/120.
+- Mobile TypeScript passed.
+- Expo web export refreshed `.expo-smoke` with 219 assets / 223 files.
+- Headless Chrome proof at 390x844 reported `overflowX=0` for:
+  `output/playwright/woofwatcher-home-log-density-2026-07-01-readable-nav/home.png`
+  and
+  `output/playwright/woofwatcher-home-log-density-2026-07-01-readable-nav/log.png`.

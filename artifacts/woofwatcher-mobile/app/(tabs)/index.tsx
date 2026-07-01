@@ -1621,7 +1621,7 @@ export default function HomeScreen() {
                 }
               />
               <View style={s.homeQuickGrid}>
-                {HOME_QUICK_LOG.map((item) => (
+                {HOME_QUICK_LOG.slice(0, 4).map((item) => (
                   <QuickActionTile
                     key={item.key}
                     icon={item.icon}

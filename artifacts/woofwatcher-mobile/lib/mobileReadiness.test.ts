@@ -1192,6 +1192,7 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
     /BoardSectionHeader\s+title="Next Up"[\s\S]*<BoardPill\s+label=\{`1 of \$\{nextCount\}`\}/,
   );
   assert.match(home, /BoardSectionHeader\s+title="Quick Log"/);
+  assert.match(home, /HOME_QUICK_LOG\.slice\(0,\s*4\)\.map/);
   assert.match(home, /Today's Missions/);
 });
 
@@ -2219,12 +2220,19 @@ test("keeps Quick Log aligned to the mobile design-system recovery recipe", () =
   assert.match(log, /quickLogActionConsoleHeader/);
   assert.match(log, /quickLogSupportRail/);
   assert.match(log, /quickLogDetailDock/);
-  assert.match(log, /logCommandStage:[\s\S]*width: "100%"[\s\S]*minHeight: 148/);
+  assert.match(log, /logCommandStage:[\s\S]*width: "100%"[\s\S]*minHeight: 82/);
   assert.match(log, /resizeMode="stretch"[\s\S]*testID="quick-log-command-pixel-stage"/);
-  assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "62%"/);
-  assert.match(log, /logCommandSprite:[\s\S]*right: 5/);
+  assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "68%"/);
+  assert.match(log, /logCommandSprite:[\s\S]*right: 12/);
   assert.match(log, /logCommandDock/);
+  assert.doesNotMatch(log, /logCommandMission/);
+  assert.doesNotMatch(log, />\s*Selected\s*</);
   assert.match(log, /Tap saves\. Hold opens details\./);
+  assert.match(
+    getStyleBlock(log, "logCommandDock"),
+    /flexDirection:\s*"row"/,
+    "Quick Log command dock should be one compact row so the action grid stays visible",
+  );
   assert.doesNotMatch(
     getStyleBlock(log, "logCommandHud"),
     /marginTop:\s*104/,
