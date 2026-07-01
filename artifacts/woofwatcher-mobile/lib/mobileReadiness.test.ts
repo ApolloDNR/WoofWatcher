@@ -1222,6 +1222,65 @@ test("keeps Home first-screen status grouped as a care status board", () => {
   );
 });
 
+test("keeps Home room animation alive without duplicate first-screen HUD chrome", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const room = readAppFile(join("..", "components", "LivingPhoenixRoom.tsx"));
+
+  assert.match(home, /<LivingPhoenixRoom[\s\S]*chromeDensity="compact"/);
+  assert.match(room, /chromeDensity\?: "full" \| "compact"/);
+  assert.match(room, /const compactChrome = chromeDensity === "compact"/);
+  assert.match(
+    room,
+    /\{!isStudio && !compactChrome \? \([\s\S]*styles\.roomStatsPanel/,
+  );
+  assert.match(
+    room,
+    /\{!isStudio && !compactChrome \? \([\s\S]*styles\.statusPatch/,
+  );
+  assert.match(
+    room,
+    /\{!isStudio && !compactChrome \? \([\s\S]*styles\.roomDock/,
+  );
+  assert.match(
+    room,
+    /\{!isStudio && !compactChrome \? \([\s\S]*styles\.nextChip/,
+  );
+  assert.match(room, /function getCompactSpriteZone/);
+  assert.match(room, /left: "42%"/);
+  assert.match(room, /top: "28%"/);
+  assert.match(room, /width: 150/);
+  assert.match(room, /height: 150/);
+  assert.match(
+    room,
+    /const stageSpriteAction: CareTwinSpriteAction = compactChrome\s*\?\s*"tail-wag"\s*:\s*activeSpriteAction/,
+  );
+  assert.match(
+    room,
+    /const activeSpriteZone = compactChrome[\s\S]*\?\s*getCompactSpriteZone\(spriteZone\)[\s\S]*:\s*spriteZone/,
+  );
+  assert.match(room, /left: activeSpriteZone\.left/);
+  assert.match(room, /width: activeSpriteZone\.width/);
+  assert.match(
+    room,
+    /const shouldUseAvatarRuntime = Boolean\(avatarConfig\) && !compactChrome/,
+  );
+  assert.match(
+    room,
+    /shouldUseAvatarRuntime && avatarConfig[\s\S]*\?\s*deriveAvatarRoomRuntime/,
+  );
+  assert.match(
+    room,
+    /const layeredStageReady =\s*!compactChrome &&[\s\S]*layerReadiness\.roomReady/,
+  );
+  assert.match(
+    room,
+    /const useFallbackAvatarLayer =\s*roomStageReady && \(compactChrome \|\| !layeredStageReady\)/,
+  );
+  assert.match(room, /testID="care-twin-fallback-avatar-rig"/);
+  assert.match(room, /compactChrome \? styles\.speechBubbleCompact : null/);
+  assert.match(room, /compactChrome \? styles\.speechTextCompact : null/);
+});
+
 test("keeps Home Quick Log header action as a real route target", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));

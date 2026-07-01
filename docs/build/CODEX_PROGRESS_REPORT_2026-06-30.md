@@ -381,3 +381,44 @@ Remaining:
 - Local headless Chrome stopped emitting new PNG screenshots after the compact
   shell proof; route smoke/export stayed green. Native iOS/Android screenshots
   remain the real visual proof needed for launch.
+
+## 2026-07-01 Home Compact Hero Recovery
+
+Home had the right operating pieces but the compact first screen still felt too
+crowded and visually risky. The room could open on a sleep/bed state, the
+experimental avatar/accessory runtime could distort Phoenix above the fold, and
+the floating next-chip sat across the dog.
+
+What changed:
+
+- Reduced the Home first-screen room density and status tile sizing while
+  preserving accessible touch targets.
+- Added a compact `LivingPhoenixRoom` mode for Home that hides duplicate HUD
+  chrome and bottom room chips.
+- Compact Home now uses a launch-safe, approved crisp Phoenix hero asset with a
+  simple breathing/tail-wag presentation instead of the experimental layered
+  sprite/accessory runtime.
+- Tightened the speech bubble and anchored Phoenix on the rug so the dog remains
+  readable in the 390px mobile preview.
+- Preserved full/studio room behavior for Avatar Studio and Care Twin QA.
+
+Verification:
+
+- `homeFirstScreenLayout.test.ts` passed 3/3.
+- `mobileReadiness.test.ts` passed 112/112 as part of the focused run.
+- Combined focused Home/readiness tests passed 115/115.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  through the bundled Node runtime.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Static preview route smoke passed for `/`, `/log`, `/calendar`, `/health`,
+  `/records`, and `/more` at `http://127.0.0.1:4194/`.
+- Chrome screenshot proof captured at
+  `tmp/route-home-compact-hero-final.png`.
+
+Remaining:
+
+- This is local web/mobile proof only. Actual iOS and Android screenshots,
+  exact pnpm 10.24 beta doctor proof, CI completion, provider-backed services,
+  generated PDF output, store approval, and Apollo launch sign-off remain open.

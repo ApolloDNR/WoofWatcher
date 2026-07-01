@@ -12,8 +12,9 @@ test("keeps the iPhone preview Home stage tight enough for the mission deck to p
   });
 
   assert.equal(layout.density, "showcase");
-  assert.ok(layout.heroAspectRatio >= 1.18);
-  assert.ok(layout.statusTileMinHeight <= 84);
+  assert.ok(layout.heroAspectRatio >= 1.42);
+  assert.ok(layout.statusTileMinHeight <= 66);
+  assert.ok(layout.todayCommandPeekPx >= 210);
   assert.ok(layout.firstMissionPeekPx >= 220);
   assert.match(layout.qaLabel, /mockup-accurate/);
 });
@@ -27,9 +28,11 @@ test("uses a denser first-screen composition on smaller phones without dropping 
   });
 
   assert.equal(layout.density, "compact");
-  assert.ok(layout.heroAspectRatio >= 1.28);
-  assert.ok(layout.statusTileMinHeight >= 72);
+  assert.ok(layout.heroAspectRatio >= 1.56);
+  assert.ok(layout.statusTileMinHeight >= 48);
+  assert.ok(layout.statusTileMinHeight <= 60);
   assert.ok(layout.presencePanelMinHeight >= 48);
+  assert.ok(layout.todayCommandPeekPx >= 120);
   assert.ok(layout.firstMissionPeekPx >= 150);
 });
 
@@ -44,7 +47,8 @@ test("never lets the Home first-screen controls shrink below accessible mobile t
 
     assert.ok(layout.heroStudioButtonMinHeight >= 48, `${width}px care twin button`);
     assert.ok(layout.presencePanelMinHeight >= 48, `${width}px presence panel`);
-    assert.ok(layout.statusTileMinHeight >= 72, `${width}px status tile`);
-    assert.ok(layout.statusTileIconBoxSize >= 34, `${width}px status icon box`);
+    assert.ok(layout.statusTileMinHeight >= 48, `${width}px status tile`);
+    assert.ok(layout.statusTileIconBoxSize >= 28, `${width}px status icon box`);
+    assert.ok(layout.todayCommandPeekPx >= 80, `${width}px Today Command peek`);
   }
 });

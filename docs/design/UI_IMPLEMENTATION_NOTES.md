@@ -2830,3 +2830,46 @@ Verification:
 - Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
   prepending bundled Node to `PATH`.
 - Route smoke returned `200` for Home, Log, Plans, Health, Records, and More.
+
+## 2026-07-01 Home Compact Hero Recovery
+
+After the preview shell and Health hierarchy fixes, Home still had a first-screen
+problem: the care-twin room could select a sleep/bed composition above the fold,
+and the experimental accessory/runtime layer made Phoenix read as a malformed
+overlay instead of the main dog. The Home screen now treats compact mobile as a
+specific product composition, not just a smaller full-stage renderer.
+
+What changed:
+
+- Tightened the Home first-screen layout model so the room stage, presence card,
+  Care Status board, and Today Command fit with a visible mission peek above the
+  paw nav.
+- `LivingPhoenixRoom` now supports compact chrome for Home: duplicate room stats,
+  status patch, room dock, and bottom next-chip are hidden because those signals
+  already exist in the real Home cards below.
+- Compact Home bypasses the Avatar Studio accessory runtime and the layered
+  sprite-sheet player, then uses the approved crisp Phoenix pixel hero as the
+  launch-safe avatar.
+- The compact hero is anchored on the room rug at a fixed readable size, with a
+  smaller speech bubble so Phoenix's face stays visible.
+- Full/studio room presentations still keep the richer layered sprite runtime,
+  template/accessory overlays, and deeper state matrix for QA.
+
+Design rule locked from this pass:
+
+- The first Home viewport must show one readable Phoenix, not every possible
+  care-twin state. Deep sleep, accessory overlays, and full sprite strips belong
+  in Avatar Studio, Care Twin QA, or secondary room states until the PixelLab
+  frames are normalized and native-approved.
+
+Verification:
+
+- `homeFirstScreenLayout.test.ts` passed 3/3.
+- `mobileReadiness.test.ts` passed 112/112 as part of the focused layout run.
+- Combined focused Home/readiness tests passed 115/115.
+- Mobile TypeScript passed.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Static preview route smoke passed for `/`, `/log`, `/calendar`, `/health`,
+  `/records`, and `/more` at `http://127.0.0.1:4194/`.
+- Chrome screenshot proof: `tmp/route-home-compact-hero-final.png`.

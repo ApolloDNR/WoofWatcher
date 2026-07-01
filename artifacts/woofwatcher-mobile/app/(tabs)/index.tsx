@@ -1341,6 +1341,7 @@ export default function HomeScreen() {
                 reaction={roomReaction}
                 statusReadouts={roomStats}
                 avatarConfig={avatarConfig}
+                chromeDensity="compact"
                 onPress={tapPhoenixRoom}
                 onLongPress={openAvatarStudio}
                 accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
@@ -2468,7 +2469,7 @@ const s = StyleSheet.create({
   presenceSub: { fontSize: 11, marginTop: 2 },
   careStatusCard: {
     marginTop: 0,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   statusTiles: {
     flexDirection: "row",
@@ -2477,24 +2478,24 @@ const s = StyleSheet.create({
   },
   statusTile: {
     flex: 1,
-    minHeight: 92,
+    minHeight: 62,
     borderWidth: 1,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 6,
-    paddingVertical: 9,
+    paddingHorizontal: 5,
+    paddingVertical: 6,
   },
   statusTileIcon: {
-    width: 39,
-    height: 39,
+    width: 30,
+    height: 30,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 5,
+    marginBottom: 3,
   },
-  statusTileLabel: { fontSize: 11, textAlign: "center" },
-  statusTileValue: { fontSize: 13, marginTop: 3, textAlign: "center" },
+  statusTileLabel: { fontSize: 9.5, textAlign: "center" },
+  statusTileValue: { fontSize: 11.5, marginTop: 1, textAlign: "center" },
   todayCommandCard: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     marginBottom: 10,

@@ -98,9 +98,16 @@ interface Props {
   onLongPress?: () => void;
   accessibilityHint?: string;
   presentation?: "home" | "studio";
+  chromeDensity?: "full" | "compact";
 }
 
 type PercentString = `${number}%`;
+type SpriteStageZone = {
+  left: PercentString;
+  top: PercentString;
+  width: number;
+  height: number;
+};
 
 const MOOD_THEME: Record<
   Mood,
@@ -167,7 +174,7 @@ const FOCUS_SPOTS: Record<
 
 const SPRITE_STAGE_ZONES: Record<
   AvatarRoomZone,
-  { left: PercentString; top: PercentString; width: number; height: number }
+  SpriteStageZone
 > = {
   rug: { left: "17%", top: "23%", width: 248, height: 248 },
   door: { left: "7%", top: "23%", width: 246, height: 246 },
@@ -175,6 +182,16 @@ const SPRITE_STAGE_ZONES: Record<
   bed: { left: "7%", top: "31%", width: 224, height: 224 },
   window: { left: "21%", top: "24%", width: 238, height: 238 },
 };
+
+function getCompactSpriteZone(zone: SpriteStageZone): SpriteStageZone {
+  return {
+    ...zone,
+    left: "42%",
+    top: "28%",
+    width: 150,
+    height: 150,
+  };
+}
 
 const HUD_TONE_COLOR: Record<CareTwinHudTone, string> = {
   steady: "#6DA36F",
@@ -237,12 +254,14 @@ export function LivingPhoenixRoom({
   onLongPress,
   accessibilityHint,
   presentation = "home",
+  chromeDensity = "full",
 }: Props) {
   const colors = useColors();
   const theme = MOOD_THEME[mood];
   const plan = useMemo(() => deriveCareTwinScene(motion), [motion]);
   const choreography = useMemo(() => deriveCareTwinChoreography(plan), [plan]);
   const isStudio = presentation === "studio";
+  const compactChrome = chromeDensity === "compact";
   const sceneSource = STATE_SCENES[mood];
   const fallbackAvatarSource = PHOENIX_FALLBACK_AVATARS[mood];
   const lines = useMemo(() => speechLines(speech), [speech]);
@@ -255,12 +274,16 @@ export function LivingPhoenixRoom({
   const ambientTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeSpriteAction =
     activeReaction?.spriteAction ?? ambientSpriteAction ?? plan.spriteAction;
+  const stageSpriteAction: CareTwinSpriteAction = compactChrome
+    ? "tail-wag"
+    : activeSpriteAction;
+  const shouldUseAvatarRuntime = Boolean(avatarConfig) && !compactChrome;
   const avatarRoomRuntime = useMemo(
     () =>
-      avatarConfig
-        ? deriveAvatarRoomRuntime(avatarConfig, activeSpriteAction)
+      shouldUseAvatarRuntime && avatarConfig
+        ? deriveAvatarRoomRuntime(avatarConfig, stageSpriteAction)
         : null,
-    [activeSpriteAction, avatarConfig],
+    [avatarConfig, shouldUseAvatarRuntime, stageSpriteAction],
   );
   const avatarAccessoryCount = avatarRoomRuntime?.activeSlots.length ?? 0;
   const roomLiveTitle = isStudio ? "STUDIO RIG" : "PHOENIX TWIN";
@@ -269,38 +292,45 @@ export function LivingPhoenixRoom({
       ? `${avatarRoomRuntime.templateLabel} - ${avatarAccessoryCount} add-ons`
       : `${avatarRoomRuntime.templateLabel} rig`
     : "Pixel room";
-  const activeZoneKey = zoneForSpriteAction(activeSpriteAction, plan.zone);
+  const activeZoneKey = compactChrome
+    ? "rug"
+    : zoneForSpriteAction(stageSpriteAction, plan.zone);
   const zone = ROOM_ZONES[activeZoneKey];
   const focusSpot = FOCUS_SPOTS[activeZoneKey];
   const spriteZone = SPRITE_STAGE_ZONES[activeZoneKey];
+  const activeSpriteZone = compactChrome
+    ? getCompactSpriteZone(spriteZone)
+    : spriteZone;
   const spriteAsset = useMemo(
     () =>
       avatarRoomRuntime?.spriteAsset ??
-      getCareTwinSpriteAsset(activeSpriteAction),
-    [activeSpriteAction, avatarRoomRuntime?.spriteAsset],
+      getCareTwinSpriteAsset(stageSpriteAction),
+    [avatarRoomRuntime?.spriteAsset, stageSpriteAction],
   );
   const roomLayer = useMemo(
-    () => getCareTwinRoomLayer(mood, activeSpriteAction),
-    [activeSpriteAction, mood],
+    () => getCareTwinRoomLayer(mood, stageSpriteAction),
+    [mood, stageSpriteAction],
   );
   const layerReadiness = useMemo(
-    () => getCareTwinLayerReadiness(activeSpriteAction, mood),
-    [activeSpriteAction, mood],
+    () => getCareTwinLayerReadiness(stageSpriteAction, mood),
+    [mood, stageSpriteAction],
   );
   const activeSpriteTrack =
     avatarRoomRuntime?.spriteTrack ??
-    CARE_TWIN_SPRITE_MANIFEST[activeSpriteAction] ??
+    CARE_TWIN_SPRITE_MANIFEST[stageSpriteAction] ??
     plan.spriteTrack;
   const activeSpriteAsset =
     avatarRoomRuntime?.spriteAsset ??
-    getCareTwinSpriteAsset(activeSpriteAction) ??
+    getCareTwinSpriteAsset(stageSpriteAction) ??
     spriteAsset;
   const layeredStageReady =
+    !compactChrome &&
     layerReadiness.roomReady &&
     Boolean(activeSpriteAsset && roomLayer && activeSpriteTrack);
   const roomStageReady = Boolean(roomLayer);
   const stageSource = roomLayer?.source ?? sceneSource;
-  const useFallbackAvatarLayer = roomStageReady && !layeredStageReady;
+  const useFallbackAvatarLayer =
+    roomStageReady && (compactChrome || !layeredStageReady);
   const animateBakedScene = !roomStageReady && !layeredStageReady;
   const roomStats = useMemo<PhoenixRoomStat[]>(
     () =>
@@ -341,8 +371,8 @@ export function LivingPhoenixRoom({
     ],
   );
   const motionRecipe = useMemo(
-    () => motionRecipeForSpriteAction(activeSpriteAction),
-    [activeSpriteAction],
+    () => motionRecipeForSpriteAction(stageSpriteAction),
+    [stageSpriteAction],
   );
 
   const breath = useSharedValue(0);
@@ -448,10 +478,13 @@ export function LivingPhoenixRoom({
   ]);
 
   const isWalking = plan.animation === "walk";
-  const isEating = plan.animation === "eat" || plan.animation === "drink";
-  const isSleeping = plan.animation === "sleep";
-  const isCelebrate = plan.animation === "celebrate";
-  const isComfort = plan.animation === "comfort";
+  const isEating =
+    !compactChrome && (plan.animation === "eat" || plan.animation === "drink");
+  const isSleeping = !compactChrome && plan.animation === "sleep";
+  const isCelebrate = !compactChrome && plan.animation === "celebrate";
+  const isComfort = !compactChrome && plan.animation === "comfort";
+  const stageBreathLift = compactChrome ? 3.5 : plan.breathLift;
+  const stageBreathScale = compactChrome ? 0.018 : plan.breathScale;
 
   const sceneMotionStyle = useAnimatedStyle(() => {
     const wave = Math.sin(walkCycle.value * Math.PI * 2);
@@ -469,7 +502,7 @@ export function LivingPhoenixRoom({
           translateY:
             zoneY.value * 0.08 -
             breath.value *
-              plan.breathLift *
+              stageBreathLift *
               (0.18 + motionRecipe.scalePulse * 0.08) -
             bob -
             celebration * 1.5 +
@@ -482,7 +515,7 @@ export function LivingPhoenixRoom({
             zoneScale.value *
             (1.018 +
               breath.value *
-                plan.breathScale *
+                stageBreathScale *
                 (0.52 + motionRecipe.scalePulse * 0.16) +
               tap.value * 0.01),
         },
@@ -500,8 +533,8 @@ export function LivingPhoenixRoom({
     motionRecipe.bodySwayPx,
     motionRecipe.scalePulse,
     motionRecipe.tiltDeg,
-    plan.breathLift,
-    plan.breathScale,
+    stageBreathLift,
+    stageBreathScale,
   ]);
 
   const spriteRigStyle = useAnimatedStyle(() => {
@@ -520,7 +553,7 @@ export function LivingPhoenixRoom({
           translateY:
             zoneY.value * 0.32 -
             breath.value *
-              plan.breathLift *
+              stageBreathLift *
               (0.78 + motionRecipe.scalePulse * 0.32) -
             bob -
             celebration * 4 +
@@ -533,7 +566,7 @@ export function LivingPhoenixRoom({
             zoneScale.value *
             (1 +
               breath.value *
-                plan.breathScale *
+                stageBreathScale *
                 (0.82 + motionRecipe.scalePulse * 0.28) +
               tap.value * 0.025),
         },
@@ -551,8 +584,8 @@ export function LivingPhoenixRoom({
     motionRecipe.bodySwayPx,
     motionRecipe.scalePulse,
     motionRecipe.tiltDeg,
-    plan.breathLift,
-    plan.breathScale,
+    stageBreathLift,
+    stageBreathScale,
   ]);
 
   const spriteShadowStyle = useAnimatedStyle(
@@ -669,14 +702,14 @@ export function LivingPhoenixRoom({
         <Animated.View
           pointerEvents="none"
           style={[
-            styles.spriteRig,
-            {
-              left: spriteZone.left,
-              top: spriteZone.top,
-              width: spriteZone.width,
-              height: spriteZone.height,
-            },
-            spriteRigStyle,
+              styles.spriteRig,
+              {
+                left: activeSpriteZone.left,
+                top: activeSpriteZone.top,
+                width: activeSpriteZone.width,
+                height: activeSpriteZone.height,
+              },
+              spriteRigStyle,
           ]}
           testID="care-twin-layered-sprite-rig"
         >
@@ -709,14 +742,14 @@ export function LivingPhoenixRoom({
                 : activeSpriteTrack.key
             }
             asset={activeSpriteAsset}
-            height={spriteZone.height}
+            height={activeSpriteZone.height}
             testID={
               avatarRoomRuntime?.spriteMode === "template-idle-walk-pack"
                 ? "care-twin-template-sprite-player"
                 : "care-twin-sprite-player"
             }
             track={activeSpriteTrack}
-            width={spriteZone.width}
+            width={activeSpriteZone.width}
           />
           {avatarRoomRuntime?.overlayLayers.map((layer) =>
             layer.source ? (
@@ -740,14 +773,14 @@ export function LivingPhoenixRoom({
         <Animated.View
           pointerEvents="none"
           style={[
-            styles.spriteRig,
-            {
-              left: spriteZone.left,
-              top: spriteZone.top,
-              width: spriteZone.width,
-              height: spriteZone.height,
-            },
-            spriteRigStyle,
+              styles.spriteRig,
+              {
+                left: activeSpriteZone.left,
+                top: activeSpriteZone.top,
+                width: activeSpriteZone.width,
+                height: activeSpriteZone.height,
+              },
+              spriteRigStyle,
           ]}
           testID="care-twin-fallback-avatar-rig"
         >
@@ -809,7 +842,7 @@ export function LivingPhoenixRoom({
             </Text>
           </View>
         </View>
-        {!isStudio ? (
+        {!isStudio && !compactChrome ? (
           <Animated.View
             style={[
               styles.zoneChip,
@@ -828,7 +861,7 @@ export function LivingPhoenixRoom({
         ) : null}
       </View>
 
-      {!isStudio ? (
+      {!isStudio && !compactChrome ? (
         <View
           style={[
             styles.roomStatsPanel,
@@ -909,6 +942,7 @@ export function LivingPhoenixRoom({
         <View
           style={[
             styles.speechBubble,
+            compactChrome ? styles.speechBubbleCompact : null,
             {
               backgroundColor: "rgba(255,249,239,0.94)",
               borderColor: colors.navy,
@@ -918,7 +952,11 @@ export function LivingPhoenixRoom({
           {(lines.length ? lines : ["I'm ready."]).map((line) => (
             <Text
               key={line}
-              style={[styles.speechText, { color: colors.navy }]}
+              style={[
+                styles.speechText,
+                compactChrome ? styles.speechTextCompact : null,
+                { color: colors.navy },
+              ]}
             >
               {line}
             </Text>
@@ -935,7 +973,7 @@ export function LivingPhoenixRoom({
         </View>
       ) : null}
 
-      {!isStudio ? (
+      {!isStudio && !compactChrome ? (
         <View
           style={[
             styles.statusPatch,
@@ -1036,7 +1074,7 @@ export function LivingPhoenixRoom({
         </Animated.View>
       ) : null}
 
-      {!isStudio ? (
+      {!isStudio && !compactChrome ? (
         <View
           style={[
             styles.roomDock,
@@ -1102,7 +1140,7 @@ export function LivingPhoenixRoom({
         </View>
       ) : null}
 
-      {!isStudio ? (
+      {!isStudio && !compactChrome ? (
         <View
           style={[
             styles.nextChip,
@@ -1295,10 +1333,22 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     zIndex: 5,
   },
+  speechBubbleCompact: {
+    top: 43,
+    left: 20,
+    width: "39%",
+    minHeight: 62,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+  },
   speechText: {
     fontFamily: "Fredoka_700Bold",
     fontSize: 14,
     lineHeight: 18,
+  },
+  speechTextCompact: {
+    fontSize: 12,
+    lineHeight: 15,
   },
   speechTail: {
     position: "absolute",
