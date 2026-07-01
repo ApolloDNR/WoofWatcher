@@ -690,3 +690,46 @@ Remaining:
 - Fresh local/native screenshots still need to be captured for `/portrait`.
 - Native iOS/Android route visual consistency proof remains required before
   design sign-off.
+
+Branch CI:
+
+- `WoofWatcher Verify` run `28534699641` completed `success` on
+  `automation/premium-revenue-product-builder` at commit `d06ecfb`.
+
+## 2026-07-01 Health Flagship Room Redesign
+
+Apollo flagged `/health` as still feeling confusing, crowded, and below the
+premium neo-retro standard. This pass changed the route hierarchy instead of
+adding more decoration.
+
+What changed:
+
+- Removed the separate compact `Health Snapshot` card that sat above the pixel
+  room.
+- Removed the extra room HUD strip that repeated score and bile status over the
+  scene.
+- Enlarged the Health Watch pixel room and live sprite so the route feels more
+  like a real care-twin screen.
+- Moved `Health Snapshot`, score, support copy, 7-day rhythm, and signal rows
+  into one main status panel below the room.
+- Kept the review packet, vet-share checklist, and non-diagnostic boundary
+  below the flagship room so serious handoff content remains reachable without
+  competing with the first screen.
+- Added a readiness guard that rejects the old duplicate compact snapshot /
+  stage-HUD structure.
+
+Verification:
+
+- The new Health readiness guard failed first against the old structure, then
+  passed after the redesign.
+- `mobileReadiness.test.ts` passed 112/112.
+- Mobile TypeScript passed with absolute workspace paths after the first
+  relative-path attempt was sandbox-remapped away from `node_modules`.
+- The broad focused API/mobile/PWA/care-domain suite passed 497/497.
+- Expo web export smoke passed to `.expo-smoke` with 218 assets / 222 files.
+- `git diff --check` passed with expected Windows CRLF warnings only.
+
+Remaining:
+
+- Commit/push this Health slice, rerun branch CI, and capture fresh `/health`
+  screenshot/native proof after the commit.

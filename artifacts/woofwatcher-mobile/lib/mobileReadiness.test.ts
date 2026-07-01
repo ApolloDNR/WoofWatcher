@@ -1788,28 +1788,32 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /Not veterinary advice/);
 });
 
-test("keeps Health Snapshot ahead of the pixel stage on compact phones", () => {
+test("keeps Health Watch as one flagship pixel room with one status panel", () => {
   const health = readAppFile(join("(tabs)", "health.tsx"));
-  const snapshotIndex = health.indexOf("<BoardCard style={[s.sectionCard, s.primaryHealthCard]}>");
   const stageIndex = health.indexOf("<BoardCard style={s.heroCard}>");
+  const reviewIndex = health.indexOf("<BoardCard style={s.sectionCard}>");
 
-  assert.notEqual(snapshotIndex, -1, "Health Snapshot should use the primary compact health card");
-  assert.notEqual(stageIndex, -1, "Health pixel stage should still exist as supporting delight");
+  assert.notEqual(stageIndex, -1, "Health pixel room should be the flagship first card");
+  assert.notEqual(reviewIndex, -1, "Health review packet should stay below the flagship room");
   assert.ok(
-    snapshotIndex < stageIndex,
-    "Health Snapshot should be the first useful card before the pixel room",
+    stageIndex < reviewIndex,
+    "Health pixel room should come before lower review cards",
   );
-  assert.match(health, /healthStatusSummary/);
-  assert.match(health, /healthScoreTokenCompact/);
+  assert.doesNotMatch(
+    health,
+    /primaryHealthCard|healthScoreTokenCompact|statusScoreTrackCompact|healthStageHud/,
+    "Health Watch should not keep duplicate compact snapshot or stage HUD layers",
+  );
+  assert.match(health, /Health Snapshot/);
   assert.match(health, /healthStatusTitle/);
-  assert.match(health, /statusScoreTrackCompact/);
+  assert.match(health, /healthHeroPanel/);
   assert.match(health, /resizeMode="stretch"[\s\S]*style=\{s\.healthStage\}/);
-  assert.match(health, /width=\{86\}/);
-  assert.match(health, /height=\{86\}/);
+  assert.match(health, /width=\{116\}/);
+  assert.match(health, /height=\{116\}/);
   assert.match(
     getStyleBlock(health, "healthStage"),
-    /minHeight:\s*124/,
-    "Health pixel room should stay compact enough to avoid fighting the paw nav",
+    /minHeight:\s*18[0-9]/,
+    "Health pixel room should stay large enough for delight but compact enough to avoid fighting the paw nav",
   );
 });
 

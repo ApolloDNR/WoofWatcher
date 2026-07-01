@@ -215,7 +215,34 @@ Design rule:
 
 ## Next Design Passes
 
+## Health Flagship Room Redesign
+
+The 2026-07-01 Health pass reverses the earlier compact-support choice because
+Apollo's current direction is that the core health route should still feel like
+a premium care-twin screen, not a utility page with a small decorative room.
+
+- Health now opens with one flagship pixel room and one status panel.
+- The old separate compact snapshot card was removed.
+- The room HUD strip was removed so the scene is not competing with repeated
+  score/bile chrome.
+- The score, `CARE STATUS`, support copy, 7-day rhythm, and health signal rows
+  live inside a single panel below the room.
+- The review packet remains below the flagship room as the serious vet/sitter
+  handoff surface.
+- A readiness guard rejects the old duplicate compact snapshot and room-HUD
+  pattern.
+
+Design rule:
+
+- Health Watch should feel calm and trustworthy, but still alive.
+- Use one pixel room and one primary status panel before review content.
+- Do not stack multiple score/HUD layers around the same room.
+- Keep medical language non-diagnostic and route actions to real logging,
+  records, or review-packet workflows.
+
+## Next Design Passes
+
 1. Device visual QA: capture real iOS/Android screenshots for Home, Log, Plans, Health, More, Records, and Avatar Studio before calling the UI store-ready.
 2. Route Visual Consistency: mark the first route with overlap, clipped copy, hidden primary action, duplicate-avatar behavior, bottom-nav collision, or mockup drift as Needs tune.
 3. Home and Avatar Studio: continue dark-RPG/game-feel alignment once native screenshots identify the highest-impact remaining drift.
-4. Polish pass: use the stage-dock rule on any remaining route where a HUD or credential card is fighting the pixel scene.
+4. Polish pass: use the one-room/one-status-panel rule on any remaining route where a HUD, credential card, or duplicated metric rail is fighting the pixel scene.
