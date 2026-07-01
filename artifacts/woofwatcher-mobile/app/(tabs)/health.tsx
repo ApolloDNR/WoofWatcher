@@ -468,6 +468,113 @@ export default function HealthScreen() {
           })}
         </View>
 
+        {activeTab === "health" ? (
+          <BoardCard style={[s.sectionCard, s.primaryHealthCard]}>
+            <BoardSectionHeader
+              title="Health Snapshot"
+              accessory={
+                <HealthHeaderAction
+                  label="7-day view"
+                  accessibilityLabel="Show Health 7-day rhythm"
+                  onPress={() => {
+                    setActiveTab("health");
+                    scrollRef.current?.scrollTo({ y: 0, animated: true });
+                  }}
+                />
+              }
+            />
+            <View style={[s.healthStatusSummary, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={[s.healthScoreToken, s.healthScoreTokenCompact, { backgroundColor: scoreTone + "14", borderColor: scoreTone + "66" }]}>
+                <Text style={[s.healthScoreValue, s.healthScoreValueCompact, { color: scoreTone, fontFamily: DISPLAY }]}>
+                  {score}
+                </Text>
+                <Text style={[s.healthScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_800ExtraBold" }]}>
+                  Health score
+                </Text>
+              </View>
+              <View style={s.healthStatusCopy}>
+                <Text style={[s.heroLabel, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>CARE STATUS</Text>
+                <Text style={[s.healthStatusTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{heroTitle}</Text>
+                <Text style={[s.healthStatusBody, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {heroCopy}
+                </Text>
+                <View style={[s.statusScoreTrack, s.statusScoreTrackCompact, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                  <View style={[s.statusScoreFill, { width: `${score}%`, backgroundColor: scoreTone }]} />
+                </View>
+              </View>
+            </View>
+            <View style={[s.healthRhythmPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={s.healthRhythmHeader}>
+                <Text style={[s.healthRhythmTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  7-day rhythm
+                </Text>
+                <Text style={[s.healthRhythmMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  Owner log signal
+                </Text>
+              </View>
+              <View style={s.healthRhythmBars}>
+                {healthRhythm.map((day, index) => (
+                  <View key={`${day.label}-${index}`} style={s.healthRhythmColumn}>
+                    <View
+                      style={[
+                        s.healthRhythmBar,
+                        {
+                          height: 10 + Math.round(day.value * 30),
+                          backgroundColor: day.tone,
+                          borderColor: day.tone,
+                        },
+                      ]}
+                    />
+                    <Text style={[s.healthRhythmLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      {day.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+            <View style={s.healthSignalList}>
+              {healthRows.map((row) => (
+                <Pressable
+                  key={row.label}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${row.label}. ${row.status}. ${row.detail}. ${row.actionLabel}`}
+                  onPress={() => openHealthStatusRoute(row.routeType)}
+                  style={({ pressed }) => [
+                    s.healthSignalRow,
+                    {
+                      backgroundColor: pressed ? row.tone + "10" : colors.background,
+                      borderColor: pressed ? row.tone + "77" : colors.border,
+                    },
+                  ]}
+                >
+                  <View style={[s.statusIcon, { backgroundColor: row.tone + "16" }]}>
+                    <PixelIcon name={row.icon} size={24} />
+                  </View>
+                  <View style={s.healthSignalCopy}>
+                    <View style={s.healthSignalTitleLine}>
+                      <Text style={[s.healthSignalTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                        {row.label}
+                      </Text>
+                      <Text style={[s.healthSignalStatus, { color: row.tone, fontFamily: DISPLAY_SEMI }]}>{row.status}</Text>
+                    </View>
+                    <Text style={[s.healthSignalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {row.detail}
+                    </Text>
+                  </View>
+                  <View style={[s.healthSignalActionPill, { backgroundColor: row.tone + "10", borderColor: row.tone + "44" }]}>
+                    <Text style={[s.healthSignalAction, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                      Log
+                    </Text>
+                    <Text style={[s.healthSignalActionArrow, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                      {">"}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </BoardCard>
+        ) : null}
+
         <BoardCard style={s.heroCard}>
           <ImageBackground
             source={HEALTH_WATCH_STAGE_ROOM}
@@ -499,8 +606,8 @@ export default function HealthScreen() {
               <SpriteSheetPlayer
                 asset={HEALTH_WATCH_STAGE_SPRITE}
                 track={HEALTH_WATCH_STAGE_TRACK}
-                width={132}
-                height={132}
+                width={96}
+                height={96}
                 testID="health-watch-pixel-sprite"
               />
             </View>
@@ -835,93 +942,6 @@ export default function HealthScreen() {
           </BoardCard>
         ) : null}
 
-        {activeTab === "health" ? (
-        <BoardCard style={s.sectionCard}>
-          <BoardSectionHeader
-            title="Health Snapshot"
-            accessory={
-              <HealthHeaderAction
-                label="7-day view"
-                accessibilityLabel="Show Health 7-day rhythm"
-                onPress={() => {
-                  setActiveTab("health");
-                  scrollRef.current?.scrollTo({ y: 0, animated: true });
-                }}
-              />
-            }
-          />
-          <View style={[s.healthRhythmPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <View style={s.healthRhythmHeader}>
-              <Text style={[s.healthRhythmTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                7-day rhythm
-              </Text>
-              <Text style={[s.healthRhythmMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                Owner log signal
-              </Text>
-            </View>
-            <View style={s.healthRhythmBars}>
-              {healthRhythm.map((day, index) => (
-                <View key={`${day.label}-${index}`} style={s.healthRhythmColumn}>
-                  <View
-                    style={[
-                      s.healthRhythmBar,
-                      {
-                        height: 10 + Math.round(day.value * 30),
-                        backgroundColor: day.tone,
-                        borderColor: day.tone,
-                      },
-                    ]}
-                  />
-                  <Text style={[s.healthRhythmLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                    {day.label}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-          <View style={s.healthSignalList}>
-            {healthRows.map((row) => (
-              <Pressable
-                key={row.label}
-                accessibilityRole="button"
-                accessibilityLabel={`${row.label}. ${row.status}. ${row.detail}. ${row.actionLabel}`}
-                onPress={() => openHealthStatusRoute(row.routeType)}
-                style={({ pressed }) => [
-                  s.healthSignalRow,
-                  {
-                    backgroundColor: pressed ? row.tone + "10" : colors.background,
-                    borderColor: pressed ? row.tone + "77" : colors.border,
-                  },
-                ]}
-              >
-                <View style={[s.statusIcon, { backgroundColor: row.tone + "16" }]}>
-                  <PixelIcon name={row.icon} size={24} />
-                </View>
-                <View style={s.healthSignalCopy}>
-                  <View style={s.healthSignalTitleLine}>
-                    <Text style={[s.healthSignalTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                      {row.label}
-                    </Text>
-                    <Text style={[s.healthSignalStatus, { color: row.tone, fontFamily: DISPLAY_SEMI }]}>{row.status}</Text>
-                  </View>
-                  <Text style={[s.healthSignalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {row.detail}
-                  </Text>
-                </View>
-                <View style={[s.healthSignalActionPill, { backgroundColor: row.tone + "10", borderColor: row.tone + "44" }]}>
-                  <Text style={[s.healthSignalAction, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
-                    Log
-                  </Text>
-                  <Text style={[s.healthSignalActionArrow, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
-                    ›
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
-          </View>
-        </BoardCard>
-        ) : null}
-
         <BoardCard style={s.sectionCard}>
           <BoardSectionHeader
             title="Pattern Board"
@@ -997,17 +1017,17 @@ const s = StyleSheet.create({
   tabText: { fontSize: 12.5 },
 
   heroCard: {
-    padding: 12,
+    padding: 10,
     marginBottom: 12,
   },
   healthStage: {
-    minHeight: 206,
+    minHeight: 148,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "rgba(8,26,42,0.42)",
     overflow: "hidden",
-    padding: 12,
-    marginBottom: 12,
+    padding: 9,
+    marginBottom: 10,
   },
   healthStageImage: {
     borderRadius: 8,
@@ -1031,22 +1051,22 @@ const s = StyleSheet.create({
     gap: 10,
   },
   healthStageBubble: {
-    maxWidth: "62%",
-    minHeight: 66,
+    maxWidth: "58%",
+    minHeight: 52,
     borderRadius: 3,
     borderWidth: 2,
     borderColor: "#081A2A",
     backgroundColor: "rgba(255,249,239,0.95)",
-    paddingHorizontal: 11,
-    paddingVertical: 9,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
   },
   healthStageBubbleTitle: {
-    fontSize: 14,
-    lineHeight: 17,
+    fontSize: 12.5,
+    lineHeight: 15,
   },
   healthStageBubbleCopy: {
-    fontSize: 10.5,
-    lineHeight: 14,
+    fontSize: 9.5,
+    lineHeight: 12,
     marginTop: 3,
   },
   healthStageBubbleTail: {
@@ -1077,18 +1097,18 @@ const s = StyleSheet.create({
   healthStageSprite: {
     position: "absolute",
     zIndex: 4,
-    right: 8,
-    bottom: 42,
-    width: 132,
-    height: 132,
+    right: 10,
+    bottom: 38,
+    width: 96,
+    height: 96,
     alignItems: "center",
     justifyContent: "flex-end",
   },
   healthStageSpriteShadow: {
     position: "absolute",
-    bottom: 17,
-    width: 94,
-    height: 14,
+    bottom: 11,
+    width: 70,
+    height: 10,
     borderRadius: 999,
     backgroundColor: "rgba(8,26,42,0.28)",
   },
@@ -1098,11 +1118,11 @@ const s = StyleSheet.create({
     left: 12,
     right: 12,
     bottom: 12,
-    minHeight: 42,
+    minHeight: 36,
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1113,13 +1133,13 @@ const s = StyleSheet.create({
     minWidth: 0,
   },
   healthStageHudLabel: {
-    fontSize: 10,
+    fontSize: 9,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   healthStageHudValue: {
-    fontSize: 13,
-    lineHeight: 16,
+    fontSize: 11.5,
+    lineHeight: 14,
     marginTop: 1,
   },
   healthHeroPanel: {
@@ -1176,8 +1196,8 @@ const s = StyleSheet.create({
   healthRhythmPanel: {
     borderWidth: 1,
     borderRadius: 8,
-    padding: 10,
-    marginTop: 12,
+    padding: 9,
+    marginTop: 9,
   },
   healthRhythmHeader: {
     flexDirection: "row",
@@ -1195,7 +1215,7 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   healthRhythmBars: {
-    minHeight: 54,
+    minHeight: 48,
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 7,
@@ -1343,6 +1363,42 @@ const s = StyleSheet.create({
   heroActionSecondaryText: { color: "#FFF9EF", fontSize: 13 },
 
   sectionCard: { marginTop: 14 },
+  primaryHealthCard: {
+    marginTop: 0,
+  },
+  healthStatusSummary: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  healthScoreTokenCompact: {
+    width: 70,
+    minHeight: 76,
+  },
+  healthScoreValueCompact: {
+    fontSize: 27,
+    lineHeight: 29,
+  },
+  healthStatusCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  healthStatusTitle: {
+    fontSize: 19,
+    lineHeight: 22,
+    marginTop: 1,
+  },
+  healthStatusBody: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 3,
+  },
+  statusScoreTrackCompact: {
+    marginTop: 7,
+  },
   sectionTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 2 },
   boardSectionTop: { flex: 1, marginBottom: 0 },
   healthHeaderAction: {
@@ -1378,7 +1434,7 @@ const s = StyleSheet.create({
   },
   reviewPromptStack: {
     gap: 7,
-    marginTop: 9,
+    marginTop: 7,
   },
   reviewPromptRow: {
     minHeight: 44,
@@ -1551,22 +1607,22 @@ const s = StyleSheet.create({
   bileBarLabel: { fontSize: 9.5 },
 
   healthSignalList: {
-    gap: 8,
-    marginTop: 10,
+    gap: 7,
+    marginTop: 9,
   },
   healthSignalRow: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
     flexDirection: "row",
     alignItems: "center",
     gap: 9,
   },
   statusIcon: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
@@ -1599,7 +1655,7 @@ const s = StyleSheet.create({
     lineHeight: 15,
   },
   healthSignalActionPill: {
-    width: 68,
+    width: 58,
     minHeight: 28,
     borderWidth: 1,
     borderRadius: 7,
@@ -1608,7 +1664,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 6,
+    gap: 4,
   },
   healthSignalAction: {
     flex: 1,

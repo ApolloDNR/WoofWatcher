@@ -1729,6 +1729,25 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /Not veterinary advice/);
 });
 
+test("keeps Health Snapshot ahead of the pixel stage on compact phones", () => {
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+  const snapshotIndex = health.indexOf("<BoardCard style={[s.sectionCard, s.primaryHealthCard]}>");
+  const stageIndex = health.indexOf("<BoardCard style={s.heroCard}>");
+
+  assert.notEqual(snapshotIndex, -1, "Health Snapshot should use the primary compact health card");
+  assert.notEqual(stageIndex, -1, "Health pixel stage should still exist as supporting delight");
+  assert.ok(
+    snapshotIndex < stageIndex,
+    "Health Snapshot should be the first useful card before the pixel room",
+  );
+  assert.match(health, /healthStatusSummary/);
+  assert.match(health, /healthScoreTokenCompact/);
+  assert.match(health, /healthStatusTitle/);
+  assert.match(health, /statusScoreTrackCompact/);
+  assert.match(health, /width=\{96\}/);
+  assert.match(health, /height=\{96\}/);
+});
+
 test("locks the mobile pixel UI foundation to Apollo's reference boards", () => {
   const colors = readFileSync(
     join(

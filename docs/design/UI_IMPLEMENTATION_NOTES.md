@@ -2796,3 +2796,37 @@ Verification:
   longer cuts off the right side for Home, Log, Health, and More:
   `tmp/route-home-final-badge.png`, `tmp/route-log-anchorfix.png`,
   `tmp/route-health-anchorfix.png`, and `tmp/route-more-anchorfix.png`.
+
+## 2026-07-01 Health Compact Hierarchy Pass
+
+Health Watch had the right data model but the wrong first-screen priority: the
+pixel room consumed most of the compact phone viewport, pushing the actual
+health rows below the bottom navigation. The route now follows the mockup
+better: status first, health rows immediately available, pixel delight second.
+
+What changed:
+
+- Moved `Health Snapshot` above the pixel health room so the first useful card
+  is the care-status/row view.
+- Added a compact `CARE STATUS` summary with health score, label, explanatory
+  copy, and progress bar.
+- Kept the 7-day rhythm and tappable Health rows inside the primary first
+  card, preserving the existing non-diagnostic health formulas and log routes.
+- Reduced the supporting Health pixel stage from a dominant hero to a smaller
+  delight panel.
+- Added a readiness guard proving the primary Health Snapshot appears before
+  the pixel stage on compact phones.
+
+Design rule locked from this pass:
+
+- Health is a trust surface before it is a game surface. Pixel art can support
+  Health Watch, but the first-screen hierarchy must show status, patterns, and
+  log actions before decorative scene space.
+
+Verification:
+
+- `mobileReadiness.test.ts` passed 111/111.
+- Mobile TypeScript passed.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Route smoke returned `200` for Home, Log, Plans, Health, Records, and More.

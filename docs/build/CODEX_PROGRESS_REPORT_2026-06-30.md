@@ -346,3 +346,38 @@ Remaining:
 - Continue native `Route Visual Consistency` QA, exact pnpm 10.24 beta doctor
   proof, CI completion, provider-backed services, PDF output, store approval,
   and Apollo sign-off before calling this launch-complete.
+
+## 2026-07-01 Health Compact Hierarchy Pass
+
+After the preview shell was fixed, Health Watch still read too much like a
+large art poster. The most important information was technically present but
+not high enough in the mobile hierarchy.
+
+What changed:
+
+- Promoted `Health Snapshot` to the first card after the Health/Bile tab rail.
+- Added a compact health status summary with score, `CARE STATUS`, status copy,
+  and a progress track.
+- Kept 7-day rhythm and tappable health rows in the first card so appetite,
+  stool, hydration, energy, and vomiting are visible sooner.
+- Reduced the pixel health room and sprite sizes so the scene supports the
+  product instead of replacing it.
+- Added `mobileReadiness.test.ts` coverage for Health Snapshot appearing before
+  the pixel stage on compact phones.
+
+Verification:
+
+- `mobileReadiness.test.ts` passed 111/111.
+- Mobile TypeScript passed with
+  `node node_modules/typescript/bin/tsc -p artifacts/woofwatcher-mobile/tsconfig.json --noEmit`
+  through the bundled Node runtime.
+- Expo web export refreshed `.expo-smoke` with 218 assets / 222 files after
+  prepending bundled Node to `PATH`.
+- Static preview route smoke passed for `/`, `/log`, `/calendar`, `/health`,
+  `/records`, and `/more` at `http://127.0.0.1:4194/`.
+
+Remaining:
+
+- Local headless Chrome stopped emitting new PNG screenshots after the compact
+  shell proof; route smoke/export stayed green. Native iOS/Android screenshots
+  remain the real visual proof needed for launch.
