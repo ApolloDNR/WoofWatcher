@@ -602,3 +602,11 @@ Remaining:
   install is missing esbuild's optional native package `@esbuild/win32-x64`.
 - Push this repair and rerun `WoofWatcher Verify` on
   `automation/premium-revenue-product-builder`.
+
+CI follow-up:
+
+- Branch run `28529223713` completed successfully on
+  `automation/premium-revenue-product-builder` after the API typecheck repair.
+- Earlier same-day current branch failures were `28527740311`
+  (machine-readable beta doctor warning assertion) and `28528291630`
+  (`TS5097` API server typecheck).

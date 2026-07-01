@@ -723,7 +723,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 710. NEXT: Rerun branch CI for the pushed assertion repair. If CI passes, continue device visual QA. If CI fails, pull the exact failed log before doing more design work.
 711. DONE 2026-07-01: Repaired the second current branch CI failure after run `28528291630` reached `pnpm run build:ci` and failed API server typecheck with `TS5097` on `.ts` source imports in `src/lib/household-sharing-cleanup.ts`. The API server `tsconfig.json` now explicitly enables `allowImportingTsExtensions` for its no-emit typecheck path, preserving the Node strip-types focused tests that import TypeScript source directly.
 712. DONE 2026-07-01: Fresh local verification for the API server CI repair passed direct API typecheck with `tsc -p artifacts/api-server/tsconfig.json --noEmit` and the CI-equivalent focused suite 496/496 with the bundled Node runtime. Direct local API build is still Windows-install-blocked by missing esbuild optional package `@esbuild/win32-x64`, so branch CI remains the build proof source.
-713. NEXT: Push the API server typecheck repair and rerun branch CI. If CI passes, resume the design/device QA path at the live preview; if CI fails, pull the exact failed step before doing more UI work.
+713. DONE 2026-07-01: Branch CI passed after the API server typecheck repair. `WoofWatcher Verify` run `28529223713` completed `success` on `automation/premium-revenue-product-builder` after the earlier current-run blockers `28527740311` and `28528291630` were fixed.
+714. NEXT: Resume the design/device QA path at the live preview. Continue native/device visual review for Home, Log, Plans, Health, Records, More, and Avatar Studio, then tune the first remaining overlap, clipped copy, hidden primary action, duplicate-avatar behavior, bottom-nav collision, or mockup drift.
 
 ## Cadence
 
