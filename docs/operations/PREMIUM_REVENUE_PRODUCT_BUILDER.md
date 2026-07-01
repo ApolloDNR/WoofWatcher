@@ -166,6 +166,7 @@ Latest completed local runtime/accessibility hardening:
 - Records Report History rows and WoofGuide saved report-history drafts now share one report-source descriptor before native PDF/export or server-backed report storage. `describeReportArtifactSource` centralizes source kind, section count, print-ready/restored status, printable file name, and local-only lifecycle copy so Records and WoofGuide stay aligned without claiming cloud sharing, retention, deletion, native export, or server-backed storage is ready.
 - Records Report History now removes selected local handoff sources through a provider-gated confirmation before native PDF/export or server-backed report storage. `describeReportArtifactRemoval` centralizes the removal copy, Mobile Records filters only the chosen local artifact from the care document, and the UI states that cloud deletion, share revocation, server retention, native PDF export, and provider-backed lifecycle controls are not enabled.
 - Report History cleanup guidance now stays shared across Records and WoofGuide before provider-backed lifecycle controls. `summarizeReportArtifacts.cleanupLine` tells owners to remove obsolete local sources only after review and clarifies that local cleanup does not revoke shares or change provider retention.
+- The 2026-07-01 GitHub Actions `WoofWatcher Verify` run `28514313498` passed on `main` for commit `58d2381` after the Report History cleanup guidance slice.
 
 Next highest-impact work:
 
