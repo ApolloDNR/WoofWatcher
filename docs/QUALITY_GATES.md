@@ -114,6 +114,8 @@ Current evidence, 2026-06-30: Records Report History rows and WoofGuide saved re
 
 Current evidence, 2026-07-01: Records and WoofGuide saved-report review now reuse `summarizeReportArtifacts.cleanupLine` so cleanup guidance tells owners to remove obsolete local sources only after review and clarifies that local cleanup does not revoke shares or change provider retention.
 
+Current evidence, 2026-07-02: Records and WoofGuide saved-report review now reuse `summarizeReportArtifacts.audienceLine` so owners pick the sitter, trainer, caregiver, or vet handoff audience before resending local report sources, while provider-backed sharing, native PDF export, server storage, retention, deletion, and unsupervised assistant actions remain gated.
+
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.
@@ -329,6 +331,8 @@ Current evidence, 2026-06-29: Progress Reports now join saved Report History bef
 Current evidence, 2026-06-30: Progress Reports now include Dog ID Prep lines before native credential/PDF export or server-backed report storage. Printable Progress Report artifacts carry ready-versus-missing Dog ID credential fields and the local printable-source boundary from shared credential readiness.
 
 Current evidence, 2026-07-01: Report History now includes shared pre-share review guidance before native PDF/export or server-backed report storage exists. `summarizeReportArtifacts.reviewLine` tells owners to review the latest local source for stale routines, medications, records, and audience before resending, and Mobile Records plus WoofGuide owner-reviewed report-history drafts reuse that same line without claiming cloud sharing, retention, deletion, native export, server-backed storage, or unsupervised assistant actions are ready.
+
+Current evidence, 2026-07-02: Report History now includes shared audience-prep guidance before native PDF/export or server-backed report storage exists. `summarizeReportArtifacts.audienceLine` tells owners to choose whether the saved local source is for a sitter, trainer, caregiver, or vet because each audience may need different notes before sharing, and Mobile Records plus WoofGuide owner-reviewed report-history drafts reuse that same line without claiming cloud sharing, retention, deletion, native export, server-backed storage, or unsupervised assistant actions are ready.
 
 Current evidence, 2026-06-14: Mobile Records now presents Care Pass audience previews, saved report artifacts, and Progress Report controls as shared board sections with accessible resend, printable-source, and share actions preserved for sitter/vet/trainer handoff workflows.
 

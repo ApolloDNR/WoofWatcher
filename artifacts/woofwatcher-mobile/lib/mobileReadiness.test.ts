@@ -944,6 +944,7 @@ test("keeps WoofGuide saved report history owner-reviewed and provider-gated", (
   assert.match(actions, /id: "report-history"/);
   assert.match(actions, /kind: "report_history"/);
   assert.match(actions, /latestSource\.metadataLine/);
+  assert.match(actions, /summary\.audienceLine/);
   assert.match(actions, /latestSource\.lifecycleLine/);
   assert.match(actions, /server-backed report storage, cloud sharing/);
   assert.match(actions, /route: "\/records"/);
@@ -1355,6 +1356,7 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /reportHistorySummary/);
   assert.match(records, /Local handoff sources/);
   assert.match(records, /reportHistorySummary\.reviewLine/);
+  assert.match(records, /reportHistorySummary\.audienceLine/);
   assert.match(records, /reportHistorySummary\.cleanupLine/);
   assert.match(records, /reportHistorySummary\.boundaryLine/);
   assert.match(records, /sourceDescriptor\.metadataLine/);

@@ -720,10 +720,12 @@ test("summarizes saved report artifacts for local handoff readiness", () => {
   assert.match(summary.action, /Resend or share printable source/);
   assert.match(summary.reviewLine, /Review the latest local source/);
   assert.match(summary.reviewLine, /routines, medications, records, and audience/);
+  assert.match(summary.audienceLine, /Pick the handoff audience/);
+  assert.match(summary.audienceLine, /sitter, trainer, caregiver, or vet/);
   assert.match(summary.cleanupLine, /Remove obsolete local sources only after review/);
   assert.match(summary.cleanupLine, /does not revoke shares/);
   assert.match(summary.boundaryLine, /local reusable sources/);
-  assert.doesNotMatch(`${summary.reviewLine} ${summary.cleanupLine} ${summary.boundaryLine}`, /cloud storage ready|PDF export ready/i);
+  assert.doesNotMatch(`${summary.reviewLine} ${summary.audienceLine} ${summary.cleanupLine} ${summary.boundaryLine}`, /cloud storage ready|PDF export ready/i);
 });
 
 test("describes report artifact print-source readiness without claiming provider lifecycle", () => {
