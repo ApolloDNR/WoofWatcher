@@ -12,6 +12,10 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-07-01:
 
+- PASS: 290 focused tests with the command above on 2026-07-02, now including shared owner-reviewed Report Handoff Prep from `summarizeReportHandoffPrep` and Mobile Records wiring so owners review local report sources, receipt/document attachment readiness, and Dog ID credential readiness before sharing.
+- PASS: PixelLab asset verifier on 2026-07-02 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the Report Handoff Prep slice.
+- PASS: `git diff --check` on 2026-07-02 after the Report Handoff Prep slice; only existing CRLF normalization warnings were printed.
+- LIMIT: Direct workspace TypeScript build still could not start on 2026-07-02 because `node_modules\typescript\bin\tsc` is missing in this detached checkout (`<missing node_modules/typescript/bin/tsc>`). Focused tests, PixelLab verification, and diff check passed locally; full CI remains the authoritative typecheck/build gate after push.
 - PASS: GitHub Actions `WoofWatcher Verify` run `28525398502` on 2026-07-01 for commit `5c60e01` completed the real `Install, Test, Typecheck, Build` job successfully after the Report History pre-share review guidance slice.
 - PASS: 289 focused tests with the command above on 2026-07-01, now including shared Report History pre-share review guidance from `summarizeReportArtifacts.reviewLine` and Mobile Records/WoofGuide wiring so owners review stale routines, medications, records, and audience before resending local handoff sources.
 - PASS: PixelLab asset verifier on 2026-07-01 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the Report History pre-share review guidance slice.

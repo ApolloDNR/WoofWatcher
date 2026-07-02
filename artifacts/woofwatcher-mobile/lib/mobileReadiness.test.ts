@@ -1352,11 +1352,16 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /describeReportArtifactRemoval/);
   assert.match(records, /describeReportArtifactSource/);
   assert.match(records, /summarizeReportArtifacts/);
+  assert.match(records, /summarizeReportHandoffPrep/);
   assert.match(records, /reportHistorySummary/);
+  assert.match(records, /reportHandoffPrep/);
   assert.match(records, /Local handoff sources/);
+  assert.match(records, /Owner-reviewed handoff prep/);
   assert.match(records, /reportHistorySummary\.reviewLine/);
   assert.match(records, /reportHistorySummary\.cleanupLine/);
   assert.match(records, /reportHistorySummary\.boundaryLine/);
+  assert.match(records, /reportHandoffPrep\.reviewLines/);
+  assert.match(records, /reportHandoffPrep\.boundaryLine/);
   assert.match(records, /sourceDescriptor\.metadataLine/);
   assert.match(records, /sourceDescriptor\.fileLine/);
   assert.match(records, /sourceDescriptor\.lifecycleLine/);

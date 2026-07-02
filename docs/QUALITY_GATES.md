@@ -330,6 +330,8 @@ Current evidence, 2026-06-30: Progress Reports now include Dog ID Prep lines bef
 
 Current evidence, 2026-07-01: Report History now includes shared pre-share review guidance before native PDF/export or server-backed report storage exists. `summarizeReportArtifacts.reviewLine` tells owners to review the latest local source for stale routines, medications, records, and audience before resending, and Mobile Records plus WoofGuide owner-reviewed report-history drafts reuse that same line without claiming cloud sharing, retention, deletion, native export, server-backed storage, or unsupervised assistant actions are ready.
 
+Current evidence, 2026-07-02: Report History now includes owner-reviewed handoff prep before native PDF/export or server-backed report storage exists. `summarizeReportHandoffPrep` combines saved local report sources, receipt/document attachment readiness, and Dog ID credential readiness so Mobile Records can tell owners what to review before sharing without claiming provider-backed document storage, cloud sharing, retention, deletion, native export, or unsupervised assistant actions are ready.
+
 Current evidence, 2026-06-14: Mobile Records now presents Care Pass audience previews, saved report artifacts, and Progress Report controls as shared board sections with accessible resend, printable-source, and share actions preserved for sitter/vet/trainer handoff workflows.
 
 Current evidence, 2026-06-14: Mobile Records now keeps credential vault sections, diet context, and the records cabinet in the same board anatomy as report handoffs, making vaccines, visits, receipts, insurance, microchip, diet, and documents easier to scan as one care vault.

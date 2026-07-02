@@ -59,6 +59,7 @@ import {
   getRecordDueStatus,
   normalizeCareEventType,
   summarizeReportArtifacts,
+  summarizeReportHandoffPrep,
   summarizeRecordVault,
   type CarePass,
   type CarePassAudience,
@@ -655,6 +656,16 @@ export default function RecordsScreen() {
   const reportHistorySummary = useMemo(
     () => summarizeReportArtifacts(state.reportArtifacts),
     [state.reportArtifacts],
+  );
+  const reportHandoffPrep = useMemo(
+    () =>
+      summarizeReportHandoffPrep({
+        artifacts: state.reportArtifacts,
+        records: state.records,
+        profile: state.profile,
+        caregivers: state.caregivers,
+      }),
+    [state.reportArtifacts, state.records, state.profile, state.caregivers],
   );
 
   const shareCarePass = (pass: CarePass) => {
@@ -2244,6 +2255,29 @@ export default function RecordsScreen() {
               </Text>
               <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 {reportHistorySummary.boundaryLine}
+              </Text>
+            </View>
+            <View
+              accessibilityRole="summary"
+              accessibilityLabel={`Report handoff prep. ${reportHandoffPrep.summary} ${reportHandoffPrep.boundaryLine}`}
+              style={[s.reportHistorySummary, { backgroundColor: colors.copper + "10", borderColor: colors.copper + "24" }]}
+            >
+              <Text style={[s.reportHistorySummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                Owner-reviewed handoff prep
+              </Text>
+              <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {reportHandoffPrep.summary}
+              </Text>
+              {reportHandoffPrep.reviewLines.map((line) => (
+                <Text key={line} style={[s.rowMeta, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  {line}
+                </Text>
+              ))}
+              <Text style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+                {reportHandoffPrep.action}
+              </Text>
+              <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {reportHandoffPrep.boundaryLine}
               </Text>
             </View>
             {reportArtifacts.length === 0 ? (

@@ -13,6 +13,7 @@ import {
   describeReportArtifactRemoval,
   describeReportArtifactSource,
   summarizeReportArtifacts,
+  summarizeReportHandoffPrep,
   summarizePetCredentialArtifacts,
 } from "../src/index.ts";
 
@@ -724,6 +725,49 @@ test("summarizes saved report artifacts for local handoff readiness", () => {
   assert.match(summary.cleanupLine, /does not revoke shares/);
   assert.match(summary.boundaryLine, /local reusable sources/);
   assert.doesNotMatch(`${summary.reviewLine} ${summary.cleanupLine} ${summary.boundaryLine}`, /cloud storage ready|PDF export ready/i);
+});
+
+test("summarizes owner-reviewed report handoff prep without claiming provider storage", () => {
+  const carePass = createCarePassArtifact(
+    buildCarePass({ ...baseInput(), audience: "sitter" }),
+    "2026-06-08T06:30:00.000Z",
+  );
+  const progress = createProgressReportArtifact({
+    dogName: "Phoenix",
+    periodDays: 30,
+    generatedAt: "Jun 9, 7:30 AM",
+    createdAt: "2026-06-09T06:30:00.000Z",
+    summary: "30-day progress report for caregiver and vet review.",
+    sections: [{ title: "Care Summary", lines: ["Total entries logged: 14"] }],
+  });
+
+  const prep = summarizeReportHandoffPrep({
+    artifacts: [carePass, progress],
+    records: [
+      { id: "receipt-1", type: "receipt", title: "Food receipt", attachmentUri: "file://receipt.jpg" },
+      { id: "doc-1", type: "document", title: "Trainer intake" },
+      { id: "vet-1", type: "vet", title: "Alameda Wellness Vet" },
+    ],
+    profile: {
+      name: "Phoenix",
+      microchipNumber: "985112003004551",
+      primaryVet: "Alameda Wellness Vet",
+    },
+  });
+
+  assert.equal(prep.status, "needs_review");
+  assert.equal(prep.reportHistory.total, 2);
+  assert.equal(prep.attachmentSummary.totalAttachable, 2);
+  assert.equal(prep.credentialReadiness.status, "needs_info");
+  assert.match(prep.summary, /2 local report sources saved/);
+  assert.match(prep.summary, /1 of 2 receipt\/document files attached locally/);
+  assert.match(prep.summary, /Dog ID has/);
+  assert.match(prep.reviewLines.join(" "), /Review the latest local source/);
+  assert.match(prep.reviewLines.join(" "), /Trainer intake/);
+  assert.match(prep.action, /Open Records Report History/);
+  assert.match(prep.boundaryLine, /native PDF export/);
+  assert.match(prep.boundaryLine, /provider-backed document storage/);
+  assert.doesNotMatch(`${prep.summary} ${prep.action} ${prep.boundaryLine}`, /cloud storage ready|PDF export ready/i);
 });
 
 test("describes report artifact print-source readiness without claiming provider lifecycle", () => {
