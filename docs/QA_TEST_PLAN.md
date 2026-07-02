@@ -15,6 +15,7 @@ Latest local evidence, 2026-07-02:
 - PASS: 289 focused tests with the command above on 2026-07-02, now including shared Report History audience-prep guidance from `summarizeReportArtifacts.audienceLine` and Mobile Records/WoofGuide wiring so owners pick the sitter, trainer, caregiver, or vet audience before resending local handoff sources.
 - PASS: PixelLab asset verifier on 2026-07-02 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the Report History audience-prep guidance slice.
 - PASS: Direct workspace TypeScript project build on 2026-07-02 with `node node_modules\typescript\bin\tsc --build` after the Report History audience-prep guidance slice.
+- PASS: GitHub Actions `WoofWatcher Verify` run `28576896356` on 2026-07-02 for commit `b287556` completed the real `Install, Test, Typecheck, Build` job successfully after the Report History audience-prep guidance slice.
 - LIMIT: `pnpm run build:ci` on 2026-07-02 still could not start workspace scripts in this Windows shell. The sandboxed run stopped during registry fetch with `EACCES` / `fetch failed`; the escalated retry hydrated all 1276 packages, then stopped at root `preinstall` because `sh` is not on PATH before typecheck/build scripts started.
 
 - PASS: GitHub Actions `WoofWatcher Verify` run `28525398502` on 2026-07-01 for commit `5c60e01` completed the real `Install, Test, Typecheck, Build` job successfully after the Report History pre-share review guidance slice.
