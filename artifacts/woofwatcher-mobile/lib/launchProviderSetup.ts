@@ -4,6 +4,10 @@ import {
   CARE_ENTRY_PROVIDER_SYNC_PROOF_SUMMARY,
 } from "./careEntryProviderSyncProof.ts";
 import {
+  AUTH_PROVIDER_PROOF_ITEMS,
+  AUTH_PROVIDER_PROOF_SUMMARY,
+} from "./authProviderProof.ts";
+import {
   REPORT_BINARY_EXPORT_PROOF_ITEMS,
   REPORT_BINARY_EXPORT_PROOF_SUMMARY,
 } from "./reportBinaryExportProof.ts";
@@ -146,7 +150,8 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Production sign-in, household membership, and deep-link sign-in are configured for review.",
     blockedDetail: "Launch still needs production auth, sign-in URLs, household membership rules, and account session policy.",
     nextAction: "Configure Clerk production keys, redirect URLs, OAuth/deep links, and household membership policy.",
-    proofRequired: "Clerk production app id, redirect URL list, OAuth/deep-link test screenshot, and household membership policy notes.",
+    proofRequired: AUTH_PROVIDER_PROOF_SUMMARY,
+    proofChecklist: AUTH_PROVIDER_PROOF_ITEMS.map((item) => `${item.label}: ${item.requiredEvidence}`),
   },
   {
     key: "database",

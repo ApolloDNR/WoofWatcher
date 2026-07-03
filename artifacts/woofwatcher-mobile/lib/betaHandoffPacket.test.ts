@@ -188,7 +188,12 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Native QA Needs tune fix brief:/);
   assert.match(text, /If any route is marked Needs tune, use More's Share Fix Brief before claiming beta proof/);
   assert.match(text, /Provider proof needed:/);
-  assert.match(text, /Production auth: Clerk production app id/);
+  assert.match(text, /Production auth: Production auth provider proof packet/);
+  assert.match(text, /Clerk production app/);
+  assert.match(text, /Redirect and deep-link URLs/);
+  assert.match(text, /OAuth sign-in test/);
+  assert.match(text, /Session and token policy/);
+  assert.match(text, /Household membership policy/);
   assert.match(text, /Household database sync: Supabase project id/);
   assert.match(text, /Care-entry provider sync proof packet/);
   assert.match(text, /Migration\/backfill/);

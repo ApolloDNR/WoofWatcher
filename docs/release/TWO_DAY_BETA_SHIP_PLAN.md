@@ -193,6 +193,13 @@ Current environment note:
   gates including the Report binary export proof packet, native/store proof, and
   truth boundaries. This is rehearsal proof, not native QA, provider approval,
   store approval, binary export readiness, or Apollo sign-off.
+- Provider Launch Setup's Production auth gate now carries a `Production auth
+  provider proof packet` requiring Clerk production app id, redirect/deep-link
+  URL list, OAuth sign-in test proof, session/token policy, and household
+  membership policy before provider-backed account sync or household creation
+  can be claimed. Share Beta Handoff prints those proof steps through the
+  `Provider proof needed` section; this is a proof checklist, not configured
+  Clerk/provider auth.
 - The Release Smoke Checklist and Share Beta Handoff now name the focused
   Records handoff target at `/care-twin-qa?qaSurface=records-local-file-handoff`,
   including Care Pass local HTML, Dog ID local HTML, Dog ID SVG, share-sheet

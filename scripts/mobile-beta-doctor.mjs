@@ -249,6 +249,7 @@ const runtimeSmokePreviewPath = join(mobileRoot, "scripts", "smoke-runtime-previ
 const livePreviewHandoffProofPath = join(mobileRoot, "scripts", "live-preview-handoff-proof.js");
 const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
 const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts");
+const authProviderProofPath = join(mobileRoot, "lib", "authProviderProof.ts");
 const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
@@ -263,6 +264,7 @@ const runtimeSmokePreviewSource = existsSync(runtimeSmokePreviewPath) ? readFile
 const livePreviewHandoffProofSource = existsSync(livePreviewHandoffProofPath) ? readFileSync(livePreviewHandoffProofPath, "utf8") : "";
 const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
 const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFileSync(launchProviderSetupPath, "utf8") : "";
+const authProviderProofSource = existsSync(authProviderProofPath) ? readFileSync(authProviderProofPath, "utf8") : "";
 const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
@@ -441,6 +443,34 @@ check(
   authSetupNativeQaTargetIsSourceBacked
     ? "Auth/setup native proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and doctor next action"
     : "keep auth/setup onboarding proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
+);
+
+const authProviderProofPacketIsSourceBacked = includesAll(authProviderProofSource, [
+  "AUTH_PROVIDER_PROOF_SUMMARY",
+  "AUTH_PROVIDER_PROOF_ITEMS",
+  "Production auth provider proof packet",
+  "Clerk production app id",
+  "redirect/deep-link URL list",
+  "OAuth sign-in test",
+  "session policy",
+  "household membership policy",
+])
+  && includesAll(launchProviderSetupSource, [
+    "AUTH_PROVIDER_PROOF_SUMMARY",
+    "AUTH_PROVIDER_PROOF_ITEMS",
+    "Production auth",
+    "authConfigured",
+  ])
+  && includesAll(betaHandoffPacketSource, [
+    "Provider proof needed:",
+    "formatProviderProof",
+  ]);
+check(
+  "auth provider proof packet is source-backed",
+  authProviderProofPacketIsSourceBacked,
+  authProviderProofPacketIsSourceBacked
+    ? "Production auth readiness requires the Clerk/OAuth/deep-link/session/household proof packet through Provider Launch Setup and Share Beta Handoff"
+    : "keep auth provider proof modeled in authProviderProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [

@@ -27,6 +27,23 @@ test("builds a truthful provider setup plan from a local launch profile", async 
   assert.match(plan.headline, /1\/8/i);
   assert.match(plan.summary, /production providers/i);
   assert.ok(plan.rows.some((row) => row.key === "auth" && row.status === "ready"));
+  assert.ok(plan.rows.some((row) => row.key === "auth" && /Production auth provider proof packet/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "auth" && /Clerk production app id/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "auth" && /OAuth sign-in test/i.test(row.proofRequired)));
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "auth" &&
+        row.proofChecklist.some((item) => /Redirect and deep-link URLs/i.test(item) && /iOS and Android/i.test(item)),
+    ),
+  );
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "auth" &&
+        row.proofChecklist.some((item) => /Household membership policy/i.test(item) && /invite acceptance/i.test(item)),
+    ),
+  );
   assert.ok(plan.rows.some((row) => row.key === "database" && /Supabase/i.test(row.nextAction)));
   assert.ok(plan.rows.some((row) => row.key === "database" && /RLS/i.test(row.proofRequired)));
   assert.ok(plan.rows.some((row) => row.key === "database" && /care_entries\.updated_at/i.test(row.proofRequired)));
@@ -142,6 +159,12 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /Owner: Apollo \/ safety/);
   assert.match(text, /Proof: AI provider key location/);
   assert.match(text, /Proof Needed/);
+  assert.match(text, /Production auth: Production auth provider proof packet/);
+  assert.match(text, /Clerk production app/);
+  assert.match(text, /Redirect and deep-link URLs/);
+  assert.match(text, /OAuth sign-in test/);
+  assert.match(text, /Session and token policy/);
+  assert.match(text, /Household membership policy/);
   assert.match(text, /Household database sync: Supabase project id/);
   assert.match(text, /Care-entry provider sync proof packet/);
   assert.match(text, /Migration\/backfill/);

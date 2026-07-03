@@ -5297,6 +5297,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.checks?.some(
       (check) =>
+        check.label === "auth provider proof packet is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
         check.label === "recorded CI proof freshness boundary is source-backed" &&
         check.status === "PASS",
     ),
