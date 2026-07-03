@@ -12,6 +12,10 @@ import {
   AI_PROVIDER_PROOF_SUMMARY,
 } from "./aiProviderProof.ts";
 import {
+  ACCOUNT_DELETION_PROOF_ITEMS,
+  ACCOUNT_DELETION_PROOF_SUMMARY,
+} from "./accountDeletionProof.ts";
+import {
   REPORT_BINARY_EXPORT_PROOF_ITEMS,
   REPORT_BINARY_EXPORT_PROOF_SUMMARY,
 } from "./reportBinaryExportProof.ts";
@@ -236,7 +240,8 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Account deletion has a provider-backed destructive path, export warning, and audit receipt.",
     blockedDetail: "Deletion is still manual/non-destructive until provider-backed deletion and audit receipts are approved.",
     nextAction: "Implement and approve account deletion, export-before-delete flow, object deletion, audit receipts, and recovery window.",
-    proofRequired: "Self-serve deletion route, export-before-delete warning, data/object deletion receipt, audit trail, and recovery-window policy.",
+    proofRequired: ACCOUNT_DELETION_PROOF_SUMMARY,
+    proofChecklist: ACCOUNT_DELETION_PROOF_ITEMS.map((item) => `${item.label}: ${item.requiredEvidence}`),
   },
 ];
 

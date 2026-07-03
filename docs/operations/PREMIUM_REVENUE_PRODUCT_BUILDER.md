@@ -277,6 +277,18 @@ OpenAI key, approve a live model, enable provider-backed AI answers, allow
 automatic care-log writes, clear veterinary safety review, or replace Apollo
 launch sign-off.
 
+The self-serve account deletion proof pass turns the old deletion one-line
+proof into a source-backed packet. `accountDeletionProof.ts` now defines the
+self-serve deletion route and reauthentication gate, export-before-delete
+handoff, data/object deletion receipt, audit/support receipt, recovery-window
+cancellation rules, and legal/store approval required before destructive
+account deletion can be enabled. Provider Launch Setup and Share Beta Handoff
+print those proof steps under Self-serve account deletion, and the JSON mobile
+beta doctor reports `account deletion proof packet is source-backed`. This does
+not enable provider-backed destructive deletion, delete storage objects, satisfy
+App Store or Play Store review, approve privacy/legal language, or replace
+Apollo launch sign-off.
+
 The two-day beta QA cockpit pass made device capture less fragile. `/care-twin-qa`
 now tags attached screenshot evidence explicitly as iOS, Android, or Web instead
 of relying on the runtime platform, and target routes opened from the cockpit

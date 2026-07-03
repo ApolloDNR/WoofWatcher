@@ -119,6 +119,16 @@ test("builds a truthful provider setup plan from a local launch profile", async 
         row.proofChecklist.some((item) => /Veterinary safety boundary/i.test(item) && /not veterinary advice/i.test(item)),
     ),
   );
+  assert.ok(plan.rows.some((row) => row.key === "accountDeletion" && /Self-serve account deletion proof packet/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "accountDeletion" && /export-before-delete warning/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "accountDeletion" && /data\/object deletion receipt/i.test(row.proofRequired)));
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "accountDeletion" &&
+        row.proofChecklist.some((item) => /Recovery window and cancellation rules/i.test(item) && /cancel deletion/i.test(item)),
+    ),
+  );
   assert.equal(plan.nextGate?.key, "database");
   assert.match(plan.nextGate?.proofRequired ?? "", /Supabase project id/);
   assert.ok(plan.nextGate?.proofChecklist.some((item) => /mobile incremental/i.test(item)));
@@ -219,6 +229,12 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /Owner-review write gate: owner-reviewed/);
   assert.match(text, /Veterinary safety boundary: not veterinary advice/);
   assert.match(text, /Fallback and incident handling: fallback copy/);
+  assert.match(text, /Self-serve account deletion: Self-serve account deletion proof packet/);
+  assert.match(text, /Deletion route and authentication gate: self-serve deletion route/);
+  assert.match(text, /Export-before-delete handoff: export-before-delete warning/);
+  assert.match(text, /Data and object deletion receipt: data\/object deletion receipt/);
+  assert.match(text, /Recovery window and cancellation rules: recovery-window policy/);
+  assert.match(text, /Legal and store approval: legal\/store approval/);
   assert.match(text, /No App Store or Play Store submission is approved by this checklist/);
 });
 

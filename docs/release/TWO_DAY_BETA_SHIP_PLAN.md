@@ -214,6 +214,14 @@ Current environment note:
   and fallback/incident handling before live AI can be enabled. Share Beta
   Handoff prints those proof steps, but this does not configure an OpenAI key,
   approve a model, enable live AI, or clear veterinary/safety review.
+- Provider Launch Setup's Self-serve account deletion gate now carries a
+  `Self-serve account deletion proof packet` requiring the deletion route and
+  reauthentication gate, export-before-delete handoff, data/object deletion
+  receipt, audit/support receipt, recovery-window cancellation rules, and
+  legal/store approval before destructive deletion can be enabled. Share Beta
+  Handoff prints those proof steps, but this does not enable production
+  deletion, delete provider data, satisfy store review, or replace Apollo/legal
+  approval.
 - The Release Smoke Checklist and Share Beta Handoff now name the focused
   Records handoff target at `/care-twin-qa?qaSurface=records-local-file-handoff`,
   including Care Pass local HTML, Dog ID local HTML, Dog ID SVG, share-sheet

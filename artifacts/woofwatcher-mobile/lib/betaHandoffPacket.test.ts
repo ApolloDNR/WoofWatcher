@@ -218,6 +218,12 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Owner-review write gate: owner-reviewed/);
   assert.match(text, /Veterinary safety boundary: not veterinary advice/);
   assert.match(text, /Fallback and incident handling: fallback copy/);
+  assert.match(text, /Self-serve account deletion: Self-serve account deletion proof packet/);
+  assert.match(text, /Deletion route and authentication gate: self-serve deletion route/);
+  assert.match(text, /Export-before-delete handoff: export-before-delete warning/);
+  assert.match(text, /Data and object deletion receipt: data\/object deletion receipt/);
+  assert.match(text, /Recovery window and cancellation rules: recovery-window policy/);
+  assert.match(text, /Legal and store approval: legal\/store approval/);
   assert.match(text, /Provider proof does not approve App Store, Play Store, payment, AI, storage, or database readiness/);
   assert.match(text, /Done condition: capture required iOS\/Android proof, save the Mission note, clear Pass pending proof, then share the QA summary/);
   assert.match(text, /Truth boundaries:/);

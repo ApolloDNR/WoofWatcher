@@ -251,6 +251,7 @@ const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProduc
 const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts");
 const authProviderProofPath = join(mobileRoot, "lib", "authProviderProof.ts");
 const aiProviderProofPath = join(mobileRoot, "lib", "aiProviderProof.ts");
+const accountDeletionProofPath = join(mobileRoot, "lib", "accountDeletionProof.ts");
 const paymentsProviderProofPath = join(mobileRoot, "lib", "paymentsProviderProof.ts");
 const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
@@ -268,6 +269,7 @@ const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) 
 const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFileSync(launchProviderSetupPath, "utf8") : "";
 const authProviderProofSource = existsSync(authProviderProofPath) ? readFileSync(authProviderProofPath, "utf8") : "";
 const aiProviderProofSource = existsSync(aiProviderProofPath) ? readFileSync(aiProviderProofPath, "utf8") : "";
+const accountDeletionProofSource = existsSync(accountDeletionProofPath) ? readFileSync(accountDeletionProofPath, "utf8") : "";
 const paymentsProviderProofSource = existsSync(paymentsProviderProofPath) ? readFileSync(paymentsProviderProofPath, "utf8") : "";
 const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
@@ -531,6 +533,35 @@ check(
   aiProviderProofPacketIsSourceBacked
     ? "WoofGuide AI readiness requires key storage, model policy, source/citation rules, owner-review write gates, veterinary boundaries, and fallback proof through Provider Launch Setup and Share Beta Handoff"
     : "keep AI proof modeled in aiProviderProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
+);
+
+const accountDeletionProofPacketIsSourceBacked = includesAll(accountDeletionProofSource, [
+  "ACCOUNT_DELETION_PROOF_SUMMARY",
+  "ACCOUNT_DELETION_PROOF_ITEMS",
+  "Self-serve account deletion proof packet",
+  "self-serve deletion route",
+  "export-before-delete warning",
+  "data/object deletion receipt",
+  "audit trail",
+  "recovery-window policy",
+  "legal/store approval",
+])
+  && includesAll(launchProviderSetupSource, [
+    "ACCOUNT_DELETION_PROOF_SUMMARY",
+    "ACCOUNT_DELETION_PROOF_ITEMS",
+    "Self-serve account deletion",
+    "accountDeletionEnabled",
+  ])
+  && includesAll(betaHandoffPacketSource, [
+    "Provider proof needed:",
+    "formatProviderProof",
+  ]);
+check(
+  "account deletion proof packet is source-backed",
+  accountDeletionProofPacketIsSourceBacked,
+  accountDeletionProofPacketIsSourceBacked
+    ? "Self-serve account deletion readiness requires deletion route, export-before-delete, data/object deletion receipt, audit trail, recovery window, and legal/store proof through Provider Launch Setup and Share Beta Handoff"
+    : "keep account deletion proof modeled in accountDeletionProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [
