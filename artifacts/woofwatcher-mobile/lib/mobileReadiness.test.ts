@@ -4531,6 +4531,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
     more,
     /const message = buildBetaHandoffPacketShareText\(launchReleasePacket,\s*nativeQaCapturePlan,\s*\{[\s\S]*providerSetupPlan:\s*launchProviderSetupPlan/,
   );
+  assert.match(more, /RECORDED_MOBILE_BETA_CI_PROOF/);
+  assert.match(more, /ciProof:\s*RECORDED_MOBILE_BETA_CI_PROOF/);
   assert.match(
     more,
     /Share\.share\(\{ message,\s*title:\s*"WoofWatcher 48-Hour Beta Handoff" \}/,
@@ -4998,6 +5000,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.deepEqual(payload.handoffProofSections, [
     "Release smoke checklist",
     "Dependency proof commands",
+    "Dependency-complete CI proof",
     "Required beta proof after export",
     "Native QA Needs tune fix brief",
     "Provider proof needed",

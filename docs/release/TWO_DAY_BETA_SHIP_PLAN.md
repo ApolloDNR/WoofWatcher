@@ -137,6 +137,10 @@ Current environment note:
   `pnpm@10.24.0`, runs focused tests, and executes `build:ci`; use the workflow
   result as dependency-complete doctor proof when local Windows still has pnpm
   `11.7.0`.
+- The in-app `Share Beta Handoff` packet now includes the recorded green
+  `WoofWatcher Verify` proof for run `28653297333`, including the passed JSON
+  doctor, focused test, and `build:ci` steps, while keeping native screenshots,
+  provider setup, store approval, and Apollo sign-off blocked.
 - The mobile package now has a `smoke:runtime` alias that starts a disposable
   static runtime over `.expo-smoke`, verifies 11 exported mobile routes return
   the Expo web shell, and exits without leaving a server running.

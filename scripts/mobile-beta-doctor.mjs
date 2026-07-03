@@ -87,6 +87,7 @@ const proofCommands = [
 const handoffProofSections = [
   "Release smoke checklist",
   "Dependency proof commands",
+  "Dependency-complete CI proof",
   "Required beta proof after export",
   "Native QA Needs tune fix brief",
   "Provider proof needed",
@@ -244,7 +245,9 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Release smoke checklist:",
   "buildMobileReleaseSmokeChecklistShareText",
   "Dependency proof commands:",
+  "Dependency-complete CI proof:",
   "Dependency proof requires a real PATH pnpm at 10.24.0; do not use a bundled pnpm 11.x candidate.",
+  "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
   "Required beta proof after export:",
   "Native QA Needs tune fix brief:",
   "Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
@@ -253,14 +256,16 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Truth boundaries:",
 ])
   && mobileReleaseSmokeChecklistSource.includes("pnpm --filter @workspace/woofwatcher-mobile run preview:smoke")
+  && /RECORDED_MOBILE_BETA_CI_PROOF/.test(moreRouteSource)
+  && /ciProof:\s*RECORDED_MOBILE_BETA_CI_PROOF/.test(moreRouteSource)
   && /providerSetupPlan:\s*launchProviderSetupPlan/.test(moreRouteSource)
   && /Share Beta Handoff/.test(moreRouteSource);
 check(
   "beta handoff source includes proof sections",
   betaHandoffProofSectionsPresent,
   betaHandoffProofSectionsPresent
-    ? "handoff packet has dependency, device, provider, and truth-boundary sections"
-    : "keep Share Beta Handoff wired to dependency, device, provider, and truth-boundary proof sections",
+    ? "handoff packet has CI, dependency, device, provider, and truth-boundary sections"
+    : "keep Share Beta Handoff wired to CI, dependency, device, provider, and truth-boundary proof sections",
 );
 
 const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeChecklistSource, [

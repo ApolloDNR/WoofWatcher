@@ -18,10 +18,41 @@ import type { ReleasePacket } from "./releasePacket.ts";
 
 const dependencyProofCommands = MOBILE_RELEASE_SMOKE_DEPENDENCY_COMMANDS;
 
+export interface MobileBetaCiProof {
+  workflowName: "WoofWatcher Verify";
+  runId: string;
+  jobId: string;
+  branch: string;
+  commit: string;
+  duration: string;
+  proofUrl: string;
+  passedSteps: readonly string[];
+  coverage: string;
+}
+
+export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
+  workflowName: "WoofWatcher Verify",
+  runId: "28653297333",
+  jobId: "84976275755",
+  branch: "automation/premium-revenue-product-builder",
+  commit: "9a36135",
+  duration: "2m57s",
+  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28653297333",
+  passedSteps: [
+    "Setup pnpm",
+    "Install dependencies",
+    "Run mobile beta doctor",
+    "Run focused behavior tests",
+    "Typecheck and CI-safe builds",
+  ],
+  coverage: "pinned pnpm 10.24.0, JSON mobile beta doctor, focused tests, build:ci, mobile smoke:web and smoke:runtime",
+};
+
 export type BetaHandoffPacketOptions =
   | string
   | {
       generatedAtIso?: string;
+      ciProof?: MobileBetaCiProof | null;
       providerSetupPlan?: LaunchProviderSetupPlan;
       proofManifest?: MobileQaSessionProofManifest | null;
     };
@@ -33,15 +64,34 @@ function formatList(items: readonly string[], fallback: string): string {
 
 function normalizeOptions(input: BetaHandoffPacketOptions | undefined): {
   generatedAtIso: string;
+  ciProof?: MobileBetaCiProof | null;
   providerSetupPlan?: LaunchProviderSetupPlan;
   proofManifest?: MobileQaSessionProofManifest | null;
 } {
   if (typeof input === "string") return { generatedAtIso: input };
   return {
     generatedAtIso: input?.generatedAtIso ?? new Date().toISOString(),
+    ciProof: input?.ciProof,
     providerSetupPlan: input?.providerSetupPlan,
     proofManifest: input?.proofManifest,
   };
+}
+
+function formatCiProof(proof: MobileBetaCiProof | null | undefined): string[] {
+  if (!proof) {
+    return [
+      "- No GitHub Actions proof is attached; dispatch WoofWatcher Verify on the branch before treating dependency proof as complete.",
+      "- CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
+    ];
+  }
+
+  return [
+    `- ${proof.workflowName} run ${proof.runId} passed on ${proof.branch} at commit ${proof.commit} (job ${proof.jobId}, ${proof.duration}).`,
+    `- Proof URL: ${proof.proofUrl}`,
+    `- Passed steps: ${proof.passedSteps.join("; ")}.`,
+    `- Covers: ${proof.coverage}.`,
+    "- CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
+  ];
 }
 
 function formatProviderProof(plan: LaunchProviderSetupPlan | undefined): string[] {
@@ -114,7 +164,7 @@ export function buildBetaHandoffPacketShareText(
   capturePlan: MobileLaunchQaCapturePlan,
   optionsOrGeneratedAt?: BetaHandoffPacketOptions,
 ): string {
-  const { generatedAtIso, providerSetupPlan, proofManifest } = normalizeOptions(optionsOrGeneratedAt);
+  const { generatedAtIso, ciProof, providerSetupPlan, proofManifest } = normalizeOptions(optionsOrGeneratedAt);
   const currentMission = capturePlan.nextTargets[0];
   const releaseSmokeChecklist = buildMobileReleaseSmokeChecklist(releasePacket, capturePlan, {
     generatedAtIso,
@@ -148,6 +198,9 @@ export function buildBetaHandoffPacketShareText(
     "- Dependency proof only counts when both doctor commands report no blockers.",
     "- Dependency proof requires a real PATH pnpm at 10.24.0; do not use a bundled pnpm 11.x candidate.",
     "- If JSON doctor reports BLOCKED, attach the JSON output to the handoff instead of claiming readiness.",
+    "",
+    "Dependency-complete CI proof:",
+    ...formatCiProof(ciProof),
     "",
     "Required beta proof after export:",
     "- Open /care-twin-qa on iOS and Android before sharing beta proof.",

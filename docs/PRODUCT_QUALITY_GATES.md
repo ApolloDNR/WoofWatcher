@@ -153,6 +153,7 @@ Passing evidence:
 - The Release Smoke Checklist now gives Apollo/Replit one source-backed rehearsal for dependency/export proof, route rehearsal, Records local HTML export truth, provider proof gates, native/store proof, and launch truth boundaries inside Share Beta Handoff and the JSON mobile beta doctor.
 - `build:ci` now runs the mobile `smoke:web` export and then `smoke:runtime`, which starts a disposable static runtime over `.expo-smoke` and verifies 11 exported mobile routes return the Expo web shell.
 - GitHub Actions now runs `pnpm run doctor:mobile-beta:json` after frozen dependency install with pinned `pnpm@10.24.0`, before focused tests and `build:ci`, so the machine-readable beta dependency/export gate is covered by branch CI.
+- Share Beta Handoff now includes the recorded green `WoofWatcher Verify` proof for run `28653297333` while explicitly saying CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.
 
 Current gaps:
 

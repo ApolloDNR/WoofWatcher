@@ -47,7 +47,10 @@ import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
-import { buildBetaHandoffPacketShareText } from "@/lib/betaHandoffPacket";
+import {
+  buildBetaHandoffPacketShareText,
+  RECORDED_MOBILE_BETA_CI_PROOF,
+} from "@/lib/betaHandoffPacket";
 import {
   deriveLaunchReadiness,
   type LaunchReadinessNativeQaSummary,
@@ -1091,6 +1094,7 @@ export default function MoreScreen() {
     const generatedAtIso = new Date(now).toISOString();
     const message = buildBetaHandoffPacketShareText(launchReleasePacket, nativeQaCapturePlan, {
       generatedAtIso,
+      ciProof: RECORDED_MOBILE_BETA_CI_PROOF,
       providerSetupPlan: launchProviderSetupPlan,
       proofManifest: savedQaProofManifest,
     });
