@@ -212,6 +212,8 @@ export function buildBetaHandoffPacketShareText(
     "- Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
     "- Open focused binary export proof target: /care-twin-qa?qaSurface=report-binary-export-proof.",
     "- Approve Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
+    "- Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
+    "- Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
     "- Save the Mission note and clear Pass pending proof in both /care-twin-qa and More.",
     "",
     "Native QA Needs tune fix brief:",

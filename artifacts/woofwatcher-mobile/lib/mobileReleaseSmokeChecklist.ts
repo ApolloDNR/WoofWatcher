@@ -204,6 +204,14 @@ export function buildMobileReleaseSmokeChecklist(
               "Attach generator choices, file name, file size, MIME proof, share/reopen proof, and storage policy evidence before claiming PDF/PNG readiness.",
             status: "required",
           },
+          {
+            label: "Focused route visual consistency target",
+            detail:
+              "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android.",
+            proof:
+              "Attach 6 iOS screenshots and 6 Android screenshots plus the QA note; web preview screenshots do not replace native proof.",
+            status: "required",
+          },
         ],
       },
       buildProviderProofSection(options.providerSetupPlan),

@@ -2711,6 +2711,20 @@ API/mobile/PWA/care-domain suite `521/521`, mobile TypeScript, and `tsc
 --build`; the JSON doctor still blocks only on local pnpm `11.7.0` versus pinned
 `10.24.0`.
 
+The Route Visual Consistency handoff target pass makes the existing route-by-route
+native screenshot mission explicit in every beta helper surface. Share Beta
+Handoff, the Release Smoke Checklist, and the JSON mobile beta doctor now point
+helpers to `/care-twin-qa?qaSurface=route-visual-consistency`, name Home, Log,
+Plans, Health, Records, and More, require both iOS and Android proof, and state
+that web preview screenshots do not replace native route proof. Fresh local
+verification passed focused beta/smoke/readiness tests `117/117`, the broader
+API/mobile/PWA/care-domain suite `521/521`, mobile TypeScript, `tsc --build`,
+and JSON doctor source-backed checks including `route visual proof target is
+source-backed`, plus `git diff --check` with expected Windows CRLF warnings only;
+the doctor still blocks only on local pnpm `11.7.0` versus pinned `10.24.0`.
+This is a handoff and guardrail slice, not actual native screenshot
+evidence, provider approval, store approval, public launch, or Apollo sign-off.
+
 The mobile runtime route smoke pass makes the export proof more execution-like
 without overclaiming native QA. `scripts/smoke-runtime-preview.js` starts a
 disposable static server over `.expo-smoke`, verifies Home, Log, Plans, Health,
@@ -2742,7 +2756,7 @@ Apollo sign-off.
 Next highest-impact work:
 
 1. Use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, and `smoke:runtime`, then run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a live preview handoff. Attach the JSON doctor/export/runtime/preview proof to the beta handoff without claiming native QA.
-2. Run native iOS/Android simulator or device QA with More's focused `/care-twin-qa?qaSurface=...` links and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with More's `Next launch gate` or `Native QA Next Captures > Primary mission`. For the `Owner Preview Core Loop`, read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the focused card or 48-hour mission card, write the required note, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, use More's `Share Beta Handoff` action after saved proof is current, then continue the Records local-file handoff and Report Binary Export Proof targets, Store Screenshot QA checklist, and 12-state care-twin matrix. Confirm More's Launch Readiness updates from the saved proof, share/export the QA report, mark the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue as Needs tune, use More's `Share Fix Brief`, and fix that first route before moving on.
+2. Run native iOS/Android simulator or device QA with More's focused `/care-twin-qa?qaSurface=...` links and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with More's `Next launch gate` or `Native QA Next Captures > Primary mission`. For the `Owner Preview Core Loop`, read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the focused card or 48-hour mission card, write the required note, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, use More's `Share Beta Handoff` action after saved proof is current, then continue the Records local-file handoff, Report Binary Export Proof, Route Visual Consistency, Store Screenshot QA checklist, and 12-state care-twin matrix. Confirm More's Launch Readiness updates from the saved proof, share/export the QA report, mark the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue as Needs tune, use More's `Share Fix Brief`, and fix that first route before moving on.
 3. Fill the Provider Launch Setup sheet only as real providers are configured: Clerk, Supabase/Postgres, storage buckets/rules, AI key/model policy, app-store payments, push, Apple/Google accounts, and self-serve deletion. Use the care-entry provider sync proof packet for Supabase migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off evidence; use the Report binary export proof packet for Care Pass PDF generator, Dog ID PNG renderer, provider storage, and iOS/Android artifact proof before claiming binary export readiness. Share the provider plan for Apollo/Fable/Replit handoff, but do not treat it as store approval.
 4. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 5. Continue screen-by-screen polish, accessibility traversal, and visual regression.

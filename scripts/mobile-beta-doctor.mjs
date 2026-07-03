@@ -109,6 +109,7 @@ const nextActions = [
   "Verify Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
   "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
   "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
+  "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
 ];
@@ -562,6 +563,37 @@ check(
   reportBinaryExportProofTargetIsSourceBacked
     ? "Binary export proof has a focused QA target, beta handoff instruction, smoke checklist item, and doctor next action"
     : "keep binary export proof wired through release QA, Share Beta Handoff, smoke checklist, and doctor next actions",
+);
+
+const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
+  "route-visual-consistency",
+  "Route Visual Consistency",
+  "Home",
+  "Log",
+  "Plans",
+  "Health",
+  "Records",
+  "More",
+  "iOS screenshot of Home route top.",
+  "Android screenshot of Home route top.",
+  'requiredNativePlatforms: ["ios", "android"]',
+])
+  && includesAll(betaHandoffPacketSource, [
+    "Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
+    "Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Focused route visual consistency target",
+    "/care-twin-qa?qaSurface=route-visual-consistency",
+    "Home, Log, Plans, Health, Records, and More",
+    "web preview screenshots do not replace native proof",
+  ]);
+check(
+  "route visual proof target is source-backed",
+  routeVisualProofTargetIsSourceBacked,
+  routeVisualProofTargetIsSourceBacked
+    ? "Route Visual Consistency has a focused QA target, beta handoff instruction, smoke checklist item, and doctor next action"
+    : "keep Route Visual Consistency wired through release QA, Share Beta Handoff, smoke checklist, and doctor next actions",
 );
 
 const betaHandoffTruthBoundariesAreSourceBacked = includesAll(betaHandoffPacketSource, [

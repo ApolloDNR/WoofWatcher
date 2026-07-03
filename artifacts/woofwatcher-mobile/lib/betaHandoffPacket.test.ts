@@ -159,6 +159,8 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy/);
   assert.match(text, /Open focused binary export proof target: \/care-twin-qa\?qaSurface=report-binary-export-proof/);
   assert.match(text, /Approve Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS\/Android artifact proof before claiming PDF\/PNG readiness/);
+  assert.match(text, /Open focused route visual target: \/care-twin-qa\?qaSurface=route-visual-consistency/);
+  assert.match(text, /Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof/);
   assert.match(text, /Save the Mission note and clear Pass pending proof in both \/care-twin-qa and More/);
   assert.match(text, /Native QA Needs tune fix brief:/);
   assert.match(text, /If any route is marked Needs tune, use More's Share Fix Brief before claiming beta proof/);

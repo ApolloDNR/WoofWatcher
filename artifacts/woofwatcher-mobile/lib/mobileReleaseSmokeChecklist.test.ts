@@ -156,6 +156,10 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /\/care-twin-qa\?qaSurface=report-binary-export-proof/);
   assert.match(text, /approved Care Pass PDF generator/);
   assert.match(text, /approved Dog ID PNG renderer/);
+  assert.match(text, /Focused route visual consistency target/);
+  assert.match(text, /\/care-twin-qa\?qaSurface=route-visual-consistency/);
+  assert.match(text, /Home, Log, Plans, Health, Records, and More on iOS and Android/);
+  assert.match(text, /web preview screenshots do not replace native proof/);
   assert.match(text, /Native and store proof:/);
   assert.match(text, /iOS Quick Log\/Log proof/);
   assert.match(text, /Android Launch Readiness proof/);

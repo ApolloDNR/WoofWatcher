@@ -5081,10 +5081,25 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     ),
   );
   assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("/care-twin-qa?qaSurface=route-visual-consistency") &&
+        action.includes("Home, Log, Plans, Health, Records, and More") &&
+        action.includes("iOS and Android"),
+    ),
+  );
+  assert.ok(
     payload.checks?.some(
       (check) =>
         check.label ===
           "report binary export proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "route visual proof target is source-backed" &&
         check.status === "PASS",
     ),
   );
