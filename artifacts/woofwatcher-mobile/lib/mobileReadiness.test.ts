@@ -368,6 +368,7 @@ test("keeps a static beta preview server wired for Apollo review", () => {
   assert.match(livePreviewProof, /report-binary-export-proof/);
   assert.match(livePreviewProof, /care-entry-provider-sync-proof/);
   assert.match(livePreviewProof, /push-notifications-proof/);
+  assert.match(livePreviewProof, /payments-provider-proof/);
   assert.match(livePreviewProof, /route-visual-consistency/);
   assert.match(livePreviewProof, /web preview only/);
   assert.match(livePreviewProof, /does not replace native iOS\/Android proof/);
@@ -376,6 +377,7 @@ test("keeps a static beta preview server wired for Apollo review", () => {
   assert.match(doctorSource, /http:\/\/127\.0\.0\.1:4194\//);
   assert.match(doctorSource, /care-entry-provider-sync-proof/);
   assert.match(doctorSource, /push-notifications-proof/);
+  assert.match(doctorSource, /payments-provider-proof/);
 });
 
 test("keeps local Clerk placeholders from blanking the web preview", () => {
@@ -4574,6 +4576,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /care-entry-provider-sync-proof/);
   assert.match(more, /report-binary-export-proof/);
   assert.match(more, /push-notifications-proof/);
+  assert.match(more, /payments-provider-proof/);
+  assert.match(more, /Payments Provider Proof/);
   assert.match(more, /Open proof mission/);
   assert.match(more, /buildCareTwinQaFocusRoute\(\{ surfaceId: rowQaTarget\.surfaceId \}\)/);
   assert.match(more, /providerSetupProofChecklist/);
@@ -5007,7 +5011,13 @@ test("keeps a native QA tooling doctor for device-proof handoff", () => {
     payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=care-entry-provider-sync-proof"),
   );
   assert.ok(
+    payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=payments-provider-proof"),
+  );
+  assert.ok(
     payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=auth-setup-onboarding-proof"),
+  );
+  assert.ok(
+    payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=payments-provider-proof"),
   );
   assert.ok(
     payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=route-visual-consistency"),
@@ -5041,6 +5051,14 @@ test("keeps a native QA tooling doctor for device-proof handoff", () => {
         action.includes("/care-twin-qa?qaSurface=care-entry-provider-sync-proof") &&
         action.includes("Supabase") &&
         action.includes("mobile full-refresh"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("/care-twin-qa?qaSurface=payments-provider-proof") &&
+        action.includes("Plus and Family product ids") &&
+        action.includes("paid checkout"),
     ),
   );
 });
@@ -5324,6 +5342,15 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.nextActions?.some(
       (action) =>
+        action.includes("/care-twin-qa?qaSurface=payments-provider-proof") &&
+        action.includes("Plus and Family product ids") &&
+        action.includes("sandbox receipts") &&
+        action.includes("checkout-gate proof"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
         action.includes("/care-twin-qa?qaSurface=route-visual-consistency") &&
         action.includes("Home, Log, Plans, Health, Records, and More") &&
         action.includes("iOS and Android"),
@@ -5349,6 +5376,20 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "push notifications proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "payments provider proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "payments provider proof target is source-backed" &&
         check.status === "PASS",
     ),
   );

@@ -187,6 +187,9 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Open focused push notifications target: \/care-twin-qa\?qaSurface=push-notifications-proof/);
   assert.match(text, /Attach Expo push project id, APNs credentials, Firebase\/FCM credentials/);
   assert.match(text, /permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback/);
+  assert.match(text, /Open focused payments provider target: \/care-twin-qa\?qaSurface=payments-provider-proof/);
+  assert.match(text, /Attach Plus and Family product ids, billing path decision, sandbox purchase\/renewal\/cancel\/refund\/expired receipt proof/);
+  assert.match(text, /restore purchases behavior, entitlement mapping, refund\/support policy, and checkout-gate proof before enabling paid checkout/);
   assert.match(text, /Open focused route visual target: \/care-twin-qa\?qaSurface=route-visual-consistency/);
   assert.match(text, /Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof/);
   assert.match(text, /Save the Mission note and clear Pass pending proof in both \/care-twin-qa and More/);

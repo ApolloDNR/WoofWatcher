@@ -71,6 +71,8 @@ The beta must not claim:
 - When reviewing More's Sync Health panel, use `Open sync proof` to jump to the same Care-entry Provider Sync Proof mission. This is a shortcut only; visible outbox/local sync status still does not prove Supabase migration, active-household RLS, retention policy, or incremental provider sync.
 - When the current mission is `Push Notifications Proof`, open `/care-twin-qa?qaSurface=push-notifications-proof`, then capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed-notification fallback before claiming reminder delivery.
 - When reviewing Reminder Center, use Calendar's `Open push proof` action to jump to the same Push Notifications Proof mission. This is a shortcut only; local preference intent still does not prove provider configuration or delivered reminders.
+- When the current mission is `Payments Provider Proof`, open `/care-twin-qa?qaSurface=payments-provider-proof`, then capture Plus and Family product ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired receipt proof, restore purchases, entitlement mapping, household role access, refund/support policy, and checkout-gate proof before enabling paid checkout.
+- When reviewing Provider Launch Setup, use the Plus payments row's `Open proof mission` action to jump to the same Payments Provider Proof mission. This is a shortcut only; it does not configure payments, prove sandbox receipts, enable money movement, or approve store checkout.
 - When the current mission is `Route Visual Consistency`, open `/care-twin-qa?qaSurface=route-visual-consistency`, then capture Home, Log, Plans, Health, Records, and More on both iOS and Android; web preview screenshots do not replace native proof.
 - Before attempting native proof, run `pnpm run doctor:native-qa:json`. A `BLOCKED` result from missing `adb`, `emulator`, `java`, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, or `JAVA_HOME` means use a configured Mac, Android Studio machine, physical device, TestFlight build, or helper environment instead of claiming local native QA. The JSON doctor's `nextActions` now explicitly call out Report Binary Export Proof and Care-entry Provider Sync Proof as helper missions alongside Route Visual Consistency, Auth/Setup, Records local files, and Push notifications; those action lines are capture instructions, not native proof by themselves.
 - On Avatar Studio, confirm Scan/Template/Customize/Emotes tabs, Gallery, Take photo, template tiles, coat swatches, face options, accessories, mood previews, Reset, and Save Avatar controls feel phone-sized and easy to tap.
@@ -295,6 +297,15 @@ Current environment note:
   quiet hours, opt-out behavior, delivery QA, and missed-notification fallback
   before reminder delivery can be claimed. This is a proof target, not provider
   configuration or native delivery evidence by itself.
+- The Release Smoke Checklist, Share Beta Handoff, live-preview verifier, JSON
+  mobile beta doctor, and native QA tooling doctor now also name
+  `/care-twin-qa?qaSurface=payments-provider-proof` for Plus and Family product
+  ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired
+  receipt proof, restore purchases, entitlement mapping, refund/support policy,
+  and checkout-gate evidence before paid checkout can be enabled. More's Plus
+  payments provider row opens the same proof mission; this is a helper shortcut,
+  not payments provider configuration, sandbox receipt proof, money movement, or
+  Apollo/store approval by itself.
 - Reminder Center now surfaces the same launch boundary in-product: provider
   configuration status, permission readiness, quiet-hours policy, and opt-out
   copy stay visible in Calendar before push delivery is enabled. Calendar can

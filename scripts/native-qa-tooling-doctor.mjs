@@ -107,9 +107,12 @@ check(
     "report-binary-export-proof",
     "care-entry-provider-sync-proof",
     "push-notifications-proof",
+    "payments-provider-proof",
     "route-visual-consistency",
     "APNs credentials",
     "Firebase/FCM credentials",
+    "Plus and Family product ids",
+    "paid checkout",
     "iOS screenshot",
     "Android screenshot",
   ].every((value) => releaseQaSource.includes(value)) &&
@@ -155,6 +158,7 @@ const payload = {
     "/care-twin-qa?qaSurface=report-binary-export-proof",
     "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
     "/care-twin-qa?qaSurface=push-notifications-proof",
+    "/care-twin-qa?qaSurface=payments-provider-proof",
     "/care-twin-qa?qaSurface=route-visual-consistency",
   ],
   proofCommands: [
@@ -176,6 +180,7 @@ const payload = {
     "Open /care-twin-qa?qaSurface=report-binary-export-proof for Care Pass PDF and Dog ID PNG artifact proof, and keep generated PDF/PNG readiness blocked until file name, file size, MIME, share/reopen, renderer, storage policy, and iOS/Android evidence exist.",
     "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof for Supabase migration/backfill, active-household RLS, retention/export/deletion policy, dependency proof, and mobile full-refresh sign-off before enabling incremental care-entry sync.",
     "Open /care-twin-qa?qaSurface=push-notifications-proof for Expo/APNs/Firebase delivery proof, permission copy, quiet hours, opt-out behavior, and missed notification fallback before claiming reminder delivery.",
+    "Open /care-twin-qa?qaSurface=payments-provider-proof for Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
   ],
 };
 

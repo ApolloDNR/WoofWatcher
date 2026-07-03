@@ -178,6 +178,13 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /APNs credentials/);
   assert.match(text, /Firebase\/FCM credentials/);
   assert.match(text, /permission prompt copy, quiet hours, opt-out behavior, and delivery QA/);
+  assert.match(text, /Focused payments provider proof target/);
+  assert.match(text, /\/care-twin-qa\?qaSurface=payments-provider-proof/);
+  assert.match(text, /Plus and Family product ids/);
+  assert.match(text, /billing path decision/);
+  assert.match(text, /sandbox receipts/);
+  assert.match(text, /restore purchases/);
+  assert.match(text, /checkout stays disabled/);
   assert.match(text, /Focused route visual consistency target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=route-visual-consistency/);
   assert.match(text, /Home, Log, Plans, Health, Records, and More on iOS and Android/);

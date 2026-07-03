@@ -322,6 +322,8 @@ export function buildBetaHandoffPacketShareText(
     "- Attach Supabase project id, migration/backfill for care_entries.updated_at and care_entry_tombstones, active-household RLS cursor/tombstone proof, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off before enabling incremental sync.",
     "- Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
     "- Attach Expo push project id, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before claiming reminder delivery.",
+    "- Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
+    "- Attach Plus and Family product ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired receipt proof, restore purchases behavior, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
     "- Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
     "- Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
     "- Save the Mission note and clear Pass pending proof in both /care-twin-qa and More.",

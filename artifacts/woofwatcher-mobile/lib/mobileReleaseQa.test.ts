@@ -481,6 +481,59 @@ test("adds a launch-critical push notifications proof target", () => {
   assert.match(surface.launchRisk, /missed medication or care reminders/);
 });
 
+test("adds a launch-critical payments provider proof target", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const ids = surfaces.map((surface) => surface.id);
+  const surface = surfaces.find((item) => item.id === "payments-provider-proof");
+
+  assert.ok(surface);
+  assert.ok(
+    ids.indexOf("payments-provider-proof") > ids.indexOf("push-notifications-proof"),
+    "Payments provider proof should follow push proof in the focused launch targets",
+  );
+  assert.ok(
+    ids.indexOf("payments-provider-proof") < ids.indexOf("route-visual-consistency"),
+    "Payments provider proof should stay visible before broad route screenshot work",
+  );
+  assert.equal(surface.title, "Payments Provider Proof");
+  assert.equal(surface.route, "/more");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /Plus and Family product ids/);
+  assert.match(surface.goal, /sandbox receipt/);
+  assert.match(surface.goal, /checkout gate/);
+  assert.match(surface.devicePrompt, /Provider Launch Setup/);
+  assert.match(surface.devicePrompt, /iOS and Android/);
+  assert.match(surface.setupSteps.join("\n"), /Plus payments/);
+  assert.match(surface.setupSteps.join("\n"), /checkout stays disabled/);
+  assert.match(surface.verificationSteps.join("\n"), /Product catalog/);
+  assert.match(surface.verificationSteps.join("\n"), /Billing path decision/);
+  assert.match(surface.verificationSteps.join("\n"), /Sandbox receipt/);
+  assert.match(surface.verificationSteps.join("\n"), /Entitlement mapping/);
+  assert.match(surface.verificationSteps.join("\n"), /Refund and support policy/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /paid checkout stays blocked/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /restore purchases/);
+  assert.match(surface.failureEscalation, /money movement/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Provider Launch Setup/);
+  assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Provider Launch Setup/);
+  assert.match(surface.requiredEvidence.join("\n"), /Plus and Family product ids/);
+  assert.match(surface.requiredEvidence.join("\n"), /sandbox purchase, renewal, cancel, refund, and expired receipt/);
+  assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
+    "Provider Launch Setup payments gate",
+    "Product catalog and billing path",
+    "Sandbox receipts and restore purchases",
+    "Entitlements, refunds, and checkout gate",
+  ]);
+  assert.equal(surface.routeChecklist?.[0]?.route, "/more");
+  assert.equal(surface.routeChecklist?.[1]?.route, "/premium");
+  assert.equal(surface.routeChecklist?.[2]?.route, "/premium");
+  assert.equal(surface.routeChecklist?.[3]?.route, "/premium");
+  assert.match(surface.routeChecklist?.[0]?.proof ?? "", /Provider Launch Setup screenshot/);
+  assert.match(surface.routeChecklist?.[1]?.proof ?? "", /Plus and Family product ids/);
+  assert.match(surface.routeChecklist?.[2]?.proof ?? "", /sandbox receipt/);
+  assert.match(surface.routeChecklist?.[3]?.proof ?? "", /checkout stays disabled/);
+  assert.match(surface.launchRisk, /paid checkout can be enabled/);
+});
+
 test("adds route-check proof to store screenshot QA surfaces", () => {
   const packet: StoreSubmissionPacket = {
     title: "WoofWatcher Store Submission Packet",

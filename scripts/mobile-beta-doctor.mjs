@@ -118,6 +118,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
   "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture Supabase migration/backfill, active-household RLS, retention/export/deletion policy, and mobile full-refresh sign-off before enabling incremental sync.",
   "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before claiming reminder delivery.",
+  "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
   "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
@@ -300,6 +301,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
   "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
   "Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
+  "Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
   "Provider proof needed:",
   "Truth boundaries:",
 ])
@@ -334,6 +336,8 @@ const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeCheckl
   "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
   "Focused push notifications proof target",
   "/care-twin-qa?qaSurface=push-notifications-proof",
+  "Focused payments provider proof target",
+  "/care-twin-qa?qaSurface=payments-provider-proof",
   "Android content URI",
   "fallback copy",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
@@ -387,6 +391,7 @@ const livePreviewHandoffVerifierIsSourceBacked = mobilePackage.scripts?.["proof:
     "records-local-file-handoff",
     "report-binary-export-proof",
     "care-entry-provider-sync-proof",
+    "payments-provider-proof",
     "route-visual-consistency",
     "WoofWatcher Live Preview Handoff Proof",
     "web preview only",
@@ -1009,6 +1014,50 @@ check(
   pushNotificationsProofTargetIsSourceBacked
     ? "Push notifications proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and doctor next action"
     : "keep push notifications proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
+);
+
+const paymentsProviderProofTargetIsSourceBacked = includesAll(paymentsProviderProofSource, [
+  "PAYMENTS_PROVIDER_PROOF_SUMMARY",
+  "PAYMENTS_PROVIDER_PROOF_ITEMS",
+  "WoofWatcher Plus payments proof packet",
+  "Plus and Family product ids",
+  "billing path decision",
+  "Sandbox receipt test",
+  "Entitlement mapping",
+  "Refund and support policy",
+])
+  && includesAll(mobileReleaseQaSource, [
+    "payments-provider-proof",
+    "Payments Provider Proof",
+    "Plus and Family product ids",
+    "sandbox receipt",
+    "paid checkout stays blocked",
+    "restore purchases",
+    "money movement",
+  ])
+  && includesAll(betaHandoffPacketSource, [
+    "Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
+    "Attach Plus and Family product ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired receipt proof",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Focused payments provider proof target",
+    "/care-twin-qa?qaSurface=payments-provider-proof",
+    "Plus and Family product ids",
+    "checkout stays disabled",
+  ])
+  && includesAll(livePreviewHandoffProofSource, [
+    "payments-provider-proof",
+  ])
+  && includesAll(moreRouteSource, [
+    "payments-provider-proof",
+    "Payments Provider Proof",
+  ]);
+check(
+  "payments provider proof target is source-backed",
+  paymentsProviderProofTargetIsSourceBacked,
+  paymentsProviderProofTargetIsSourceBacked
+    ? "Payments proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and provider-row shortcut"
+    : "keep payments proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
 const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [

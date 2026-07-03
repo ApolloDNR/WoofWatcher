@@ -1567,6 +1567,23 @@ Owner: Codex.
 
 Revisit trigger: the premium branch is ready for a dedicated conflict-resolution merge window, or main contains another high-impact care logic change that should be ported intentionally.
 
+### 2026-07-03: Payments Checkout Requires Focused Provider Proof Before Money Movement
+
+Decision: WoofWatcher Plus payments get a focused `/care-twin-qa?qaSurface=payments-provider-proof` mission and a Provider Launch Setup shortcut before any checkout, entitlement enforcement, or money movement can be enabled.
+
+Reason: paid checkout is a launch-critical trust boundary. Local preview state, static plan copy, or owner-staged provider rows must not be treated as a real paid subscription. Helpers need one concrete mission for product ids, billing path, sandbox receipts, restore purchases, entitlements, refund/support policy, and Apollo approval before the payments gate can close.
+
+Consequences:
+
+- More's Plus payments provider row opens the focused payments proof mission.
+- Mobile Release QA, Share Beta Handoff, Release Smoke Checklist, live-preview proof, JSON mobile beta doctor, and native QA tooling doctor all name the same route.
+- The proof target requires Plus and Family product ids, billing path decision, sandbox purchase, renewal, cancel, refund, expired receipt, restore purchases, entitlement mapping, household role access, refund/support policy, and checkout-gate evidence.
+- Paid checkout, Stripe or store purchase flows, active paid entitlements, subscription enforcement, and public launch remain blocked until real provider proof and Apollo approval exist.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves the billing path, App Store/Google Play/Stripe provider credentials are available, or sandbox receipt evidence is ready to attach.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

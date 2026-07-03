@@ -288,6 +288,12 @@ function providerRowQaTarget(key: LaunchProviderSetupKey): ProviderRowQaTarget |
         detail: "Push Notifications Proof",
         iconName: "notifications-outline",
       };
+    case "payments":
+      return {
+        surfaceId: "payments-provider-proof",
+        detail: "Payments Provider Proof",
+        iconName: "card-outline",
+      };
     default:
       return null;
   }

@@ -1520,3 +1520,37 @@ Latest local evidence, 2026-07-03:
 - This handoff proof does not approve native screenshots, provider setup,
   generated PDF/image export, app-store approval, public launch, or Apollo
   sign-off.
+
+## Payments Provider Proof Target
+
+Latest local evidence, 2026-07-03:
+
+- `/care-twin-qa?qaSurface=payments-provider-proof` is now a launch-critical
+  focused mission for WoofWatcher Plus payments evidence before any paid
+  checkout can be enabled.
+- The target requires Plus and Family product ids, price/currency and trial
+  decision, App Store/Google Play/Stripe or web billing path, sandbox purchase,
+  renewal, cancel, refund, expired receipt, restore purchases, entitlement
+  mapping, household role access, refund/support policy, and Apollo checkout
+  approval.
+- More's Provider Launch Setup maps the Plus payments row to `Open proof
+  mission`, and Share Beta Handoff, the Release Smoke Checklist, the JSON mobile
+  beta doctor, live-preview proof, and native QA tooling doctor all name the
+  same target.
+- Focused proof passed `mobileReleaseQa.test.ts`,
+  `betaHandoffPacket.test.ts`, `mobileReleaseSmokeChecklist.test.ts`, and
+  `mobileReadiness.test.ts` with `138/138` tests. The broader mobile/PWA/care
+  domain suite passed `506/506`.
+- Direct `scripts/mobile-beta-doctor.mjs --json` reports `payments provider
+  proof target is source-backed` as `PASS`, while remaining truthfully
+  `BLOCKED` only because local pnpm is `11.7.0` and the repo is pinned to
+  `10.24.0`.
+- Direct `scripts/native-qa-tooling-doctor.mjs --json` lists the payments proof
+  route in `nativeProofTargets`, but remains `BLOCKED` in this Windows shell
+  because Android adb/emulator, Java, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and
+  `JAVA_HOME` are unavailable.
+- Direct live-preview handoff proof passed `15/15` web-preview route shell
+  checks, including `/care-twin-qa?qaSurface=payments-provider-proof`, against
+  the existing `.expo-smoke` export. This is web-preview proof only; it does not
+  approve native screenshots, provider payments setup, sandbox receipts, money
+  movement, store approval, public launch, or Apollo sign-off.

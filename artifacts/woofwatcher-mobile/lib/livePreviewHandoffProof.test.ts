@@ -48,6 +48,7 @@ test("builds preview-only handoff proof from served route results", () => {
       "/care-twin-qa?qaSurface=report-binary-export-proof",
       "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
       "/care-twin-qa?qaSurface=push-notifications-proof",
+      "/care-twin-qa?qaSurface=payments-provider-proof",
       "/care-twin-qa?qaSurface=route-visual-consistency",
     ],
   );
@@ -65,6 +66,7 @@ test("builds preview-only handoff proof from served route results", () => {
   assert.match(text, /route-visual-consistency/);
   assert.match(text, /care-entry-provider-sync-proof/);
   assert.match(text, /push-notifications-proof/);
+  assert.match(text, /payments-provider-proof/);
   assert.match(text, /web preview only/);
   assert.match(text, /does not replace native iOS\/Android proof/);
 });
