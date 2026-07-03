@@ -256,6 +256,7 @@ const livePreviewHandoffProofPath = join(mobileRoot, "scripts", "live-preview-ha
 const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
 const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts");
 const authProviderProofPath = join(mobileRoot, "lib", "authProviderProof.ts");
+const authUiPath = join(mobileRoot, "components", "auth-ui.tsx");
 const aiProviderProofPath = join(mobileRoot, "lib", "aiProviderProof.ts");
 const accountDeletionProofPath = join(mobileRoot, "lib", "accountDeletionProof.ts");
 const storeAccountsProofPath = join(mobileRoot, "lib", "storeAccountsProof.ts");
@@ -264,6 +265,7 @@ const paymentsProviderProofPath = join(mobileRoot, "lib", "paymentsProviderProof
 const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
+const setupRoutePath = join(mobileRoot, "app", "setup.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
 const premiumRoutePath = join(mobileRoot, "app", "premium.tsx");
 const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
@@ -278,6 +280,7 @@ const livePreviewHandoffProofSource = existsSync(livePreviewHandoffProofPath) ? 
 const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
 const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFileSync(launchProviderSetupPath, "utf8") : "";
 const authProviderProofSource = existsSync(authProviderProofPath) ? readFileSync(authProviderProofPath, "utf8") : "";
+const authUiSource = existsSync(authUiPath) ? readFileSync(authUiPath, "utf8") : "";
 const aiProviderProofSource = existsSync(aiProviderProofPath) ? readFileSync(aiProviderProofPath, "utf8") : "";
 const accountDeletionProofSource = existsSync(accountDeletionProofPath) ? readFileSync(accountDeletionProofPath, "utf8") : "";
 const storeAccountsProofSource = existsSync(storeAccountsProofPath) ? readFileSync(storeAccountsProofPath, "utf8") : "";
@@ -286,6 +289,7 @@ const paymentsProviderProofSource = existsSync(paymentsProviderProofPath) ? read
 const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
+const setupRouteSource = existsSync(setupRoutePath) ? readFileSync(setupRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
 const premiumRouteSource = existsSync(premiumRoutePath) ? readFileSync(premiumRoutePath, "utf8") : "";
 const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRoutePath, "utf8") : "";
@@ -515,6 +519,39 @@ check(
   authProviderProofPacketIsSourceBacked
     ? "Production auth readiness requires the Clerk/OAuth/deep-link/session/household proof packet through Provider Launch Setup and Share Beta Handoff"
     : "keep auth provider proof modeled in authProviderProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
+);
+
+const authSetupProofManifestIsSourceBacked = includesAll(authProviderProofSource, [
+  "buildAuthSetupProofManifest",
+  "Clerk production app",
+  "Redirect and deep links",
+  "Native auth screenshots",
+  "Setup local-preview proof",
+  "Native proof blocked",
+  "Apollo approval",
+])
+  && includesAll(authUiSource, [
+    "buildAuthSetupProofManifest",
+    "const authSetupProofManifest = buildAuthSetupProofManifest",
+    "Auth/Setup proof manifest",
+    "authSetupProofManifest.rows.map",
+    "authSetupProofManifest.blockers.map",
+    "Native proof blocked",
+  ])
+  && includesAll(setupRouteSource, [
+    "buildAuthSetupProofManifest",
+    "const authSetupProofManifest = buildAuthSetupProofManifest",
+    "Auth/Setup proof manifest",
+    "authSetupProofManifest.rows.map",
+    "authSetupProofManifest.blockers.map",
+    "Native proof blocked",
+  ]);
+check(
+  "auth/setup proof manifest is source-backed",
+  authSetupProofManifestIsSourceBacked,
+  authSetupProofManifestIsSourceBacked
+    ? "Auth gateway and Setup show Clerk, redirect, native screenshot, local-preview setup, household sync, and launch blockers before native auth/setup proof can be claimed"
+    : "keep Auth gateway and Setup wired to buildAuthSetupProofManifest before claiming native auth/setup proof",
 );
 
 const paymentsProviderProofPacketIsSourceBacked = includesAll(paymentsProviderProofSource, [

@@ -63,3 +63,40 @@ test("defines the production auth provider proof packet before account sync can 
     ),
   );
 });
+
+test("builds an Auth/Setup proof manifest before native proof can be claimed", async () => {
+  const mod = await import("./authProviderProof.ts").catch(() => null);
+  assert.equal(typeof mod?.buildAuthSetupProofManifest, "function");
+
+  const manifest = mod.buildAuthSetupProofManifest({
+    clerkProductionApproved: false,
+    redirectDeepLinkApproved: false,
+    nativeAuthScreensApproved: false,
+    setupNativeScreensApproved: false,
+    householdSyncApproved: false,
+    launchGateApproved: false,
+  });
+
+  assert.equal(manifest.status, "blocked");
+  assert.deepEqual(
+    manifest.rows.map((row) => row.label),
+    [
+      "Clerk production app",
+      "Redirect and deep links",
+      "Native auth screenshots",
+      "Setup local-preview proof",
+      "Household sync boundary",
+      "Launch gate",
+    ],
+  );
+  assert.equal(manifest.rows[2]?.value, "Screenshots pending");
+  assert.match(manifest.rows[2]?.detail ?? "", /iOS and Android Auth gateway/);
+  assert.match(manifest.rows[3]?.detail ?? "", /Setup local-preview path/);
+  assert.equal(manifest.rows[5]?.value, "Native proof blocked");
+  assert.ok(manifest.blockers.some((blocker) => /Clerk production app/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /redirect and deep links/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /iOS and Android Auth gateway/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /Setup local-preview path/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /household creation/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /Apollo approval/i.test(blocker)));
+});

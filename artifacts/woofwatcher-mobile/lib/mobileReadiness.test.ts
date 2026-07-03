@@ -464,6 +464,12 @@ test("keeps auth entry styled as the truthful CareTwin gateway", () => {
   assert.match(authUi, /Open setup proof/);
   assert.match(authUi, /accessibilityLabel="Open auth and setup proof mission"/);
   assert.match(authUi, /accessibilityRole="button"/);
+  assert.match(authUi, /buildAuthSetupProofManifest/);
+  assert.match(authUi, /const authSetupProofManifest = buildAuthSetupProofManifest/);
+  assert.match(authUi, /Auth\/Setup proof manifest/);
+  assert.match(authUi, /authSetupProofManifest\.rows\.map/);
+  assert.match(authUi, /authSetupProofManifest\.blockers\.map/);
+  assert.match(authUi, /Native proof blocked/);
   assert.match(authUi, /accessibilityLabel=\{label\}/);
   assert.match(signIn, /account layer ready for shared sync/);
   assert.match(signUp, /Care data stays local-first until production sync providers are configured/);
@@ -3391,6 +3397,12 @@ test("keeps Setup onboarding on shared board anatomy", () => {
   assert.match(setup, /\/care-twin-qa\?qaSurface=auth-setup-onboarding-proof/);
   assert.match(setup, /Open setup proof/);
   assert.match(setup, /accessibilityLabel="Open auth and setup proof mission"/);
+  assert.match(setup, /buildAuthSetupProofManifest/);
+  assert.match(setup, /const authSetupProofManifest = buildAuthSetupProofManifest/);
+  assert.match(setup, /Auth\/Setup proof manifest/);
+  assert.match(setup, /authSetupProofManifest\.rows\.map/);
+  assert.match(setup, /authSetupProofManifest\.blockers\.map/);
+  assert.match(setup, /Native proof blocked/);
   assert.doesNotMatch(setup, /header:/);
   assert.doesNotMatch(
     setup,
@@ -5580,6 +5592,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "auth provider proof packet is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "auth/setup proof manifest is source-backed" &&
         check.status === "PASS",
     ),
   );

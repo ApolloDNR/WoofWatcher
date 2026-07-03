@@ -57,6 +57,7 @@ The beta must not claim:
 - When the current mission is `Owner Preview Core Loop`, use the bottom nav to open Home, Log, Plans, Health, and More in order, then confirm Adventure, Records, Avatar Studio, and Care Pass are reachable from More or Home without dead ends.
 - When the current mission is `Auth And Setup Onboarding Proof`, open `/care-twin-qa?qaSurface=auth-setup-onboarding-proof`, then capture the Auth gateway and Setup local-preview path on iOS and Android while keeping provider-backed auth, household creation, invite delivery, and cross-device sync blocked until real provider proof exists.
 - When reviewing the Auth gateway or Setup onboarding route, use `Open setup proof` to jump to the same Auth And Setup Onboarding Proof mission. This is a shortcut only; it does not prove Clerk OAuth, household creation, invite delivery, cross-device sync, or native screenshots.
+- On the Auth gateway and Setup route, confirm the `Auth/Setup proof manifest` shows Clerk production app, Redirect and deep links, Native auth screenshots, Setup local-preview proof, Household sync boundary, and Launch gate rows. The manifest must keep `Native proof blocked` visible until real Clerk, native iOS/Android screenshot, household sync, and Apollo approval evidence is attached.
 - On Home, confirm the header/menu action, Avatar Studio hero entry, household presence panel, Adventure inline action, pixel-room crop, and bottom-nav fit feel phone-sized, useful, and aligned with the premium neo-retro care-twin promise.
 - In the owner-preview loop, quick-log one safe care event or open the detail sheet, then undo it or leave a QA note if you do not want the test log to stay in local preview data.
 - On Log, confirm the care-type tabs, Undo/Add details, meal outcome, potty outcome, trust review, walk finish, and alone-time return controls feel phone-sized and easy to tap.
@@ -153,6 +154,10 @@ Shippable for internal beta after local verification passes:
   source-backed`, so Premium must display product catalog, billing path,
   sandbox receipt, restore-purchase, refund/support, and checkout-gate blockers
   before paid checkout can be enabled.
+- The mobile beta doctor also verifies `auth/setup proof manifest is
+  source-backed`, so Auth gateway and Setup must display Clerk, redirect,
+  native screenshot, setup local-preview, household sync, and launch blockers
+  before native Auth/Setup proof can be claimed.
 
 Current environment note:
 

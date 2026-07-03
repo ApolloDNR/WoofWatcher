@@ -265,6 +265,15 @@ those proof steps under Production auth, and the JSON mobile beta doctor reports
 `auth provider proof packet is source-backed`. This does not configure Clerk,
 approve OAuth, enable household creation, or clear native Auth/Setup screenshots.
 
+The Auth/Setup proof manifest pass makes the first native-proof blocker visible
+on the Auth gateway and Setup route. `authProviderProof.ts` now builds rows for
+Clerk production app, Redirect and deep links, Native auth screenshots, Setup
+local-preview proof, Household sync boundary, and Launch gate; `auth-ui.tsx` and
+`setup.tsx` render those rows under `Auth/Setup proof manifest` and keep the
+visible status at `Native proof blocked` until real Clerk, native screenshot,
+household sync, and Apollo approval evidence is attached. The JSON mobile beta
+doctor reports `auth/setup proof manifest is source-backed`.
+
 The WoofWatcher Plus payments proof pass turns the old payments one-line proof
 into a source-backed packet. `paymentsProviderProof.ts` now defines the Plus and
 Family product catalog, App Store/Google Play/Stripe or web billing decision,

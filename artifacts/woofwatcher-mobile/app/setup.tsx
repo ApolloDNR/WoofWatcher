@@ -19,6 +19,7 @@ import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
+import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import {
   getKeyboardAvoidingVerticalOffset,
   getRouteTopPadding,
@@ -98,6 +99,7 @@ export default function SetupScreen() {
     () => buildSetupWizardConfirmation(preview, { isSignedIn: Boolean(isSignedIn), isClerkConfigured }),
     [isSignedIn, preview],
   );
+  const authSetupProofManifest = buildAuthSetupProofManifest();
 
   const setField = (key: keyof SetupWizardDraft, value: string) => {
     setDirty(true);
@@ -336,6 +338,39 @@ export default function SetupScreen() {
             </View>
           </BoardCard>
 
+          <BoardCard style={s.authSetupProofCard}>
+            <BoardSectionHeader
+              title="Auth/Setup proof manifest"
+              accessory={<BoardPill label="Native proof blocked" tone={colors.amber} />}
+            />
+            <View style={s.authSetupProofGrid}>
+              {authSetupProofManifest.rows.map((row) => (
+                <View key={row.label} style={[s.authSetupProofCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <Text style={[s.authSetupProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_800ExtraBold" }]}>
+                    {row.label}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      s.authSetupProofValue,
+                      { color: row.status === "ready" ? colors.sage : colors.amber, fontFamily: "Inter_800ExtraBold" },
+                    ]}
+                  >
+                    {row.value}
+                  </Text>
+                  <Text numberOfLines={2} style={[s.authSetupProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {row.detail}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            {authSetupProofManifest.blockers.map((blocker) => (
+              <Text key={blocker} numberOfLines={2} style={[s.authSetupProofBlocker, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                - {blocker}
+              </Text>
+            ))}
+          </BoardCard>
+
           <View style={s.actions}>
             <Pressable
               onPress={saveSetup}
@@ -479,6 +514,19 @@ const s = StyleSheet.create({
   confirmationItem: { flex: 1, fontSize: 12.5, lineHeight: 18 },
   boundaryBox: { borderWidth: 1, borderRadius: 15, padding: 11, flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 13 },
   boundaryText: { flex: 1, fontSize: 11.5, lineHeight: 17 },
+  authSetupProofCard: { marginBottom: 14 },
+  authSetupProofGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  authSetupProofCell: {
+    width: "48.5%",
+    minHeight: 112,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 9,
+  },
+  authSetupProofLabel: { fontSize: 9, lineHeight: 12, textTransform: "uppercase" },
+  authSetupProofValue: { fontSize: 11, lineHeight: 14, marginTop: 4 },
+  authSetupProofDetail: { fontSize: 10, lineHeight: 14, marginTop: 4 },
+  authSetupProofBlocker: { fontSize: 10.5, lineHeight: 15, marginTop: 8 },
   actions: { gap: 12, marginTop: 8 },
   saveBtn: { height: 54, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   saveText: { color: "#fff", fontSize: 15.5 },

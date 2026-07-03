@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import { isClerkConfigured } from "@/lib/auth";
+import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 
@@ -71,6 +72,7 @@ export function AuthShell({
     Haptics.selectionAsync();
     router.push("/care-twin-qa?qaSurface=auth-setup-onboarding-proof" as never);
   };
+  const authSetupProofManifest = buildAuthSetupProofManifest();
 
   return (
     <ScrollView
@@ -157,6 +159,42 @@ export function AuthShell({
             Open setup proof
           </Text>
         </Pressable>
+        <View style={[styles.proofManifest, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
+          <View style={styles.proofManifestHead}>
+            <Text style={[styles.proofManifestTitle, { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" }]}>
+              Auth/Setup proof manifest
+            </Text>
+            <Text style={[styles.proofManifestPill, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+              Native proof blocked
+            </Text>
+          </View>
+          <View style={styles.proofManifestGrid}>
+            {authSetupProofManifest.rows.map((row) => (
+              <View key={row.label} style={[styles.proofManifestCell, { borderColor: colors.border }]}>
+                <Text style={[styles.proofManifestLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                  {row.label}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.proofManifestValue,
+                    { color: row.status === "ready" ? colors.sage : BUBBLE_INK, fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
+                  {row.value}
+                </Text>
+                <Text numberOfLines={2} style={[styles.proofManifestDetail, { color: BUBBLE_INK, fontFamily: "Inter_500Medium" }]}>
+                  {row.detail}
+                </Text>
+              </View>
+            ))}
+          </View>
+          {authSetupProofManifest.blockers.map((blocker) => (
+            <Text key={blocker} numberOfLines={2} style={[styles.proofManifestBlocker, { color: BUBBLE_INK, fontFamily: "Inter_500Medium" }]}>
+              - {blocker}
+            </Text>
+          ))}
+        </View>
       </View>
 
       <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -463,6 +501,61 @@ const styles = StyleSheet.create({
   proofButtonText: {
     fontSize: 11,
     lineHeight: 14,
+  },
+  proofManifest: {
+    borderWidth: 1,
+    borderRadius: 14,
+    marginTop: 10,
+    padding: 10,
+  },
+  proofManifestHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  proofManifestTitle: {
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  proofManifestPill: {
+    fontSize: 9,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  proofManifestGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  proofManifestCell: {
+    width: "48.5%",
+    minHeight: 104,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 8,
+  },
+  proofManifestLabel: {
+    fontSize: 8.5,
+    lineHeight: 11,
+    textTransform: "uppercase",
+  },
+  proofManifestValue: {
+    fontSize: 10.5,
+    lineHeight: 13,
+    marginTop: 4,
+  },
+  proofManifestDetail: {
+    fontSize: 9.5,
+    lineHeight: 13,
+    marginTop: 4,
+  },
+  proofManifestBlocker: {
+    fontSize: 9.5,
+    lineHeight: 13,
+    marginTop: 7,
   },
   formCard: {
     width: "100%",
