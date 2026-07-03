@@ -72,3 +72,23 @@ test("defines the WoofGuide AI provider proof packet before live AI can be enabl
     ),
   );
 });
+
+test("builds a blocked WoofGuide AI provider proof manifest before live AI can be enabled", async () => {
+  const mod = await import("./aiProviderProof.ts").catch(() => null);
+  assert.ok(mod, "aiProviderProof module should exist");
+
+  const manifest = mod.buildAiProviderProofManifest({});
+
+  assert.equal(manifest.title, "WoofGuide AI provider proof manifest");
+  assert.equal(manifest.status, "blocked");
+  assert.equal(manifest.statusLabel, "Live AI blocked");
+  assert.equal(manifest.liveAiAllowed, false);
+  assert.equal(manifest.readyCount, 0);
+  assert.equal(manifest.openCount, 6);
+  assert.match(manifest.summary, /deterministic/);
+  assert.match(manifest.summary, /owner-reviewed/);
+  assert.ok(manifest.items.every((item) => item.status === "blocked"));
+  assert.ok(manifest.blockers.some((blocker) => /OpenAI key location/.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /not veterinary advice/.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /no automatic care-log writes/.test(blocker)));
+});

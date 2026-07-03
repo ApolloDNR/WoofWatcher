@@ -1217,6 +1217,31 @@ check(
     : "keep WoofGuide AI proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
+const woofGuideAiProviderProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
+  "buildAiProviderProofManifest",
+  "woofGuideAiProviderProofManifest",
+  "WoofGuide AI provider proof manifest",
+  "Live AI allowed",
+  "WoofGuide must stay deterministic and owner-reviewed",
+  "woofGuideAiProviderProofManifest.items.map",
+  "woofGuideAiProviderProofManifest.blockers.map",
+])
+  && includesAll(aiProviderProofSource, [
+    "buildAiProviderProofManifest",
+    "liveAiAllowed",
+    "OpenAI key storage",
+    "source/citation rules",
+    "owner-reviewed",
+    "veterinary safety",
+  ]);
+check(
+  "woofguide ai provider proof manifest is source-backed",
+  woofGuideAiProviderProofManifestIsSourceBacked,
+  woofGuideAiProviderProofManifestIsSourceBacked
+    ? "WoofGuide AI provider proof manifest is visible on the focused QA route while keeping deterministic, source, write-gate, and veterinary safety boundaries"
+    : "render the WoofGuide AI provider proof manifest on /care-twin-qa?qaSurface=woofguide-ai-provider-proof with deterministic, source, write-gate, and veterinary safety boundaries",
+);
+
 const pushNotificationsProofTargetIsSourceBacked = includesAll(pushNotificationsProofSource, [
   "PUSH_NOTIFICATIONS_PROOF_SUMMARY",
   "PUSH_NOTIFICATIONS_PROOF_ITEMS",

@@ -1388,6 +1388,35 @@ Latest local evidence, 2026-07-03:
   retention/export/deletion, enable incremental sync, replace native proof, or
   replace Apollo sign-off.
 
+## WoofGuide AI Provider Proof Manifest
+
+Latest local evidence, 2026-07-03:
+
+- `/care-twin-qa?qaSurface=woofguide-ai-provider-proof` now renders a focused
+  WoofGuide AI provider proof manifest using `buildAiProviderProofManifest`.
+- The manifest shows proof progress, `Live AI allowed: No`, every OpenAI key
+  storage, model policy, source/citation, owner-review write gate, veterinary
+  safety, and fallback/incident row, plus blockers and the deterministic
+  owner-reviewed boundary before live AI can be enabled.
+- Red/green proof first failed because `buildAiProviderProofManifest` did not
+  exist, then failed again because the focused QA route did not import or render
+  the manifest, then failed again because the JSON mobile beta doctor did not
+  report `woofguide ai provider proof manifest is source-backed`.
+- Focused proof now passes `aiProviderProof.test.ts` and
+  `mobileReleaseQa.test.ts` with `27/27` tests, plus the focused care-twin QA
+  route and machine-readable doctor readiness run with `114/114` tests. The
+  broader zero-dependency API/mobile/PWA/care-domain suite passes `553/553`,
+  root TypeScript passes, and mobile TypeScript passes.
+- Direct JSON mobile beta doctor reports `woofguide ai provider proof manifest
+  is source-backed` as `PASS` while remaining blocked only on local
+  pnpm/Corepack. Direct JSON native QA tooling doctor remains blocked because
+  this Windows shell lacks Android `adb`, Android `emulator`, Java,
+  `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+- This clears only source-backed helper visibility for the WoofGuide AI proof
+  packet. It does not configure OpenAI, approve a model policy, enable live AI,
+  allow automatic care-log writes, replace citation/source review, clear
+  veterinary safety approval, or replace Apollo sign-off.
+
 ## Release Smoke Checklist Handoff
 
 Latest local evidence, 2026-07-03:

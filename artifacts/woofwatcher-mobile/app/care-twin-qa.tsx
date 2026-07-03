@@ -25,6 +25,7 @@ import {
   type CareTwinQaReviewStatus,
 } from "@/lib/careTwinQaReport";
 import { deriveCareEntryProviderSyncProof } from "@/lib/careEntryProviderSyncProof";
+import { buildAiProviderProofManifest } from "@/lib/aiProviderProof";
 import {
   buildRouteVisualProofManifest,
   buildStoreSubmissionScreenshotQaSurfaces,
@@ -409,6 +410,10 @@ export default function CareTwinQaScreen() {
   );
   const careEntryProviderSyncProofManifest = useMemo(
     () => (focusedQaTarget?.surface.id === "care-entry-provider-sync-proof" ? deriveCareEntryProviderSyncProof({}) : null),
+    [focusedQaTarget],
+  );
+  const woofGuideAiProviderProofManifest = useMemo(
+    () => (focusedQaTarget?.surface.id === "woofguide-ai-provider-proof" ? buildAiProviderProofManifest({}) : null),
     [focusedQaTarget],
   );
   const nextBetaMission = betaCapturePlan.primaryMission;
@@ -847,6 +852,81 @@ export default function CareTwinQaScreen() {
                     ) : null}
                     <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       This manifest does not run Supabase migrations, approve RLS, configure retention/export/deletion policy, replace native iOS/Android proof, or enable incremental sync.
+                    </Text>
+                  </View>
+                ) : null}
+                {woofGuideAiProviderProofManifest ? (
+                  <View style={[s.routeVisualManifest, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.routeVisualManifestHeader}>
+                      <View style={s.routeVisualManifestCopy}>
+                        <Text style={[s.routeVisualManifestTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                          WoofGuide AI provider proof manifest
+                        </Text>
+                        <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          WoofGuide must stay deterministic and owner-reviewed until provider, safety, and source proof are attached.
+                        </Text>
+                      </View>
+                      <QaBadge
+                        label={woofGuideAiProviderProofManifest.statusLabel}
+                        tone={woofGuideAiProviderProofManifest.liveAiAllowed ? colors.sage : colors.amber}
+                      />
+                    </View>
+                    <View style={s.routeVisualManifestStats}>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Ready
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {woofGuideAiProviderProofManifest.readyCount}/{woofGuideAiProviderProofManifest.totalCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Open
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {woofGuideAiProviderProofManifest.openCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Live AI allowed
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {woofGuideAiProviderProofManifest.liveAiAllowed ? "Yes" : "No"}
+                        </Text>
+                      </View>
+                    </View>
+                    {woofGuideAiProviderProofManifest.items.map((item) => (
+                      <View key={`woofguide-ai-provider-manifest-${item.label}`} style={[s.routeVisualManifestRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={s.routeVisualManifestRouteLine}>
+                          <Text style={[s.routeVisualManifestRouteName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {item.label}
+                          </Text>
+                          <QaBadge label={item.status === "ready" ? "Ready" : "Blocked"} tone={item.status === "ready" ? colors.sage : colors.amber} />
+                        </View>
+                        <Text style={[s.routeVisualManifestExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {item.requiredEvidence}
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatusLine, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Evidence: {item.evidenceAttached.length ? item.evidenceAttached.join(", ") : "Not attached"}
+                        </Text>
+                      </View>
+                    ))}
+                    {woofGuideAiProviderProofManifest.blockers.length ? (
+                      <View style={[s.routeVisualManifestBlockers, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                        {woofGuideAiProviderProofManifest.blockers.map((blocker) => (
+                          <View key={`woofguide-ai-provider-blocker-${blocker}`} style={s.betaRunStep}>
+                            <View style={[s.betaRunStepDot, { backgroundColor: colors.amber }]} />
+                            <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {blocker}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      This manifest does not configure OpenAI, approve model policy, allow automatic care-log writes, replace veterinary safety review, or enable live AI.
                     </Text>
                   </View>
                 ) : null}

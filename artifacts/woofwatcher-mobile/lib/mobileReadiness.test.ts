@@ -845,6 +845,13 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /careEntryProviderSyncProofManifest\.blockers\.map/);
   assert.match(qaRoute, /Incremental sync allowed/);
   assert.match(qaRoute, /Mobile must remain on full-refresh care-entry refresh/);
+  assert.match(qaRoute, /buildAiProviderProofManifest/);
+  assert.match(qaRoute, /woofGuideAiProviderProofManifest/);
+  assert.match(qaRoute, /WoofGuide AI provider proof manifest/);
+  assert.match(qaRoute, /woofGuideAiProviderProofManifest\.items\.map/);
+  assert.match(qaRoute, /woofGuideAiProviderProofManifest\.blockers\.map/);
+  assert.match(qaRoute, /Live AI allowed/);
+  assert.match(qaRoute, /WoofGuide must stay deterministic and owner-reviewed/);
   assert.match(qaRoute, /Mission note/);
   assert.match(qaRoute, /Mission note for \$\{nextBetaTarget\.title\}/);
   assert.match(qaRoute, /surfaceNotes\[nextBetaTarget\.surfaceId\]/);
@@ -5683,6 +5690,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "woofguide ai provider proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "woofguide ai provider proof manifest is source-backed" &&
         check.status === "PASS",
     ),
   );
