@@ -475,11 +475,12 @@ check(
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [
   "RECORDED_MOBILE_BETA_CI_PROOF",
-  'runId: "28664666368"',
-  'jobId: "85013346789"',
-  'commit: "d3d767d"',
+  'runId: "28665850917"',
+  'jobId: "85017274907"',
+  'commit: "c17571a"',
   "auth/setup smoke proof",
   "auth/setup native QA target",
+  "auth provider proof packet",
   "Recorded branch CI proof:",
   "Rerun WoofWatcher Verify after any new commit before treating dependency proof as current.",
   "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
@@ -488,7 +489,7 @@ check(
   "recorded CI proof freshness boundary is source-backed",
   recordedCiProofFreshnessBoundaryIsSourceBacked,
   recordedCiProofFreshnessBoundaryIsSourceBacked
-    ? "Recorded CI proof names the latest recorded branch run while requiring a rerun after new commits"
+    ? "Recorded CI proof names run 28665850917 on commit c17571a while requiring a rerun after new commits"
     : "keep recorded CI proof labeled as historical branch evidence with a rerun-after-new-commit boundary",
 );
 
