@@ -189,6 +189,8 @@ test("keeps launch-blocking safety copy on premium, privacy, and WoofGuide surfa
   assert.match(privacy, /state\.launchSupportProfile/);
   assert.match(privacy, /updateCareDoc/);
   assert.match(privacy, /Support runbook/);
+  assert.match(privacy, /openSupportLegalProofMission/);
+  assert.match(privacy, /support-legal-readiness-proof/);
   assert.match(privacy, /supportPlan\.launchBlockers/);
   assert.match(privacyModel, /launchSupportProfile/);
   assert.match(privacyModel, /deriveAttachmentManifest/);
@@ -372,6 +374,7 @@ test("keeps a static beta preview server wired for Apollo review", () => {
   assert.match(livePreviewProof, /payments-provider-proof/);
   assert.match(livePreviewProof, /store-accounts-proof/);
   assert.match(livePreviewProof, /account-deletion-proof/);
+  assert.match(livePreviewProof, /support-legal-readiness-proof/);
   assert.match(livePreviewProof, /route-visual-consistency/);
   assert.match(livePreviewProof, /web preview only/);
   assert.match(livePreviewProof, /does not replace native iOS\/Android proof/);
@@ -384,6 +387,7 @@ test("keeps a static beta preview server wired for Apollo review", () => {
   assert.match(doctorSource, /payments-provider-proof/);
   assert.match(doctorSource, /store-accounts-proof/);
   assert.match(doctorSource, /account-deletion-proof/);
+  assert.match(doctorSource, /support-legal-readiness-proof/);
 });
 
 test("keeps local Clerk placeholders from blanking the web preview", () => {
@@ -480,6 +484,10 @@ test("keeps critical mobile actions accessible to screen readers", () => {
   assert.match(
     privacy,
     /accessibilityLabel="Share WoofWatcher support runbook"/,
+  );
+  assert.match(
+    privacy,
+    /accessibilityLabel="Open support legal readiness proof mission"/,
   );
   assert.match(
     privacy,
@@ -5041,6 +5049,9 @@ test("keeps a native QA tooling doctor for device-proof handoff", () => {
     payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=account-deletion-proof"),
   );
   assert.ok(
+    payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=support-legal-readiness-proof"),
+  );
+  assert.ok(
     payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=route-visual-consistency"),
   );
   assert.ok(
@@ -5104,6 +5115,15 @@ test("keeps a native QA tooling doctor for device-proof handoff", () => {
         action.includes("/care-twin-qa?qaSurface=account-deletion-proof") &&
         action.includes("self-serve deletion route") &&
         action.includes("legal/store approval"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("/care-twin-qa?qaSurface=support-legal-readiness-proof") &&
+        action.includes("support inbox") &&
+        action.includes("privacy policy") &&
+        action.includes("veterinary boundary"),
     ),
   );
 });
@@ -5423,6 +5443,15 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.nextActions?.some(
       (action) =>
+        action.includes("/care-twin-qa?qaSurface=support-legal-readiness-proof") &&
+        action.includes("support inbox") &&
+        action.includes("privacy policy") &&
+        action.includes("Apollo approval"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
         action.includes("/care-twin-qa?qaSurface=route-visual-consistency") &&
         action.includes("Home, Log, Plans, Health, Records, and More") &&
         action.includes("iOS and Android"),
@@ -5553,6 +5582,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "account deletion proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "support legal readiness proof target is source-backed" &&
         check.status === "PASS",
     ),
   );

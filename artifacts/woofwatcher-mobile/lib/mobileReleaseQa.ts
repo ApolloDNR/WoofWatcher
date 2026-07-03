@@ -800,6 +800,68 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If this proof is skipped, destructive account deletion can be enabled or store deletion compliance can be claimed without route, auth, export, provider deletion, audit, recovery, legal, or store approval evidence.",
   },
   {
+    id: "support-legal-readiness-proof",
+    title: "Support Legal Readiness Proof",
+    route: "/privacy",
+    priority: "launch-critical",
+    goal:
+      "Prove the support inbox, privacy policy and terms links, refund and subscription policy, veterinary and emergency boundary, account deletion escalation, incident response owner, and Apollo approval before public launch can be claimed.",
+    devicePrompt:
+      "In Privacy & Safety on iOS and Android, collect the support/legal readiness packet without treating local owner-reviewed checkboxes, policy drafts, or share text as legal or store approval.",
+    setupSteps: [
+      "Open Privacy & Safety, then Launch support profile, and confirm support email, privacy policy URL, terms URL, and policy approvals are staged from real owner or provider decisions.",
+      "Use Share support runbook to produce the support packet and keep public launch blocked until every blocker is closed with Apollo approval.",
+      "Confirm local draft or owner-reviewed support profile state does not approve legal, store, provider, refund, or veterinary-boundary readiness by itself.",
+    ],
+    verificationSteps: [
+      "Confirm Privacy & Safety shows the support inbox, privacy policy link, terms link, refund/subscription policy, veterinary boundary, deletion escalation, and incident response owner.",
+      "Confirm the support runbook says WoofWatcher is not veterinary advice, diagnosis, treatment, or emergency triage.",
+      "Confirm deletion escalation, account export, and support receipt expectations stay visible before public accounts or destructive deletion are claimed.",
+      "Confirm public launch stays blocked until support, legal/privacy, refund/subscription, veterinary-boundary, incident response, and Apollo approval evidence is attached.",
+    ],
+    acceptanceCriteria: [
+      "public launch stays blocked until support inbox, privacy policy, terms, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval are attached.",
+      "Privacy & Safety never treats local support profile drafts or owner-reviewed rows as final legal, store, provider, refund, or veterinary approval.",
+      "Support runbook share text keeps emergency/veterinary boundaries visible before AI, payments, uploads, public accounts, or store review are claimed ready.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if the app implies legal, support, refund, or veterinary-boundary approval without support inbox, privacy policy, terms, refund/subscription policy, deletion escalation, incident response owner, and Apollo approval evidence.",
+    requiredEvidence: [
+      "iOS screenshot of Privacy & Safety support runbook showing support inbox, privacy policy, terms, and blockers.",
+      "Android screenshot of Privacy & Safety support runbook showing refund and subscription policy plus veterinary boundary.",
+      "Shared support runbook text showing not veterinary advice, emergency escalation, deletion escalation, incident response owner, and public launch blockers.",
+      "Note confirming support inbox, privacy policy and terms links, refund and subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
+    ],
+    routeChecklist: [
+      {
+        label: "Privacy & Safety support runbook",
+        route: "/privacy",
+        expected:
+          "Confirm Privacy & Safety shows support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, and incident response owner before launch readiness is claimed.",
+        proof:
+          "Privacy & Safety screenshot plus support runbook share text showing support inbox, policy links, refund/subscription policy, veterinary boundary, deletion escalation, and incident response owner.",
+      },
+      {
+        label: "Launch support profile",
+        route: "/privacy",
+        expected:
+          "Confirm Launch support profile keeps local draft, owner-reviewed, and provider-approved states distinct and does not treat staged links as legal or store approval.",
+        proof:
+          "Launch support profile screenshot and note confirming whether the support inbox, privacy policy URL, terms URL, refund/subscription policy, and Apollo approval are attached.",
+      },
+      {
+        label: "Share support runbook",
+        route: "/privacy",
+        expected:
+          "Confirm Share support runbook produces a packet with emergency boundaries, not-veterinary-advice language, deletion escalation, incident response owner, and public launch blockers.",
+        proof:
+          "Shared support runbook text showing veterinary and emergency boundary, deletion escalation, incident response owner, and public launch stays blocked.",
+      },
+    ],
+    launchRisk:
+      "If this proof is skipped, public launch, payments, uploads, AI, store review, or destructive deletion can be claimed without legal, support, refund, or veterinary-boundary approval.",
+  },
+  {
     id: "route-visual-consistency",
     title: "Route Visual Consistency",
     route: "/more",

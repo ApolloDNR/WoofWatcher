@@ -688,6 +688,46 @@ test("adds a launch-critical account deletion proof target", () => {
   assert.match(surface.launchRisk, /destructive account deletion can be enabled/);
 });
 
+test("adds a launch-critical support legal readiness proof target", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const ids = surfaces.map((surface) => surface.id);
+  const surface = surfaces.find((item) => item.id === "support-legal-readiness-proof");
+
+  assert.ok(surface);
+  assert.ok(
+    ids.indexOf("support-legal-readiness-proof") > ids.indexOf("account-deletion-proof"),
+    "Support legal readiness proof should follow the account deletion proof in the focused launch targets",
+  );
+  assert.ok(
+    ids.indexOf("support-legal-readiness-proof") < ids.indexOf("route-visual-consistency"),
+    "Support legal readiness proof should stay visible before broad route screenshot work",
+  );
+  assert.equal(surface.title, "Support Legal Readiness Proof");
+  assert.equal(surface.route, "/privacy");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /support inbox/);
+  assert.match(surface.goal, /privacy policy and terms links/);
+  assert.match(surface.goal, /refund and subscription policy/);
+  assert.match(surface.goal, /veterinary and emergency boundary/);
+  assert.match(surface.goal, /account deletion escalation/);
+  assert.match(surface.goal, /incident response owner/);
+  assert.match(surface.devicePrompt, /Privacy & Safety/);
+  assert.match(surface.setupSteps.join("\n"), /Launch support profile/);
+  assert.match(surface.setupSteps.join("\n"), /Share support runbook/);
+  assert.match(surface.verificationSteps.join("\n"), /privacy policy/);
+  assert.match(surface.verificationSteps.join("\n"), /terms/);
+  assert.match(surface.verificationSteps.join("\n"), /refund/);
+  assert.match(surface.verificationSteps.join("\n"), /not veterinary advice/);
+  assert.match(surface.verificationSteps.join("\n"), /deletion escalation/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /public launch stays blocked/);
+  assert.match(surface.requiredEvidence.join("\n"), /Privacy & Safety support runbook/);
+  assert.match(surface.requiredEvidence.join("\n"), /support inbox/);
+  assert.match(surface.requiredEvidence.join("\n"), /refund and subscription policy/);
+  assert.match(surface.requiredEvidence.join("\n"), /veterinary boundary/);
+  assert.match(surface.requiredEvidence.join("\n"), /Apollo approval/);
+  assert.match(surface.launchRisk, /legal, support, refund, or veterinary-boundary approval/);
+});
+
 test("adds route-check proof to store screenshot QA surfaces", () => {
   const packet: StoreSubmissionPacket = {
     title: "WoofWatcher Store Submission Packet",

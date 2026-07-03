@@ -307,6 +307,14 @@ export function buildMobileReleaseSmokeChecklist(
             status: "required",
           },
           {
+            label: "Focused support legal readiness proof target",
+            detail:
+              "Open /care-twin-qa?qaSurface=support-legal-readiness-proof and confirm support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
+            proof:
+              "Attach support runbook share text, privacy/terms URLs, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval; public launch stays blocked until this proof exists.",
+            status: "required",
+          },
+          {
             label: "Focused route visual consistency target",
             detail:
               "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android.",

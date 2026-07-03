@@ -205,6 +205,11 @@ export default function PrivacyScreen() {
     }).catch(() => Alert.alert("Support runbook", message));
   };
 
+  const openSupportLegalProofMission = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/care-twin-qa?qaSurface=support-legal-readiness-proof" as never);
+  };
+
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -339,18 +344,34 @@ export default function PrivacyScreen() {
               </Text>
             ))}
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Share WoofWatcher support runbook"
-            onPress={shareSupportRunbook}
-            style={({ pressed }) => [
-              s.supportShareBtn,
-              { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
-            ]}
-          >
-            <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
-            <Text style={[s.supportShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share support runbook</Text>
-          </Pressable>
+          <View style={s.supportActionRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open support legal readiness proof mission"
+              onPress={openSupportLegalProofMission}
+              style={({ pressed }) => [
+                s.supportProofBtn,
+                { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.76 : 1 },
+              ]}
+            >
+              <Ionicons name="shield-checkmark-outline" size={16} color={colors.foreground} />
+              <Text style={[s.supportProofText, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                Proof mission
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Share WoofWatcher support runbook"
+              onPress={shareSupportRunbook}
+              style={({ pressed }) => [
+                s.supportShareBtn,
+                { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+              ]}
+            >
+              <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
+              <Text style={[s.supportShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share support runbook</Text>
+            </Pressable>
+          </View>
         </BoardCard>
 
         <BoardCard style={s.privacyBoard}>
@@ -716,8 +737,20 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   supportBlockerText: { fontSize: 12, lineHeight: 17 },
+  supportActionRow: { flexDirection: "row", gap: 10, marginTop: 12 },
+  supportProofBtn: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  supportProofText: { fontSize: 13 },
   supportShareBtn: {
-    marginTop: 12,
+    flex: 1,
     minHeight: 46,
     borderRadius: 8,
     flexDirection: "row",

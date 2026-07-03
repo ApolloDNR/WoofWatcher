@@ -381,6 +381,16 @@ Current environment note:
   enabled. More's Self-serve account deletion row opens the same proof mission;
   this is a helper shortcut, not provider deletion, privacy/legal approval,
   App Store/Play Store compliance, or Apollo sign-off by itself.
+- The Release Smoke Checklist, Share Beta Handoff, live-preview verifier, JSON
+  mobile beta doctor, and native QA tooling doctor now also name
+  `/care-twin-qa?qaSurface=support-legal-readiness-proof` for support inbox,
+  privacy policy and terms links, refund/subscription policy, veterinary and
+  emergency boundary, deletion escalation, incident response owner, and Apollo
+  approval before public launch can be claimed. Privacy & Safety's Support
+  runbook card opens the same proof mission; this is a helper shortcut, not
+  legal/privacy approval, refund/subscription approval, support-operation
+  approval, veterinary-boundary sign-off, public launch approval, or Apollo
+  sign-off by itself.
 - Reminder Center now surfaces the same launch boundary in-product: provider
   configuration status, permission readiness, quiet-hours policy, and opt-out
   copy stay visible in Calendar before push delivery is enabled. Calendar can

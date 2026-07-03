@@ -122,6 +122,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
   "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, reviewer access, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.",
   "Open /care-twin-qa?qaSurface=account-deletion-proof and capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before enabling destructive account deletion.",
+  "Open /care-twin-qa?qaSurface=support-legal-readiness-proof and capture support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
   "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
@@ -264,6 +265,7 @@ const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProvide
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
+const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
 const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
 const carePassDomainPath = join(root, "lib", "care-domain", "src", "care-pass.ts");
 const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
@@ -284,6 +286,7 @@ const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPa
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
+const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRoutePath, "utf8") : "";
 const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
 const carePassDomainSource = existsSync(carePassDomainPath) ? readFileSync(carePassDomainPath, "utf8") : "";
 const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
@@ -308,6 +311,8 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
   "Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",
   "Open focused account deletion target: /care-twin-qa?qaSurface=account-deletion-proof.",
+  "Open focused support legal readiness target: /care-twin-qa?qaSurface=support-legal-readiness-proof.",
+  "Attach support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
   "Provider proof needed:",
   "Truth boundaries:",
 ])
@@ -350,6 +355,8 @@ const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeCheckl
   "/care-twin-qa?qaSurface=store-accounts-proof",
   "Focused account deletion proof target",
   "/care-twin-qa?qaSurface=account-deletion-proof",
+  "Focused support legal readiness proof target",
+  "/care-twin-qa?qaSurface=support-legal-readiness-proof",
   "Android content URI",
   "fallback copy",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
@@ -407,6 +414,7 @@ const livePreviewHandoffVerifierIsSourceBacked = mobilePackage.scripts?.["proof:
     "payments-provider-proof",
     "store-accounts-proof",
     "account-deletion-proof",
+    "support-legal-readiness-proof",
     "route-visual-consistency",
     "WoofWatcher Live Preview Handoff Proof",
     "web preview only",
@@ -1211,6 +1219,41 @@ check(
   accountDeletionProofTargetIsSourceBacked
     ? "Account deletion proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and provider-row shortcut"
     : "keep account deletion proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
+);
+
+const supportLegalReadinessProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
+  "support-legal-readiness-proof",
+  "Support Legal Readiness Proof",
+  "support inbox",
+  "privacy policy and terms links",
+  "refund and subscription policy",
+  "veterinary and emergency boundary",
+  "public launch stays blocked",
+])
+  && includesAll(betaHandoffPacketSource, [
+    "Open focused support legal readiness target: /care-twin-qa?qaSurface=support-legal-readiness-proof.",
+    "Attach support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Focused support legal readiness proof target",
+    "/care-twin-qa?qaSurface=support-legal-readiness-proof",
+    "support inbox",
+    "public launch stays blocked",
+  ])
+  && includesAll(livePreviewHandoffProofSource, [
+    "support-legal-readiness-proof",
+  ])
+  && includesAll(privacyRouteSource, [
+    "openSupportLegalProofMission",
+    "support-legal-readiness-proof",
+    "Share support runbook",
+  ]);
+check(
+  "support legal readiness proof target is source-backed",
+  supportLegalReadinessProofTargetIsSourceBacked,
+  supportLegalReadinessProofTargetIsSourceBacked
+    ? "Support legal readiness proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and Privacy shortcut"
+    : "keep support/legal readiness proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and Privacy & Safety",
 );
 
 const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [

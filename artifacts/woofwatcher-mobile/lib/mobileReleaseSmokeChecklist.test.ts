@@ -204,6 +204,13 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /export-before-delete warning/);
   assert.match(text, /data\/object deletion receipt/);
   assert.match(text, /destructive deletion stays blocked/);
+  assert.match(text, /Focused support legal readiness proof target/);
+  assert.match(text, /\/care-twin-qa\?qaSurface=support-legal-readiness-proof/);
+  assert.match(text, /support inbox/);
+  assert.match(text, /privacy policy and terms links/);
+  assert.match(text, /refund\/subscription policy/);
+  assert.match(text, /veterinary boundary/);
+  assert.match(text, /public launch stays blocked/);
   assert.match(text, /Focused route visual consistency target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=route-visual-consistency/);
   assert.match(text, /Home, Log, Plans, Health, Records, and More on iOS and Android/);

@@ -123,6 +123,10 @@ check(
     "store submission",
     "self-serve deletion route",
     "destructive account deletion",
+    "support-legal-readiness-proof",
+    "support inbox",
+    "privacy policy and terms links",
+    "veterinary boundary",
     "iOS screenshot",
     "Android screenshot",
   ].every((value) => releaseQaSource.includes(value)) &&
@@ -172,6 +176,7 @@ const payload = {
     "/care-twin-qa?qaSurface=payments-provider-proof",
     "/care-twin-qa?qaSurface=store-accounts-proof",
     "/care-twin-qa?qaSurface=account-deletion-proof",
+    "/care-twin-qa?qaSurface=support-legal-readiness-proof",
     "/care-twin-qa?qaSurface=route-visual-consistency",
   ],
   proofCommands: [
@@ -197,6 +202,7 @@ const payload = {
     "Open /care-twin-qa?qaSurface=payments-provider-proof for Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
     "Open /care-twin-qa?qaSurface=store-accounts-proof for Apple Developer team id, App Store Connect app record, Google Play package record, reviewer access, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.",
     "Open /care-twin-qa?qaSurface=account-deletion-proof for self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before enabling destructive account deletion.",
+    "Open /care-twin-qa?qaSurface=support-legal-readiness-proof for support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before claiming public launch readiness.",
   ],
 };
 
