@@ -1432,6 +1432,11 @@ Latest local evidence, 2026-07-03:
   doctor command, then passed after the workflow step was added.
 - Focused readiness proof passed `mobileReadiness.test.ts` with `113/113`
   tests after the workflow change.
+- Dependency-complete branch CI proof passed in `WoofWatcher Verify` run
+  `28653044937`, job `84975449140`, in 2m56s on
+  `automation/premium-revenue-product-builder`; the workflow passed Setup pnpm,
+  install, `pnpm run doctor:mobile-beta:json`, focused behavior tests, and
+  `build:ci` with mobile `smoke:web` plus `smoke:runtime`.
 - Direct local JSON doctor still reports `BLOCKED` only because this Windows
   shell exposes pnpm `11.7.0` while the repo is pinned to `10.24.0`; all
   source-backed checks pass, including release smoke checklist, owner preview
