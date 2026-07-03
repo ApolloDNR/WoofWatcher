@@ -193,6 +193,9 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Open focused store accounts target: \/care-twin-qa\?qaSurface=store-accounts-proof/);
   assert.match(text, /Attach Apple Developer team id, App Store Connect app record, Google Play package record/);
   assert.match(text, /reviewer access\/test credentials, screenshots\/metadata ownership, and release role approval before claiming store submission/);
+  assert.match(text, /Open focused account deletion target: \/care-twin-qa\?qaSurface=account-deletion-proof/);
+  assert.match(text, /Attach self-serve deletion route, reauthentication requirement, export-before-delete warning/);
+  assert.match(text, /data\/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal\/store approval before enabling destructive deletion/);
   assert.match(text, /Open focused route visual target: \/care-twin-qa\?qaSurface=route-visual-consistency/);
   assert.match(text, /Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof/);
   assert.match(text, /Save the Mission note and clear Pass pending proof in both \/care-twin-qa and More/);

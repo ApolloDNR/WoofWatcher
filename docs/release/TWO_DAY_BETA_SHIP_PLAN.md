@@ -75,8 +75,10 @@ The beta must not claim:
 - When reviewing Provider Launch Setup's WoofWatcher Plus payments row, use `Open proof mission` to jump to the same Payments Provider Proof mission. This is a shortcut only; it does not approve tiers, configure store or Stripe billing, prove receipts, enable checkout, clear store approval, or replace Apollo sign-off.
 - When the current mission is `Store Accounts Proof`, open `/care-twin-qa?qaSurface=store-accounts-proof`, then capture Apple Developer team id, App Store Connect app record, Google Play package record, bundle/signing ownership, reviewer access/test credentials, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.
 - When reviewing Provider Launch Setup's Apple and Google store accounts row, use `Open proof mission` to jump to the same Store Accounts Proof mission. This is a shortcut only; it does not create accounts, approve metadata/screenshots, submit App Review or Play review, clear legal/privacy approval, or replace Apollo sign-off.
+- When the current mission is `Account Deletion Proof`, open `/care-twin-qa?qaSurface=account-deletion-proof`, then capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, cancellation behavior, and legal/store approval before claiming destructive deletion readiness.
+- When reviewing Provider Launch Setup's Self-serve account deletion row, use `Open proof mission` to jump to the same Account Deletion Proof mission. This is a shortcut only; it does not enable destructive deletion, delete provider data/storage, approve privacy/legal copy, satisfy App Store/Play Store review, or replace Apollo sign-off.
 - When the current mission is `Route Visual Consistency`, open `/care-twin-qa?qaSurface=route-visual-consistency`, then capture Home, Log, Plans, Health, Records, and More on both iOS and Android; web preview screenshots do not replace native proof.
-- Before attempting native proof, run `pnpm run doctor:native-qa:json`. A `BLOCKED` result from missing `adb`, `emulator`, `java`, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, or `JAVA_HOME` means use a configured Mac, Android Studio machine, physical device, TestFlight build, or helper environment instead of claiming local native QA. The JSON doctor's `nextActions` now explicitly call out Report Binary Export Proof, Care-entry Provider Sync Proof, Payments Provider Proof, Push Notifications Proof, and Store Accounts Proof as helper missions alongside Route Visual Consistency, Auth/Setup, and Records local files; those action lines are capture instructions, not native proof by themselves.
+- Before attempting native proof, run `pnpm run doctor:native-qa:json`. A `BLOCKED` result from missing `adb`, `emulator`, `java`, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, or `JAVA_HOME` means use a configured Mac, Android Studio machine, physical device, TestFlight build, or helper environment instead of claiming local native QA. The JSON doctor's `nextActions` now explicitly call out Report Binary Export Proof, Care-entry Provider Sync Proof, Payments Provider Proof, Push Notifications Proof, Store Accounts Proof, and Account Deletion Proof as helper missions alongside Route Visual Consistency, Auth/Setup, and Records local files; those action lines are capture instructions, not native proof by themselves.
 - On Avatar Studio, confirm Scan/Template/Customize/Emotes tabs, Gallery, Take photo, template tiles, coat swatches, face options, accessories, mood previews, Reset, and Save Avatar controls feel phone-sized and easy to tap.
 - On Adventure, confirm quest cards, private memory capture, `Save Memory`, and `Share Adventure` feel phone-sized, useful, and aligned with the real-care RPG promise instead of decorative game fluff.
 - On WoofGuide, confirm quick questions, suggested actions, the send button, and owner-review Cancel/Apply draft controls feel phone-sized, useful, and clearly non-diagnostic.
@@ -215,6 +217,13 @@ Current environment note:
   mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds
   all passing. This is recorded proof freshness only; rerun CI after newer
   commits before treating dependency proof as current.
+- Branch CI also proved the focused store accounts proof target on 2026-07-03:
+  `WoofWatcher Verify` run `28677469355`, job `85053786318`, commit `182ed7d`,
+  completed successfully in `2m55s` with Setup pnpm, Setup Node, install, JSON
+  mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds
+  all passing. This is store proof-target routing only; account creation,
+  metadata/screenshot approval, App Review or Play review submission,
+  legal/privacy approval, and Apollo sign-off remain blocked.
 - The mobile package now has a `smoke:runtime` alias that starts a disposable
   static runtime over `.expo-smoke`, verifies 13 exported mobile routes return
   the Expo web shell, including `/sign-in` and `/setup`, and exits without
@@ -223,11 +232,11 @@ Current environment note:
   no-dependency static server, both pinned to port `4194`, and the root
   `preview:mobile-beta` command points to the same handoff path.
 - The mobile package also has `proof:live-preview`, which starts a disposable
-  static preview server over `.expo-smoke`, verifies 16 launch-critical preview
+  static preview server over `.expo-smoke`, verifies 17 launch-critical preview
   routes return the Expo web shell, including `/sign-in`, `/setup`, Auth/Setup,
-  push, payments, store accounts, care-entry sync, Records handoff, report
-  binary export, and Route Visual Consistency proof targets, and emits JSON proof with
-  web-preview-only truth boundaries before helpers keep
+  push, payments, store accounts, account deletion, care-entry sync, Records
+  handoff, report binary export, and Route Visual Consistency proof targets, and
+  emits JSON proof with web-preview-only truth boundaries before helpers keep
   `preview:smoke` open for human review. Root `build:ci` runs it after
   `smoke:web` and `smoke:runtime`.
 - The Release Smoke Checklist now has an `Auth and setup route smoke` proof row,
@@ -282,9 +291,10 @@ Current environment note:
   reauthentication gate, export-before-delete handoff, data/object deletion
   receipt, audit/support receipt, recovery-window cancellation rules, and
   legal/store approval before destructive deletion can be enabled. Share Beta
-  Handoff prints those proof steps, but this does not enable production
-  deletion, delete provider data, satisfy store review, or replace Apollo/legal
-  approval.
+  Handoff prints those proof steps, and the account deletion row now opens
+  `/care-twin-qa?qaSurface=account-deletion-proof` for focused helper capture,
+  but this does not enable production deletion, delete provider data, satisfy
+  store review, or replace Apollo/legal approval.
 - Provider Launch Setup's Apple and Google store accounts gate now carries an
   `Apple and Google store accounts proof packet` requiring Apple Developer team
   id, App Store Connect app record, Google Play package record, bundle ids,
@@ -342,6 +352,15 @@ Current environment note:
   review readiness can be claimed. More's Apple and Google store accounts row
   opens the same proof mission; this is a helper shortcut, not account creation,
   metadata approval, store submission, or Apollo sign-off by itself.
+- The Release Smoke Checklist, Share Beta Handoff, live-preview verifier, JSON
+  mobile beta doctor, and native QA tooling doctor now also name
+  `/care-twin-qa?qaSurface=account-deletion-proof` for self-serve deletion
+  route, reauthentication, export-before-delete warning, data/object deletion
+  receipt, audit trail, support receipt, recovery-window policy, cancellation
+  behavior, and legal/store approval before destructive account deletion can be
+  enabled. More's Self-serve account deletion row opens the same proof mission;
+  this is a helper shortcut, not provider deletion, privacy/legal approval,
+  App Store/Play Store compliance, or Apollo sign-off by itself.
 - Reminder Center now surfaces the same launch boundary in-product: provider
   configuration status, permission readiness, quiet-hours policy, and opt-out
   copy stay visible in Calendar before push delivery is enabled. Calendar can
@@ -395,12 +414,13 @@ Current environment note:
   plus a `More proof steps` count. Use `Share Provider Plan` for the complete
   checklist, and do not treat a single visible proof line as enough to clear
   Supabase/RLS, PDF/PNG artifact, storage policy, or native proof blockers.
-- Provider Launch Setup also gives the auth, database, storage, payments, push, and store accounts rows an
+- Provider Launch Setup also gives the auth, database, storage, payments, push, store accounts, and account deletion rows an
   `Open proof mission` action to the matching focused `/care-twin-qa` surface:
   Auth/Setup onboarding proof, Care-entry provider sync proof, Report binary
   export proof, Payments Provider Proof, Push notifications proof, and Store
-  Accounts Proof. These are capture shortcuts only; they do not replace provider
-  credentials, native screenshots, store submission evidence, or Apollo approval.
+  Accounts Proof, and Account Deletion Proof. These are capture shortcuts only;
+  they do not replace provider credentials, native screenshots, store submission
+  evidence, destructive deletion evidence, legal/store approval, or Apollo approval.
 - The in-app `Share Beta Handoff` packet now includes that provider proof
   checklist too, so deadline helpers can use one packet for dependency proof,
   device proof, provider evidence, and launch truth boundaries.

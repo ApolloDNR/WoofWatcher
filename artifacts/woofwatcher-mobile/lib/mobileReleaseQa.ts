@@ -665,6 +665,72 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If this proof is skipped, store submission can be claimed without developer account ownership, package records, reviewer access, metadata ownership, or release role approval.",
   },
   {
+    id: "account-deletion-proof",
+    title: "Account Deletion Proof",
+    route: "/more",
+    priority: "launch-critical",
+    goal:
+      "Prove the self-serve deletion route, reauthentication gate, export-before-delete warning, data/object deletion receipt, audit trail, recovery window, and legal/store approval before destructive account deletion can be enabled.",
+    devicePrompt:
+      "In Provider Launch Setup on iOS and Android, collect the Self-serve account deletion proof packet without treating manual request copy, local preview state, or owner-staged provider rows as destructive deletion readiness.",
+    setupSteps: [
+      "Use local preview data and keep Self-serve account deletion marked open unless the real deletion route, provider data deletion, audit, and legal/store proof are attached.",
+      "Open More, then Provider Launch Setup, and inspect the Self-serve account deletion gate.",
+      "Confirm destructive deletion stays blocked until reauthentication, export-before-delete, data/object deletion receipt, audit trail, recovery window, support escalation, and legal/store approval are proven.",
+    ],
+    verificationSteps: [
+      "Confirm Self-serve account deletion lists the Self-serve account deletion proof packet.",
+      "Confirm the deletion route requires reauthentication, active-household scope, destructive-action confirmation copy, and cannot delete provider data from local preview state.",
+      "Confirm export-before-delete warning, owner data export link, data/object deletion receipt, audit trail, support receipt, and request id are required before destructive deletion is claimed.",
+      "Confirm recovery-window policy, cancel deletion behavior, irreversible-deletion timestamp, post-window support limits, privacy language, and App Store or Play Store approval remain visible before marking deletion ready.",
+    ],
+    acceptanceCriteria: [
+      "destructive deletion stays blocked until self-serve deletion route, reauthentication, export-before-delete, data/object deletion receipt, audit trail, recovery window, support receipt, and legal/store approval proof is attached.",
+      "Provider Launch Setup never treats manual deletion request copy, local-draft rows, owner-staged rows, or privacy copy as provider-backed deletion readiness.",
+      "legal/store approval and recovery-window policy remain visible before account deletion can close.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if the app implies App Store, Play Store, or privacy deletion compliance is ready without a self-serve deletion route, reauthentication, export-before-delete, provider data/object deletion receipt, audit trail, recovery window, support receipt, and legal/store proof.",
+    requiredEvidence: [
+      "iOS screenshot of Provider Launch Setup showing the Self-serve account deletion proof packet.",
+      "Android screenshot of Provider Launch Setup showing Self-serve account deletion still blocked or fully evidenced.",
+      "Note confirming self-serve deletion route, reauthentication, active-household scope, destructive-action confirmation copy, and export-before-delete warning.",
+      "Note confirming data/object deletion receipt, audit trail, support receipt, recovery-window policy, cancellation behavior, legal/store approval, and destructive deletion stays blocked until approval.",
+    ],
+    routeChecklist: [
+      {
+        label: "Provider Launch Setup account deletion gate",
+        route: "/more",
+        expected:
+          "Confirm Self-serve account deletion lists the Self-serve account deletion proof packet and stays open until provider/legal/store proof is attached.",
+        proof: "Provider Launch Setup screenshot plus Self-serve account deletion proof packet note.",
+      },
+      {
+        label: "Deletion route and reauthentication",
+        route: "/more",
+        expected:
+          "Confirm self-serve deletion route, reauthentication requirement, active-household scope, and destructive-action confirmation copy are proven before deletion readiness appears ready.",
+        proof: "self-serve deletion route, reauthentication, active-household scope, and destructive-action confirmation proof.",
+      },
+      {
+        label: "Export, deletion receipt, and audit trail",
+        route: "/more",
+        expected:
+          "Confirm export-before-delete warning, owner data export link, provider data/object deletion receipt, audit trail, support receipt, and request id are proven before destructive deletion appears ready.",
+        proof: "export-before-delete warning, data/object deletion receipt, audit trail, support receipt, and request id proof.",
+      },
+      {
+        label: "Recovery window, support, and store approval",
+        route: "/more",
+        expected:
+          "Confirm recovery-window policy, cancel deletion behavior, irreversible-deletion timestamp, support limits, privacy language, and legal/store approval are proven before deletion compliance is claimed.",
+        proof: "recovery-window policy, cancel deletion behavior, support limits, privacy language, and legal/store approval proof.",
+      },
+    ],
+    launchRisk:
+      "If this proof is skipped, destructive account deletion can be enabled or store deletion compliance can be claimed without route, auth, export, provider deletion, audit, recovery, legal, or store approval evidence.",
+  },
+  {
     id: "route-visual-consistency",
     title: "Route Visual Consistency",
     route: "/more",

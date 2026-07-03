@@ -338,6 +338,8 @@ export function buildBetaHandoffPacketShareText(
     "- Attach Plus and Family product ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired receipt proof, restore purchases behavior, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
     "- Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",
     "- Attach Apple Developer team id, App Store Connect app record, Google Play package record, bundle/signing ownership, reviewer access/test credentials, screenshots/metadata ownership, and release role approval before claiming store submission.",
+    "- Open focused account deletion target: /care-twin-qa?qaSurface=account-deletion-proof.",
+    "- Attach self-serve deletion route, reauthentication requirement, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before enabling destructive deletion.",
     "- Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
     "- Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
     "- Save the Mission note and clear Pass pending proof in both /care-twin-qa and More.",

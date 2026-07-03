@@ -120,6 +120,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before claiming reminder delivery.",
   "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
   "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, reviewer access, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.",
+  "Open /care-twin-qa?qaSurface=account-deletion-proof and capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before enabling destructive account deletion.",
   "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
@@ -304,6 +305,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
   "Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
   "Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",
+  "Open focused account deletion target: /care-twin-qa?qaSurface=account-deletion-proof.",
   "Provider proof needed:",
   "Truth boundaries:",
 ])
@@ -342,6 +344,8 @@ const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeCheckl
   "/care-twin-qa?qaSurface=payments-provider-proof",
   "Focused store accounts proof target",
   "/care-twin-qa?qaSurface=store-accounts-proof",
+  "Focused account deletion proof target",
+  "/care-twin-qa?qaSurface=account-deletion-proof",
   "Android content URI",
   "fallback copy",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
@@ -397,6 +401,7 @@ const livePreviewHandoffVerifierIsSourceBacked = mobilePackage.scripts?.["proof:
     "care-entry-provider-sync-proof",
     "payments-provider-proof",
     "store-accounts-proof",
+    "account-deletion-proof",
     "route-visual-consistency",
     "WoofWatcher Live Preview Handoff Proof",
     "web preview only",
@@ -1109,6 +1114,50 @@ check(
   storeAccountsProofTargetIsSourceBacked
     ? "Store accounts proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and provider-row shortcut"
     : "keep store accounts proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
+);
+
+const accountDeletionProofTargetIsSourceBacked = includesAll(accountDeletionProofSource, [
+  "ACCOUNT_DELETION_PROOF_SUMMARY",
+  "ACCOUNT_DELETION_PROOF_ITEMS",
+  "Self-serve account deletion proof packet",
+  "self-serve deletion route",
+  "export-before-delete warning",
+  "data/object deletion receipt",
+  "audit trail",
+  "recovery-window policy",
+  "legal/store approval",
+])
+  && includesAll(mobileReleaseQaSource, [
+    "account-deletion-proof",
+    "Account Deletion Proof",
+    "self-serve deletion route",
+    "destructive deletion stays blocked",
+    "data/object deletion receipt",
+    "legal/store approval",
+  ])
+  && includesAll(betaHandoffPacketSource, [
+    "Open focused account deletion target: /care-twin-qa?qaSurface=account-deletion-proof.",
+    "Attach self-serve deletion route, reauthentication requirement, export-before-delete warning",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Focused account deletion proof target",
+    "/care-twin-qa?qaSurface=account-deletion-proof",
+    "self-serve deletion route",
+    "destructive deletion stays blocked",
+  ])
+  && includesAll(livePreviewHandoffProofSource, [
+    "account-deletion-proof",
+  ])
+  && includesAll(moreRouteSource, [
+    "account-deletion-proof",
+    "Account Deletion Proof",
+  ]);
+check(
+  "account deletion proof target is source-backed",
+  accountDeletionProofTargetIsSourceBacked,
+  accountDeletionProofTargetIsSourceBacked
+    ? "Account deletion proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and provider-row shortcut"
+    : "keep account deletion proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
 const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [

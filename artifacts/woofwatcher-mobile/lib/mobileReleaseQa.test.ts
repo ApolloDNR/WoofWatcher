@@ -586,6 +586,57 @@ test("adds a launch-critical store accounts proof target", () => {
   assert.match(surface.launchRisk, /store submission can be claimed/);
 });
 
+test("adds a launch-critical account deletion proof target", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const ids = surfaces.map((surface) => surface.id);
+  const surface = surfaces.find((item) => item.id === "account-deletion-proof");
+
+  assert.ok(surface);
+  assert.ok(
+    ids.indexOf("account-deletion-proof") > ids.indexOf("store-accounts-proof"),
+    "Account deletion proof should follow store accounts in the focused launch targets",
+  );
+  assert.ok(
+    ids.indexOf("account-deletion-proof") < ids.indexOf("route-visual-consistency"),
+    "Account deletion proof should stay visible before broad route screenshot work",
+  );
+  assert.equal(surface.title, "Account Deletion Proof");
+  assert.equal(surface.route, "/more");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /self-serve deletion route/);
+  assert.match(surface.goal, /export-before-delete/);
+  assert.match(surface.goal, /data\/object deletion receipt/);
+  assert.match(surface.devicePrompt, /Provider Launch Setup/);
+  assert.match(surface.devicePrompt, /iOS and Android/);
+  assert.match(surface.setupSteps.join("\n"), /Self-serve account deletion/);
+  assert.match(surface.setupSteps.join("\n"), /destructive deletion stays blocked/);
+  assert.match(surface.verificationSteps.join("\n"), /reauthentication/);
+  assert.match(surface.verificationSteps.join("\n"), /export-before-delete warning/);
+  assert.match(surface.verificationSteps.join("\n"), /audit trail/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /destructive deletion stays blocked/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /legal\/store approval/);
+  assert.match(surface.failureEscalation, /App Store|Play Store|privacy/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Provider Launch Setup/);
+  assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Provider Launch Setup/);
+  assert.match(surface.requiredEvidence.join("\n"), /export-before-delete/);
+  assert.match(surface.requiredEvidence.join("\n"), /data\/object deletion receipt/);
+  assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
+    "Provider Launch Setup account deletion gate",
+    "Deletion route and reauthentication",
+    "Export, deletion receipt, and audit trail",
+    "Recovery window, support, and store approval",
+  ]);
+  assert.equal(surface.routeChecklist?.[0]?.route, "/more");
+  assert.equal(surface.routeChecklist?.[1]?.route, "/more");
+  assert.equal(surface.routeChecklist?.[2]?.route, "/more");
+  assert.equal(surface.routeChecklist?.[3]?.route, "/more");
+  assert.match(surface.routeChecklist?.[0]?.proof ?? "", /Self-serve account deletion proof packet/);
+  assert.match(surface.routeChecklist?.[1]?.proof ?? "", /self-serve deletion route/);
+  assert.match(surface.routeChecklist?.[2]?.proof ?? "", /data\/object deletion receipt/);
+  assert.match(surface.routeChecklist?.[3]?.proof ?? "", /recovery-window policy/);
+  assert.match(surface.launchRisk, /destructive account deletion can be enabled/);
+});
+
 test("adds route-check proof to store screenshot QA surfaces", () => {
   const packet: StoreSubmissionPacket = {
     title: "WoofWatcher Store Submission Packet",

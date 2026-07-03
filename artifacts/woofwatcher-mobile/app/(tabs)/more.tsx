@@ -300,6 +300,12 @@ function providerRowQaTarget(key: LaunchProviderSetupKey): ProviderRowQaTarget |
         detail: "Store Accounts Proof",
         iconName: "storefront-outline",
       };
+    case "accountDeletion":
+      return {
+        surfaceId: "account-deletion-proof",
+        detail: "Account Deletion Proof",
+        iconName: "trash-outline",
+      };
     default:
       return null;
   }

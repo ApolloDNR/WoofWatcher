@@ -191,6 +191,12 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /App Store Connect app record/);
   assert.match(text, /Google Play package record/);
   assert.match(text, /store submission stays blocked/);
+  assert.match(text, /Focused account deletion proof target/);
+  assert.match(text, /\/care-twin-qa\?qaSurface=account-deletion-proof/);
+  assert.match(text, /self-serve deletion route/);
+  assert.match(text, /export-before-delete warning/);
+  assert.match(text, /data\/object deletion receipt/);
+  assert.match(text, /destructive deletion stays blocked/);
   assert.match(text, /Focused route visual consistency target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=route-visual-consistency/);
   assert.match(text, /Home, Log, Plans, Health, Records, and More on iOS and Android/);

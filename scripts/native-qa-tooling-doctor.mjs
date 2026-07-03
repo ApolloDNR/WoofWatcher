@@ -109,6 +109,7 @@ check(
     "push-notifications-proof",
     "payments-provider-proof",
     "store-accounts-proof",
+    "account-deletion-proof",
     "route-visual-consistency",
     "APNs credentials",
     "Firebase/FCM credentials",
@@ -116,6 +117,8 @@ check(
     "paid checkout",
     "Apple Developer team id",
     "store submission",
+    "self-serve deletion route",
+    "destructive account deletion",
     "iOS screenshot",
     "Android screenshot",
   ].every((value) => releaseQaSource.includes(value)) &&
@@ -163,6 +166,7 @@ const payload = {
     "/care-twin-qa?qaSurface=push-notifications-proof",
     "/care-twin-qa?qaSurface=payments-provider-proof",
     "/care-twin-qa?qaSurface=store-accounts-proof",
+    "/care-twin-qa?qaSurface=account-deletion-proof",
     "/care-twin-qa?qaSurface=route-visual-consistency",
   ],
   proofCommands: [
@@ -186,6 +190,7 @@ const payload = {
     "Open /care-twin-qa?qaSurface=push-notifications-proof for Expo/APNs/Firebase delivery proof, permission copy, quiet hours, opt-out behavior, and missed notification fallback before claiming reminder delivery.",
     "Open /care-twin-qa?qaSurface=payments-provider-proof for Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
     "Open /care-twin-qa?qaSurface=store-accounts-proof for Apple Developer team id, App Store Connect app record, Google Play package record, reviewer access, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.",
+    "Open /care-twin-qa?qaSurface=account-deletion-proof for self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before enabling destructive account deletion.",
   ],
 };
 

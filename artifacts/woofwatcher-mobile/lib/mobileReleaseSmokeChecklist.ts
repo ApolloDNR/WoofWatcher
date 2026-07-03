@@ -291,6 +291,14 @@ export function buildMobileReleaseSmokeChecklist(
             status: "required",
           },
           {
+            label: "Focused account deletion proof target",
+            detail:
+              "Open /care-twin-qa?qaSurface=account-deletion-proof and confirm self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before destructive deletion is enabled.",
+            proof:
+              "Attach self-serve deletion route, reauthentication requirement, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, cancellation behavior, and legal/store approval; destructive deletion stays blocked until this proof exists.",
+            status: "required",
+          },
+          {
             label: "Focused route visual consistency target",
             detail:
               "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android.",

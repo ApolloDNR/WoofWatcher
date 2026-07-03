@@ -50,6 +50,7 @@ test("builds preview-only handoff proof from served route results", () => {
       "/care-twin-qa?qaSurface=push-notifications-proof",
       "/care-twin-qa?qaSurface=payments-provider-proof",
       "/care-twin-qa?qaSurface=store-accounts-proof",
+      "/care-twin-qa?qaSurface=account-deletion-proof",
       "/care-twin-qa?qaSurface=route-visual-consistency",
     ],
   );
@@ -69,6 +70,7 @@ test("builds preview-only handoff proof from served route results", () => {
   assert.match(text, /push-notifications-proof/);
   assert.match(text, /payments-provider-proof/);
   assert.match(text, /store-accounts-proof/);
+  assert.match(text, /account-deletion-proof/);
   assert.match(text, /web preview only/);
   assert.match(text, /does not replace native iOS\/Android proof/);
 });
