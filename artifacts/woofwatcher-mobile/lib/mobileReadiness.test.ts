@@ -4866,6 +4866,103 @@ test("keeps a deadline beta doctor command for mobile export handoff", () => {
   assert.match(doctorSource, /GitHub Actions/);
 });
 
+test("keeps a native QA tooling doctor for device-proof handoff", () => {
+  const rootPackageJson = JSON.parse(
+    readFileSync(join(process.cwd(), "package.json"), "utf8"),
+  ) as {
+    scripts?: Record<string, string>;
+  };
+  const doctorPath = join(process.cwd(), "scripts", "native-qa-tooling-doctor.mjs");
+  const doctorSource = readFileSync(doctorPath, "utf8");
+  const blockerSource = readFileSync(
+    join(process.cwd(), "docs", "BLOCKERS_FOR_APOLLO.md"),
+    "utf8",
+  );
+
+  assert.equal(
+    rootPackageJson.scripts?.["doctor:native-qa"],
+    "node scripts/native-qa-tooling-doctor.mjs",
+  );
+  assert.equal(
+    rootPackageJson.scripts?.["doctor:native-qa:json"],
+    "node scripts/native-qa-tooling-doctor.mjs --json",
+  );
+  assert.match(doctorSource, /WoofWatcher native QA tooling doctor/);
+  assert.match(doctorSource, /adb/);
+  assert.match(doctorSource, /emulator/);
+  assert.match(doctorSource, /java/);
+  assert.match(doctorSource, /ANDROID_HOME/);
+  assert.match(doctorSource, /ANDROID_SDK_ROOT/);
+  assert.match(doctorSource, /JAVA_HOME/);
+  assert.match(doctorSource, /route-visual-consistency/);
+  assert.match(doctorSource, /records-local-file-handoff/);
+  assert.match(doctorSource, /web preview evidence only/);
+  assert.match(doctorSource, /does not replace native iOS\/Android proof/);
+  assert.match(blockerSource, /pnpm run doctor:native-qa:json/);
+  assert.match(blockerSource, /adb/);
+  assert.match(blockerSource, /ANDROID_HOME/);
+
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/native-qa-tooling-doctor.mjs", "--json"],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    },
+  );
+  assert.equal(result.stderr, "");
+  const payload = JSON.parse(result.stdout) as {
+    name?: string;
+    result?: "READY_FOR_NATIVE_QA" | "BLOCKED";
+    checks?: Array<{ label?: string; status?: "PASS" | "WARN" | "BLOCKED"; detail?: string }>;
+    issues?: string[];
+    warnings?: string[];
+    nativeProofTargets?: string[];
+    truthBoundaries?: string[];
+    nextActions?: string[];
+  };
+
+  assert.equal(payload.name, "WoofWatcher native QA tooling doctor");
+  assert.ok(payload.result === "READY_FOR_NATIVE_QA" || payload.result === "BLOCKED");
+  assert.equal(result.status, payload.result === "READY_FOR_NATIVE_QA" ? 0 : 1);
+  assert.ok(
+    payload.checks?.some((check) => check.label === "Android adb available"),
+  );
+  assert.ok(
+    payload.checks?.some((check) => check.label === "Android emulator available"),
+  );
+  assert.ok(
+    payload.checks?.some((check) => check.label === "Java runtime available"),
+  );
+  assert.ok(
+    payload.checks?.some((check) => check.label === "ANDROID_HOME or ANDROID_SDK_ROOT set"),
+  );
+  assert.ok(
+    payload.checks?.some((check) => check.label === "JAVA_HOME set"),
+  );
+  assert.ok(
+    payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=records-local-file-handoff"),
+  );
+  assert.ok(
+    payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=route-visual-consistency"),
+  );
+  assert.ok(
+    payload.truthBoundaries?.some((boundary) =>
+      boundary.includes("web preview evidence only"),
+    ),
+  );
+  assert.ok(
+    payload.truthBoundaries?.some((boundary) =>
+      boundary.includes("does not replace native iOS/Android proof"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some((action) =>
+      action.includes("/care-twin-qa?qaSurface=route-visual-consistency"),
+    ),
+  );
+});
+
 test("emits machine-readable mobile beta doctor status for Replit and native helpers", () => {
   const rootPackageJson = JSON.parse(
     readFileSync(join(process.cwd(), "package.json"), "utf8"),

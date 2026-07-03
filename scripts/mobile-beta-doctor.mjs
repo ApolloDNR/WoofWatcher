@@ -108,6 +108,7 @@ const nextActions = [
   "Run pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview and attach the JSON route proof without claiming native QA.",
   "Serve the exported beta with pnpm --filter @workspace/woofwatcher-mobile run preview:smoke, then open http://127.0.0.1:4194/.",
   "Attach JSON doctor output, branch CI proof, smoke:web and smoke:runtime output, and the preview:smoke URL to the handoff without claiming native QA.",
+  "Run pnpm run doctor:native-qa:json before attempting native iOS or Android proof; beta export proof still does not replace native QA.",
   "Open /care-twin-qa on a real device or simulator.",
   "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
   "Verify Records/Care Pass Report History shows Printable HTML local file, file size, and PDF pending.",
@@ -196,6 +197,12 @@ check(
   "doctor command is wired",
   rootPackage.scripts?.["doctor:mobile-beta"] === "node scripts/mobile-beta-doctor.mjs",
   rootPackage.scripts?.["doctor:mobile-beta"] ?? "missing doctor:mobile-beta",
+);
+check(
+  "native QA tooling doctor command is wired",
+  rootPackage.scripts?.["doctor:native-qa"] === "node scripts/native-qa-tooling-doctor.mjs"
+    && rootPackage.scripts?.["doctor:native-qa:json"] === "node scripts/native-qa-tooling-doctor.mjs --json",
+  rootPackage.scripts?.["doctor:native-qa"] ?? "missing doctor:native-qa",
 );
 
 const mobilePackagePath = join(mobileRoot, "package.json");
