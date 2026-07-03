@@ -438,6 +438,10 @@ export default function MoreScreen() {
     state.launchSupportProfile.providerStatus === "owner-reviewed" && launchSupportPlan.supportRunbookApproved;
   const privacyLegalOwnerReviewed =
     state.launchSupportProfile.providerStatus === "owner-reviewed" && launchSupportPlan.privacyLegalApproved;
+  const supportRunbookApproved =
+    state.launchSupportProfile.providerStatus === "provider-approved" && launchSupportPlan.supportRunbookApproved;
+  const privacyLegalApproved =
+    state.launchSupportProfile.providerStatus === "provider-approved" && launchSupportPlan.privacyLegalApproved;
 
   const syncTone =
     syncDashboard.status === "attention"
@@ -1044,9 +1048,9 @@ export default function MoreScreen() {
           accountDeletionEnabled: Boolean(launchProviderSetupPlan.providerInput.accountDeletionEnabled),
           pushNotificationsConfigured: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsConfigured),
           appStoreAccountsReady: Boolean(launchProviderSetupPlan.providerInput.appStoreAccountsReady),
-          privacyLegalApproved: false,
+          privacyLegalApproved,
           privacyLegalOwnerReviewed,
-          supportRunbookApproved: false,
+          supportRunbookApproved,
           supportRunbookOwnerReviewed,
         },
         syncStatus: syncDashboard.status,
@@ -1057,7 +1061,9 @@ export default function MoreScreen() {
       me.data?.user?.id,
       household,
       privacyLegalOwnerReviewed,
+      privacyLegalApproved,
       savedNativeQaSummary,
+      supportRunbookApproved,
       supportRunbookOwnerReviewed,
       syncDashboard.status,
     ],
