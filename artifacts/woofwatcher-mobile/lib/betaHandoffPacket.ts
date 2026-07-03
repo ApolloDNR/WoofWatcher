@@ -48,12 +48,12 @@ export interface MobileLivePreviewHandoffProof {
 
 export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
   workflowName: "WoofWatcher Verify",
-  runId: "28682273946",
-  jobId: "85068036247",
+  runId: "28683229279",
+  jobId: "85070831897",
   branch: "automation/premium-revenue-product-builder",
-  commit: "8695505",
+  commit: "2f8f36a",
   duration: "3m2s",
-  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28682273946",
+  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28683229279",
   passedSteps: [
     "Setup pnpm",
     "Setup Node",
@@ -63,15 +63,15 @@ export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
     "Typecheck and CI-safe builds",
   ],
   coverage:
-    "pinned pnpm 10.24.0, JSON mobile beta doctor with auth/setup smoke proof, auth/setup native QA target, auth provider proof packet, provider staged-row truth boundary, support legal readiness proof target, provider-approved support/legal launch-readiness wiring, Plus checkout approval truth boundary, Records storage provider-approval clamp, focused tests, build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview",
+    "pinned pnpm 10.24.0, JSON mobile beta doctor with auth/setup smoke proof, auth/setup native QA target, auth provider proof packet, provider staged-row truth boundary, support legal readiness proof target, provider-approved support/legal launch-readiness wiring, Plus checkout approval truth boundary, Records storage provider-approval clamp, Records binary proof manifest, focused tests, build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview",
 };
 
 export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof = {
   title: "WoofWatcher Live Preview Handoff Proof",
-  generatedAtIso: "2026-07-03T20:38:13.714Z",
+  generatedAtIso: "2026-07-03T21:06:14.191Z",
   result: "PASS",
-  baseUrl: "http://127.0.0.1:49528/",
-  commit: "8695505",
+  baseUrl: "http://127.0.0.1:60306/",
+  commit: "2f8f36a",
   exportIndexMtimeIso: "2026-07-03T12:38:39.906Z",
   routeChecks: [
     { route: "/", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
