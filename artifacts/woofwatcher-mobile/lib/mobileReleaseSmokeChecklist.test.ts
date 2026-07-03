@@ -145,6 +145,7 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /WoofWatcherReports/);
   assert.match(text, /Printable HTML local file/);
   assert.match(text, /PDF pending/);
+  assert.match(text, /Ready to upload only after provider-approved storage/);
   assert.match(text, /WoofWatcherCredentials/);
   assert.match(text, /SVG image source while PNG\/PDF export stays pending/);
   assert.match(text, /Focused Records handoff target/);

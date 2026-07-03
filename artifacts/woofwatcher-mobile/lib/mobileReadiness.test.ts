@@ -3404,6 +3404,7 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
 
   assert.match(records, /getCarePassArtifactPrintView/);
   assert.match(records, /describeCarePassArtifactExport/);
+  assert.match(records, /deriveLaunchProviderSetup/);
   assert.match(records, /import \* as FileSystem from "expo-file-system\/legacy"/);
   assert.match(records, /buildReportArtifactExportFilePlan/);
   assert.match(records, /buildReportArtifactShareContent/);
@@ -3411,9 +3412,13 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /FileSystem\.writeAsStringAsync/);
   assert.match(records, /FileSystem\.getContentUriAsync/);
   assert.match(records, /const storage = exportView\.storage/);
-  assert.match(
+  assert.doesNotMatch(
     records,
     /storageProviderConfigured: Boolean\(state\.launchProviderProfile\?\.storageProviderConfigured\)/,
+  );
+  assert.match(
+    records,
+    /storageProviderConfigured: launchProviderSetupPlan\.providerInput\.storageProviderConfigured/,
   );
   assert.match(records, /exportView\.formatLabel/);
   assert.match(records, /local file - PDF pending/);

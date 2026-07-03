@@ -209,7 +209,8 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.match(surface.acceptanceCriteria.join("\n"), /bottom-nav loop never hides the active action/);
   assert.match(surface.acceptanceCriteria.join("\n"), /Adventure Mode/);
   assert.match(surface.acceptanceCriteria.join("\n"), /provider setup, store approval, payments, AI, and storage boundaries/);
-  assert.match(surface.acceptanceCriteria.join("\n"), /Saved on this device|Ready to upload/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /Saved on this device/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /Ready to upload only after provider-approved storage/);
   assert.match(surface.failureEscalation, /keyboard\/modal overlap/);
   assert.match(surface.failureEscalation, /Adventure/);
   assert.match(surface.failureEscalation, /claims provider\/store\/payment\/AI\/storage readiness/);
@@ -306,7 +307,8 @@ test("adds a launch-critical Records local file handoff proof target", () => {
   assert.match(surface.verificationSteps.join("\n"), /SVG image source/);
   assert.match(surface.verificationSteps.join("\n"), /Android content URI/);
   assert.match(surface.verificationSteps.join("\n"), /fallback copy/);
-  assert.match(surface.acceptanceCriteria.join("\n"), /Saved on this device|Ready to upload/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /Saved on this device/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /Ready to upload only after provider-approved storage/);
   assert.match(surface.acceptanceCriteria.join("\n"), /PNG\/PDF export stays pending/);
   assert.match(surface.acceptanceCriteria.join("\n"), /provider-backed storage/);
   assert.match(surface.failureEscalation, /provider-backed/);

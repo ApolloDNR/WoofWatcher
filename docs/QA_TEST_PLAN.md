@@ -924,8 +924,9 @@ Latest local evidence, 2026-06-26:
 - The one-tap 48-hour Beta Handoff packet now explicitly includes the Care Pass
   Report History storage-status proof in `Required beta proof after export`.
 - The packet tells helpers to confirm Report History says `Saved on this
-  device` or `Ready to upload`, so the storage truth check is visible even if a
-  tester reads only the handoff packet and not the route-loop details.
+  device`, or `Ready to upload` only after provider-approved storage, so the
+  storage truth check is visible even if a tester reads only the handoff packet
+  and not the route-loop details.
 - The mobile beta doctor's source-backed Owner Preview storage-proof guard now
   also checks `betaHandoffPacket.ts` for that required proof line.
 - Red/green evidence: `betaHandoffPacket.test.ts` first failed on the missing

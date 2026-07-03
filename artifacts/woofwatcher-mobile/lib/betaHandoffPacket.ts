@@ -342,7 +342,7 @@ export function buildBetaHandoffPacketShareText(
     "Required beta proof after export:",
     "- Open /care-twin-qa on iOS and Android before sharing beta proof.",
     "- Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
-    "- Confirm Care Pass Report History storage status says Saved on this device or Ready to upload.",
+    "- Confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after provider-approved storage.",
     "- Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
     "- Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
     "- Open focused auth/setup target: /care-twin-qa?qaSurface=auth-setup-onboarding-proof.",

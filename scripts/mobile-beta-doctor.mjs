@@ -841,9 +841,10 @@ const providerAwareCarePassStorageIsSourceBacked = includesAll(carePassDomainSou
 ])
   && /baseStatus === "local-only" && options\.storageProviderConfigured/.test(carePassDomainSource)
   && includesAll(recordsRouteSource, [
+    "deriveLaunchProviderSetup",
     "describeCarePassArtifactExport(artifact",
     "const storage = exportView.storage",
-    "storageProviderConfigured: Boolean(state.launchProviderProfile?.storageProviderConfigured)",
+    "storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured",
     "storage.label",
     "storage.detail",
   ]);
@@ -851,18 +852,18 @@ check(
   "provider-aware Care Pass storage is source-backed",
   providerAwareCarePassStorageIsSourceBacked,
   providerAwareCarePassStorageIsSourceBacked
-    ? "Records report history follows Provider Launch Setup storage readiness without claiming provider-backed upload"
+    ? "Records report history follows provider-approved Provider Launch Setup storage readiness without claiming provider-backed upload"
     : "keep Care Pass storage status wired through Provider Launch Setup, Records, and the shared care-domain helper",
 );
 
 const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "Care Pass Report History storage status",
-  "Saved on this device or Ready to upload",
+  "Saved on this device, or Ready to upload only after provider-approved storage",
   "QA note confirming Care Pass Report History storage status stayed truthful.",
   'proof: "Care Pass Report History storage status note or screenshot."',
 ])
   && includesAll(betaHandoffPacketSource, [
-    "Confirm Care Pass Report History storage status says Saved on this device or Ready to upload.",
+    "Confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after provider-approved storage.",
     "Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
     "Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
 ])

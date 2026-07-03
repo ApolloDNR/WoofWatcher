@@ -152,13 +152,13 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "In Health, confirm Health Watch and Bile Watch, plus the Review packet, Vet-share checklist, and Draft vet questions action stay non-diagnostic and readable on the phone.",
       "Open Adventure Mode from More or Home and confirm private care quests, proof rows, and the memory shelf are reachable without implying public maps or cloud sharing.",
       "In More, open Launch Readiness, Records, Avatar Studio, and Care Pass/Reports paths and confirm no route is a dead end.",
-      "In Records, confirm Care Pass Report History storage status says Saved on this device or Ready to upload, not provider-backed upload unless the provider gate is actually closed.",
+      "In Records, confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after provider-approved storage; never provider-backed upload unless the provider gate is actually closed.",
     ],
     acceptanceCriteria: [
       "The bottom-nav loop never hides the active action, gets stuck behind a modal, or routes to a blank screen.",
       "Quick Log, Plans, Health, More, Adventure Mode, Records, Avatar Studio, and Care Pass each expose a clear next action.",
       "Launch Readiness keeps internal beta, provider setup, store approval, payments, AI, and storage boundaries truthful.",
-      "Care Pass Report History shows Saved on this device or Ready to upload without implying cloud-backed storage before upload rules exist.",
+      "Care Pass Report History shows Saved on this device, or Ready to upload only after provider-approved storage, without implying cloud-backed storage before upload rules exist.",
     ],
     failureEscalation:
       "Mark Needs tune if any core route is confusing, clipped by the paw nav, blocked by keyboard/modal overlap, missing a next action, Adventure Mode becomes a dead end, or claims provider/store/payment/AI/storage readiness that is not actually configured.",
@@ -288,7 +288,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Open Dog ID with the local HTML credential and SVG image source actions available under WoofWatcherCredentials.",
     ],
     verificationSteps: [
-      "Open Records and confirm Care Pass Report History storage status says Saved on this device or Ready to upload.",
+      "Open Records and confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after provider-approved storage.",
       "Share or print the Care Pass Report History artifact and confirm the Printable HTML local file, file name, file size, and PDF pending copy are visible.",
       "Share the Dog ID local HTML credential and confirm it saves under WoofWatcherCredentials before opening the native share sheet.",
       "Share the Dog ID SVG image source and confirm it saves under WoofWatcherCredentials with image/svg+xml behavior, not an HTML fallback filename.",
@@ -296,7 +296,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "On either platform, force or note the fallback copy path if local file sharing is unavailable, and confirm it names the local-only boundary.",
     ],
     acceptanceCriteria: [
-      "Care Pass Report History shows Saved on this device or Ready to upload and names the Printable HTML local file with PDF pending copy.",
+      "Care Pass Report History shows Saved on this device, or Ready to upload only after provider-approved storage, and names the Printable HTML local file with PDF pending copy.",
       "Dog ID can share a local HTML credential file and SVG image source from WoofWatcherCredentials.",
       "Android content URI behavior and fallback copy are captured instead of guessed.",
       "PNG/PDF export stays pending, and Records never claims provider-backed storage, generated PDF, credential PNG/PDF, or cloud sync unless those gates are actually closed.",

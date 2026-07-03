@@ -224,7 +224,7 @@ export function buildMobileReleaseSmokeChecklist(
             detail:
               "Confirm WoofWatcherReports contains the Printable HTML local file, file size, and PDF pending copy.",
             proof:
-              "Attach iOS or Android proof that Report History says Saved on this device or Ready to upload before handoff.",
+              "Attach iOS or Android proof that Report History says Saved on this device, or Ready to upload only after provider-approved storage, before handoff.",
             status: "required",
           },
           {

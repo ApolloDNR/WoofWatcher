@@ -806,9 +806,10 @@ Mission note while the dependency/export gate remains external.
 
 The beta handoff packet pass moved the same proof into the one-tap helper script
 itself. `buildBetaHandoffPacketShareText` now lists `Confirm Care Pass Report
-History storage status says Saved on this device or Ready to upload` under
-`Required beta proof after export`, and the doctor source-backed guard requires
-that line before passing the Owner Preview storage-proof check.
+History storage status says Saved on this device, or Ready to upload only after
+provider-approved storage` under `Required beta proof after export`, and the
+doctor source-backed guard requires that line before passing the Owner Preview
+storage-proof check.
 
 The bundled-pnpm handoff guard keeps the same packet from letting a helper use
 the wrong package manager. `buildBetaHandoffPacketShareText` now warns that

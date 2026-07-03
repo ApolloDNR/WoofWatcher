@@ -84,6 +84,7 @@ import {
   buildReportArtifactShareContent,
   type ReportArtifactPrintableSource,
 } from "@/lib/reportArtifactExportFile";
+import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -236,6 +237,10 @@ export default function RecordsScreen() {
   const [medicationOutcomeFilter, setMedicationOutcomeFilter] = useState<MedicationHistoryOutcomeFilter>("all");
 
   const recordOption = RECORD_OPTIONS.find((option) => option.kind === recordType) ?? RECORD_OPTIONS[0];
+  const launchProviderSetupPlan = useMemo(
+    () => deriveLaunchProviderSetup(state.launchProviderProfile),
+    [state.launchProviderProfile],
+  );
 
   const healthWatch = useMemo(
     () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
@@ -2192,7 +2197,7 @@ export default function RecordsScreen() {
             ) : (
               reportArtifacts.map((artifact, index) => {
                 const exportView = describeCarePassArtifactExport(artifact, {
-                  storageProviderConfigured: Boolean(state.launchProviderProfile?.storageProviderConfigured),
+                  storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
                 });
                 const storage = exportView.storage;
                 const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
