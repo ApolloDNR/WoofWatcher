@@ -67,6 +67,7 @@ The beta must not claim:
 - When the current mission is `Records Local File Handoff`, open `/care-twin-qa?qaSurface=records-local-file-handoff`, then capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG image source, native share-sheet behavior, Android content URI, and fallback copy without claiming PDF/PNG/provider storage proof.
 - When the current mission is `Report Binary Export Proof`, open `/care-twin-qa?qaSurface=report-binary-export-proof`, then capture the approved Care Pass PDF generator, approved Dog ID PNG renderer, provider storage policy, generated file name/size/MIME/share proof, and iOS/Android artifact evidence before claiming PDF/PNG readiness.
 - When the current mission is `Care-entry Provider Sync Proof`, open `/care-twin-qa?qaSurface=care-entry-provider-sync-proof`, then capture Supabase project id, migration/backfill for `care_entries.updated_at` and `care_entry_tombstones`, active-household RLS for cursor and tombstone routes, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off before enabling incremental care-entry sync.
+- When reviewing More's Sync Health panel, use `Open sync proof` to jump to the same Care-entry Provider Sync Proof mission. This is a shortcut only; visible outbox/local sync status still does not prove Supabase migration, active-household RLS, retention policy, or incremental provider sync.
 - When the current mission is `Push Notifications Proof`, open `/care-twin-qa?qaSurface=push-notifications-proof`, then capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed-notification fallback before claiming reminder delivery.
 - When reviewing Reminder Center, use Calendar's `Open push proof` action to jump to the same Push Notifications Proof mission. This is a shortcut only; local preference intent still does not prove provider configuration or delivered reminders.
 - When the current mission is `Route Visual Consistency`, open `/care-twin-qa?qaSurface=route-visual-consistency`, then capture Home, Log, Plans, Health, Records, and More on both iOS and Android; web preview screenshots do not replace native proof.
@@ -175,6 +176,13 @@ Current environment note:
   focused behavior tests, and Typecheck plus CI-safe builds all passing. This is
   shortcut-routing proof only; native Records file proof, generated PDF/PNG
   proof, provider storage, and Apollo sign-off remain blocked.
+- Branch CI also proved the Calendar Reminder Center push-proof shortcut on
+  2026-07-03: `WoofWatcher Verify` run `28674916286`, job `85046177133`,
+  commit `8a8bb50`, with Setup pnpm, Setup Node, install, JSON mobile beta
+  doctor, focused behavior tests, and Typecheck plus CI-safe builds all passing.
+  This is shortcut-routing proof only; Expo/APNs/FCM setup, delivered
+  notification proof, native iOS/Android delivery QA, prompt/legal approval, and
+  Apollo sign-off remain blocked.
 - The mobile package now has a `smoke:runtime` alias that starts a disposable
   static runtime over `.expo-smoke`, verifies 13 exported mobile routes return
   the Expo web shell, including `/sign-in` and `/setup`, and exits without
@@ -264,7 +272,9 @@ Current environment note:
   `/care-twin-qa?qaSurface=care-entry-provider-sync-proof` for Supabase
   migration/backfill, active-household cursor/tombstone RLS, retention/export/
   deletion policy, dependency proof, and mobile full-refresh sign-off before
-  incremental care-entry sync can be enabled.
+  incremental care-entry sync can be enabled. More's Sync Health panel now opens
+  the same proof mission through `Open sync proof`; this is a helper shortcut,
+  not Supabase/provider approval by itself.
 - The Release Smoke Checklist, Share Beta Handoff, live-preview verifier, JSON
   mobile beta doctor, and native QA tooling doctor now also name
   `/care-twin-qa?qaSurface=push-notifications-proof` for Expo push project

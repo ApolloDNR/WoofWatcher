@@ -3968,6 +3968,10 @@ test("keeps household sync health visible from More", () => {
   assert.match(more, /syncDashboard/);
   assert.match(more, /Sync Health/);
   assert.match(more, /syncDashboard\.metrics/);
+  assert.match(more, /openCareEntryProviderSyncProofMission/);
+  assert.match(more, /care-entry-provider-sync-proof/);
+  assert.match(more, /Open sync proof/);
+  assert.match(more, /accessibilityLabel="Open care-entry provider sync proof mission"/);
   assert.match(more, /accessibilityLabel="Refresh household sync"/);
 });
 

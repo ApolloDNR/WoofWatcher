@@ -903,6 +903,13 @@ export default function MoreScreen() {
   const routeVisualConsistencyDetail =
     nativeQaCapturePlan.nextTargets.find((target) => target.surfaceId === "route-visual-consistency")?.missingEvidence[0] ??
     "Run the six-route design pass before native screenshots.";
+  const careEntryProviderSyncProofTarget = {
+    surfaceId: "care-entry-provider-sync-proof",
+  } as Pick<MobileLaunchQaCaptureTarget, "surfaceId">;
+  const openCareEntryProviderSyncProofMission = () => {
+    Haptics.selectionAsync();
+    router.push(buildCareTwinQaFocusRoute(careEntryProviderSyncProofTarget) as never);
+  };
 
   const links: { icon: PulseIconName; iconName: keyof typeof Ionicons.glyphMap; label: string; sub: string; onPress: () => void }[] = [
     {
@@ -3007,6 +3014,21 @@ export default function MoreScreen() {
             <Text style={[s.syncNextStep, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {syncDashboard.nextStep}
             </Text>
+            <Pressable
+              onPress={openCareEntryProviderSyncProofMission}
+              accessibilityRole="button"
+              accessibilityLabel="Open care-entry provider sync proof mission"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={({ pressed }) => [
+                s.providerSetupRowAction,
+                { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
+              ]}
+            >
+              <Ionicons name="server-outline" size={14} color={syncTone} />
+              <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                Open sync proof
+              </Text>
+            </Pressable>
           </BoardCard>
 
           {/* Household actions */}
