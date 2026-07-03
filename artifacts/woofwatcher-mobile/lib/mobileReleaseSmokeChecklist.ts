@@ -14,6 +14,7 @@ export const MOBILE_RELEASE_SMOKE_DEPENDENCY_COMMANDS = [
   "pnpm run doctor:mobile-beta:json",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
+  "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
   "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
 ] as const;
 
@@ -178,6 +179,14 @@ export function buildMobileReleaseSmokeChecklist(
               "Attach a WoofWatcher Verify run proving pnpm 10.24.0 install, JSON doctor, focused tests, smoke:web, and smoke:runtime for the branch.",
             proof:
               "Run URL, job id, commit SHA, and passed step list; CI proof does not approve native screenshots.",
+            status: "required",
+          },
+          {
+            label: "Live preview handoff verifier",
+            detail:
+              "Run pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview to produce JSON route proof for the exported web preview.",
+            proof:
+              "Attach the JSON result with route status, commit, export index timestamp, and web-preview-only truth boundaries.",
             status: "required",
           },
           {

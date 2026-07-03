@@ -1430,9 +1430,14 @@ on an ad hoc foreground Node process:
   uses during design review.
 - `serve-smoke-preview.js` defaults to port `4194`, blocks path traversal with
   a root-relative check, and clearly tells reviewers to keep the terminal open.
+- Mobile `proof:live-preview` runs `live-preview-handoff-proof.js --json`,
+  starts a disposable preview server over `.expo-smoke`, verifies 9
+  launch-critical preview routes return the Expo web shell, and emits JSON proof
+  with web-preview-only truth boundaries.
 - The mobile beta doctor proof command list now includes `preview:smoke` after
-  `smoke:web`, so Replit, Fable, or a device helper cannot stop at export-only
-  evidence when the next step is owner visual review.
+  `smoke:web`, `smoke:runtime`, and `proof:live-preview`, so Replit, Fable, or
+  a device helper cannot stop at export-only evidence when the next step is
+  owner visual review.
 
 Design intent:
 

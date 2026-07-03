@@ -120,6 +120,7 @@ test("builds a source-backed release smoke checklist without clearing blocked la
     "pnpm run doctor:mobile-beta:json",
     "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
     "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
+    "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
     "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
   ]);
 
@@ -127,9 +128,11 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /Build: two-day owner beta/);
   assert.match(text, /Dependency and export proof:/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run preview:smoke/);
+  assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run proof:live-preview/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run smoke:runtime/);
   assert.match(text, /Live preview handoff proof:/);
   assert.match(text, /Dependency-complete branch CI/);
+  assert.match(text, /Live preview handoff verifier/);
   assert.match(text, /Preview server handoff/);
   assert.match(text, /http:\/\/127\.0\.0\.1:4194\//);
   assert.match(text, /live preview proof does not replace native iOS\/Android proof/);

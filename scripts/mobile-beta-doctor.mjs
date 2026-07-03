@@ -82,6 +82,7 @@ const proofCommands = [
   "pnpm run doctor:mobile-beta:json",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
+  "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
   "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
 ];
 const handoffProofSections = [
@@ -103,6 +104,7 @@ const nextActions = [
   "Run the Release smoke checklist from Share Beta Handoff before claiming beta proof.",
   "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:web.",
   "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime to verify exported mobile routes return 200 from the static runtime.",
+  "Run pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview and attach the JSON route proof without claiming native QA.",
   "Serve the exported beta with pnpm --filter @workspace/woofwatcher-mobile run preview:smoke, then open http://127.0.0.1:4194/.",
   "Attach JSON doctor output, branch CI proof, smoke:web and smoke:runtime output, and the preview:smoke URL to the handoff without claiming native QA.",
   "Open /care-twin-qa on a real device or simulator.",
@@ -199,6 +201,7 @@ const mobilePackage = readJson(mobilePackagePath);
 check("mobile package exists", existsSync(mobilePackagePath), mobilePackage.name);
 check("smoke:web export command exists", mobilePackage.scripts?.["smoke:web"] === "node scripts/smoke-web-export.js", mobilePackage.scripts?.["smoke:web"] ?? "missing smoke:web");
 check("smoke:runtime route command exists", mobilePackage.scripts?.["smoke:runtime"] === "node scripts/smoke-runtime-preview.js", mobilePackage.scripts?.["smoke:runtime"] ?? "missing smoke:runtime");
+check("proof:live-preview command exists", mobilePackage.scripts?.["proof:live-preview"] === "node scripts/live-preview-handoff-proof.js --json", mobilePackage.scripts?.["proof:live-preview"] ?? "missing proof:live-preview");
 check("static preview command exists", mobilePackage.scripts?.["preview:smoke"] === "node scripts/serve-smoke-preview.js 4194", mobilePackage.scripts?.["preview:smoke"] ?? "missing preview:smoke");
 
 const appJson = readJson(join(mobileRoot, "app.json")).expo;
@@ -232,6 +235,7 @@ const betaHandoffPacketPath = join(mobileRoot, "lib", "betaHandoffPacket.ts");
 const mobileLaunchQaEvidencePath = join(mobileRoot, "lib", "mobileLaunchQaEvidence.ts");
 const mobileReleaseQaPath = join(mobileRoot, "lib", "mobileReleaseQa.ts");
 const mobileReleaseSmokeChecklistPath = join(mobileRoot, "lib", "mobileReleaseSmokeChecklist.ts");
+const livePreviewHandoffProofPath = join(mobileRoot, "scripts", "live-preview-handoff-proof.js");
 const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
 const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
@@ -243,6 +247,7 @@ const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync
 const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath) ? readFileSync(mobileLaunchQaEvidencePath, "utf8") : "";
 const mobileReleaseQaSource = existsSync(mobileReleaseQaPath) ? readFileSync(mobileReleaseQaPath, "utf8") : "";
 const mobileReleaseSmokeChecklistSource = existsSync(mobileReleaseSmokeChecklistPath) ? readFileSync(mobileReleaseSmokeChecklistPath, "utf8") : "";
+const livePreviewHandoffProofSource = existsSync(livePreviewHandoffProofPath) ? readFileSync(livePreviewHandoffProofPath, "utf8") : "";
 const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
 const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFileSync(launchProviderSetupPath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
@@ -295,6 +300,7 @@ const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeCheckl
   "fallback copy",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
   "Generated PDF and credential PNG/PDF export stay pending",
+  "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
 ])
   && includesAll(betaHandoffPacketSource, [
     "buildMobileReleaseSmokeChecklist",
@@ -314,6 +320,8 @@ const livePreviewHandoffProofIsSourceBacked = includesAll(mobileReleaseSmokeChec
   "Live preview handoff proof",
   "Dependency-complete branch CI",
   "Preview server handoff",
+  "Live preview handoff verifier",
+  "proof:live-preview",
   "preview:smoke terminal output",
   "http://127.0.0.1:4194/",
   "live preview proof does not replace native iOS/Android proof",
@@ -330,6 +338,30 @@ check(
   livePreviewHandoffProofIsSourceBacked
     ? "Live preview handoff proof requires branch CI, JSON doctor/export/runtime proof, preview URL, and native-proof boundaries"
     : "keep live preview proof wired through the release smoke checklist, Share Beta Handoff, and doctor next actions",
+);
+
+const livePreviewHandoffVerifierIsSourceBacked = mobilePackage.scripts?.["proof:live-preview"] === "node scripts/live-preview-handoff-proof.js --json"
+  && includesAll(livePreviewHandoffProofSource, [
+    "LIVE_PREVIEW_HANDOFF_ROUTES",
+    "records-local-file-handoff",
+    "report-binary-export-proof",
+    "route-visual-consistency",
+    "WoofWatcher Live Preview Handoff Proof",
+    "web preview only",
+    "does not replace native iOS/Android proof",
+    "Attach this JSON",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Live preview handoff verifier",
+    "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
+  ])
+  && proofCommands.includes("pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview");
+check(
+  "live preview handoff verifier is source-backed",
+  livePreviewHandoffVerifierIsSourceBacked,
+  livePreviewHandoffVerifierIsSourceBacked
+    ? "Live preview proof can emit JSON route evidence with preview-only boundaries"
+    : "keep proof:live-preview wired through the mobile script, release smoke checklist, and doctor proof commands",
 );
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [

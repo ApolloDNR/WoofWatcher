@@ -270,7 +270,7 @@ test("keeps exported mobile runtime route smoke wired into CI", () => {
   );
   assert.match(
     rootPackage.scripts["build:ci"],
-    /woofwatcher-mobile run smoke:web && pnpm --filter @workspace\/woofwatcher-mobile run smoke:runtime/,
+    /woofwatcher-mobile run smoke:web && pnpm --filter @workspace\/woofwatcher-mobile run smoke:runtime && pnpm --filter @workspace\/woofwatcher-mobile run proof:live-preview/,
   );
   assert.equal(existsSync(runtimeSmokePath), true);
 
@@ -339,6 +339,20 @@ test("keeps a static beta preview server wired for Apollo review", () => {
     mobilePackage.scripts["preview:web"],
     "node scripts/serve-smoke-preview.js 4194",
   );
+  assert.equal(
+    mobilePackage.scripts["proof:live-preview"],
+    "node scripts/live-preview-handoff-proof.js --json",
+  );
+  const livePreviewProof = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "scripts",
+      "live-preview-handoff-proof.js",
+    ),
+    "utf8",
+  );
   assert.match(
     serveSmokePreview,
     /const root = path\.resolve\(projectRoot, "\.expo-smoke"\)/,
@@ -347,6 +361,13 @@ test("keeps a static beta preview server wired for Apollo review", () => {
   assert.match(serveSmokePreview, /Missing \.expo-smoke\/index\.html/);
   assert.match(serveSmokePreview, /Keep this terminal open/);
   assert.match(serveSmokePreview, /127\.0\.0\.1/);
+  assert.match(livePreviewProof, /LIVE_PREVIEW_HANDOFF_ROUTES/);
+  assert.match(livePreviewProof, /records-local-file-handoff/);
+  assert.match(livePreviewProof, /report-binary-export-proof/);
+  assert.match(livePreviewProof, /route-visual-consistency/);
+  assert.match(livePreviewProof, /web preview only/);
+  assert.match(livePreviewProof, /does not replace native iOS\/Android proof/);
+  assert.match(doctorSource, /proof:live-preview/);
   assert.match(doctorSource, /preview:smoke/);
   assert.match(doctorSource, /http:\/\/127\.0\.0\.1:4194\//);
 });
@@ -5015,6 +5036,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     "pnpm run doctor:mobile-beta:json",
     "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
     "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
+    "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
     "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
   ]);
   assert.deepEqual(payload.handoffProofSections, [
@@ -5117,6 +5139,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "live preview handoff proof is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "live preview handoff verifier is source-backed" &&
         check.status === "PASS",
     ),
   );

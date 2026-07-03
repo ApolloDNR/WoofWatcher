@@ -142,7 +142,8 @@ Current environment note:
   true local blocker: pnpm is `11.7.0` while the repo is pinned to `10.24.0`.
 - The JSON payload also includes `proofCommands`, so automation can read the
   exact `corepack`, `pnpm install`, doctor, JSON doctor, `smoke:web`,
-  `smoke:runtime`, and `preview:smoke` command order without parsing prose.
+  `smoke:runtime`, `proof:live-preview`, and `preview:smoke` command order
+  without parsing prose.
 - Branch CI now runs that JSON doctor in the same workflow that installs
   `pnpm@10.24.0`, runs focused tests, and executes `build:ci`; use the workflow
   result as dependency-complete doctor proof when local Windows still has pnpm
@@ -159,6 +160,11 @@ Current environment note:
 - The mobile package now has `preview:smoke` and `preview:web` aliases for the
   no-dependency static server, both pinned to port `4194`, and the root
   `preview:mobile-beta` command points to the same handoff path.
+- The mobile package also has `proof:live-preview`, which starts a disposable
+  static preview server over `.expo-smoke`, verifies 9 launch-critical preview
+  routes return the Expo web shell, and emits JSON proof with web-preview-only
+  truth boundaries before helpers keep `preview:smoke` open for human review.
+  Root `build:ci` runs it after `smoke:web` and `smoke:runtime`.
 - The in-app `Share Beta Handoff` packet now repeats the exact dependency proof
   commands and warns that dependency proof only counts when both doctor commands
   report no blockers.
@@ -189,9 +195,9 @@ Current environment note:
   exported routes load before they keep the preview server open for visual QA.
 - The Release Smoke Checklist and Share Beta Handoff now include a dedicated
   `Live preview handoff proof` section for branch CI, JSON doctor/export/runtime
-  proof, `preview:smoke` output, `http://127.0.0.1:4194/`, and browser-open
-  evidence while saying live preview proof does not replace native iOS/Android
-  proof.
+  proof, `proof:live-preview` JSON route proof, `preview:smoke` output,
+  `http://127.0.0.1:4194/`, and browser-open evidence while saying live preview
+  proof does not replace native iOS/Android proof.
 - Provider Launch Setup now also shows a proof-needed checklist for every
   production provider gate in More and in the share packet: Clerk, Supabase/RLS,
   storage signed uploads, WoofGuide AI policy, payments, push, Apple/Google
