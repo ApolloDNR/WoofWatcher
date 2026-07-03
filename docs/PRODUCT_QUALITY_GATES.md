@@ -64,7 +64,7 @@ Passing evidence:
 Current gaps:
 
 - Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning, invite approval, and post-setup confirmation remain incomplete.
-- Provider-backed multi-dog care documents/switching, provider-backed role enforcement beyond existing household/helper routes, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential PNG/PDF export beyond the local SVG source, and broader role/document/account audit policy need implementation.
+- Provider-backed multi-dog care documents/switching, provider-backed role enforcement beyond existing household/helper routes, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential PNG/PDF export beyond the local SVG source, and broader role/document/account audit policy need implementation. The Report binary export proof packet now structures the generator/storage/native-proof requirements, but it does not implement PDF or PNG generation.
 - Native simulator/device runtime smoke still needs configured iOS/Android tooling; exported web-runtime route smoke does not replace native rendering.
 
 ## Gate 3: Care Domain Correctness
@@ -95,7 +95,7 @@ Passing evidence:
 Current gaps:
 
 - Need broader integration tests for authenticated household-scoped routes.
-- Need storage for record documents and generated reports.
+- Need storage for record documents, generated reports, credential images, and binary export proof artifacts.
 - Need provider-backed role-aware permissions beyond existing care-entry and household helper APIs, broader audit trail policy for documents/accounts, provider migration/RLS/retention rules for household audit rows, scheduled or owner-facing cleanup for expired Access Pass helper memberships, and provider-backed data export/delete paths. Request-time helper expiry enforcement exists now.
 - Need deeper multi-device conflict policy, server-backed delete/edit retention rules, and native offline recovery QA.
 
@@ -150,7 +150,8 @@ Passing evidence:
 - Local mobile readiness proof now protects the full-refresh boundary for care entries until provider migration/RLS, retention policy, and mobile incremental adoption are verified against the server cursor/delete-tombstone contract.
 - Provider Launch Setup now exposes the exact Supabase migration/backfill, active-household RLS, retention/export/deletion, and mobile full-refresh sign-off proof needed for `care_entries.updated_at`, `care_entry_tombstones`, `/care-entries?updatedSince=`, and `/care-entries/tombstones?updatedSince=` before incremental sync can be claimed.
 - The care-entry provider sync proof packet now structures that provider gate into Supabase project, migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off evidence; the checklist appears in Provider Launch Setup, More, and Share Beta Handoff.
-- The Release Smoke Checklist now gives Apollo/Replit one source-backed rehearsal for dependency/export proof, route rehearsal, Records local HTML export truth, provider proof gates, native/store proof, and launch truth boundaries inside Share Beta Handoff and the JSON mobile beta doctor. It also names the focused Records handoff target at `/care-twin-qa?qaSurface=records-local-file-handoff` for Care Pass local HTML, Dog ID local HTML, Dog ID SVG, Android content URI, fallback copy, and still-pending PDF/PNG/provider proof.
+- Provider Launch Setup now also carries the Report binary export proof packet under Records and media storage, requiring an approved Care Pass PDF generator, approved Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before binary export readiness can be claimed.
+- The Release Smoke Checklist now gives Apollo/Replit one source-backed rehearsal for dependency/export proof, route rehearsal, Records local HTML export truth, provider proof gates including the Report binary export proof packet, native/store proof, and launch truth boundaries inside Share Beta Handoff and the JSON mobile beta doctor. It also names the focused Records handoff target at `/care-twin-qa?qaSurface=records-local-file-handoff` for Care Pass local HTML, Dog ID local HTML, Dog ID SVG, Android content URI, fallback copy, and still-pending PDF/PNG/provider proof.
 - `build:ci` now runs the mobile `smoke:web` export and then `smoke:runtime`, which starts a disposable static runtime over `.expo-smoke` and verifies 11 exported mobile routes return the Expo web shell.
 - GitHub Actions now runs `pnpm run doctor:mobile-beta:json` after frozen dependency install with pinned `pnpm@10.24.0`, before focused tests and `build:ci`, so the machine-readable beta dependency/export gate is covered by branch CI.
 - Share Beta Handoff now includes the recorded green `WoofWatcher Verify` proof for run `28653297333` while explicitly saying CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.

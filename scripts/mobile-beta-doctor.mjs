@@ -229,6 +229,8 @@ const mobileLaunchQaEvidencePath = join(mobileRoot, "lib", "mobileLaunchQaEviden
 const mobileReleaseQaPath = join(mobileRoot, "lib", "mobileReleaseQa.ts");
 const mobileReleaseSmokeChecklistPath = join(mobileRoot, "lib", "mobileReleaseSmokeChecklist.ts");
 const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
+const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts");
+const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
 const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
@@ -238,6 +240,8 @@ const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath) ? re
 const mobileReleaseQaSource = existsSync(mobileReleaseQaPath) ? readFileSync(mobileReleaseQaPath, "utf8") : "";
 const mobileReleaseSmokeChecklistSource = existsSync(mobileReleaseSmokeChecklistPath) ? readFileSync(mobileReleaseSmokeChecklistPath, "utf8") : "";
 const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
+const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFileSync(launchProviderSetupPath, "utf8") : "";
+const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
 const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
@@ -501,6 +505,35 @@ check(
   recordsLocalFileHandoffProofIsSourceBacked
     ? "Records local HTML/SVG proof has a focused QA target, beta handoff instruction, smoke checklist item, and doctor next action"
     : "keep Records local file handoff proof wired through release QA, Share Beta Handoff, smoke checklist, and doctor next actions",
+);
+
+const reportBinaryExportProofPacketIsSourceBacked = includesAll(reportBinaryExportProofSource, [
+  "REPORT_BINARY_EXPORT_PROOF_SUMMARY",
+  "REPORT_BINARY_EXPORT_PROOF_ITEMS",
+  "Report binary export proof packet",
+  "Care Pass PDF",
+  "Dog ID PNG",
+  "expo-print",
+  "react-native-view-shot",
+  "server renderer",
+  "iOS and Android",
+])
+  && includesAll(launchProviderSetupSource, [
+    "REPORT_BINARY_EXPORT_PROOF_SUMMARY",
+    "REPORT_BINARY_EXPORT_PROOF_ITEMS",
+    "Records and media storage",
+    "storageProviderConfigured",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Provider proof gates",
+    "proofChecklist",
+  ]);
+check(
+  "report binary export proof packet is source-backed",
+  reportBinaryExportProofPacketIsSourceBacked,
+  reportBinaryExportProofPacketIsSourceBacked
+    ? "PDF/PNG readiness requires the binary export proof packet through Provider Launch Setup and the beta smoke checklist"
+    : "keep binary PDF/PNG export proof modeled in reportBinaryExportProof.ts and wired through Provider Launch Setup",
 );
 
 const betaHandoffTruthBoundariesAreSourceBacked = includesAll(betaHandoffPacketSource, [

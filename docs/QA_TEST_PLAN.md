@@ -1388,6 +1388,30 @@ Latest local evidence, 2026-07-03:
   export, native iOS/Android QA proof, store approval, public launch, or Apollo
   sign-off.
 
+## Report Binary Export Proof Packet
+
+Latest local evidence, 2026-07-03:
+
+- `reportBinaryExportProof.ts` now models the exact proof packet required before
+  Care Pass PDF or Dog ID PNG readiness can be claimed: approved PDF generator,
+  approved PNG renderer, provider storage handoff, and native artifact proof.
+- Provider Launch Setup's Records and media storage gate includes that packet in
+  `proofRequired` and `proofChecklist`, and Share Provider Plan text carries the
+  same requirements for Apollo/Replit handoff.
+- The Release Smoke Checklist and JSON mobile beta doctor verify the packet is
+  source-backed without claiming PDF/PNG generation is implemented.
+- Red/green proof first failed on the missing helper/provider/checklist/doctor
+  wiring, then passed focused report/provider/smoke/readiness tests `120/120`.
+- Fresh local verification also passed the broader API/mobile/PWA/care-domain
+  suite `520/520`, mobile TypeScript, and `tsc --build`.
+- JSON mobile beta doctor source-backed checks pass, including `report binary
+  export proof packet is source-backed`, but the result remains truthfully
+  `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to
+  `10.24.0`; Corepack is not on PATH.
+- This is a proof packet, not binary export implementation. Actual Care Pass PDF
+  generation, Dog ID PNG generation, provider-backed storage, iOS/Android
+  artifact proof, and launch approval remain blocked until real evidence exists.
+
 ## Mobile Runtime Route Smoke
 
 Latest local evidence, 2026-07-03:

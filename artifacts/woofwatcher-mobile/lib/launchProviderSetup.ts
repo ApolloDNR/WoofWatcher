@@ -3,6 +3,10 @@ import {
   CARE_ENTRY_PROVIDER_SYNC_PROOF_ITEMS,
   CARE_ENTRY_PROVIDER_SYNC_PROOF_SUMMARY,
 } from "./careEntryProviderSyncProof.ts";
+import {
+  REPORT_BINARY_EXPORT_PROOF_ITEMS,
+  REPORT_BINARY_EXPORT_PROOF_SUMMARY,
+} from "./reportBinaryExportProof.ts";
 
 export type LaunchProviderSetupStatus = "local-draft" | "owner-reviewed" | "provider-approved";
 
@@ -165,7 +169,9 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Document, proof-photo, report, and QA evidence storage rules are ready for migration testing.",
     blockedDetail: "Receipts, proof photos, reports, and QA screenshots stay local until signed storage rules exist.",
     nextAction: "Create storage buckets, signed upload/download rules, retention, export, deletion, and household scope policy.",
-    proofRequired: "Storage bucket names, signed upload/download policy, retention/export/deletion rules, and household access test evidence.",
+    proofRequired:
+      `Storage bucket names, signed upload/download policy, retention/export/deletion rules, household access test evidence, and ${REPORT_BINARY_EXPORT_PROOF_SUMMARY}`,
+    proofChecklist: REPORT_BINARY_EXPORT_PROOF_ITEMS.map((item) => `${item.label}: ${item.requiredEvidence}`),
   },
   {
     key: "ai",

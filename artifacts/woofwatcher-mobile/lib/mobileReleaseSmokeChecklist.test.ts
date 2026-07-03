@@ -148,6 +148,10 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /Care-entry provider sync proof packet/);
   assert.match(text, /care_entries\.updated_at/);
   assert.match(text, /care_entry_tombstones/);
+  assert.match(text, /Report binary export proof packet/);
+  assert.match(text, /Care Pass PDF/);
+  assert.match(text, /Dog ID PNG/);
+  assert.match(text, /iOS\/Android artifact proof/);
   assert.match(text, /Native and store proof:/);
   assert.match(text, /iOS Quick Log\/Log proof/);
   assert.match(text, /Android Launch Readiness proof/);

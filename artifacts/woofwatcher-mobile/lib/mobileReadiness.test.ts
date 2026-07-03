@@ -4954,6 +4954,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.checks?.some(
       (check) =>
+        check.label ===
+          "report binary export proof packet is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
         check.label === "beta handoff truth boundaries are source-backed" &&
         check.status === "PASS",
     ),

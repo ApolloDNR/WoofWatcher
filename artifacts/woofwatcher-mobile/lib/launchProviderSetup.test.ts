@@ -51,6 +51,30 @@ test("builds a truthful provider setup plan from a local launch profile", async 
     ),
   );
   assert.ok(plan.rows.some((row) => row.key === "storage" && /signed upload/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "storage" && /Report binary export proof packet/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "storage" && /Care Pass PDF/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "storage" && /Dog ID PNG/i.test(row.proofRequired)));
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "storage" &&
+        row.proofChecklist.some((item) => /PDF generator/i.test(item) && /expo-print/i.test(item)),
+    ),
+  );
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "storage" &&
+        row.proofChecklist.some((item) => /Credential PNG generator/i.test(item) && /view-shot|server renderer/i.test(item)),
+    ),
+  );
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "storage" &&
+        row.proofChecklist.some((item) => /Native artifact proof/i.test(item) && /iOS and Android/i.test(item)),
+    ),
+  );
   assert.equal(plan.nextGate?.key, "database");
   assert.match(plan.nextGate?.proofRequired ?? "", /Supabase project id/);
   assert.ok(plan.nextGate?.proofChecklist.some((item) => /mobile incremental/i.test(item)));
@@ -127,6 +151,10 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /\/care-entries\?updatedSince=/);
   assert.match(text, /mobile full-refresh sign-off/);
   assert.match(text, /Records and media storage: Storage bucket names/);
+  assert.match(text, /Report binary export proof packet/);
+  assert.match(text, /PDF generator: Approved native PDF generator/);
+  assert.match(text, /Credential PNG generator: Approved image renderer/);
+  assert.match(text, /Native artifact proof: iOS and Android/);
   assert.match(text, /WoofGuide AI/);
   assert.match(text, /No App Store or Play Store submission is approved by this checklist/);
 });

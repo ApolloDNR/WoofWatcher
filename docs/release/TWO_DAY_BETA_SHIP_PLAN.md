@@ -120,6 +120,10 @@ Shippable for internal beta after local verification passes:
   preview/production build profiles cover both iOS and Android.
 - If `pnpm` is present, the mobile beta doctor confirms the actual CLI version
   is exactly `10.24.0`.
+- The mobile beta doctor also verifies `report binary export proof packet is
+  source-backed`, so PDF/PNG readiness stays blocked unless Provider Launch
+  Setup carries the approved generator, storage policy, and native artifact
+  proof requirements.
 
 Current environment note:
 
@@ -157,8 +161,9 @@ Current environment note:
 - The in-app `Share Beta Handoff` packet now includes the Release Smoke
   Checklist: dependency/export proof, route rehearsal, Records local HTML export
   truth for `WoofWatcherReports` and `WoofWatcherCredentials`, provider proof
-  gates, native/store proof, and truth boundaries. This is rehearsal proof, not
-  native QA, provider approval, store approval, or Apollo sign-off.
+  gates including the Report binary export proof packet, native/store proof, and
+  truth boundaries. This is rehearsal proof, not native QA, provider approval,
+  store approval, binary export readiness, or Apollo sign-off.
 - The Release Smoke Checklist and Share Beta Handoff now name the focused
   Records handoff target at `/care-twin-qa?qaSurface=records-local-file-handoff`,
   including Care Pass local HTML, Dog ID local HTML, Dog ID SVG, share-sheet
@@ -167,6 +172,10 @@ Current environment note:
 - Records Dog ID can now share a local SVG image-source credential file beside
   the local printable HTML credential file; PNG/PDF credential export still
   needs native/provider generation and real iOS/Android share proof.
+- Provider Launch Setup's Records/media storage gate now carries the Report
+  binary export proof packet for an approved Care Pass PDF generator, approved
+  Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof.
+  This is a proof requirement, not implemented PDF/PNG generation.
 - The Release Smoke Checklist and JSON doctor now include the `smoke:runtime`
   route proof between `smoke:web` and preview handoff, so helpers can confirm
   exported routes load before they keep the preview server open for visual QA.
