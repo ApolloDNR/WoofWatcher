@@ -1954,12 +1954,25 @@ export default function MoreScreen() {
                           Proof needed: {row.proofRequired}
                         </Text>
                         {row.proofChecklist.length ? (
-                          <Text
-                            numberOfLines={2}
-                            style={[s.providerSetupRowProof, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
-                          >
-                            Proof step: {row.proofChecklist[0]}
-                          </Text>
+                          <View style={s.providerSetupProofChecklist}>
+                            {row.proofChecklist.slice(0, 3).map((proofItem) => (
+                              <Text
+                                key={proofItem}
+                                numberOfLines={2}
+                                style={[s.providerSetupProofItem, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                              >
+                                - {proofItem}
+                              </Text>
+                            ))}
+                            {row.proofChecklist.length > 3 ? (
+                              <Text
+                                numberOfLines={1}
+                                style={[s.providerSetupProofItem, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}
+                              >
+                                More proof steps: {row.proofChecklist.length - 3} in Share Provider Plan
+                              </Text>
+                            ) : null}
+                          </View>
                         ) : null}
                       </View>
                     </View>

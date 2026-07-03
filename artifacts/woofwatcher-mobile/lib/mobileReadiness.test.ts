@@ -4539,6 +4539,10 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /Provider gates ready for owner approval/);
   assert.match(more, /row\.proofRequired/);
   assert.match(more, /row\.proofChecklist/);
+  assert.match(more, /row\.proofChecklist\.slice\(0, 3\)\.map/);
+  assert.match(more, /row\.proofChecklist\.length > 3/);
+  assert.match(more, /More proof steps:/);
+  assert.doesNotMatch(more, /Proof step: \{row\.proofChecklist\[0\]\}/);
   assert.match(more, /providerSetupProofChecklist/);
   assert.match(more, /Proof needed/);
   assert.match(more, /row\.status === "blocked" \? row\.nextAction : row\.detail/);

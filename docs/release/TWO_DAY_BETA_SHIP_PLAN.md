@@ -304,6 +304,10 @@ Current environment note:
   open-provider list, keep `nextGate` active, and do not increase the
   provider-approved progress score until the saved provider status is
   `provider-approved`.
+- Provider Launch Setup visible rows now show up to three proof checklist steps
+  plus a `More proof steps` count. Use `Share Provider Plan` for the complete
+  checklist, and do not treat a single visible proof line as enough to clear
+  Supabase/RLS, PDF/PNG artifact, storage policy, or native proof blockers.
 - The in-app `Share Beta Handoff` packet now includes that provider proof
   checklist too, so deadline helpers can use one packet for dependency proof,
   device proof, provider evidence, and launch truth boundaries.
