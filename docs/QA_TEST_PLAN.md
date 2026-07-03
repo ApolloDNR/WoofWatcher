@@ -1356,7 +1356,8 @@ Latest local evidence, 2026-07-03:
 - Share Beta Handoff now embeds the checklist, including the static
   `preview:smoke` proof command, the `/care-twin-qa` QA-return route, Care Pass
   Report History `Printable HTML local file`/`PDF pending` copy, Dog ID
-  `local HTML credential file`/`image/PDF export stays pending` copy, and the
+  `local HTML credential file`/`SVG image source`/`PNG/PDF export stays pending`
+  copy, and the
   care-entry provider sync proof packet.
 - The JSON mobile beta doctor now checks `release smoke checklist is
   source-backed` and includes `Release smoke checklist` in

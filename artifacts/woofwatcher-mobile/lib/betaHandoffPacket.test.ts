@@ -125,7 +125,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Open with QA return: \/care-twin-qa\?qaReturn=care-twin-qa/);
   assert.match(text, /WoofWatcherReports/);
   assert.match(text, /WoofWatcherCredentials/);
-  assert.match(text, /Generated PDF and credential image\/PDF export stay pending/);
+  assert.match(text, /Generated PDF and credential PNG\/PDF export stay pending/);
   assert.match(text, /Next device mission: Owner Preview Core Loop \(\/care-twin-qa\)/);
   assert.match(text, /Status: Not reviewed/);
   assert.match(text, /Missing proof: Attach 1 iOS screenshot for Owner Preview Core Loop\. Attach 1 Android screenshot/);
@@ -154,7 +154,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Attach iOS Quick Log\/Log proof and Android Launch Readiness proof/);
   assert.match(text, /Confirm Care Pass Report History storage status says Saved on this device or Ready to upload/);
   assert.match(text, /Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness/);
-  assert.match(text, /Confirm Records Dog ID printable source shares as a local HTML credential file; image\/PDF export stays pending/);
+  assert.match(text, /Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG\/PDF export stays pending/);
   assert.match(text, /Save the Mission note and clear Pass pending proof in both \/care-twin-qa and More/);
   assert.match(text, /Native QA Needs tune fix brief:/);
   assert.match(text, /If any route is marked Needs tune, use More's Share Fix Brief before claiming beta proof/);

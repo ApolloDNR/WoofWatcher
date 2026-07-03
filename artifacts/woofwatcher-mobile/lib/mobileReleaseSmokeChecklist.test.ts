@@ -137,7 +137,7 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /Printable HTML local file/);
   assert.match(text, /PDF pending/);
   assert.match(text, /WoofWatcherCredentials/);
-  assert.match(text, /image\/PDF export stays pending/);
+  assert.match(text, /SVG image source while PNG\/PDF export stays pending/);
   assert.match(text, /Provider proof gates:/);
   assert.match(text, /Household database sync/);
   assert.match(text, /Care-entry provider sync proof packet/);
@@ -150,6 +150,6 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /Truth boundaries:/);
   assert.match(text, /does not approve App Store or Play Store submission/);
   assert.match(text, /does not prove provider-backed storage, sync, AI, payments, or push/);
-  assert.match(text, /Generated PDF and credential image\/PDF export stay pending/);
+  assert.match(text, /Generated PDF and credential PNG\/PDF export stay pending/);
   assert.doesNotMatch(text, /STORE READY/i);
 });

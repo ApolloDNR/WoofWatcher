@@ -155,6 +155,9 @@ Current environment note:
   truth for `WoofWatcherReports` and `WoofWatcherCredentials`, provider proof
   gates, native/store proof, and truth boundaries. This is rehearsal proof, not
   native QA, provider approval, store approval, or Apollo sign-off.
+- Records Dog ID can now share a local SVG image-source credential file beside
+  the local printable HTML credential file; PNG/PDF credential export still
+  needs native/provider generation and real iOS/Android share proof.
 - The Release Smoke Checklist and JSON doctor now include the `smoke:runtime`
   route proof between `smoke:web` and preview handoff, so helpers can confirm
   exported routes load before they keep the preview server open for visual QA.

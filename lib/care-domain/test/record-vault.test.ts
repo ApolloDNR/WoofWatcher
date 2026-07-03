@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildPetCredential,
   deriveRecordReminders,
+  getPetCredentialImageView,
   getPetCredentialPrintView,
   getRecordDueStatus,
   summarizeRecordVault,
@@ -105,6 +106,37 @@ test("renders a print-ready dog ID credential with escaped details", () => {
   assert.match(printable.html, /Lemonade - WW-1042/);
   assert.match(printable.html, /For caregiver and veterinarian review/);
   assert.doesNotMatch(printable.html, /Phoenix <script>/);
+});
+
+test("renders a shareable SVG dog ID image source without claiming PDF output", () => {
+  const credential = buildPetCredential({
+    profile: {
+      name: "Phoenix <script>",
+      breed: "German Shepherd Mix",
+      careFocus: "Anxiety-aware feeding",
+      weight: { current: 68, unit: "lb" },
+      microchipNumber: "985112003004551",
+      insuranceProvider: "Lemonade",
+      insurancePolicy: "WW-1042",
+      primaryVet: "Alameda Wellness Vet",
+      emergencyContact: "Apollo - 555-0100",
+      vetBoundary: "For caregiver and veterinarian review.",
+    },
+    caregivers: [{ name: "Apollo", role: "Owner" }],
+    generatedAt: "2026-06-06T18:00:00.000Z",
+  });
+
+  const image = getPetCredentialImageView(credential);
+
+  assert.equal(image.fileName, "phoenix-script-dog-id-2026-06-06.svg");
+  assert.equal(image.mimeType, "image/svg+xml");
+  assert.equal(image.formatLabel, "SVG image source");
+  assert.match(image.svg, /^<svg /);
+  assert.match(image.svg, /Phoenix &lt;script&gt; Dog ID/);
+  assert.match(image.svg, /985112003004551/);
+  assert.match(image.svg, /Lemonade - WW-1042/);
+  assert.match(image.boundary, /PNG and PDF export still need native or provider-backed generation/);
+  assert.doesNotMatch(image.svg, /Phoenix <script>/);
 });
 
 test("classifies date-backed records by due status", () => {

@@ -64,7 +64,7 @@ Passing evidence:
 Current gaps:
 
 - Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning, invite approval, and post-setup confirmation remain incomplete.
-- Provider-backed multi-dog care documents/switching, provider-backed role enforcement beyond existing household/helper routes, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
+- Provider-backed multi-dog care documents/switching, provider-backed role enforcement beyond existing household/helper routes, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential PNG/PDF export beyond the local SVG source, and broader role/document/account audit policy need implementation.
 - Native simulator/device runtime smoke still needs configured iOS/Android tooling; exported web-runtime route smoke does not replace native rendering.
 
 ## Gate 3: Care Domain Correctness

@@ -1,8 +1,12 @@
 export const REPORT_EXPORT_DIRECTORY_NAME = "WoofWatcherReports";
+export type ReportArtifactExportMimeType = "text/html" | "image/svg+xml";
 
 export interface ReportArtifactPrintableSource {
   fileName: string;
   html: string;
+  mimeType?: ReportArtifactExportMimeType;
+  formatLabel?: string;
+  boundary?: string;
 }
 
 export interface ReportArtifactExportFileOptions {
@@ -17,7 +21,7 @@ export interface ReportArtifactExportFilePlan {
   fileName: string;
   fileUri: string | null;
   html: string;
-  mimeType: "text/html";
+  mimeType: ReportArtifactExportMimeType;
   shareTitle: string;
   message: string;
   canWriteLocalFile: boolean;
@@ -30,7 +34,14 @@ export interface ReportArtifactShareContent {
   url?: string;
 }
 
-export function normalizeReportExportFileName(fileName: string): string {
+function extensionForMimeType(mimeType: ReportArtifactExportMimeType): ".html" | ".svg" {
+  return mimeType === "image/svg+xml" ? ".svg" : ".html";
+}
+
+export function normalizeReportExportFileName(
+  fileName: string,
+  extension: ".html" | ".svg" = ".html",
+): string {
   const normalized = String(fileName ?? "")
     .trim()
     .replace(/[\\/:*?"<>|#%{}^[\]`]+/g, "-")
@@ -38,7 +49,7 @@ export function normalizeReportExportFileName(fileName: string): string {
     .replace(/-+/g, "-")
     .replace(/^[.-]+|[.-]+$/g, "");
   const safeName = normalized.length ? normalized : "woofwatcher-report";
-  return /\.html$/i.test(safeName) ? safeName : `${safeName}.html`;
+  return safeName.toLowerCase().endsWith(extension) ? safeName : `${safeName}${extension}`;
 }
 
 function withTrailingSlash(uri: string): string {
@@ -59,9 +70,16 @@ export function buildReportArtifactExportFilePlan(
   printable: ReportArtifactPrintableSource,
   options: ReportArtifactExportFileOptions,
 ): ReportArtifactExportFilePlan {
-  const fileName = normalizeReportExportFileName(printable.fileName);
+  const mimeType = printable.mimeType ?? "text/html";
+  const fileName = normalizeReportExportFileName(printable.fileName, extensionForMimeType(mimeType));
   const directoryName = normalizeExportDirectoryName(options.directoryName);
   const printableLabel = options.printableLabel?.trim() || "report source";
+  const formatLabel = printable.formatLabel?.trim() || "HTML file";
+  const boundary = [
+    printable.boundary?.trim() ||
+      "PDF generation is still pending native or provider-backed setup.",
+    "cloud storage is not enabled by this export.",
+  ].join(" ");
   const documentDirectory = typeof options.documentDirectory === "string" && options.documentDirectory.trim().length
     ? withTrailingSlash(options.documentDirectory.trim())
     : null;
@@ -77,13 +95,13 @@ export function buildReportArtifactExportFilePlan(
     fileName,
     fileUri,
     html: printable.html,
-    mimeType: "text/html",
+    mimeType,
     shareTitle: `${options.title} printable source`,
     canWriteLocalFile,
     fallbackReason,
     message: canWriteLocalFile
-      ? `WoofWatcher printable ${printableLabel} is attached as a local HTML file. PDF generation is still pending native or provider-backed setup, and cloud storage is not enabled by this export.`
-      : `WoofWatcher printable ${printableLabel} is included below because local file export is unavailable in this runtime. PDF generation is still pending native or provider-backed setup, and cloud storage is not enabled by this export.`,
+      ? `WoofWatcher printable ${printableLabel} is attached as a local ${formatLabel}. ${boundary}`
+      : `WoofWatcher printable ${printableLabel} is included below because local file export is unavailable in this runtime. ${boundary}`,
   };
 }
 

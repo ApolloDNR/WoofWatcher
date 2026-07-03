@@ -107,6 +107,14 @@ export interface PetCredentialPrintView {
   html: string;
 }
 
+export interface PetCredentialImageView {
+  fileName: string;
+  svg: string;
+  mimeType: "image/svg+xml";
+  formatLabel: "SVG image source";
+  boundary: string;
+}
+
 const SECTION_DEFS: { kind: RecordKind; label: string; critical?: boolean }[] = [
   { kind: "vaccine", label: "Vaccines", critical: true },
   { kind: "vet", label: "Vet Visits" },
@@ -608,5 +616,62 @@ ${rowHtml}
   </main>
 </body>
 </html>`,
+  };
+}
+
+function svgCredentialRow(label: string, value: string, y: number): string {
+  return `
+    <g transform="translate(64 ${y})">
+      <text class="label" x="0" y="0">${escapeHtml(label)}</text>
+      <text class="value" x="0" y="34">${escapeHtml(value)}</text>
+    </g>`;
+}
+
+export function getPetCredentialImageView(credential: PetCredential): PetCredentialImageView {
+  const rows = [
+    ["Breed", credential.breed],
+    ["Weight", credential.weight],
+    ["Care focus", credential.careFocus],
+    ["Primary caregiver", credential.primaryCaregiver],
+    ["Primary vet", credential.primaryVet],
+    ["Emergency contact", credential.emergencyContact],
+    ["Microchip", credential.microchip],
+    ["Insurance", credential.insurance],
+    ["Vaccines", credential.vaccines],
+  ];
+  const boundary = "PNG and PDF export still need native or provider-backed generation; this SVG is the local image source.";
+
+  return {
+    fileName: `${slugify(credential.name)}-dog-id-${dateStamp(credential.generatedAt)}.svg`,
+    mimeType: "image/svg+xml",
+    formatLabel: "SVG image source",
+    boundary,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="680" viewBox="0 0 1080 680" role="img" aria-label="${escapeHtml(credential.name)} Dog ID">
+  <defs>
+    <style>
+      .bg { fill: #f7f5f1; }
+      .card { fill: #ffffff; stroke: #d4cfc4; stroke-width: 3; }
+      .header { fill: #0f1f33; }
+      .brand { fill: #c87a3a; font: 800 26px Inter, Arial, sans-serif; letter-spacing: 3px; }
+      .title { fill: #ffffff; font: 800 58px Georgia, serif; }
+      .generated { fill: #d4cfc4; font: 500 24px Inter, Arial, sans-serif; }
+      .label { fill: #5f6f63; font: 800 20px Inter, Arial, sans-serif; letter-spacing: 2px; }
+      .value { fill: #1a2332; font: 700 28px Inter, Arial, sans-serif; }
+      .boundary { fill: #5f6f63; font: 600 21px Inter, Arial, sans-serif; }
+      .line { stroke: #d4cfc4; stroke-width: 2; }
+    </style>
+  </defs>
+  <rect class="bg" width="1080" height="680" />
+  <rect class="card" x="32" y="32" width="1016" height="616" rx="30" />
+  <rect class="header" x="32" y="32" width="1016" height="170" rx="30" />
+  <rect class="header" x="32" y="132" width="1016" height="70" />
+  <text class="brand" x="64" y="86">WOOFWATCHER DOG ID</text>
+  <text class="title" x="64" y="154">${escapeHtml(credential.name)} Dog ID</text>
+  <text class="generated" x="760" y="92">Generated ${escapeHtml(shortDate(credential.generatedAt))}</text>
+  <line class="line" x1="540" y1="224" x2="540" y2="534" />
+  ${rows.slice(0, 5).map((row, index) => svgCredentialRow(row[0], row[1], 252 + index * 58)).join("")}
+  ${rows.slice(5).map((row, index) => svgCredentialRow(row[0], row[1], 252 + index * 58).replace("translate(64", "translate(584")).join("")}
+  <text class="boundary" x="64" y="606">${escapeHtml(boundary)}</text>
+</svg>`,
   };
 }

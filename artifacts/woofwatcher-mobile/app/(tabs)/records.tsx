@@ -52,6 +52,7 @@ import {
   deriveWaterHydration,
   deriveWeightTrend,
   getCarePassArtifactPrintView,
+  getPetCredentialImageView,
   getPetCredentialPrintView,
   getRecordDueStatus,
   normalizeCareEventType,
@@ -556,6 +557,25 @@ export default function RecordsScreen() {
     });
   };
 
+  const shareCredentialImageSource = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const image = getPetCredentialImageView(credential);
+    await sharePrintableSourceFile(
+      {
+        fileName: image.fileName,
+        html: image.svg,
+        mimeType: image.mimeType,
+        formatLabel: image.formatLabel,
+        boundary: image.boundary,
+      },
+      {
+        directoryName: "WoofWatcherCredentials",
+        printableLabel: "Dog ID SVG image source",
+        title: `${credential.name} Dog ID`,
+      },
+    );
+  };
+
   const buildCarePassFor = (audience: CarePassAudience) =>
     buildCarePass({
       audience,
@@ -982,6 +1002,16 @@ export default function RecordsScreen() {
                 >
                   <Ionicons name="print-outline" size={15} color={colors.copper} />
                   <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Print</Text>
+                </Pressable>
+                <Pressable
+                  onPress={shareCredentialImageSource}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share local SVG Dog ID image source"
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  style={s.shareInline}
+                >
+                  <Ionicons name="image-outline" size={15} color={colors.copper} />
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>SVG</Text>
                 </Pressable>
               </View>
             }

@@ -54,6 +54,29 @@ test("builds a local printable credential export file plan without calling it a 
   assert.doesNotMatch(plan.message, /report source/);
 });
 
+test("builds a local SVG credential image source export plan without claiming PNG or PDF output", () => {
+  const plan = buildReportArtifactExportFilePlan(
+    {
+      fileName: "Phoenix Dog ID.svg",
+      html: "<svg>Dog ID</svg>",
+      mimeType: "image/svg+xml",
+      formatLabel: "SVG image source",
+      boundary: "PNG and PDF export still need native or provider-backed generation.",
+    },
+    {
+      documentDirectory: "file:///var/mobile/Documents",
+      directoryName: "WoofWatcherCredentials",
+      printableLabel: "Dog ID SVG image source",
+      title: "Phoenix Dog ID",
+    },
+  );
+
+  assert.equal(plan.fileName, "Phoenix-Dog-ID.svg");
+  assert.equal(plan.mimeType, "image/svg+xml");
+  assert.match(plan.message, /local SVG image source/);
+  assert.match(plan.message, /PNG and PDF export still need/);
+});
+
 test("falls back to inline printable source when a local file directory is unavailable", () => {
   const plan = buildReportArtifactExportFilePlan(
     {

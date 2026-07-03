@@ -207,7 +207,7 @@ export function buildBetaHandoffPacketShareText(
     "- Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
     "- Confirm Care Pass Report History storage status says Saved on this device or Ready to upload.",
     "- Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
-    "- Confirm Records Dog ID printable source shares as a local HTML credential file; image/PDF export stays pending.",
+    "- Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
     "- Save the Mission note and clear Pass pending proof in both /care-twin-qa and More.",
     "",
     "Native QA Needs tune fix brief:",

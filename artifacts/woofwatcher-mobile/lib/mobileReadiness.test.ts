@@ -3389,12 +3389,16 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
   assert.match(records, /getPetCredentialPrintView/);
+  assert.match(records, /getPetCredentialImageView/);
   assert.match(records, /sharePrintableCredential/);
+  assert.match(records, /shareCredentialImageSource/);
   assert.match(records, /directoryName: "WoofWatcherCredentials"/);
   assert.match(records, /printableLabel: "Dog ID credential source"/);
+  assert.match(records, /printableLabel: "Dog ID SVG image source"/);
   assert.match(records, /FileSystem\.writeAsStringAsync/);
   assert.match(records, /accessibilityLabel="Share dog ID card"/);
   assert.match(records, /accessibilityLabel="Share local printable Dog ID source file"/);
+  assert.match(records, /accessibilityLabel="Share local SVG Dog ID image source"/);
 });
 
 test("keeps Records organized around a vault command hierarchy", () => {
@@ -5038,9 +5042,10 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.nextActions?.some(
       (action) =>
-        action.includes("Dog ID printable source") &&
+        action.includes("Dog ID") &&
         action.includes("local HTML credential file") &&
-        action.includes("image/PDF export stays pending"),
+        action.includes("SVG image source") &&
+        action.includes("PNG/PDF export stays pending"),
     ),
   );
   assert.ok(

@@ -184,7 +184,7 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Dog ID credential",
             detail:
-              "Confirm WoofWatcherCredentials contains the local HTML credential file and image/PDF export stays pending.",
+              "Confirm WoofWatcherCredentials contains the local HTML credential file and SVG image source while PNG/PDF export stays pending.",
             proof: "Attach share-sheet or saved-file proof from a native runtime.",
             status: "required",
           },
@@ -218,7 +218,7 @@ export function buildMobileReleaseSmokeChecklist(
     truthBoundaries: [
       "This smoke checklist does not approve App Store or Play Store submission.",
       "This smoke checklist does not prove provider-backed storage, sync, AI, payments, or push.",
-      "Generated PDF and credential image/PDF export stay pending until native/provider export work is approved.",
+      "Generated PDF and credential PNG/PDF export stay pending until native/provider export work is approved.",
       "Apollo launch sign-off remains separate from dependency, route, and QA proof.",
     ],
     doneCondition:
