@@ -1380,3 +1380,40 @@ Latest local evidence, 2026-07-03:
 - This checklist is rehearsal proof, not provider approval, generated PDF/image
   export, native iOS/Android QA proof, store approval, public launch, or Apollo
   sign-off.
+
+## Mobile Runtime Route Smoke
+
+Latest local evidence, 2026-07-03:
+
+- `artifacts/woofwatcher-mobile/scripts/smoke-runtime-preview.js` now starts a
+  disposable localhost static server over `.expo-smoke`, requests the exported
+  mobile routes, verifies each route returns `200` HTML with the Expo web entry
+  script, and closes the server in `finally`.
+- The protected route set is `/`, `/log`, `/calendar`, `/health`, `/records`,
+  `/more`, `/care-twin-qa`, `/woofguide`, `/premium`, `/privacy`, and
+  `/portrait`.
+- The mobile package exposes `pnpm --filter @workspace/woofwatcher-mobile run
+  smoke:runtime`; root `build:ci` runs it immediately after mobile `smoke:web`.
+  Share Beta Handoff, the Release Smoke Checklist, and the JSON mobile beta
+  doctor list the same command.
+- Red/green proof first failed because the package script, runtime smoke
+  script, doctor proof command, and checklist command were missing, then passed
+  after the command and source-backed checks were added.
+- Focused proof passed `mobileReadiness.test.ts`,
+  `mobileReleaseSmokeChecklist.test.ts`, and `betaHandoffPacket.test.ts` with
+  `117/117` tests. Broader proof passed the API/mobile/PWA/care-domain suite
+  with `516/516` tests.
+- Mobile TypeScript, `pnpm run typecheck:libs`, and API TypeScript passed after
+  prepending bundled Node and pnpm to `PATH`. Expo web export smoke produced
+  `219` assets and `223` files in `.expo-smoke`.
+- Direct runtime smoke passed for all 11 routes:
+  `/`, `/log`, `/calendar`, `/health`, `/records`, `/more`, `/care-twin-qa`,
+  `/woofguide`, `/premium`, `/privacy`, and `/portrait`.
+- JSON mobile beta doctor source-backed checks pass, including `smoke:runtime
+  route command exists` and `release smoke checklist is source-backed`, but the
+  result remains truthfully `BLOCKED` only because local pnpm is `11.7.0` while
+  the repo is pinned to `10.24.0`.
+- This is exported web-runtime proof only. Native iOS/Android simulator or
+  device rendering, provider approvals, generated PDF/image export, store
+  approval, public launch, and Apollo sign-off remain blocked until real
+  artifacts exist.

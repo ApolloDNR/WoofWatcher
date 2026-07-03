@@ -81,6 +81,7 @@ const proofCommands = [
   "pnpm run doctor:mobile-beta",
   "pnpm run doctor:mobile-beta:json",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+  "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
   "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
 ];
 const handoffProofSections = [
@@ -99,6 +100,7 @@ const truthBoundaries = [
 const nextActions = [
   "Run the Release smoke checklist from Share Beta Handoff before claiming beta proof.",
   "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:web.",
+  "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime to verify exported mobile routes return 200 from the static runtime.",
   "Serve the exported beta with pnpm --filter @workspace/woofwatcher-mobile run preview:smoke, then open http://127.0.0.1:4194/.",
   "Open /care-twin-qa on a real device or simulator.",
   "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
@@ -190,6 +192,7 @@ const mobilePackagePath = join(mobileRoot, "package.json");
 const mobilePackage = readJson(mobilePackagePath);
 check("mobile package exists", existsSync(mobilePackagePath), mobilePackage.name);
 check("smoke:web export command exists", mobilePackage.scripts?.["smoke:web"] === "node scripts/smoke-web-export.js", mobilePackage.scripts?.["smoke:web"] ?? "missing smoke:web");
+check("smoke:runtime route command exists", mobilePackage.scripts?.["smoke:runtime"] === "node scripts/smoke-runtime-preview.js", mobilePackage.scripts?.["smoke:runtime"] ?? "missing smoke:runtime");
 check("static preview command exists", mobilePackage.scripts?.["preview:smoke"] === "node scripts/serve-smoke-preview.js 4194", mobilePackage.scripts?.["preview:smoke"] ?? "missing preview:smoke");
 
 const appJson = readJson(join(mobileRoot, "app.json")).expo;
@@ -270,6 +273,7 @@ const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeCheckl
   "Native and store proof",
   "WoofWatcherReports",
   "WoofWatcherCredentials",
+  "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
   "Generated PDF and credential image/PDF export stay pending",
 ])
   && includesAll(betaHandoffPacketSource, [

@@ -13,6 +13,7 @@ export const MOBILE_RELEASE_SMOKE_DEPENDENCY_COMMANDS = [
   "pnpm run doctor:mobile-beta",
   "pnpm run doctor:mobile-beta:json",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+  "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
   "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
 ] as const;
 

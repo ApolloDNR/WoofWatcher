@@ -246,6 +246,62 @@ test("keeps Expo web export smoke wired into CI", () => {
   assert.match(mobileGitignore, /\.expo-smoke\//);
 });
 
+test("keeps exported mobile runtime route smoke wired into CI", () => {
+  const rootPackage = JSON.parse(
+    readFileSync(join(process.cwd(), "package.json"), "utf8"),
+  );
+  const mobilePackage = JSON.parse(
+    readFileSync(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "package.json"),
+      "utf8",
+    ),
+  );
+  const runtimeSmokePath = join(
+    process.cwd(),
+    "artifacts",
+    "woofwatcher-mobile",
+    "scripts",
+    "smoke-runtime-preview.js",
+  );
+
+  assert.equal(
+    mobilePackage.scripts["smoke:runtime"],
+    "node scripts/smoke-runtime-preview.js",
+  );
+  assert.match(
+    rootPackage.scripts["build:ci"],
+    /woofwatcher-mobile run smoke:web && pnpm --filter @workspace\/woofwatcher-mobile run smoke:runtime/,
+  );
+  assert.equal(existsSync(runtimeSmokePath), true);
+
+  const runtimeSmokeSource = readFileSync(runtimeSmokePath, "utf8");
+  assert.match(runtimeSmokeSource, /MOBILE_RUNTIME_SMOKE_ROUTES/);
+  assert.match(runtimeSmokeSource, /Missing \.expo-smoke\/index\.html/);
+  assert.match(runtimeSmokeSource, /WoofWatcher mobile runtime smoke passed/);
+  assert.match(runtimeSmokeSource, /server\.close/);
+  assert.match(runtimeSmokeSource, /127\.0\.0\.1/);
+
+  const routeList = spawnSync(process.execPath, [runtimeSmokePath, "--list-routes"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  assert.equal(routeList.status, 0);
+  const routes = JSON.parse(routeList.stdout) as string[];
+  assert.deepEqual(routes, [
+    "/",
+    "/log",
+    "/calendar",
+    "/health",
+    "/records",
+    "/more",
+    "/care-twin-qa",
+    "/woofguide",
+    "/premium",
+    "/privacy",
+    "/portrait",
+  ]);
+});
+
 test("keeps a static beta preview server wired for Apollo review", () => {
   const rootPackage = JSON.parse(
     readFileSync(join(process.cwd(), "package.json"), "utf8"),
@@ -4772,6 +4828,7 @@ test("keeps a deadline beta doctor command for mobile export handoff", () => {
   assert.match(doctorSource, /pnpm/);
   assert.match(doctorSource, /expo/);
   assert.match(doctorSource, /smoke:web/);
+  assert.match(doctorSource, /smoke:runtime/);
   assert.match(doctorSource, /care-twin-qa/);
   assert.match(doctorSource, /Mission note/);
   assert.match(doctorSource, /GitHub Actions/);
@@ -4934,6 +4991,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     "pnpm run doctor:mobile-beta",
     "pnpm run doctor:mobile-beta:json",
     "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+    "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
     "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
   ]);
   assert.deepEqual(payload.handoffProofSections, [
@@ -4948,6 +5006,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.nextActions?.some((action) =>
       action.includes(
         "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+      ),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some((action) =>
+      action.includes(
+        "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
       ),
     ),
   );

@@ -2672,9 +2672,25 @@ This clears a source-backed checklist gap; it does not clear actual native
 iOS/Android proof, provider approvals, generated PDF/image export, store
 approval, public launch, or Apollo sign-off.
 
+The mobile runtime route smoke pass makes the export proof more execution-like
+without overclaiming native QA. `scripts/smoke-runtime-preview.js` starts a
+disposable static server over `.expo-smoke`, verifies Home, Log, Plans, Health,
+Records, More, Care Twin QA, WoofGuide, Premium, Privacy, and Avatar Studio
+return the Expo web shell, then closes the server. The mobile package exposes
+`smoke:runtime`, root `build:ci` runs it immediately after `smoke:web`, and the
+Release Smoke Checklist plus JSON doctor list it before preview handoff. Fresh
+local verification passed focused smoke/beta/readiness tests `117/117`, the
+API/mobile/PWA/care-domain suite `516/516`, mobile TypeScript,
+`pnpm run typecheck:libs`, API TypeScript, Expo web export to `.expo-smoke`
+with 219 assets / 223 files, and direct runtime smoke for all 11 routes. The
+JSON mobile beta doctor source-backed checks pass but remain `BLOCKED` only
+because local pnpm is `11.7.0` versus pinned `10.24.0`. This is exported
+web-runtime proof, not native simulator/device proof, provider approval,
+generated PDF/image export, store approval, public launch, or Apollo sign-off.
+
 Next highest-impact work:
 
-1. Run the Release Smoke Checklist from Share Beta Handoff in a dependency-complete environment: `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, `pnpm --filter @workspace/woofwatcher-mobile run smoke:web`, and `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` with real pnpm `10.24.0` on PATH. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI after billing is fixed, or another environment with the Expo/mobile dependency layer, then attach the JSON doctor/export/preview proof to the beta handoff.
+1. Run the Release Smoke Checklist from Share Beta Handoff in a dependency-complete environment: `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, `pnpm --filter @workspace/woofwatcher-mobile run smoke:web`, `pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime`, and `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` with real pnpm `10.24.0` on PATH. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI, or another environment with the Expo/mobile dependency layer, then attach the JSON doctor/export/runtime/preview proof to the beta handoff.
 2. Run native iOS/Android simulator or device QA with More's focused `/care-twin-qa?qaSurface=...` links and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with More's `Next launch gate` or `Native QA Next Captures > Primary mission`. For the `Owner Preview Core Loop`, read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the focused card or 48-hour mission card, write the required note, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, use More's `Share Beta Handoff` action after saved proof is current, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, mark the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue as Needs tune, use More's `Share Fix Brief`, and fix that first route before moving on.
 3. Fill the Provider Launch Setup sheet only as real providers are configured: Clerk, Supabase/Postgres, storage buckets/rules, AI key/model policy, app-store payments, push, Apple/Google accounts, and self-serve deletion. Use the care-entry provider sync proof packet for Supabase migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off evidence. Share the provider plan for Apollo/Fable/Replit handoff, but do not treat it as store approval.
 4. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.

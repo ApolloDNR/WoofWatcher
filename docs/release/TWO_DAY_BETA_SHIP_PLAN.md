@@ -102,6 +102,10 @@ Shippable for internal beta after local verification passes:
 - The JSON doctor reports `release smoke checklist is source-backed` and lists
   `Release smoke checklist` as a handoff proof section before helpers claim the
   beta packet is complete.
+- `pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime` verifies the
+  exported `.expo-smoke` runtime for Home, Log, Plans, Health, Records, More,
+  Care Twin QA, WoofGuide, Premium, Privacy, and Avatar Studio before preview
+  handoff.
 - `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` serves the
   exact `.expo-smoke` export at `http://127.0.0.1:4194/`; keep that terminal
   open while Apollo, Fable, Replit, or device QA reviews the build.
@@ -121,12 +125,14 @@ Current environment note:
 - The doctor now enforces the actual `pnpm --version` output when pnpm is present, so a stray pnpm 11.x helper install cannot be mistaken for the pinned `pnpm@10.24.0` beta export path.
 - The doctor now also supports `--json` through `pnpm run doctor:mobile-beta:json`.
   In this cleaned Windows shell the JSON payload is valid, reports
-  `result: BLOCKED`, includes pass/warn/blocked checks, and lists the same two
-  true issues: missing local `pnpm` and missing mobile `expo` dependency
-  resolution.
+  `result: BLOCKED`, and keeps source-backed checks passing while naming the
+  true local blocker: pnpm is `11.7.0` while the repo is pinned to `10.24.0`.
 - The JSON payload also includes `proofCommands`, so automation can read the
-  exact `corepack`, `pnpm install`, doctor, JSON doctor, `smoke:web`, and
-  `preview:smoke` command order without parsing prose.
+  exact `corepack`, `pnpm install`, doctor, JSON doctor, `smoke:web`,
+  `smoke:runtime`, and `preview:smoke` command order without parsing prose.
+- The mobile package now has a `smoke:runtime` alias that starts a disposable
+  static runtime over `.expo-smoke`, verifies 11 exported mobile routes return
+  the Expo web shell, and exits without leaving a server running.
 - The mobile package now has `preview:smoke` and `preview:web` aliases for the
   no-dependency static server, both pinned to port `4194`, and the root
   `preview:mobile-beta` command points to the same handoff path.
@@ -138,6 +144,9 @@ Current environment note:
   truth for `WoofWatcherReports` and `WoofWatcherCredentials`, provider proof
   gates, native/store proof, and truth boundaries. This is rehearsal proof, not
   native QA, provider approval, store approval, or Apollo sign-off.
+- The Release Smoke Checklist and JSON doctor now include the `smoke:runtime`
+  route proof between `smoke:web` and preview handoff, so helpers can confirm
+  exported routes load before they keep the preview server open for visual QA.
 - Provider Launch Setup now also shows a proof-needed checklist for every
   production provider gate in More and in the share packet: Clerk, Supabase/RLS,
   storage signed uploads, WoofGuide AI policy, payments, push, Apple/Google
@@ -149,7 +158,7 @@ Current environment note:
 - The in-app `Share Beta Handoff` packet now includes that provider proof
   checklist too, so deadline helpers can use one packet for dependency proof,
   device proof, provider evidence, and launch truth boundaries.
-- Mobile TypeScript and package-local web export now pass in this cleaned Windows shell, but no local iOS/Android simulator/tooling is visible here. Re-run the full doctor, install, scripted `smoke:web`, and actual device capture from Replit, Git Bash/WSL with pnpm installed, CI after billing is fixed, or a native-device environment before treating this as native/device-proven.
+- Mobile TypeScript, package-local web export, and exported web-runtime route smoke now pass in this cleaned Windows shell, but no local iOS/Android simulator/tooling is visible here. Re-run the full doctor, install, scripted `smoke:web`, `smoke:runtime`, preview handoff, and actual device capture from Replit, Git Bash/WSL with pnpm 10.24.0 installed, CI, or a native-device environment before treating this as native/device-proven.
 
 Still blocked for public launch:
 

@@ -29,6 +29,7 @@ Passing evidence:
 - Quick Log and Full Log cover all required care event types.
 - Calendar/routines can be assigned and completed.
 - Records, handoff, reports, and WoofGuide route to useful workflows.
+- Exported mobile web-runtime smoke exercises Home, Log, Plans, Health, Records, More, Care Twin QA, WoofGuide, Premium, Privacy, and Avatar Studio routes from `.expo-smoke` without leaving a preview server running.
 - Dog profile credential fields feed the Records ID card, share text, and escaped print-ready source.
 - Records includes a Medication Plan that derives taken, due, missed, upcoming, dose, owner, logged-by, and adherence percentage from routines and medication logs.
 - Home quick log and the Log composer can create medication logs with routine identity, dose, taken/skipped outcome, and household visibility.
@@ -64,7 +65,7 @@ Current gaps:
 
 - Shared onboarding readiness exists and is used by the Today setup nudge. The care foundation setup route exists, but auth-connected account provisioning, invite approval, and post-setup confirmation remain incomplete.
 - Provider-backed multi-dog care documents/switching, provider-backed role enforcement beyond existing household/helper routes, binary PDF generation, server-backed report storage, record document storage, provider-backed reminder delivery, formal Alone Time trigger plans, richer weight-goal plans, credential image/PDF export, and broader role/document/account audit policy need implementation.
-- Runtime smoke has not been added.
+- Native simulator/device runtime smoke still needs configured iOS/Android tooling; exported web-runtime route smoke does not replace native rendering.
 
 ## Gate 3: Care Domain Correctness
 
@@ -150,12 +151,13 @@ Passing evidence:
 - Provider Launch Setup now exposes the exact Supabase migration/backfill, active-household RLS, retention/export/deletion, and mobile full-refresh sign-off proof needed for `care_entries.updated_at`, `care_entry_tombstones`, `/care-entries?updatedSince=`, and `/care-entries/tombstones?updatedSince=` before incremental sync can be claimed.
 - The care-entry provider sync proof packet now structures that provider gate into Supabase project, migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off evidence; the checklist appears in Provider Launch Setup, More, and Share Beta Handoff.
 - The Release Smoke Checklist now gives Apollo/Replit one source-backed rehearsal for dependency/export proof, route rehearsal, Records local HTML export truth, provider proof gates, native/store proof, and launch truth boundaries inside Share Beta Handoff and the JSON mobile beta doctor.
+- `build:ci` now runs the mobile `smoke:web` export and then `smoke:runtime`, which starts a disposable static runtime over `.expo-smoke` and verifies 11 exported mobile routes return the Expo web shell.
 
 Current gaps:
 
 - Local dependency layer still blocks API build proof in this Codex checkout because `@esbuild/win32-x64` is missing from `node_modules`, and the local pnpm CLI is `11.7.0` while the repo is pinned to `10.24.0`.
 - Need actual provider migration/RLS proof, retention/export/deletion approval, dependency-complete provider integration evidence, and native QA proof before care-entry incremental sync can replace full-refresh mobile behavior.
-- Need mobile runtime smoke.
+- Need native simulator/device runtime smoke; exported web-runtime route smoke is source-backed but not native proof.
 - Critical mobile action accessibility labels are covered by focused static smoke.
 - Home avatar motion state and wiring are covered by focused tests.
 - Medication adherence, medication follow-ups, medication history search/outcome filters, medication log defaults, Care Pass medication language, and Records/Log wiring are covered by focused tests.

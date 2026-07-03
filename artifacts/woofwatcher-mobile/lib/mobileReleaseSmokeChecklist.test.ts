@@ -118,6 +118,7 @@ test("builds a source-backed release smoke checklist without clearing blocked la
     "pnpm run doctor:mobile-beta",
     "pnpm run doctor:mobile-beta:json",
     "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+    "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
     "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
   ]);
 
@@ -125,6 +126,7 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /Build: two-day owner beta/);
   assert.match(text, /Dependency and export proof:/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run preview:smoke/);
+  assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run smoke:runtime/);
   assert.match(text, /Route rehearsal:/);
   assert.match(text, /Owner Preview Core Loop \(\/care-twin-qa\)/);
   assert.match(text, /Open with QA return: \/care-twin-qa\?qaReturn=care-twin-qa/);

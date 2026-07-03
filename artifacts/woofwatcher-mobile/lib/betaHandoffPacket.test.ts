@@ -133,6 +133,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /pnpm run doctor:mobile-beta/);
   assert.match(text, /pnpm run doctor:mobile-beta:json/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run smoke:web/);
+  assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run smoke:runtime/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run preview:smoke/);
   assert.match(text, /Dependency proof only counts when both doctor commands report no blockers/);
   assert.match(text, /Dependency proof requires a real PATH pnpm at 10\.24\.0; do not use a bundled pnpm 11\.x candidate/);
