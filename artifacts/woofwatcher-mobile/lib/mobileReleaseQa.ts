@@ -319,7 +319,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     ],
     verificationSteps: [
       "Open Records and confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after provider-approved storage.",
-      "Share or print the Care Pass Report History artifact and confirm the Printable HTML local file, file name, file size, and PDF pending copy are visible.",
+      "Share or print the Care Pass Report History artifact and confirm the Printable HTML local file, file name, file size, and local PDF/native-proof boundary are visible.",
       "Share the Dog ID local HTML credential and confirm it saves under WoofWatcherCredentials before opening the native share sheet.",
       "Share the Dog ID SVG image source and confirm it saves under WoofWatcherCredentials with image/svg+xml behavior, not an HTML fallback filename.",
       "On Android, confirm at least one Records local file handoff uses the Android content URI when available.",
@@ -329,15 +329,15 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Care Pass Report History shows Saved on this device, or Ready to upload only after provider-approved storage, and names the Printable HTML local file with PDF pending copy.",
       "Dog ID can share a local HTML credential file and SVG image source from WoofWatcherCredentials.",
       "Android content URI behavior and fallback copy are captured instead of guessed.",
-      "PNG/PDF export stays pending, and Records never claims provider-backed storage, generated PDF, credential PNG/PDF, or cloud sync unless those gates are actually closed.",
+      "Generated PDF/PNG proof is handled by Report Binary Export Proof, and Records never claims provider-backed storage, native artifact proof, or cloud sync unless those gates are actually closed.",
     ],
     failureEscalation:
       "Mark Needs tune if Records hides the saved file name, misses the Android content URI path, loses fallback copy, claims provider-backed storage, or implies PNG/PDF export is complete.",
     requiredEvidence: [
       "iOS screenshot of Care Pass Report History showing local HTML storage status.",
       "Android screenshot of Dog ID local HTML or SVG share sheet.",
-      "Note confirming WoofWatcherReports saved Printable HTML local file name, file size, and PDF pending copy.",
-      "Note confirming WoofWatcherCredentials saved local HTML credential and SVG image source, Android content URI behavior, fallback copy, and PNG/PDF export stays pending.",
+      "Note confirming WoofWatcherReports saved Printable HTML local file name, file size, and local PDF/native-proof boundary.",
+      "Note confirming WoofWatcherCredentials saved local HTML credential and SVG image source, Android content URI behavior, fallback copy, and generated PDF/PNG proof remains separate.",
     ],
     routeChecklist: [
       {
@@ -358,8 +358,8 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         label: "Dog ID SVG image source",
         route: "/records",
         expected:
-          "Confirm the SVG image source saves with image/svg+xml behavior and keeps PNG/PDF pending copy visible.",
-        proof: "SVG image source share proof and Mission note naming the PNG/PDF boundary.",
+          "Confirm the SVG image source saves with image/svg+xml behavior and keeps generated PDF/PNG proof separate.",
+        proof: "SVG image source share proof and Mission note naming the generated PDF/PNG proof boundary.",
       },
     ],
     launchRisk:
@@ -371,24 +371,24 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     route: "/more",
     priority: "launch-critical",
     goal:
-      "Prove the approved Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and native artifact evidence exist before binary export readiness can be claimed.",
+      "Prove local Care Pass PDF and Dog ID PNG bytes, native share/reopen behavior, provider storage policy, and native artifact evidence before binary export readiness can be claimed.",
     devicePrompt:
-      "In Provider Launch Setup on iOS and Android, collect the Records/media storage proof packet for approved PDF/PNG generators, provider storage, and generated artifact evidence.",
+      "In Records and Provider Launch Setup on iOS and Android, collect local PDF/PNG artifact proof, native share/reopen evidence, provider storage policy, and generated artifact evidence.",
     setupSteps: [
-      "Use local preview data and keep PDF/PNG actions pending until the generator and provider proof exists.",
+      "Use local preview data; PDF/PNG actions can generate local bytes, but readiness stays blocked until native share/reopen and provider proof exists.",
       "Open More, then Provider Launch Setup, and inspect the Records and media storage gate.",
-      "Confirm the PDF path names an approved generator such as expo-print or provider renderer before any PDF action is considered ready.",
-      "Confirm the PNG path names an approved renderer such as react-native-view-shot or server renderer before any Dog ID PNG action is considered ready.",
+      "Open Records Report History and run the generated Care Pass PDF action from a saved artifact.",
+      "Open Dog ID and run the generated Dog ID PNG action while retaining the HTML/SVG source fallbacks.",
     ],
     verificationSteps: [
       "Open Provider Launch Setup and confirm Records and media storage shows the Report binary export proof packet.",
       "Confirm the packet names Care Pass PDF, Dog ID PNG, provider storage policy, and iOS/Android artifact proof.",
-      "In Records, verify the Care Pass Report History still shows Printable HTML/PDF pending unless generated PDF file name, file size, MIME proof, and share/reopen proof exist.",
-      "In Records, verify Dog ID still shows local HTML/SVG source and PNG pending unless generated PNG file name, file size, MIME proof, and share/reopen proof exist.",
+      "In Records, verify the Care Pass Report History Binary proof manifest shows the local PDF file name, file size, MIME proof, and native share/reopen blocker.",
+      "In Records, verify Dog ID shows local HTML/SVG source plus local PNG file name, file size, MIME proof, and native share/reopen blocker.",
       "Capture or attach the provider storage policy for report PDFs, credential PNG/SVG/HTML, and QA evidence before clearing the storage gate.",
     ],
     acceptanceCriteria: [
-      "No PDF/PNG readiness is claimed until approved generator choice, provider storage policy, and generated artifact proof are attached.",
+      "No PDF/PNG readiness is claimed until native share/reopen proof, provider storage policy, and generated artifact proof are attached.",
       "Care Pass PDF proof includes iOS and Android generated artifact evidence, file name, file size, MIME proof, share/reopen proof, and no HTML-only fallback in the PDF action.",
       "Dog ID PNG proof includes iOS and Android generated artifact evidence, file name, file size, MIME proof, share/reopen proof, and SVG source retained as fallback.",
       "Provider storage proof covers household-scoped signed upload/download, retention, export, deletion, and QA evidence storage.",
@@ -398,7 +398,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     requiredEvidence: [
       "iOS screenshot of Provider Launch Setup showing the Report binary export proof packet.",
       "Android screenshot of generated PDF and PNG artifact proof or the still-pending proof packet.",
-      "Note confirming approved Care Pass PDF generator and approved Dog ID PNG renderer choices.",
+      "Note confirming local Care Pass PDF bytes and local Dog ID PNG bytes were generated before native proof was evaluated.",
       "Note confirming provider storage policy for report PDFs, credential PNG/SVG/HTML, and QA evidence.",
     ],
     routeChecklist: [
@@ -407,7 +407,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         route: "/more",
         expected:
           "Confirm Records and media storage lists the Report binary export proof packet before binary readiness can be claimed.",
-        proof: "Provider-approved generator and storage policy note.",
+        proof: "Provider-approved storage policy note.",
       },
       {
         label: "Care Pass PDF artifact proof",

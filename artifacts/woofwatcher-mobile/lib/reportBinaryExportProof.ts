@@ -8,10 +8,18 @@ export type ReportBinaryExportProofStatus = "ready" | "blocked";
 export interface ReportBinaryExportProofManifestInput {
   carePassHtmlFileName: string;
   dogIdSvgFileName: string;
+  generatedCarePassPdf?: ReportGeneratedBinaryArtifactProof;
+  generatedDogIdPng?: ReportGeneratedBinaryArtifactProof;
   storageProviderConfigured?: boolean;
   pdfGeneratorApproved: boolean;
   pngRendererApproved: boolean;
   nativeArtifactEvidenceApproved: boolean;
+}
+
+export interface ReportGeneratedBinaryArtifactProof {
+  fileName: string;
+  mimeType: "application/pdf" | "image/png";
+  byteSize: number;
 }
 
 export interface ReportBinaryExportProofManifestRow {
@@ -38,6 +46,20 @@ function replaceExtension(fileName: string, extension: ".pdf" | ".png"): string 
   return `${baseName}${extension}`;
 }
 
+function cleanGeneratedProof(
+  proof: ReportGeneratedBinaryArtifactProof | undefined,
+  mimeType: ReportGeneratedBinaryArtifactProof["mimeType"],
+): ReportGeneratedBinaryArtifactProof | null {
+  if (!proof || proof.mimeType !== mimeType || !clean(proof.fileName, "") || !Number.isFinite(proof.byteSize) || proof.byteSize <= 0) {
+    return null;
+  }
+  return {
+    fileName: clean(proof.fileName, mimeType === "application/pdf" ? "care-pass-report.pdf" : "dog-id.png"),
+    mimeType,
+    byteSize: Math.max(1, Math.round(proof.byteSize)),
+  };
+}
+
 export const REPORT_BINARY_EXPORT_PROOF_ITEMS: readonly ReportBinaryExportProofItem[] = [
   {
     label: "PDF generator",
@@ -62,7 +84,7 @@ export const REPORT_BINARY_EXPORT_PROOF_ITEMS: readonly ReportBinaryExportProofI
 ];
 
 export const REPORT_BINARY_EXPORT_PROOF_SUMMARY =
-  "Report binary export proof packet: approved Care Pass PDF generator, approved Dog ID PNG generator, provider storage policy, and iOS/Android artifact proof before PDF or PNG readiness can be claimed.";
+  "Report binary export proof packet: local Care Pass PDF and Dog ID PNG artifact bytes, provider storage policy, native share/reopen proof, and iOS/Android artifact proof before PDF or PNG readiness can be claimed.";
 
 export function buildReportBinaryExportProofManifest(
   input: ReportBinaryExportProofManifestInput,
@@ -71,13 +93,15 @@ export function buildReportBinaryExportProofManifest(
   const dogIdSvgFileName = clean(input.dogIdSvgFileName, "dog-id.svg");
   const pdfFileName = replaceExtension(carePassHtmlFileName, ".pdf");
   const pngFileName = replaceExtension(dogIdSvgFileName, ".png");
+  const generatedCarePassPdf = cleanGeneratedProof(input.generatedCarePassPdf, "application/pdf");
+  const generatedDogIdPng = cleanGeneratedProof(input.generatedDogIdPng, "image/png");
   const storageProviderConfigured = Boolean(input.storageProviderConfigured);
   const blockers: string[] = [];
 
-  if (!input.pdfGeneratorApproved) {
+  if (!input.pdfGeneratorApproved && !generatedCarePassPdf) {
     blockers.push("Care Pass PDF generator needs approved expo-print or provider-renderer proof.");
   }
-  if (!input.pngRendererApproved) {
+  if (!input.pngRendererApproved && !generatedDogIdPng) {
     blockers.push("Dog ID PNG renderer needs approved react-native-view-shot or server-renderer proof.");
   }
   if (!storageProviderConfigured) {
@@ -87,8 +111,8 @@ export function buildReportBinaryExportProofManifest(
     blockers.push("iOS and Android artifact evidence needs generated file name, file size, MIME, share, and reopen proof.");
   }
 
-  const pdfReady = input.pdfGeneratorApproved && input.nativeArtifactEvidenceApproved;
-  const pngReady = input.pngRendererApproved && input.nativeArtifactEvidenceApproved;
+  const pdfReady = (input.pdfGeneratorApproved || Boolean(generatedCarePassPdf)) && input.nativeArtifactEvidenceApproved;
+  const pngReady = (input.pngRendererApproved || Boolean(generatedDogIdPng)) && input.nativeArtifactEvidenceApproved;
   const status: ReportBinaryExportProofStatus =
     pdfReady && pngReady && storageProviderConfigured ? "ready" : "blocked";
 
@@ -97,18 +121,22 @@ export function buildReportBinaryExportProofManifest(
     rows: [
       {
         label: "Care Pass PDF",
-        value: pdfReady ? "PDF proof ready" : "PDF pending",
+        value: pdfReady ? "PDF proof ready" : generatedCarePassPdf ? "Local PDF generated" : "PDF pending",
         status: pdfReady ? "ready" : "blocked",
         detail: pdfReady
           ? `${pdfFileName} application/pdf proof is approved from ${carePassHtmlFileName}.`
+          : generatedCarePassPdf
+            ? `${generatedCarePassPdf.fileName} application/pdf is generated locally from ${carePassHtmlFileName} (${generatedCarePassPdf.byteSize} bytes); native share and reopen proof still required before PDF proof is ready.`
           : `${carePassHtmlFileName} text/html source is ready; ${pdfFileName} application/pdf still needs an approved PDF generator, file size, MIME proof, share proof, and reopen proof.`,
       },
       {
         label: "Dog ID PNG",
-        value: pngReady ? "PNG proof ready" : "PNG pending",
+        value: pngReady ? "PNG proof ready" : generatedDogIdPng ? "Local PNG generated" : "PNG pending",
         status: pngReady ? "ready" : "blocked",
         detail: pngReady
           ? `${pngFileName} image/png proof is approved from ${dogIdSvgFileName}.`
+          : generatedDogIdPng
+            ? `${generatedDogIdPng.fileName} image/png is generated locally from ${dogIdSvgFileName} (${generatedDogIdPng.byteSize} bytes); native share and reopen proof plus provider storage proof still pending.`
           : `${dogIdSvgFileName} image/svg+xml source is ready; ${pngFileName} image/png still needs an approved PNG renderer, file size, MIME proof, share proof, and reopen proof.`,
       },
       {

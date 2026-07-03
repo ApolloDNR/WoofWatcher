@@ -144,10 +144,10 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /Records and export truth:/);
   assert.match(text, /WoofWatcherReports/);
   assert.match(text, /Printable HTML local file/);
-  assert.match(text, /PDF pending/);
+  assert.match(text, /Binary proof manifest rows show local PDF\/PNG generation/);
   assert.match(text, /Ready to upload only after provider-approved storage/);
   assert.match(text, /WoofWatcherCredentials/);
-  assert.match(text, /SVG image source while PNG\/PDF export stays pending/);
+  assert.match(text, /SVG image source, then use Report Binary Export Proof/);
   assert.match(text, /Focused Records handoff target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=records-local-file-handoff/);
   assert.match(text, /Care Pass Report History local HTML, Dog ID local HTML, and Dog ID SVG image source/);
@@ -164,8 +164,9 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /iOS\/Android artifact proof/);
   assert.match(text, /Focused binary export proof target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=report-binary-export-proof/);
-  assert.match(text, /approved Care Pass PDF generator/);
-  assert.match(text, /approved Dog ID PNG renderer/);
+  assert.match(text, /local Care Pass PDF bytes/);
+  assert.match(text, /local Dog ID PNG bytes/);
+  assert.match(text, /native share\/reopen proof/);
   assert.match(text, /Focused care-entry provider sync proof target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=care-entry-provider-sync-proof/);
   assert.match(text, /Supabase migration\/backfill/);
@@ -223,6 +224,6 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /Truth boundaries:/);
   assert.match(text, /does not approve App Store or Play Store submission/);
   assert.match(text, /does not prove provider-backed storage, sync, AI, payments, or push/);
-  assert.match(text, /Generated PDF and credential PNG\/PDF export stay pending/);
+  assert.match(text, /Generated Care Pass PDF and Dog ID PNG bytes stay local-only/);
   assert.doesNotMatch(text, /STORE READY/i);
 });

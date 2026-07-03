@@ -2812,17 +2812,17 @@ JSON mobile beta doctor all point helpers to
 Pass Report History local HTML proof in `WoofWatcherReports`, Dog ID local HTML
 and SVG image-source proof in `WoofWatcherCredentials`, native share-sheet
 behavior, Android content URI or saved-file proof, fallback copy, and explicit
-`PNG/PDF export stays pending` language. This is a source-backed proof path; real
-iOS/Android screenshots/share-dialog evidence still must be attached before the
-handoff is device-verified.
+`generated PDF/PNG proof remains separate` language. This is a source-backed
+proof path for HTML/SVG files; real iOS/Android screenshots/share-dialog
+evidence still must be attached before the handoff is device-verified.
 
 The report binary export proof packet pass keeps the next export boundary
-truthful before anyone wires native generators. `reportBinaryExportProof.ts`
-now names the required proof for an approved Care Pass PDF generator, approved
-Dog ID PNG renderer, provider storage handoff, and iOS/Android generated-file
-artifact proof. Provider Launch Setup's Records/media storage row carries that
-packet in its proof checklist, while the Release Smoke Checklist and JSON mobile
-beta doctor guard that the packet remains source-backed. Fresh verification
+truthful before anyone claims native/provider readiness. `reportBinaryExportProof.ts`
+now names the required proof for local Care Pass PDF and Dog ID PNG artifact
+bytes, provider storage handoff, native share/reopen behavior, and iOS/Android
+generated-file artifact proof. Provider Launch Setup's Records/media storage row
+carries that packet in its proof checklist, while the Release Smoke Checklist
+and JSON mobile beta doctor guard that the packet remains source-backed. Fresh verification
 passed the focused report/provider/smoke/readiness tests `120/120`, the broader
 API/mobile/PWA/care-domain suite `520/520`, mobile TypeScript, and `tsc
 --build`; the JSON doctor still blocks only on local pnpm `11.7.0` versus pinned
@@ -2850,6 +2850,17 @@ The JSON mobile beta doctor now guards `records binary export proof manifest is
 source-backed`, so generated PDF/PNG readiness stays blocked until the manifest
 has real file name, file size, MIME, share/reopen, provider storage, and
 iOS/Android evidence instead of HTML/SVG-only source proof.
+
+The generated binary artifact pass moves the Records route from manifest-only
+proof into real local artifact bytes. `reportGeneratedBinaryArtifact.ts` now
+builds base64 Care Pass PDF bytes and Dog ID PNG bytes with file name, MIME type,
+byte size, and local-file share plans; Records exposes generated PDF actions for
+Report History and a generated PNG action for Dog ID while feeding those
+metadata rows into the binary proof manifest. The JSON mobile beta doctor now
+guards `generated binary artifact exports are source-backed`. This closes only
+the local generator/source gap; native iOS/Android share-reopen proof, provider
+storage, retention/export/deletion policy, and Apollo sign-off remain launch
+blockers.
 
 The Route Visual Consistency handoff target pass makes the existing route-by-route
 native screenshot mission explicit in every beta helper surface. Share Beta

@@ -3441,8 +3441,12 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /import \* as FileSystem from "expo-file-system\/legacy"/);
   assert.match(records, /buildReportArtifactExportFilePlan/);
   assert.match(records, /buildReportArtifactShareContent/);
+  assert.match(records, /buildCarePassPdfArtifactSource/);
+  assert.match(records, /buildGeneratedBinaryArtifactFilePlan/);
+  assert.match(records, /buildGeneratedBinaryArtifactShareContent/);
   assert.match(records, /FileSystem\.makeDirectoryAsync/);
   assert.match(records, /FileSystem\.writeAsStringAsync/);
+  assert.match(records, /FileSystem\.EncodingType\.Base64/);
   assert.match(records, /FileSystem\.getContentUriAsync/);
   assert.match(records, /const storage = exportView\.storage/);
   assert.doesNotMatch(
@@ -3462,12 +3466,16 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /const binaryProofManifest = buildReportBinaryExportProofManifest/);
   assert.match(records, /carePassHtmlFileName: exportView\.fileName/);
   assert.match(records, /dogIdSvgFileName: credentialImageView\.fileName/);
+  assert.match(records, /generatedCarePassPdf:/);
+  assert.match(records, /generatedDogIdPng:/);
   assert.match(records, /storageProviderConfigured: launchProviderSetupPlan\.providerInput\.storageProviderConfigured/);
   assert.match(records, /binaryProofManifest\.rows\.map/);
   assert.match(records, /binaryProofManifest\.blockers\.map/);
   assert.match(records, /artifactManifestGrid/);
   assert.match(records, /artifactManifestCell/);
   assert.match(records, /sharePrintableReportArtifact/);
+  assert.match(records, /shareGeneratedCarePassPdfArtifact/);
+  assert.match(records, /shareGeneratedBinaryArtifactFile/);
   assert.match(records, /openReportBinaryExportProofMission/);
   assert.match(records, /report-binary-export-proof/);
   assert.match(records, /Print-ready/);
@@ -3483,6 +3491,10 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   );
   assert.match(
     records,
+    /accessibilityLabel=\{`Share generated Care Pass PDF for \$\{artifact\.title\}`\}/,
+  );
+  assert.match(
+    records,
     /accessibilityLabel=\{`Open report binary export proof mission for \$\{artifact\.title\}`\}/,
   );
 });
@@ -3492,15 +3504,19 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
 
   assert.match(records, /getPetCredentialPrintView/);
   assert.match(records, /getPetCredentialImageView/);
+  assert.match(records, /buildDogIdPngArtifactSource/);
   assert.match(records, /sharePrintableCredential/);
   assert.match(records, /shareCredentialImageSource/);
+  assert.match(records, /shareCredentialPngArtifact/);
   assert.match(records, /directoryName: "WoofWatcherCredentials"/);
   assert.match(records, /printableLabel: "Dog ID credential source"/);
   assert.match(records, /printableLabel: "Dog ID SVG image source"/);
   assert.match(records, /FileSystem\.writeAsStringAsync/);
+  assert.match(records, /FileSystem\.EncodingType\.Base64/);
   assert.match(records, /accessibilityLabel="Share dog ID card"/);
   assert.match(records, /accessibilityLabel="Share local printable Dog ID source file"/);
   assert.match(records, /accessibilityLabel="Share local SVG Dog ID image source"/);
+  assert.match(records, /accessibilityLabel="Share generated Dog ID PNG"/);
 });
 
 test("keeps Records organized around a vault command hierarchy", () => {
@@ -5318,6 +5334,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.checks?.some(
       (check) =>
+        check.label ===
+          "generated binary artifact exports are source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
         check.label === "beta handoff truth boundaries are source-backed" &&
         check.status === "PASS",
     ),
@@ -5420,7 +5444,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.nextActions?.some(
       (action) =>
-        action.includes("Printable HTML local file") && action.includes("PDF pending"),
+        action.includes("Printable HTML local file") && action.includes("generated PDF/native proof still blocked"),
     ),
   );
   assert.ok(
@@ -5429,7 +5453,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
         action.includes("Dog ID") &&
         action.includes("local HTML credential file") &&
         action.includes("SVG image source") &&
-        action.includes("PNG/PDF export stays pending"),
+        action.includes("generated PNG/PDF readiness still needs native/provider proof"),
     ),
   );
   assert.ok(
@@ -5452,8 +5476,8 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.nextActions?.some(
       (action) =>
         action.includes("/care-twin-qa?qaSurface=report-binary-export-proof") &&
-        action.includes("Care Pass PDF generator") &&
-        action.includes("Dog ID PNG renderer"),
+        action.includes("local Care Pass PDF bytes") &&
+        action.includes("local Dog ID PNG bytes"),
     ),
   );
   assert.ok(

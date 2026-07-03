@@ -67,9 +67,9 @@ The beta must not claim:
 - On Records, confirm Dog ID share/print, medication search/filter, Care Pass preview, report resend/print, record add/delete, attachment, and sheet save/cancel controls feel phone-sized and easy to tap.
 - On Records, use the `Records file handoff` Vault Command shortcut when the next proof target is Records local files, and use the Report History proof icon when the next target is Report Binary Export Proof. These are capture shortcuts only; they do not prove PDF/PNG generation or provider storage by themselves.
 - On Records, confirm Care Pass Report History says `Saved on this device` unless Provider Launch Setup storage is provider-approved; `Ready to upload` is not a local draft or owner-reviewed status.
-- On Records, confirm each Report History artifact shows the `Binary proof manifest` rows for Care Pass PDF, Dog ID PNG, Provider storage, and Native artifact proof. These rows must stay blocked until the generated PDF/PNG file name, file size, MIME, share/reopen, provider storage, and iOS/Android evidence exists.
+- On Records, confirm each Report History artifact shows the `Binary proof manifest` rows for Care Pass PDF, Dog ID PNG, Provider storage, and Native artifact proof. Local Records actions can now generate Care Pass PDF and Dog ID PNG bytes with file name, file size, and MIME metadata, but the rows must stay blocked until native share/reopen proof, provider storage, and iOS/Android evidence exists.
 - When the current mission is `Records Local File Handoff`, open `/care-twin-qa?qaSurface=records-local-file-handoff`, then capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG image source, native share-sheet behavior, Android content URI, and fallback copy without claiming PDF/PNG/provider storage proof.
-- When the current mission is `Report Binary Export Proof`, open `/care-twin-qa?qaSurface=report-binary-export-proof`, then capture the approved Care Pass PDF generator, approved Dog ID PNG renderer, provider storage policy, generated file name/size/MIME/share proof, and iOS/Android artifact evidence before claiming PDF/PNG readiness.
+- When the current mission is `Report Binary Export Proof`, open `/care-twin-qa?qaSurface=report-binary-export-proof`, then capture the local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, generated file name/size/MIME/share proof, reopen proof, and iOS/Android artifact evidence before claiming PDF/PNG readiness.
 - When the current mission is `Care-entry Provider Sync Proof`, open `/care-twin-qa?qaSurface=care-entry-provider-sync-proof`, then capture Supabase project id, migration/backfill for `care_entries.updated_at` and `care_entry_tombstones`, active-household RLS for cursor and tombstone routes, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off before enabling incremental care-entry sync.
 - When reviewing More's Sync Health panel, use `Open sync proof` to jump to the same Care-entry Provider Sync Proof mission. This is a shortcut only; visible outbox/local sync status still does not prove Supabase migration, active-household RLS, retention policy, or incremental provider sync.
 - When the current mission is `WoofGuide AI Provider Proof`, open `/care-twin-qa?qaSurface=woofguide-ai-provider-proof`, then capture OpenAI key location, secret storage, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, fallback/incident handling, rollback plan, and support handoff before enabling live AI.
@@ -151,6 +151,10 @@ Shippable for internal beta after local verification passes:
   source-backed`, so Records must display artifact-specific Care Pass PDF, Dog
   ID PNG, provider storage, and native evidence blocker rows before generated
   PDF/PNG readiness can be claimed.
+- The mobile beta doctor also verifies `generated binary artifact exports are
+  source-backed`, so Records must wire the local Care Pass PDF and Dog ID PNG
+  share actions from real base64 artifact bytes while keeping native
+  share/reopen and provider storage proof blocked until device evidence exists.
 - The mobile beta doctor also verifies `premium payments proof manifest is
   source-backed`, so Premium must display product catalog, billing path,
   sandbox receipt, restore-purchase, refund/support, and checkout-gate blockers
@@ -424,12 +428,17 @@ Current environment note:
   local preference/readiness boundary only; it does not configure Expo/APNs/FCM,
   deliver notifications, prove native delivery, or replace Apollo approval.
 - Records Dog ID can now share a local SVG image-source credential file beside
-  the local printable HTML credential file; PNG/PDF credential export still
-  needs native/provider generation and real iOS/Android share proof.
+  the local printable HTML credential file, and Records can generate a local Dog
+  ID PNG plus local Care Pass PDF bytes for Report History. Native iOS/Android
+  share/reopen proof and provider storage approval are still required before
+  PDF/PNG export readiness can be claimed.
 - Provider Launch Setup's Records/media storage gate now carries the Report
-  binary export proof packet for an approved Care Pass PDF generator, approved
-  Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof.
-  This is a proof requirement, not implemented PDF/PNG generation.
+  binary export proof packet for local Care Pass PDF and Dog ID PNG artifact
+  bytes, provider storage policy, native share/reopen proof, and iOS/Android
+  artifact proof.
+  The local Records route now implements the first PDF/PNG byte generation
+  path, but the packet remains blocked until native share/reopen evidence and
+  provider storage proof are attached.
 - The Release Smoke Checklist and JSON doctor now include the `smoke:runtime`
   route proof between `smoke:web` and preview handoff, so helpers can confirm
   exported routes load before they keep the preview server open for visual QA.

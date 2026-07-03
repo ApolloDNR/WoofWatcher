@@ -131,7 +131,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Open with QA return: \/care-twin-qa\?qaReturn=care-twin-qa/);
   assert.match(text, /WoofWatcherReports/);
   assert.match(text, /WoofWatcherCredentials/);
-  assert.match(text, /Generated PDF and credential PNG\/PDF export stay pending/);
+  assert.match(text, /Generated Care Pass PDF and Dog ID PNG bytes stay local-only until native share\/reopen and provider storage proof are approved/);
   assert.match(text, /Next device mission: Owner Preview Core Loop \(\/care-twin-qa\)/);
   assert.match(text, /Status: Not reviewed/);
   assert.match(text, /Missing proof: Attach 1 iOS screenshot for Owner Preview Core Loop\. Attach 1 Android screenshot/);
@@ -182,14 +182,14 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Open \/care-twin-qa on iOS and Android before sharing beta proof/);
   assert.match(text, /Attach iOS Quick Log\/Log proof and Android Launch Readiness proof/);
   assert.match(text, /Confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after provider-approved storage/);
-  assert.match(text, /Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness/);
-  assert.match(text, /Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG\/PDF export stays pending/);
+  assert.match(text, /Confirm Report History Binary proof manifest shows local Care Pass PDF and Dog ID PNG rows while native\/provider proof remains blocked/);
+  assert.match(text, /Confirm Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG\/PDF readiness still needs native\/provider proof/);
   assert.match(text, /Open focused auth\/setup target: \/care-twin-qa\?qaSurface=auth-setup-onboarding-proof/);
   assert.match(text, /Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked/);
   assert.match(text, /Open focused Records handoff target: \/care-twin-qa\?qaSurface=records-local-file-handoff/);
   assert.match(text, /Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy/);
   assert.match(text, /Open focused binary export proof target: \/care-twin-qa\?qaSurface=report-binary-export-proof/);
-  assert.match(text, /Approve Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS\/Android artifact proof before claiming PDF\/PNG readiness/);
+  assert.match(text, /Capture local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, native share\/reopen proof, and iOS\/Android artifact proof before claiming PDF\/PNG readiness/);
   assert.match(text, /Open focused care-entry provider sync target: \/care-twin-qa\?qaSurface=care-entry-provider-sync-proof/);
   assert.match(text, /Attach Supabase project id, migration\/backfill for care_entries\.updated_at and care_entry_tombstones/);
   assert.match(text, /active-household RLS cursor\/tombstone proof/);

@@ -111,11 +111,11 @@ const nextActions = [
   "Run pnpm run doctor:native-qa:json before attempting native iOS or Android proof; beta export proof still does not replace native QA.",
   "Open /care-twin-qa on a real device or simulator.",
   "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
-  "Verify Records/Care Pass Report History shows Printable HTML local file, file size, and PDF pending.",
-  "Verify Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
+  "Verify Records/Care Pass Report History shows Printable HTML local file, file size, and generated PDF/native proof still blocked.",
+  "Verify Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
   "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof and capture Auth gateway plus Setup local-preview proof while provider-backed auth and household creation stay blocked.",
   "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
-  "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
+  "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, native share/reopen proof, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
   "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture Supabase migration/backfill, active-household RLS, retention/export/deletion policy, and mobile full-refresh sign-off before enabling incremental sync.",
   "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and capture OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling before enabling live AI.",
   "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before claiming reminder delivery.",
@@ -264,6 +264,7 @@ const pushNotificationsProofPath = join(mobileRoot, "lib", "pushNotificationsPro
 const paymentsProviderProofPath = join(mobileRoot, "lib", "paymentsProviderProof.ts");
 const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
+const reportGeneratedBinaryArtifactPath = join(mobileRoot, "lib", "reportGeneratedBinaryArtifact.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const setupRoutePath = join(mobileRoot, "app", "setup.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
@@ -288,6 +289,7 @@ const pushNotificationsProofSource = existsSync(pushNotificationsProofPath) ? re
 const paymentsProviderProofSource = existsSync(paymentsProviderProofPath) ? readFileSync(paymentsProviderProofPath, "utf8") : "";
 const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
+const reportGeneratedBinaryArtifactSource = existsSync(reportGeneratedBinaryArtifactPath) ? readFileSync(reportGeneratedBinaryArtifactPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const setupRouteSource = existsSync(setupRoutePath) ? readFileSync(setupRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
@@ -305,8 +307,8 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
   "Required beta proof after export:",
   "Native QA Needs tune fix brief:",
-  "Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
-  "Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
+  "Confirm Report History Binary proof manifest shows local Care Pass PDF and Dog ID PNG rows while native/provider proof remains blocked.",
+  "Confirm Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
   "Open focused auth/setup target: /care-twin-qa?qaSurface=auth-setup-onboarding-proof.",
   "Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked.",
   "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
@@ -366,7 +368,7 @@ const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeCheckl
   "Android content URI",
   "fallback copy",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
-  "Generated PDF and credential PNG/PDF export stay pending",
+  "Generated Care Pass PDF and Dog ID PNG bytes stay local-only until native share/reopen and provider storage proof are approved.",
   "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
 ])
   && includesAll(betaHandoffPacketSource, [
@@ -933,8 +935,8 @@ const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileRelease
 ])
   && includesAll(betaHandoffPacketSource, [
     "Confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after provider-approved storage.",
-    "Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
-    "Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
+    "Confirm Report History Binary proof manifest shows local Care Pass PDF and Dog ID PNG rows while native/provider proof remains blocked.",
+    "Confirm Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
 ])
   && includesAll(mobileLaunchQaEvidenceSource, [
     "Route loop:",
@@ -962,7 +964,7 @@ const recordsLocalFileHandoffProofIsSourceBacked = includesAll(mobileReleaseQaSo
   "WoofWatcherCredentials",
   "Android content URI",
   "fallback copy",
-  "PNG/PDF export stays pending",
+  "generated PDF/PNG proof remains separate",
 ])
   && includesAll(betaHandoffPacketSource, [
     "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
@@ -1026,6 +1028,8 @@ const recordsBinaryExportProofManifestIsSourceBacked = includesAll(reportBinaryE
     "const binaryProofManifest = buildReportBinaryExportProofManifest",
     "carePassHtmlFileName: exportView.fileName",
     "dogIdSvgFileName: credentialImageView.fileName",
+    "generatedCarePassPdf:",
+    "generatedDogIdPng:",
     "storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured",
     "binaryProofManifest.rows.map",
     "binaryProofManifest.blockers.map",
@@ -1038,24 +1042,63 @@ check(
     : "keep Records Report History wired to the binary export proof manifest before claiming generated PDF/PNG readiness",
 );
 
+const generatedBinaryArtifactExportsAreSourceBacked = includesAll(reportGeneratedBinaryArtifactSource, [
+  "buildCarePassPdfArtifactSource",
+  "buildDogIdPngArtifactSource",
+  "buildGeneratedBinaryArtifactFilePlan",
+  "buildGeneratedBinaryArtifactShareContent",
+  "application/pdf",
+  "image/png",
+  "base64",
+  "Native share/reopen proof still required",
+  "provider storage is not enabled",
+])
+  && includesAll(reportBinaryExportProofSource, [
+    "generatedCarePassPdf",
+    "generatedDogIdPng",
+    "Local PDF generated",
+    "Local PNG generated",
+    "native share and reopen proof still required",
+  ])
+  && includesAll(recordsRouteSource, [
+    "buildCarePassPdfArtifactSource",
+    "buildDogIdPngArtifactSource",
+    "buildGeneratedBinaryArtifactFilePlan",
+    "buildGeneratedBinaryArtifactShareContent",
+    "FileSystem.EncodingType.Base64",
+    "shareGeneratedCarePassPdfArtifact",
+    "shareCredentialPngArtifact",
+    "Share generated Care Pass PDF",
+    "Share generated Dog ID PNG",
+    "generatedCarePassPdf:",
+    "generatedDogIdPng:",
+  ]);
+check(
+  "generated binary artifact exports are source-backed",
+  generatedBinaryArtifactExportsAreSourceBacked,
+  generatedBinaryArtifactExportsAreSourceBacked
+    ? "Records can generate local Care Pass PDF and Dog ID PNG bytes while keeping native share/reopen and provider storage proof blocked"
+    : "keep reportGeneratedBinaryArtifact.ts wired through Records PDF/PNG actions and the binary proof manifest",
+);
+
 const reportBinaryExportProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "report-binary-export-proof",
   "Report Binary Export Proof",
-  "Care Pass PDF generator",
-  "Dog ID PNG renderer",
+  "local Care Pass PDF and Dog ID PNG bytes",
+  "native share/reopen behavior",
   "Provider Launch Setup",
   "file name, file size, MIME proof",
   "HTML-only fallback",
 ])
   && includesAll(betaHandoffPacketSource, [
     "Open focused binary export proof target: /care-twin-qa?qaSurface=report-binary-export-proof.",
-    "Approve Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
+    "Capture local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, native share/reopen proof, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused binary export proof target",
     "/care-twin-qa?qaSurface=report-binary-export-proof",
-    "approved Care Pass PDF generator",
-    "approved Dog ID PNG renderer",
+    "iOS/Android artifact proof",
+    "share/reopen proof",
   ]);
 check(
   "report binary export proof target is source-backed",

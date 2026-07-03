@@ -100,6 +100,24 @@ Latest local evidence, 2026-06-23:
 - Store submission screenshot QA surfaces derived from the Store Submission packet, including iOS/Android evidence slots, route targets, store-safe prompts, launch-risk copy, and `/care-twin-qa` wiring.
 - CI `build:ci` runs a mobile Expo web export smoke and verifies emitted HTML/JavaScript assets.
 
+## Records Binary Artifact Proof
+
+Current evidence, 2026-07-03: `reportGeneratedBinaryArtifact.ts` creates local
+base64 Care Pass PDF bytes and Dog ID PNG bytes without provider storage.
+Records wires those artifacts into Report History PDF actions and the Dog ID PNG
+action, writes them through Expo FileSystem when a document directory exists,
+and falls back to share-safe text when local file writing is unavailable.
+
+Current evidence, 2026-07-03: `buildReportBinaryExportProofManifest` can show
+`Local PDF generated` and `Local PNG generated` with file name, MIME type, and
+byte size, but it still keeps the manifest blocked until native iOS/Android
+share/reopen proof and provider storage evidence are attached.
+
+Current evidence, 2026-07-03: `mobileReadiness.test.ts` and
+`scripts/mobile-beta-doctor.mjs` guard `generated binary artifact exports are
+source-backed`, so local PDF/PNG generation cannot drift back to HTML/SVG-only
+fallbacks while native/provider proof remains open.
+
 ## Manual Mobile QA
 
 1. Sign up/sign in.
@@ -1360,7 +1378,7 @@ Latest local evidence, 2026-07-03:
 - Share Beta Handoff now embeds the checklist, including the static
   `preview:smoke` proof command, the `/care-twin-qa` QA-return route, Care Pass
   Report History `Printable HTML local file`/`PDF pending` copy, Dog ID
-  `local HTML credential file`/`SVG image source`/`PNG/PDF export stays pending`
+  `local HTML credential file`/`SVG image source`/`generated PDF/PNG proof remains separate`
   copy, and the
   care-entry provider sync proof packet.
 - `/care-twin-qa?qaSurface=records-local-file-handoff` is now the focused
@@ -1403,15 +1421,16 @@ Latest local evidence, 2026-07-03:
   `proofRequired` and `proofChecklist`, and Share Provider Plan text carries the
   same requirements for Apollo/Replit handoff.
 - The Release Smoke Checklist and JSON mobile beta doctor verify the packet is
-  source-backed without claiming PDF/PNG generation is implemented.
+  source-backed while keeping local PDF/PNG generation separate from native and
+  provider readiness.
 - Records Report History now renders a `Binary proof manifest` for each saved
   Care Pass artifact. Confirm it names the current Care Pass HTML source, Dog ID
   SVG source, provider storage state, and iOS/Android evidence blockers before
   any helper claims generated PDF/PNG readiness.
 - `/care-twin-qa?qaSurface=report-binary-export-proof` now gives the packet a
-  focused native QA target that must collect approved generator choices,
-  generated PDF/PNG file name, file size, MIME, share/reopen proof, provider
-  storage policy, and iOS/Android artifact evidence before binary readiness.
+  focused native QA target that must collect local PDF/PNG file name, file size,
+  MIME, share/reopen proof, provider storage policy, and iOS/Android artifact
+  evidence before binary readiness.
 - Red/green proof first failed on the missing helper/provider/checklist/doctor
   wiring, then passed focused report/provider/smoke/readiness tests `120/120`.
 - Fresh local verification also passed the broader API/mobile/PWA/care-domain

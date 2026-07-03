@@ -84,6 +84,13 @@ import {
   buildReportArtifactShareContent,
   type ReportArtifactPrintableSource,
 } from "@/lib/reportArtifactExportFile";
+import {
+  buildCarePassPdfArtifactSource,
+  buildDogIdPngArtifactSource,
+  buildGeneratedBinaryArtifactFilePlan,
+  buildGeneratedBinaryArtifactShareContent,
+  type GeneratedBinaryArtifactSource,
+} from "@/lib/reportGeneratedBinaryArtifact";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
 
@@ -403,6 +410,33 @@ export default function RecordsScreen() {
     [state.profile, state.caregivers, state.records],
   );
   const credentialImageView = useMemo(() => getPetCredentialImageView(credential), [credential]);
+  const credentialPngArtifactSource = useMemo(
+    () =>
+      buildDogIdPngArtifactSource({
+        fileName: credentialImageView.fileName,
+        title: `${credential.name} Dog ID`,
+        lines: [
+          `Breed: ${credential.breed}`,
+          `Weight: ${credential.weight}`,
+          `Care focus: ${credential.careFocus}`,
+          `Primary vet: ${credential.primaryVet}`,
+          `Emergency: ${credential.emergencyContact}`,
+          `Microchip: ${credential.microchip}`,
+          `Insurance: ${credential.insurance}`,
+        ],
+      }),
+    [
+      credential.breed,
+      credential.careFocus,
+      credential.emergencyContact,
+      credential.insurance,
+      credential.microchip,
+      credential.name,
+      credential.primaryVet,
+      credential.weight,
+      credentialImageView.fileName,
+    ],
+  );
 
   const openRecordForm = (kind: RecordKind = "vaccine") => {
     setRecordType(kind);
@@ -554,6 +588,51 @@ export default function RecordsScreen() {
     await shareFallback();
   };
 
+  const shareGeneratedBinaryArtifactFile = async (
+    source: GeneratedBinaryArtifactSource,
+    options: { directoryName?: string; title: string },
+  ) => {
+    const plan = buildGeneratedBinaryArtifactFilePlan(source, {
+      directoryName: options.directoryName,
+      documentDirectory: Platform.OS === "web" ? null : FileSystem.documentDirectory,
+      title: options.title,
+    });
+
+    const shareFallback = async () => {
+      const fallbackPlan = buildGeneratedBinaryArtifactFilePlan(source, {
+        directoryName: options.directoryName,
+        documentDirectory: null,
+        title: options.title,
+      });
+      const fallbackContent = buildGeneratedBinaryArtifactShareContent(fallbackPlan);
+      try {
+        await Share.share(fallbackContent);
+      } catch {
+        Alert.alert(fallbackContent.title, fallbackContent.message);
+      }
+    };
+
+    if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
+      try {
+        await FileSystem.makeDirectoryAsync(plan.directoryUri, { intermediates: true });
+        await FileSystem.writeAsStringAsync(plan.fileUri, plan.contentBase64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const shareUri =
+          Platform.OS === "android"
+            ? await FileSystem.getContentUriAsync(plan.fileUri).catch(() => plan.fileUri)
+            : plan.fileUri;
+        await Share.share(buildGeneratedBinaryArtifactShareContent(plan, { shareUri }));
+        return;
+      } catch {
+        await shareFallback();
+        return;
+      }
+    }
+
+    await shareFallback();
+  };
+
   const sharePrintableCredential = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const printable = getPetCredentialPrintView(credential);
@@ -580,6 +659,14 @@ export default function RecordsScreen() {
         title: `${credential.name} Dog ID`,
       },
     );
+  };
+
+  const shareCredentialPngArtifact = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await shareGeneratedBinaryArtifactFile(credentialPngArtifactSource, {
+      directoryName: "WoofWatcherCredentials",
+      title: `${credential.name} Dog ID`,
+    });
   };
 
   const buildCarePassFor = (audience: CarePassAudience) =>
@@ -647,6 +734,21 @@ export default function RecordsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const printable = getCarePassArtifactPrintView(artifact);
     await sharePrintableSourceFile(printable, { title: artifact.title });
+  };
+
+  const shareGeneratedCarePassPdfArtifact = async (artifact: CarePassArtifact) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const printable = getCarePassArtifactPrintView(artifact);
+    const source = buildCarePassPdfArtifactSource({
+      fileName: printable.fileName,
+      title: artifact.title,
+      summary: artifact.summary,
+      message: artifact.message,
+    });
+    await shareGeneratedBinaryArtifactFile(source, {
+      directoryName: "WoofWatcherReports",
+      title: artifact.title,
+    });
   };
 
   const openRecordsFileProofMission = () => {
@@ -1038,6 +1140,16 @@ export default function RecordsScreen() {
                 >
                   <Ionicons name="image-outline" size={15} color={colors.copper} />
                   <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>SVG</Text>
+                </Pressable>
+                <Pressable
+                  onPress={shareCredentialPngArtifact}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share generated Dog ID PNG"
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  style={s.shareInline}
+                >
+                  <Ionicons name="download-outline" size={15} color={colors.copper} />
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>PNG</Text>
                 </Pressable>
               </View>
             }
@@ -2200,9 +2312,26 @@ export default function RecordsScreen() {
                 const exportView = describeCarePassArtifactExport(artifact, {
                   storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
                 });
+                const printable = getCarePassArtifactPrintView(artifact);
+                const generatedCarePassPdf = buildCarePassPdfArtifactSource({
+                  fileName: printable.fileName,
+                  title: artifact.title,
+                  summary: artifact.summary,
+                  message: artifact.message,
+                });
                 const binaryProofManifest = buildReportBinaryExportProofManifest({
                   carePassHtmlFileName: exportView.fileName,
                   dogIdSvgFileName: credentialImageView.fileName,
+                  generatedCarePassPdf: {
+                    fileName: generatedCarePassPdf.fileName,
+                    mimeType: generatedCarePassPdf.mimeType,
+                    byteSize: generatedCarePassPdf.byteSize,
+                  },
+                  generatedDogIdPng: {
+                    fileName: credentialPngArtifactSource.fileName,
+                    mimeType: credentialPngArtifactSource.mimeType,
+                    byteSize: credentialPngArtifactSource.byteSize,
+                  },
                   storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
                   pdfGeneratorApproved: false,
                   pngRendererApproved: false,
@@ -2233,6 +2362,9 @@ export default function RecordsScreen() {
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                         {exportView.formatLabel} local file - PDF pending
+                      </Text>
+                      <Text numberOfLines={1} style={[s.rowMeta, { color: colors.sage, fontFamily: "Inter_600SemiBold" }]}>
+                        Generated PDF local file - native proof pending
                       </Text>
                       <View style={s.artifactStorageRow}>
                         <View
@@ -2351,6 +2483,18 @@ export default function RecordsScreen() {
                           ]}
                         >
                           <Ionicons name="print-outline" size={15} color={colors.copper} />
+                        </Pressable>
+                        <Pressable
+                          onPress={() => shareGeneratedCarePassPdfArtifact(artifact)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Share generated Care Pass PDF for ${artifact.title}`}
+                          hitSlop={MOBILE_INLINE_HIT_SLOP}
+                          style={({ pressed }) => [
+                            s.artifactIconButton,
+                            { backgroundColor: colors.sage + "14", opacity: pressed ? 0.75 : 1 },
+                          ]}
+                        >
+                          <Ionicons name="download-outline" size={15} color={colors.sage} />
                         </Pressable>
                         <Pressable
                           onPress={openReportBinaryExportProofMission}

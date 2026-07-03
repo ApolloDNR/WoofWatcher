@@ -222,7 +222,7 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Care Pass Report History",
             detail:
-              "Confirm WoofWatcherReports contains the Printable HTML local file, file size, and PDF pending copy.",
+              "Confirm WoofWatcherReports contains the Printable HTML local file and that Binary proof manifest rows show local PDF/PNG generation with native/provider proof blocked.",
             proof:
               "Attach iOS or Android proof that Report History says Saved on this device, or Ready to upload only after provider-approved storage, before handoff.",
             status: "required",
@@ -230,7 +230,7 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Dog ID credential",
             detail:
-              "Confirm WoofWatcherCredentials contains the local HTML credential file and SVG image source while PNG/PDF export stays pending.",
+              "Confirm WoofWatcherCredentials contains the local HTML credential file and SVG image source, then use Report Binary Export Proof for generated PNG/native proof.",
             proof: "Attach share-sheet or saved-file proof from a native runtime.",
             status: "required",
           },
@@ -253,9 +253,9 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Focused binary export proof target",
             detail:
-              "Open /care-twin-qa?qaSurface=report-binary-export-proof and confirm approved Care Pass PDF generator, approved Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before binary readiness.",
+              "Open /care-twin-qa?qaSurface=report-binary-export-proof and confirm local Care Pass PDF bytes, local Dog ID PNG bytes, native share/reopen proof, provider storage policy, and iOS/Android artifact proof before binary readiness.",
             proof:
-              "Attach generator choices, file name, file size, MIME proof, share/reopen proof, and storage policy evidence before claiming PDF/PNG readiness.",
+              "Attach file name, file size, MIME proof, share/reopen proof, and storage policy evidence before claiming PDF/PNG readiness.",
             status: "required",
           },
           {
@@ -352,7 +352,7 @@ export function buildMobileReleaseSmokeChecklist(
     truthBoundaries: [
       "This smoke checklist does not approve App Store or Play Store submission.",
       "This smoke checklist does not prove provider-backed storage, sync, AI, payments, or push.",
-      "Generated PDF and credential PNG/PDF export stay pending until native/provider export work is approved.",
+      "Generated Care Pass PDF and Dog ID PNG bytes stay local-only until native share/reopen and provider storage proof are approved.",
       "Apollo launch sign-off remains separate from dependency, route, and QA proof.",
     ],
     doneCondition:

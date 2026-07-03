@@ -63,3 +63,36 @@ test("builds an artifact-specific binary export readiness manifest without claim
   assert.ok(manifest.blockers.some((blocker) => /Provider storage/i.test(blocker)));
   assert.ok(manifest.blockers.some((blocker) => /iOS and Android/i.test(blocker)));
 });
+
+test("shows generated local binary artifacts while keeping native and provider proof blocked", () => {
+  const manifest = buildReportBinaryExportProofManifest({
+    carePassHtmlFileName: "phoenix-vet-care-pass-2026-06-08.html",
+    dogIdSvgFileName: "phoenix-dog-id-2026-06-08.svg",
+    generatedCarePassPdf: {
+      fileName: "phoenix-vet-care-pass-2026-06-08.pdf",
+      mimeType: "application/pdf",
+      byteSize: 2048,
+    },
+    generatedDogIdPng: {
+      fileName: "phoenix-dog-id-2026-06-08.png",
+      mimeType: "image/png",
+      byteSize: 4096,
+    },
+    storageProviderConfigured: false,
+    pdfGeneratorApproved: false,
+    pngRendererApproved: false,
+    nativeArtifactEvidenceApproved: false,
+  });
+
+  assert.equal(manifest.status, "blocked");
+  assert.equal(manifest.rows[0]?.value, "Local PDF generated");
+  assert.match(manifest.rows[0]?.detail ?? "", /2048 bytes/);
+  assert.match(manifest.rows[0]?.detail ?? "", /native share and reopen proof still required/i);
+  assert.equal(manifest.rows[1]?.value, "Local PNG generated");
+  assert.match(manifest.rows[1]?.detail ?? "", /4096 bytes/);
+  assert.match(manifest.rows[1]?.detail ?? "", /provider storage proof still pending/i);
+  assert.ok(!manifest.blockers.some((blocker) => /PDF generator needs/i.test(blocker)));
+  assert.ok(!manifest.blockers.some((blocker) => /PNG renderer needs/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /Provider storage/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /iOS and Android/i.test(blocker)));
+});
