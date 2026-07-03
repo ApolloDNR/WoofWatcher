@@ -333,6 +333,18 @@ attached; even when provider-backed preferences are marked eligible, delivery
 still needs native notification QA and delivered-notification evidence before
 launch.
 
+The Reminder Center local preference persistence pass turns that read-only
+boundary into saved product behavior without enabling delivery. The care
+document now stores `reminderNotificationPreferences` with push preference
+intent, permission status, quiet-hours start/end, opt-out state, and update
+time; Calendar can save "allow after provider setup", "opt out", and "save
+quiet hours" actions into that object; `buildReminderNotificationPreferencesForCenter`
+only marks provider delivery configured when Provider Launch Setup has push
+notifications configured and provider-approved; and privacy export bundles carry
+the saved preference state. This closes the local preference-persistence slice,
+not Expo/APNs/FCM setup, device permission proof, delivered-notification QA, or
+store/privacy approval.
+
 The two-day beta QA cockpit pass made device capture less fragile. `/care-twin-qa`
 now tags attached screenshot evidence explicitly as iOS, Android, or Web instead
 of relying on the runtime platform, and target routes opened from the cockpit

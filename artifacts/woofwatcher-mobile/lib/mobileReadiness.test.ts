@@ -3985,6 +3985,12 @@ test("keeps Reminder Center visible in Calendar before push notifications are en
   assert.match(calendar, /notificationPreferenceSummary/);
   assert.match(calendar, /notificationQuietHours/);
   assert.match(calendar, /notificationOptOut/);
+  assert.match(calendar, /buildReminderNotificationPreferencesForCenter/);
+  assert.match(calendar, /reminderNotificationPreferences/);
+  assert.match(calendar, /saveReminderNotificationPreferences/);
+  assert.match(calendar, /Save quiet hours/);
+  assert.match(calendar, /Opt out/);
+  assert.match(calendar, /Allow reminders after provider setup/);
   assert.match(calendar, /reminderCount/);
 });
 

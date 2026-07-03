@@ -260,10 +260,11 @@ Current environment note:
   configuration or native delivery evidence by itself.
 - Reminder Center now surfaces the same launch boundary in-product: provider
   configuration status, permission readiness, quiet-hours policy, and opt-out
-  copy stay visible in Calendar before push delivery is enabled. This is a
-  local preference/readiness boundary only; it does not persist interactive
-  notification settings, configure Expo/APNs/FCM, deliver notifications, or
-  replace native delivery proof.
+  copy stay visible in Calendar before push delivery is enabled. Calendar can
+  now save local push preference intent, a 9:00 PM-7:00 AM quiet-hours window,
+  and opt-out state into the care document and privacy export. This is still a
+  local preference/readiness boundary only; it does not configure Expo/APNs/FCM,
+  deliver notifications, prove native delivery, or replace Apollo approval.
 - Records Dog ID can now share a local SVG image-source credential file beside
   the local printable HTML credential file; PNG/PDF credential export still
   needs native/provider generation and real iOS/Android share proof.

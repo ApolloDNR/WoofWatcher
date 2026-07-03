@@ -48,6 +48,14 @@ const state = {
     providerStatus: "owner-reviewed",
     notes: "Production provider checklist is staged for Apollo review.",
   },
+  reminderNotificationPreferences: {
+    pushEnabled: true,
+    permissionStatus: "unknown",
+    quietHoursStart: "9:00 PM",
+    quietHoursEnd: "7:00 AM",
+    optOut: false,
+    updatedAt: "2026-07-03T16:00:00.000Z",
+  },
   accessPasses: [{ id: "access_maya", holderName: "Maya", role: "Sitter", status: "draft" }],
   adventureMemories: [{ id: "memory_1", title: "Wildflower Loop", petName: "Phoenix", storageStatus: "local-draft" }],
   caregivers: [{ name: "Apollo", role: "Owner" }],
@@ -118,6 +126,7 @@ test("builds an owner export bundle with counts and care data", () => {
   assert.deepEqual(bundle.care.householdSetup, state.householdSetup);
   assert.deepEqual(bundle.care.launchSupportProfile, state.launchSupportProfile);
   assert.deepEqual(bundle.care.launchProviderProfile, state.launchProviderProfile);
+  assert.deepEqual(bundle.care.reminderNotificationPreferences, state.reminderNotificationPreferences);
   assert.equal((bundle.care.accessPasses[0] as { holderName?: string })?.holderName, "Maya");
   assert.equal((bundle.care.adventureMemories[0] as { title?: string })?.title, "Wildflower Loop");
   assert.equal(bundle.care.entries[0]?.id, "meal_1");

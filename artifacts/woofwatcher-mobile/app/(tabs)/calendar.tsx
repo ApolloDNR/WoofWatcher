@@ -36,6 +36,10 @@ import { parseLocalDate } from "@/lib/time";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import {
+  applyReminderNotificationPreferenceDraft,
+  buildReminderNotificationPreferencesForCenter,
+} from "@/lib/reminderNotificationPreferences";
+import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -177,7 +181,16 @@ export default function CalendarScreen() {
   const { state, updateCareDoc, addEntry, deleteEntry } = useCare();
 
   const { getToken } = useWoofAuth();
-  const { routines, calendarEvents, profile, entries, caregivers, records } = state;
+  const {
+    routines,
+    calendarEvents,
+    profile,
+    entries,
+    caregivers,
+    records,
+    launchProviderProfile,
+    reminderNotificationPreferences,
+  } = state;
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -261,9 +274,21 @@ export default function CalendarScreen() {
     () => deriveHouseholdResponsibility({ routines: sortedRoutines, entries, caregivers, now }),
     [sortedRoutines, entries, caregivers, now],
   );
+  const reminderNotificationPreferenceInput = useMemo(
+    () => buildReminderNotificationPreferencesForCenter(launchProviderProfile, reminderNotificationPreferences),
+    [launchProviderProfile, reminderNotificationPreferences],
+  );
   const careReminderCenter = useMemo(
-    () => deriveCareReminderCenter({ routines: sortedRoutines, entries, records, caregivers, now, limit: 4 }),
-    [sortedRoutines, entries, records, caregivers, now],
+    () => deriveCareReminderCenter({
+      routines: sortedRoutines,
+      entries,
+      records,
+      caregivers,
+      notificationPreferences: reminderNotificationPreferenceInput,
+      now,
+      limit: 4,
+    }),
+    [sortedRoutines, entries, records, caregivers, reminderNotificationPreferenceInput, now],
   );
   const reminderCount = careReminderCenter.total;
   const reminderTone =
@@ -376,6 +401,14 @@ export default function CalendarScreen() {
       owner: routine.owner,
       note: routine.note ?? "",
     });
+  };
+
+  const saveReminderNotificationPreferences = (
+    draft: Parameters<typeof applyReminderNotificationPreferenceDraft>[1],
+  ) => {
+    Haptics.selectionAsync();
+    const savedAt = new Date().toISOString();
+    updateCareDoc((doc) => applyReminderNotificationPreferenceDraft(doc, draft, savedAt));
   };
 
   const openReminderLogDetailRoute = (type: string) => {
@@ -1119,6 +1152,53 @@ export default function CalendarScreen() {
               </Text>
               <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 {careReminderCenter.notificationOptOut}
+              </Text>
+              <View style={s.reminderPreferenceActions}>
+                <Pressable
+                  onPress={() => saveReminderNotificationPreferences({ pushEnabled: true, optOut: false })}
+                  accessibilityRole="button"
+                  accessibilityLabel="Allow reminders after provider setup"
+                  style={({ pressed }) => [
+                    s.reminderPreferenceButton,
+                    { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+                  ]}
+                >
+                  <Ionicons name="notifications-outline" size={15} color={colors.primary} />
+                  <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Allow reminders after provider setup
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => saveReminderNotificationPreferences({ optOut: true })}
+                  accessibilityRole="button"
+                  accessibilityLabel="Opt out of push reminders"
+                  style={({ pressed }) => [
+                    s.reminderPreferenceButton,
+                    { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+                  ]}
+                >
+                  <Ionicons name="notifications-off-outline" size={15} color={colors.rose} />
+                  <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Opt out
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => saveReminderNotificationPreferences({ quietHoursStart: "9:00 PM", quietHoursEnd: "7:00 AM" })}
+                  accessibilityRole="button"
+                  accessibilityLabel="Save quiet hours from 9:00 PM to 7:00 AM"
+                  style={({ pressed }) => [
+                    s.reminderPreferenceButton,
+                    { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+                  ]}
+                >
+                  <Ionicons name="moon-outline" size={15} color={colors.amber} />
+                  <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Save quiet hours
+                  </Text>
+                </Pressable>
+              </View>
+              <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Saved locally; delivery still needs provider proof and native notification QA.
               </Text>
             </View>
           </BoardCard>
@@ -1887,6 +1967,20 @@ const s = StyleSheet.create({
   reminderNotificationPanel: { borderRadius: 13, borderWidth: 1, padding: 11, marginTop: 10, gap: 5 },
   reminderNotificationTitle: { fontSize: 12.5, lineHeight: 17 },
   reminderNotificationText: { fontSize: 11.5, lineHeight: 16 },
+  reminderPreferenceActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 7 },
+  reminderPreferenceButton: {
+    flexGrow: 1,
+    flexBasis: "46%",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  reminderPreferenceButtonText: { flex: 1, fontSize: 11.5, lineHeight: 15 },
   reminderEmpty: { flexDirection: "row", alignItems: "center", gap: 9, borderRadius: 14, padding: 12, marginTop: 12 },
   reminderEmptyText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
 

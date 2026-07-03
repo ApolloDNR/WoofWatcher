@@ -49,6 +49,7 @@ export interface PrivacyExportState {
   householdSetup?: unknown;
   launchSupportProfile?: unknown;
   launchProviderProfile?: unknown;
+  reminderNotificationPreferences?: unknown;
   accessPasses?: readonly unknown[];
   adventureMemories?: readonly unknown[];
   caregivers?: readonly unknown[];
@@ -105,6 +106,7 @@ export interface PrivacyExportBundle {
     householdSetup: unknown | null;
     launchSupportProfile: unknown | null;
     launchProviderProfile: unknown | null;
+    reminderNotificationPreferences: unknown | null;
     accessPasses: readonly unknown[];
     adventureMemories: readonly unknown[];
     caregivers: readonly unknown[];
@@ -234,6 +236,7 @@ export function buildPrivacyExportBundle(
       householdSetup: state.householdSetup ?? null,
       launchSupportProfile: state.launchSupportProfile ?? null,
       launchProviderProfile: state.launchProviderProfile ?? null,
+      reminderNotificationPreferences: state.reminderNotificationPreferences ?? null,
       accessPasses,
       adventureMemories,
       caregivers,

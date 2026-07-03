@@ -34,6 +34,10 @@ import {
 } from "@/lib/careSync";
 import type { AccessPass, AdventureMemory, CarePassArtifact } from "@workspace/care-domain";
 import { useWoofAuth } from "@/lib/auth";
+import {
+  normalizeReminderNotificationPreferences,
+  type ReminderNotificationPreferences,
+} from "@/lib/reminderNotificationPreferences";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
 
@@ -198,6 +202,7 @@ export interface CareDoc {
   householdSetup: HouseholdSetup;
   launchSupportProfile: LaunchSupportProfile;
   launchProviderProfile: LaunchProviderProfile;
+  reminderNotificationPreferences: ReminderNotificationPreferences;
   dietProfile: DietProfile;
   routines: Routine[];
   goals: Goal[];
@@ -268,6 +273,7 @@ function getDefaultDoc(): CareDoc {
       providerStatus: "local-draft",
       notes: "",
     },
+    reminderNotificationPreferences: normalizeReminderNotificationPreferences(null),
     dietProfile: {
       primaryFood: "",
       normalPortion: "",
@@ -349,6 +355,7 @@ function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
           : "local-draft",
       notes: typeof launchProviderProfile.notes === "string" ? launchProviderProfile.notes : "",
     },
+    reminderNotificationPreferences: normalizeReminderNotificationPreferences(merged.reminderNotificationPreferences),
   };
 }
 
@@ -802,6 +809,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       householdSetup: doc.householdSetup,
       launchSupportProfile: doc.launchSupportProfile,
       launchProviderProfile: doc.launchProviderProfile,
+      reminderNotificationPreferences: doc.reminderNotificationPreferences,
       dietProfile: doc.dietProfile,
       routines: doc.routines,
       goals: doc.goals,
