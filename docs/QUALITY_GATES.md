@@ -256,6 +256,8 @@ Current evidence, 2026-06-19: Adventure Mode strengthens the emotional retention
 
 Current evidence, 2026-06-11: Reminder Center strengthens the Plus/Family reminders wedge by making existing routine, medication, record, and grooming follow-up candidates visible in Calendar without enabling checkout, push notifications, or automatic care writes.
 
+Current evidence, 2026-07-03: The Push notifications proof manifest strengthens the reminder-delivery launch gate by making Expo push project config, APNs credentials, Firebase/FCM credentials, permission copy, quiet-hours/opt-out behavior, and delivery QA visible on `/care-twin-qa?qaSurface=push-notifications-proof` while keeping `Reminder delivery allowed: No` until real provider proof and native delivery evidence are attached.
+
 Current evidence, 2026-06-11: Full Log search strengthens the paid history/trust wedge by making rich care evidence findable across notes, caregivers, routes, medication details, and sticky notes before server search indexes or long-history retention policy exist.
 
 Current evidence, 2026-06-11: Medication History search/filter strengthens the paid health-history wedge by making dose and adherence evidence findable inside Records before provider-backed medication reports or server search exist.

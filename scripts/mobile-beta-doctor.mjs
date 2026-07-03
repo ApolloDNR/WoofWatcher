@@ -1284,6 +1284,31 @@ check(
     : "keep push notifications proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
 );
 
+const pushNotificationsProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
+  "buildPushNotificationsProofManifest",
+  "pushNotificationsProofManifest",
+  "Push notifications proof manifest",
+  "Reminder delivery allowed",
+  "Reminder Center must stay local",
+  "pushNotificationsProofManifest.items.map",
+  "pushNotificationsProofManifest.blockers.map",
+])
+  && includesAll(pushNotificationsProofSource, [
+    "buildPushNotificationsProofManifest",
+    "reminderDeliveryAllowed",
+    "Expo/APNs/FCM credentials",
+    "permission copy",
+    "quiet-hours opt-out behavior",
+    "delivery QA proof",
+  ]);
+check(
+  "push notifications proof manifest is source-backed",
+  pushNotificationsProofManifestIsSourceBacked,
+  pushNotificationsProofManifestIsSourceBacked
+    ? "Push notifications proof manifest is visible on the focused QA route while keeping Reminder Center local until provider delivery proof is attached"
+    : "render the push notifications proof manifest on /care-twin-qa?qaSurface=push-notifications-proof with Expo/APNs/FCM, permission, quiet-hours, and delivery QA boundaries",
+);
+
 const paymentsProviderProofTargetIsSourceBacked = includesAll(paymentsProviderProofSource, [
   "PAYMENTS_PROVIDER_PROOF_SUMMARY",
   "PAYMENTS_PROVIDER_PROOF_ITEMS",

@@ -3,6 +3,35 @@ export interface PushNotificationsProofItem {
   requiredEvidence: string;
 }
 
+export type PushNotificationsProofStatus = "blocked" | "ready-for-review";
+
+export interface PushNotificationsProofEvidence {
+  expoPushProjectConfig?: string | null;
+  appleApnsCredentials?: string | null;
+  firebaseFcmCredentials?: string | null;
+  permissionPromptPreferenceCopy?: string | null;
+  quietHoursOptOutBehavior?: string | null;
+  reminderDeliveryQaFallback?: string | null;
+}
+
+export interface PushNotificationsProofManifestItem extends PushNotificationsProofItem {
+  status: "blocked" | "ready";
+  evidenceAttached: readonly string[];
+}
+
+export interface PushNotificationsProofManifest {
+  title: "Push notifications proof manifest";
+  status: PushNotificationsProofStatus;
+  statusLabel: string;
+  summary: string;
+  readyCount: number;
+  openCount: number;
+  totalCount: number;
+  reminderDeliveryAllowed: boolean;
+  items: PushNotificationsProofManifestItem[];
+  blockers: string[];
+}
+
 export const PUSH_NOTIFICATIONS_PROOF_ITEMS: readonly PushNotificationsProofItem[] = [
   {
     label: "Expo push project config",
@@ -38,3 +67,49 @@ export const PUSH_NOTIFICATIONS_PROOF_ITEMS: readonly PushNotificationsProofItem
 
 export const PUSH_NOTIFICATIONS_PROOF_SUMMARY =
   "Push notifications proof packet: Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, and delivery QA before reminder delivery can be claimed.";
+
+const PUSH_NOTIFICATIONS_PROOF_EVIDENCE_KEYS: readonly (keyof PushNotificationsProofEvidence)[] = [
+  "expoPushProjectConfig",
+  "appleApnsCredentials",
+  "firebaseFcmCredentials",
+  "permissionPromptPreferenceCopy",
+  "quietHoursOptOutBehavior",
+  "reminderDeliveryQaFallback",
+];
+
+function clean(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function buildPushNotificationsProofManifest(
+  input: PushNotificationsProofEvidence | null | undefined,
+): PushNotificationsProofManifest {
+  const evidence = input ?? {};
+  const items = PUSH_NOTIFICATIONS_PROOF_ITEMS.map<PushNotificationsProofManifestItem>((item, index) => {
+    const attached = clean(evidence[PUSH_NOTIFICATIONS_PROOF_EVIDENCE_KEYS[index]]);
+    return {
+      ...item,
+      status: attached ? "ready" : "blocked",
+      evidenceAttached: attached ? [attached] : [],
+    };
+  });
+  const readyCount = items.filter((item) => item.status === "ready").length;
+  const totalCount = items.length;
+  const openCount = totalCount - readyCount;
+  const reminderDeliveryAllowed = openCount === 0;
+
+  return {
+    title: "Push notifications proof manifest",
+    status: reminderDeliveryAllowed ? "ready-for-review" : "blocked",
+    statusLabel: reminderDeliveryAllowed ? "Ready for notification provider review" : "Reminder delivery blocked",
+    summary: reminderDeliveryAllowed
+      ? "All push notification provider proof is attached for review before reminder delivery can be enabled."
+      : "Reminder Center must stay local until Expo/APNs/FCM credentials, permission copy, quiet-hours opt-out behavior, and delivery QA proof are attached.",
+    readyCount,
+    openCount,
+    totalCount,
+    reminderDeliveryAllowed,
+    items,
+    blockers: items.filter((item) => item.status === "blocked").map((item) => `${item.label}: ${item.requiredEvidence}`),
+  };
+}

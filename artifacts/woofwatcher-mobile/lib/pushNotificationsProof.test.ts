@@ -77,3 +77,25 @@ test("defines the push notifications proof packet before reminder delivery can b
     ),
   );
 });
+
+test("builds a blocked push notifications proof manifest before reminder delivery can be claimed", async () => {
+  const mod = await import("./pushNotificationsProof.ts").catch(() => null);
+  assert.ok(mod, "pushNotificationsProof module should exist");
+
+  const manifest = mod.buildPushNotificationsProofManifest({});
+
+  assert.equal(manifest.title, "Push notifications proof manifest");
+  assert.equal(manifest.status, "blocked");
+  assert.equal(manifest.statusLabel, "Reminder delivery blocked");
+  assert.equal(manifest.reminderDeliveryAllowed, false);
+  assert.equal(manifest.readyCount, 0);
+  assert.equal(manifest.openCount, 6);
+  assert.match(manifest.summary, /Reminder Center must stay local/);
+  assert.match(manifest.summary, /Expo\/APNs\/FCM/);
+  assert.ok(manifest.items.every((item) => item.status === "blocked"));
+  assert.ok(manifest.blockers.some((blocker) => /Expo push project id/.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /APNs credentials/.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /Firebase\/FCM credentials/.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /quiet hours/.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /missed notification fallback/.test(blocker)));
+});

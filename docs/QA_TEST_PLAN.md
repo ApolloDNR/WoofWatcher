@@ -1417,6 +1417,34 @@ Latest local evidence, 2026-07-03:
   allow automatic care-log writes, replace citation/source review, clear
   veterinary safety approval, or replace Apollo sign-off.
 
+## Push Notifications Provider Proof Manifest
+
+Latest local evidence, 2026-07-03:
+
+- `/care-twin-qa?qaSurface=push-notifications-proof` now renders a focused Push
+  notifications proof manifest using `buildPushNotificationsProofManifest`.
+- The manifest shows proof progress, `Reminder delivery allowed: No`, every
+  Expo push project config, APNs credentials, Firebase/FCM credentials,
+  permission prompt/preference copy, quiet-hours/opt-out, and reminder delivery
+  QA row, plus blockers and the local Reminder Center boundary before push
+  reminder delivery can be claimed.
+- Red/green proof first failed because `buildPushNotificationsProofManifest`
+  did not exist.
+- Focused proof now passes `pushNotificationsProof.test.ts` and
+  `mobileReleaseQa.test.ts` with `27/27` tests, plus the focused care-twin QA
+  route and machine-readable doctor readiness run with `114/114` tests. The
+  broader zero-dependency API/mobile/PWA/care-domain suite passes `554/554`,
+  root TypeScript passes, and mobile TypeScript passes.
+- Direct JSON mobile beta doctor reports `push notifications proof manifest is
+  source-backed` as `PASS` while remaining blocked only on local
+  pnpm/Corepack. Direct JSON native QA tooling doctor remains blocked because
+  this Windows shell lacks Android `adb`, Android `emulator`, Java,
+  `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+- This clears only source-backed helper visibility for the push notifications
+  proof packet. It does not configure Expo push, APNs, Firebase/FCM, prove iOS
+  or Android delivery, approve prompt/legal copy, enable reminders, or replace
+  Apollo sign-off.
+
 ## Release Smoke Checklist Handoff
 
 Latest local evidence, 2026-07-03:

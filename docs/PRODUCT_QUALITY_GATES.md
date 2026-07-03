@@ -150,6 +150,7 @@ Passing evidence:
 - Local mobile readiness proof now protects the full-refresh boundary for care entries until provider migration/RLS, retention policy, and mobile incremental adoption are verified against the server cursor/delete-tombstone contract.
 - Provider Launch Setup now exposes the exact Supabase migration/backfill, active-household RLS, retention/export/deletion, and mobile full-refresh sign-off proof needed for `care_entries.updated_at`, `care_entry_tombstones`, `/care-entries?updatedSince=`, and `/care-entries/tombstones?updatedSince=` before incremental sync can be claimed.
 - The care-entry provider sync proof packet now structures that provider gate into Supabase project, migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off evidence; the checklist appears in Provider Launch Setup, More, and Share Beta Handoff.
+- The Push notifications proof manifest now structures the reminder-delivery provider gate into Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt/preference copy, quiet-hours/opt-out behavior, and delivery QA evidence; the focused `/care-twin-qa?qaSurface=push-notifications-proof` route shows `Reminder delivery allowed: No` until real provider proof and iOS/Android delivery evidence are attached.
 - Provider Launch Setup now also carries the Report binary export proof packet under Records and media storage, requiring local Care Pass PDF and Dog ID PNG artifact bytes, provider storage policy, native share/reopen proof, and iOS/Android artifact proof before binary export readiness can be claimed.
 - `/care-twin-qa?qaSurface=report-binary-export-proof` now turns that packet into a focused launch-critical QA target for generated file name/size/MIME/share proof, provider storage policy, and iOS/Android artifact evidence.
 - Records now generates local Care Pass PDF and Dog ID PNG bytes with file name, MIME type, and byte-size metadata, and the mobile beta doctor guards `generated binary artifact exports are source-backed`; this is local artifact generation only, not native iOS/Android share/reopen approval or provider storage readiness.
@@ -162,6 +163,7 @@ Current gaps:
 
 - Local JSON mobile beta doctor still blocks in this Codex checkout because the local pnpm CLI is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
 - Need actual provider migration/RLS proof, retention/export/deletion approval, dependency-complete provider integration evidence, and native QA proof before care-entry incremental sync can replace full-refresh mobile behavior.
+- Need actual Expo/APNs/FCM configuration, notification permission/legal approval, quiet-hours/opt-out sign-off, and native iOS/Android delivery evidence before Reminder Center can claim provider-backed push delivery.
 - Need native simulator/device runtime smoke; exported web-runtime route smoke is source-backed but not native proof.
 - Critical mobile action accessibility labels are covered by focused static smoke.
 - Home avatar motion state and wiring are covered by focused tests.

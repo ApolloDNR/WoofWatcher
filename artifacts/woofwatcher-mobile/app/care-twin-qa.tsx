@@ -26,6 +26,7 @@ import {
 } from "@/lib/careTwinQaReport";
 import { deriveCareEntryProviderSyncProof } from "@/lib/careEntryProviderSyncProof";
 import { buildAiProviderProofManifest } from "@/lib/aiProviderProof";
+import { buildPushNotificationsProofManifest } from "@/lib/pushNotificationsProof";
 import {
   buildRouteVisualProofManifest,
   buildStoreSubmissionScreenshotQaSurfaces,
@@ -414,6 +415,10 @@ export default function CareTwinQaScreen() {
   );
   const woofGuideAiProviderProofManifest = useMemo(
     () => (focusedQaTarget?.surface.id === "woofguide-ai-provider-proof" ? buildAiProviderProofManifest({}) : null),
+    [focusedQaTarget],
+  );
+  const pushNotificationsProofManifest = useMemo(
+    () => (focusedQaTarget?.surface.id === "push-notifications-proof" ? buildPushNotificationsProofManifest({}) : null),
     [focusedQaTarget],
   );
   const nextBetaMission = betaCapturePlan.primaryMission;
@@ -927,6 +932,81 @@ export default function CareTwinQaScreen() {
                     ) : null}
                     <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       This manifest does not configure OpenAI, approve model policy, allow automatic care-log writes, replace veterinary safety review, or enable live AI.
+                    </Text>
+                  </View>
+                ) : null}
+                {pushNotificationsProofManifest ? (
+                  <View style={[s.routeVisualManifest, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.routeVisualManifestHeader}>
+                      <View style={s.routeVisualManifestCopy}>
+                        <Text style={[s.routeVisualManifestTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                          Push notifications proof manifest
+                        </Text>
+                        <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Reminder Center must stay local until provider credentials, consent copy, quiet hours, and delivery QA proof are attached.
+                        </Text>
+                      </View>
+                      <QaBadge
+                        label={pushNotificationsProofManifest.statusLabel}
+                        tone={pushNotificationsProofManifest.reminderDeliveryAllowed ? colors.sage : colors.amber}
+                      />
+                    </View>
+                    <View style={s.routeVisualManifestStats}>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Ready
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {pushNotificationsProofManifest.readyCount}/{pushNotificationsProofManifest.totalCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Open
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {pushNotificationsProofManifest.openCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Reminder delivery allowed
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {pushNotificationsProofManifest.reminderDeliveryAllowed ? "Yes" : "No"}
+                        </Text>
+                      </View>
+                    </View>
+                    {pushNotificationsProofManifest.items.map((item) => (
+                      <View key={`push-notifications-manifest-${item.label}`} style={[s.routeVisualManifestRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={s.routeVisualManifestRouteLine}>
+                          <Text style={[s.routeVisualManifestRouteName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {item.label}
+                          </Text>
+                          <QaBadge label={item.status === "ready" ? "Ready" : "Blocked"} tone={item.status === "ready" ? colors.sage : colors.amber} />
+                        </View>
+                        <Text style={[s.routeVisualManifestExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {item.requiredEvidence}
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatusLine, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Evidence: {item.evidenceAttached.length ? item.evidenceAttached.join(", ") : "Not attached"}
+                        </Text>
+                      </View>
+                    ))}
+                    {pushNotificationsProofManifest.blockers.length ? (
+                      <View style={[s.routeVisualManifestBlockers, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                        {pushNotificationsProofManifest.blockers.map((blocker) => (
+                          <View key={`push-notifications-blocker-${blocker}`} style={s.betaRunStep}>
+                            <View style={[s.betaRunStepDot, { backgroundColor: colors.amber }]} />
+                            <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {blocker}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      This manifest does not configure Expo push, APNs, Firebase/FCM, prove iOS or Android delivery, approve prompt/legal copy, or enable reminder notifications.
                     </Text>
                   </View>
                 ) : null}
