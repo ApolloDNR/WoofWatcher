@@ -643,6 +643,16 @@ export default function RecordsScreen() {
     await sharePrintableSourceFile(printable, { title: artifact.title });
   };
 
+  const openRecordsFileProofMission = () => {
+    Haptics.selectionAsync();
+    router.push("/care-twin-qa?qaSurface=records-local-file-handoff" as never);
+  };
+
+  const openReportBinaryExportProofMission = () => {
+    Haptics.selectionAsync();
+    router.push("/care-twin-qa?qaSurface=report-binary-export-proof" as never);
+  };
+
   // Mount animation
   const isWebRoutePreview = (Platform.OS as string) === "web";
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
@@ -790,6 +800,16 @@ export default function RecordsScreen() {
       actionLabel: "Share",
       tone: colors.primary,
       onPress: shareReport,
+    },
+    {
+      id: "proof",
+      icon: "shield-checkmark-outline",
+      eyebrow: "Native proof",
+      label: "Records file handoff",
+      detail: "Capture Care Pass local HTML, Dog ID HTML/SVG, share-sheet behavior, and fallback copy.",
+      actionLabel: "Proof",
+      tone: colors.amber,
+      onPress: openRecordsFileProofMission,
     },
   ];
 
@@ -2281,6 +2301,18 @@ export default function RecordsScreen() {
                           ]}
                         >
                           <Ionicons name="print-outline" size={15} color={colors.copper} />
+                        </Pressable>
+                        <Pressable
+                          onPress={openReportBinaryExportProofMission}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Open report binary export proof mission for ${artifact.title}`}
+                          hitSlop={MOBILE_INLINE_HIT_SLOP}
+                          style={({ pressed }) => [
+                            s.artifactIconButton,
+                            { backgroundColor: colors.amber + "14", opacity: pressed ? 0.75 : 1 },
+                          ]}
+                        >
+                          <Ionicons name="shield-checkmark-outline" size={15} color={colors.amber} />
                         </Pressable>
                       </View>
                     </View>

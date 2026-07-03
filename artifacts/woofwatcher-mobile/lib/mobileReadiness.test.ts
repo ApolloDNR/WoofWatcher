@@ -3399,6 +3399,8 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /artifactManifestGrid/);
   assert.match(records, /artifactManifestCell/);
   assert.match(records, /sharePrintableReportArtifact/);
+  assert.match(records, /openReportBinaryExportProofMission/);
+  assert.match(records, /report-binary-export-proof/);
   assert.match(records, /Print-ready/);
   assert.match(records, /storage\.label/);
   assert.match(records, /storage\.detail/);
@@ -3409,6 +3411,10 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(
     records,
     /accessibilityLabel=\{`Share local printable report source file for \$\{artifact\.title\}`\}/,
+  );
+  assert.match(
+    records,
+    /accessibilityLabel=\{`Open report binary export proof mission for \$\{artifact\.title\}`\}/,
   );
 });
 
@@ -3438,10 +3444,14 @@ test("keeps Records organized around a vault command hierarchy", () => {
   assert.match(records, /Record vault/);
   assert.match(records, /Care Pass/);
   assert.match(records, /Reports/);
+  assert.match(records, /Records file handoff/);
+  assert.match(records, /records-local-file-handoff/);
+  assert.match(records, /openRecordsFileProofMission/);
   assert.match(records, /onPress: shareCredential/);
   assert.match(records, /onPress: \(\) => openRecordForm\("document"\)/);
   assert.match(records, /onPress: \(\) => openCarePassPreview\("vet"\)/);
   assert.match(records, /onPress: shareReport/);
+  assert.match(records, /onPress: openRecordsFileProofMission/);
   assert.match(records, /style=\{s\.recordsCommandCard\}/);
   assert.match(records, /s\.recordsCommandRow/);
   assert.match(records, /accessibilityLabel=\{`\$\{item\.label\}\. \$\{item\.detail\}\. \$\{item\.actionLabel\}`\}/);

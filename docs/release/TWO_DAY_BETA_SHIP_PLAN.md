@@ -63,6 +63,7 @@ The beta must not claim:
 - On Health, confirm the Health/Bile tabs plus `Log health note`, `Records`, and `Share review` actions feel phone-sized, calm, useful for vet/caregiver handoff, and clearly non-diagnostic.
 - On More, confirm Launch Readiness, Native QA Next Captures, provider setup, household invite, Access Pass, profile edit, and save/share actions feel phone-sized and easy to tap.
 - On Records, confirm Dog ID share/print, medication search/filter, Care Pass preview, report resend/print, record add/delete, attachment, and sheet save/cancel controls feel phone-sized and easy to tap.
+- On Records, use the `Records file handoff` Vault Command shortcut when the next proof target is Records local files, and use the Report History proof icon when the next target is Report Binary Export Proof. These are capture shortcuts only; they do not prove PDF/PNG generation or provider storage by themselves.
 - When the current mission is `Records Local File Handoff`, open `/care-twin-qa?qaSurface=records-local-file-handoff`, then capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG image source, native share-sheet behavior, Android content URI, and fallback copy without claiming PDF/PNG/provider storage proof.
 - When the current mission is `Report Binary Export Proof`, open `/care-twin-qa?qaSurface=report-binary-export-proof`, then capture the approved Care Pass PDF generator, approved Dog ID PNG renderer, provider storage policy, generated file name/size/MIME/share proof, and iOS/Android artifact evidence before claiming PDF/PNG readiness.
 - When the current mission is `Care-entry Provider Sync Proof`, open `/care-twin-qa?qaSurface=care-entry-provider-sync-proof`, then capture Supabase project id, migration/backfill for `care_entries.updated_at` and `care_entry_tombstones`, active-household RLS for cursor and tombstone routes, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off before enabling incremental care-entry sync.
@@ -161,6 +162,12 @@ Current environment note:
   rerunning `WoofWatcher Verify` after any new commit before treating dependency
   proof as current, while keeping native screenshots, provider setup, store
   approval, and Apollo sign-off blocked.
+- Branch CI also proved the Provider Launch Setup row-level QA action routing on
+  2026-07-03: `WoofWatcher Verify` run `28674214816`, job `85044028568`,
+  commit `8d31dea`, with Setup pnpm, Setup Node, install, JSON mobile beta
+  doctor, focused behavior tests, and Typecheck plus CI-safe builds all passing.
+  This is provider-row routing proof only; the in-app recorded beta handoff proof
+  still carries its explicit rerun-after-new-commit boundary.
 - The mobile package now has a `smoke:runtime` alias that starts a disposable
   static runtime over `.expo-smoke`, verifies 13 exported mobile routes return
   the Expo web shell, including `/sign-in` and `/setup`, and exits without
