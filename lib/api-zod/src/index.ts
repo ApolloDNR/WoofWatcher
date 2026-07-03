@@ -1,4 +1,4 @@
-export * from "./generated/api";
+export * from "./generated/api.ts";
 export type {
   ApiError,
   AvatarEmotionImage,
@@ -57,4 +57,4 @@ export type {
   HouseholdSharingCleanupFilters as HouseholdSharingCleanupFiltersType,
   HouseholdSharingCleanupKind as HouseholdSharingCleanupKindType,
   HouseholdSharingCleanupRecommendedAction as HouseholdSharingCleanupRecommendedActionType,
-} from "./generated/types";
+} from "./generated/types/index.ts";

@@ -9,6 +9,13 @@ function read(path: string): string {
   return readFileSync(join(root, path), "utf8");
 }
 
+function readCareEntriesRouteSource(): string {
+  return [
+    read("artifacts/api-server/src/routes/care-entries.ts"),
+    read("artifacts/api-server/src/routes/care-entries-router.ts"),
+  ].join("\n");
+}
+
 function section(source: string, start: string, end: string): string {
   const normalized = source.replace(/\r\n/g, "\n");
   const startIndex = normalized.indexOf(start);
@@ -75,7 +82,7 @@ test("root focused tests include API readiness so backend contracts do not drift
 });
 
 test("care entries list query stays documented, typed, and validation-aware", () => {
-  const route = read("artifacts/api-server/src/routes/care-entries.ts");
+  const route = readCareEntriesRouteSource();
   const queryHelper = read("artifacts/api-server/src/lib/care-entry-query.ts");
   const openapi = read("lib/api-spec/openapi.yaml");
   const reactSchemas = read("lib/api-client-react/src/generated/api.schemas.ts");
@@ -108,7 +115,7 @@ test("care entries list query stays documented, typed, and validation-aware", ()
 });
 
 test("care entry server cursor and tombstone contract stays source-backed", () => {
-  const route = read("artifacts/api-server/src/routes/care-entries.ts");
+  const route = readCareEntriesRouteSource();
   const schema = read("lib/db/src/schema/careEntries.ts");
   const openapi = read("lib/api-spec/openapi.yaml");
   const zodApi = read("lib/api-zod/src/generated/api.ts");
@@ -180,7 +187,7 @@ test("care state write errors stay documented and typed", () => {
 });
 
 test("care entry write errors stay documented and typed", () => {
-  const route = read("artifacts/api-server/src/routes/care-entries.ts");
+  const route = readCareEntriesRouteSource();
   const openapi = read("lib/api-spec/openapi.yaml");
   const reactClient = read("lib/api-client-react/src/generated/api.ts");
 
@@ -385,7 +392,7 @@ test("WoofGuide provider actions keep auth, rate-limit, and local-fallback contr
 
 test("care state and care entry routes keep household scoping documented and typed", () => {
   const careStateRoute = read("artifacts/api-server/src/routes/care-state.ts");
-  const careEntriesRoute = read("artifacts/api-server/src/routes/care-entries.ts");
+  const careEntriesRoute = readCareEntriesRouteSource();
   const openapi = read("lib/api-spec/openapi.yaml");
   const reactClient = read("lib/api-client-react/src/generated/api.ts");
 
@@ -468,7 +475,7 @@ test("care state and care entry routes keep household scoping documented and typ
 });
 
 test("care entry writes keep role-aware trust and read-only boundaries", () => {
-  const careEntriesRoute = read("artifacts/api-server/src/routes/care-entries.ts");
+  const careEntriesRoute = readCareEntriesRouteSource();
   const householdLib = read("artifacts/api-server/src/lib/household.ts");
   const rolePolicy = read("artifacts/api-server/src/lib/care-entry-authorization.ts");
   const openapi = read("lib/api-spec/openapi.yaml");
@@ -1025,7 +1032,7 @@ test("household sharing cleanup review API stays owner-scoped and typed", () => 
 test("API Zod public barrel avoids schema and generated-type export ambiguity", () => {
   const publicBarrel = read("lib/api-zod/src/index.ts");
 
-  assert.match(publicBarrel, /export \* from "\.\/generated\/api"/, "runtime Zod schemas must stay exported");
+  assert.match(publicBarrel, /export \* from "\.\/generated\/api(?:\.ts)?"/, "runtime Zod schemas must stay exported");
   assert.doesNotMatch(
     publicBarrel,
     /export type \* from "\.\/generated\/types"/,

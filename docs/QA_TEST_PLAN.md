@@ -1190,6 +1190,34 @@ Latest local evidence, 2026-07-03:
   `@esbuild/win32-x64` is missing from `node_modules`. Re-run after dependency
   install/build proof exists in a pinned `pnpm@10.24.0` environment.
 
+## Care Entries Route Integration Proof
+
+Latest local evidence, 2026-07-03:
+
+- Care-entry route handlers now live behind an injectable
+  `createCareEntriesRouter` factory. Production still wires the real Drizzle DB,
+  Clerk auth helpers, household helpers, and Drizzle query operators.
+- `careEntryRoutes.test.ts` starts an Express app with fake DB/auth dependencies
+  and hits the real route handlers over HTTP.
+- Route proof covers `/care-entries?updatedSince=` returning server cursor rows,
+  ambiguous `since` plus `updatedSince` returning `400` before DB access,
+  `/care-entries/tombstones?updatedSince=` returning delete tombstone rows, and
+  invalid tombstone cursors returning `400` before DB access.
+- The testability pass also made the `api-zod` runtime barrel explicit with
+  `./generated/api.ts` while preserving named type-only aliases for generated
+  model types.
+- Red/green proof first failed because direct care-entry route imports pulled
+  live DB/provider barrels and extensionless runtime imports, then passed after
+  the factory seam and explicit runtime export were added.
+- Focused API proof passed `apiReadiness.test.ts`, `careEntryRoutes.test.ts`,
+  and `careEntryQuery.test.ts` with `25/25` tests. Broader proof passed the
+  API/mobile/care-domain suite with `496/496` tests.
+- `pnpm run typecheck:libs` and API TypeScript passed after prepending bundled
+  Node and pnpm to `PATH`.
+- Local API build remains blocked by missing `@esbuild/win32-x64` in
+  `node_modules`; rerun in a dependency-complete pinned pnpm environment or use
+  branch CI as build authority.
+
 ## Care Entries Refresh Cursor Boundary Proof
 
 Latest local evidence, 2026-07-03:
