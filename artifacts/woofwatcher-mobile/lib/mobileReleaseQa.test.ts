@@ -25,6 +25,7 @@ test("lists the launch-critical mobile QA surfaces for the next native pass", ()
   assert.ok(ids.includes("phoenix-home"));
   assert.ok(ids.includes("home-mission-deck"));
   assert.ok(ids.includes("owner-preview-core-loop"));
+  assert.ok(ids.includes("auth-setup-onboarding-proof"));
   assert.ok(ids.includes("care-entry-provider-sync-proof"));
   assert.ok(ids.includes("route-visual-consistency"));
   assert.ok(ids.includes("care-twin-state-lab"));
@@ -228,6 +229,50 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.match(surface.routeChecklist?.[8]?.expected ?? "", /Report History storage status/);
   assert.match(surface.routeChecklist?.[8]?.proof ?? "", /Care Pass Report History storage status/);
   assert.match(surface.launchRisk, /real owner beta journey/);
+});
+
+test("adds a launch-critical auth and setup onboarding proof target", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const ids = surfaces.map((surface) => surface.id);
+  const surface = surfaces.find((item) => item.id === "auth-setup-onboarding-proof");
+
+  assert.ok(surface);
+  assert.ok(
+    ids.indexOf("auth-setup-onboarding-proof") > ids.indexOf("owner-preview-core-loop"),
+    "Auth/setup proof should follow the owner loop in the focused launch targets",
+  );
+  assert.ok(
+    ids.indexOf("auth-setup-onboarding-proof") < ids.indexOf("records-local-file-handoff"),
+    "Auth/setup proof should stay visible before Records handoff proof",
+  );
+  assert.equal(surface.title, "Auth And Setup Onboarding Proof");
+  assert.equal(surface.route, "/sign-in");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /account gateway/);
+  assert.match(surface.goal, /first-run setup/);
+  assert.match(surface.devicePrompt, /iOS and Android/);
+  assert.match(surface.devicePrompt, /provider-backed auth stays blocked/);
+  assert.match(surface.setupSteps.join("\n"), /Clerk production credentials are not configured/);
+  assert.match(surface.setupSteps.join("\n"), /Local preview household setup/);
+  assert.match(surface.verificationSteps.join("\n"), /Open \/sign-in/);
+  assert.match(surface.verificationSteps.join("\n"), /Open \/setup/);
+  assert.match(surface.verificationSteps.join("\n"), /Local preview/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /provider-backed auth/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /household creation/);
+  assert.match(surface.failureEscalation, /claims cross-device account sync/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Auth gateway/);
+  assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Setup/);
+  assert.match(surface.requiredEvidence.join("\n"), /provider-backed auth and household creation stay blocked/);
+  assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
+    "Auth gateway",
+    "First-run setup",
+  ]);
+  assert.equal(surface.routeChecklist?.[0]?.route, "/sign-in");
+  assert.equal(surface.routeChecklist?.[1]?.route, "/setup");
+  assert.ok(surface.routeChecklist?.every((item) => item.requiredNativePlatforms?.join(",") === "ios,android"));
+  assert.match(surface.routeChecklist?.[0]?.proof ?? "", /iOS \+ Android native screenshot required/);
+  assert.match(surface.routeChecklist?.[1]?.proof ?? "", /local preview setup note/);
+  assert.match(surface.launchRisk, /account entry/);
 });
 
 test("adds a launch-critical Records local file handoff proof target", () => {

@@ -306,6 +306,8 @@ export function buildBetaHandoffPacketShareText(
     "- Confirm Care Pass Report History storage status says Saved on this device or Ready to upload.",
     "- Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
     "- Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
+    "- Open focused auth/setup target: /care-twin-qa?qaSurface=auth-setup-onboarding-proof.",
+    "- Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked.",
     "- Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
     "- Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
     "- Open focused binary export proof target: /care-twin-qa?qaSurface=report-binary-export-proof.",

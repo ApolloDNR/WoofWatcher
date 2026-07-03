@@ -171,6 +171,8 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Confirm Care Pass Report History storage status says Saved on this device or Ready to upload/);
   assert.match(text, /Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness/);
   assert.match(text, /Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG\/PDF export stays pending/);
+  assert.match(text, /Open focused auth\/setup target: \/care-twin-qa\?qaSurface=auth-setup-onboarding-proof/);
+  assert.match(text, /Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked/);
   assert.match(text, /Open focused Records handoff target: \/care-twin-qa\?qaSurface=records-local-file-handoff/);
   assert.match(text, /Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy/);
   assert.match(text, /Open focused binary export proof target: \/care-twin-qa\?qaSurface=report-binary-export-proof/);

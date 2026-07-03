@@ -235,6 +235,14 @@ export function buildMobileReleaseSmokeChecklist(
             status: "required",
           },
           {
+            label: "Focused auth/setup onboarding proof target",
+            detail:
+              "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof and capture Auth gateway plus Setup local-preview proof on iOS and Android while provider-backed auth and household creation stay blocked.",
+            proof:
+              "Attach iOS and Android screenshots plus a note confirming Clerk/Supabase/provider proof is still required before account sync, household creation, invite delivery, or cross-device sync can be claimed.",
+            status: "required",
+          },
+          {
             label: "Focused Records handoff target",
             detail:
               "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Care Pass Report History local HTML, Dog ID local HTML, and Dog ID SVG image source proof.",

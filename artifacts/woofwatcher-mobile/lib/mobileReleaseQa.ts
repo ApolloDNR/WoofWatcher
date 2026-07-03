@@ -222,6 +222,59 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If this loop is not proven, WoofWatcher may look polished in isolated screens while still failing the real owner beta journey.",
   },
   {
+    id: "auth-setup-onboarding-proof",
+    title: "Auth And Setup Onboarding Proof",
+    route: "/sign-in",
+    priority: "launch-critical",
+    goal:
+      "Prove the account gateway and first-run setup are phone-ready while provider-backed auth and household creation stay blocked unless real providers are configured.",
+    devicePrompt:
+      "On iOS and Android, capture the Auth gateway and Setup local-preview path, confirming provider-backed auth stays blocked and local setup does not claim cross-device household creation.",
+    setupSteps: [
+      "Confirm Clerk production credentials are not configured unless Apollo has provided real provider proof.",
+      "Use Local preview household setup data with no private household details visible.",
+      "Keep provider-backed auth, household creation, invite delivery, and cross-device sync labels in their truthful blocked or local-preview state.",
+    ],
+    verificationSteps: [
+      "Open /sign-in and confirm the account gateway renders the WoofWatcher CareTwin gateway, local-preview status, and provider-boundary copy without blanking the page.",
+      "Open /setup and select Local preview household setup, then confirm save/finish-later controls stay reachable on a phone viewport.",
+      "Confirm Create household and Join by invite copy does not claim provider-backed household creation, invite acceptance, or cross-device sync unless real providers are configured.",
+      "Return to More or Home without losing the local preview setup state.",
+    ],
+    acceptanceCriteria: [
+      "Auth gateway and Setup are readable, tappable, and clear of safe-area, keyboard, and floating navigation issues on iOS and Android.",
+      "provider-backed auth, household creation, invite delivery, and cross-device sync remain explicitly blocked or local-preview unless real provider proof exists.",
+      "Local preview setup can be saved or deferred without a dead end.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if Auth or Setup clips, blanks, traps the keyboard, hides save controls, claims cross-device account sync, or says provider-backed household creation/invite delivery is ready without provider proof.",
+    requiredEvidence: [
+      "iOS screenshot of Auth gateway showing local-preview/provider-boundary copy.",
+      "Android screenshot of Setup showing Local preview household setup and reachable save controls.",
+      "Note confirming provider-backed auth and household creation stay blocked until Clerk/Supabase/provider proof exists.",
+    ],
+    routeChecklist: [
+      {
+        label: "Auth gateway",
+        route: "/sign-in",
+        expected:
+          "Confirm the account gateway renders CareTwin branding, local-preview status, and provider-boundary copy without blanking.",
+        proof: "iOS + Android native screenshot required.",
+        requiredNativePlatforms: ["ios", "android"],
+      },
+      {
+        label: "First-run setup",
+        route: "/setup",
+        expected:
+          "Confirm Local preview setup, Create household, and Join by invite stay truthful about provider-backed household creation and invite delivery.",
+        proof: "iOS + Android native screenshot plus local preview setup note.",
+        requiredNativePlatforms: ["ios", "android"],
+      },
+    ],
+    launchRisk:
+      "If account entry or setup overclaims provider sync, the beta starts with a trust breach before the owner reaches real dog care.",
+  },
+  {
     id: "records-local-file-handoff",
     title: "Records Local File Handoff",
     route: "/records",

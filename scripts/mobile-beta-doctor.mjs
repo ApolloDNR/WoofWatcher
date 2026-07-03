@@ -113,6 +113,7 @@ const nextActions = [
   "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
   "Verify Records/Care Pass Report History shows Printable HTML local file, file size, and PDF pending.",
   "Verify Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
+  "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof and capture Auth gateway plus Setup local-preview proof while provider-backed auth and household creation stay blocked.",
   "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
   "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
   "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture Supabase migration/backfill, active-household RLS, retention/export/deletion policy, and mobile full-refresh sign-off before enabling incremental sync.",
@@ -280,6 +281,8 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Native QA Needs tune fix brief:",
   "Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
   "Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
+  "Open focused auth/setup target: /care-twin-qa?qaSurface=auth-setup-onboarding-proof.",
+  "Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked.",
   "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
   "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
   "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
@@ -364,6 +367,7 @@ const livePreviewHandoffVerifierIsSourceBacked = mobilePackage.scripts?.["proof:
     "LIVE_PREVIEW_HANDOFF_ROUTES",
     '"/sign-in"',
     '"/setup"',
+    "auth-setup-onboarding-proof",
     "records-local-file-handoff",
     "report-binary-export-proof",
     "care-entry-provider-sync-proof",
@@ -409,6 +413,34 @@ check(
   authSetupRuntimeSmokeProofIsSourceBacked
     ? "smoke:runtime and proof:live-preview include sign-in and setup without claiming provider-backed auth"
     : "keep /sign-in and /setup covered by smoke:runtime, proof:live-preview, and the release smoke checklist",
+);
+
+const authSetupNativeQaTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
+  "auth-setup-onboarding-proof",
+  "Auth And Setup Onboarding Proof",
+  "provider-backed auth stays blocked",
+  "Clerk production credentials are not configured",
+  "Local preview household setup",
+  "provider-backed auth and household creation stay blocked",
+])
+  && includesAll(betaHandoffPacketSource, [
+    "Open focused auth/setup target: /care-twin-qa?qaSurface=auth-setup-onboarding-proof.",
+    "Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked.",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Focused auth/setup onboarding proof target",
+    "/care-twin-qa?qaSurface=auth-setup-onboarding-proof",
+    "provider-backed auth and household creation stay blocked",
+  ])
+  && includesAll(livePreviewHandoffProofSource, [
+    "auth-setup-onboarding-proof",
+  ]);
+check(
+  "auth/setup native QA target is source-backed",
+  authSetupNativeQaTargetIsSourceBacked,
+  authSetupNativeQaTargetIsSourceBacked
+    ? "Auth/setup native proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and doctor next action"
+    : "keep auth/setup onboarding proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
 );
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [

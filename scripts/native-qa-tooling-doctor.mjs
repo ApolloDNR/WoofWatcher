@@ -101,6 +101,8 @@ const qaRouteSource = readText(
 check(
   "Focused native QA targets are source-backed",
   [
+    "auth-setup-onboarding-proof",
+    "provider-backed auth stays blocked",
     "records-local-file-handoff",
     "report-binary-export-proof",
     "care-entry-provider-sync-proof",
@@ -145,6 +147,7 @@ const payload = {
   warnings,
   nativeProofTargets: [
     "/care-twin-qa?qaSurface=owner-preview-core-loop",
+    "/care-twin-qa?qaSurface=auth-setup-onboarding-proof",
     "/care-twin-qa?qaSurface=records-local-file-handoff",
     "/care-twin-qa?qaSurface=report-binary-export-proof",
     "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
@@ -164,6 +167,7 @@ const payload = {
     "Install or use an environment with Android SDK platform-tools, emulator, Java, ANDROID_HOME or ANDROID_SDK_ROOT, and JAVA_HOME before Android emulator proof.",
     "Use macOS, TestFlight, Expo dev client, or a physical iOS device for iOS screenshots; this Windows shell cannot produce iOS simulator proof.",
     "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
+    "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof for Auth gateway and Setup local-preview proof, and keep provider-backed auth/household creation blocked until real provider evidence exists.",
     "Open /care-twin-qa?qaSurface=records-local-file-handoff for Records local file proof and keep generated PDF/PNG/provider storage blocked until real artifacts exist.",
   ],
 };

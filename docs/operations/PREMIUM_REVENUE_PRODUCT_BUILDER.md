@@ -2868,8 +2868,9 @@ from native QA.
 The auth/setup runtime smoke proof pass extends dependency-complete web-runtime
 proof to the account gateway and first-run setup route without claiming provider
 sync. `smoke:runtime` now lists 13 exported routes, including `/sign-in` and
-`/setup`, while `proof:live-preview` lists 12 launch-critical preview routes with
-the same auth/onboarding front doors. The Release Smoke Checklist now includes
+`/setup`, while `proof:live-preview` lists 13 launch-critical preview routes with
+the same auth/onboarding front doors plus the focused auth/setup native QA
+target. The Release Smoke Checklist now includes
 an `Auth and setup route smoke` row, and the JSON mobile beta doctor reports
 `auth/setup runtime smoke proof is source-backed` only when `smoke:runtime`,
 `proof:live-preview`, and the checklist all carry `/sign-in` plus `/setup`.
@@ -2880,6 +2881,16 @@ beta doctor source-backed checks. Direct JSON doctor still blocks only on local
 pnpm `11.7.0` versus pinned `10.24.0`, with Corepack not on PATH. This is
 web-runtime onboarding proof only, not provider-backed auth, household creation,
 native iOS/Android proof, store approval, public launch, or Apollo sign-off.
+
+The auth/setup native QA target pass adds a focused launch-critical mission at
+`/care-twin-qa?qaSurface=auth-setup-onboarding-proof`. Share Beta Handoff, the
+Release Smoke Checklist, the live-preview route verifier, the native tooling
+doctor, and the JSON mobile beta doctor now all point helpers to capture the
+Auth gateway and Setup local-preview path on iOS and Android while keeping
+provider-backed auth, household creation, invite delivery, and cross-device sync
+blocked until real provider proof exists. This is device-capture routing and
+truth-boundary copy only, not native proof, provider approval, store approval,
+public launch, or Apollo sign-off.
 
 Next highest-impact work:
 

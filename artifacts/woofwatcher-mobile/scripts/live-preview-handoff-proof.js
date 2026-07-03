@@ -19,6 +19,7 @@ const LIVE_PREVIEW_HANDOFF_ROUTES = [
   "/health",
   "/records",
   "/more",
+  "/care-twin-qa?qaSurface=auth-setup-onboarding-proof",
   "/care-twin-qa?qaSurface=records-local-file-handoff",
   "/care-twin-qa?qaSurface=report-binary-export-proof",
   "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",

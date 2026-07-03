@@ -55,6 +55,7 @@ The beta must not claim:
 - Use the large cockpit actions first: platform tag, `Open Next Surface`, `Attach proof`, `Pass`, `Needs tune`, `Share QA`, and per-surface `Open surface` are all intended to be phone-sized beta controls.
 - If the card shows `Owner route loop`, follow that ordered checklist before marking the mission Pass; it is the beta's real owner journey, not an optional note.
 - When the current mission is `Owner Preview Core Loop`, use the bottom nav to open Home, Log, Plans, Health, and More in order, then confirm Adventure, Records, Avatar Studio, and Care Pass are reachable from More or Home without dead ends.
+- When the current mission is `Auth And Setup Onboarding Proof`, open `/care-twin-qa?qaSurface=auth-setup-onboarding-proof`, then capture the Auth gateway and Setup local-preview path on iOS and Android while keeping provider-backed auth, household creation, invite delivery, and cross-device sync blocked until real provider proof exists.
 - On Home, confirm the header/menu action, Avatar Studio hero entry, household presence panel, Adventure inline action, pixel-room crop, and bottom-nav fit feel phone-sized, useful, and aligned with the premium neo-retro care-twin promise.
 - In the owner-preview loop, quick-log one safe care event or open the detail sheet, then undo it or leave a QA note if you do not want the test log to stay in local preview data.
 - On Log, confirm the care-type tabs, Undo/Add details, meal outcome, potty outcome, trust review, walk finish, and alone-time return controls feel phone-sized and easy to tap.
@@ -166,9 +167,10 @@ Current environment note:
   no-dependency static server, both pinned to port `4194`, and the root
   `preview:mobile-beta` command points to the same handoff path.
 - The mobile package also has `proof:live-preview`, which starts a disposable
-  static preview server over `.expo-smoke`, verifies 12 launch-critical preview
-  routes return the Expo web shell, including `/sign-in` and `/setup`, and emits
-  JSON proof with web-preview-only truth boundaries before helpers keep
+  static preview server over `.expo-smoke`, verifies 13 launch-critical preview
+  routes return the Expo web shell, including `/sign-in`, `/setup`, and the
+  focused auth/setup onboarding proof target, and emits JSON proof with
+  web-preview-only truth boundaries before helpers keep
   `preview:smoke` open for human review. Root `build:ci` runs it after
   `smoke:web` and `smoke:runtime`.
 - The Release Smoke Checklist now has an `Auth and setup route smoke` proof row,
@@ -176,6 +178,12 @@ Current environment note:
   when `smoke:runtime`, `proof:live-preview`, and the checklist all cover
   `/sign-in` plus `/setup` without claiming provider-backed auth or household
   creation.
+- The Release Smoke Checklist, Share Beta Handoff, live-preview route verifier,
+  native QA doctor, and JSON mobile beta doctor now also name
+  `/care-twin-qa?qaSurface=auth-setup-onboarding-proof` as the focused native
+  capture target for Auth gateway plus Setup local-preview proof. This is a
+  phone QA mission only; it does not approve provider-backed auth, household
+  creation, invite delivery, cross-device sync, or Apollo launch sign-off.
 - The in-app `Share Beta Handoff` packet now repeats the exact dependency proof
   commands and warns that dependency proof only counts when both doctor commands
   report no blockers.

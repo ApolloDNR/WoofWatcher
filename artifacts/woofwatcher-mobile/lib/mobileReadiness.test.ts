@@ -4946,6 +4946,9 @@ test("keeps a native QA tooling doctor for device-proof handoff", () => {
     payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=records-local-file-handoff"),
   );
   assert.ok(
+    payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=auth-setup-onboarding-proof"),
+  );
+  assert.ok(
     payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=route-visual-consistency"),
   );
   assert.ok(
@@ -5203,6 +5206,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.nextActions?.some(
       (action) =>
+        action.includes("/care-twin-qa?qaSurface=auth-setup-onboarding-proof") &&
+        action.includes("provider-backed auth") &&
+        action.includes("household creation"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
         action.includes("/care-twin-qa?qaSurface=records-local-file-handoff") &&
         action.includes("Android content URI") &&
         action.includes("fallback copy"),
@@ -5273,6 +5284,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "auth/setup runtime smoke proof is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "auth/setup native QA target is source-backed" &&
         check.status === "PASS",
     ),
   );
