@@ -4489,6 +4489,12 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(providerSetup, /nextGate/);
   assert.match(providerSetup, /openCount/);
   assert.match(providerSetup, /Next Provider Gate/);
+  assert.match(providerSetup, /care_entries\.updated_at/);
+  assert.match(providerSetup, /care_entry_tombstones/);
+  assert.match(providerSetup, /\/care-entries\?updatedSince=/);
+  assert.match(providerSetup, /\/care-entries\/tombstones\?updatedSince=/);
+  assert.match(providerSetup, /retention\/export\/deletion/);
+  assert.match(providerSetup, /mobile full-refresh sign-off/);
   assert.match(
     providerSetup,
     /All provider gates are ready for final owner review/,

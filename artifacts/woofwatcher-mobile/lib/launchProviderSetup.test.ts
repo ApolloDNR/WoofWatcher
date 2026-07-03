@@ -29,6 +29,12 @@ test("builds a truthful provider setup plan from a local launch profile", async 
   assert.ok(plan.rows.some((row) => row.key === "auth" && row.status === "ready"));
   assert.ok(plan.rows.some((row) => row.key === "database" && /Supabase/i.test(row.nextAction)));
   assert.ok(plan.rows.some((row) => row.key === "database" && /RLS/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "database" && /care_entries\.updated_at/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "database" && /care_entry_tombstones/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "database" && /\/care-entries\?updatedSince=/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "database" && /\/care-entries\/tombstones\?updatedSince=/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "database" && /retention\/export\/deletion/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "database" && /full-refresh/i.test(row.proofRequired)));
   assert.ok(plan.rows.some((row) => row.key === "storage" && /signed upload/i.test(row.proofRequired)));
   assert.equal(plan.nextGate?.key, "database");
   assert.match(plan.nextGate?.proofRequired ?? "", /Supabase project id/);
@@ -97,6 +103,10 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /Proof: AI provider key location/);
   assert.match(text, /Proof Needed/);
   assert.match(text, /Household database sync: Supabase project id/);
+  assert.match(text, /care_entries\.updated_at/);
+  assert.match(text, /care_entry_tombstones/);
+  assert.match(text, /\/care-entries\?updatedSince=/);
+  assert.match(text, /mobile full-refresh sign-off/);
   assert.match(text, /Records and media storage: Storage bucket names/);
   assert.match(text, /WoofGuide AI/);
   assert.match(text, /No App Store or Play Store submission is approved by this checklist/);

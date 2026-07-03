@@ -136,6 +136,10 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Provider proof needed:/);
   assert.match(text, /Production auth: Clerk production app id/);
   assert.match(text, /Household database sync: Supabase project id/);
+  assert.match(text, /care_entries\.updated_at/);
+  assert.match(text, /care_entry_tombstones/);
+  assert.match(text, /\/care-entries\?updatedSince=/);
+  assert.match(text, /mobile full-refresh sign-off/);
   assert.match(text, /Records and media storage: Storage bucket names/);
   assert.match(text, /Provider proof does not approve App Store, Play Store, payment, AI, storage, or database readiness/);
   assert.match(text, /Done condition: capture required iOS\/Android proof, save the Mission note, clear Pass pending proof, then share the QA summary/);

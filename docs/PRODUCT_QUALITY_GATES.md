@@ -146,11 +146,12 @@ Passing evidence:
 - Local zero-dependency focused tests can run with bundled Node.
 - Local API parser/readiness proof now covers the care-entry occurrence query, server `updatedAt` cursor query, delete tombstone route, and generated-client/spec contract.
 - Local mobile readiness proof now protects the full-refresh boundary for care entries until provider migration/RLS, retention policy, and mobile incremental adoption are verified against the server cursor/delete-tombstone contract.
+- Provider Launch Setup now exposes the exact Supabase migration/backfill, active-household RLS, retention/export/deletion, and mobile full-refresh sign-off proof needed for `care_entries.updated_at`, `care_entry_tombstones`, `/care-entries?updatedSince=`, and `/care-entries/tombstones?updatedSince=` before incremental sync can be claimed.
 
 Current gaps:
 
 - Local dependency layer still blocks API build proof in this Codex checkout because `@esbuild/win32-x64` is missing from `node_modules`, and the local pnpm CLI is `11.7.0` while the repo is pinned to `10.24.0`.
-- Need broader API integration tests, provider migration/RLS proof, and retention policy for the care-entry update cursor and tombstone schema.
+- Need broader API integration tests plus actual provider migration/RLS proof and retention/export/deletion approval for the care-entry update cursor and tombstone schema.
 - Need mobile runtime smoke.
 - Critical mobile action accessibility labels are covered by focused static smoke.
 - Home avatar motion state and wiring are covered by focused tests.

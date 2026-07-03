@@ -143,10 +143,13 @@ const ROW_DEFINITIONS: Array<{
     label: "Household database sync",
     owner: "Developer",
     field: "databaseConfigured",
-    readyDetail: "Production household care documents, logs, and sync rules are configured for review.",
-    blockedDetail: "Household logs remain local or preview-only until production database sync and permissions are approved.",
-    nextAction: "Approve Supabase/Postgres schema, RLS rules, backups, migrations, and per-household care document scoping.",
-    proofRequired: "Supabase project id, applied migration list, RLS policy review, backup policy, and per-household care document scoping proof.",
+    readyDetail: "Production household care documents, logs, update cursors, delete tombstones, and sync rules are configured for review.",
+    blockedDetail:
+      "Household logs remain local/full-refresh or preview-only until production database sync, cursor/tombstone RLS, retention, and permissions are approved.",
+    nextAction:
+      "Approve Supabase/Postgres schema, migration/backfill for care_entries.updated_at and care_entry_tombstones, RLS scoping, backups, retention/export/deletion, and per-household sync proof.",
+    proofRequired:
+      "Supabase project id, applied migration list for care_entries.updated_at and care_entry_tombstones, RLS proof for /care-entries?updatedSince= and /care-entries/tombstones?updatedSince= active-household scoping, backup plus retention/export/deletion policy, and mobile full-refresh sign-off until incremental adoption is verified.",
   },
   {
     key: "storage",

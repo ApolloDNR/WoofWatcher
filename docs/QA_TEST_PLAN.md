@@ -1248,3 +1248,34 @@ Latest local evidence, 2026-07-03:
 - Local API build remains blocked by missing `@esbuild/win32-x64` in
   `node_modules`; rerun in a dependency-complete pinned pnpm environment or use
   branch CI as build authority.
+
+## Provider Launch Setup Cursor/Tombstone Proof Handoff
+
+Latest local evidence, 2026-07-03:
+
+- Provider Launch Setup now makes the Household database sync gate actionable
+  for the server cursor/tombstone contract instead of using generic database
+  readiness copy.
+- The proof row requires a Supabase project id, applied migrations/backfill for
+  `care_entries.updated_at` and `care_entry_tombstones`, active-household RLS
+  proof for `/care-entries?updatedSince=` and
+  `/care-entries/tombstones?updatedSince=`, backup plus
+  retention/export/deletion policy, and mobile full-refresh sign-off until
+  incremental adoption is verified.
+- The beta handoff packet includes the same Provider Launch Setup proof row, so
+  Apollo/Replit sees the provider work required before mobile can stop using
+  full care-entry refresh.
+- Red/green proof first failed on the missing cursor/tombstone proof language
+  in `launchProviderSetup.test.ts`, then passed after the provider setup model
+  was updated.
+- Focused mobile proof passed `launchProviderSetup.test.ts`,
+  `betaHandoffPacket.test.ts`, and `mobileReadiness.test.ts` with `120/120`
+  tests. Broader proof passed the API/mobile/care-domain suite with `492/492`
+  tests.
+- Mobile TypeScript passed after prepending bundled Node and pnpm to `PATH`;
+  the first attempt failed because pnpm's child process could not find `node`.
+- Expo web export smoke passed to `.expo-smoke` with `219` assets and `223`
+  files.
+- JSON mobile beta doctor source-backed checks still pass, but the result
+  remains truthfully `BLOCKED` only because local pnpm is `11.7.0` while the
+  repo is pinned to `10.24.0`.
