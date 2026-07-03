@@ -120,6 +120,10 @@ export default function SetupScreen() {
     Haptics.selectionAsync();
     router.replace("/(tabs)");
   };
+  const openAuthSetupProofMission = () => {
+    Haptics.selectionAsync();
+    router.push("/care-twin-qa?qaSurface=auth-setup-onboarding-proof" as never);
+  };
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -349,6 +353,18 @@ export default function SetupScreen() {
             <Pressable onPress={finishLater} style={({ pressed }) => [s.laterBtn, { opacity: pressed ? 0.65 : 1 }]}>
               <Text style={[s.laterText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Finish later</Text>
             </Pressable>
+            <Pressable
+              onPress={openAuthSetupProofMission}
+              accessibilityRole="button"
+              accessibilityLabel="Open auth and setup proof mission"
+              style={({ pressed }) => [
+                s.proofBtn,
+                { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
+              ]}
+            >
+              <Ionicons name="shield-checkmark-outline" size={15} color={colors.copper} />
+              <Text style={[s.proofText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Open setup proof</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -468,4 +484,6 @@ const s = StyleSheet.create({
   saveText: { color: "#fff", fontSize: 15.5 },
   laterBtn: { height: 42, alignItems: "center", justifyContent: "center" },
   laterText: { fontSize: 14 },
+  proofBtn: { minHeight: 42, borderRadius: 14, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
+  proofText: { fontSize: 12.5 },
 });

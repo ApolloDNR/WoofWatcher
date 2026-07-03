@@ -1,4 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
@@ -55,6 +57,7 @@ export function AuthShell({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const bottomPadding = getStandaloneRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -64,6 +67,10 @@ export function AuthShell({
     topInset: insets.top,
     surface: "auth",
   });
+  const openAuthSetupProofMission = () => {
+    Haptics.selectionAsync();
+    router.push("/care-twin-qa?qaSurface=auth-setup-onboarding-proof" as never);
+  };
 
   return (
     <ScrollView
@@ -136,6 +143,20 @@ export function AuthShell({
             </View>
           ))}
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open auth and setup proof mission"
+          onPress={openAuthSetupProofMission}
+          style={({ pressed }) => [
+            styles.proofButton,
+            { backgroundColor: colors.ivory, borderColor: colors.copper, opacity: pressed ? 0.76 : 1 },
+          ]}
+        >
+          <Ionicons name="shield-checkmark-outline" size={15} color={colors.copper} />
+          <Text style={[styles.proofButtonText, { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" }]}>
+            Open setup proof
+          </Text>
+        </Pressable>
       </View>
 
       <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -427,6 +448,21 @@ const styles = StyleSheet.create({
   trustDetail: {
     fontSize: 10,
     lineHeight: 13,
+  },
+  proofButton: {
+    minHeight: 40,
+    borderWidth: 1,
+    borderRadius: 14,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  proofButtonText: {
+    fontSize: 11,
+    lineHeight: 14,
   },
   formCard: {
     width: "100%",

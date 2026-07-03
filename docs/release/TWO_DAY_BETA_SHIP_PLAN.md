@@ -56,6 +56,7 @@ The beta must not claim:
 - If the card shows `Owner route loop`, follow that ordered checklist before marking the mission Pass; it is the beta's real owner journey, not an optional note.
 - When the current mission is `Owner Preview Core Loop`, use the bottom nav to open Home, Log, Plans, Health, and More in order, then confirm Adventure, Records, Avatar Studio, and Care Pass are reachable from More or Home without dead ends.
 - When the current mission is `Auth And Setup Onboarding Proof`, open `/care-twin-qa?qaSurface=auth-setup-onboarding-proof`, then capture the Auth gateway and Setup local-preview path on iOS and Android while keeping provider-backed auth, household creation, invite delivery, and cross-device sync blocked until real provider proof exists.
+- When reviewing the Auth gateway or Setup onboarding route, use `Open setup proof` to jump to the same Auth And Setup Onboarding Proof mission. This is a shortcut only; it does not prove Clerk OAuth, household creation, invite delivery, cross-device sync, or native screenshots.
 - On Home, confirm the header/menu action, Avatar Studio hero entry, household presence panel, Adventure inline action, pixel-room crop, and bottom-nav fit feel phone-sized, useful, and aligned with the premium neo-retro care-twin promise.
 - In the owner-preview loop, quick-log one safe care event or open the detail sheet, then undo it or leave a QA note if you do not want the test log to stay in local preview data.
 - On Log, confirm the care-type tabs, Undo/Add details, meal outcome, potty outcome, trust review, walk finish, and alone-time return controls feel phone-sized and easy to tap.
@@ -183,6 +184,13 @@ Current environment note:
   This is shortcut-routing proof only; Expo/APNs/FCM setup, delivered
   notification proof, native iOS/Android delivery QA, prompt/legal approval, and
   Apollo sign-off remain blocked.
+- Branch CI also proved the More Sync Health provider-sync shortcut on
+  2026-07-03: `WoofWatcher Verify` run `28675348598`, job `85047483945`,
+  commit `e234d14`, with Setup pnpm, Setup Node, install, JSON mobile beta
+  doctor, focused behavior tests, and Typecheck plus CI-safe builds all passing.
+  This is shortcut-routing proof only; Supabase migration/backfill,
+  active-household RLS, retention/export/deletion, incremental provider sync,
+  and Apollo sign-off remain blocked.
 - The mobile package now has a `smoke:runtime` alias that starts a disposable
   static runtime over `.expo-smoke`, verifies 13 exported mobile routes return
   the Expo web shell, including `/sign-in` and `/setup`, and exits without
@@ -208,6 +216,11 @@ Current environment note:
   capture target for Auth gateway plus Setup local-preview proof. This is a
   phone QA mission only; it does not approve provider-backed auth, household
   creation, invite delivery, cross-device sync, or Apollo launch sign-off.
+- Auth gateway and Setup onboarding now expose `Open setup proof` to jump to
+  `/care-twin-qa?qaSurface=auth-setup-onboarding-proof` from the actual
+  sign-in/sign-up or local setup path. This shortcut still requires real
+  iOS/Android proof and real provider evidence before any provider-backed auth
+  or household sync claim.
 - The in-app `Share Beta Handoff` packet now repeats the exact dependency proof
   commands and warns that dependency proof only counts when both doctor commands
   report no blockers.

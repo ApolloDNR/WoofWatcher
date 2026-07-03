@@ -447,6 +447,10 @@ test("keeps auth entry styled as the truthful CareTwin gateway", () => {
   assert.match(authUi, /Local-first care/);
   assert.match(authUi, /CareTwin ready/);
   assert.match(authUi, /isClerkConfigured \? "Account ready" : "Local preview"/);
+  assert.match(authUi, /openAuthSetupProofMission/);
+  assert.match(authUi, /\/care-twin-qa\?qaSurface=auth-setup-onboarding-proof/);
+  assert.match(authUi, /Open setup proof/);
+  assert.match(authUi, /accessibilityLabel="Open auth and setup proof mission"/);
   assert.match(authUi, /accessibilityRole="button"/);
   assert.match(authUi, /accessibilityLabel=\{label\}/);
   assert.match(signIn, /account layer ready for shared sync/);
@@ -3357,6 +3361,10 @@ test("keeps Setup onboarding on shared board anatomy", () => {
   assert.match(setup, /buildSetupWizardConfirmation/);
   assert.match(setup, /Care foundation saved/);
   assert.match(setup, /Add invite code/);
+  assert.match(setup, /openAuthSetupProofMission/);
+  assert.match(setup, /\/care-twin-qa\?qaSurface=auth-setup-onboarding-proof/);
+  assert.match(setup, /Open setup proof/);
+  assert.match(setup, /accessibilityLabel="Open auth and setup proof mission"/);
   assert.doesNotMatch(setup, /header:/);
   assert.doesNotMatch(
     setup,
