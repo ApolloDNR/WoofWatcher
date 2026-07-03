@@ -5021,6 +5021,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     "Release smoke checklist",
     "Dependency proof commands",
     "Dependency-complete CI proof",
+    "Live preview handoff proof",
     "Required beta proof after export",
     "Native QA Needs tune fix brief",
     "Provider proof needed",
@@ -5044,6 +5045,15 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.nextActions?.some(
       (action) =>
         action.includes("preview:smoke") && action.includes("127.0.0.1:4194"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("Attach JSON doctor") &&
+        action.includes("branch CI proof") &&
+        action.includes("preview:smoke URL") &&
+        action.includes("without claiming native QA"),
     ),
   );
   assert.ok(
@@ -5100,6 +5110,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "route visual proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "live preview handoff proof is source-backed" &&
         check.status === "PASS",
     ),
   );

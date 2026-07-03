@@ -106,6 +106,7 @@ test("builds a source-backed release smoke checklist without clearing blocked la
     checklist.sections.map((section) => section.title),
     [
       "Dependency and export proof",
+      "Live preview handoff proof",
       "Route rehearsal",
       "Records and export truth",
       "Provider proof gates",
@@ -127,6 +128,11 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /Dependency and export proof:/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run preview:smoke/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run smoke:runtime/);
+  assert.match(text, /Live preview handoff proof:/);
+  assert.match(text, /Dependency-complete branch CI/);
+  assert.match(text, /Preview server handoff/);
+  assert.match(text, /http:\/\/127\.0\.0\.1:4194\//);
+  assert.match(text, /live preview proof does not replace native iOS\/Android proof/);
   assert.match(text, /Route rehearsal:/);
   assert.match(text, /Owner Preview Core Loop \(\/care-twin-qa\)/);
   assert.match(text, /Open with QA return: \/care-twin-qa\?qaReturn=care-twin-qa/);

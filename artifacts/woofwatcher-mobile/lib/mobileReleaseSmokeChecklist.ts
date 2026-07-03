@@ -169,6 +169,35 @@ export function buildMobileReleaseSmokeChecklist(
           status: "required" as const,
         })),
       },
+      {
+        title: "Live preview handoff proof",
+        items: [
+          {
+            label: "Dependency-complete branch CI",
+            detail:
+              "Attach a WoofWatcher Verify run proving pnpm 10.24.0 install, JSON doctor, focused tests, smoke:web, and smoke:runtime for the branch.",
+            proof:
+              "Run URL, job id, commit SHA, and passed step list; CI proof does not approve native screenshots.",
+            status: "required",
+          },
+          {
+            label: "Preview server handoff",
+            detail:
+              "Run pnpm --filter @workspace/woofwatcher-mobile run preview:smoke, then open http://127.0.0.1:4194/.",
+            proof:
+              "Attach preview:smoke terminal output, URL, browser-open note, and any web screenshot as preview-only evidence.",
+            status: "required",
+          },
+          {
+            label: "Preview truth boundary",
+            detail:
+              "Use preview proof for live review and visual triage only; live preview proof does not replace native iOS/Android proof.",
+            proof:
+              "Keep native QA, provider setup, store approval, and Apollo sign-off listed as open until real artifacts exist.",
+            status: "required",
+          },
+        ],
+      },
       buildRouteRehearsalSection(capturePlan),
       {
         title: "Records and export truth",

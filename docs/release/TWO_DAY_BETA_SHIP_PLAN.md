@@ -185,6 +185,11 @@ Current environment note:
 - The Release Smoke Checklist and JSON doctor now include the `smoke:runtime`
   route proof between `smoke:web` and preview handoff, so helpers can confirm
   exported routes load before they keep the preview server open for visual QA.
+- The Release Smoke Checklist and Share Beta Handoff now include a dedicated
+  `Live preview handoff proof` section for branch CI, JSON doctor/export/runtime
+  proof, `preview:smoke` output, `http://127.0.0.1:4194/`, and browser-open
+  evidence while saying live preview proof does not replace native iOS/Android
+  proof.
 - Provider Launch Setup now also shows a proof-needed checklist for every
   production provider gate in More and in the share packet: Clerk, Supabase/RLS,
   storage signed uploads, WoofGuide AI policy, payments, push, Apple/Google

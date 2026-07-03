@@ -88,6 +88,7 @@ const handoffProofSections = [
   "Release smoke checklist",
   "Dependency proof commands",
   "Dependency-complete CI proof",
+  "Live preview handoff proof",
   "Required beta proof after export",
   "Native QA Needs tune fix brief",
   "Provider proof needed",
@@ -103,6 +104,7 @@ const nextActions = [
   "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:web.",
   "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime to verify exported mobile routes return 200 from the static runtime.",
   "Serve the exported beta with pnpm --filter @workspace/woofwatcher-mobile run preview:smoke, then open http://127.0.0.1:4194/.",
+  "Attach JSON doctor output, branch CI proof, smoke:web and smoke:runtime output, and the preview:smoke URL to the handoff without claiming native QA.",
   "Open /care-twin-qa on a real device or simulator.",
   "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
   "Verify Records/Care Pass Report History shows Printable HTML local file, file size, and PDF pending.",
@@ -306,6 +308,28 @@ check(
   releaseSmokeChecklistIsSourceBacked
     ? "Share Beta Handoff carries the dependency, route, Records export, provider, native/store, and truth-boundary smoke checklist"
     : "keep Release smoke checklist wired through mobileReleaseSmokeChecklist.ts and Share Beta Handoff",
+);
+
+const livePreviewHandoffProofIsSourceBacked = includesAll(mobileReleaseSmokeChecklistSource, [
+  "Live preview handoff proof",
+  "Dependency-complete branch CI",
+  "Preview server handoff",
+  "preview:smoke terminal output",
+  "http://127.0.0.1:4194/",
+  "live preview proof does not replace native iOS/Android proof",
+])
+  && includesAll(betaHandoffPacketSource, [
+    "buildMobileReleaseSmokeChecklist",
+    "buildMobileReleaseSmokeChecklistShareText",
+    "Release smoke checklist:",
+  ])
+  && handoffProofSections.includes("Live preview handoff proof");
+check(
+  "live preview handoff proof is source-backed",
+  livePreviewHandoffProofIsSourceBacked,
+  livePreviewHandoffProofIsSourceBacked
+    ? "Live preview handoff proof requires branch CI, JSON doctor/export/runtime proof, preview URL, and native-proof boundaries"
+    : "keep live preview proof wired through the release smoke checklist, Share Beta Handoff, and doctor next actions",
 );
 
 const ownerPreviewProofWiringIsSourceBacked = includesAll(mobileLaunchQaEvidenceSource, [

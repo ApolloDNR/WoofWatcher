@@ -118,6 +118,10 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Release smoke checklist:/);
   assert.match(text, /WoofWatcher Release Smoke Checklist/);
   assert.match(text, /Dependency and export proof:/);
+  assert.match(text, /Live preview handoff proof:/);
+  assert.match(text, /Dependency-complete branch CI/);
+  assert.match(text, /Preview server handoff/);
+  assert.match(text, /live preview proof does not replace native iOS\/Android proof/);
   assert.match(text, /Route rehearsal:/);
   assert.match(text, /Records and export truth:/);
   assert.match(text, /Provider proof gates:/);
