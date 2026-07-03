@@ -459,6 +459,76 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If this proof is skipped, incremental sync can leak stale, missing, deleted, or cross-household care-entry state before the provider database is ready.",
   },
   {
+    id: "push-notifications-proof",
+    title: "Push Notifications Proof",
+    route: "/more",
+    priority: "launch-critical",
+    goal:
+      "Prove the Expo push project config, APNs credentials, Firebase/FCM credentials, permission copy, quiet hours, opt-out behavior, and delivery QA exist before reminder notifications are claimed.",
+    devicePrompt:
+      "In Provider Launch Setup and Reminder Center on iOS and Android, collect the Push notifications proof packet for Expo, APNs, Firebase/FCM, permission prompts, quiet hours, opt-out behavior, delivery QA, and fallback recovery.",
+    setupSteps: [
+      "Use local preview data and keep Push notifications marked open unless real Expo, APNs, and Firebase/FCM provider proof is attached.",
+      "Open More, then Provider Launch Setup, and inspect the Push notifications gate.",
+      "Open Calendar Reminder Center with quiet hours and opt-out preferences visible before attempting any delivery proof.",
+      "Keep reminder delivery in blocked or in-app-only language until every provider credential, permission, and native delivery proof item exists.",
+    ],
+    verificationSteps: [
+      "Confirm Push notifications lists the Push notifications proof packet.",
+      "Confirm the packet requires Expo push project config, Expo push project id, EAS project linkage, and push token registration.",
+      "Confirm APNs credentials and iOS device token proof are required before iOS delivery is trusted.",
+      "Confirm Firebase/FCM credentials and Android delivery proof are required before Android delivery is trusted.",
+      "Confirm permission prompt copy, notification preferences, quiet hours, opt-out behavior, delivery QA, and missed notification fallback are required before reminder delivery can be claimed.",
+      "Capture the Provider Launch Setup and Reminder Center states on iOS and Android without marking Push notifications ready unless the real proof artifacts are attached.",
+    ],
+    acceptanceCriteria: [
+      "reminder delivery stays blocked until Expo push project id, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and fallback proof are attached.",
+      "iOS proof includes APNs credentials, production entitlement environment, device token registration, delivered notification proof, and denied-permission fallback copy.",
+      "Android proof includes Firebase/FCM credentials, notification channel behavior, token registration, delivered notification proof, and denied-permission fallback copy.",
+      "Quiet hours and opt-out behavior prove disabled notifications stay off, while missed reminders remain recoverable from Reminder Center.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if the app claims reminders are delivered from local Reminder Center state, hides permission or opt-out copy, skips APNs or Firebase/FCM proof, ignores quiet hours, or lacks missed notification fallback.",
+    requiredEvidence: [
+      "iOS screenshot of Provider Launch Setup showing the Push notifications proof packet.",
+      "Android screenshot of Provider Launch Setup showing Push notifications still blocked or fully evidenced.",
+      "Note confirming Expo push project id, EAS project linkage, push token registration, APNs credentials, iOS device token proof, Firebase/FCM credentials, and Android delivery proof.",
+      "Note confirming permission prompt copy, notification preferences, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before enabling reminder delivery.",
+    ],
+    routeChecklist: [
+      {
+        label: "Provider Launch Setup push gate",
+        route: "/more",
+        expected:
+          "Confirm Push notifications lists the Push notifications proof packet and stays open until provider proof is attached.",
+        proof: "Provider Launch Setup screenshot plus Expo push project id, APNs, and Firebase/FCM proof note.",
+      },
+      {
+        label: "iOS APNs registration and delivery",
+        route: "/calendar",
+        expected:
+          "Confirm iOS reminder delivery has APNs credentials, device token registration, delivered notification proof, and denied-permission fallback copy.",
+        proof: "APNs credentials, iOS device token proof, delivered notification proof, and fallback note.",
+      },
+      {
+        label: "Android FCM registration and delivery",
+        route: "/calendar",
+        expected:
+          "Confirm Android reminder delivery has Firebase/FCM credentials, notification channel behavior, token registration, delivered notification proof, and denied-permission fallback copy.",
+        proof: "Firebase/FCM credentials, Android delivery proof, notification channel note, and fallback note.",
+      },
+      {
+        label: "Permission, quiet hours, and opt-out behavior",
+        route: "/calendar",
+        expected:
+          "Confirm permission prompt copy, notification preferences, quiet hours, opt-out behavior, and missed notification fallback are visible before Push notifications is marked ready.",
+        proof: "Permission copy, quiet hours and opt-out proof, disabled-notification proof, and missed notification fallback note.",
+      },
+    ],
+    launchRisk:
+      "If this proof is skipped, missed medication or care reminders can be marketed as push-backed even though APNs, Firebase/FCM, permissions, quiet hours, and fallback behavior were never proven.",
+  },
+  {
     id: "route-visual-consistency",
     title: "Route Visual Consistency",
     route: "/more",

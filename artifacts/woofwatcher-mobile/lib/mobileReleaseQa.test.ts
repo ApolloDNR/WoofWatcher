@@ -27,6 +27,7 @@ test("lists the launch-critical mobile QA surfaces for the next native pass", ()
   assert.ok(ids.includes("owner-preview-core-loop"));
   assert.ok(ids.includes("auth-setup-onboarding-proof"));
   assert.ok(ids.includes("care-entry-provider-sync-proof"));
+  assert.ok(ids.includes("push-notifications-proof"));
   assert.ok(ids.includes("route-visual-consistency"));
   assert.ok(ids.includes("care-twin-state-lab"));
   assert.ok(ids.includes("avatar-studio"));
@@ -425,6 +426,59 @@ test("adds a launch-critical care-entry provider sync proof target", () => {
   assert.match(surface.routeChecklist?.[1]?.proof ?? "", /active-household RLS/);
   assert.match(surface.routeChecklist?.[2]?.proof ?? "", /tombstone RLS/);
   assert.match(surface.launchRisk, /cross-household/);
+});
+
+test("adds a launch-critical push notifications proof target", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const ids = surfaces.map((surface) => surface.id);
+  const surface = surfaces.find((item) => item.id === "push-notifications-proof");
+
+  assert.ok(surface);
+  assert.ok(
+    ids.indexOf("push-notifications-proof") > ids.indexOf("care-entry-provider-sync-proof"),
+    "Push notifications proof should follow provider sync proof in the focused launch targets",
+  );
+  assert.ok(
+    ids.indexOf("push-notifications-proof") < ids.indexOf("route-visual-consistency"),
+    "Push notifications proof should stay visible before broad route screenshot work",
+  );
+  assert.equal(surface.title, "Push Notifications Proof");
+  assert.equal(surface.route, "/more");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /Expo push project config/);
+  assert.match(surface.goal, /APNs credentials/);
+  assert.match(surface.goal, /Firebase\/FCM credentials/);
+  assert.match(surface.devicePrompt, /Provider Launch Setup/);
+  assert.match(surface.devicePrompt, /iOS and Android/);
+  assert.match(surface.setupSteps.join("\n"), /Push notifications/);
+  assert.match(surface.setupSteps.join("\n"), /quiet hours/);
+  assert.match(surface.verificationSteps.join("\n"), /Expo push project config/);
+  assert.match(surface.verificationSteps.join("\n"), /APNs credentials/);
+  assert.match(surface.verificationSteps.join("\n"), /Firebase\/FCM credentials/);
+  assert.match(surface.verificationSteps.join("\n"), /permission prompt/);
+  assert.match(surface.verificationSteps.join("\n"), /delivery QA/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /reminder delivery stays blocked/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /opt-out behavior/);
+  assert.match(surface.failureEscalation, /claims reminders are delivered/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Provider Launch Setup/);
+  assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Provider Launch Setup/);
+  assert.match(surface.requiredEvidence.join("\n"), /Expo push project id/);
+  assert.match(surface.requiredEvidence.join("\n"), /missed notification fallback/);
+  assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
+    "Provider Launch Setup push gate",
+    "iOS APNs registration and delivery",
+    "Android FCM registration and delivery",
+    "Permission, quiet hours, and opt-out behavior",
+  ]);
+  assert.equal(surface.routeChecklist?.[0]?.route, "/more");
+  assert.equal(surface.routeChecklist?.[1]?.route, "/calendar");
+  assert.equal(surface.routeChecklist?.[2]?.route, "/calendar");
+  assert.equal(surface.routeChecklist?.[3]?.route, "/calendar");
+  assert.match(surface.routeChecklist?.[0]?.proof ?? "", /Expo push project id/);
+  assert.match(surface.routeChecklist?.[1]?.proof ?? "", /APNs/);
+  assert.match(surface.routeChecklist?.[2]?.proof ?? "", /Firebase\/FCM/);
+  assert.match(surface.routeChecklist?.[3]?.proof ?? "", /quiet hours and opt-out/);
+  assert.match(surface.launchRisk, /missed medication or care reminders/);
 });
 
 test("adds route-check proof to store screenshot QA surfaces", () => {

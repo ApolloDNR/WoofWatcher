@@ -117,6 +117,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
   "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
   "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture Supabase migration/backfill, active-household RLS, retention/export/deletion policy, and mobile full-refresh sign-off before enabling incremental sync.",
+  "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before claiming reminder delivery.",
   "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
@@ -298,6 +299,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
   "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
   "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
+  "Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
   "Provider proof needed:",
   "Truth boundaries:",
 ])
@@ -330,6 +332,8 @@ const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeCheckl
   "/care-twin-qa?qaSurface=records-local-file-handoff",
   "Focused care-entry provider sync proof target",
   "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
+  "Focused push notifications proof target",
+  "/care-twin-qa?qaSurface=push-notifications-proof",
   "Android content URI",
   "fallback copy",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
@@ -962,6 +966,48 @@ check(
   careEntryProviderSyncProofTargetIsSourceBacked
     ? "Care-entry provider sync proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and doctor next action"
     : "keep care-entry provider sync proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
+);
+
+const pushNotificationsProofTargetIsSourceBacked = includesAll(pushNotificationsProofSource, [
+  "PUSH_NOTIFICATIONS_PROOF_SUMMARY",
+  "PUSH_NOTIFICATIONS_PROOF_ITEMS",
+  "Expo push project config",
+  "APNs credentials",
+  "Firebase/FCM credentials",
+  "permission prompt copy",
+  "quiet hours",
+  "opt-out behavior",
+  "delivery QA",
+])
+  && includesAll(mobileReleaseQaSource, [
+    "push-notifications-proof",
+    "Push Notifications Proof",
+    "Expo push project config",
+    "APNs credentials",
+    "Firebase/FCM credentials",
+    "reminder delivery stays blocked",
+    "missed notification fallback",
+  ])
+  && includesAll(betaHandoffPacketSource, [
+    "Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
+    "Attach Expo push project id, APNs credentials, Firebase/FCM credentials",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Focused push notifications proof target",
+    "/care-twin-qa?qaSurface=push-notifications-proof",
+    "Expo push project config",
+    "APNs credentials",
+    "Firebase/FCM credentials",
+  ])
+  && includesAll(livePreviewHandoffProofSource, [
+    "push-notifications-proof",
+  ]);
+check(
+  "push notifications proof target is source-backed",
+  pushNotificationsProofTargetIsSourceBacked,
+  pushNotificationsProofTargetIsSourceBacked
+    ? "Push notifications proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and doctor next action"
+    : "keep push notifications proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
 );
 
 const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [

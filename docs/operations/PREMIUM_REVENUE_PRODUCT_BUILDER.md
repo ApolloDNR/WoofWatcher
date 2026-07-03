@@ -312,6 +312,17 @@ source-backed`. This does not configure Expo/APNs/FCM, deliver notifications,
 approve prompt copy, clear native notification QA, or replace Apollo launch
 sign-off.
 
+The push notifications focused proof target pass gives native helpers a
+concrete route for that packet. `/care-twin-qa?qaSurface=push-notifications-proof`
+now directs iOS and Android capture through Provider Launch Setup's Push
+notifications gate, Reminder Center, Expo push project config, APNs
+credentials, Firebase/FCM credentials, permission prompt/preference copy, quiet
+hours, opt-out behavior, delivery QA, and missed-notification fallback before
+reminder delivery can be claimed. Share Beta Handoff, the Release Smoke
+Checklist, the live-preview route verifier, the JSON mobile beta doctor, and
+the native QA tooling doctor all name the target. This remains proof routing
+only; it does not configure providers or prove delivered notifications.
+
 The two-day beta QA cockpit pass made device capture less fragile. `/care-twin-qa`
 now tags attached screenshot evidence explicitly as iOS, Android, or Web instead
 of relying on the runtime platform, and target routes opened from the cockpit

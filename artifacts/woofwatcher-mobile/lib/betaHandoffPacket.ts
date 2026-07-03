@@ -94,6 +94,11 @@ export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof 
       detail: "200 text/html; charset=utf-8; Expo web entry present",
     },
     {
+      route: "/care-twin-qa?qaSurface=push-notifications-proof",
+      status: "PASS",
+      detail: "200 text/html; charset=utf-8; Expo web entry present",
+    },
+    {
       route: "/care-twin-qa?qaSurface=route-visual-consistency",
       status: "PASS",
       detail: "200 text/html; charset=utf-8; Expo web entry present",
@@ -314,6 +319,8 @@ export function buildBetaHandoffPacketShareText(
     "- Approve Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
     "- Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
     "- Attach Supabase project id, migration/backfill for care_entries.updated_at and care_entry_tombstones, active-household RLS cursor/tombstone proof, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off before enabling incremental sync.",
+    "- Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
+    "- Attach Expo push project id, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before claiming reminder delivery.",
     "- Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
     "- Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
     "- Save the Mission note and clear Pass pending proof in both /care-twin-qa and More.",

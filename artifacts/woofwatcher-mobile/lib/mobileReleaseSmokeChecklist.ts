@@ -267,6 +267,14 @@ export function buildMobileReleaseSmokeChecklist(
             status: "required",
           },
           {
+            label: "Focused push notifications proof target",
+            detail:
+              "Open /care-twin-qa?qaSurface=push-notifications-proof and confirm Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, and delivery QA before reminder delivery is claimed.",
+            proof:
+              "Attach Expo push project id, APNs credential/device-token proof, Firebase/FCM delivery proof, permission preference copy, quiet hours and opt-out proof, delivery QA, and missed notification fallback.",
+            status: "required",
+          },
+          {
             label: "Focused route visual consistency target",
             detail:
               "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android.",
