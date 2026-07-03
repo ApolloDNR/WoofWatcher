@@ -1364,6 +1364,30 @@ Latest local evidence, 2026-07-03:
   care-entry sync remains blocked until actual Supabase migration/RLS/retention
   evidence and native QA proof are attached.
 
+## Care-Entry Provider Sync Proof Manifest
+
+Latest local evidence, 2026-07-03:
+
+- `/care-twin-qa?qaSurface=care-entry-provider-sync-proof` now renders a focused
+  Care-entry provider sync proof manifest using the existing
+  `deriveCareEntryProviderSyncProof` packet.
+- The manifest shows proof progress, `Incremental sync allowed: No`, every
+  Supabase project, migration/backfill, active-household RLS,
+  retention/export/deletion, dependency-complete build, and mobile incremental
+  sign-off row, plus blockers and the full-refresh boundary.
+- Red/green proof first failed because the focused QA route did not import or
+  render the manifest, then failed again because the JSON mobile beta doctor did
+  not report `care-entry provider sync proof manifest is source-backed`.
+- Focused proof now passes `careEntryProviderSyncProof.test.ts` and
+  `mobileReleaseQa.test.ts` with `28/28` tests, plus the focused care-twin QA
+  route and machine-readable doctor readiness run with `114/114` tests. Direct
+  JSON mobile beta doctor reports `care-entry provider sync proof manifest is
+  source-backed` as `PASS` while remaining blocked only on local pnpm/Corepack.
+- This clears only source-backed helper visibility for the provider-sync proof
+  packet. It does not run Supabase migrations, approve RLS, configure
+  retention/export/deletion, enable incremental sync, replace native proof, or
+  replace Apollo sign-off.
+
 ## Release Smoke Checklist Handoff
 
 Latest local evidence, 2026-07-03:

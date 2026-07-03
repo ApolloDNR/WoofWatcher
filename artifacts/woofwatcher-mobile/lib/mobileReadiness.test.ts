@@ -838,6 +838,13 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /routeVisualProofManifest\.rows\.map/);
   assert.match(qaRoute, /routeVisualProofManifest\.blockers\.map/);
   assert.match(qaRoute, /routeVisualProofManifest\.webPreviewBoundary/);
+  assert.match(qaRoute, /deriveCareEntryProviderSyncProof/);
+  assert.match(qaRoute, /careEntryProviderSyncProofManifest/);
+  assert.match(qaRoute, /Care-entry provider sync proof manifest/);
+  assert.match(qaRoute, /careEntryProviderSyncProofManifest\.items\.map/);
+  assert.match(qaRoute, /careEntryProviderSyncProofManifest\.blockers\.map/);
+  assert.match(qaRoute, /Incremental sync allowed/);
+  assert.match(qaRoute, /Mobile must remain on full-refresh care-entry refresh/);
   assert.match(qaRoute, /Mission note/);
   assert.match(qaRoute, /Mission note for \$\{nextBetaTarget\.title\}/);
   assert.match(qaRoute, /surfaceNotes\[nextBetaTarget\.surfaceId\]/);
@@ -5563,6 +5570,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
       (check) =>
         check.label ===
           "care-entry provider sync proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label ===
+          "care-entry provider sync proof manifest is source-backed" &&
         check.status === "PASS",
     ),
   );

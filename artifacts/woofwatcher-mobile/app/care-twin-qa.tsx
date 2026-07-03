@@ -24,6 +24,7 @@ import {
   type CareTwinQaReview,
   type CareTwinQaReviewStatus,
 } from "@/lib/careTwinQaReport";
+import { deriveCareEntryProviderSyncProof } from "@/lib/careEntryProviderSyncProof";
 import {
   buildRouteVisualProofManifest,
   buildStoreSubmissionScreenshotQaSurfaces,
@@ -406,6 +407,10 @@ export default function CareTwinQaScreen() {
         : null,
     [focusedQaEvidence, focusedQaTarget, surfaceNotes],
   );
+  const careEntryProviderSyncProofManifest = useMemo(
+    () => (focusedQaTarget?.surface.id === "care-entry-provider-sync-proof" ? deriveCareEntryProviderSyncProof({}) : null),
+    [focusedQaTarget],
+  );
   const nextBetaMission = betaCapturePlan.primaryMission;
   const nextBetaTarget = nextBetaMission.target ?? betaCapturePlan.nextTargets[0];
   const nextBetaTargetMissingEvidence = nextBetaTarget?.missingEvidence ?? [];
@@ -767,6 +772,81 @@ export default function CareTwinQaScreen() {
                     ) : null}
                     <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       {routeVisualProofManifest.webPreviewBoundary}
+                    </Text>
+                  </View>
+                ) : null}
+                {careEntryProviderSyncProofManifest ? (
+                  <View style={[s.routeVisualManifest, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.routeVisualManifestHeader}>
+                      <View style={s.routeVisualManifestCopy}>
+                        <Text style={[s.routeVisualManifestTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                          Care-entry provider sync proof manifest
+                        </Text>
+                        <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Mobile must remain on full-refresh care-entry refresh until provider proof and native QA sign-off are attached.
+                        </Text>
+                      </View>
+                      <QaBadge
+                        label={careEntryProviderSyncProofManifest.statusLabel}
+                        tone={careEntryProviderSyncProofManifest.incrementalSyncAllowed ? colors.sage : colors.amber}
+                      />
+                    </View>
+                    <View style={s.routeVisualManifestStats}>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Ready
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {careEntryProviderSyncProofManifest.readyCount}/{careEntryProviderSyncProofManifest.totalCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Open
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {careEntryProviderSyncProofManifest.openCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Incremental sync allowed
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {careEntryProviderSyncProofManifest.incrementalSyncAllowed ? "Yes" : "No"}
+                        </Text>
+                      </View>
+                    </View>
+                    {careEntryProviderSyncProofManifest.items.map((item) => (
+                      <View key={`care-entry-sync-manifest-${item.key}`} style={[s.routeVisualManifestRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={s.routeVisualManifestRouteLine}>
+                          <Text style={[s.routeVisualManifestRouteName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {item.label}
+                          </Text>
+                          <QaBadge label={item.status === "ready" ? "Ready" : "Blocked"} tone={item.status === "ready" ? colors.sage : colors.amber} />
+                        </View>
+                        <Text style={[s.routeVisualManifestExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {item.requiredEvidence}
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatusLine, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Source: {item.sourceFiles.join(", ")}
+                        </Text>
+                      </View>
+                    ))}
+                    {careEntryProviderSyncProofManifest.blockers.length ? (
+                      <View style={[s.routeVisualManifestBlockers, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                        {careEntryProviderSyncProofManifest.blockers.map((blocker) => (
+                          <View key={`care-entry-sync-blocker-${blocker}`} style={s.betaRunStep}>
+                            <View style={[s.betaRunStepDot, { backgroundColor: colors.amber }]} />
+                            <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {blocker}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      This manifest does not run Supabase migrations, approve RLS, configure retention/export/deletion policy, replace native iOS/Android proof, or enable incremental sync.
                     </Text>
                   </View>
                 ) : null}

@@ -1146,6 +1146,29 @@ check(
     : "keep care-entry provider sync proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
 );
 
+const careEntryProviderSyncProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
+  "deriveCareEntryProviderSyncProof",
+  "careEntryProviderSyncProofManifest",
+  "Care-entry provider sync proof manifest",
+  "Incremental sync allowed",
+  "Mobile must remain on full-refresh care-entry refresh",
+  "careEntryProviderSyncProofManifest.items.map",
+  "careEntryProviderSyncProofManifest.blockers.map",
+])
+  && includesAll(careEntryProviderSyncProofSource, [
+    "deriveCareEntryProviderSyncProof",
+    "incrementalSyncAllowed",
+    "mobile full-refresh sign-off",
+    "Mobile must remain on full-refresh care-entry refresh",
+  ]);
+check(
+  "care-entry provider sync proof manifest is source-backed",
+  careEntryProviderSyncProofManifestIsSourceBacked,
+  careEntryProviderSyncProofManifestIsSourceBacked
+    ? "Care-entry provider sync proof manifest is visible on the focused QA route while keeping full-refresh and provider proof boundaries"
+    : "render the care-entry provider sync proof manifest on /care-twin-qa?qaSurface=care-entry-provider-sync-proof with full-refresh and provider proof boundaries",
+);
+
 const woofGuideAiProviderProofTargetIsSourceBacked = includesAll(aiProviderProofSource, [
   "AI_PROVIDER_PROOF_SUMMARY",
   "AI_PROVIDER_PROOF_ITEMS",
