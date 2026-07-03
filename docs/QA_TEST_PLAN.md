@@ -1495,11 +1495,12 @@ Latest local evidence, 2026-07-03:
   dependency-complete `WoofWatcher Verify` proof instead of only listing local
   commands.
 - The handoff labels that evidence as recorded branch CI proof for run
-  `28661364982`, job `85002511278`, branch
-  `automation/premium-revenue-product-builder`, commit `38ae755`, duration
-  `3m10s`, the proof URL, and the passed Setup pnpm, install, JSON doctor,
-  focused behavior, and `build:ci` steps with `smoke:web`, `smoke:runtime`, and
-  `proof:live-preview`.
+  `28680310602`, job `85062294806`, branch
+  `automation/premium-revenue-product-builder`, commit `0d363de`, duration
+  `3m12s`, the proof URL, and the passed Setup pnpm, install, JSON doctor,
+  focused behavior, and `build:ci` steps with `smoke:web`, `smoke:runtime`,
+  `proof:live-preview`, and provider-approved support/legal launch-readiness
+  wiring.
 - The handoff now warns helpers to rerun `WoofWatcher Verify` after any new
   commit before treating dependency proof as current.
 - Red/green proof first failed because `RECORDED_MOBILE_BETA_CI_PROOF` was not
@@ -1514,7 +1515,7 @@ Latest local evidence, 2026-07-03:
   pnpm `11.7.0` while the repo is pinned to `10.24.0`.
 - Fresh refresh proof first failed because the packet still named the older
   recorded run, then passed focused beta handoff plus mobile readiness tests
-  `116/116`. JSON mobile beta doctor source-backed checks pass, including
+  `117/117`. JSON mobile beta doctor source-backed checks pass, including
   `recorded CI proof freshness boundary is source-backed`, and still block only
   on the local pnpm/Corepack mismatch.
 - This handoff proof does not approve native screenshots, provider setup,

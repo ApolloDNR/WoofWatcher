@@ -165,12 +165,13 @@ Current environment note:
   result as dependency-complete doctor proof when local Windows still has pnpm
   `11.7.0`.
 - The in-app `Share Beta Handoff` packet now labels the recorded branch CI proof
-  for `WoofWatcher Verify` run `28679465658`, job `85059791276`, commit
-  `4c373ad`, including the passed JSON doctor with auth/setup smoke proof,
+  for `WoofWatcher Verify` run `28680310602`, job `85062294806`, commit
+  `0d363de`, including the passed JSON doctor with auth/setup smoke proof,
   auth/setup native QA target coverage, auth provider proof packet coverage,
-  the provider staged-row truth boundary, the support legal readiness proof
-  target, focused tests, and `build:ci` proof for `smoke:web`, `smoke:runtime`,
-  and `proof:live-preview`. It explicitly requires rerunning `WoofWatcher
+  the provider staged-row truth boundary, support legal readiness proof target,
+  provider-approved support/legal launch-readiness wiring, focused tests, and
+  `build:ci` proof for `smoke:web`, `smoke:runtime`, and
+  `proof:live-preview`. It explicitly requires rerunning `WoofWatcher
   Verify` after any new commit before treating dependency proof as current,
   while keeping native screenshots, provider setup, store approval, and Apollo
   sign-off blocked.
@@ -415,7 +416,8 @@ Current environment note:
   `http://127.0.0.1:4194/`, and browser-open evidence while saying live preview
   proof does not replace native iOS/Android proof.
 - Share Beta Handoff now also carries a `Recorded live preview proof` section
-  from a recorded local `proof:live-preview` run: `19/19` web-preview route shell
+  from a recorded local `proof:live-preview` run generated
+  `2026-07-03T19:45:52.244Z` on commit `0d363de`: `19/19` web-preview route shell
   checks passed against the existing `.expo-smoke` export, including sign-in,
   setup, Auth/Setup onboarding proof, Records file handoff, report binary export
   proof, care-entry sync proof, WoofGuide AI provider proof, push notifications
