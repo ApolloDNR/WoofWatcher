@@ -144,13 +144,13 @@ Passing evidence:
 - GitHub Actions `WoofWatcher Verify` passes on `main`.
 - CI installs with frozen lockfile, runs focused tests, typechecks, builds API, builds web prototype, and builds mockup sandbox.
 - Local zero-dependency focused tests can run with bundled Node.
-- Local API parser/readiness proof now covers the care-entry incremental sync query contract.
-- Local mobile readiness proof now protects the full-refresh boundary for care entries until the server cursor/delete-tombstone contract exists.
+- Local API parser/readiness proof now covers the care-entry occurrence query, server `updatedAt` cursor query, delete tombstone route, and generated-client/spec contract.
+- Local mobile readiness proof now protects the full-refresh boundary for care entries until provider migration/RLS, retention policy, and mobile incremental adoption are verified against the server cursor/delete-tombstone contract.
 
 Current gaps:
 
 - Local dependency layer still blocks API build proof in this Codex checkout because `@esbuild/win32-x64` is missing from `node_modules`, and the local pnpm CLI is `11.7.0` while the repo is pinned to `10.24.0`.
-- Need broader API integration tests.
+- Need broader API integration tests, provider migration/RLS proof, and retention policy for the care-entry update cursor and tombstone schema.
 - Need mobile runtime smoke.
 - Critical mobile action accessibility labels are covered by focused static smoke.
 - Home avatar motion state and wiring are covered by focused tests.

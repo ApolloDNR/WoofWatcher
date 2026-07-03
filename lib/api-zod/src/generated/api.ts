@@ -466,6 +466,7 @@ export const PutCareStateResponse = zod.object({
  */
 export const ListCareEntriesQueryParams = zod.object({
   "since": zod.date().optional(),
+  "updatedSince": zod.date().optional(),
   "limit": zod.number().min(1).max(500).optional()
 })
 
@@ -480,9 +481,31 @@ export const ListCareEntriesResponseItem = zod.object({
   "severity": zod.string().nullish(),
   "note": zod.string().nullish(),
   "details": zod.record(zod.string(), zod.unknown()).nullish(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })
 export const ListCareEntriesResponse = zod.array(ListCareEntriesResponseItem)
+
+
+/**
+ * @summary List deleted care log tombstones for household sync
+ */
+export const ListCareEntryTombstonesQueryParams = zod.object({
+  "updatedSince": zod.date().optional(),
+  "limit": zod.number().min(1).max(500).optional()
+})
+
+export const CareEntryTombstone = zod.object({
+  "id": zod.string(),
+  "householdId": zod.string(),
+  "entryId": zod.string(),
+  "petId": zod.string().nullish(),
+  "deletedByUserId": zod.string().nullish(),
+  "deletedAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListCareEntryTombstonesResponse = zod.array(CareEntryTombstone)
 
 
 /**
@@ -532,7 +555,8 @@ export const UpdateCareEntryResponse = zod.object({
   "severity": zod.string().nullish(),
   "note": zod.string().nullish(),
   "details": zod.record(zod.string(), zod.unknown()).nullish(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })
 
 

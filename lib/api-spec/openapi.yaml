@@ -887,6 +887,12 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: updatedSince
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
         - name: limit
           in: query
           required: false
@@ -947,6 +953,47 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "403":
           description: Role is not allowed to create shared care logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /care-entries/tombstones:
+    get:
+      operationId: listCareEntryTombstones
+      tags: [care-entries]
+      summary: List deleted care log tombstones for household sync
+      parameters:
+        - name: updatedSince
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 250
+      responses:
+        "200":
+          description: Deleted care-entry tombstones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CareEntryTombstone"
+        "400":
+          description: Invalid care-entry tombstone list query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -1775,11 +1822,44 @@ components:
         createdAt:
           type: string
           format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       required:
         - id
         - type
         - occurredAt
         - createdAt
+        - updatedAt
+    CareEntryTombstone:
+      type: object
+      properties:
+        id:
+          type: string
+        householdId:
+          type: string
+        entryId:
+          type: string
+        petId:
+          type: ["string", "null"]
+        deletedByUserId:
+          type: ["string", "null"]
+        deletedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - householdId
+        - entryId
+        - deletedAt
+        - createdAt
+        - updatedAt
     CareEntryInput:
       type: object
       properties:

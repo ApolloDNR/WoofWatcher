@@ -89,15 +89,69 @@ test("care entries list query stays documented, typed, and validation-aware", ()
 
   assert.match(route, /normalizeListCareEntriesQuery\(req\.query\)/, "care-entries route should use the shared query normalizer");
   assert.match(queryHelper, /Invalid since query/, "care-entry list query should reject malformed incremental sync timestamps");
+  assert.match(queryHelper, /updatedSince/, "care-entry list query should expose a server update cursor separate from occurrence filters");
+  assert.match(route, /gte\(careEntriesTable\.updatedAt, updatedSince\)/, "care-entry list route should use updatedAt for server cursor reads");
   assert.match(listCareEntriesBlock, /name:\s+since/, "OpenAPI must document the care-entries since query");
+  assert.match(listCareEntriesBlock, /name:\s+updatedSince/, "OpenAPI must document the care-entries server update cursor query");
   assert.match(openapi, /name:\s+limit/, "OpenAPI must document the care-entries limit query");
   assert.match(listCareEntriesBlock, /"400":/, "OpenAPI must document invalid care-entry list query errors");
+  assert.match(reactSchemas, /updatedAt:\s*string/, "React API client must expose the care-entry update cursor");
   assert.match(reactSchemas, /since\?:\s*string/, "React API client must type the care-entries since query");
+  assert.match(reactSchemas, /updatedSince\?:\s*string/, "React API client must type the care-entries updatedSince query");
   assert.match(reactSchemas, /limit\?:\s*number/, "React API client must type the care-entries limit query");
+  assert.match(zodTypes, /updatedSince\?:\s*Date/, "Zod generated param types must type the care-entries updatedSince query");
   assert.match(zodTypes, /since\?:\s*Date/, "Zod generated param types must type the care-entries since query");
   assert.match(zodTypes, /limit\?:\s*number/, "Zod generated param types must type the care-entries limit query");
+  assert.match(zodSchemas, /"updatedSince":\s*zod\.date\(\)\.optional\(\)/, "Zod generated validator must validate the care-entries updatedSince query");
   assert.match(zodSchemas, /"since":\s*zod\.date\(\)\.optional\(\)/, "Zod generated validator must validate the care-entries since query");
   assert.match(zodSchemas, /"limit":\s*zod\.number\(\)/, "Zod generated validator must validate the care-entries limit query");
+});
+
+test("care entry server cursor and tombstone contract stays source-backed", () => {
+  const route = read("artifacts/api-server/src/routes/care-entries.ts");
+  const schema = read("lib/db/src/schema/careEntries.ts");
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const zodApi = read("lib/api-zod/src/generated/api.ts");
+  const zodTypesIndex = read("lib/api-zod/src/generated/types/index.ts");
+  const reactSchemas = read("lib/api-client-react/src/generated/api.schemas.ts");
+  const reactClient = read("lib/api-client-react/src/generated/api.ts");
+
+  const tombstoneBlock = section(
+    openapi,
+    "  /care-entries/tombstones:",
+    "  /care-entries/{id}:",
+  );
+
+  assert.match(schema, /updatedAt:\s*timestamp\("updated_at"/, "care entries must store an updatedAt cursor");
+  assert.match(schema, /pgTable\("care_entry_tombstones"/, "care-entry deletes must have durable tombstone rows");
+  assert.match(schema, /entryId:\s*uuid\("entry_id"\)/, "tombstones must preserve the deleted care-entry id");
+  assert.match(schema, /deletedAt:\s*timestamp\("deleted_at"/, "tombstones must preserve delete time");
+
+  assert.match(route, /router\.get\("\/care-entries\/tombstones", requireAuth/, "care-entry tombstones need an authenticated list route");
+  assert.match(route, /ListCareEntryTombstonesResponse\.parse/, "care-entry tombstones should use the generated response validator");
+  assert.match(route, /(?:db|tx)\s*\.\s*insert\(careEntryTombstonesTable\)/, "care-entry deletes should insert a tombstone with the delete mutation");
+  assert.match(route, /entryId:\s*deleted\.id/, "care-entry tombstones should preserve the deleted entry id");
+  assert.match(route, /deletedByUserId:\s*userId/, "care-entry tombstones should preserve who deleted the entry");
+
+  assert.match(tombstoneBlock, /operationId: listCareEntryTombstones/, "OpenAPI must document the tombstone list route");
+  assert.match(tombstoneBlock, /name:\s+updatedSince/, "OpenAPI must document the tombstone update cursor");
+  assert.match(tombstoneBlock, /"200":/, "OpenAPI must document tombstone list success");
+  assert.match(tombstoneBlock, /"400":/, "OpenAPI must document invalid tombstone list query errors");
+  assert.match(tombstoneBlock, /"401":/, "OpenAPI must document unauthenticated tombstone list errors");
+  assert.match(openapi, /CareEntryTombstone:/, "OpenAPI must expose the care-entry tombstone schema");
+
+  assert.match(zodApi, /export const ListCareEntryTombstonesQueryParams/, "Zod must validate tombstone query params");
+  assert.match(zodApi, /export const CareEntryTombstone/, "Zod must expose the tombstone schema");
+  assert.match(zodApi, /export const ListCareEntryTombstonesResponse/, "Zod must expose the tombstone response");
+  assert.match(zodTypesIndex, /careEntryTombstone/, "Zod generated type exports must include tombstones");
+  assert.match(reactSchemas, /export interface CareEntryTombstone/, "React schemas must type tombstone rows");
+  assert.match(reactSchemas, /export interface ListCareEntryTombstonesParams/, "React schemas must type tombstone query params");
+  assert.match(reactClient, /listCareEntryTombstones/, "React client must expose the tombstone fetcher");
+  assert.match(
+    reactClient,
+    /ListCareEntryTombstonesQueryError = ErrorType<ApiError>/,
+    "React tombstone query error alias must expose ApiError bodies",
+  );
 });
 
 test("care state write errors stay documented and typed", () => {

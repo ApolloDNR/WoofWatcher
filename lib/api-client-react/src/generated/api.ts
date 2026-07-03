@@ -28,6 +28,7 @@ import type {
   AccessPassActivationInput,
   AccessPassRevocationInput,
   CareEntry,
+  CareEntryTombstone,
   CareEntryInput,
   CareEntryUpdate,
   CareHelperAnswer,
@@ -53,6 +54,7 @@ import type {
   ListHouseholdAuditEventsParams,
   ListHouseholdSharingCleanupParams,
   ListCareEntriesParams,
+  ListCareEntryTombstonesParams,
   Me,
   MeUpdate,
   WoofguideEventsInput,
@@ -1776,10 +1778,83 @@ export function useListCareEntries<TData = Awaited<ReturnType<typeof listCareEnt
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
+export const getListCareEntryTombstonesUrl = (params?: ListCareEntryTombstonesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/care-entries/tombstones?${stringifiedParams}` : `/api/care-entries/tombstones`
+}
+
+/**
+ * @summary List deleted care log tombstones for household sync
+ */
+export const listCareEntryTombstones = async (params?: ListCareEntryTombstonesParams, options?: RequestInit): Promise<CareEntryTombstone[]> => {
+
+  return customFetch<CareEntryTombstone[]>(getListCareEntryTombstonesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
 
 
 
 
+
+export const getListCareEntryTombstonesQueryKey = (params?: ListCareEntryTombstonesParams,) => {
+    return [
+    `/api/care-entries/tombstones`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCareEntryTombstonesQueryOptions = <TData = Awaited<ReturnType<typeof listCareEntryTombstones>>, TError = ErrorType<ApiError>>(params?: ListCareEntryTombstonesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCareEntryTombstones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCareEntryTombstonesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCareEntryTombstones>>> = ({ signal }) => listCareEntryTombstones(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCareEntryTombstones>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCareEntryTombstonesQueryResult = NonNullable<Awaited<ReturnType<typeof listCareEntryTombstones>>>
+export type ListCareEntryTombstonesQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List deleted care log tombstones for household sync
+ */
+
+export function useListCareEntryTombstones<TData = Awaited<ReturnType<typeof listCareEntryTombstones>>, TError = ErrorType<ApiError>>(
+ params?: ListCareEntryTombstonesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCareEntryTombstones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCareEntryTombstonesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 
 export const getCreateCareEntryUrl = () => {

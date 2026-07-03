@@ -1,10 +1,11 @@
 import { Router, type IRouter } from "express";
 import { and, desc, eq, gte } from "drizzle-orm";
-import { db, careEntriesTable } from "@workspace/db";
+import { db, careEntriesTable, careEntryTombstonesTable } from "@workspace/db";
 import { normalizeCareEventType } from "@workspace/care-domain";
 import {
   ListCareEntriesResponse,
   ListCareEntriesResponseItem,
+  ListCareEntryTombstonesResponse,
   CreateCareEntryBody,
   UpdateCareEntryParams,
   UpdateCareEntryBody,
@@ -21,7 +22,10 @@ import {
   applyCareEntryWritePolicy,
   assertCareEntryWriteAllowed,
 } from "../lib/care-entry-authorization";
-import { normalizeListCareEntriesQuery } from "../lib/care-entry-query";
+import {
+  normalizeListCareEntriesQuery,
+  normalizeListCareEntryTombstonesQuery,
+} from "../lib/care-entry-query";
 
 const router: IRouter = Router();
 
@@ -35,8 +39,14 @@ router.get("/care-entries", requireAuth, async (req, res): Promise<void> => {
   }
 
   const since = query.since;
+  const updatedSince = query.updatedSince;
 
-  const where = since
+  const where = updatedSince
+    ? and(
+        eq(careEntriesTable.householdId, householdId),
+        gte(careEntriesTable.updatedAt, updatedSince),
+      )
+    : since
     ? and(
         eq(careEntriesTable.householdId, householdId),
         gte(careEntriesTable.occurredAt, since),
@@ -47,10 +57,36 @@ router.get("/care-entries", requireAuth, async (req, res): Promise<void> => {
     .select()
     .from(careEntriesTable)
     .where(where)
-    .orderBy(desc(careEntriesTable.occurredAt))
+    .orderBy(desc(updatedSince ? careEntriesTable.updatedAt : careEntriesTable.occurredAt))
     .limit(query.limit);
 
   res.json(ListCareEntriesResponse.parse(rows));
+});
+
+router.get("/care-entries/tombstones", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const householdId = await getActiveHouseholdId(userId);
+  const query = normalizeListCareEntryTombstonesQuery(req.query);
+  if (!query.ok) {
+    res.status(query.status).json({ error: query.error });
+    return;
+  }
+
+  const where = query.updatedSince
+    ? and(
+        eq(careEntryTombstonesTable.householdId, householdId),
+        gte(careEntryTombstonesTable.updatedAt, query.updatedSince),
+      )
+    : eq(careEntryTombstonesTable.householdId, householdId);
+
+  const rows = await db
+    .select()
+    .from(careEntryTombstonesTable)
+    .where(where)
+    .orderBy(desc(careEntryTombstonesTable.updatedAt))
+    .limit(query.limit);
+
+  res.json(ListCareEntryTombstonesResponse.parse(rows));
 });
 
 router.post("/care-entries", requireAuth, async (req, res): Promise<void> => {
@@ -150,6 +186,7 @@ router.patch("/care-entries/:id", requireAuth, async (req, res): Promise<void> =
         : {}),
       ...(parsed.data.note !== undefined ? { note: parsed.data.note } : {}),
       details: policy.details,
+      updatedAt: new Date(),
     })
     .where(
       and(
@@ -183,15 +220,33 @@ router.delete(
       return;
     }
 
-    const [deleted] = await db
-      .delete(careEntriesTable)
-      .where(
-        and(
-          eq(careEntriesTable.id, params.data.id),
-          eq(careEntriesTable.householdId, householdId),
-        ),
-      )
-      .returning();
+    let deleted: typeof careEntriesTable.$inferSelect | undefined;
+    const deletedAt = new Date();
+
+    await db.transaction(async (tx) => {
+      const [removed] = await tx
+        .delete(careEntriesTable)
+        .where(
+          and(
+            eq(careEntriesTable.id, params.data.id),
+            eq(careEntriesTable.householdId, householdId),
+          ),
+        )
+        .returning();
+
+      deleted = removed;
+
+      if (deleted) {
+        await tx.insert(careEntryTombstonesTable).values({
+          householdId,
+          entryId: deleted.id,
+          petId: deleted.petId,
+          deletedByUserId: userId,
+          deletedAt,
+          updatedAt: deletedAt,
+        });
+      }
+    });
 
     if (!deleted) {
       res.status(404).json({ error: "Entry not found" });

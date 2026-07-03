@@ -416,6 +416,20 @@ export interface CareEntry {
   /** @nullable */
   details?: CareEntryDetails;
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface CareEntryTombstone {
+  id: string;
+  householdId: string;
+  entryId: string;
+  /** @nullable */
+  petId?: string | null;
+  /** @nullable */
+  deletedByUserId?: string | null;
+  deletedAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type CareEntryInputDetails = { [key: string]: unknown };
@@ -452,6 +466,12 @@ export interface CareEntryUpdate {
 
 export type ListCareEntriesParams = {
 since?: string;
+updatedSince?: string;
 limit?: number;
 };
+
+export interface ListCareEntryTombstonesParams {
+  updatedSince?: string;
+  limit?: number;
+}
 

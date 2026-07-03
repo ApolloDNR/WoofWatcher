@@ -1217,3 +1217,34 @@ Latest local evidence, 2026-07-03:
 - JSON mobile beta doctor source-backed checks still pass, but the result
   remains truthfully `BLOCKED` only because local pnpm is `11.7.0` while the
   repo is pinned to `10.24.0`.
+
+## Care Entries Server Cursor And Tombstone Contract Proof
+
+Latest local evidence, 2026-07-03:
+
+- `care_entries` now has a server-owned `updatedAt` cursor in the Drizzle schema.
+- `/care-entries?updatedSince=` is documented, validated, generated-client typed,
+  and routed through the API list query without changing the existing
+  occurrence-time `/care-entries?since=` behavior.
+- The list query rejects ambiguous `since` plus `updatedSince` requests with
+  `Use either since or updatedSince for care-entry sync, not both.`
+- Care-entry deletes now write `care_entry_tombstones` rows with the deleted
+  entry id, pet id, deleting user, delete time, and update cursor.
+- `/care-entries/tombstones?updatedSince=` is authenticated, household-scoped,
+  OpenAPI documented, Zod-validated, and exposed in the generated React client.
+- Red/green proof first failed on missing `updatedSince`, `updatedAt`,
+  tombstone route/schema, and generated-client coverage, then passed after the
+  server contract was added.
+- Focused API proof passed `careEntryQuery.test.ts` plus
+  `apiReadiness.test.ts` with `21/21` tests. Broader proof passed the
+  API/mobile/care-domain suite with `492/492` tests.
+- Library TypeScript, API TypeScript, and mobile TypeScript passed after
+  prepending bundled Node and pnpm to `PATH`.
+- Expo web export smoke passed to `.expo-smoke` with `219` assets and `223`
+  files.
+- JSON mobile beta doctor source-backed checks still pass, but the result
+  remains truthfully `BLOCKED` only because local pnpm is `11.7.0` while the
+  repo is pinned to `10.24.0`.
+- Local API build remains blocked by missing `@esbuild/win32-x64` in
+  `node_modules`; rerun in a dependency-complete pinned pnpm environment or use
+  branch CI as build authority.

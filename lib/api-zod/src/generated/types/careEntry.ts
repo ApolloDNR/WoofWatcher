@@ -26,4 +26,5 @@ export interface CareEntry {
   /** @nullable */
   details?: CareEntryDetails;
   createdAt: Date;
+  updatedAt: Date;
 }
