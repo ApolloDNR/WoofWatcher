@@ -1189,3 +1189,31 @@ Latest local evidence, 2026-07-03:
 - API build remains locally blocked by the existing dependency layer:
   `@esbuild/win32-x64` is missing from `node_modules`. Re-run after dependency
   install/build proof exists in a pinned `pnpm@10.24.0` environment.
+
+## Care Entries Refresh Cursor Boundary Proof
+
+Latest local evidence, 2026-07-03:
+
+- Mobile care sync now routes care-entry refreshes through
+  `buildCareEntryRefreshPlan` before calling `listCareEntries`.
+- The current plan stays in `full` mode because `/care-entries?since=` filters
+  by `occurredAt`, not a server update cursor, and there are no delete
+  tombstones yet.
+- `CareContext` keeps `hasUpdatedAtCursor: false` and
+  `hasDeleteTombstones: false`, so future builders cannot silently turn the
+  occurrence-time filter into fake provider sync readiness.
+- The readiness boundary is explicit:
+  `Full care-entry refresh required until the API exposes an updatedAt cursor
+  and delete tombstones.`
+- Red/green proof first failed because `careSync.ts` did not export
+  `buildCareEntryRefreshPlan`, then passed after the helper and CareContext
+  wiring were added.
+- Focused proof passed `careSync.test.ts` plus `mobileReadiness.test.ts` with
+  `126/126` tests. Broader proof passed the API/mobile/care-domain suite with
+  `490/490` tests.
+- Mobile TypeScript passed after prepending bundled Node to `PATH`.
+- Expo web export smoke passed to `.expo-smoke` with `219` assets and `223`
+  files.
+- JSON mobile beta doctor source-backed checks still pass, but the result
+  remains truthfully `BLOCKED` only because local pnpm is `11.7.0` while the
+  repo is pinned to `10.24.0`.

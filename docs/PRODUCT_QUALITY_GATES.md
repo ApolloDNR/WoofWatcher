@@ -52,6 +52,7 @@ Passing evidence:
 - Calendar exposes Reminder Center derived from routine-board status, medication follow-ups, record reminders, and grooming due dates, with urgency counts, explicit notification-readiness copy, and row routing to routine edit, Records, Medication log, or Grooming log before provider-backed push delivery exists.
 - Log search combines text query and type filters across titles, notes, caregivers, nested details, route/place fields, medication fields, and sticky notes with owner-readable summary and empty-state copy.
 - Care document refresh keeps newer local/offline profile, routine, record, and report changes when server care-state data is older, then pushes the newer doc back to the household.
+- Care entry refresh stays in full-refresh mode until the API exposes a real `updatedAt` cursor and delete tombstones, so mobile sync does not misuse the occurrence-time `since` filter as provider-ready incremental sync.
 - Care Pass reports can be previewed by audience before sharing.
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
 - Records show expired, due-soon, current, and reference status for saved record rows.
@@ -144,6 +145,7 @@ Passing evidence:
 - CI installs with frozen lockfile, runs focused tests, typechecks, builds API, builds web prototype, and builds mockup sandbox.
 - Local zero-dependency focused tests can run with bundled Node.
 - Local API parser/readiness proof now covers the care-entry incremental sync query contract.
+- Local mobile readiness proof now protects the full-refresh boundary for care entries until the server cursor/delete-tombstone contract exists.
 
 Current gaps:
 

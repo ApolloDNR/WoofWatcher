@@ -23,6 +23,7 @@ import {
   type CareStateEnvelope,
 } from "@workspace/api-client-react";
 import {
+  buildCareEntryRefreshPlan,
   deriveCareSyncOutbox,
   mergeServerAndLocalEntries,
   reconcileCareDocFromServer,
@@ -638,7 +639,13 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         setServerVersion(plan.version);
       }
 
-      const rows = await listCareEntries();
+      const entryRefreshPlan = buildCareEntryRefreshPlan({
+        // The current API `since` filter is occurrence-based, not a server
+        // update cursor, so full refresh remains the safe household sync path.
+        hasUpdatedAtCursor: false,
+        hasDeleteTombstones: false,
+      });
+      const rows = await listCareEntries(entryRefreshPlan.params);
       const serverEntries = rows.map(toEntry);
       const retryableCreates = entriesRef.current.filter(
         (entry) => shouldRetryCreate(entry) && entry.syncStatus !== "pending",

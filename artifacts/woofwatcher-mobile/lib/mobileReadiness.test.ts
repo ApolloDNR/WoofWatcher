@@ -3794,9 +3794,23 @@ test("keeps the durable sync outbox visible in care context and Log", () => {
     ),
     "utf8",
   );
+  const careSync = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "careSync.ts",
+    ),
+    "utf8",
+  );
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
   assert.match(careContext, /deriveCareSyncOutbox/);
+  assert.match(careContext, /buildCareEntryRefreshPlan/);
+  assert.match(careContext, /hasUpdatedAtCursor:\s*false/);
+  assert.match(careContext, /hasDeleteTombstones:\s*false/);
+  assert.match(careSync, /Full care-entry refresh required/);
   assert.match(careContext, /syncOutbox/);
   assert.match(log, /syncOutbox\.message/);
   assert.match(log, /Retry sync/);
