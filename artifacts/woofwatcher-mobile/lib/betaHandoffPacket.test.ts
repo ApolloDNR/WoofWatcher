@@ -161,7 +161,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Recorded live preview proof:/);
   assert.match(text, /WoofWatcher Live Preview Handoff Proof/);
   assert.match(text, /Result: PASS/);
-  assert.match(text, /Routes: 11\/11 web-preview shell checks passed/);
+  assert.match(text, /Routes: 15\/15 web-preview shell checks passed/);
   assert.match(text, /Recorded verifier URL: http:\/\/127\.0\.0\.1:\d+\//);
   assert.match(text, /Preview handoff URL: http:\/\/127\.0\.0\.1:4194\/ after preview:smoke is running/);
   assert.match(text, /Attach proof: JSON route proof plus preview:smoke URL\/output/);

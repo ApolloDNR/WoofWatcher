@@ -72,9 +72,9 @@ The beta must not claim:
 - When the current mission is `Push Notifications Proof`, open `/care-twin-qa?qaSurface=push-notifications-proof`, then capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed-notification fallback before claiming reminder delivery.
 - When reviewing Reminder Center, use Calendar's `Open push proof` action to jump to the same Push Notifications Proof mission. This is a shortcut only; local preference intent still does not prove provider configuration or delivered reminders.
 - When the current mission is `Payments Provider Proof`, open `/care-twin-qa?qaSurface=payments-provider-proof`, then capture Plus and Family product ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired receipt proof, restore purchases, entitlement mapping, household role access, refund/support policy, and checkout-gate proof before enabling paid checkout.
-- When reviewing Provider Launch Setup, use the Plus payments row's `Open proof mission` action to jump to the same Payments Provider Proof mission. This is a shortcut only; it does not configure payments, prove sandbox receipts, enable money movement, or approve store checkout.
+- When reviewing Provider Launch Setup's WoofWatcher Plus payments row, use `Open proof mission` to jump to the same Payments Provider Proof mission. This is a shortcut only; it does not approve tiers, configure store or Stripe billing, prove receipts, enable checkout, clear store approval, or replace Apollo sign-off.
 - When the current mission is `Route Visual Consistency`, open `/care-twin-qa?qaSurface=route-visual-consistency`, then capture Home, Log, Plans, Health, Records, and More on both iOS and Android; web preview screenshots do not replace native proof.
-- Before attempting native proof, run `pnpm run doctor:native-qa:json`. A `BLOCKED` result from missing `adb`, `emulator`, `java`, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, or `JAVA_HOME` means use a configured Mac, Android Studio machine, physical device, TestFlight build, or helper environment instead of claiming local native QA. The JSON doctor's `nextActions` now explicitly call out Report Binary Export Proof and Care-entry Provider Sync Proof as helper missions alongside Route Visual Consistency, Auth/Setup, Records local files, and Push notifications; those action lines are capture instructions, not native proof by themselves.
+- Before attempting native proof, run `pnpm run doctor:native-qa:json`. A `BLOCKED` result from missing `adb`, `emulator`, `java`, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, or `JAVA_HOME` means use a configured Mac, Android Studio machine, physical device, TestFlight build, or helper environment instead of claiming local native QA. The JSON doctor's `nextActions` now explicitly call out Report Binary Export Proof, Care-entry Provider Sync Proof, Payments Provider Proof, and Push Notifications Proof as helper missions alongside Route Visual Consistency, Auth/Setup, and Records local files; those action lines are capture instructions, not native proof by themselves.
 - On Avatar Studio, confirm Scan/Template/Customize/Emotes tabs, Gallery, Take photo, template tiles, coat swatches, face options, accessories, mood previews, Reset, and Save Avatar controls feel phone-sized and easy to tap.
 - On Adventure, confirm quest cards, private memory capture, `Save Memory`, and `Share Adventure` feel phone-sized, useful, and aligned with the real-care RPG promise instead of decorative game fluff.
 - On WoofGuide, confirm quick questions, suggested actions, the send button, and owner-review Cancel/Apply draft controls feel phone-sized, useful, and clearly non-diagnostic.
@@ -193,6 +193,13 @@ Current environment note:
   This is shortcut-routing proof only; Supabase migration/backfill,
   active-household RLS, retention/export/deletion, incremental provider sync,
   and Apollo sign-off remain blocked.
+- Branch CI also proved the Auth/Setup proof shortcut on 2026-07-03:
+  `WoofWatcher Verify` run `28675785938`, job `85048784312`, commit `7d7013b`,
+  with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused
+  behavior tests, and Typecheck plus CI-safe builds all passing. This is
+  shortcut-routing proof only; Clerk setup, provider-backed household creation,
+  invite delivery, cross-device sync, native screenshots, and Apollo sign-off
+  remain blocked.
 - The mobile package now has a `smoke:runtime` alias that starts a disposable
   static runtime over `.expo-smoke`, verifies 13 exported mobile routes return
   the Expo web shell, including `/sign-in` and `/setup`, and exits without
@@ -244,8 +251,10 @@ Current environment note:
   ids, the App Store/Google Play/Stripe or web checkout decision, sandbox
   receipt tests, entitlement mapping, refund/support policy, and checkout-gate
   proof before paid checkout can be enabled. Share Beta Handoff prints those
-  proof steps, but checkout remains disabled until Apollo and the store/provider
-  evidence is attached.
+  proof steps, and the payments row now opens
+  `/care-twin-qa?qaSurface=payments-provider-proof` for focused helper capture,
+  but checkout remains disabled until Apollo and the store/provider evidence is
+  attached.
 - Provider Launch Setup's WoofGuide AI gate now carries a `WoofGuide AI
   provider proof packet` requiring OpenAI key location, approved model policy,
   source/citation rules, owner-review write gate, veterinary safety boundary,
@@ -329,12 +338,15 @@ Current environment note:
   `http://127.0.0.1:4194/`, and browser-open evidence while saying live preview
   proof does not replace native iOS/Android proof.
 - Share Beta Handoff now also carries a `Recorded live preview proof` section
-  from a recorded local `proof:live-preview` run: `10/10` web-preview route shell
-  checks passed against the regenerated `.expo-smoke` export. The recorded
-  verifier URL is disposable; the review handoff URL remains
-  `http://127.0.0.1:4194/` after `preview:smoke` is running. Rerun branch CI and
-  `proof:live-preview` after new commits/exports before treating this proof as
-  current, and do not use it as native iOS/Android proof.
+  from a recorded local `proof:live-preview` run: `15/15` web-preview route shell
+  checks passed against the existing `.expo-smoke` export, including sign-in,
+  setup, Auth/Setup onboarding proof, push notifications proof, payments
+  provider proof, care-entry sync proof, records file handoff, report binary
+  export proof, and route visual consistency. The recorded verifier URL is
+  disposable; the review handoff URL remains `http://127.0.0.1:4194/` after
+  `preview:smoke` is running. Rerun branch CI and `proof:live-preview` after new
+  commits/exports before treating this proof as current, and do not use it as
+  native iOS/Android proof.
 - Provider Launch Setup now also shows a proof-needed checklist for every
   production provider gate in More and in the share packet: Clerk, Supabase/RLS,
   storage signed uploads, WoofGuide AI policy, payments, push, Apple/Google
@@ -356,12 +368,12 @@ Current environment note:
   plus a `More proof steps` count. Use `Share Provider Plan` for the complete
   checklist, and do not treat a single visible proof line as enough to clear
   Supabase/RLS, PDF/PNG artifact, storage policy, or native proof blockers.
-- Provider Launch Setup also gives the auth, database, storage, and push rows an
+- Provider Launch Setup also gives the auth, database, storage, payments, and push rows an
   `Open proof mission` action to the matching focused `/care-twin-qa` surface:
   Auth/Setup onboarding proof, Care-entry provider sync proof, Report binary
-  export proof, and Push notifications proof. These are capture shortcuts only;
-  they do not replace provider credentials, native screenshots, or Apollo
-  approval.
+  export proof, Payments Provider Proof, and Push notifications proof. These are
+  capture shortcuts only; they do not replace provider credentials, native
+  screenshots, or Apollo approval.
 - The in-app `Share Beta Handoff` packet now includes that provider proof
   checklist too, so deadline helpers can use one packet for dependency proof,
   device proof, provider evidence, and launch truth boundaries.

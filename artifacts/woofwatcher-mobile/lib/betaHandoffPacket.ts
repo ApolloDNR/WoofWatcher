@@ -67,18 +67,25 @@ export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
 
 export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof = {
   title: "WoofWatcher Live Preview Handoff Proof",
-  generatedAtIso: "2026-07-03T12:38:54.998Z",
+  generatedAtIso: "2026-07-03T17:55:38.090Z",
   result: "PASS",
-  baseUrl: "http://127.0.0.1:58033/",
-  commit: "699589a",
+  baseUrl: "http://127.0.0.1:57379/",
+  commit: "7d7013b",
   exportIndexMtimeIso: "2026-07-03T12:38:39.906Z",
   routeChecks: [
     { route: "/", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
+    { route: "/sign-in", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
+    { route: "/setup", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
     { route: "/log", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
     { route: "/calendar", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
     { route: "/health", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
     { route: "/records", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
     { route: "/more", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
+    {
+      route: "/care-twin-qa?qaSurface=auth-setup-onboarding-proof",
+      status: "PASS",
+      detail: "200 text/html; charset=utf-8; Expo web entry present",
+    },
     {
       route: "/care-twin-qa?qaSurface=records-local-file-handoff",
       status: "PASS",
@@ -96,6 +103,11 @@ export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof 
     },
     {
       route: "/care-twin-qa?qaSurface=push-notifications-proof",
+      status: "PASS",
+      detail: "200 text/html; charset=utf-8; Expo web entry present",
+    },
+    {
+      route: "/care-twin-qa?qaSurface=payments-provider-proof",
       status: "PASS",
       detail: "200 text/html; charset=utf-8; Expo web entry present",
     },

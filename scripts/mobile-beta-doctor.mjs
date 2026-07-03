@@ -660,8 +660,10 @@ check(
 const recordedLivePreviewProofAttachmentIsSourceBacked = includesAll(betaHandoffPacketSource, [
   "RECORDED_LIVE_PREVIEW_HANDOFF_PROOF",
   'title: "WoofWatcher Live Preview Handoff Proof"',
-  'commit: "699589a"',
+  'commit: "7d7013b"',
+  "auth-setup-onboarding-proof",
   "care-entry-provider-sync-proof",
+  "payments-provider-proof",
   "Recorded live preview proof:",
   "Routes: ${passCount}/${totalCount} web-preview shell checks passed.",
   "Attach proof: JSON route proof plus preview:smoke URL/output before claiming preview handoff.",
