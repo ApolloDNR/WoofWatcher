@@ -48,12 +48,12 @@ export interface MobileLivePreviewHandoffProof {
 
 export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
   workflowName: "WoofWatcher Verify",
-  runId: "28657836139",
-  jobId: "84991128098",
+  runId: "28661364982",
+  jobId: "85002511278",
   branch: "automation/premium-revenue-product-builder",
-  commit: "5f80049",
-  duration: "2m10s",
-  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28657836139",
+  commit: "38ae755",
+  duration: "3m10s",
+  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28661364982",
   passedSteps: [
     "Setup pnpm",
     "Install dependencies",
@@ -61,7 +61,7 @@ export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
     "Run focused behavior tests",
     "Typecheck and CI-safe builds",
   ],
-  coverage: "pinned pnpm 10.24.0, JSON mobile beta doctor, focused tests, build:ci, mobile smoke:web and smoke:runtime",
+  coverage: "pinned pnpm 10.24.0, JSON mobile beta doctor, focused tests, build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview",
 };
 
 export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof = {
