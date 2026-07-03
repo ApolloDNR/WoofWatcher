@@ -5375,8 +5375,8 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
       (check) =>
         check.label === "recorded CI proof freshness boundary is source-backed" &&
         check.status === "PASS" &&
-        check.detail.includes("run 28665850917") &&
-        check.detail.includes("commit c17571a"),
+        check.detail.includes("run 28672842742") &&
+        check.detail.includes("commit b76cb8f"),
     ),
   );
   assert.ok(
