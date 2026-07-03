@@ -2811,14 +2811,15 @@ submission, or replace Apollo sign-off.
 
 The recorded CI proof freshness pass keeps Share Beta Handoff from treating a
 historical branch run as current proof after later commits. The recorded proof
-now points to `WoofWatcher Verify` run `28663442198`, job `85009301034`, commit
-`a392ca0`, and the packet labels it `Recorded branch CI proof` while requiring a
+now points to `WoofWatcher Verify` run `28664666368`, job `85013346789`, commit
+`d3d767d`, and the packet labels it `Recorded branch CI proof` while requiring a
 fresh workflow rerun after any new commit before dependency proof can be treated
 as current. This refresh records the branch CI that passed after the auth/setup
-runtime smoke proof target, including pinned pnpm 10.24.0, the JSON mobile beta
-doctor with `auth/setup runtime smoke proof is source-backed`, focused behavior
-tests, and `build:ci` with `smoke:web`, `smoke:runtime`, and
-`proof:live-preview`. Fresh refresh verification covered the intended red
+native QA target, including pinned pnpm 10.24.0, the JSON mobile beta doctor
+with `auth/setup runtime smoke proof is source-backed` and
+`auth/setup native QA target is source-backed`, focused behavior tests, and
+`build:ci` with `smoke:web`, `smoke:runtime`, and `proof:live-preview`. Fresh
+refresh verification covered the intended red
 beta-handoff/doctor failures for the old recorded run, then passed focused beta
 handoff plus mobile readiness tests `117/117`. Direct JSON doctor still blocks only on
 local pnpm `11.7.0` versus pinned `10.24.0`, with Corepack not on PATH. This is

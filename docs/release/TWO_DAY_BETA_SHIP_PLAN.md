@@ -152,13 +152,13 @@ Current environment note:
   result as dependency-complete doctor proof when local Windows still has pnpm
   `11.7.0`.
 - The in-app `Share Beta Handoff` packet now labels the recorded branch CI proof
-  for `WoofWatcher Verify` run `28663442198`, job `85009301034`, commit
-  `a392ca0`, including the passed JSON doctor with auth/setup smoke proof,
-  focused test, and `build:ci` proof for `smoke:web`, `smoke:runtime`, and
-  `proof:live-preview`. It explicitly requires rerunning `WoofWatcher Verify`
-  after any new commit before treating dependency proof as current, while
-  keeping native screenshots, provider setup, store approval, and Apollo
-  sign-off blocked.
+  for `WoofWatcher Verify` run `28664666368`, job `85013346789`, commit
+  `d3d767d`, including the passed JSON doctor with auth/setup smoke proof and
+  auth/setup native QA target coverage, focused test, and `build:ci` proof for
+  `smoke:web`, `smoke:runtime`, and `proof:live-preview`. It explicitly
+  requires rerunning `WoofWatcher Verify` after any new commit before treating
+  dependency proof as current, while keeping native screenshots, provider setup,
+  store approval, and Apollo sign-off blocked.
 - The mobile package now has a `smoke:runtime` alias that starts a disposable
   static runtime over `.expo-smoke`, verifies 13 exported mobile routes return
   the Expo web shell, including `/sign-in` and `/setup`, and exits without
