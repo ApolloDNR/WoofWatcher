@@ -2688,9 +2688,21 @@ because local pnpm is `11.7.0` versus pinned `10.24.0`. This is exported
 web-runtime proof, not native simulator/device proof, provider approval,
 generated PDF/image export, store approval, public launch, or Apollo sign-off.
 
+The CI mobile beta doctor pass moves the exact pnpm 10.24 dependency/export
+doctor into branch verification. `.github/workflows/verify.yml` now runs
+`pnpm run doctor:mobile-beta:json` immediately after frozen dependency install,
+before focused tests and `build:ci`. A red/green readiness check first failed
+because the workflow did not include the JSON doctor command, then passed after
+the step was added. Direct local JSON doctor output still remains `BLOCKED`
+only because this Windows shell exposes pnpm `11.7.0` while the repo pins
+`10.24.0`; the branch runner is the dependency-complete authority for that
+doctor gate. This is dependency/export proof only, not native screenshots,
+provider setup, generated PDF/image export, store approval, public launch, or
+Apollo sign-off.
+
 Next highest-impact work:
 
-1. Run the Release Smoke Checklist from Share Beta Handoff in a dependency-complete environment: `corepack prepare pnpm@10.24.0 --activate` when Corepack is available and pnpm is missing, then run `pnpm run doctor:mobile-beta`, `pnpm run doctor:mobile-beta:json`, `pnpm --filter @workspace/woofwatcher-mobile run smoke:web`, `pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime`, and `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` with real pnpm `10.24.0` on PATH. Use Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, CI, or another environment with the Expo/mobile dependency layer, then attach the JSON doctor/export/runtime/preview proof to the beta handoff.
+1. Use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, and `smoke:runtime`, then run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a live preview handoff. Attach the JSON doctor/export/runtime/preview proof to the beta handoff without claiming native QA.
 2. Run native iOS/Android simulator or device QA with More's focused `/care-twin-qa?qaSurface=...` links and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md`, starting with More's `Next launch gate` or `Native QA Next Captures > Primary mission`. For the `Owner Preview Core Loop`, read the in-card `Owner route loop`, complete Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass without dead ends, attach iOS Quick Log/Log proof and Android Launch Readiness proof through the focused card or 48-hour mission card, write the required note, confirm `Pass pending proof` clears only after required proof is saved in both `/care-twin-qa` and More's Native QA Next Captures, use More's `Share Beta Handoff` action after saved proof is current, then continue the Store Screenshot QA checklist and 12-state care-twin matrix, confirm More's Launch Readiness updates from the saved proof, share/export the QA report, mark the first visible stage/sprite/Incident Watch/safe-area/composer/setup/modal/touch issue as Needs tune, use More's `Share Fix Brief`, and fix that first route before moving on.
 3. Fill the Provider Launch Setup sheet only as real providers are configured: Clerk, Supabase/Postgres, storage buckets/rules, AI key/model policy, app-store payments, push, Apple/Google accounts, and self-serve deletion. Use the care-entry provider sync proof packet for Supabase migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off evidence. Share the provider plan for Apollo/Fable/Replit handoff, but do not treat it as store approval.
 4. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.

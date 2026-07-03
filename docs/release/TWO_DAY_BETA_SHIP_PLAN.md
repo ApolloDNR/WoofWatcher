@@ -99,6 +99,9 @@ Shippable for internal beta after local verification passes:
 - `pnpm run doctor:mobile-beta:json` reports the same status as parseable JSON
   for Replit, native helpers, or automation, including structured
   `proofCommands` for the dependency/export proof sequence.
+- GitHub Actions `WoofWatcher Verify` runs `pnpm run doctor:mobile-beta:json`
+  after frozen dependency install with pinned `pnpm@10.24.0`, before focused
+  tests and `build:ci`.
 - The JSON doctor reports `release smoke checklist is source-backed` and lists
   `Release smoke checklist` as a handoff proof section before helpers claim the
   beta packet is complete.
@@ -130,6 +133,10 @@ Current environment note:
 - The JSON payload also includes `proofCommands`, so automation can read the
   exact `corepack`, `pnpm install`, doctor, JSON doctor, `smoke:web`,
   `smoke:runtime`, and `preview:smoke` command order without parsing prose.
+- Branch CI now runs that JSON doctor in the same workflow that installs
+  `pnpm@10.24.0`, runs focused tests, and executes `build:ci`; use the workflow
+  result as dependency-complete doctor proof when local Windows still has pnpm
+  `11.7.0`.
 - The mobile package now has a `smoke:runtime` alias that starts a disposable
   static runtime over `.expo-smoke`, verifies 11 exported mobile routes return
   the Expo web shell, and exits without leaving a server running.

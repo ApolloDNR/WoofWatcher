@@ -1417,3 +1417,26 @@ Latest local evidence, 2026-07-03:
   device rendering, provider approvals, generated PDF/image export, store
   approval, public launch, and Apollo sign-off remain blocked until real
   artifacts exist.
+
+## CI Mobile Beta Doctor Gate
+
+Latest local evidence, 2026-07-03:
+
+- `.github/workflows/verify.yml` now runs `pnpm run doctor:mobile-beta:json`
+  immediately after `pnpm install --frozen-lockfile` and before focused tests or
+  `build:ci`.
+- This means branch CI uses Node 24 plus the workflow-pinned `pnpm@10.24.0` to
+  prove the same machine-readable dependency/export gate that Apollo, Replit, or
+  a native helper sees in the Share Beta Handoff proof sequence.
+- Red/green proof first failed because `verify.yml` did not include the JSON
+  doctor command, then passed after the workflow step was added.
+- Focused readiness proof passed `mobileReadiness.test.ts` with `113/113`
+  tests after the workflow change.
+- Direct local JSON doctor still reports `BLOCKED` only because this Windows
+  shell exposes pnpm `11.7.0` while the repo is pinned to `10.24.0`; all
+  source-backed checks pass, including release smoke checklist, owner preview
+  proof wiring, `/care-twin-qa` proof flow, route smoke command, provider-aware
+  Care Pass storage, and truth boundaries.
+- This CI doctor gate does not prove native iOS/Android screenshots, provider
+  setup, generated PDF/image export, app-store approval, public launch, or
+  Apollo sign-off.

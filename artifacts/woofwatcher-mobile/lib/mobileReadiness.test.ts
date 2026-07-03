@@ -4811,6 +4811,7 @@ test("keeps a deadline beta doctor command for mobile export handoff", () => {
 
   assert.equal(rootPackageJson.packageManager, "pnpm@10.24.0");
   assert.match(verifyWorkflow, /version:\s*10\.24\.0/);
+  assert.match(verifyWorkflow, /pnpm run doctor:mobile-beta:json/);
   assert.equal(
     rootPackageJson.scripts?.["doctor:mobile-beta"],
     "node scripts/mobile-beta-doctor.mjs",
