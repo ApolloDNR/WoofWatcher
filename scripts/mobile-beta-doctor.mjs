@@ -688,9 +688,9 @@ check(
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [
   "RECORDED_MOBILE_BETA_CI_PROOF",
-  'runId: "28683229279"',
-  'jobId: "85070831897"',
-  'commit: "2f8f36a"',
+  'runId: "28684074927"',
+  'jobId: "85073288003"',
+  'commit: "ab36157"',
   "auth/setup smoke proof",
   "auth/setup native QA target",
   "auth provider proof packet",
@@ -700,6 +700,7 @@ const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPa
   "Plus checkout approval truth boundary",
   "Records storage provider-approval clamp",
   "Records binary proof manifest",
+  "Premium payments proof manifest",
   "Recorded branch CI proof:",
   "Rerun WoofWatcher Verify after any new commit before treating dependency proof as current.",
   "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
@@ -708,14 +709,14 @@ check(
   "recorded CI proof freshness boundary is source-backed",
   recordedCiProofFreshnessBoundaryIsSourceBacked,
   recordedCiProofFreshnessBoundaryIsSourceBacked
-    ? "Recorded CI proof names run 28683229279 on commit 2f8f36a while requiring a rerun after new commits"
+    ? "Recorded CI proof names run 28684074927 on commit ab36157 while requiring a rerun after new commits"
     : "keep recorded CI proof labeled as historical branch evidence with a rerun-after-new-commit boundary",
 );
 
 const recordedLivePreviewProofAttachmentIsSourceBacked = includesAll(betaHandoffPacketSource, [
   "RECORDED_LIVE_PREVIEW_HANDOFF_PROOF",
   'title: "WoofWatcher Live Preview Handoff Proof"',
-  'commit: "2f8f36a"',
+  'commit: "ab36157"',
   "auth-setup-onboarding-proof",
   "care-entry-provider-sync-proof",
   "woofguide-ai-provider-proof",

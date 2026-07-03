@@ -176,16 +176,17 @@ Current environment note:
   result as dependency-complete doctor proof when local Windows still has pnpm
   `11.7.0`.
 - The in-app `Share Beta Handoff` packet now labels the recorded branch CI proof
-  for `WoofWatcher Verify` run `28683229279`, job `85070831897`, commit
-  `2f8f36a`, including the passed JSON doctor with auth/setup smoke proof,
+  for `WoofWatcher Verify` run `28684074927`, job `85073288003`, commit
+  `ab36157`, including the passed JSON doctor with auth/setup smoke proof,
   auth/setup native QA target coverage, auth provider proof packet coverage,
   the provider staged-row truth boundary, support legal readiness proof target,
   provider-approved support/legal launch-readiness wiring, the Plus checkout
   approval truth boundary, Records storage provider-approval clamp, Records
-  binary proof manifest, focused tests, and `build:ci` proof for `smoke:web`,
-  `smoke:runtime`, and `proof:live-preview`. The recorded live-preview proof
-  now points at a local `proof:live-preview` run generated
-  `2026-07-03T21:06:14.191Z` on commit `2f8f36a` with `19/19` web-preview
+  binary proof manifest, Premium payments proof manifest, focused tests, and
+  `build:ci` proof for `smoke:web`, `smoke:runtime`, and
+  `proof:live-preview`. The recorded live-preview proof now points at a local
+  `proof:live-preview` run generated `2026-07-03T21:34:30.033Z` on commit
+  `ab36157` with `19/19` web-preview
   route checks. It explicitly requires
   rerunning `WoofWatcher Verify` and `proof:live-preview` after any new commit
   before treating dependency or preview proof as current, while keeping native
