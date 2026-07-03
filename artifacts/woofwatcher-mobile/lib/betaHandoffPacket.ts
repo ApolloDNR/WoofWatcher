@@ -48,12 +48,12 @@ export interface MobileLivePreviewHandoffProof {
 
 export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
   workflowName: "WoofWatcher Verify",
-  runId: "28681351681",
-  jobId: "85065319612",
+  runId: "28682273946",
+  jobId: "85068036247",
   branch: "automation/premium-revenue-product-builder",
-  commit: "455d7e1",
-  duration: "2m58s",
-  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28681351681",
+  commit: "8695505",
+  duration: "3m2s",
+  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28682273946",
   passedSteps: [
     "Setup pnpm",
     "Setup Node",
@@ -63,15 +63,15 @@ export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
     "Typecheck and CI-safe builds",
   ],
   coverage:
-    "pinned pnpm 10.24.0, JSON mobile beta doctor with auth/setup smoke proof, auth/setup native QA target, auth provider proof packet, provider staged-row truth boundary, support legal readiness proof target, provider-approved support/legal launch-readiness wiring, Plus checkout approval truth boundary, focused tests, build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview",
+    "pinned pnpm 10.24.0, JSON mobile beta doctor with auth/setup smoke proof, auth/setup native QA target, auth provider proof packet, provider staged-row truth boundary, support legal readiness proof target, provider-approved support/legal launch-readiness wiring, Plus checkout approval truth boundary, Records storage provider-approval clamp, focused tests, build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview",
 };
 
 export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof = {
   title: "WoofWatcher Live Preview Handoff Proof",
-  generatedAtIso: "2026-07-03T20:14:07.072Z",
+  generatedAtIso: "2026-07-03T20:38:13.714Z",
   result: "PASS",
-  baseUrl: "http://127.0.0.1:58553/",
-  commit: "455d7e1",
+  baseUrl: "http://127.0.0.1:49528/",
+  commit: "8695505",
   exportIndexMtimeIso: "2026-07-03T12:38:39.906Z",
   routeChecks: [
     { route: "/", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },

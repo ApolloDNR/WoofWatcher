@@ -146,10 +146,10 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run smoke:runtime/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run preview:smoke/);
   assert.match(text, /Dependency-complete CI proof:/);
-  assert.match(text, /Recorded branch CI proof: WoofWatcher Verify run 28681351681 passed/);
-  assert.match(text, /job 85065319612/);
+  assert.match(text, /Recorded branch CI proof: WoofWatcher Verify run 28682273946 passed/);
+  assert.match(text, /job 85068036247/);
   assert.match(text, /automation\/premium-revenue-product-builder/);
-  assert.match(text, /commit 455d7e1/);
+  assert.match(text, /commit 8695505/);
   assert.match(text, /Run mobile beta doctor/);
   assert.match(text, /auth\/setup smoke proof/);
   assert.match(text, /auth\/setup native QA target/);
@@ -158,6 +158,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /support legal readiness proof target/);
   assert.match(text, /provider-approved support\/legal launch-readiness wiring/);
   assert.match(text, /Plus checkout approval truth boundary/);
+  assert.match(text, /Records storage provider-approval clamp/);
   assert.match(text, /build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview/);
   assert.match(text, /Rerun WoofWatcher Verify after any new commit before treating dependency proof as current/);
   assert.match(text, /CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off/);

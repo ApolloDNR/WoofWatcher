@@ -166,16 +166,19 @@ Current environment note:
   result as dependency-complete doctor proof when local Windows still has pnpm
   `11.7.0`.
 - The in-app `Share Beta Handoff` packet now labels the recorded branch CI proof
-  for `WoofWatcher Verify` run `28681351681`, job `85065319612`, commit
-  `455d7e1`, including the passed JSON doctor with auth/setup smoke proof,
+  for `WoofWatcher Verify` run `28682273946`, job `85068036247`, commit
+  `8695505`, including the passed JSON doctor with auth/setup smoke proof,
   auth/setup native QA target coverage, auth provider proof packet coverage,
   the provider staged-row truth boundary, support legal readiness proof target,
   provider-approved support/legal launch-readiness wiring, the Plus checkout
-  approval truth boundary, focused tests, and `build:ci` proof for `smoke:web`,
-  `smoke:runtime`, and `proof:live-preview`. It explicitly requires rerunning
-  `WoofWatcher Verify` after any new commit before treating dependency proof as
-  current, while keeping native screenshots, provider setup, store approval, and
-  Apollo sign-off blocked.
+  approval truth boundary, Records storage provider-approval clamp, focused
+  tests, and `build:ci` proof for `smoke:web`, `smoke:runtime`, and
+  `proof:live-preview`. The recorded live-preview proof now points at a local
+  `proof:live-preview` run generated `2026-07-03T20:38:13.714Z` on commit
+  `8695505` with `19/19` web-preview route checks. It explicitly requires
+  rerunning `WoofWatcher Verify` and `proof:live-preview` after any new commit
+  before treating dependency or preview proof as current, while keeping native
+  screenshots, provider setup, store approval, and Apollo sign-off blocked.
 - Branch CI also proved the Provider Launch Setup row-level QA action routing on
   2026-07-03: `WoofWatcher Verify` run `28674214816`, job `85044028568`,
   commit `8d31dea`, with Setup pnpm, Setup Node, install, JSON mobile beta
