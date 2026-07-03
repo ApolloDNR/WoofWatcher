@@ -154,7 +154,7 @@ test("builds a truthful provider setup plan from a local launch profile", async 
   assert.match(plan.nextGate?.proofRequired ?? "", /Supabase project id/);
   assert.ok(plan.nextGate?.proofChecklist.some((item) => /mobile incremental/i.test(item)));
   assert.ok(plan.blockers.some((blocker) => /household database/i.test(blocker)));
-  assert.equal(plan.providerInput.authConfigured, true);
+  assert.equal(plan.providerInput.authConfigured, false);
   assert.equal(plan.providerInput.databaseConfigured, false);
   assert.equal(plan.providerInput.storageProviderConfigured, false);
   assert.equal(plan.providerInput.aiProviderConfigured, false);
@@ -188,6 +188,59 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
   assert.equal(profile.providerStatus, "local-draft");
   assert.equal(profile.ownerReviewedAt, undefined);
   assert.equal(profile.notes, "");
+});
+
+test("keeps owner-reviewed provider toggles out of launch-readiness input until provider approval", async () => {
+  const mod = await import("./launchProviderSetup.ts").catch(() => null);
+  assert.ok(mod, "launchProviderSetup module should exist");
+
+  const ownerReviewed = mod.deriveLaunchProviderSetup({
+    authConfigured: true,
+    databaseConfigured: true,
+    storageProviderConfigured: true,
+    aiProviderConfigured: true,
+    paymentsEnabled: true,
+    pushNotificationsConfigured: true,
+    appStoreAccountsReady: true,
+    accountDeletionEnabled: true,
+    providerStatus: "owner-reviewed",
+  });
+  const providerApproved = mod.deriveLaunchProviderSetup({
+    ...ownerReviewed.providerInput,
+    authConfigured: true,
+    databaseConfigured: true,
+    storageProviderConfigured: true,
+    aiProviderConfigured: true,
+    paymentsEnabled: true,
+    pushNotificationsConfigured: true,
+    appStoreAccountsReady: true,
+    accountDeletionEnabled: true,
+    providerStatus: "provider-approved",
+  });
+
+  assert.equal(ownerReviewed.status, "owner-reviewed");
+  assert.equal(ownerReviewed.readyCount, 8);
+  assert.deepEqual(ownerReviewed.providerInput, {
+    authConfigured: false,
+    databaseConfigured: false,
+    storageProviderConfigured: false,
+    aiProviderConfigured: false,
+    paymentsEnabled: false,
+    pushNotificationsConfigured: false,
+    appStoreAccountsReady: false,
+    accountDeletionEnabled: false,
+  });
+  assert.equal(providerApproved.status, "provider-approved");
+  assert.deepEqual(providerApproved.providerInput, {
+    authConfigured: true,
+    databaseConfigured: true,
+    storageProviderConfigured: true,
+    aiProviderConfigured: true,
+    paymentsEnabled: true,
+    pushNotificationsConfigured: true,
+    appStoreAccountsReady: true,
+    accountDeletionEnabled: true,
+  });
 });
 
 test("formats a shareable provider setup checklist without claiming launch approval", async () => {

@@ -293,6 +293,7 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
       : profile.providerStatus === "provider-approved"
         ? "owner-reviewed"
         : profile.providerStatus;
+  const providerApproved = profile.providerStatus === "provider-approved";
 
   return {
     title: "Provider Launch Setup",
@@ -312,14 +313,14 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
     blockers,
     nextActions,
     providerInput: {
-      authConfigured: profile.authConfigured,
-      databaseConfigured: profile.databaseConfigured,
-      storageProviderConfigured: profile.storageProviderConfigured,
-      aiProviderConfigured: profile.aiProviderConfigured,
-      paymentsEnabled: profile.paymentsEnabled,
-      pushNotificationsConfigured: profile.pushNotificationsConfigured,
-      appStoreAccountsReady: profile.appStoreAccountsReady,
-      accountDeletionEnabled: profile.accountDeletionEnabled,
+      authConfigured: providerApproved && profile.authConfigured,
+      databaseConfigured: providerApproved && profile.databaseConfigured,
+      storageProviderConfigured: providerApproved && profile.storageProviderConfigured,
+      aiProviderConfigured: providerApproved && profile.aiProviderConfigured,
+      paymentsEnabled: providerApproved && profile.paymentsEnabled,
+      pushNotificationsConfigured: providerApproved && profile.pushNotificationsConfigured,
+      appStoreAccountsReady: providerApproved && profile.appStoreAccountsReady,
+      accountDeletionEnabled: providerApproved && profile.accountDeletionEnabled,
     },
   };
 }

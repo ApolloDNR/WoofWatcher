@@ -247,6 +247,15 @@ a native helper concrete evidence to collect for Clerk, Supabase/RLS, storage,
 AI policy, payments, push, store accounts, and account deletion without
 pretending those external approvals are complete.
 
+The Provider Launch Setup provider-approval clamp keeps those saved rows from
+becoming fake launch readiness. `deriveLaunchProviderSetup` can still show
+owner-reviewed gates as staged checklist progress, but its `providerInput` now
+passes auth, database, storage, AI, payments, push, store-account, and deletion
+booleans into Launch Readiness only when the saved provider status is
+`provider-approved`. This prevents a local owner-reviewed checklist from making
+More's Launch Readiness, release packet, or store gates behave as if real
+Clerk/Supabase/storage/AI/payments/push/store/deletion providers are approved.
+
 The production auth provider proof pass turns the old Clerk one-line proof into
 a source-backed packet. `authProviderProof.ts` now defines the Clerk production
 app, redirect/deep-link URL, OAuth sign-in, session/token policy, and household

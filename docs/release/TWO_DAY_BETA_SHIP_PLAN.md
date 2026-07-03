@@ -295,6 +295,10 @@ Current environment note:
   with owner/action/proof and prioritizes open rows before ready rows, so Apollo
   or a helper can close real provider proof without guessing which gate comes
   next.
+- Provider Launch Setup now clamps Launch Readiness input to
+  `provider-approved` status. Owner-reviewed local rows can stage proof work,
+  but they no longer make release packets or store gates behave as if real
+  Clerk/Supabase/storage/AI/payments/push/store/deletion providers are approved.
 - The in-app `Share Beta Handoff` packet now includes that provider proof
   checklist too, so deadline helpers can use one packet for dependency proof,
   device proof, provider evidence, and launch truth boundaries.
