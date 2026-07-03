@@ -165,14 +165,15 @@ Current environment note:
   result as dependency-complete doctor proof when local Windows still has pnpm
   `11.7.0`.
 - The in-app `Share Beta Handoff` packet now labels the recorded branch CI proof
-  for `WoofWatcher Verify` run `28672842742`, job `85039818152`, commit
-  `b76cb8f`, including the passed JSON doctor with auth/setup smoke proof,
+  for `WoofWatcher Verify` run `28679465658`, job `85059791276`, commit
+  `4c373ad`, including the passed JSON doctor with auth/setup smoke proof,
   auth/setup native QA target coverage, auth provider proof packet coverage,
-  the provider staged-row truth boundary, focused test, and `build:ci` proof for
-  `smoke:web`, `smoke:runtime`, and `proof:live-preview`. It explicitly requires
-  rerunning `WoofWatcher Verify` after any new commit before treating dependency
-  proof as current, while keeping native screenshots, provider setup, store
-  approval, and Apollo sign-off blocked.
+  the provider staged-row truth boundary, the support legal readiness proof
+  target, focused tests, and `build:ci` proof for `smoke:web`, `smoke:runtime`,
+  and `proof:live-preview`. It explicitly requires rerunning `WoofWatcher
+  Verify` after any new commit before treating dependency proof as current,
+  while keeping native screenshots, provider setup, store approval, and Apollo
+  sign-off blocked.
 - Branch CI also proved the Provider Launch Setup row-level QA action routing on
   2026-07-03: `WoofWatcher Verify` run `28674214816`, job `85044028568`,
   commit `8d31dea`, with Setup pnpm, Setup Node, install, JSON mobile beta
@@ -414,11 +415,12 @@ Current environment note:
   `http://127.0.0.1:4194/`, and browser-open evidence while saying live preview
   proof does not replace native iOS/Android proof.
 - Share Beta Handoff now also carries a `Recorded live preview proof` section
-  from a recorded local `proof:live-preview` run: `15/15` web-preview route shell
+  from a recorded local `proof:live-preview` run: `19/19` web-preview route shell
   checks passed against the existing `.expo-smoke` export, including sign-in,
-  setup, Auth/Setup onboarding proof, push notifications proof, payments
-  provider proof, care-entry sync proof, records file handoff, report binary
-  export proof, and route visual consistency. The recorded verifier URL is
+  setup, Auth/Setup onboarding proof, Records file handoff, report binary export
+  proof, care-entry sync proof, WoofGuide AI provider proof, push notifications
+  proof, payments provider proof, store accounts proof, account deletion proof,
+  support legal readiness proof, and route visual consistency. The recorded verifier URL is
   disposable; the review handoff URL remains `http://127.0.0.1:4194/` after
   `preview:smoke` is running. Rerun branch CI and `proof:live-preview` after new
   commits/exports before treating this proof as current, and do not use it as

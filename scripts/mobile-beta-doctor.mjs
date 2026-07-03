@@ -661,13 +661,14 @@ check(
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [
   "RECORDED_MOBILE_BETA_CI_PROOF",
-  'runId: "28672842742"',
-  'jobId: "85039818152"',
-  'commit: "b76cb8f"',
+  'runId: "28679465658"',
+  'jobId: "85059791276"',
+  'commit: "4c373ad"',
   "auth/setup smoke proof",
   "auth/setup native QA target",
   "auth provider proof packet",
   "provider staged-row truth boundary",
+  "support legal readiness proof target",
   "Recorded branch CI proof:",
   "Rerun WoofWatcher Verify after any new commit before treating dependency proof as current.",
   "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
@@ -676,17 +677,21 @@ check(
   "recorded CI proof freshness boundary is source-backed",
   recordedCiProofFreshnessBoundaryIsSourceBacked,
   recordedCiProofFreshnessBoundaryIsSourceBacked
-    ? "Recorded CI proof names run 28672842742 on commit b76cb8f while requiring a rerun after new commits"
+    ? "Recorded CI proof names run 28679465658 on commit 4c373ad while requiring a rerun after new commits"
     : "keep recorded CI proof labeled as historical branch evidence with a rerun-after-new-commit boundary",
 );
 
 const recordedLivePreviewProofAttachmentIsSourceBacked = includesAll(betaHandoffPacketSource, [
   "RECORDED_LIVE_PREVIEW_HANDOFF_PROOF",
   'title: "WoofWatcher Live Preview Handoff Proof"',
-  'commit: "b376488"',
+  'commit: "4c373ad"',
   "auth-setup-onboarding-proof",
   "care-entry-provider-sync-proof",
+  "woofguide-ai-provider-proof",
   "payments-provider-proof",
+  "store-accounts-proof",
+  "account-deletion-proof",
+  "support-legal-readiness-proof",
   "Recorded live preview proof:",
   "Routes: ${passCount}/${totalCount} web-preview shell checks passed.",
   "Attach proof: JSON route proof plus preview:smoke URL/output before claiming preview handoff.",

@@ -1549,8 +1549,10 @@ Latest local evidence, 2026-07-03:
   route in `nativeProofTargets`, but remains `BLOCKED` in this Windows shell
   because Android adb/emulator, Java, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and
   `JAVA_HOME` are unavailable.
-- Direct live-preview handoff proof passed `15/15` web-preview route shell
-  checks, including `/care-twin-qa?qaSurface=payments-provider-proof`, against
-  the existing `.expo-smoke` export. This is web-preview proof only; it does not
-  approve native screenshots, provider payments setup, sandbox receipts, money
-  movement, store approval, public launch, or Apollo sign-off.
+- Direct live-preview handoff proof was later refreshed after the support/legal
+  readiness proof target landed and now passes `19/19` web-preview route shell
+  checks, including `/care-twin-qa?qaSurface=payments-provider-proof` and
+  `/care-twin-qa?qaSurface=support-legal-readiness-proof`, against the existing
+  `.expo-smoke` export. This is web-preview proof only; it does not approve
+  native screenshots, provider payments setup, sandbox receipts, money movement,
+  store approval, public launch, or Apollo sign-off.

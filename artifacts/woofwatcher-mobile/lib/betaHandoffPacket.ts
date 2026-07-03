@@ -48,29 +48,30 @@ export interface MobileLivePreviewHandoffProof {
 
 export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
   workflowName: "WoofWatcher Verify",
-  runId: "28672842742",
-  jobId: "85039818152",
+  runId: "28679465658",
+  jobId: "85059791276",
   branch: "automation/premium-revenue-product-builder",
-  commit: "b76cb8f",
-  duration: "2m58s",
-  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28672842742",
+  commit: "4c373ad",
+  duration: "3m10s",
+  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28679465658",
   passedSteps: [
     "Setup pnpm",
+    "Setup Node",
     "Install dependencies",
     "Run mobile beta doctor",
     "Run focused behavior tests",
     "Typecheck and CI-safe builds",
   ],
   coverage:
-    "pinned pnpm 10.24.0, JSON mobile beta doctor with auth/setup smoke proof, auth/setup native QA target, auth provider proof packet, provider staged-row truth boundary, focused tests, build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview",
+    "pinned pnpm 10.24.0, JSON mobile beta doctor with auth/setup smoke proof, auth/setup native QA target, auth provider proof packet, provider staged-row truth boundary, support legal readiness proof target, focused tests, build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview",
 };
 
 export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof = {
   title: "WoofWatcher Live Preview Handoff Proof",
-  generatedAtIso: "2026-07-03T18:06:19.813Z",
+  generatedAtIso: "2026-07-03T19:24:30.256Z",
   result: "PASS",
-  baseUrl: "http://127.0.0.1:55476/",
-  commit: "b376488",
+  baseUrl: "http://127.0.0.1:50562/",
+  commit: "4c373ad",
   exportIndexMtimeIso: "2026-07-03T12:38:39.906Z",
   routeChecks: [
     { route: "/", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
@@ -102,12 +103,32 @@ export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof 
       detail: "200 text/html; charset=utf-8; Expo web entry present",
     },
     {
+      route: "/care-twin-qa?qaSurface=woofguide-ai-provider-proof",
+      status: "PASS",
+      detail: "200 text/html; charset=utf-8; Expo web entry present",
+    },
+    {
       route: "/care-twin-qa?qaSurface=push-notifications-proof",
       status: "PASS",
       detail: "200 text/html; charset=utf-8; Expo web entry present",
     },
     {
       route: "/care-twin-qa?qaSurface=payments-provider-proof",
+      status: "PASS",
+      detail: "200 text/html; charset=utf-8; Expo web entry present",
+    },
+    {
+      route: "/care-twin-qa?qaSurface=store-accounts-proof",
+      status: "PASS",
+      detail: "200 text/html; charset=utf-8; Expo web entry present",
+    },
+    {
+      route: "/care-twin-qa?qaSurface=account-deletion-proof",
+      status: "PASS",
+      detail: "200 text/html; charset=utf-8; Expo web entry present",
+    },
+    {
+      route: "/care-twin-qa?qaSurface=support-legal-readiness-proof",
       status: "PASS",
       detail: "200 text/html; charset=utf-8; Expo web entry present",
     },
@@ -125,7 +146,7 @@ export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof 
   nextActions: [
     "Attach this JSON, the preview URL, and the preview:smoke terminal output to Share Beta Handoff without claiming native QA.",
     "Run WoofWatcher Verify after each new commit before treating dependency proof as current.",
-    "Run native iOS/Android proof targets separately for Records local files, care-entry provider sync, route visual consistency, and generated PDF/PNG artifacts.",
+    "Run native iOS/Android proof targets separately for Records local files, care-entry provider sync, push notifications, route visual consistency, and generated PDF/PNG artifacts.",
   ],
 };
 
