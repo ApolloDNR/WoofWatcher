@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-07-03: Report History Owner Approval Guidance Is Shared
+
+Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared owner-approval line from `summarizeReportArtifacts`. The line may tell owners to share only after they choose the audience and approve the local source content for that handoff, but it must not imply native PDF export, server-backed report storage, cloud sharing, provider retention/deletion, or unsupervised assistant actions are ready.
+
+Reason: Local Care Pass, Progress Report, and Dog ID sources can now be reused, reviewed, and cleaned up. Owners also need one consistent approval boundary before those sources leave the app so a saved report is not treated as automatically ready for every sitter, trainer, caregiver, or vet.
+
+Owner: Codex.
+
+Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, persisted assistant report drafts, permission-aware assistant writes, cloud sharing, share revocation, or storage retention/deletion policy become active release work.
+
 ### 2026-07-01: Report History Pre-Share Review Guidance Is Shared
 
 Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared pre-share review line from `summarizeReportArtifacts`. The line may tell owners to review the latest local source for stale routines, medications, records, and audience before resending, but it must not imply provider-backed storage, native export, cloud sharing, retention, deletion, or unsupervised assistant actions are ready.

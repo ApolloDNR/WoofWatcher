@@ -391,6 +391,7 @@ function reportHistoryDraft(state: WoofGuideActionState): WoofGuideActionDraft |
       latestSource.fileLine,
       summary.action,
       summary.reviewLine,
+      summary.approvalLine,
       summary.cleanupLine,
       latestSource.lifecycleLine,
       summary.boundaryLine,

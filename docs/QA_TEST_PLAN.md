@@ -10,8 +10,13 @@ Run focused behavior tests:
 
 CI must pass `WoofWatcher Verify` on `main`.
 
-Latest local evidence, 2026-07-01:
+Latest local evidence, 2026-07-03:
 
+- PASS: 289 focused tests with the command above on 2026-07-03, now including shared Report History owner-approval guidance from `summarizeReportArtifacts.approvalLine` and Mobile Records/WoofGuide wiring so owners choose the handoff audience and approve the local source content before sharing reusable local reports.
+- PASS: PixelLab asset verifier on 2026-07-03 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the Report History owner-approval guidance slice.
+- PASS: `git diff --check` on 2026-07-03 after the Report History owner-approval guidance slice; only existing CRLF normalization warnings were printed.
+- PASS: Direct workspace TypeScript project build on 2026-07-03 with `node node_modules\typescript\bin\tsc --build` after the escalated `pnpm run build:ci` attempt hydrated dependencies.
+- LIMIT: `pnpm run build:ci` on 2026-07-03 first failed in the sandbox with registry `EACCES`/`fetch failed`. The escalated retry hydrated all 1276 packages, then stopped at the root `preinstall` script because `sh` is not available on PATH before workspace scripts started. Direct `tsc --build`, focused tests, PixelLab verification, and diff check passed locally.
 - PASS: GitHub Actions `WoofWatcher Verify` run `28525398502` on 2026-07-01 for commit `5c60e01` completed the real `Install, Test, Typecheck, Build` job successfully after the Report History pre-share review guidance slice.
 - PASS: 289 focused tests with the command above on 2026-07-01, now including shared Report History pre-share review guidance from `summarizeReportArtifacts.reviewLine` and Mobile Records/WoofGuide wiring so owners review stale routines, medications, records, and audience before resending local handoff sources.
 - PASS: PixelLab asset verifier on 2026-07-01 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the Report History pre-share review guidance slice.
