@@ -1,4 +1,8 @@
 import type { LaunchReadinessProviderInput } from "./launchReadiness.ts";
+import {
+  CARE_ENTRY_PROVIDER_SYNC_PROOF_ITEMS,
+  CARE_ENTRY_PROVIDER_SYNC_PROOF_SUMMARY,
+} from "./careEntryProviderSyncProof.ts";
 
 export type LaunchProviderSetupStatus = "local-draft" | "owner-reviewed" | "provider-approved";
 
@@ -37,6 +41,7 @@ export interface LaunchProviderSetupRow {
   detail: string;
   nextAction: string;
   proofRequired: string;
+  proofChecklist: string[];
 }
 
 export interface LaunchProviderSetupPlan {
@@ -127,6 +132,7 @@ const ROW_DEFINITIONS: Array<{
   blockedDetail: string;
   nextAction: string;
   proofRequired: string;
+  proofChecklist?: readonly string[];
 }> = [
   {
     key: "auth",
@@ -148,8 +154,8 @@ const ROW_DEFINITIONS: Array<{
       "Household logs remain local/full-refresh or preview-only until production database sync, cursor/tombstone RLS, retention, and permissions are approved.",
     nextAction:
       "Approve Supabase/Postgres schema, migration/backfill for care_entries.updated_at and care_entry_tombstones, RLS scoping, backups, retention/export/deletion, and per-household sync proof.",
-    proofRequired:
-      "Supabase project id, applied migration list for care_entries.updated_at and care_entry_tombstones, RLS proof for /care-entries?updatedSince= and /care-entries/tombstones?updatedSince= active-household scoping, backup plus retention/export/deletion policy, and mobile full-refresh sign-off until incremental adoption is verified.",
+    proofRequired: CARE_ENTRY_PROVIDER_SYNC_PROOF_SUMMARY,
+    proofChecklist: CARE_ENTRY_PROVIDER_SYNC_PROOF_ITEMS.map((item) => `${item.label}: ${item.requiredEvidence}`),
   },
   {
     key: "storage",
@@ -232,6 +238,7 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
       detail: ready ? definition.readyDetail : definition.blockedDetail,
       nextAction: definition.nextAction,
       proofRequired: definition.proofRequired,
+      proofChecklist: [...(definition.proofChecklist ?? [])],
     };
   });
 
@@ -286,7 +293,10 @@ function formatRows(rows: readonly LaunchProviderSetupRow[]): string[] {
 }
 
 function formatProofRows(rows: readonly LaunchProviderSetupRow[]): string[] {
-  return rows.map((row) => `- ${row.label}: ${row.proofRequired}`);
+  return rows.flatMap((row) => [
+    `- ${row.label}: ${row.proofRequired}`,
+    ...row.proofChecklist.map((item) => `  - ${item}`),
+  ]);
 }
 
 export function buildLaunchProviderSetupShareText(

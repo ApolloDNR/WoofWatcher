@@ -1886,6 +1886,19 @@ export default function MoreScreen() {
                   <Text style={[s.providerNextGateProof, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                     Proof: {launchProviderSetupPlan.nextGate.proofRequired}
                   </Text>
+                  {launchProviderSetupPlan.nextGate.proofChecklist.length ? (
+                    <View style={s.providerSetupProofChecklist}>
+                      {launchProviderSetupPlan.nextGate.proofChecklist.slice(0, 4).map((proofItem) => (
+                        <Text
+                          key={proofItem}
+                          numberOfLines={2}
+                          style={[s.providerSetupProofItem, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                        >
+                          - {proofItem}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : null}
                 </View>
               ) : (
                 <View
@@ -1934,6 +1947,14 @@ export default function MoreScreen() {
                         >
                           Proof needed: {row.proofRequired}
                         </Text>
+                        {row.proofChecklist.length ? (
+                          <Text
+                            numberOfLines={2}
+                            style={[s.providerSetupRowProof, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                          >
+                            Proof step: {row.proofChecklist[0]}
+                          </Text>
+                        ) : null}
                       </View>
                     </View>
                   );
@@ -3999,6 +4020,8 @@ const s = StyleSheet.create({
   providerNextGateMeta: { fontSize: 10.3, lineHeight: 14 },
   providerNextGateCopy: { fontSize: 11, lineHeight: 15 },
   providerNextGateProof: { fontSize: 10.2, lineHeight: 14 },
+  providerSetupProofChecklist: { gap: 3, marginTop: 4 },
+  providerSetupProofItem: { fontSize: 9.8, lineHeight: 13 },
   providerSetupRows: { marginTop: 8 },
   providerSetupRow: {
     minHeight: 52,

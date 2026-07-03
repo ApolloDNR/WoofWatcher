@@ -1307,3 +1307,37 @@ Latest local evidence, 2026-07-03:
 - JSON mobile beta doctor source-backed checks still pass, but the result
   remains truthfully `BLOCKED` only because local pnpm is `11.7.0` while the
   repo is pinned to `10.24.0`.
+
+## Care Entry Provider Sync Proof Packet
+
+Latest local evidence, 2026-07-03:
+
+- `careEntryProviderSyncProof.ts` now turns the care-entry provider launch gate
+  into a structured packet with six proof items: Supabase project, migration
+  and backfill, active-household RLS, retention/export/deletion,
+  dependency-complete build, and mobile incremental sign-off.
+- The packet requires proof for `care_entries.updated_at`,
+  `care_entry_tombstones`, `/care-entries?updatedSince=`,
+  `/care-entries/tombstones?updatedSince=`, backup/retention/export/deletion
+  policy, and full-refresh mobile sign-off before incremental care-entry sync
+  can be reviewed.
+- Provider Launch Setup now includes the packet checklist in the Household
+  database sync row, More shows the proof steps under the next provider gate,
+  and Share Beta Handoff carries the same checklist for Apollo/Replit handoff.
+- Red/green proof first failed because `careEntryProviderSyncProof.ts` and the
+  provider checklist wiring did not exist, then passed after the packet model
+  and More/provider/beta handoff wiring were added.
+- Focused proof passed `careEntryProviderSyncProof.test.ts`,
+  `launchProviderSetup.test.ts`, `betaHandoffPacket.test.ts`, and
+  `mobileReadiness.test.ts` with `123/123` tests. Broader proof passed the
+  API/mobile/PWA/care-domain suite with `514/514` tests.
+- Mobile TypeScript, `pnpm run typecheck:libs`, and API TypeScript passed after
+  prepending bundled Node and pnpm to `PATH`.
+- Expo web export smoke passed to `.expo-smoke` with `219` assets and `223`
+  files.
+- JSON mobile beta doctor source-backed checks still pass, but the result
+  remains truthfully `BLOCKED` only because local pnpm is `11.7.0` while the
+  repo is pinned to `10.24.0`; Corepack is not on PATH.
+- This is a provider proof checklist, not provider approval. Mobile incremental
+  care-entry sync remains blocked until actual Supabase migration/RLS/retention
+  evidence and native QA proof are attached.

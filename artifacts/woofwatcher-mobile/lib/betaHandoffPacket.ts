@@ -51,7 +51,10 @@ function formatProviderProof(plan: LaunchProviderSetupPlan | undefined): string[
   return [
     "",
     "Provider proof needed:",
-    ...plan.rows.map((row) => `- ${row.label}: ${row.proofRequired}`),
+    ...plan.rows.flatMap((row) => [
+      `- ${row.label}: ${row.proofRequired}`,
+      ...row.proofChecklist.map((item) => `  - ${item}`),
+    ]),
     "- Provider proof does not approve App Store, Play Store, payment, AI, storage, or database readiness.",
   ];
 }

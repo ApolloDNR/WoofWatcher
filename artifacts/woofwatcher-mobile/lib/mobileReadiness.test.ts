@@ -4354,6 +4354,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const launchModel = readMobileLibFile("launchReadiness.ts");
   const providerSetup = readMobileLibFile("launchProviderSetup.ts");
+  const providerSyncProof = readMobileLibFile("careEntryProviderSyncProof.ts");
   const careContext = readFileSync(
     join(
       process.cwd(),
@@ -4437,6 +4438,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /Next provider gate/);
   assert.match(more, /Provider gates ready for owner approval/);
   assert.match(more, /row\.proofRequired/);
+  assert.match(more, /row\.proofChecklist/);
+  assert.match(more, /providerSetupProofChecklist/);
   assert.match(more, /Proof needed/);
   assert.match(more, /Owner: \{launchProviderSetupPlan\.nextGate\.owner\}/);
   assert.match(
@@ -4489,12 +4492,15 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(providerSetup, /nextGate/);
   assert.match(providerSetup, /openCount/);
   assert.match(providerSetup, /Next Provider Gate/);
-  assert.match(providerSetup, /care_entries\.updated_at/);
-  assert.match(providerSetup, /care_entry_tombstones/);
-  assert.match(providerSetup, /\/care-entries\?updatedSince=/);
-  assert.match(providerSetup, /\/care-entries\/tombstones\?updatedSince=/);
-  assert.match(providerSetup, /retention\/export\/deletion/);
-  assert.match(providerSetup, /mobile full-refresh sign-off/);
+  assert.match(providerSetup, /CARE_ENTRY_PROVIDER_SYNC_PROOF_ITEMS/);
+  assert.match(providerSetup, /proofChecklist/);
+  assert.match(providerSyncProof, /Care-entry provider sync proof packet/);
+  assert.match(providerSyncProof, /care_entries\.updated_at/);
+  assert.match(providerSyncProof, /care_entry_tombstones/);
+  assert.match(providerSyncProof, /\/care-entries\?updatedSince=/);
+  assert.match(providerSyncProof, /\/care-entries\/tombstones\?updatedSince=/);
+  assert.match(providerSyncProof, /retention\/export\/deletion/);
+  assert.match(providerSyncProof, /mobile full-refresh sign-off/);
   assert.match(
     providerSetup,
     /All provider gates are ready for final owner review/,

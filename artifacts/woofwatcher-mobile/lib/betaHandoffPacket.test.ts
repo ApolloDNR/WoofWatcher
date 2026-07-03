@@ -136,6 +136,9 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Provider proof needed:/);
   assert.match(text, /Production auth: Clerk production app id/);
   assert.match(text, /Household database sync: Supabase project id/);
+  assert.match(text, /Care-entry provider sync proof packet/);
+  assert.match(text, /Migration\/backfill/);
+  assert.match(text, /Active-household RLS/);
   assert.match(text, /care_entries\.updated_at/);
   assert.match(text, /care_entry_tombstones/);
   assert.match(text, /\/care-entries\?updatedSince=/);

@@ -35,9 +35,25 @@ test("builds a truthful provider setup plan from a local launch profile", async 
   assert.ok(plan.rows.some((row) => row.key === "database" && /\/care-entries\/tombstones\?updatedSince=/i.test(row.proofRequired)));
   assert.ok(plan.rows.some((row) => row.key === "database" && /retention\/export\/deletion/i.test(row.proofRequired)));
   assert.ok(plan.rows.some((row) => row.key === "database" && /full-refresh/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "database" && /Care-entry provider sync proof packet/i.test(row.proofRequired)));
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "database" &&
+        row.proofChecklist.some((item) => /migration\/backfill/i.test(item) && /care_entries\.updated_at/i.test(item)),
+    ),
+  );
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "database" &&
+        row.proofChecklist.some((item) => /active-household RLS/i.test(item) && /tombstones\?updatedSince/i.test(item)),
+    ),
+  );
   assert.ok(plan.rows.some((row) => row.key === "storage" && /signed upload/i.test(row.proofRequired)));
   assert.equal(plan.nextGate?.key, "database");
   assert.match(plan.nextGate?.proofRequired ?? "", /Supabase project id/);
+  assert.ok(plan.nextGate?.proofChecklist.some((item) => /mobile incremental/i.test(item)));
   assert.ok(plan.blockers.some((blocker) => /household database/i.test(blocker)));
   assert.equal(plan.providerInput.authConfigured, true);
   assert.equal(plan.providerInput.databaseConfigured, false);
@@ -103,6 +119,9 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /Proof: AI provider key location/);
   assert.match(text, /Proof Needed/);
   assert.match(text, /Household database sync: Supabase project id/);
+  assert.match(text, /Care-entry provider sync proof packet/);
+  assert.match(text, /Migration\/backfill/);
+  assert.match(text, /Active-household RLS/);
   assert.match(text, /care_entries\.updated_at/);
   assert.match(text, /care_entry_tombstones/);
   assert.match(text, /\/care-entries\?updatedSince=/);

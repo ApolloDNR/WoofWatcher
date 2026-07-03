@@ -148,11 +148,12 @@ Passing evidence:
 - Local API route integration proof now hits the real Express care-entry handlers through an injectable router factory for server cursor reads, ambiguous cursor rejection, tombstone reads, and invalid tombstone cursor rejection without requiring live provider credentials.
 - Local mobile readiness proof now protects the full-refresh boundary for care entries until provider migration/RLS, retention policy, and mobile incremental adoption are verified against the server cursor/delete-tombstone contract.
 - Provider Launch Setup now exposes the exact Supabase migration/backfill, active-household RLS, retention/export/deletion, and mobile full-refresh sign-off proof needed for `care_entries.updated_at`, `care_entry_tombstones`, `/care-entries?updatedSince=`, and `/care-entries/tombstones?updatedSince=` before incremental sync can be claimed.
+- The care-entry provider sync proof packet now structures that provider gate into Supabase project, migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off evidence; the checklist appears in Provider Launch Setup, More, and Share Beta Handoff.
 
 Current gaps:
 
 - Local dependency layer still blocks API build proof in this Codex checkout because `@esbuild/win32-x64` is missing from `node_modules`, and the local pnpm CLI is `11.7.0` while the repo is pinned to `10.24.0`.
-- Need actual provider migration/RLS proof, retention/export/deletion approval, and provider-backed integration proof for the care-entry update cursor and tombstone schema.
+- Need actual provider migration/RLS proof, retention/export/deletion approval, dependency-complete provider integration evidence, and native QA proof before care-entry incremental sync can replace full-refresh mobile behavior.
 - Need mobile runtime smoke.
 - Critical mobile action accessibility labels are covered by focused static smoke.
 - Home avatar motion state and wiring are covered by focused tests.
