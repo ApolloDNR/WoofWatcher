@@ -367,6 +367,7 @@ test("keeps a static beta preview server wired for Apollo review", () => {
   assert.match(livePreviewProof, /records-local-file-handoff/);
   assert.match(livePreviewProof, /report-binary-export-proof/);
   assert.match(livePreviewProof, /care-entry-provider-sync-proof/);
+  assert.match(livePreviewProof, /woofguide-ai-provider-proof/);
   assert.match(livePreviewProof, /push-notifications-proof/);
   assert.match(livePreviewProof, /payments-provider-proof/);
   assert.match(livePreviewProof, /store-accounts-proof/);
@@ -378,6 +379,7 @@ test("keeps a static beta preview server wired for Apollo review", () => {
   assert.match(doctorSource, /preview:smoke/);
   assert.match(doctorSource, /http:\/\/127\.0\.0\.1:4194\//);
   assert.match(doctorSource, /care-entry-provider-sync-proof/);
+  assert.match(doctorSource, /woofguide-ai-provider-proof/);
   assert.match(doctorSource, /push-notifications-proof/);
   assert.match(doctorSource, /payments-provider-proof/);
   assert.match(doctorSource, /store-accounts-proof/);
@@ -4579,6 +4581,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /auth-setup-onboarding-proof/);
   assert.match(more, /care-entry-provider-sync-proof/);
   assert.match(more, /report-binary-export-proof/);
+  assert.match(more, /woofguide-ai-provider-proof/);
+  assert.match(more, /WoofGuide AI Provider Proof/);
   assert.match(more, /push-notifications-proof/);
   assert.match(more, /payments-provider-proof/);
   assert.match(more, /Payments Provider Proof/);
@@ -5019,6 +5023,9 @@ test("keeps a native QA tooling doctor for device-proof handoff", () => {
     payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=care-entry-provider-sync-proof"),
   );
   assert.ok(
+    payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=woofguide-ai-provider-proof"),
+  );
+  assert.ok(
     payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=payments-provider-proof"),
   );
   assert.ok(
@@ -5065,6 +5072,14 @@ test("keeps a native QA tooling doctor for device-proof handoff", () => {
         action.includes("/care-twin-qa?qaSurface=care-entry-provider-sync-proof") &&
         action.includes("Supabase") &&
         action.includes("mobile full-refresh"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("/care-twin-qa?qaSurface=woofguide-ai-provider-proof") &&
+        action.includes("OpenAI key location") &&
+        action.includes("owner-review write gate"),
     ),
   );
   assert.ok(
@@ -5363,6 +5378,15 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.nextActions?.some(
       (action) =>
+        action.includes("/care-twin-qa?qaSurface=woofguide-ai-provider-proof") &&
+        action.includes("OpenAI key location") &&
+        action.includes("approved model policy") &&
+        action.includes("veterinary safety boundary"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
         action.includes("/care-twin-qa?qaSurface=push-notifications-proof") &&
         action.includes("Expo push project") &&
         action.includes("APNs") &&
@@ -5494,6 +5518,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "ai provider proof packet is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "woofguide ai provider proof target is source-backed" &&
         check.status === "PASS",
     ),
   );

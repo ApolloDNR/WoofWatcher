@@ -459,6 +459,75 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If this proof is skipped, incremental sync can leak stale, missing, deleted, or cross-household care-entry state before the provider database is ready.",
   },
   {
+    id: "woofguide-ai-provider-proof",
+    title: "WoofGuide AI Provider Proof",
+    route: "/more",
+    priority: "launch-critical",
+    goal:
+      "Prove the OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback handling before live AI can be enabled.",
+    devicePrompt:
+      "In Provider Launch Setup and WoofGuide on iOS and Android, collect the WoofGuide AI provider proof packet without treating deterministic drafts or local fallback state as provider-backed AI.",
+    setupSteps: [
+      "Use local preview data and keep WoofGuide AI marked open unless real OpenAI key storage, approved model policy, source rules, and safety proof are attached.",
+      "Open More, then Provider Launch Setup, and inspect the WoofGuide AI gate.",
+      "Open WoofGuide and confirm deterministic/fallback owner-reviewed drafts remain visible until the provider policy is approved.",
+      "Keep automatic care-log writes, record mutation, diagnosis, and treatment advice blocked unless owner review, audit, and veterinary-boundary proof exists.",
+    ],
+    verificationSteps: [
+      "Confirm WoofGuide AI lists the WoofGuide AI provider proof packet.",
+      "Confirm OpenAI key location, secret storage, environment scope, rotation owner, and no local placeholders are required before live AI can be claimed.",
+      "Confirm approved model policy, prompt policy, data retention stance, source/citation rules, and source freshness rules are required for every AI-assisted answer.",
+      "Confirm owner-review write gate proof is required before any AI suggestion can affect saved care data, care logs, records, reports, or routines.",
+      "Confirm veterinary safety boundary, diagnosis/treatment refusal examples, emergency escalation language, fallback/incident handling, rate-limit behavior, rollback plan, and support handoff are required before marking WoofGuide AI ready.",
+    ],
+    acceptanceCriteria: [
+      "live AI stays blocked until OpenAI key storage, approved model policy, source/citation behavior, owner-review write gate, veterinary safety boundary, and fallback proof are attached.",
+      "WoofGuide never treats deterministic local drafts, static prompt copy, or owner-staged provider rows as provider-backed AI.",
+      "permission-aware writes stay owner-reviewed and audited before any AI suggestion can alter saved care data.",
+      "medical and behavior-safety answers stay non-diagnostic, cite local evidence boundaries, and escalate urgent or concerning symptoms to veterinary care.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if WoofGuide implies provider-backed AI is active from local fallback text, hides citation or owner-review rules, suggests automatic writes, or weakens veterinary safety boundaries.",
+    requiredEvidence: [
+      "iOS screenshot of Provider Launch Setup showing the WoofGuide AI provider proof packet.",
+      "Android screenshot of WoofGuide showing deterministic or provider-backed state with owner-review and safety boundary copy.",
+      "Note confirming OpenAI key location, secret storage, environment scope, rotation owner, approved model id, prompt policy, and data retention stance.",
+      "Note confirming source/citation rules, owner-review write gate, veterinary safety boundary, diagnosis/treatment refusal examples, emergency escalation copy, fallback/incident handling, rollback plan, and support handoff.",
+    ],
+    routeChecklist: [
+      {
+        label: "Provider Launch Setup WoofGuide AI gate",
+        route: "/more",
+        expected:
+          "Confirm WoofGuide AI lists the WoofGuide AI provider proof packet and stays open until provider, safety, and policy proof is attached.",
+        proof: "Provider Launch Setup screenshot plus WoofGuide AI provider proof packet note.",
+      },
+      {
+        label: "WoofGuide model and key policy",
+        route: "/woofguide",
+        expected:
+          "Confirm OpenAI key location, secret storage, approved model id, prompt policy, and data retention stance are approved before live AI appears ready.",
+        proof: "OpenAI key location, approved model policy, prompt policy, and data retention proof.",
+      },
+      {
+        label: "Source citations and owner-reviewed writes",
+        route: "/woofguide",
+        expected:
+          "Confirm source/citation rules, source freshness boundaries, owner-review write gate, permission-aware writes, and audit copy are proven before AI suggestions can change saved care data.",
+        proof: "source/citation rules, owner-review write gate, permission-aware write, and audit proof.",
+      },
+      {
+        label: "Veterinary safety and fallback handling",
+        route: "/woofguide",
+        expected:
+          "Confirm veterinary safety boundary, diagnosis/treatment refusal examples, emergency escalation copy, fallback behavior, rate limits, incident handling, rollback plan, and support handoff are approved before WoofGuide AI is marked ready.",
+        proof: "veterinary safety boundary, fallback/incident handling, rate-limit behavior, rollback plan, and support handoff proof.",
+      },
+    ],
+    launchRisk:
+      "If this proof is skipped, live AI can be enabled without provider key controls, model policy, citation rules, owner-reviewed write gates, veterinary safety proof, fallback handling, or support incident evidence.",
+  },
+  {
     id: "push-notifications-proof",
     title: "Push Notifications Proof",
     route: "/more",

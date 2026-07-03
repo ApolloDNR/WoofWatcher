@@ -282,6 +282,12 @@ function providerRowQaTarget(key: LaunchProviderSetupKey): ProviderRowQaTarget |
         detail: "Report Binary Export Proof",
         iconName: "document-attach-outline",
       };
+    case "ai":
+      return {
+        surfaceId: "woofguide-ai-provider-proof",
+        detail: "WoofGuide AI Provider Proof",
+        iconName: "chatbubbles-outline",
+      };
     case "push":
       return {
         surfaceId: "push-notifications-proof",

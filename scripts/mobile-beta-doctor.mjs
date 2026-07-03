@@ -117,6 +117,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
   "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
   "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture Supabase migration/backfill, active-household RLS, retention/export/deletion policy, and mobile full-refresh sign-off before enabling incremental sync.",
+  "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and capture OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling before enabling live AI.",
   "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before claiming reminder delivery.",
   "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
   "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, reviewer access, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.",
@@ -302,6 +303,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
   "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
   "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
+  "Open focused WoofGuide AI provider target: /care-twin-qa?qaSurface=woofguide-ai-provider-proof.",
   "Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
   "Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
   "Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",
@@ -338,6 +340,8 @@ const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeCheckl
   "/care-twin-qa?qaSurface=records-local-file-handoff",
   "Focused care-entry provider sync proof target",
   "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
+  "Focused WoofGuide AI provider proof target",
+  "/care-twin-qa?qaSurface=woofguide-ai-provider-proof",
   "Focused push notifications proof target",
   "/care-twin-qa?qaSurface=push-notifications-proof",
   "Focused payments provider proof target",
@@ -399,6 +403,7 @@ const livePreviewHandoffVerifierIsSourceBacked = mobilePackage.scripts?.["proof:
     "records-local-file-handoff",
     "report-binary-export-proof",
     "care-entry-provider-sync-proof",
+    "woofguide-ai-provider-proof",
     "payments-provider-proof",
     "store-accounts-proof",
     "account-deletion-proof",
@@ -984,6 +989,54 @@ check(
   careEntryProviderSyncProofTargetIsSourceBacked
     ? "Care-entry provider sync proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and doctor next action"
     : "keep care-entry provider sync proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
+);
+
+const woofGuideAiProviderProofTargetIsSourceBacked = includesAll(aiProviderProofSource, [
+  "AI_PROVIDER_PROOF_SUMMARY",
+  "AI_PROVIDER_PROOF_ITEMS",
+  "WoofGuide AI provider proof packet",
+  "OpenAI key location",
+  "approved model policy",
+  "source/citation rules",
+  "owner-review write gate",
+  "veterinary safety boundary",
+  "Fallback and incident handling",
+])
+  && includesAll(mobileReleaseQaSource, [
+    "woofguide-ai-provider-proof",
+    "WoofGuide AI Provider Proof",
+    "OpenAI key location",
+    "approved model policy",
+    "source/citation rules",
+    "owner-review write gate",
+    "veterinary safety boundary",
+    "live AI stays blocked",
+  ])
+  && includesAll(betaHandoffPacketSource, [
+    "Open focused WoofGuide AI provider target: /care-twin-qa?qaSurface=woofguide-ai-provider-proof.",
+    "Attach OpenAI key location, approved model policy, source/citation rules, and owner-review write gate",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Focused WoofGuide AI provider proof target",
+    "/care-twin-qa?qaSurface=woofguide-ai-provider-proof",
+    "OpenAI key location",
+    "approved model policy",
+    "owner-review write gate",
+    "veterinary safety boundary",
+  ])
+  && includesAll(livePreviewHandoffProofSource, [
+    "woofguide-ai-provider-proof",
+  ])
+  && includesAll(moreRouteSource, [
+    "woofguide-ai-provider-proof",
+    "WoofGuide AI Provider Proof",
+  ]);
+check(
+  "woofguide ai provider proof target is source-backed",
+  woofGuideAiProviderProofTargetIsSourceBacked,
+  woofGuideAiProviderProofTargetIsSourceBacked
+    ? "WoofGuide AI proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and provider-row shortcut"
+    : "keep WoofGuide AI proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
 const pushNotificationsProofTargetIsSourceBacked = includesAll(pushNotificationsProofSource, [

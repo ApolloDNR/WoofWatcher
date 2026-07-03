@@ -428,6 +428,57 @@ test("adds a launch-critical care-entry provider sync proof target", () => {
   assert.match(surface.launchRisk, /cross-household/);
 });
 
+test("adds a launch-critical WoofGuide AI provider proof target", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const ids = surfaces.map((surface) => surface.id);
+  const surface = surfaces.find((item) => item.id === "woofguide-ai-provider-proof");
+
+  assert.ok(surface);
+  assert.ok(
+    ids.indexOf("woofguide-ai-provider-proof") > ids.indexOf("care-entry-provider-sync-proof"),
+    "WoofGuide AI provider proof should follow provider sync proof in the focused launch targets",
+  );
+  assert.ok(
+    ids.indexOf("woofguide-ai-provider-proof") < ids.indexOf("push-notifications-proof"),
+    "WoofGuide AI provider proof should stay visible before push and payments proof work",
+  );
+  assert.equal(surface.title, "WoofGuide AI Provider Proof");
+  assert.equal(surface.route, "/more");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /OpenAI key location/);
+  assert.match(surface.goal, /approved model policy/);
+  assert.match(surface.goal, /owner-review write gate/);
+  assert.match(surface.devicePrompt, /Provider Launch Setup/);
+  assert.match(surface.devicePrompt, /WoofGuide/);
+  assert.match(surface.setupSteps.join("\n"), /WoofGuide AI/);
+  assert.match(surface.setupSteps.join("\n"), /deterministic\/fallback/);
+  assert.match(surface.verificationSteps.join("\n"), /source\/citation rules/);
+  assert.match(surface.verificationSteps.join("\n"), /veterinary safety boundary/);
+  assert.match(surface.verificationSteps.join("\n"), /fallback\/incident handling/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /live AI stays blocked/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /permission-aware writes/);
+  assert.match(surface.failureEscalation, /provider-backed AI/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Provider Launch Setup/);
+  assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of WoofGuide/);
+  assert.match(surface.requiredEvidence.join("\n"), /OpenAI key location/);
+  assert.match(surface.requiredEvidence.join("\n"), /fallback\/incident handling/);
+  assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
+    "Provider Launch Setup WoofGuide AI gate",
+    "WoofGuide model and key policy",
+    "Source citations and owner-reviewed writes",
+    "Veterinary safety and fallback handling",
+  ]);
+  assert.equal(surface.routeChecklist?.[0]?.route, "/more");
+  assert.equal(surface.routeChecklist?.[1]?.route, "/woofguide");
+  assert.equal(surface.routeChecklist?.[2]?.route, "/woofguide");
+  assert.equal(surface.routeChecklist?.[3]?.route, "/woofguide");
+  assert.match(surface.routeChecklist?.[0]?.proof ?? "", /WoofGuide AI provider proof packet/);
+  assert.match(surface.routeChecklist?.[1]?.proof ?? "", /OpenAI key location/);
+  assert.match(surface.routeChecklist?.[2]?.proof ?? "", /owner-review write gate/);
+  assert.match(surface.routeChecklist?.[3]?.proof ?? "", /veterinary safety boundary/);
+  assert.match(surface.launchRisk, /live AI can be enabled/);
+});
+
 test("adds a launch-critical push notifications proof target", () => {
   const surfaces = listMobileReleaseQaSurfaces();
   const ids = surfaces.map((surface) => surface.id);

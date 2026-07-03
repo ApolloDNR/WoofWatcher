@@ -267,6 +267,14 @@ export function buildMobileReleaseSmokeChecklist(
             status: "required",
           },
           {
+            label: "Focused WoofGuide AI provider proof target",
+            detail:
+              "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and confirm OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary and fallback/incident handling before live AI is enabled.",
+            proof:
+              "Attach key storage, model policy, source/citation rules, owner-reviewed write gate, safety refusal examples, emergency escalation copy, fallback/incident handling, rollback plan, and support handoff; WoofGuide stays deterministic until this proof exists.",
+            status: "required",
+          },
+          {
             label: "Focused push notifications proof target",
             detail:
               "Open /care-twin-qa?qaSurface=push-notifications-proof and confirm Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, and delivery QA before reminder delivery is claimed.",

@@ -69,6 +69,8 @@ The beta must not claim:
 - When the current mission is `Report Binary Export Proof`, open `/care-twin-qa?qaSurface=report-binary-export-proof`, then capture the approved Care Pass PDF generator, approved Dog ID PNG renderer, provider storage policy, generated file name/size/MIME/share proof, and iOS/Android artifact evidence before claiming PDF/PNG readiness.
 - When the current mission is `Care-entry Provider Sync Proof`, open `/care-twin-qa?qaSurface=care-entry-provider-sync-proof`, then capture Supabase project id, migration/backfill for `care_entries.updated_at` and `care_entry_tombstones`, active-household RLS for cursor and tombstone routes, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off before enabling incremental care-entry sync.
 - When reviewing More's Sync Health panel, use `Open sync proof` to jump to the same Care-entry Provider Sync Proof mission. This is a shortcut only; visible outbox/local sync status still does not prove Supabase migration, active-household RLS, retention policy, or incremental provider sync.
+- When the current mission is `WoofGuide AI Provider Proof`, open `/care-twin-qa?qaSurface=woofguide-ai-provider-proof`, then capture OpenAI key location, secret storage, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, fallback/incident handling, rollback plan, and support handoff before enabling live AI.
+- When reviewing Provider Launch Setup's WoofGuide AI row, use `Open proof mission` to jump to the same WoofGuide AI Provider Proof mission. This is a shortcut only; it does not configure OpenAI, approve a model, enable live provider-backed AI, allow automatic care-log writes, clear source/citation review, or replace veterinary/safety approval.
 - When the current mission is `Push Notifications Proof`, open `/care-twin-qa?qaSurface=push-notifications-proof`, then capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed-notification fallback before claiming reminder delivery.
 - When reviewing Reminder Center, use Calendar's `Open push proof` action to jump to the same Push Notifications Proof mission. This is a shortcut only; local preference intent still does not prove provider configuration or delivered reminders.
 - When the current mission is `Payments Provider Proof`, open `/care-twin-qa?qaSurface=payments-provider-proof`, then capture Plus and Family product ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired receipt proof, restore purchases, entitlement mapping, household role access, refund/support policy, and checkout-gate proof before enabling paid checkout.
@@ -78,7 +80,7 @@ The beta must not claim:
 - When the current mission is `Account Deletion Proof`, open `/care-twin-qa?qaSurface=account-deletion-proof`, then capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, cancellation behavior, and legal/store approval before claiming destructive deletion readiness.
 - When reviewing Provider Launch Setup's Self-serve account deletion row, use `Open proof mission` to jump to the same Account Deletion Proof mission. This is a shortcut only; it does not enable destructive deletion, delete provider data/storage, approve privacy/legal copy, satisfy App Store/Play Store review, or replace Apollo sign-off.
 - When the current mission is `Route Visual Consistency`, open `/care-twin-qa?qaSurface=route-visual-consistency`, then capture Home, Log, Plans, Health, Records, and More on both iOS and Android; web preview screenshots do not replace native proof.
-- Before attempting native proof, run `pnpm run doctor:native-qa:json`. A `BLOCKED` result from missing `adb`, `emulator`, `java`, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, or `JAVA_HOME` means use a configured Mac, Android Studio machine, physical device, TestFlight build, or helper environment instead of claiming local native QA. The JSON doctor's `nextActions` now explicitly call out Report Binary Export Proof, Care-entry Provider Sync Proof, Payments Provider Proof, Push Notifications Proof, Store Accounts Proof, and Account Deletion Proof as helper missions alongside Route Visual Consistency, Auth/Setup, and Records local files; those action lines are capture instructions, not native proof by themselves.
+- Before attempting native proof, run `pnpm run doctor:native-qa:json`. A `BLOCKED` result from missing `adb`, `emulator`, `java`, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, or `JAVA_HOME` means use a configured Mac, Android Studio machine, physical device, TestFlight build, or helper environment instead of claiming local native QA. The JSON doctor's `nextActions` now explicitly call out Report Binary Export Proof, Care-entry Provider Sync Proof, WoofGuide AI Provider Proof, Payments Provider Proof, Push Notifications Proof, Store Accounts Proof, and Account Deletion Proof as helper missions alongside Route Visual Consistency, Auth/Setup, and Records local files; those action lines are capture instructions, not native proof by themselves.
 - On Avatar Studio, confirm Scan/Template/Customize/Emotes tabs, Gallery, Take photo, template tiles, coat swatches, face options, accessories, mood previews, Reset, and Save Avatar controls feel phone-sized and easy to tap.
 - On Adventure, confirm quest cards, private memory capture, `Save Memory`, and `Share Adventure` feel phone-sized, useful, and aligned with the real-care RPG promise instead of decorative game fluff.
 - On WoofGuide, confirm quick questions, suggested actions, the send button, and owner-review Cancel/Apply draft controls feel phone-sized, useful, and clearly non-diagnostic.
@@ -224,6 +226,13 @@ Current environment note:
   all passing. This is store proof-target routing only; account creation,
   metadata/screenshot approval, App Review or Play review submission,
   legal/privacy approval, and Apollo sign-off remain blocked.
+- Branch CI also proved the focused account deletion proof target on 2026-07-03:
+  `WoofWatcher Verify` run `28678013555`, job `85055419174`, commit `51ecca7`,
+  completed successfully in `2m56s` with Setup pnpm, Setup Node, install, JSON
+  mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds
+  all passing. This is account-deletion proof-target routing only; destructive
+  deletion, provider data/storage deletion, privacy/legal approval, store
+  deletion compliance, and Apollo sign-off remain blocked.
 - The mobile package now has a `smoke:runtime` alias that starts a disposable
   static runtime over `.expo-smoke`, verifies 13 exported mobile routes return
   the Expo web shell, including `/sign-in` and `/setup`, and exits without
@@ -232,10 +241,10 @@ Current environment note:
   no-dependency static server, both pinned to port `4194`, and the root
   `preview:mobile-beta` command points to the same handoff path.
 - The mobile package also has `proof:live-preview`, which starts a disposable
-  static preview server over `.expo-smoke`, verifies 17 launch-critical preview
+  static preview server over `.expo-smoke`, verifies 18 launch-critical preview
   routes return the Expo web shell, including `/sign-in`, `/setup`, Auth/Setup,
-  push, payments, store accounts, account deletion, care-entry sync, Records
-  handoff, report binary export, and Route Visual Consistency proof targets, and
+  WoofGuide AI, push, payments, store accounts, account deletion, care-entry
+  sync, Records handoff, report binary export, and Route Visual Consistency proof targets, and
   emits JSON proof with web-preview-only truth boundaries before helpers keep
   `preview:smoke` open for human review. Root `build:ci` runs it after
   `smoke:web` and `smoke:runtime`.
@@ -284,8 +293,10 @@ Current environment note:
   provider proof packet` requiring OpenAI key location, approved model policy,
   source/citation rules, owner-review write gate, veterinary safety boundary,
   and fallback/incident handling before live AI can be enabled. Share Beta
-  Handoff prints those proof steps, but this does not configure an OpenAI key,
-  approve a model, enable live AI, or clear veterinary/safety review.
+  Handoff prints those proof steps, and the WoofGuide AI row now opens
+  `/care-twin-qa?qaSurface=woofguide-ai-provider-proof` for focused helper
+  capture, but this does not configure an OpenAI key, approve a model, enable
+  live AI, allow automatic care-log writes, or clear veterinary/safety review.
 - Provider Launch Setup's Self-serve account deletion gate now carries a
   `Self-serve account deletion proof packet` requiring the deletion route and
   reauthentication gate, export-before-delete handoff, data/object deletion
@@ -327,6 +338,15 @@ Current environment note:
   incremental care-entry sync can be enabled. More's Sync Health panel now opens
   the same proof mission through `Open sync proof`; this is a helper shortcut,
   not Supabase/provider approval by itself.
+- The Release Smoke Checklist, Share Beta Handoff, live-preview verifier, JSON
+  mobile beta doctor, and native QA tooling doctor now also name
+  `/care-twin-qa?qaSurface=woofguide-ai-provider-proof` for OpenAI key location,
+  secret storage, approved model policy, source/citation rules, owner-review
+  write gate, veterinary safety boundary, fallback/incident handling, rollback
+  plan, and support handoff before live AI can be enabled. More's WoofGuide AI
+  provider row opens the same proof mission; this is a helper shortcut, not
+  OpenAI configuration, model approval, automatic-write approval, or
+  veterinary/safety sign-off by itself.
 - The Release Smoke Checklist, Share Beta Handoff, live-preview verifier, JSON
   mobile beta doctor, and native QA tooling doctor now also name
   `/care-twin-qa?qaSurface=push-notifications-proof` for Expo push project
@@ -414,13 +434,13 @@ Current environment note:
   plus a `More proof steps` count. Use `Share Provider Plan` for the complete
   checklist, and do not treat a single visible proof line as enough to clear
   Supabase/RLS, PDF/PNG artifact, storage policy, or native proof blockers.
-- Provider Launch Setup also gives the auth, database, storage, payments, push, store accounts, and account deletion rows an
+- Provider Launch Setup also gives the auth, database, storage, WoofGuide AI, payments, push, store accounts, and account deletion rows an
   `Open proof mission` action to the matching focused `/care-twin-qa` surface:
   Auth/Setup onboarding proof, Care-entry provider sync proof, Report binary
-  export proof, Payments Provider Proof, Push notifications proof, and Store
-  Accounts Proof, and Account Deletion Proof. These are capture shortcuts only;
+  export proof, WoofGuide AI Provider Proof, Payments Provider Proof, Push
+  notifications proof, Store Accounts Proof, and Account Deletion Proof. These are capture shortcuts only;
   they do not replace provider credentials, native screenshots, store submission
-  evidence, destructive deletion evidence, legal/store approval, or Apollo approval.
+  evidence, destructive deletion evidence, AI/model/safety approval, legal/store approval, or Apollo approval.
 - The in-app `Share Beta Handoff` packet now includes that provider proof
   checklist too, so deadline helpers can use one packet for dependency proof,
   device proof, provider evidence, and launch truth boundaries.

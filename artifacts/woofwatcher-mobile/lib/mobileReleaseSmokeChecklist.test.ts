@@ -172,6 +172,13 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /care_entry_tombstones/);
   assert.match(text, /active-household RLS/);
   assert.match(text, /mobile full-refresh sign-off/);
+  assert.match(text, /Focused WoofGuide AI provider proof target/);
+  assert.match(text, /\/care-twin-qa\?qaSurface=woofguide-ai-provider-proof/);
+  assert.match(text, /OpenAI key location/);
+  assert.match(text, /approved model policy/);
+  assert.match(text, /source\/citation rules/);
+  assert.match(text, /owner-review write gate/);
+  assert.match(text, /veterinary safety boundary and fallback\/incident handling/);
   assert.match(text, /Focused push notifications proof target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=push-notifications-proof/);
   assert.match(text, /Expo push project config/);

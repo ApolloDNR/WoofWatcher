@@ -184,6 +184,9 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Attach Supabase project id, migration\/backfill for care_entries\.updated_at and care_entry_tombstones/);
   assert.match(text, /active-household RLS cursor\/tombstone proof/);
   assert.match(text, /mobile full-refresh sign-off before enabling incremental sync/);
+  assert.match(text, /Open focused WoofGuide AI provider target: \/care-twin-qa\?qaSurface=woofguide-ai-provider-proof/);
+  assert.match(text, /Attach OpenAI key location, approved model policy, source\/citation rules, and owner-review write gate/);
+  assert.match(text, /veterinary safety boundary and fallback\/incident handling before enabling live AI/);
   assert.match(text, /Open focused push notifications target: \/care-twin-qa\?qaSurface=push-notifications-proof/);
   assert.match(text, /Attach Expo push project id, APNs credentials, Firebase\/FCM credentials/);
   assert.match(text, /permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback/);
