@@ -25,6 +25,7 @@ import {
   type CareTwinQaReviewStatus,
 } from "@/lib/careTwinQaReport";
 import {
+  buildRouteVisualProofManifest,
   buildStoreSubmissionScreenshotQaSurfaces,
   buildMobileReleaseQaShareText,
   formatMobileReleaseQaMissingEvidence,
@@ -394,6 +395,17 @@ export default function CareTwinQaScreen() {
         : colors.copper
     : colors.mutedForeground;
   const focusedQaEvidence = focusedQaTarget ? surfaceEvidenceById[focusedQaTarget.target.surfaceId] ?? [] : [];
+  const routeVisualProofManifest = useMemo(
+    () =>
+      focusedQaTarget?.surface.id === "route-visual-consistency"
+        ? buildRouteVisualProofManifest({
+            surface: focusedQaTarget.surface,
+            evidence: focusedQaEvidence,
+            note: surfaceNotes[focusedQaTarget.target.surfaceId],
+          })
+        : null,
+    [focusedQaEvidence, focusedQaTarget, surfaceNotes],
+  );
   const nextBetaMission = betaCapturePlan.primaryMission;
   const nextBetaTarget = nextBetaMission.target ?? betaCapturePlan.nextTargets[0];
   const nextBetaTargetMissingEvidence = nextBetaTarget?.missingEvidence ?? [];
@@ -689,6 +701,75 @@ export default function CareTwinQaScreen() {
                     </View>
                   ))}
                 </View>
+                {routeVisualProofManifest ? (
+                  <View style={[s.routeVisualManifest, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.routeVisualManifestHeader}>
+                      <View style={s.routeVisualManifestCopy}>
+                        <Text style={[s.routeVisualManifestTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                          Route visual proof manifest
+                        </Text>
+                        <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Native route screenshots stay required before visual sign-off.
+                        </Text>
+                      </View>
+                      <QaBadge
+                        label={routeVisualProofManifest.statusLabel}
+                        tone={routeVisualProofManifest.status === "ready" ? colors.sage : colors.amber}
+                      />
+                    </View>
+                    <View style={s.routeVisualManifestStats}>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          iOS
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {routeVisualProofManifest.attachedIosScreenshots}/{routeVisualProofManifest.requiredIosScreenshots}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Android
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {routeVisualProofManifest.attachedAndroidScreenshots}/{routeVisualProofManifest.requiredAndroidScreenshots}
+                        </Text>
+                      </View>
+                    </View>
+                    {routeVisualProofManifest.rows.map((row) => (
+                      <View key={`route-visual-manifest-${row.label}`} style={[s.routeVisualManifestRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={s.routeVisualManifestRouteLine}>
+                          <Text style={[s.routeVisualManifestRouteName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {row.label}
+                          </Text>
+                          <Text style={[s.routeVisualManifestRoutePath, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                            {row.route}
+                          </Text>
+                        </View>
+                        <Text style={[s.routeVisualManifestExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {row.expected}
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatusLine, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                          {row.iosStatus} / {row.androidStatus}
+                        </Text>
+                      </View>
+                    ))}
+                    {routeVisualProofManifest.blockers.length ? (
+                      <View style={[s.routeVisualManifestBlockers, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                        {routeVisualProofManifest.blockers.map((blocker) => (
+                          <View key={`route-visual-blocker-${blocker}`} style={s.betaRunStep}>
+                            <View style={[s.betaRunStepDot, { backgroundColor: colors.amber }]} />
+                            <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {blocker}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      {routeVisualProofManifest.webPreviewBoundary}
+                    </Text>
+                  </View>
+                ) : null}
                 <EvidenceCapture
                   title="Focused screenshot proof"
                   label={`${focusedQaEvidence.length} focused`}
@@ -2397,6 +2478,93 @@ const s = StyleSheet.create({
     lineHeight: 16,
   },
   betaRunRouteLoopProof: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  routeVisualManifest: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
+  routeVisualManifestHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  routeVisualManifestCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  routeVisualManifestTitle: {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  routeVisualManifestHelp: {
+    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  routeVisualManifestStats: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  routeVisualManifestStat: {
+    flexGrow: 1,
+    flexBasis: "45%",
+    minWidth: 116,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 2,
+  },
+  routeVisualManifestStatLabel: {
+    fontSize: 9.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
+  routeVisualManifestStatValue: {
+    fontSize: 12,
+  },
+  routeVisualManifestRow: {
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 10,
+    gap: 4,
+  },
+  routeVisualManifestRouteLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  routeVisualManifestRouteName: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 12,
+  },
+  routeVisualManifestRoutePath: {
+    fontSize: 10.5,
+  },
+  routeVisualManifestExpected: {
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  routeVisualManifestStatusLine: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  routeVisualManifestBlockers: {
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 10,
+    gap: 7,
+  },
+  routeVisualManifestBoundary: {
     fontSize: 11,
     lineHeight: 15,
   },

@@ -828,6 +828,16 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Open focused route target:/);
   assert.match(qaRoute, /routeCheck\.expected/);
   assert.match(qaRoute, /mobileReleaseQaRouteProofLabel/);
+  assert.match(releaseQa, /buildRouteVisualProofManifest/);
+  assert.match(releaseQa, /Route visual proof manifest/);
+  assert.match(releaseQa, /Native proof blocked/);
+  assert.match(releaseQa, /Web preview route proof can catch shell regressions/);
+  assert.match(qaRoute, /buildRouteVisualProofManifest/);
+  assert.match(qaRoute, /routeVisualProofManifest/);
+  assert.match(qaRoute, /Route visual proof manifest/);
+  assert.match(qaRoute, /routeVisualProofManifest\.rows\.map/);
+  assert.match(qaRoute, /routeVisualProofManifest\.blockers\.map/);
+  assert.match(qaRoute, /routeVisualProofManifest\.webPreviewBoundary/);
   assert.match(qaRoute, /Mission note/);
   assert.match(qaRoute, /Mission note for \$\{nextBetaTarget\.title\}/);
   assert.match(qaRoute, /surfaceNotes\[nextBetaTarget\.surfaceId\]/);
@@ -5557,6 +5567,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "route visual proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "route visual proof manifest is source-backed" &&
         check.status === "PASS",
     ),
   );

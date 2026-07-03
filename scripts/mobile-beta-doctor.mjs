@@ -1390,6 +1390,33 @@ check(
     : "keep Route Visual Consistency wired through release QA, Share Beta Handoff, smoke checklist, and doctor next actions",
 );
 
+const routeVisualProofManifestIsSourceBacked = includesAll(mobileReleaseQaSource, [
+  "buildRouteVisualProofManifest",
+  "Route visual proof manifest",
+  "Native proof blocked",
+  "Native visual proof complete",
+  "iOS screenshot pending",
+  "Android screenshot pending",
+  "QA note pending",
+  "Web preview route proof can catch shell regressions",
+])
+  && includesAll(careTwinQaRouteSource, [
+    "buildRouteVisualProofManifest",
+    "routeVisualProofManifest",
+    "Route visual proof manifest",
+    "Native route screenshots stay required before visual sign-off.",
+    "routeVisualProofManifest.rows.map",
+    "routeVisualProofManifest.blockers.map",
+    "routeVisualProofManifest.webPreviewBoundary",
+  ]);
+check(
+  "route visual proof manifest is source-backed",
+  routeVisualProofManifestIsSourceBacked,
+  routeVisualProofManifestIsSourceBacked
+    ? "Route Visual Consistency shows per-route iOS/Android screenshot slots, blockers, and the web-preview boundary before visual proof can be claimed"
+    : "keep Route Visual Consistency wired to buildRouteVisualProofManifest in the focused QA route before claiming route visual proof",
+);
+
 const betaHandoffTruthBoundariesAreSourceBacked = includesAll(betaHandoffPacketSource, [
   "Truth boundaries:",
   "No App Store or Play Store submission is approved by this packet.",

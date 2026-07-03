@@ -2865,6 +2865,16 @@ the doctor still blocks only on local pnpm `11.7.0` versus pinned `10.24.0`.
 This is a handoff and guardrail slice, not actual native screenshot
 evidence, provider approval, store approval, public launch, or Apollo sign-off.
 
+The Route Visual proof manifest pass makes that handoff harder to overclaim.
+`buildRouteVisualProofManifest` derives the six route rows from the existing
+Route Visual Consistency QA surface, counts attached iOS and Android screenshot
+slots, requires the QA note, and keeps a web-preview-only boundary visible.
+The focused `/care-twin-qa?qaSurface=route-visual-consistency` route now renders
+the manifest, blockers, per-route iOS/Android slot status, and the boundary
+before visual proof can be marked complete. The JSON mobile beta doctor reports
+`route visual proof manifest is source-backed`; this still does not create
+native screenshots, approve route visuals, or replace Apollo sign-off.
+
 The Live Preview Handoff proof pass turns the dependency-complete preview handoff
 into a first-class section instead of a hidden command. The Release Smoke
 Checklist now lists `Live preview handoff proof` immediately after dependency

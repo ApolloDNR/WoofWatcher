@@ -57,6 +57,36 @@ export interface MobileReleaseQaSummary {
   missingAnyScreenshots: number;
 }
 
+export type RouteVisualProofManifestStatus = "ready" | "blocked";
+
+export interface RouteVisualProofManifestInput {
+  surface?: MobileReleaseQaSurface;
+  evidence?: readonly QaScreenshotEvidence[];
+  note?: string;
+}
+
+export interface RouteVisualProofManifestRow {
+  label: string;
+  route: string;
+  expected: string;
+  iosStatus: string;
+  androidStatus: string;
+  proof: string;
+}
+
+export interface RouteVisualProofManifest {
+  title: "Route visual proof manifest";
+  status: RouteVisualProofManifestStatus;
+  statusLabel: "Native visual proof complete" | "Native proof blocked";
+  requiredIosScreenshots: number;
+  requiredAndroidScreenshots: number;
+  attachedIosScreenshots: number;
+  attachedAndroidScreenshots: number;
+  rows: RouteVisualProofManifestRow[];
+  blockers: string[];
+  webPreviewBoundary: string;
+}
+
 const AVATAR_SPRITE_PRODUCTION_QA = buildAvatarSpriteProductionQaSummary();
 
 export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
@@ -1399,6 +1429,67 @@ export function mobileReleaseQaRouteProofLabel(routeCheck: MobileReleaseQaRouteC
   const platformLabel = platforms.map((platform) => (platform === "ios" ? "iOS" : "Android")).join(" + ");
   const proof = routeCheck.proof ? ` ${routeCheck.proof}` : "";
   return `${platformLabel} native screenshot required.${proof}`;
+}
+
+function routeVisualSurfaceForManifest(surface: MobileReleaseQaSurface | undefined): MobileReleaseQaSurface {
+  return surface ?? listMobileReleaseQaSurfaces().find((item) => item.id === "route-visual-consistency") ?? {
+    id: "route-visual-consistency",
+    title: "Route Visual Consistency",
+    route: "/more",
+    priority: "launch-critical",
+    goal: "Prove route visual consistency.",
+    devicePrompt: "Capture native route proof.",
+    setupSteps: [],
+    verificationSteps: [],
+    acceptanceCriteria: [],
+    failureEscalation: "Mark Needs tune for visual drift.",
+    requiredEvidence: [],
+    launchRisk: "Route visual proof is required before launch.",
+    routeChecklist: [],
+  };
+}
+
+export function buildRouteVisualProofManifest(
+  input: RouteVisualProofManifestInput = {},
+): RouteVisualProofManifest {
+  const surface = routeVisualSurfaceForManifest(input.surface);
+  const routeChecks = surface.routeChecklist ?? [];
+  const attachedIosScreenshots = (input.evidence ?? []).filter((item) => item.targetPlatform === "ios").length;
+  const attachedAndroidScreenshots = (input.evidence ?? []).filter((item) => item.targetPlatform === "android").length;
+  const rows = routeChecks.map((routeCheck, index) => {
+    const iosAttached = attachedIosScreenshots > index;
+    const androidAttached = attachedAndroidScreenshots > index;
+    return {
+      label: routeCheck.label,
+      route: routeCheck.route,
+      expected: routeCheck.expected,
+      iosStatus: iosAttached ? "iOS screenshot attached" : "iOS screenshot pending",
+      androidStatus: androidAttached ? "Android screenshot attached" : "Android screenshot pending",
+      proof: mobileReleaseQaRouteProofLabel(routeCheck) ?? "Native visual proof required.",
+    };
+  });
+  const noteReady = Boolean(input.note?.trim());
+  const blockers = rows.flatMap((row) => [
+    ...(row.iosStatus.includes("pending") ? [`${row.label}: ${row.iosStatus}`] : []),
+    ...(row.androidStatus.includes("pending") ? [`${row.label}: ${row.androidStatus}`] : []),
+  ]);
+  if (!noteReady) {
+    blockers.push("QA note pending: list the first overlap, confusing hierarchy, mockup drift, or confirm no route-to-route design break was found.");
+  }
+
+  return {
+    title: "Route visual proof manifest",
+    status: blockers.length ? "blocked" : "ready",
+    statusLabel: blockers.length ? "Native proof blocked" : "Native visual proof complete",
+    requiredIosScreenshots: routeChecks.length,
+    requiredAndroidScreenshots: routeChecks.length,
+    attachedIosScreenshots,
+    attachedAndroidScreenshots,
+    rows,
+    blockers,
+    webPreviewBoundary:
+      "Web preview route proof can catch shell regressions, but it does not replace native iOS/Android route screenshots, safe-area review, touch proof, or Apollo visual sign-off.",
+  };
 }
 
 function pluralLabel(value: number, label: string): string {
