@@ -64,6 +64,7 @@ import {
   buildLaunchProviderSetupShareText,
   deriveLaunchProviderSetup,
   normalizeLaunchProviderProfile,
+  type LaunchProviderSetupKey,
   type LaunchProviderProfile,
 } from "@/lib/launchProviderSetup";
 import {
@@ -254,6 +255,42 @@ function launchNextGateIcon(action: LaunchReadinessNextGateAction): keyof typeof
 function buildCareTwinQaFocusRoute(target: Pick<MobileLaunchQaCaptureTarget, "surfaceId"> | null | undefined): string {
   if (!target) return "/care-twin-qa";
   return `/care-twin-qa?qaSurface=${encodeURIComponent(target.surfaceId)}`;
+}
+
+type ProviderRowQaTarget = Pick<MobileLaunchQaCaptureTarget, "surfaceId"> & {
+  detail: string;
+  iconName: keyof typeof Ionicons.glyphMap;
+};
+
+function providerRowQaTarget(key: LaunchProviderSetupKey): ProviderRowQaTarget | null {
+  switch (key) {
+    case "auth":
+      return {
+        surfaceId: "auth-setup-onboarding-proof",
+        detail: "Auth and Setup native proof",
+        iconName: "log-in-outline",
+      };
+    case "database":
+      return {
+        surfaceId: "care-entry-provider-sync-proof",
+        detail: "Care-entry Provider Sync Proof",
+        iconName: "server-outline",
+      };
+    case "storage":
+      return {
+        surfaceId: "report-binary-export-proof",
+        detail: "Report Binary Export Proof",
+        iconName: "document-attach-outline",
+      };
+    case "push":
+      return {
+        surfaceId: "push-notifications-proof",
+        detail: "Push Notifications Proof",
+        iconName: "notifications-outline",
+      };
+    default:
+      return null;
+  }
 }
 
 export default function MoreScreen() {
@@ -1930,6 +1967,7 @@ export default function MoreScreen() {
               <View style={s.providerSetupRows}>
                 {providerSetupVisibleRows.map((row) => {
                   const rowTone = row.status === "ready" ? colors.sage : colors.amber;
+                  const rowQaTarget = providerRowQaTarget(row.key);
                   return (
                     <View key={row.key} style={[s.providerSetupRow, { borderTopColor: colors.border }]}>
                       <Ionicons
@@ -1973,6 +2011,29 @@ export default function MoreScreen() {
                               </Text>
                             ) : null}
                           </View>
+                        ) : null}
+                        {rowQaTarget ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Open proof mission for ${row.label}: ${rowQaTarget.detail}`}
+                            onPress={() => {
+                              Haptics.selectionAsync();
+                              router.push(buildCareTwinQaFocusRoute({ surfaceId: rowQaTarget.surfaceId }) as never);
+                            }}
+                            style={({ pressed }) => [
+                              s.providerSetupRowAction,
+                              {
+                                backgroundColor: rowTone + "12",
+                                borderColor: rowTone + "45",
+                                opacity: pressed ? 0.74 : 1,
+                              },
+                            ]}
+                          >
+                            <Ionicons name={rowQaTarget.iconName} size={13} color={rowTone} />
+                            <Text style={[s.providerSetupRowActionText, { color: rowTone, fontFamily: "Inter_800ExtraBold" }]}>
+                              Open proof mission
+                            </Text>
+                          </Pressable>
                         ) : null}
                       </View>
                     </View>
@@ -4053,6 +4114,18 @@ const s = StyleSheet.create({
   providerSetupRowTitle: { fontSize: 12.4, lineHeight: 16 },
   providerSetupRowSub: { fontSize: 10.8, lineHeight: 15, marginTop: 2 },
   providerSetupRowProof: { fontSize: 10, lineHeight: 14, marginTop: 3 },
+  providerSetupRowAction: {
+    minHeight: 34,
+    alignSelf: "flex-start",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 6,
+    paddingHorizontal: 8,
+  },
+  providerSetupRowActionText: { fontSize: 10.2, lineHeight: 13 },
   providerSetupActions: { flexDirection: "row", gap: 8, marginTop: 10 },
   providerSetupButton: {
     flex: 1,

@@ -4543,6 +4543,13 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /row\.proofChecklist\.length > 3/);
   assert.match(more, /More proof steps:/);
   assert.doesNotMatch(more, /Proof step: \{row\.proofChecklist\[0\]\}/);
+  assert.match(more, /providerRowQaTarget/);
+  assert.match(more, /auth-setup-onboarding-proof/);
+  assert.match(more, /care-entry-provider-sync-proof/);
+  assert.match(more, /report-binary-export-proof/);
+  assert.match(more, /push-notifications-proof/);
+  assert.match(more, /Open proof mission/);
+  assert.match(more, /buildCareTwinQaFocusRoute\(\{ surfaceId: rowQaTarget\.surfaceId \}\)/);
   assert.match(more, /providerSetupProofChecklist/);
   assert.match(more, /Proof needed/);
   assert.match(more, /row\.status === "blocked" \? row\.nextAction : row\.detail/);

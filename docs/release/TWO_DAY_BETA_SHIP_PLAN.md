@@ -308,6 +308,12 @@ Current environment note:
   plus a `More proof steps` count. Use `Share Provider Plan` for the complete
   checklist, and do not treat a single visible proof line as enough to clear
   Supabase/RLS, PDF/PNG artifact, storage policy, or native proof blockers.
+- Provider Launch Setup also gives the auth, database, storage, and push rows an
+  `Open proof mission` action to the matching focused `/care-twin-qa` surface:
+  Auth/Setup onboarding proof, Care-entry provider sync proof, Report binary
+  export proof, and Push notifications proof. These are capture shortcuts only;
+  they do not replace provider credentials, native screenshots, or Apollo
+  approval.
 - The in-app `Share Beta Handoff` packet now includes that provider proof
   checklist too, so deadline helpers can use one packet for dependency proof,
   device proof, provider evidence, and launch truth boundaries.
