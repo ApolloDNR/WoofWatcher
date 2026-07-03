@@ -173,6 +173,8 @@ const payload = {
     "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
     "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof for Auth gateway and Setup local-preview proof, and keep provider-backed auth/household creation blocked until real provider evidence exists.",
     "Open /care-twin-qa?qaSurface=records-local-file-handoff for Records local file proof and keep generated PDF/PNG/provider storage blocked until real artifacts exist.",
+    "Open /care-twin-qa?qaSurface=report-binary-export-proof for Care Pass PDF and Dog ID PNG artifact proof, and keep generated PDF/PNG readiness blocked until file name, file size, MIME, share/reopen, renderer, storage policy, and iOS/Android evidence exist.",
+    "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof for Supabase migration/backfill, active-household RLS, retention/export/deletion policy, dependency proof, and mobile full-refresh sign-off before enabling incremental care-entry sync.",
     "Open /care-twin-qa?qaSurface=push-notifications-proof for Expo/APNs/Firebase delivery proof, permission copy, quiet hours, opt-out behavior, and missed notification fallback before claiming reminder delivery.",
   ],
 };

@@ -4964,6 +4964,12 @@ test("keeps a native QA tooling doctor for device-proof handoff", () => {
     payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=records-local-file-handoff"),
   );
   assert.ok(
+    payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=report-binary-export-proof"),
+  );
+  assert.ok(
+    payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=care-entry-provider-sync-proof"),
+  );
+  assert.ok(
     payload.nativeProofTargets?.includes("/care-twin-qa?qaSurface=auth-setup-onboarding-proof"),
   );
   assert.ok(
@@ -4982,6 +4988,22 @@ test("keeps a native QA tooling doctor for device-proof handoff", () => {
   assert.ok(
     payload.nextActions?.some((action) =>
       action.includes("/care-twin-qa?qaSurface=route-visual-consistency"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("/care-twin-qa?qaSurface=report-binary-export-proof") &&
+        action.includes("Care Pass PDF") &&
+        action.includes("Dog ID PNG"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("/care-twin-qa?qaSurface=care-entry-provider-sync-proof") &&
+        action.includes("Supabase") &&
+        action.includes("mobile full-refresh"),
     ),
   );
 });
