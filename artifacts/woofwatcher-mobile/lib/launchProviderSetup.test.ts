@@ -92,6 +92,23 @@ test("builds a truthful provider setup plan from a local launch profile", async 
         row.proofChecklist.some((item) => /Native artifact proof/i.test(item) && /iOS and Android/i.test(item)),
     ),
   );
+  assert.ok(plan.rows.some((row) => row.key === "payments" && /WoofWatcher Plus payments proof packet/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "payments" && /Plus and Family product ids/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "payments" && /sandbox receipt test/i.test(row.proofRequired)));
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "payments" &&
+        row.proofChecklist.some((item) => /Billing path decision/i.test(item) && /App Store/i.test(item) && /Google Play/i.test(item)),
+    ),
+  );
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "payments" &&
+        row.proofChecklist.some((item) => /Entitlement mapping/i.test(item) && /restore purchases/i.test(item)),
+    ),
+  );
   assert.equal(plan.nextGate?.key, "database");
   assert.match(plan.nextGate?.proofRequired ?? "", /Supabase project id/);
   assert.ok(plan.nextGate?.proofChecklist.some((item) => /mobile incremental/i.test(item)));
@@ -178,6 +195,13 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /PDF generator: Approved native PDF generator/);
   assert.match(text, /Credential PNG generator: Approved image renderer/);
   assert.match(text, /Native artifact proof: iOS and Android/);
+  assert.match(text, /WoofWatcher Plus payments: WoofWatcher Plus payments proof packet/);
+  assert.match(text, /Product catalog: Plus and Family product ids/);
+  assert.match(text, /Billing path decision: Approved App Store, Google Play, and Stripe or web checkout decision/);
+  assert.match(text, /Sandbox receipt test: Sandbox purchase, renewal, cancel, refund, and expired receipt proof/);
+  assert.match(text, /Entitlement mapping: Plus and Family feature gates/);
+  assert.match(text, /Refund and support policy: Public refund, support, tax, and subscription terms/);
+  assert.match(text, /Checkout gate and restore behavior: checkout stays disabled/);
   assert.match(text, /WoofGuide AI/);
   assert.match(text, /No App Store or Play Store submission is approved by this checklist/);
 });

@@ -256,6 +256,16 @@ those proof steps under Production auth, and the JSON mobile beta doctor reports
 `auth provider proof packet is source-backed`. This does not configure Clerk,
 approve OAuth, enable household creation, or clear native Auth/Setup screenshots.
 
+The WoofWatcher Plus payments proof pass turns the old payments one-line proof
+into a source-backed packet. `paymentsProviderProof.ts` now defines the Plus and
+Family product catalog, App Store/Google Play/Stripe or web billing decision,
+sandbox receipt tests, entitlement mapping, refund/support/subscription terms,
+and checkout-gate evidence required before paid checkout can be enabled.
+Provider Launch Setup and Share Beta Handoff print those proof steps under
+WoofWatcher Plus payments, and the JSON mobile beta doctor reports `payments provider proof packet is source-backed`. This does not confirm exact paid tiers,
+enable checkout, approve App Store or Play Store billing, prove receipts, or
+clear Apollo launch sign-off.
+
 The two-day beta QA cockpit pass made device capture less fragile. `/care-twin-qa`
 now tags attached screenshot evidence explicitly as iOS, Android, or Web instead
 of relying on the runtime platform, and target routes opened from the cockpit

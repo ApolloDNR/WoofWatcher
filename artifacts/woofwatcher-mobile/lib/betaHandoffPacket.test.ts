@@ -204,6 +204,13 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /\/care-entries\?updatedSince=/);
   assert.match(text, /mobile full-refresh sign-off/);
   assert.match(text, /Records and media storage: Storage bucket names/);
+  assert.match(text, /WoofWatcher Plus payments: WoofWatcher Plus payments proof packet/);
+  assert.match(text, /Product catalog: Plus and Family product ids/);
+  assert.match(text, /Billing path decision: Approved App Store, Google Play, and Stripe or web checkout decision/);
+  assert.match(text, /Sandbox receipt test: Sandbox purchase, renewal, cancel, refund, and expired receipt proof/);
+  assert.match(text, /Entitlement mapping: Plus and Family feature gates/);
+  assert.match(text, /Refund and support policy: Public refund, support, tax, and subscription terms/);
+  assert.match(text, /Checkout gate and restore behavior: checkout stays disabled/);
   assert.match(text, /Provider proof does not approve App Store, Play Store, payment, AI, storage, or database readiness/);
   assert.match(text, /Done condition: capture required iOS\/Android proof, save the Mission note, clear Pass pending proof, then share the QA summary/);
   assert.match(text, /Truth boundaries:/);

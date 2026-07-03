@@ -201,6 +201,13 @@ Current environment note:
   can be claimed. Share Beta Handoff prints those proof steps through the
   `Provider proof needed` section; this is a proof checklist, not configured
   Clerk/provider auth.
+- Provider Launch Setup's WoofWatcher Plus payments gate now carries a
+  `WoofWatcher Plus payments proof packet` requiring Plus and Family product
+  ids, the App Store/Google Play/Stripe or web checkout decision, sandbox
+  receipt tests, entitlement mapping, refund/support policy, and checkout-gate
+  proof before paid checkout can be enabled. Share Beta Handoff prints those
+  proof steps, but checkout remains disabled until Apollo and the store/provider
+  evidence is attached.
 - The Release Smoke Checklist and Share Beta Handoff now name the focused
   Records handoff target at `/care-twin-qa?qaSurface=records-local-file-handoff`,
   including Care Pass local HTML, Dog ID local HTML, Dog ID SVG, share-sheet

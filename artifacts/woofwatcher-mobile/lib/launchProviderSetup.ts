@@ -11,6 +11,10 @@ import {
   REPORT_BINARY_EXPORT_PROOF_ITEMS,
   REPORT_BINARY_EXPORT_PROOF_SUMMARY,
 } from "./reportBinaryExportProof.ts";
+import {
+  PAYMENTS_PROVIDER_PROOF_ITEMS,
+  PAYMENTS_PROVIDER_PROOF_SUMMARY,
+} from "./paymentsProviderProof.ts";
 
 export type LaunchProviderSetupStatus = "local-draft" | "owner-reviewed" | "provider-approved";
 
@@ -196,7 +200,8 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Subscription checkout is staged under approved product, support, refund, and store obligations.",
     blockedDetail: "Paid checkout must stay disabled until subscription packaging, refund policy, and store rules are approved.",
     nextAction: "Finalize Plus tiers, App Store/Play billing path, refund/support policy, receipts, and entitlement checks.",
-    proofRequired: "Plus/Family product ids, sandbox receipt test, refund/support policy, entitlement mapping, and store billing decision record.",
+    proofRequired: PAYMENTS_PROVIDER_PROOF_SUMMARY,
+    proofChecklist: PAYMENTS_PROVIDER_PROOF_ITEMS.map((item) => `${item.label}: ${item.requiredEvidence}`),
   },
   {
     key: "push",
