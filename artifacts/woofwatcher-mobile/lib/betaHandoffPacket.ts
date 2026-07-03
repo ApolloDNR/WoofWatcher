@@ -67,10 +67,10 @@ export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
 
 export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof = {
   title: "WoofWatcher Live Preview Handoff Proof",
-  generatedAtIso: "2026-07-03T17:55:38.090Z",
+  generatedAtIso: "2026-07-03T18:06:19.813Z",
   result: "PASS",
-  baseUrl: "http://127.0.0.1:57379/",
-  commit: "7d7013b",
+  baseUrl: "http://127.0.0.1:55476/",
+  commit: "b376488",
   exportIndexMtimeIso: "2026-07-03T12:38:39.906Z",
   routeChecks: [
     { route: "/", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },

@@ -660,7 +660,7 @@ check(
 const recordedLivePreviewProofAttachmentIsSourceBacked = includesAll(betaHandoffPacketSource, [
   "RECORDED_LIVE_PREVIEW_HANDOFF_PROOF",
   'title: "WoofWatcher Live Preview Handoff Proof"',
-  'commit: "7d7013b"',
+  'commit: "b376488"',
   "auth-setup-onboarding-proof",
   "care-entry-provider-sync-proof",
   "payments-provider-proof",
