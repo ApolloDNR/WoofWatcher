@@ -411,6 +411,11 @@ export default function CalendarScreen() {
     updateCareDoc((doc) => applyReminderNotificationPreferenceDraft(doc, draft, savedAt));
   };
 
+  const openPushNotificationProofMission = () => {
+    Haptics.selectionAsync();
+    router.push("/care-twin-qa?qaSurface=push-notifications-proof" as never);
+  };
+
   const openReminderLogDetailRoute = (type: string) => {
     router.push(`/log?type=${encodeURIComponent(type)}&detail=1&intent=${Date.now()}` as never);
   };
@@ -1194,6 +1199,20 @@ export default function CalendarScreen() {
                   <Ionicons name="moon-outline" size={15} color={colors.amber} />
                   <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                     Save quiet hours
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={openPushNotificationProofMission}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open push notifications proof mission"
+                  style={({ pressed }) => [
+                    s.reminderPreferenceButton,
+                    { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+                  ]}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={15} color={colors.amber} />
+                  <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Open push proof
                   </Text>
                 </Pressable>
               </View>

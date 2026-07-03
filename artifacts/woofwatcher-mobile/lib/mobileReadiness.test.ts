@@ -4001,6 +4001,10 @@ test("keeps Reminder Center visible in Calendar before push notifications are en
   assert.match(calendar, /Save quiet hours/);
   assert.match(calendar, /Opt out/);
   assert.match(calendar, /Allow reminders after provider setup/);
+  assert.match(calendar, /openPushNotificationProofMission/);
+  assert.match(calendar, /push-notifications-proof/);
+  assert.match(calendar, /Open push proof/);
+  assert.match(calendar, /accessibilityLabel="Open push notifications proof mission"/);
   assert.match(calendar, /reminderCount/);
 });
 

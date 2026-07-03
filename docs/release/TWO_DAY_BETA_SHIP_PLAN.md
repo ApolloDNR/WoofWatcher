@@ -59,7 +59,7 @@ The beta must not claim:
 - On Home, confirm the header/menu action, Avatar Studio hero entry, household presence panel, Adventure inline action, pixel-room crop, and bottom-nav fit feel phone-sized, useful, and aligned with the premium neo-retro care-twin promise.
 - In the owner-preview loop, quick-log one safe care event or open the detail sheet, then undo it or leave a QA note if you do not want the test log to stay in local preview data.
 - On Log, confirm the care-type tabs, Undo/Add details, meal outcome, potty outcome, trust review, walk finish, and alone-time return controls feel phone-sized and easy to tap.
-- On Plans, confirm schedule tabs, Add plan, Find event, suggestion add, routine done, owner chips, save, and delete controls feel phone-sized and easy to tap.
+- On Plans, confirm schedule tabs, Add plan, Find event, suggestion add, routine done, owner chips, save, delete, Reminder Center preferences, and `Open push proof` controls feel phone-sized and easy to tap.
 - On Health, confirm the Health/Bile tabs plus `Log health note`, `Records`, and `Share review` actions feel phone-sized, calm, useful for vet/caregiver handoff, and clearly non-diagnostic.
 - On More, confirm Launch Readiness, Native QA Next Captures, provider setup, household invite, Access Pass, profile edit, and save/share actions feel phone-sized and easy to tap.
 - On Records, confirm Dog ID share/print, medication search/filter, Care Pass preview, report resend/print, record add/delete, attachment, and sheet save/cancel controls feel phone-sized and easy to tap.
@@ -68,6 +68,7 @@ The beta must not claim:
 - When the current mission is `Report Binary Export Proof`, open `/care-twin-qa?qaSurface=report-binary-export-proof`, then capture the approved Care Pass PDF generator, approved Dog ID PNG renderer, provider storage policy, generated file name/size/MIME/share proof, and iOS/Android artifact evidence before claiming PDF/PNG readiness.
 - When the current mission is `Care-entry Provider Sync Proof`, open `/care-twin-qa?qaSurface=care-entry-provider-sync-proof`, then capture Supabase project id, migration/backfill for `care_entries.updated_at` and `care_entry_tombstones`, active-household RLS for cursor and tombstone routes, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off before enabling incremental care-entry sync.
 - When the current mission is `Push Notifications Proof`, open `/care-twin-qa?qaSurface=push-notifications-proof`, then capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed-notification fallback before claiming reminder delivery.
+- When reviewing Reminder Center, use Calendar's `Open push proof` action to jump to the same Push Notifications Proof mission. This is a shortcut only; local preference intent still does not prove provider configuration or delivered reminders.
 - When the current mission is `Route Visual Consistency`, open `/care-twin-qa?qaSurface=route-visual-consistency`, then capture Home, Log, Plans, Health, Records, and More on both iOS and Android; web preview screenshots do not replace native proof.
 - Before attempting native proof, run `pnpm run doctor:native-qa:json`. A `BLOCKED` result from missing `adb`, `emulator`, `java`, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, or `JAVA_HOME` means use a configured Mac, Android Studio machine, physical device, TestFlight build, or helper environment instead of claiming local native QA. The JSON doctor's `nextActions` now explicitly call out Report Binary Export Proof and Care-entry Provider Sync Proof as helper missions alongside Route Visual Consistency, Auth/Setup, Records local files, and Push notifications; those action lines are capture instructions, not native proof by themselves.
 - On Avatar Studio, confirm Scan/Template/Customize/Emotes tabs, Gallery, Take photo, template tiles, coat swatches, face options, accessories, mood previews, Reset, and Save Avatar controls feel phone-sized and easy to tap.
@@ -168,6 +169,12 @@ Current environment note:
   doctor, focused behavior tests, and Typecheck plus CI-safe builds all passing.
   This is provider-row routing proof only; the in-app recorded beta handoff proof
   still carries its explicit rerun-after-new-commit boundary.
+- Branch CI also proved the Records proof shortcut routing on 2026-07-03:
+  `WoofWatcher Verify` run `28674576890`, job `85045143466`, commit
+  `e37e73a`, with Setup pnpm, Setup Node, install, JSON mobile beta doctor,
+  focused behavior tests, and Typecheck plus CI-safe builds all passing. This is
+  shortcut-routing proof only; native Records file proof, generated PDF/PNG
+  proof, provider storage, and Apollo sign-off remain blocked.
 - The mobile package now has a `smoke:runtime` alias that starts a disposable
   static runtime over `.expo-smoke`, verifies 13 exported mobile routes return
   the Expo web shell, including `/sign-in` and `/setup`, and exits without
