@@ -941,6 +941,12 @@ test("shows premium entitlement policy before checkout is enabled", () => {
   assert.match(premium, /Launch entitlements/);
   assert.match(premium, /Current plan: Free/);
   assert.match(premium, /Locked until upgrade/);
+  assert.match(premium, /buildPaymentsProviderProofManifest/);
+  assert.match(premium, /const paymentsProofManifest = buildPaymentsProviderProofManifest/);
+  assert.match(premium, /Payments proof manifest/);
+  assert.match(premium, /paymentsProofManifest\.rows\.map/);
+  assert.match(premium, /paymentsProofManifest\.blockers\.map/);
+  assert.match(premium, /Checkout disabled/);
 });
 
 test("keeps Expo app identity release-grade", () => {
@@ -2520,6 +2526,10 @@ test("keeps Premium value, plan, and entitlement surfaces on shared board anatom
   assert.match(
     premium,
     /<BoardCard style=\{s\.entitlementCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch entitlements"/,
+  );
+  assert.match(
+    premium,
+    /<BoardCard style=\{s\.paymentsProofCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Payments proof manifest"/,
   );
   assert.match(
     premium,
@@ -5577,6 +5587,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "payments provider proof packet is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "premium payments proof manifest is source-backed" &&
         check.status === "PASS",
     ),
   );

@@ -77,3 +77,40 @@ test("defines the WoofWatcher Plus payments proof packet before checkout can be 
     ),
   );
 });
+
+test("builds a Premium payments proof manifest before checkout can be enabled", async () => {
+  const mod = await import("./paymentsProviderProof.ts").catch(() => null);
+  assert.equal(typeof mod?.buildPaymentsProviderProofManifest, "function");
+
+  const manifest = mod.buildPaymentsProviderProofManifest({
+    productCatalogApproved: false,
+    billingPathApproved: false,
+    sandboxReceiptsApproved: false,
+    entitlementMappingApproved: false,
+    refundSupportApproved: false,
+    checkoutGateApproved: false,
+  });
+
+  assert.equal(manifest.status, "blocked");
+  assert.deepEqual(
+    manifest.rows.map((row) => row.label),
+    [
+      "Product catalog",
+      "Billing path decision",
+      "Sandbox receipts",
+      "Entitlements and restore",
+      "Refund and support policy",
+      "Checkout gate",
+    ],
+  );
+  assert.equal(manifest.rows[2]?.value, "Receipts pending");
+  assert.match(manifest.rows[2]?.detail ?? "", /purchase, renewal, cancel, refund, and expired receipt/);
+  assert.match(manifest.rows[3]?.detail ?? "", /restore purchases/);
+  assert.equal(manifest.rows[5]?.value, "Checkout disabled");
+  assert.ok(manifest.blockers.some((blocker) => /Plus and Family product ids/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /billing path decision/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /sandbox receipts/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /restore purchases/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /refund and support/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /Apollo approval/i.test(blocker)));
+});

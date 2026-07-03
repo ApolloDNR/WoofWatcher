@@ -28,6 +28,7 @@ import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { MIN_MOBILE_TOUCH_TARGET, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { buildPaymentsProviderProofManifest } from "@/lib/paymentsProviderProof";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -89,6 +90,7 @@ export default function PremiumScreen() {
     { label: "Signals", value: String(preview.valueSignals.length), tone: colors.sage },
     { label: "Gate", value: "Checkout", tone: colors.amber },
   ];
+  const paymentsProofManifest = buildPaymentsProviderProofManifest();
 
   const isWebRoutePreview = (Platform.OS as string) === "web";
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
@@ -252,6 +254,49 @@ export default function PremiumScreen() {
               {preview.launchNotice}
             </Text>
           </View>
+
+          <BoardCard style={s.paymentsProofCard}>
+            <BoardSectionHeader
+              title="Payments proof manifest"
+              accessory={<BoardPill label="Checkout disabled" tone={colors.amber} />}
+            />
+            <Text style={[s.paymentsProofIntro, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              Paid checkout stays blocked until every provider proof row is approved from real billing evidence.
+            </Text>
+            <View style={s.paymentsProofGrid}>
+              {paymentsProofManifest.rows.map((row) => (
+                <View key={row.label} style={[s.paymentsProofCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <Text style={[s.paymentsProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    {row.label}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      s.paymentsProofValue,
+                      {
+                        color: row.status === "ready" ? colors.sage : colors.amber,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
+                    {row.value}
+                  </Text>
+                  <Text numberOfLines={2} style={[s.paymentsProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {row.detail}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            {paymentsProofManifest.blockers.map((blocker) => (
+              <Text
+                key={blocker}
+                numberOfLines={2}
+                style={[s.paymentsProofBlocker, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+              >
+                - {blocker}
+              </Text>
+            ))}
+          </BoardCard>
 
           <BoardCard style={s.premiumBoard}>
             <BoardSectionHeader
@@ -607,6 +652,20 @@ const s = StyleSheet.create({
   },
   notice: { flexDirection: "row", gap: 9, borderWidth: 1, borderRadius: 17, padding: 14, marginTop: 14 },
   noticeText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
+  paymentsProofCard: { marginTop: 14 },
+  paymentsProofIntro: { fontSize: 12.5, lineHeight: 18, marginTop: -4 },
+  paymentsProofGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
+  paymentsProofCell: {
+    width: "48.5%",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    minHeight: 118,
+  },
+  paymentsProofLabel: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  paymentsProofValue: { fontSize: 11.5, marginTop: 4 },
+  paymentsProofDetail: { fontSize: 10.5, lineHeight: 14, marginTop: 4 },
+  paymentsProofBlocker: { fontSize: 10.5, lineHeight: 15, marginTop: 8 },
   premiumBoard: { marginTop: 18 },
   signalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   signalTile: { width: "48.5%", borderWidth: 1, borderRadius: 16, padding: 14 },

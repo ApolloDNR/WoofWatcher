@@ -265,6 +265,7 @@ const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProvide
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
+const premiumRoutePath = join(mobileRoot, "app", "premium.tsx");
 const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
 const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
 const carePassDomainPath = join(root, "lib", "care-domain", "src", "care-pass.ts");
@@ -286,6 +287,7 @@ const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPa
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
+const premiumRouteSource = existsSync(premiumRoutePath) ? readFileSync(premiumRoutePath, "utf8") : "";
 const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRoutePath, "utf8") : "";
 const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
 const carePassDomainSource = existsSync(carePassDomainPath) ? readFileSync(carePassDomainPath, "utf8") : "";
@@ -541,6 +543,31 @@ check(
   paymentsProviderProofPacketIsSourceBacked
     ? "Payments readiness requires product ids, billing path, sandbox receipts, entitlements, refund/support policy, and checkout gate proof through Provider Launch Setup and Share Beta Handoff"
     : "keep payments proof modeled in paymentsProviderProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
+);
+
+const premiumPaymentsProofManifestIsSourceBacked = includesAll(paymentsProviderProofSource, [
+  "buildPaymentsProviderProofManifest",
+  "Product catalog",
+  "Sandbox receipts",
+  "Entitlements and restore",
+  "Checkout disabled",
+  "restore purchases",
+  "Apollo approval",
+])
+  && includesAll(premiumRouteSource, [
+    "buildPaymentsProviderProofManifest",
+    "const paymentsProofManifest = buildPaymentsProviderProofManifest",
+    "Payments proof manifest",
+    "paymentsProofManifest.rows.map",
+    "paymentsProofManifest.blockers.map",
+    "Checkout disabled",
+  ]);
+check(
+  "premium payments proof manifest is source-backed",
+  premiumPaymentsProofManifestIsSourceBacked,
+  premiumPaymentsProofManifestIsSourceBacked
+    ? "Premium shows product catalog, billing path, sandbox receipt, restore purchase, refund/support, and checkout blockers before paid checkout can be enabled"
+    : "keep Premium wired to buildPaymentsProviderProofManifest so checkout stays blocked until real billing proof is attached",
 );
 
 const aiProviderProofPacketIsSourceBacked = includesAll(aiProviderProofSource, [

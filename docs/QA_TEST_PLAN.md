@@ -88,6 +88,7 @@ Latest local evidence, 2026-06-23:
 - Setup wizard.
 - Premium plan packaging and checkout-disabled guard.
 - Premium entitlement policy for Free, Plus, and Family feature gates before checkout is enabled.
+- Premium payments proof manifest for product catalog, billing path, sandbox receipt, restore-purchase, refund/support, and checkout-gate blockers before paid checkout is enabled.
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
 - Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, Records printable report and Dog ID actions, Hydration/Walk/Potty Records wiring, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
@@ -1547,6 +1548,11 @@ Latest local evidence, 2026-07-03:
   open` review when payment provider proof is staged but store-account,
   privacy/legal, or support/refund approval is still missing. The tile does not
   say `Checkout ready` until those obligations are closed.
+- Premium now shows a `Payments proof manifest` with Product catalog, Billing
+  path decision, Sandbox receipts, Entitlements and restore, Refund and support
+  policy, and Checkout gate rows. It keeps `Checkout disabled` visible and
+  lists blockers until the real billing/provider proof and Apollo checkout
+  approval are attached.
 - Focused proof passed `mobileReleaseQa.test.ts`,
   `betaHandoffPacket.test.ts`, `mobileReleaseSmokeChecklist.test.ts`, and
   `mobileReadiness.test.ts` with `138/138` tests. The broader mobile/PWA/care
@@ -1555,6 +1561,9 @@ Latest local evidence, 2026-07-03:
   proof target is source-backed` as `PASS`, while remaining truthfully
   `BLOCKED` only because local pnpm is `11.7.0` and the repo is pinned to
   `10.24.0`.
+- Direct `scripts/mobile-beta-doctor.mjs --json` also reports `premium
+  payments proof manifest is source-backed` as `PASS`, proving the Premium
+  route renders the manifest without enabling checkout.
 - Direct `scripts/native-qa-tooling-doctor.mjs --json` lists the payments proof
   route in `nativeProofTargets`, but remains `BLOCKED` in this Windows shell
   because Android adb/emulator, Java, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and

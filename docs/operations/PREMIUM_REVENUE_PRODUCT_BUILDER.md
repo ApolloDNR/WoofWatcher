@@ -275,6 +275,15 @@ WoofWatcher Plus payments, and the JSON mobile beta doctor reports `payments pro
 enable checkout, approve App Store or Play Store billing, prove receipts, or
 clear Apollo launch sign-off.
 
+The Premium payments proof manifest pass makes that same billing boundary
+visible on the revenue screen itself. `paymentsProviderProof.ts` now builds rows
+for Product catalog, Billing path decision, Sandbox receipts, Entitlements and
+restore, Refund and support policy, and Checkout gate; `premium.tsx` renders
+those rows under `Payments proof manifest` and lists blockers while the pill
+stays `Checkout disabled`. The JSON mobile beta doctor reports `premium payments
+proof manifest is source-backed`, proving the route surfaces the required
+billing evidence without enabling money movement.
+
 The WoofGuide AI provider proof pass turns the old AI one-line proof into a
 source-backed packet. `aiProviderProof.ts` now defines the OpenAI key location,
 approved model policy, source/citation rules, owner-review write gate,

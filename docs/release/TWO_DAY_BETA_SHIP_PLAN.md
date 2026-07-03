@@ -77,6 +77,7 @@ The beta must not claim:
 - When reviewing Reminder Center, use Calendar's `Open push proof` action to jump to the same Push Notifications Proof mission. This is a shortcut only; local preference intent still does not prove provider configuration or delivered reminders.
 - When the current mission is `Payments Provider Proof`, open `/care-twin-qa?qaSurface=payments-provider-proof`, then capture Plus and Family product ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired receipt proof, restore purchases, entitlement mapping, household role access, refund/support policy, and checkout-gate proof before enabling paid checkout.
 - When reviewing Provider Launch Setup's WoofWatcher Plus payments row, use `Open proof mission` to jump to the same Payments Provider Proof mission. This is a shortcut only; it does not approve tiers, configure store or Stripe billing, prove receipts, enable checkout, clear store approval, or replace Apollo sign-off.
+- On Premium, confirm the `Payments proof manifest` shows Product catalog, Billing path decision, Sandbox receipts, Entitlements and restore, Refund and support policy, and Checkout gate rows. The manifest must keep `Checkout disabled` visible until real billing/provider proof, refund/support policy approval, and Apollo checkout approval are attached.
 - When the current mission is `Store Accounts Proof`, open `/care-twin-qa?qaSurface=store-accounts-proof`, then capture Apple Developer team id, App Store Connect app record, Google Play package record, bundle/signing ownership, reviewer access/test credentials, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.
 - When reviewing Provider Launch Setup's Apple and Google store accounts row, use `Open proof mission` to jump to the same Store Accounts Proof mission. This is a shortcut only; it does not create accounts, approve metadata/screenshots, submit App Review or Play review, clear legal/privacy approval, or replace Apollo sign-off.
 - When the current mission is `Account Deletion Proof`, open `/care-twin-qa?qaSurface=account-deletion-proof`, then capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, cancellation behavior, and legal/store approval before claiming destructive deletion readiness.
@@ -148,6 +149,10 @@ Shippable for internal beta after local verification passes:
   source-backed`, so Records must display artifact-specific Care Pass PDF, Dog
   ID PNG, provider storage, and native evidence blocker rows before generated
   PDF/PNG readiness can be claimed.
+- The mobile beta doctor also verifies `premium payments proof manifest is
+  source-backed`, so Premium must display product catalog, billing path,
+  sandbox receipt, restore-purchase, refund/support, and checkout-gate blockers
+  before paid checkout can be enabled.
 
 Current environment note:
 
