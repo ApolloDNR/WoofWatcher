@@ -2752,8 +2752,9 @@ The live preview handoff verifier pass adds machine-readable preview evidence
 without pretending browser proof is native proof. `scripts/live-preview-handoff-proof.js`
 starts the same static `.expo-smoke` server on a disposable local port, verifies
 Home, Log, Calendar, Health, Records, More, Records local-file handoff, Report
-Binary Export Proof, and Route Visual Consistency return the Expo web shell, and
-emits JSON/text proof with commit, export index timestamp, route checks, and
+Binary Export Proof, Care-entry Provider Sync Proof, and Route Visual
+Consistency return the Expo web shell, and emits JSON/text proof with commit,
+export index timestamp, route checks, and
 web-preview-only truth boundaries. The mobile package exposes
 `proof:live-preview`, root `build:ci` runs it after `smoke:web` and
 `smoke:runtime`, the Release Smoke Checklist and JSON doctor include it before
@@ -2762,7 +2763,7 @@ verifier is source-backed`. Fresh local verification passed focused
 live-preview/smoke/beta/readiness tests `119/119`, the broader
 API/mobile/PWA/care-domain suite `523/523`, mobile TypeScript, `tsc --build`,
 direct runtime smoke with `11/11` exported routes passing, direct
-`live-preview-handoff-proof.js --json` with `9/9` preview routes against the
+`live-preview-handoff-proof.js --json` with `10/10` preview routes against the
 existing `.expo-smoke` export, JSON mobile beta doctor source-backed checks, and
 `git diff --check` with expected Windows CRLF warnings only. Direct JSON doctor
 still blocks only on local pnpm `11.7.0` versus pinned `10.24.0`, with Corepack
@@ -2771,7 +2772,7 @@ provider approval, store approval, public launch, or Apollo sign-off.
 
 The recorded live-preview proof attachment pass puts recorded local
 `proof:live-preview` JSON evidence directly into Share Beta Handoff. The packet
-now prints a `Recorded live preview proof` section with the `9/9` route result,
+now prints a `Recorded live preview proof` section with the `10/10` route result,
 the recorded disposable verifier URL, the foreground `http://127.0.0.1:4194/`
 `preview:smoke` URL, export index mtime, route statuses, and rerun-after-new
 commit/export boundary. More passes that proof into the one-tap packet, and the
@@ -2779,11 +2780,34 @@ JSON mobile beta doctor verifies `recorded live preview proof attachment is
 source-backed`. Fresh local verification passed the red/green beta handoff and
 readiness tests `116/116`, the broader API/mobile/PWA/care-domain suite
 `523/523`, mobile TypeScript, `tsc --build`, Expo web export with 219 assets /
-223 files, runtime smoke for 11 routes, direct live preview proof for 9 routes,
+223 files, runtime smoke for 11 routes, direct live preview proof for 10 routes,
 and `git diff --check` with expected Windows CRLF warnings only. Direct JSON
 doctor still blocks only on local pnpm `11.7.0` versus pinned `10.24.0`, with
 Corepack not on PATH. This is recorded web-preview proof only, not native device
 proof, provider approval, store approval, public launch, or Apollo sign-off.
+
+The care-entry provider sync proof target pass gives the existing Supabase
+provider proof packet a focused launch-critical QA route. `/care-twin-qa?qaSurface=care-entry-provider-sync-proof`
+now directs Apollo/Replit/native helpers through Provider Launch Setup's
+Household database sync gate, requiring Supabase project id, migration/backfill
+for `care_entries.updated_at` and `care_entry_tombstones`, active-household RLS
+for `/care-entries?updatedSince=` and `/care-entries/tombstones?updatedSince=`,
+backup plus retention/export/deletion policy, dependency-complete build proof,
+and mobile full-refresh sign-off before incremental care-entry sync can be
+enabled. Share Beta Handoff, the Release Smoke Checklist, the live-preview
+verifier, the recorded live-preview proof, and the JSON mobile beta doctor all
+name that focused target, and the doctor verifies `care-entry provider sync
+proof target is source-backed`. Fresh local verification passed the red/green
+focused tests `136/136`, the broader API/mobile/PWA/care-domain suite
+`524/524`, mobile TypeScript, `tsc --build`, Expo web export with 219 assets /
+223 files, runtime smoke for 11 routes, direct live preview proof for 10 routes,
+JSON mobile beta doctor source-backed checks, and `git diff --check` with
+expected Windows CRLF warnings only. Direct JSON doctor still
+blocks only on local pnpm `11.7.0` versus pinned `10.24.0`, with Corepack not
+on PATH. This is a provider-proof handoff route and web-preview proof only; it
+does not execute the Supabase migration, approve RLS, enable incremental sync,
+clear native iOS/Android proof, approve storage/AI/payments/push, approve store
+submission, or replace Apollo sign-off.
 
 The recorded CI proof freshness pass keeps Share Beta Handoff from treating a
 historical branch run as current proof after later commits. The recorded proof

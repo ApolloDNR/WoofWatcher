@@ -243,6 +243,14 @@ export function buildMobileReleaseSmokeChecklist(
             status: "required",
           },
           {
+            label: "Focused care-entry provider sync proof target",
+            detail:
+              "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and confirm Supabase migration/backfill for care_entries.updated_at and care_entry_tombstones, active-household RLS, retention/export/deletion policy, dependency proof, and mobile full-refresh sign-off before incremental sync.",
+            proof:
+              "Attach Supabase project id, migration ids, updated_at backfill timestamp, cursor/tombstone RLS proof, retention/export/deletion policy, dependency-complete build URL, and mobile full-refresh sign-off.",
+            status: "required",
+          },
+          {
             label: "Focused route visual consistency target",
             detail:
               "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android.",

@@ -114,6 +114,7 @@ const nextActions = [
   "Verify Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
   "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
   "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
+  "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture Supabase migration/backfill, active-household RLS, retention/export/deletion policy, and mobile full-refresh sign-off before enabling incremental sync.",
   "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
@@ -239,6 +240,7 @@ const mobileReleaseSmokeChecklistPath = join(mobileRoot, "lib", "mobileReleaseSm
 const livePreviewHandoffProofPath = join(mobileRoot, "scripts", "live-preview-handoff-proof.js");
 const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
 const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts");
+const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
@@ -251,6 +253,7 @@ const mobileReleaseSmokeChecklistSource = existsSync(mobileReleaseSmokeChecklist
 const livePreviewHandoffProofSource = existsSync(livePreviewHandoffProofPath) ? readFileSync(livePreviewHandoffProofPath, "utf8") : "";
 const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
 const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFileSync(launchProviderSetupPath, "utf8") : "";
+const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
@@ -270,6 +273,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
   "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
   "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
+  "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
   "Provider proof needed:",
   "Truth boundaries:",
 ])
@@ -300,6 +304,8 @@ const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeCheckl
   "WoofWatcherCredentials",
   "Focused Records handoff target",
   "/care-twin-qa?qaSurface=records-local-file-handoff",
+  "Focused care-entry provider sync proof target",
+  "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
   "Android content URI",
   "fallback copy",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
@@ -349,6 +355,7 @@ const livePreviewHandoffVerifierIsSourceBacked = mobilePackage.scripts?.["proof:
     "LIVE_PREVIEW_HANDOFF_ROUTES",
     "records-local-file-handoff",
     "report-binary-export-proof",
+    "care-entry-provider-sync-proof",
     "route-visual-consistency",
     "WoofWatcher Live Preview Handoff Proof",
     "web preview only",
@@ -388,7 +395,8 @@ check(
 const recordedLivePreviewProofAttachmentIsSourceBacked = includesAll(betaHandoffPacketSource, [
   "RECORDED_LIVE_PREVIEW_HANDOFF_PROOF",
   'title: "WoofWatcher Live Preview Handoff Proof"',
-  'commit: "8275b66"',
+  'commit: "699589a"',
+  "care-entry-provider-sync-proof",
   "Recorded live preview proof:",
   "Routes: ${passCount}/${totalCount} web-preview shell checks passed.",
   "Attach proof: JSON route proof plus preview:smoke URL/output before claiming preview handoff.",
@@ -661,6 +669,44 @@ check(
   reportBinaryExportProofTargetIsSourceBacked
     ? "Binary export proof has a focused QA target, beta handoff instruction, smoke checklist item, and doctor next action"
     : "keep binary export proof wired through release QA, Share Beta Handoff, smoke checklist, and doctor next actions",
+);
+
+const careEntryProviderSyncProofTargetIsSourceBacked = includesAll(careEntryProviderSyncProofSource, [
+  "CARE_ENTRY_PROVIDER_SYNC_PROOF_SUMMARY",
+  "CARE_ENTRY_PROVIDER_SYNC_PROOF_ITEMS",
+  "care_entries.updated_at",
+  "care_entry_tombstones",
+  "/care-entries?updatedSince=",
+  "/care-entries/tombstones?updatedSince=",
+  "mobile full-refresh sign-off",
+])
+  && includesAll(mobileReleaseQaSource, [
+    "care-entry-provider-sync-proof",
+    "Care-entry Provider Sync Proof",
+    "Supabase migration",
+    "active-household RLS",
+    "retention/export/deletion",
+    "incremental sync stays blocked",
+  ])
+  && includesAll(betaHandoffPacketSource, [
+    "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
+    "Attach Supabase project id, migration/backfill for care_entries.updated_at and care_entry_tombstones",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Focused care-entry provider sync proof target",
+    "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
+    "Supabase migration/backfill",
+    "active-household RLS",
+  ])
+  && includesAll(livePreviewHandoffProofSource, [
+    "care-entry-provider-sync-proof",
+  ]);
+check(
+  "care-entry provider sync proof target is source-backed",
+  careEntryProviderSyncProofTargetIsSourceBacked,
+  careEntryProviderSyncProofTargetIsSourceBacked
+    ? "Care-entry provider sync proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and doctor next action"
+    : "keep care-entry provider sync proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, and doctor next actions",
 );
 
 const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [

@@ -64,6 +64,7 @@ The beta must not claim:
 - On Records, confirm Dog ID share/print, medication search/filter, Care Pass preview, report resend/print, record add/delete, attachment, and sheet save/cancel controls feel phone-sized and easy to tap.
 - When the current mission is `Records Local File Handoff`, open `/care-twin-qa?qaSurface=records-local-file-handoff`, then capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG image source, native share-sheet behavior, Android content URI, and fallback copy without claiming PDF/PNG/provider storage proof.
 - When the current mission is `Report Binary Export Proof`, open `/care-twin-qa?qaSurface=report-binary-export-proof`, then capture the approved Care Pass PDF generator, approved Dog ID PNG renderer, provider storage policy, generated file name/size/MIME/share proof, and iOS/Android artifact evidence before claiming PDF/PNG readiness.
+- When the current mission is `Care-entry Provider Sync Proof`, open `/care-twin-qa?qaSurface=care-entry-provider-sync-proof`, then capture Supabase project id, migration/backfill for `care_entries.updated_at` and `care_entry_tombstones`, active-household RLS for cursor and tombstone routes, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off before enabling incremental care-entry sync.
 - When the current mission is `Route Visual Consistency`, open `/care-twin-qa?qaSurface=route-visual-consistency`, then capture Home, Log, Plans, Health, Records, and More on both iOS and Android; web preview screenshots do not replace native proof.
 - On Avatar Studio, confirm Scan/Template/Customize/Emotes tabs, Gallery, Take photo, template tiles, coat swatches, face options, accessories, mood previews, Reset, and Save Avatar controls feel phone-sized and easy to tap.
 - On Adventure, confirm quest cards, private memory capture, `Save Memory`, and `Share Adventure` feel phone-sized, useful, and aligned with the real-care RPG promise instead of decorative game fluff.
@@ -161,7 +162,7 @@ Current environment note:
   no-dependency static server, both pinned to port `4194`, and the root
   `preview:mobile-beta` command points to the same handoff path.
 - The mobile package also has `proof:live-preview`, which starts a disposable
-  static preview server over `.expo-smoke`, verifies 9 launch-critical preview
+  static preview server over `.expo-smoke`, verifies 10 launch-critical preview
   routes return the Expo web shell, and emits JSON proof with web-preview-only
   truth boundaries before helpers keep `preview:smoke` open for human review.
   Root `build:ci` runs it after `smoke:web` and `smoke:runtime`.
@@ -183,6 +184,11 @@ Current environment note:
   `/care-twin-qa?qaSurface=report-binary-export-proof` for the approved
   generator, provider storage policy, and generated artifact evidence needed
   before binary PDF/PNG readiness can be claimed.
+- The Release Smoke Checklist and Share Beta Handoff now also name
+  `/care-twin-qa?qaSurface=care-entry-provider-sync-proof` for Supabase
+  migration/backfill, active-household cursor/tombstone RLS, retention/export/
+  deletion policy, dependency proof, and mobile full-refresh sign-off before
+  incremental care-entry sync can be enabled.
 - Records Dog ID can now share a local SVG image-source credential file beside
   the local printable HTML credential file; PNG/PDF credential export still
   needs native/provider generation and real iOS/Android share proof.
@@ -199,7 +205,7 @@ Current environment note:
   `http://127.0.0.1:4194/`, and browser-open evidence while saying live preview
   proof does not replace native iOS/Android proof.
 - Share Beta Handoff now also carries a `Recorded live preview proof` section
-  from a recorded local `proof:live-preview` run: `9/9` web-preview route shell
+  from a recorded local `proof:live-preview` run: `10/10` web-preview route shell
   checks passed against the regenerated `.expo-smoke` export. The recorded
   verifier URL is disposable; the review handoff URL remains
   `http://127.0.0.1:4194/` after `preview:smoke` is running. Rerun branch CI and

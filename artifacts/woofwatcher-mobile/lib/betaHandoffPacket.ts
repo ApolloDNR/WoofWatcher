@@ -66,11 +66,11 @@ export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
 
 export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof = {
   title: "WoofWatcher Live Preview Handoff Proof",
-  generatedAtIso: "2026-07-03T12:19:18.055Z",
+  generatedAtIso: "2026-07-03T12:38:54.998Z",
   result: "PASS",
-  baseUrl: "http://127.0.0.1:53642/",
-  commit: "8275b66",
-  exportIndexMtimeIso: "2026-07-03T12:18:55.019Z",
+  baseUrl: "http://127.0.0.1:58033/",
+  commit: "699589a",
+  exportIndexMtimeIso: "2026-07-03T12:38:39.906Z",
   routeChecks: [
     { route: "/", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
     { route: "/log", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
@@ -89,6 +89,11 @@ export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof 
       detail: "200 text/html; charset=utf-8; Expo web entry present",
     },
     {
+      route: "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
+      status: "PASS",
+      detail: "200 text/html; charset=utf-8; Expo web entry present",
+    },
+    {
       route: "/care-twin-qa?qaSurface=route-visual-consistency",
       status: "PASS",
       detail: "200 text/html; charset=utf-8; Expo web entry present",
@@ -102,7 +107,7 @@ export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof 
   nextActions: [
     "Attach this JSON, the preview URL, and the preview:smoke terminal output to Share Beta Handoff without claiming native QA.",
     "Run WoofWatcher Verify after each new commit before treating dependency proof as current.",
-    "Run native iOS/Android proof targets separately for Records local files, route visual consistency, and generated PDF/PNG artifacts.",
+    "Run native iOS/Android proof targets separately for Records local files, care-entry provider sync, route visual consistency, and generated PDF/PNG artifacts.",
   ],
 };
 
@@ -305,6 +310,8 @@ export function buildBetaHandoffPacketShareText(
     "- Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
     "- Open focused binary export proof target: /care-twin-qa?qaSurface=report-binary-export-proof.",
     "- Approve Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
+    "- Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
+    "- Attach Supabase project id, migration/backfill for care_entries.updated_at and care_entry_tombstones, active-household RLS cursor/tombstone proof, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off before enabling incremental sync.",
     "- Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
     "- Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
     "- Save the Mission note and clear Pass pending proof in both /care-twin-qa and More.",

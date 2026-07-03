@@ -43,6 +43,7 @@ test("builds preview-only handoff proof from served route results", () => {
       "/more",
       "/care-twin-qa?qaSurface=records-local-file-handoff",
       "/care-twin-qa?qaSurface=report-binary-export-proof",
+      "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
       "/care-twin-qa?qaSurface=route-visual-consistency",
     ],
   );
@@ -55,6 +56,7 @@ test("builds preview-only handoff proof from served route results", () => {
   assert.match(text, /Result: PASS/);
   assert.match(text, /http:\/\/127\.0\.0\.1:4194\//);
   assert.match(text, /route-visual-consistency/);
+  assert.match(text, /care-entry-provider-sync-proof/);
   assert.match(text, /web preview only/);
   assert.match(text, /does not replace native iOS\/Android proof/);
 });

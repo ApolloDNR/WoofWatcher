@@ -345,6 +345,67 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If this proof is skipped, binary export readiness can be claimed from local HTML/SVG sources instead of real PDF/PNG artifacts.",
   },
   {
+    id: "care-entry-provider-sync-proof",
+    title: "Care-entry Provider Sync Proof",
+    route: "/more",
+    priority: "launch-critical",
+    goal:
+      "Prove the Supabase migration, active-household RLS, retention policy, dependency proof, and mobile sign-off exist before incremental care-entry sync is enabled.",
+    devicePrompt:
+      "In Provider Launch Setup on iOS and Android, collect the Household database sync proof packet for Supabase migration/backfill, cursor and tombstone RLS, retention/export/deletion, and mobile full-refresh sign-off.",
+    setupSteps: [
+      "Use local preview data and keep Household database sync marked open unless provider proof is actually attached.",
+      "Open More, then Provider Launch Setup, and inspect the Household database sync gate.",
+      "Keep mobile care-entry refresh in full-refresh mode until every provider proof item and native QA sign-off exists.",
+    ],
+    verificationSteps: [
+      "Confirm Household database sync lists the Care-entry provider sync proof packet.",
+      "Confirm the packet requires Supabase project id, migration/backfill for care_entries.updated_at and care_entry_tombstones, and a non-null updated_at backfill timestamp.",
+      "Confirm active-household RLS proof is required for /care-entries?updatedSince= and /care-entries/tombstones?updatedSince=.",
+      "Confirm backup, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off are required before incremental adoption.",
+      "Capture the Provider Launch Setup state on iOS and Android without marking the database gate ready unless the real proof artifacts are attached.",
+    ],
+    acceptanceCriteria: [
+      "incremental sync stays blocked until Supabase project id, migration/backfill, cursor RLS, tombstone RLS, retention/export/deletion, dependency build proof, and mobile sign-off are attached.",
+      "The database gate names care_entries.updated_at, care_entry_tombstones, /care-entries?updatedSince=, and /care-entries/tombstones?updatedSince=.",
+      "Retention/export/deletion proof is listed beside the migration and RLS proof, not treated as optional follow-up.",
+      "Provider Launch Setup does not imply cross-device sync is ready from local schema or API contract coverage alone.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if the database gate hides migration/backfill, skips cursor or tombstone RLS proof, omits retention/export/deletion policy, allows incremental sync without native sign-off, or implies provider sync is ready from source code alone.",
+    requiredEvidence: [
+      "iOS screenshot of Provider Launch Setup showing the Household database sync proof packet.",
+      "Android screenshot of Provider Launch Setup showing Household database sync still blocked or fully evidenced.",
+      "Note confirming Supabase project id, migration ids, updated_at backfill timestamp, active-household cursor RLS proof, and tombstone RLS proof.",
+      "Note confirming backup policy, retention/export/deletion policy, dependency-complete build URL, and mobile full-refresh sign-off before enabling incremental sync.",
+    ],
+    routeChecklist: [
+      {
+        label: "Provider Launch Setup database gate",
+        route: "/more",
+        expected:
+          "Confirm Household database sync lists the Care-entry provider sync proof packet and stays open until proof is attached.",
+        proof: "Provider Launch Setup screenshot plus migration/backfill and retention policy note.",
+      },
+      {
+        label: "Care-entry cursor route",
+        route: "/care-entries?updatedSince=",
+        expected:
+          "Confirm /care-entries?updatedSince= has active-household RLS proof before incremental cursor reads are trusted.",
+        proof: "Supabase active-household RLS cursor proof.",
+      },
+      {
+        label: "Care-entry tombstone route",
+        route: "/care-entries/tombstones?updatedSince=",
+        expected:
+          "Confirm /care-entries/tombstones?updatedSince= has tombstone RLS proof and retention/export/deletion policy before delete sync is trusted.",
+        proof: "Supabase tombstone RLS proof and retention/export/deletion note.",
+      },
+    ],
+    launchRisk:
+      "If this proof is skipped, incremental sync can leak stale, missing, deleted, or cross-household care-entry state before the provider database is ready.",
+  },
+  {
     id: "route-visual-consistency",
     title: "Route Visual Consistency",
     route: "/more",

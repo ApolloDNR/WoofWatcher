@@ -364,12 +364,14 @@ test("keeps a static beta preview server wired for Apollo review", () => {
   assert.match(livePreviewProof, /LIVE_PREVIEW_HANDOFF_ROUTES/);
   assert.match(livePreviewProof, /records-local-file-handoff/);
   assert.match(livePreviewProof, /report-binary-export-proof/);
+  assert.match(livePreviewProof, /care-entry-provider-sync-proof/);
   assert.match(livePreviewProof, /route-visual-consistency/);
   assert.match(livePreviewProof, /web preview only/);
   assert.match(livePreviewProof, /does not replace native iOS\/Android proof/);
   assert.match(doctorSource, /proof:live-preview/);
   assert.match(doctorSource, /preview:smoke/);
   assert.match(doctorSource, /http:\/\/127\.0\.0\.1:4194\//);
+  assert.match(doctorSource, /care-entry-provider-sync-proof/);
 });
 
 test("keeps local Clerk placeholders from blanking the web preview", () => {
@@ -5118,6 +5120,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.nextActions?.some(
       (action) =>
+        action.includes("/care-twin-qa?qaSurface=care-entry-provider-sync-proof") &&
+        action.includes("Supabase migration") &&
+        action.includes("active-household RLS"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
         action.includes("/care-twin-qa?qaSurface=route-visual-consistency") &&
         action.includes("Home, Log, Plans, Health, Records, and More") &&
         action.includes("iOS and Android"),
@@ -5128,6 +5138,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
       (check) =>
         check.label ===
           "report binary export proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label ===
+          "care-entry provider sync proof target is source-backed" &&
         check.status === "PASS",
     ),
   );

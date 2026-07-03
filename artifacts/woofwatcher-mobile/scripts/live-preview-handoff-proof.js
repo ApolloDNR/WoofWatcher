@@ -19,6 +19,7 @@ const LIVE_PREVIEW_HANDOFF_ROUTES = [
   "/more",
   "/care-twin-qa?qaSurface=records-local-file-handoff",
   "/care-twin-qa?qaSurface=report-binary-export-proof",
+  "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
   "/care-twin-qa?qaSurface=route-visual-consistency",
 ];
 
@@ -68,7 +69,7 @@ function buildLivePreviewHandoffProof(input) {
     nextActions: [
       "Attach this JSON, the preview URL, and the preview:smoke terminal output to Share Beta Handoff without claiming native QA.",
       "Run WoofWatcher Verify after each new commit before treating dependency proof as current.",
-      "Run native iOS/Android proof targets separately for Records local files, route visual consistency, and generated PDF/PNG artifacts.",
+      "Run native iOS/Android proof targets separately for Records local files, care-entry provider sync, route visual consistency, and generated PDF/PNG artifacts.",
     ],
   };
 }

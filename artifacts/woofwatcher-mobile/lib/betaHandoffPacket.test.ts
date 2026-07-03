@@ -157,7 +157,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Recorded live preview proof:/);
   assert.match(text, /WoofWatcher Live Preview Handoff Proof/);
   assert.match(text, /Result: PASS/);
-  assert.match(text, /Routes: 9\/9 web-preview shell checks passed/);
+  assert.match(text, /Routes: 10\/10 web-preview shell checks passed/);
   assert.match(text, /Recorded verifier URL: http:\/\/127\.0\.0\.1:\d+\//);
   assert.match(text, /Preview handoff URL: http:\/\/127\.0\.0\.1:4194\/ after preview:smoke is running/);
   assert.match(text, /Attach proof: JSON route proof plus preview:smoke URL\/output/);
@@ -174,6 +174,10 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy/);
   assert.match(text, /Open focused binary export proof target: \/care-twin-qa\?qaSurface=report-binary-export-proof/);
   assert.match(text, /Approve Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS\/Android artifact proof before claiming PDF\/PNG readiness/);
+  assert.match(text, /Open focused care-entry provider sync target: \/care-twin-qa\?qaSurface=care-entry-provider-sync-proof/);
+  assert.match(text, /Attach Supabase project id, migration\/backfill for care_entries\.updated_at and care_entry_tombstones/);
+  assert.match(text, /active-household RLS cursor\/tombstone proof/);
+  assert.match(text, /mobile full-refresh sign-off before enabling incremental sync/);
   assert.match(text, /Open focused route visual target: \/care-twin-qa\?qaSurface=route-visual-consistency/);
   assert.match(text, /Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof/);
   assert.match(text, /Save the Mission note and clear Pass pending proof in both \/care-twin-qa and More/);
