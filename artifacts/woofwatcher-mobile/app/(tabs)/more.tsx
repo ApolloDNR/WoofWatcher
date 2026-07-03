@@ -1040,7 +1040,7 @@ export default function MoreScreen() {
         ? colors.copper
         : colors.rose;
   const providerSetupVisibleRows = useMemo(() => {
-    const openRows = launchProviderSetupPlan.rows.filter((row) => row.status === "blocked");
+    const openRows = launchProviderSetupPlan.rows.filter((row) => row.status !== "ready");
     return (openRows.length ? openRows : launchProviderSetupPlan.rows).slice(0, 4);
   }, [launchProviderSetupPlan.rows]);
 
@@ -1945,7 +1945,7 @@ export default function MoreScreen() {
                           numberOfLines={2}
                           style={[s.providerSetupRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
                         >
-                          {row.status === "ready" ? row.detail : row.nextAction}
+                          {row.status === "blocked" ? row.nextAction : row.detail}
                         </Text>
                         <Text
                           numberOfLines={2}

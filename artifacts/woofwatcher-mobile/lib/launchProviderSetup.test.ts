@@ -20,13 +20,15 @@ test("builds a truthful provider setup plan from a local launch profile", async 
 
   assert.equal(plan.title, "Provider Launch Setup");
   assert.equal(plan.status, "owner-reviewed");
-  assert.equal(plan.readyCount, 1);
+  assert.equal(plan.readyCount, 0);
   assert.equal(plan.totalCount, 8);
-  assert.equal(plan.openCount, 7);
-  assert.equal(plan.percent, 13);
-  assert.match(plan.headline, /1\/8/i);
-  assert.match(plan.summary, /production providers/i);
-  assert.ok(plan.rows.some((row) => row.key === "auth" && row.status === "ready"));
+  assert.equal(plan.openCount, 8);
+  assert.equal(plan.percent, 0);
+  assert.match(plan.headline, /1\/8 provider gates staged/i);
+  assert.match(plan.summary, /staged locally/i);
+  assert.ok(plan.rows.some((row) => row.key === "auth" && row.status === "staged"));
+  assert.ok(plan.rows.some((row) => row.key === "auth" && row.statusLabel === "Owner staged"));
+  assert.ok(plan.rows.some((row) => row.key === "auth" && /provider approval/i.test(row.detail)));
   assert.ok(plan.rows.some((row) => row.key === "auth" && /Production auth provider proof packet/i.test(row.proofRequired)));
   assert.ok(plan.rows.some((row) => row.key === "auth" && /Clerk production app id/i.test(row.proofRequired)));
   assert.ok(plan.rows.some((row) => row.key === "auth" && /OAuth sign-in test/i.test(row.proofRequired)));
@@ -150,9 +152,9 @@ test("builds a truthful provider setup plan from a local launch profile", async 
         row.proofChecklist.some((item) => /Quiet hours and opt-out behavior/i.test(item) && /opt-out behavior/i.test(item)),
     ),
   );
-  assert.equal(plan.nextGate?.key, "database");
-  assert.match(plan.nextGate?.proofRequired ?? "", /Supabase project id/);
-  assert.ok(plan.nextGate?.proofChecklist.some((item) => /mobile incremental/i.test(item)));
+  assert.equal(plan.nextGate?.key, "auth");
+  assert.match(plan.nextGate?.proofRequired ?? "", /Production auth provider proof packet/);
+  assert.ok(plan.nextGate?.proofChecklist.some((item) => /Redirect and deep-link URLs/i.test(item)));
   assert.ok(plan.blockers.some((blocker) => /household database/i.test(blocker)));
   assert.equal(plan.providerInput.authConfigured, false);
   assert.equal(plan.providerInput.databaseConfigured, false);
@@ -219,7 +221,12 @@ test("keeps owner-reviewed provider toggles out of launch-readiness input until 
   });
 
   assert.equal(ownerReviewed.status, "owner-reviewed");
-  assert.equal(ownerReviewed.readyCount, 8);
+  assert.equal(ownerReviewed.readyCount, 0);
+  assert.equal(ownerReviewed.openCount, 8);
+  assert.equal(ownerReviewed.percent, 0);
+  assert.ok(ownerReviewed.rows.every((row) => row.status === "staged"));
+  assert.ok(ownerReviewed.rows.every((row) => row.statusLabel === "Owner staged"));
+  assert.equal(ownerReviewed.nextGate?.key, "auth");
   assert.deepEqual(ownerReviewed.providerInput, {
     authConfigured: false,
     databaseConfigured: false,
@@ -231,6 +238,9 @@ test("keeps owner-reviewed provider toggles out of launch-readiness input until 
     accountDeletionEnabled: false,
   });
   assert.equal(providerApproved.status, "provider-approved");
+  assert.equal(providerApproved.readyCount, 8);
+  assert.equal(providerApproved.openCount, 0);
+  assert.ok(providerApproved.rows.every((row) => row.status === "ready"));
   assert.deepEqual(providerApproved.providerInput, {
     authConfigured: true,
     databaseConfigured: true,
@@ -262,13 +272,15 @@ test("formats a shareable provider setup checklist without claiming launch appro
 
   assert.match(text, /WoofWatcher Provider Launch Setup/);
   assert.match(text, /Generated: 2026-06-21T10:00:00.000Z/);
-  assert.match(text, /Progress: 3\/8 ready \(38%\)/);
+  assert.match(text, /Progress: 0\/8 provider approved \(0%\)/);
   assert.match(text, /Ready/);
-  assert.match(text, /Open/);
+  assert.match(text, /Nothing is provider-approved yet/);
+  assert.match(text, /Open or Staged/);
+  assert.match(text, /Local staged/);
   assert.match(text, /Next Provider Gate/);
-  assert.match(text, /WoofGuide AI/);
-  assert.match(text, /Owner: Apollo \/ safety/);
-  assert.match(text, /Proof: WoofGuide AI provider proof packet/);
+  assert.match(text, /Production auth/);
+  assert.match(text, /Owner: Apollo \/ developer/);
+  assert.match(text, /Proof: Production auth provider proof packet/);
   assert.match(text, /Proof Needed/);
   assert.match(text, /Production auth: Production auth provider proof packet/);
   assert.match(text, /Clerk production app/);
@@ -371,5 +383,5 @@ test("clears the next provider gate only when every production provider is ready
 
   const text = mod.buildLaunchProviderSetupShareText(plan, "2026-06-21T10:00:00.000Z");
   assert.match(text, /Next Provider Gate/);
-  assert.match(text, /All provider gates are ready for final owner review/);
+  assert.match(text, /All provider gates are provider-approved for final owner review/);
 });

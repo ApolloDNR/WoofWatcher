@@ -4530,6 +4530,10 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /Store Submission/);
   assert.match(more, /Provider Launch Setup/);
   assert.match(more, /providerSetupVisibleRows/);
+  assert.match(
+    more,
+    /launchProviderSetupPlan\.rows\.filter\(\(row\) => row\.status !== "ready"\)/,
+  );
   assert.match(more, /launchProviderSetupPlan\.nextGate/);
   assert.match(more, /Next provider gate/);
   assert.match(more, /Provider gates ready for owner approval/);
@@ -4537,6 +4541,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /row\.proofChecklist/);
   assert.match(more, /providerSetupProofChecklist/);
   assert.match(more, /Proof needed/);
+  assert.match(more, /row\.status === "blocked" \? row\.nextAction : row\.detail/);
   assert.match(more, /Owner: \{launchProviderSetupPlan\.nextGate\.owner\}/);
   assert.match(
     more,
@@ -4589,8 +4594,10 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(careContext, /launchProviderProfile/);
   assert.match(providerSetup, /Provider Launch Setup/);
+  assert.match(providerSetup, /LaunchProviderSetupRowStatus = "ready" \| "staged" \| "blocked"/);
   assert.match(providerSetup, /nextGate/);
   assert.match(providerSetup, /openCount/);
+  assert.match(providerSetup, /Open or Staged/);
   assert.match(providerSetup, /Next Provider Gate/);
   assert.match(providerSetup, /CARE_ENTRY_PROVIDER_SYNC_PROOF_ITEMS/);
   assert.match(providerSetup, /proofChecklist/);
@@ -4603,7 +4610,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(providerSyncProof, /mobile full-refresh sign-off/);
   assert.match(
     providerSetup,
-    /All provider gates are ready for final owner review/,
+    /All provider gates are provider-approved for final owner review/,
   );
   assert.match(
     providerSetup,

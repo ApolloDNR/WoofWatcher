@@ -299,6 +299,11 @@ Current environment note:
   `provider-approved` status. Owner-reviewed local rows can stage proof work,
   but they no longer make release packets or store gates behave as if real
   Clerk/Supabase/storage/AI/payments/push/store/deletion providers are approved.
+- Provider Launch Setup row status now uses the same boundary. Local-draft and
+  owner-reviewed toggles show as `Local staged` or `Owner staged`, stay in the
+  open-provider list, keep `nextGate` active, and do not increase the
+  provider-approved progress score until the saved provider status is
+  `provider-approved`.
 - The in-app `Share Beta Handoff` packet now includes that provider proof
   checklist too, so deadline helpers can use one packet for dependency proof,
   device proof, provider evidence, and launch truth boundaries.

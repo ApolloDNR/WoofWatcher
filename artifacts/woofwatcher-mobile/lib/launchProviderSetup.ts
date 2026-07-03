@@ -58,7 +58,7 @@ export interface LaunchProviderProfile {
   notes: string;
 }
 
-export type LaunchProviderSetupRowStatus = "ready" | "blocked";
+export type LaunchProviderSetupRowStatus = "ready" | "staged" | "blocked";
 
 export interface LaunchProviderSetupRow {
   key: LaunchProviderSetupKey;
@@ -77,6 +77,7 @@ export interface LaunchProviderSetupPlan {
   status: LaunchProviderSetupStatus;
   statusLabel: string;
   readyCount: number;
+  stagedCount: number;
   totalCount: number;
   openCount: number;
   percent: number;
@@ -263,15 +264,24 @@ function statusLabel(status: LaunchProviderSetupStatus): string {
 
 export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): LaunchProviderSetupPlan {
   const profile = normalizeLaunchProviderProfile(input);
+  const providerApproved = profile.providerStatus === "provider-approved";
+  const stagedStatusLabel = profile.providerStatus === "owner-reviewed" ? "Owner staged" : "Local staged";
   const rows = ROW_DEFINITIONS.map<LaunchProviderSetupRow>((definition) => {
-    const ready = Boolean(profile[definition.field]);
+    const configured = Boolean(profile[definition.field]);
+    const status: LaunchProviderSetupRowStatus = configured ? (providerApproved ? "ready" : "staged") : "blocked";
+    const detail =
+      status === "ready"
+        ? definition.readyDetail
+        : status === "staged"
+          ? `Proof is staged locally; provider approval and evidence are still required before this gate counts as production-ready. ${definition.readyDetail}`
+          : definition.blockedDetail;
     return {
       key: definition.key,
       label: definition.label,
       owner: definition.owner,
-      status: ready ? "ready" : "blocked",
-      statusLabel: ready ? "Ready" : "Open",
-      detail: ready ? definition.readyDetail : definition.blockedDetail,
+      status,
+      statusLabel: status === "ready" ? "Ready" : status === "staged" ? stagedStatusLabel : "Open",
+      detail,
       nextAction: definition.nextAction,
       proofRequired: definition.proofRequired,
       proofChecklist: [...(definition.proofChecklist ?? [])],
@@ -279,8 +289,9 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
   });
 
   const readyCount = rows.filter((row) => row.status === "ready").length;
+  const stagedCount = rows.filter((row) => row.status === "staged").length;
   const totalCount = rows.length;
-  const openRows = rows.filter((row) => row.status === "blocked");
+  const openRows = rows.filter((row) => row.status !== "ready");
   const openCount = openRows.length;
   const percent = totalCount > 0 ? Math.round((readyCount / totalCount) * 100) : 0;
   const blockers = openRows.map((row) => `${row.label}: ${row.nextAction}`);
@@ -288,25 +299,33 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
   const nextGate = openRows[0] ?? null;
   const allReady = readyCount === totalCount;
   const status =
-    allReady && profile.providerStatus === "provider-approved"
+    allReady && providerApproved
       ? "provider-approved"
-      : profile.providerStatus === "provider-approved"
+      : providerApproved
         ? "owner-reviewed"
         : profile.providerStatus;
-  const providerApproved = profile.providerStatus === "provider-approved";
+  const headline =
+    stagedCount > 0 && readyCount > 0
+      ? `${readyCount}/${totalCount} provider gates approved, ${stagedCount} staged`
+      : stagedCount > 0
+        ? `${stagedCount}/${totalCount} provider gates staged`
+        : `${readyCount}/${totalCount} provider gates approved`;
 
   return {
     title: "Provider Launch Setup",
     status,
     statusLabel: statusLabel(status),
     readyCount,
+    stagedCount,
     totalCount,
     openCount,
     percent,
-    headline: `${readyCount}/${totalCount} provider gates ready`,
+    headline,
     summary: allReady
       ? "Production providers are configured for final native QA and owner approval."
-      : "Production providers still need setup before WoofWatcher can honestly move from local preview to public launch.",
+      : stagedCount > 0
+        ? "Provider proof is staged locally, but provider-approved evidence is still required before WoofWatcher can honestly move from local preview to public launch."
+        : "Production providers still need setup before WoofWatcher can honestly move from local preview to public launch.",
     notes: profile.notes,
     rows,
     nextGate,
@@ -326,7 +345,7 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
 }
 
 function formatRows(rows: readonly LaunchProviderSetupRow[]): string[] {
-  return rows.map((row) => `- ${row.label}: ${row.statusLabel}. ${row.nextAction}`);
+  return rows.map((row) => `- ${row.label}: ${row.statusLabel}. ${row.status === "blocked" ? row.nextAction : row.detail}`);
 }
 
 function formatProofRows(rows: readonly LaunchProviderSetupRow[]): string[] {
@@ -341,7 +360,7 @@ export function buildLaunchProviderSetupShareText(
   generatedAtIso = new Date().toISOString(),
 ): string {
   const readyRows = plan.rows.filter((row) => row.status === "ready");
-  const openRows = plan.rows.filter((row) => row.status === "blocked");
+  const openRows = plan.rows.filter((row) => row.status !== "ready");
   const nextGateLines = plan.nextGate
     ? [
         `- ${plan.nextGate.label}`,
@@ -349,22 +368,22 @@ export function buildLaunchProviderSetupShareText(
         `  Action: ${plan.nextGate.nextAction}`,
         `  Proof: ${plan.nextGate.proofRequired}`,
       ]
-    : ["- All provider gates are ready for final owner review."];
+    : ["- All provider gates are provider-approved for final owner review."];
 
   return [
     "WoofWatcher Provider Launch Setup",
     `Generated: ${generatedAtIso}`,
     `Status: ${plan.statusLabel}`,
-    `Progress: ${plan.readyCount}/${plan.totalCount} ready (${plan.percent}%)`,
+    `Progress: ${plan.readyCount}/${plan.totalCount} provider approved (${plan.percent}%)`,
     "",
     plan.summary,
     plan.notes ? `Notes: ${plan.notes}` : "",
     "",
     "Ready",
-    ...(readyRows.length ? formatRows(readyRows) : ["- Nothing is fully ready yet."]),
+    ...(readyRows.length ? formatRows(readyRows) : ["- Nothing is provider-approved yet."]),
     "",
-    "Open",
-    ...(openRows.length ? formatRows(openRows) : ["- No provider gates are open."]),
+    "Open or Staged",
+    ...(openRows.length ? formatRows(openRows) : ["- No provider gates are open or staged."]),
     "",
     "Next Provider Gate",
     ...nextGateLines,
