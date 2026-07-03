@@ -196,6 +196,14 @@ export function buildMobileReleaseSmokeChecklist(
               "Attach iOS/Android share sheet behavior, Android content URI or saved-file proof, and fallback copy note before claiming Records handoff proof.",
             status: "required",
           },
+          {
+            label: "Focused binary export proof target",
+            detail:
+              "Open /care-twin-qa?qaSurface=report-binary-export-proof and confirm approved Care Pass PDF generator, approved Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before binary readiness.",
+            proof:
+              "Attach generator choices, file name, file size, MIME proof, share/reopen proof, and storage policy evidence before claiming PDF/PNG readiness.",
+            status: "required",
+          },
         ],
       },
       buildProviderProofSection(options.providerSetupPlan),

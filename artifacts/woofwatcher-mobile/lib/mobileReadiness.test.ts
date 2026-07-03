@@ -5073,6 +5073,22 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     ),
   );
   assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("/care-twin-qa?qaSurface=report-binary-export-proof") &&
+        action.includes("Care Pass PDF generator") &&
+        action.includes("Dog ID PNG renderer"),
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label ===
+          "report binary export proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
     payload.truthBoundaries?.some((boundary) =>
       boundary.includes("READY_FOR_EXPORT only"),
     ),

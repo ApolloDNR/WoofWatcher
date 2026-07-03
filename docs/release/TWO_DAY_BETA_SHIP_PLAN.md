@@ -63,6 +63,7 @@ The beta must not claim:
 - On More, confirm Launch Readiness, Native QA Next Captures, provider setup, household invite, Access Pass, profile edit, and save/share actions feel phone-sized and easy to tap.
 - On Records, confirm Dog ID share/print, medication search/filter, Care Pass preview, report resend/print, record add/delete, attachment, and sheet save/cancel controls feel phone-sized and easy to tap.
 - When the current mission is `Records Local File Handoff`, open `/care-twin-qa?qaSurface=records-local-file-handoff`, then capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG image source, native share-sheet behavior, Android content URI, and fallback copy without claiming PDF/PNG/provider storage proof.
+- When the current mission is `Report Binary Export Proof`, open `/care-twin-qa?qaSurface=report-binary-export-proof`, then capture the approved Care Pass PDF generator, approved Dog ID PNG renderer, provider storage policy, generated file name/size/MIME/share proof, and iOS/Android artifact evidence before claiming PDF/PNG readiness.
 - On Avatar Studio, confirm Scan/Template/Customize/Emotes tabs, Gallery, Take photo, template tiles, coat swatches, face options, accessories, mood previews, Reset, and Save Avatar controls feel phone-sized and easy to tap.
 - On Adventure, confirm quest cards, private memory capture, `Save Memory`, and `Share Adventure` feel phone-sized, useful, and aligned with the real-care RPG promise instead of decorative game fluff.
 - On WoofGuide, confirm quick questions, suggested actions, the send button, and owner-review Cancel/Apply draft controls feel phone-sized, useful, and clearly non-diagnostic.
@@ -169,6 +170,10 @@ Current environment note:
   including Care Pass local HTML, Dog ID local HTML, Dog ID SVG, share-sheet
   behavior, Android content URI, and fallback copy proof. This still does not
   provide actual iOS/Android proof by itself.
+- The Release Smoke Checklist and Share Beta Handoff now also name
+  `/care-twin-qa?qaSurface=report-binary-export-proof` for the approved
+  generator, provider storage policy, and generated artifact evidence needed
+  before binary PDF/PNG readiness can be claimed.
 - Records Dog ID can now share a local SVG image-source credential file beside
   the local printable HTML credential file; PNG/PDF credential export still
   needs native/provider generation and real iOS/Android share proof.

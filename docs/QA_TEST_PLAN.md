@@ -1400,6 +1400,10 @@ Latest local evidence, 2026-07-03:
   same requirements for Apollo/Replit handoff.
 - The Release Smoke Checklist and JSON mobile beta doctor verify the packet is
   source-backed without claiming PDF/PNG generation is implemented.
+- `/care-twin-qa?qaSurface=report-binary-export-proof` now gives the packet a
+  focused native QA target that must collect approved generator choices,
+  generated PDF/PNG file name, file size, MIME, share/reopen proof, provider
+  storage policy, and iOS/Android artifact evidence before binary readiness.
 - Red/green proof first failed on the missing helper/provider/checklist/doctor
   wiring, then passed focused report/provider/smoke/readiness tests `120/120`.
 - Fresh local verification also passed the broader API/mobile/PWA/care-domain
@@ -1408,6 +1412,11 @@ Latest local evidence, 2026-07-03:
   export proof packet is source-backed`, but the result remains truthfully
   `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to
   `10.24.0`; Corepack is not on PATH.
+- Follow-up proof-target verification first failed on the missing QA surface,
+  beta handoff instruction, release smoke item, and doctor guard, then passed
+  focused mobile release/beta/smoke/readiness tests `133/133`, the broader
+  API/mobile/PWA/care-domain suite `521/521`, mobile TypeScript, and `tsc
+  --build`.
 - This is a proof packet, not binary export implementation. Actual Care Pass PDF
   generation, Dog ID PNG generation, provider-backed storage, iOS/Android
   artifact proof, and launch approval remain blocked until real evidence exists.

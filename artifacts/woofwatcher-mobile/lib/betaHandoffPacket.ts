@@ -210,6 +210,8 @@ export function buildBetaHandoffPacketShareText(
     "- Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
     "- Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
     "- Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
+    "- Open focused binary export proof target: /care-twin-qa?qaSurface=report-binary-export-proof.",
+    "- Approve Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
     "- Save the Mission note and clear Pass pending proof in both /care-twin-qa and More.",
     "",
     "Native QA Needs tune fix brief:",

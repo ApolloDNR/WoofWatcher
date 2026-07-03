@@ -283,6 +283,68 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If this proof is missing, the beta handoff cannot claim Records export proof even though the local HTML and SVG source actions exist.",
   },
   {
+    id: "report-binary-export-proof",
+    title: "Report Binary Export Proof",
+    route: "/more",
+    priority: "launch-critical",
+    goal:
+      "Prove the approved Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and native artifact evidence exist before binary export readiness can be claimed.",
+    devicePrompt:
+      "In Provider Launch Setup on iOS and Android, collect the Records/media storage proof packet for approved PDF/PNG generators, provider storage, and generated artifact evidence.",
+    setupSteps: [
+      "Use local preview data and keep PDF/PNG actions pending until the generator and provider proof exists.",
+      "Open More, then Provider Launch Setup, and inspect the Records and media storage gate.",
+      "Confirm the PDF path names an approved generator such as expo-print or provider renderer before any PDF action is considered ready.",
+      "Confirm the PNG path names an approved renderer such as react-native-view-shot or server renderer before any Dog ID PNG action is considered ready.",
+    ],
+    verificationSteps: [
+      "Open Provider Launch Setup and confirm Records and media storage shows the Report binary export proof packet.",
+      "Confirm the packet names Care Pass PDF, Dog ID PNG, provider storage policy, and iOS/Android artifact proof.",
+      "In Records, verify the Care Pass Report History still shows Printable HTML/PDF pending unless generated PDF file name, file size, MIME proof, and share/reopen proof exist.",
+      "In Records, verify Dog ID still shows local HTML/SVG source and PNG pending unless generated PNG file name, file size, MIME proof, and share/reopen proof exist.",
+      "Capture or attach the provider storage policy for report PDFs, credential PNG/SVG/HTML, and QA evidence before clearing the storage gate.",
+    ],
+    acceptanceCriteria: [
+      "No PDF/PNG readiness is claimed until approved generator choice, provider storage policy, and generated artifact proof are attached.",
+      "Care Pass PDF proof includes iOS and Android generated artifact evidence, file name, file size, MIME proof, share/reopen proof, and no HTML-only fallback in the PDF action.",
+      "Dog ID PNG proof includes iOS and Android generated artifact evidence, file name, file size, MIME proof, share/reopen proof, and SVG source retained as fallback.",
+      "Provider storage proof covers household-scoped signed upload/download, retention, export, deletion, and QA evidence storage.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if the app treats HTML-only fallback as PDF proof, treats SVG source as PNG proof, hides file name/size/MIME evidence, or implies provider storage is ready without signed upload/download policy.",
+    requiredEvidence: [
+      "iOS screenshot of Provider Launch Setup showing the Report binary export proof packet.",
+      "Android screenshot of generated PDF and PNG artifact proof or the still-pending proof packet.",
+      "Note confirming approved Care Pass PDF generator and approved Dog ID PNG renderer choices.",
+      "Note confirming provider storage policy for report PDFs, credential PNG/SVG/HTML, and QA evidence.",
+    ],
+    routeChecklist: [
+      {
+        label: "Provider Launch Setup storage gate",
+        route: "/more",
+        expected:
+          "Confirm Records and media storage lists the Report binary export proof packet before binary readiness can be claimed.",
+        proof: "Provider-approved generator and storage policy note.",
+      },
+      {
+        label: "Care Pass PDF artifact proof",
+        route: "/records",
+        expected:
+          "Confirm Care Pass Report History has a generated PDF file name, file size, MIME proof, and share/reopen proof before leaving PDF pending state.",
+        proof: "iOS and Android generated PDF proof.",
+      },
+      {
+        label: "Dog ID PNG artifact proof",
+        route: "/records",
+        expected:
+          "Confirm Dog ID has a generated PNG file name, file size, MIME proof, share/reopen proof, and retained SVG source before leaving PNG pending state.",
+        proof: "iOS and Android generated PNG proof.",
+      },
+    ],
+    launchRisk:
+      "If this proof is skipped, binary export readiness can be claimed from local HTML/SVG sources instead of real PDF/PNG artifacts.",
+  },
+  {
     id: "route-visual-consistency",
     title: "Route Visual Consistency",
     route: "/more",

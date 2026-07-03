@@ -280,6 +280,57 @@ test("adds a launch-critical Records local file handoff proof target", () => {
   assert.match(surface.launchRisk, /beta handoff cannot claim Records export proof/);
 });
 
+test("adds a launch-critical report binary export proof target", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const ids = surfaces.map((surface) => surface.id);
+  const surface = surfaces.find((item) => item.id === "report-binary-export-proof");
+
+  assert.ok(surface);
+  assert.ok(
+    ids.indexOf("report-binary-export-proof") > ids.indexOf("records-local-file-handoff"),
+    "Report binary export proof should follow the local Records handoff target",
+  );
+  assert.ok(
+    ids.indexOf("report-binary-export-proof") < ids.indexOf("route-visual-consistency"),
+    "Report binary export proof should stay visible before broad route screenshot work",
+  );
+  assert.equal(surface.title, "Report Binary Export Proof");
+  assert.equal(surface.route, "/more");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /Care Pass PDF generator/);
+  assert.match(surface.goal, /Dog ID PNG renderer/);
+  assert.match(surface.goal, /provider storage policy/);
+  assert.match(surface.devicePrompt, /Provider Launch Setup/);
+  assert.match(surface.devicePrompt, /iOS and Android/);
+  assert.match(surface.setupSteps.join("\n"), /storage gate/);
+  assert.match(surface.setupSteps.join("\n"), /expo-print/);
+  assert.match(surface.setupSteps.join("\n"), /react-native-view-shot|server renderer/);
+  assert.match(surface.verificationSteps.join("\n"), /Records and media storage/);
+  assert.match(surface.verificationSteps.join("\n"), /Care Pass PDF/);
+  assert.match(surface.verificationSteps.join("\n"), /Dog ID PNG/);
+  assert.match(surface.verificationSteps.join("\n"), /file name, file size, MIME/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /No PDF\/PNG readiness/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /iOS and Android/);
+  assert.match(surface.failureEscalation, /HTML-only fallback/);
+  assert.match(surface.failureEscalation, /provider storage/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Provider Launch Setup/);
+  assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of generated PDF and PNG artifact proof/);
+  assert.match(surface.requiredEvidence.join("\n"), /Note confirming approved Care Pass PDF generator/);
+  assert.match(surface.requiredEvidence.join("\n"), /Note confirming provider storage policy/);
+  assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
+    "Provider Launch Setup storage gate",
+    "Care Pass PDF artifact proof",
+    "Dog ID PNG artifact proof",
+  ]);
+  assert.equal(surface.routeChecklist?.[0]?.route, "/more");
+  assert.equal(surface.routeChecklist?.[1]?.route, "/records");
+  assert.equal(surface.routeChecklist?.[2]?.route, "/records");
+  assert.match(surface.routeChecklist?.[0]?.proof ?? "", /approved generator and storage policy note/);
+  assert.match(surface.routeChecklist?.[1]?.proof ?? "", /iOS and Android generated PDF proof/);
+  assert.match(surface.routeChecklist?.[2]?.proof ?? "", /iOS and Android generated PNG proof/);
+  assert.match(surface.launchRisk, /binary export readiness can be claimed/);
+});
+
 test("adds route-check proof to store screenshot QA surfaces", () => {
   const packet: StoreSubmissionPacket = {
     title: "WoofWatcher Store Submission Packet",

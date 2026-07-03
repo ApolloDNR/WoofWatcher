@@ -108,6 +108,7 @@ const nextActions = [
   "Verify Records/Care Pass Report History shows Printable HTML local file, file size, and PDF pending.",
   "Verify Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
   "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
+  "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
 ];
@@ -534,6 +535,33 @@ check(
   reportBinaryExportProofPacketIsSourceBacked
     ? "PDF/PNG readiness requires the binary export proof packet through Provider Launch Setup and the beta smoke checklist"
     : "keep binary PDF/PNG export proof modeled in reportBinaryExportProof.ts and wired through Provider Launch Setup",
+);
+
+const reportBinaryExportProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
+  "report-binary-export-proof",
+  "Report Binary Export Proof",
+  "Care Pass PDF generator",
+  "Dog ID PNG renderer",
+  "Provider Launch Setup",
+  "file name, file size, MIME proof",
+  "HTML-only fallback",
+])
+  && includesAll(betaHandoffPacketSource, [
+    "Open focused binary export proof target: /care-twin-qa?qaSurface=report-binary-export-proof.",
+    "Approve Care Pass PDF generator, Dog ID PNG renderer, provider storage policy, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Focused binary export proof target",
+    "/care-twin-qa?qaSurface=report-binary-export-proof",
+    "approved Care Pass PDF generator",
+    "approved Dog ID PNG renderer",
+  ]);
+check(
+  "report binary export proof target is source-backed",
+  reportBinaryExportProofTargetIsSourceBacked,
+  reportBinaryExportProofTargetIsSourceBacked
+    ? "Binary export proof has a focused QA target, beta handoff instruction, smoke checklist item, and doctor next action"
+    : "keep binary export proof wired through release QA, Share Beta Handoff, smoke checklist, and doctor next actions",
 );
 
 const betaHandoffTruthBoundariesAreSourceBacked = includesAll(betaHandoffPacketSource, [

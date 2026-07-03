@@ -152,6 +152,10 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /Care Pass PDF/);
   assert.match(text, /Dog ID PNG/);
   assert.match(text, /iOS\/Android artifact proof/);
+  assert.match(text, /Focused binary export proof target/);
+  assert.match(text, /\/care-twin-qa\?qaSurface=report-binary-export-proof/);
+  assert.match(text, /approved Care Pass PDF generator/);
+  assert.match(text, /approved Dog ID PNG renderer/);
   assert.match(text, /Native and store proof:/);
   assert.match(text, /iOS Quick Log\/Log proof/);
   assert.match(text, /Android Launch Readiness proof/);
