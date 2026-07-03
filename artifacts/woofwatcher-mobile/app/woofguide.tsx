@@ -26,7 +26,7 @@ import {
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare, CareState } from "@/context/CareContext";
-import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
@@ -326,7 +326,7 @@ export default function WoofGuideScreen() {
       >
         <FlatList
           data={messages}
-          inverted
+          inverted={messages.length > 0}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12, paddingTop: loading ? 8 : 12 }}
           showsVerticalScrollIndicator={false}
@@ -377,8 +377,8 @@ export default function WoofGuideScreen() {
                       <SpriteSheetPlayer
                         asset={WOOFGUIDE_STAGE_SPRITE}
                         track={WOOFGUIDE_STAGE_TRACK}
-                        width={132}
-                        height={132}
+                        width={112}
+                        height={112}
                         testID="woofguide-pixel-guidance-sprite"
                       />
                     </View>
@@ -446,13 +446,29 @@ export default function WoofGuideScreen() {
                   </ImageBackground>
                 </BoardCard>
                 <BoardCard style={s.guideIntroCard}>
-                  <BoardRouteHeader
-                    kicker="WoofGuide"
-                    title="Owner-reviewed guidance"
-                    subtitle={`WoofGuide summarizes ${name}'s logs, drafts safe next steps, and keeps health language non-diagnostic. Not veterinary advice.`}
-                    icon="chatbubbles-outline"
-                    style={s.guideIntroHeader}
-                  />
+                  <View style={s.guideIntroRow}>
+                    <View style={[s.guideIntroIcon, { backgroundColor: colors.sage + "18", borderColor: colors.sage + "44" }]}>
+                      <Ionicons name="chatbubbles-outline" size={21} color={colors.brandNavy} />
+                    </View>
+                    <View style={s.guideIntroText}>
+                      <Text style={[s.guideIntroKicker, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                        WoofGuide
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        style={[s.guideIntroTitle, { color: colors.foreground, fontFamily: "Fredoka_700Bold" }]}
+                      >
+                        Owner-reviewed guidance
+                      </Text>
+                      <Text
+                        numberOfLines={2}
+                        style={[s.guideIntroCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                      >
+                        Uses {name}'s logs for owner-reviewed, non-diagnostic next steps.
+                      </Text>
+                    </View>
+                  </View>
                 </BoardCard>
                 <BoardCard style={s.quickQuestionBoard}>
                   <BoardSectionHeader
@@ -633,7 +649,7 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   emptyArea: { alignItems: "center", paddingTop: 20, gap: 10 },
   guideStageCard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 4, overflow: "hidden" },
-  guideStage: { minHeight: 356, overflow: "hidden", justifyContent: "space-between" },
+  guideStage: { minHeight: 294, overflow: "hidden", justifyContent: "space-between" },
   guideStageImage: { borderRadius: 8 },
   guideStageShade: {
     ...StyleSheet.absoluteFillObject,
@@ -651,21 +667,21 @@ const s = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 10,
-    padding: 14,
+    padding: 12,
     zIndex: 3,
   },
   guideBubble: {
-    maxWidth: "68%",
-    minHeight: 104,
+    maxWidth: "70%",
+    minHeight: 88,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "#142033",
     backgroundColor: "rgba(255,249,239,0.94)",
-    paddingHorizontal: 13,
-    paddingVertical: 11,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  guideKicker: { fontSize: 8.5, lineHeight: 13, textTransform: "uppercase" },
-  guideSpeech: { fontSize: 11.5, lineHeight: 19, marginTop: 6 },
+  guideKicker: { fontSize: 7.5, lineHeight: 11, textTransform: "uppercase" },
+  guideSpeech: { fontSize: 10.8, lineHeight: 17, marginTop: 5 },
   guideBubbleTail: {
     position: "absolute",
     bottom: -10,
@@ -680,22 +696,22 @@ const s = StyleSheet.create({
   },
   guideReviewChip: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    maxWidth: 118,
+    maxWidth: 108,
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
-    paddingHorizontal: 9,
+    gap: 4,
+    paddingHorizontal: 7,
   },
-  guideReviewChipText: { flexShrink: 1, fontSize: 10.5, lineHeight: 13 },
+  guideReviewChipText: { flexShrink: 1, fontSize: 10, lineHeight: 12 },
   guideSprite: {
     position: "absolute",
     right: 18,
-    bottom: 118,
-    width: 132,
-    height: 132,
+    bottom: 98,
+    width: 112,
+    height: 112,
     zIndex: 2,
   },
   guideSpriteShadow: {
@@ -711,17 +727,17 @@ const s = StyleSheet.create({
     position: "absolute",
     left: 14,
     right: 14,
-    bottom: 86,
+    bottom: 70,
     borderRadius: 8,
     borderWidth: 1,
-    padding: 10,
+    padding: 8,
     flexDirection: "row",
     gap: 8,
     zIndex: 3,
   },
   guideHudCell: { flex: 1, minWidth: 0 },
-  guideHudLabel: { fontSize: 7, lineHeight: 11, textTransform: "uppercase" },
-  guideHudValue: { fontSize: 12, lineHeight: 15, marginTop: 3 },
+  guideHudLabel: { fontSize: 6.5, lineHeight: 10, textTransform: "uppercase" },
+  guideHudValue: { fontSize: 11.5, lineHeight: 14, marginTop: 2 },
   guideSignalRow: {
     height: 17,
     flexDirection: "row",
@@ -734,22 +750,22 @@ const s = StyleSheet.create({
     position: "absolute",
     left: 14,
     right: 14,
-    bottom: 14,
+    bottom: 10,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     zIndex: 4,
   },
   guideBoundaryCard: {
     flex: 1,
-    minHeight: 62,
+    minHeight: 54,
     borderRadius: 8,
     borderWidth: 1,
     justifyContent: "center",
     paddingHorizontal: 12,
   },
-  guideBoundaryLabel: { fontSize: 10, lineHeight: 13, textTransform: "uppercase" },
-  guideBoundaryValue: { fontSize: 10.5, lineHeight: 14, marginTop: 5 },
+  guideBoundaryLabel: { fontSize: 9.2, lineHeight: 12, textTransform: "uppercase" },
+  guideBoundaryValue: { fontSize: 9.8, lineHeight: 13, marginTop: 4 },
   guideStageAction: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
@@ -759,10 +775,22 @@ const s = StyleSheet.create({
     gap: 7,
     paddingHorizontal: 12,
   },
-  guideStageActionText: { color: "#FFF9EF", fontSize: 11.5, lineHeight: 15 },
+  guideStageActionText: { color: "#FFF9EF", fontSize: 11, lineHeight: 14 },
   guideIntroCard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 8 },
-  guideIntroHeader: { marginBottom: 0 },
-  quickQuestionBoard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 8 },
+  guideIntroRow: { flexDirection: "row", alignItems: "center", gap: 11 },
+  guideIntroIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  guideIntroText: { flex: 1, minWidth: 0 },
+  guideIntroKicker: { fontSize: 10, lineHeight: 13, textTransform: "uppercase" },
+  guideIntroTitle: { fontSize: 17, lineHeight: 20, marginTop: 1 },
+  guideIntroCopy: { fontSize: 11.5, lineHeight: 16, marginTop: 3 },
+  quickQuestionBoard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 6 },
   quickQuestionGrid: { gap: 10 },
   quickChip: { borderRadius: 14, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 14 },
   quickText: { fontSize: 14, lineHeight: 20 },
@@ -779,8 +807,8 @@ const s = StyleSheet.create({
   bubbleText: { fontSize: 15, lineHeight: 22 },
   typingBubble: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 20, borderWidth: 1, padding: 12, marginBottom: 8 },
   typingText: { fontSize: 14 },
-  inputArea: { flexDirection: "row", alignItems: "flex-end", gap: 10, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1 },
-  input: { flex: 1, borderRadius: 20, borderWidth: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, fontSize: 15, maxHeight: 120, minHeight: 48 },
+  inputArea: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 14, paddingTop: 8, borderTopWidth: 1 },
+  input: { flex: 1, borderRadius: 18, borderWidth: 1, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 10, fontSize: 15, maxHeight: 112, minHeight: 48 },
   sendBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 24, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   reviewBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(10, 16, 24, 0.42)" },
   reviewSheet: { borderTopLeftRadius: 26, borderTopRightRadius: 26, borderWidth: 1, padding: 18, maxHeight: "78%" },

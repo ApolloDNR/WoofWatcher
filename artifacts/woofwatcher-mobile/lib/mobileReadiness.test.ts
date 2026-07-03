@@ -1917,11 +1917,19 @@ test("extends the mobile pixel board system across core v1.5 routes", () => {
       /@\/components\/board\/BoardPrimitives/,
       `${route} should import board primitives`,
     );
-    assert.match(
-      source,
-      /BoardRouteHeader/,
-      `${route} should use the shared route header`,
-    );
+    if (route === "woofguide") {
+      assert.match(
+        source,
+        /guideIntroRow/,
+        "woofguide should keep its compact owner-reviewed intro row instead of a hero-scale route header",
+      );
+    } else {
+      assert.match(
+        source,
+        /BoardRouteHeader/,
+        `${route} should use the shared route header`,
+      );
+    }
     assert.match(
       source,
       /BoardCard|BoardSectionHeader|CareRow|StatusMeter|BoardMetricTile/,
@@ -2329,8 +2337,11 @@ test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
   );
   assert.match(
     guide,
-    /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/,
+    /import \{ BoardCard, BoardPill, BoardSectionHeader \}/,
   );
+  assert.match(guide, /guideIntroRow/);
+  assert.match(guide, /guideIntroTitle/);
+  assert.match(guide, /Owner-reviewed guidance/);
   assert.doesNotMatch(guide, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(
     guide,
@@ -2351,10 +2362,13 @@ test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
 test("keeps WoofGuide rooted in a live pixel guidance stage", () => {
   const guide = readAppFile("woofguide.tsx");
 
+  assert.match(guide, /inverted=\{messages\.length > 0\}/);
   assert.match(guide, /ImageBackground/);
   assert.match(guide, /WOOFGUIDE_STAGE_ROOM/);
   assert.match(guide, /CARE_TWIN_ROOM_VARIANT_ASSETS\.night/);
   assert.match(guide, /SpriteSheetPlayer/);
+  assert.match(guide, /testID="woofguide-pixel-guidance-stage"/);
+  assert.match(guide, /guideStage:\s*\{[\s\S]*minHeight:\s*294/);
   assert.match(guide, /getCareTwinSpriteAsset\("idle-breathe"\)/);
   assert.match(guide, /CARE_TWIN_SPRITE_MANIFEST\["idle-breathe"\]/);
   assert.match(guide, /pixelImageStyle/);
