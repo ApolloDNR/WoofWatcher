@@ -12,6 +12,14 @@ async function loadReminderCenter() {
       entries: readonly unknown[];
       records?: readonly unknown[];
       caregivers?: readonly unknown[];
+      notificationPreferences?: {
+        providerConfigured?: boolean;
+        pushEnabled?: boolean;
+        permissionStatus?: "unknown" | "granted" | "denied" | "unavailable";
+        quietHoursStart?: string | null;
+        quietHoursEnd?: string | null;
+        optOut?: boolean;
+      };
       now?: number;
       limit?: number;
       routineLookaheadHours?: number;
@@ -38,6 +46,10 @@ async function loadReminderCenter() {
       summary: string;
       nextStep: string;
       notificationReadiness: string;
+      notificationPreferenceSummary: string;
+      notificationQuietHours: string;
+      notificationOptOut: string;
+      providerBackedNotifications: boolean;
     };
   };
 
@@ -159,6 +171,83 @@ test("clears visible routine reminders only when matching household-visible logs
   assert.equal(visibleLog.status, "clear");
   assert.equal(visibleLog.total, 0);
   assert.match(visibleLog.nextStep, /push notifications/i);
+  assert.match(visibleLog.notificationPreferenceSummary, /Push provider not configured/i);
+  assert.match(visibleLog.notificationQuietHours, /Quiet hours not set/i);
+  assert.match(visibleLog.notificationOptOut, /Opt-out control/i);
+  assert.equal(visibleLog.providerBackedNotifications, false);
+});
+
+test("keeps notification permission, quiet hours, and opt-out boundaries explicit", async () => {
+  const deriveCareReminderCenter = await loadReminderCenter();
+
+  const providerGated = deriveCareReminderCenter({
+    now: NOW,
+    routines: [],
+    entries: [],
+    records: [],
+    notificationPreferences: {
+      providerConfigured: false,
+      pushEnabled: true,
+      permissionStatus: "granted",
+      quietHoursStart: "9:00 PM",
+      quietHoursEnd: "7:00 AM",
+      optOut: false,
+    },
+  });
+  const optedOut = deriveCareReminderCenter({
+    now: NOW,
+    routines: [],
+    entries: [],
+    records: [],
+    notificationPreferences: {
+      providerConfigured: true,
+      pushEnabled: true,
+      permissionStatus: "granted",
+      quietHoursStart: "9:00 PM",
+      quietHoursEnd: "7:00 AM",
+      optOut: true,
+    },
+  });
+  const denied = deriveCareReminderCenter({
+    now: NOW,
+    routines: [],
+    entries: [],
+    records: [],
+    notificationPreferences: {
+      providerConfigured: true,
+      pushEnabled: true,
+      permissionStatus: "denied",
+      quietHoursStart: "9:00 PM",
+      quietHoursEnd: "7:00 AM",
+      optOut: false,
+    },
+  });
+  const deliveryQaReady = deriveCareReminderCenter({
+    now: NOW,
+    routines: [],
+    entries: [],
+    records: [],
+    notificationPreferences: {
+      providerConfigured: true,
+      pushEnabled: true,
+      permissionStatus: "granted",
+      quietHoursStart: "9:00 PM",
+      quietHoursEnd: "7:00 AM",
+      optOut: false,
+    },
+  });
+
+  assert.match(providerGated.notificationPreferenceSummary, /Push provider not configured/i);
+  assert.equal(providerGated.providerBackedNotifications, false);
+  assert.match(optedOut.notificationPreferenceSummary, /Notifications are off by your choice/i);
+  assert.match(optedOut.notificationOptOut, /Opted out/i);
+  assert.equal(optedOut.providerBackedNotifications, false);
+  assert.match(denied.notificationPreferenceSummary, /Device permission is denied/i);
+  assert.equal(denied.providerBackedNotifications, false);
+  assert.match(deliveryQaReady.notificationPreferenceSummary, /eligible for delivery QA/i);
+  assert.match(deliveryQaReady.notificationQuietHours, /Quiet hours 9:00 PM-7:00 AM/i);
+  assert.match(deliveryQaReady.notificationOptOut, /Opt-out remains available/i);
+  assert.equal(deliveryQaReady.providerBackedNotifications, true);
 });
 
 test("sorts alerts before watch items and respects the display limit", async () => {

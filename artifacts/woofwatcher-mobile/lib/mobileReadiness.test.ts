@@ -3982,6 +3982,9 @@ test("keeps Reminder Center visible in Calendar before push notifications are en
   assert.match(calendar, /careReminderCenter/);
   assert.match(calendar, /Reminder Center/);
   assert.match(calendar, /notificationReadiness/);
+  assert.match(calendar, /notificationPreferenceSummary/);
+  assert.match(calendar, /notificationQuietHours/);
+  assert.match(calendar, /notificationOptOut/);
   assert.match(calendar, /reminderCount/);
 });
 

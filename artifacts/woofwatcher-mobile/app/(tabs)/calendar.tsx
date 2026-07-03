@@ -1107,6 +1107,20 @@ export default function CalendarScreen() {
             <Text style={[s.reminderReadiness, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {careReminderCenter.notificationReadiness}
             </Text>
+            <View style={[s.reminderNotificationPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Text style={[s.reminderNotificationTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                Notification preferences
+              </Text>
+              <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {careReminderCenter.notificationPreferenceSummary}
+              </Text>
+              <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {careReminderCenter.notificationQuietHours}
+              </Text>
+              <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {careReminderCenter.notificationOptOut}
+              </Text>
+            </View>
           </BoardCard>
 
           {/* Daily routine */}
@@ -1870,6 +1884,9 @@ const s = StyleSheet.create({
   reminderMore: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
   reminderNext: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
   reminderReadiness: { fontSize: 11.5, lineHeight: 16, marginTop: 7 },
+  reminderNotificationPanel: { borderRadius: 13, borderWidth: 1, padding: 11, marginTop: 10, gap: 5 },
+  reminderNotificationTitle: { fontSize: 12.5, lineHeight: 17 },
+  reminderNotificationText: { fontSize: 11.5, lineHeight: 16 },
   reminderEmpty: { flexDirection: "row", alignItems: "center", gap: 9, borderRadius: 14, padding: 12, marginTop: 12 },
   reminderEmptyText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
 

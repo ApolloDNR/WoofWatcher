@@ -323,6 +323,16 @@ Checklist, the live-preview route verifier, the JSON mobile beta doctor, and
 the native QA tooling doctor all name the target. This remains proof routing
 only; it does not configure providers or prove delivered notifications.
 
+The Reminder Center notification preference boundary pass makes Calendar show
+that same push truth in the product surface. `deriveCareReminderCenter` now
+returns `notificationPreferenceSummary`, `notificationQuietHours`,
+`notificationOptOut`, and `providerBackedNotifications`, and Calendar renders
+the provider-gated status, quiet-hours policy, and opt-out copy below reminder
+readiness. The default state keeps reminders in-app until Expo/APNs/FCM proof is
+attached; even when provider-backed preferences are marked eligible, delivery
+still needs native notification QA and delivered-notification evidence before
+launch.
+
 The two-day beta QA cockpit pass made device capture less fragile. `/care-twin-qa`
 now tags attached screenshot evidence explicitly as iOS, Android, or Web instead
 of relying on the runtime platform, and target routes opened from the cockpit

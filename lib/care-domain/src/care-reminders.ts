@@ -39,11 +39,23 @@ export interface CareReminderRecord extends CareRecord, MedicationRecord {}
 
 export interface CareReminderCaregiver extends RoutineBoardCaregiver {}
 
+export type CareReminderNotificationPermissionStatus = "unknown" | "granted" | "denied" | "unavailable";
+
+export interface CareReminderNotificationPreferences {
+  providerConfigured?: boolean;
+  pushEnabled?: boolean;
+  permissionStatus?: CareReminderNotificationPermissionStatus;
+  quietHoursStart?: string | null;
+  quietHoursEnd?: string | null;
+  optOut?: boolean;
+}
+
 export interface CareReminderCenterInput {
   routines: readonly CareReminderRoutine[];
   entries: readonly CareReminderEntry[];
   records?: readonly CareReminderRecord[];
   caregivers?: readonly CareReminderCaregiver[];
+  notificationPreferences?: CareReminderNotificationPreferences;
   now?: number;
   limit?: number;
   routineLookaheadHours?: number;
@@ -75,6 +87,10 @@ export interface CareReminderCenter {
   summary: string;
   nextStep: string;
   notificationReadiness: string;
+  notificationPreferenceSummary: string;
+  notificationQuietHours: string;
+  notificationOptOut: string;
+  providerBackedNotifications: boolean;
 }
 
 const DAY_MS = 86400000;
@@ -125,6 +141,56 @@ function nextStepFor(status: CareReminderStatus): string {
     return "Review due-soon reminders and assign the owner before the care window closes.";
   }
   return "Keep routines and records current; push notifications still need provider setup.";
+}
+
+function notificationPreferenceSummaryFor(preferences: CareReminderNotificationPreferences = {}): string {
+  const providerConfigured = preferences.providerConfigured === true;
+  const pushEnabled = preferences.pushEnabled === true;
+  const permissionStatus = preferences.permissionStatus ?? "unknown";
+  const optedOut = preferences.optOut === true;
+
+  if (!providerConfigured) {
+    return "Push provider not configured; push notifications stay in-app until Expo, APNs, and Firebase/FCM proof is attached.";
+  }
+  if (optedOut) {
+    return "Notifications are off by your choice; Reminder Center stays visible in app until you turn them back on.";
+  }
+  if (!pushEnabled) {
+    return "Push reminders are off; Reminder Center stays in-app until you enable delivery.";
+  }
+  if (permissionStatus === "denied") {
+    return "Device permission is denied; reminders stay in-app until permission is enabled on the device.";
+  }
+  if (permissionStatus === "unavailable") {
+    return "Device notifications are unavailable here; use Reminder Center until native notification support is available.";
+  }
+  if (permissionStatus !== "granted") {
+    return "Notification permission is not approved yet; review prompt copy before enabling provider-backed reminders.";
+  }
+  return "Push reminders are eligible for delivery QA; attach delivered-notification proof before launch.";
+}
+
+function notificationQuietHoursFor(preferences: CareReminderNotificationPreferences = {}): string {
+  const start = clean(preferences.quietHoursStart);
+  const end = clean(preferences.quietHoursEnd);
+  if (start && end) {
+    return `Quiet hours ${start}-${end} must mute non-urgent reminders until delivery QA proves the window.`;
+  }
+  return "Quiet hours not set; choose a quiet window before enabling reminder delivery.";
+}
+
+function notificationOptOutFor(preferences: CareReminderNotificationPreferences = {}): string {
+  if (preferences.optOut === true) {
+    return "Opted out; do not deliver push notifications until you turn them back on.";
+  }
+  return "Opt-out remains available; Opt-out control must stay visible before provider-backed delivery.";
+}
+
+function hasProviderBackedNotifications(preferences: CareReminderNotificationPreferences = {}): boolean {
+  return preferences.providerConfigured === true
+    && preferences.pushEnabled === true
+    && preferences.permissionStatus === "granted"
+    && preferences.optOut !== true;
 }
 
 export function deriveCareReminderCenter(input: CareReminderCenterInput): CareReminderCenter {
@@ -240,6 +306,8 @@ export function deriveCareReminderCenter(input: CareReminderCenterInput): CareRe
   const alertCount = allItems.filter((item) => item.urgency === "alert").length;
   const watchCount = allItems.filter((item) => item.urgency === "watch").length;
   const status: CareReminderStatus = alertCount > 0 ? "attention" : watchCount > 0 ? "watch" : "clear";
+  const notificationPreferenceSummary = notificationPreferenceSummaryFor(input.notificationPreferences);
+  const providerBackedNotifications = hasProviderBackedNotifications(input.notificationPreferences);
 
   return {
     items: allItems.slice(0, limit),
@@ -253,7 +321,12 @@ export function deriveCareReminderCenter(input: CareReminderCenterInput): CareRe
     status,
     summary: summaryFor(allItems.length, alertCount, watchCount),
     nextStep: nextStepFor(status),
-    notificationReadiness:
-      "Reminder candidates are ready for owner review; real push notifications still need provider setup.",
+    notificationReadiness: providerBackedNotifications
+      ? "Reminder candidates are ready for owner review; push delivery is eligible for delivery QA, but launch still needs delivered-notification proof."
+      : `Reminder candidates are ready for owner review; ${notificationPreferenceSummary}`,
+    notificationPreferenceSummary,
+    notificationQuietHours: notificationQuietHoursFor(input.notificationPreferences),
+    notificationOptOut: notificationOptOutFor(input.notificationPreferences),
+    providerBackedNotifications,
   };
 }

@@ -258,6 +258,12 @@ Current environment note:
   quiet hours, opt-out behavior, delivery QA, and missed-notification fallback
   before reminder delivery can be claimed. This is a proof target, not provider
   configuration or native delivery evidence by itself.
+- Reminder Center now surfaces the same launch boundary in-product: provider
+  configuration status, permission readiness, quiet-hours policy, and opt-out
+  copy stay visible in Calendar before push delivery is enabled. This is a
+  local preference/readiness boundary only; it does not persist interactive
+  notification settings, configure Expo/APNs/FCM, deliver notifications, or
+  replace native delivery proof.
 - Records Dog ID can now share a local SVG image-source credential file beside
   the local printable HTML credential file; PNG/PDF credential export still
   needs native/provider generation and real iOS/Android share proof.
