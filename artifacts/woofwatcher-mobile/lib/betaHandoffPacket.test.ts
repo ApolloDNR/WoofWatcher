@@ -190,6 +190,9 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Open focused payments provider target: \/care-twin-qa\?qaSurface=payments-provider-proof/);
   assert.match(text, /Attach Plus and Family product ids, billing path decision, sandbox purchase\/renewal\/cancel\/refund\/expired receipt proof/);
   assert.match(text, /restore purchases behavior, entitlement mapping, refund\/support policy, and checkout-gate proof before enabling paid checkout/);
+  assert.match(text, /Open focused store accounts target: \/care-twin-qa\?qaSurface=store-accounts-proof/);
+  assert.match(text, /Attach Apple Developer team id, App Store Connect app record, Google Play package record/);
+  assert.match(text, /reviewer access\/test credentials, screenshots\/metadata ownership, and release role approval before claiming store submission/);
   assert.match(text, /Open focused route visual target: \/care-twin-qa\?qaSurface=route-visual-consistency/);
   assert.match(text, /Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof/);
   assert.match(text, /Save the Mission note and clear Pass pending proof in both \/care-twin-qa and More/);

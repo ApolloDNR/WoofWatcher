@@ -108,11 +108,14 @@ check(
     "care-entry-provider-sync-proof",
     "push-notifications-proof",
     "payments-provider-proof",
+    "store-accounts-proof",
     "route-visual-consistency",
     "APNs credentials",
     "Firebase/FCM credentials",
     "Plus and Family product ids",
     "paid checkout",
+    "Apple Developer team id",
+    "store submission",
     "iOS screenshot",
     "Android screenshot",
   ].every((value) => releaseQaSource.includes(value)) &&
@@ -159,6 +162,7 @@ const payload = {
     "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
     "/care-twin-qa?qaSurface=push-notifications-proof",
     "/care-twin-qa?qaSurface=payments-provider-proof",
+    "/care-twin-qa?qaSurface=store-accounts-proof",
     "/care-twin-qa?qaSurface=route-visual-consistency",
   ],
   proofCommands: [
@@ -181,6 +185,7 @@ const payload = {
     "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof for Supabase migration/backfill, active-household RLS, retention/export/deletion policy, dependency proof, and mobile full-refresh sign-off before enabling incremental care-entry sync.",
     "Open /care-twin-qa?qaSurface=push-notifications-proof for Expo/APNs/Firebase delivery proof, permission copy, quiet hours, opt-out behavior, and missed notification fallback before claiming reminder delivery.",
     "Open /care-twin-qa?qaSurface=payments-provider-proof for Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
+    "Open /care-twin-qa?qaSurface=store-accounts-proof for Apple Developer team id, App Store Connect app record, Google Play package record, reviewer access, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.",
   ],
 };
 

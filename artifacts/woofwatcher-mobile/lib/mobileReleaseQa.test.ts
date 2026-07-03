@@ -534,6 +534,58 @@ test("adds a launch-critical payments provider proof target", () => {
   assert.match(surface.launchRisk, /paid checkout can be enabled/);
 });
 
+test("adds a launch-critical store accounts proof target", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const ids = surfaces.map((surface) => surface.id);
+  const surface = surfaces.find((item) => item.id === "store-accounts-proof");
+
+  assert.ok(surface);
+  assert.ok(
+    ids.indexOf("store-accounts-proof") > ids.indexOf("payments-provider-proof"),
+    "Store accounts proof should follow payments proof in the focused launch targets",
+  );
+  assert.ok(
+    ids.indexOf("store-accounts-proof") < ids.indexOf("route-visual-consistency"),
+    "Store accounts proof should stay visible before broad route screenshot work",
+  );
+  assert.equal(surface.title, "Store Accounts Proof");
+  assert.equal(surface.route, "/more");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /Apple Developer team id/);
+  assert.match(surface.goal, /Google Play package record/);
+  assert.match(surface.goal, /reviewer access/);
+  assert.match(surface.devicePrompt, /Provider Launch Setup/);
+  assert.match(surface.devicePrompt, /iOS and Android/);
+  assert.match(surface.setupSteps.join("\n"), /Apple and Google store accounts/);
+  assert.match(surface.setupSteps.join("\n"), /store submission stays blocked/);
+  assert.match(surface.verificationSteps.join("\n"), /App Store Connect app record/);
+  assert.match(surface.verificationSteps.join("\n"), /Google Play package record/);
+  assert.match(surface.verificationSteps.join("\n"), /bundle ids/);
+  assert.match(surface.verificationSteps.join("\n"), /reviewer access/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /store submission stays blocked/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /screenshots\/metadata ownership/);
+  assert.match(surface.failureEscalation, /App Review|Play review/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Provider Launch Setup/);
+  assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Provider Launch Setup/);
+  assert.match(surface.requiredEvidence.join("\n"), /Apple Developer team id/);
+  assert.match(surface.requiredEvidence.join("\n"), /Google Play package record/);
+  assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
+    "Provider Launch Setup store accounts gate",
+    "Apple Developer and App Store Connect",
+    "Google Play package and release access",
+    "Reviewer access, metadata, and release roles",
+  ]);
+  assert.equal(surface.routeChecklist?.[0]?.route, "/more");
+  assert.equal(surface.routeChecklist?.[1]?.route, "/more");
+  assert.equal(surface.routeChecklist?.[2]?.route, "/more");
+  assert.equal(surface.routeChecklist?.[3]?.route, "/more");
+  assert.match(surface.routeChecklist?.[0]?.proof ?? "", /Apple and Google store accounts proof packet/);
+  assert.match(surface.routeChecklist?.[1]?.proof ?? "", /Apple Developer team id/);
+  assert.match(surface.routeChecklist?.[2]?.proof ?? "", /Google Play package record/);
+  assert.match(surface.routeChecklist?.[3]?.proof ?? "", /reviewer access/);
+  assert.match(surface.launchRisk, /store submission can be claimed/);
+});
+
 test("adds route-check proof to store screenshot QA surfaces", () => {
   const packet: StoreSubmissionPacket = {
     title: "WoofWatcher Store Submission Packet",

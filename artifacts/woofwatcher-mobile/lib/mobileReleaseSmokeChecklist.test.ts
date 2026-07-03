@@ -185,6 +185,12 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /sandbox receipts/);
   assert.match(text, /restore purchases/);
   assert.match(text, /checkout stays disabled/);
+  assert.match(text, /Focused store accounts proof target/);
+  assert.match(text, /\/care-twin-qa\?qaSurface=store-accounts-proof/);
+  assert.match(text, /Apple Developer team id/);
+  assert.match(text, /App Store Connect app record/);
+  assert.match(text, /Google Play package record/);
+  assert.match(text, /store submission stays blocked/);
   assert.match(text, /Focused route visual consistency target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=route-visual-consistency/);
   assert.match(text, /Home, Log, Plans, Health, Records, and More on iOS and Android/);

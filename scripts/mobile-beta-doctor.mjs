@@ -119,6 +119,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture Supabase migration/backfill, active-household RLS, retention/export/deletion policy, and mobile full-refresh sign-off before enabling incremental sync.",
   "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before claiming reminder delivery.",
   "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
+  "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, reviewer access, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.",
   "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
@@ -302,6 +303,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
   "Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
   "Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
+  "Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",
   "Provider proof needed:",
   "Truth boundaries:",
 ])
@@ -338,6 +340,8 @@ const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeCheckl
   "/care-twin-qa?qaSurface=push-notifications-proof",
   "Focused payments provider proof target",
   "/care-twin-qa?qaSurface=payments-provider-proof",
+  "Focused store accounts proof target",
+  "/care-twin-qa?qaSurface=store-accounts-proof",
   "Android content URI",
   "fallback copy",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
@@ -392,6 +396,7 @@ const livePreviewHandoffVerifierIsSourceBacked = mobilePackage.scripts?.["proof:
     "report-binary-export-proof",
     "care-entry-provider-sync-proof",
     "payments-provider-proof",
+    "store-accounts-proof",
     "route-visual-consistency",
     "WoofWatcher Live Preview Handoff Proof",
     "web preview only",
@@ -1060,6 +1065,50 @@ check(
   paymentsProviderProofTargetIsSourceBacked
     ? "Payments proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and provider-row shortcut"
     : "keep payments proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
+);
+
+const storeAccountsProofTargetIsSourceBacked = includesAll(storeAccountsProofSource, [
+  "STORE_ACCOUNTS_PROOF_SUMMARY",
+  "STORE_ACCOUNTS_PROOF_ITEMS",
+  "Apple and Google store accounts proof packet",
+  "Apple Developer team id",
+  "App Store Connect app record",
+  "Google Play package record",
+  "reviewer access notes",
+  "release role approval",
+])
+  && includesAll(mobileReleaseQaSource, [
+    "store-accounts-proof",
+    "Store Accounts Proof",
+    "Apple Developer team id",
+    "App Store Connect app record",
+    "Google Play package record",
+    "store submission stays blocked",
+    "screenshots/metadata ownership",
+  ])
+  && includesAll(betaHandoffPacketSource, [
+    "Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",
+    "Attach Apple Developer team id, App Store Connect app record, Google Play package record",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Focused store accounts proof target",
+    "/care-twin-qa?qaSurface=store-accounts-proof",
+    "Apple Developer team id",
+    "store submission stays blocked",
+  ])
+  && includesAll(livePreviewHandoffProofSource, [
+    "store-accounts-proof",
+  ])
+  && includesAll(moreRouteSource, [
+    "store-accounts-proof",
+    "Store Accounts Proof",
+  ]);
+check(
+  "store accounts proof target is source-backed",
+  storeAccountsProofTargetIsSourceBacked,
+  storeAccountsProofTargetIsSourceBacked
+    ? "Store accounts proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and provider-row shortcut"
+    : "keep store accounts proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
 const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [

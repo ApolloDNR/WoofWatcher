@@ -294,6 +294,12 @@ function providerRowQaTarget(key: LaunchProviderSetupKey): ProviderRowQaTarget |
         detail: "Payments Provider Proof",
         iconName: "card-outline",
       };
+    case "storeAccounts":
+      return {
+        surfaceId: "store-accounts-proof",
+        detail: "Store Accounts Proof",
+        iconName: "storefront-outline",
+      };
     default:
       return null;
   }

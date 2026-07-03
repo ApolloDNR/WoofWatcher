@@ -25,6 +25,7 @@ const LIVE_PREVIEW_HANDOFF_ROUTES = [
   "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
   "/care-twin-qa?qaSurface=push-notifications-proof",
   "/care-twin-qa?qaSurface=payments-provider-proof",
+  "/care-twin-qa?qaSurface=store-accounts-proof",
   "/care-twin-qa?qaSurface=route-visual-consistency",
 ];
 

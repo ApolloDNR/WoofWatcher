@@ -283,6 +283,14 @@ export function buildMobileReleaseSmokeChecklist(
             status: "required",
           },
           {
+            label: "Focused store accounts proof target",
+            detail:
+              "Open /care-twin-qa?qaSurface=store-accounts-proof and confirm Apple Developer team id, App Store Connect app record, Google Play package record, bundle ids, reviewer access, screenshots/metadata ownership, and release role approval before store submission is claimed.",
+            proof:
+              "Attach Apple Developer team id, App Store Connect app record, Google Play package record, bundle/signing ownership, reviewer access/test credentials, screenshots/metadata ownership, and release role approval; store submission stays blocked until this proof exists.",
+            status: "required",
+          },
+          {
             label: "Focused route visual consistency target",
             detail:
               "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android.",
