@@ -3334,8 +3334,11 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
 
   assert.match(records, /getPetCredentialPrintView/);
   assert.match(records, /sharePrintableCredential/);
+  assert.match(records, /directoryName: "WoofWatcherCredentials"/);
+  assert.match(records, /printableLabel: "Dog ID credential source"/);
+  assert.match(records, /FileSystem\.writeAsStringAsync/);
   assert.match(records, /accessibilityLabel="Share dog ID card"/);
-  assert.match(records, /accessibilityLabel="Share printable dog ID source"/);
+  assert.match(records, /accessibilityLabel="Share local printable Dog ID source file"/);
 });
 
 test("keeps Records organized around a vault command hierarchy", () => {
@@ -4927,6 +4930,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.nextActions?.some(
       (action) =>
         action.includes("Printable HTML local file") && action.includes("PDF pending"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("Dog ID printable source") &&
+        action.includes("local HTML credential file") &&
+        action.includes("image/PDF export stays pending"),
     ),
   );
   assert.ok(

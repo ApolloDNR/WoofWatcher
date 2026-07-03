@@ -101,6 +101,7 @@ const nextActions = [
   "Open /care-twin-qa on a real device or simulator.",
   "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
   "Verify Records/Care Pass Report History shows Printable HTML local file, file size, and PDF pending.",
+  "Verify Records Dog ID printable source shares as a local HTML credential file; image/PDF export stays pending.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
 ];
@@ -238,6 +239,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Required beta proof after export:",
   "Native QA Needs tune fix brief:",
   "Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
+  "Confirm Records Dog ID printable source shares as a local HTML credential file; image/PDF export stays pending.",
   "Provider proof needed:",
   "Truth boundaries:",
 ])
@@ -404,6 +406,7 @@ const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileRelease
   && includesAll(betaHandoffPacketSource, [
     "Confirm Care Pass Report History storage status says Saved on this device or Ready to upload.",
     "Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
+    "Confirm Records Dog ID printable source shares as a local HTML credential file; image/PDF export stays pending.",
 ])
   && includesAll(mobileLaunchQaEvidenceSource, [
     "Route loop:",

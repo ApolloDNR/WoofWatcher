@@ -33,6 +33,27 @@ test("builds a local printable report export file plan without claiming PDF outp
   assert.match(plan.message, /cloud storage is not enabled/);
 });
 
+test("builds a local printable credential export file plan without calling it a report", () => {
+  const plan = buildReportArtifactExportFilePlan(
+    {
+      fileName: "Phoenix Dog ID: microchip/insurance.html",
+      html: "<!doctype html><html><body>Dog ID</body></html>",
+    },
+    {
+      documentDirectory: "file:///var/mobile/Documents",
+      directoryName: "WoofWatcherCredentials",
+      printableLabel: "Dog ID credential source",
+      title: "Phoenix Dog ID",
+    },
+  );
+
+  assert.equal(plan.directoryUri, "file:///var/mobile/Documents/WoofWatcherCredentials/");
+  assert.equal(plan.fileName, "Phoenix-Dog-ID-microchip-insurance.html");
+  assert.equal(plan.fileUri, "file:///var/mobile/Documents/WoofWatcherCredentials/Phoenix-Dog-ID-microchip-insurance.html");
+  assert.match(plan.message, /Dog ID credential source/);
+  assert.doesNotMatch(plan.message, /report source/);
+});
+
 test("falls back to inline printable source when a local file directory is unavailable", () => {
   const plan = buildReportArtifactExportFilePlan(
     {
@@ -52,7 +73,7 @@ test("falls back to inline printable source when a local file directory is unava
   assert.equal(plan.fileUri, null);
   assert.match(plan.fallbackReason ?? "", /Local file export is unavailable/);
   assert.equal(shareContent.url, undefined);
-  assert.match(shareContent.message, /printable source is included below/);
+  assert.match(shareContent.message, /printable report source is included below/);
   assert.match(shareContent.message, /Care pass/);
 });
 

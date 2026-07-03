@@ -81,6 +81,7 @@ import { pixelImageStyle } from "@/lib/pixelRendering";
 import {
   buildReportArtifactExportFilePlan,
   buildReportArtifactShareContent,
+  type ReportArtifactPrintableSource,
 } from "@/lib/reportArtifactExportFile";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -500,12 +501,59 @@ export default function RecordsScreen() {
     );
   };
 
-  const sharePrintableCredential = () => {
+  const sharePrintableSourceFile = async (
+    printable: ReportArtifactPrintableSource,
+    options: { directoryName?: string; printableLabel?: string; title: string },
+  ) => {
+    const plan = buildReportArtifactExportFilePlan(printable, {
+      directoryName: options.directoryName,
+      documentDirectory: Platform.OS === "web" ? null : FileSystem.documentDirectory,
+      printableLabel: options.printableLabel,
+      title: options.title,
+    });
+
+    const shareFallback = async () => {
+      const fallbackPlan = buildReportArtifactExportFilePlan(printable, {
+        directoryName: options.directoryName,
+        documentDirectory: null,
+        printableLabel: options.printableLabel,
+        title: options.title,
+      });
+      const fallbackContent = buildReportArtifactShareContent(fallbackPlan);
+      try {
+        await Share.share(fallbackContent);
+      } catch {
+        Alert.alert(fallbackContent.title, fallbackContent.message);
+      }
+    };
+
+    if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
+      try {
+        await FileSystem.makeDirectoryAsync(plan.directoryUri, { intermediates: true });
+        await FileSystem.writeAsStringAsync(plan.fileUri, printable.html, { encoding: FileSystem.EncodingType.UTF8 });
+        const shareUri =
+          Platform.OS === "android"
+            ? await FileSystem.getContentUriAsync(plan.fileUri).catch(() => plan.fileUri)
+            : plan.fileUri;
+        await Share.share(buildReportArtifactShareContent(plan, { shareUri }));
+        return;
+      } catch {
+        await shareFallback();
+        return;
+      }
+    }
+
+    await shareFallback();
+  };
+
+  const sharePrintableCredential = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const printable = getPetCredentialPrintView(credential);
-    Share.share({ message: printable.html, title: printable.fileName }).catch(() =>
-      Alert.alert(printable.fileName, printable.html),
-    );
+    await sharePrintableSourceFile(printable, {
+      directoryName: "WoofWatcherCredentials",
+      printableLabel: "Dog ID credential source",
+      title: `${credential.name} Dog ID`,
+    });
   };
 
   const buildCarePassFor = (audience: CarePassAudience) =>
@@ -572,41 +620,7 @@ export default function RecordsScreen() {
   const sharePrintableReportArtifact = async (artifact: CarePassArtifact) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const printable = getCarePassArtifactPrintView(artifact);
-    const plan = buildReportArtifactExportFilePlan(printable, {
-      documentDirectory: Platform.OS === "web" ? null : FileSystem.documentDirectory,
-      title: artifact.title,
-    });
-
-    const shareFallback = async () => {
-      const fallbackPlan = buildReportArtifactExportFilePlan(printable, {
-        documentDirectory: null,
-        title: artifact.title,
-      });
-      const fallbackContent = buildReportArtifactShareContent(fallbackPlan);
-      try {
-        await Share.share(fallbackContent);
-      } catch {
-        Alert.alert(fallbackContent.title, fallbackContent.message);
-      }
-    };
-
-    if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
-      try {
-        await FileSystem.makeDirectoryAsync(plan.directoryUri, { intermediates: true });
-        await FileSystem.writeAsStringAsync(plan.fileUri, printable.html, { encoding: FileSystem.EncodingType.UTF8 });
-        const shareUri =
-          Platform.OS === "android"
-            ? await FileSystem.getContentUriAsync(plan.fileUri).catch(() => plan.fileUri)
-            : plan.fileUri;
-        await Share.share(buildReportArtifactShareContent(plan, { shareUri }));
-        return;
-      } catch {
-        await shareFallback();
-        return;
-      }
-    }
-
-    await shareFallback();
+    await sharePrintableSourceFile(printable, { title: artifact.title });
   };
 
   // Mount animation
@@ -962,7 +976,7 @@ export default function RecordsScreen() {
                 <Pressable
                   onPress={sharePrintableCredential}
                   accessibilityRole="button"
-                  accessibilityLabel="Share printable dog ID source"
+                  accessibilityLabel="Share local printable Dog ID source file"
                   hitSlop={MOBILE_INLINE_HIT_SLOP}
                   style={s.shareInline}
                 >
