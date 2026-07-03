@@ -146,10 +146,10 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run smoke:runtime/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run preview:smoke/);
   assert.match(text, /Dependency-complete CI proof:/);
-  assert.match(text, /Recorded branch CI proof: WoofWatcher Verify run 28680310602 passed/);
-  assert.match(text, /job 85062294806/);
+  assert.match(text, /Recorded branch CI proof: WoofWatcher Verify run 28681351681 passed/);
+  assert.match(text, /job 85065319612/);
   assert.match(text, /automation\/premium-revenue-product-builder/);
-  assert.match(text, /commit 0d363de/);
+  assert.match(text, /commit 455d7e1/);
   assert.match(text, /Run mobile beta doctor/);
   assert.match(text, /auth\/setup smoke proof/);
   assert.match(text, /auth\/setup native QA target/);
@@ -157,6 +157,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /provider staged-row truth boundary/);
   assert.match(text, /support legal readiness proof target/);
   assert.match(text, /provider-approved support\/legal launch-readiness wiring/);
+  assert.match(text, /Plus checkout approval truth boundary/);
   assert.match(text, /build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview/);
   assert.match(text, /Rerun WoofWatcher Verify after any new commit before treating dependency proof as current/);
   assert.match(text, /CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off/);
@@ -165,6 +166,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Result: PASS/);
   assert.match(text, /Routes: 19\/19 web-preview shell checks passed/);
   assert.match(text, /\/care-twin-qa\?qaSurface=support-legal-readiness-proof PASS/);
+  assert.match(text, /\/care-twin-qa\?qaSurface=route-visual-consistency PASS/);
   assert.match(text, /Recorded verifier URL: http:\/\/127\.0\.0\.1:\d+\//);
   assert.match(text, /Preview handoff URL: http:\/\/127\.0\.0\.1:4194\/ after preview:smoke is running/);
   assert.match(text, /Attach proof: JSON route proof plus preview:smoke URL\/output/);
