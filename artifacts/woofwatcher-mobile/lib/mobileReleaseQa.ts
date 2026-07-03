@@ -10,6 +10,7 @@ export interface MobileReleaseQaRouteCheck {
   route: string;
   expected: string;
   proof?: string;
+  requiredNativePlatforms?: readonly ("ios" | "android")[];
 }
 
 export interface MobileReleaseQaSurface {
@@ -251,8 +252,18 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     failureEscalation:
       "Mark Needs tune for the first route with crowded hierarchy, clipped copy, duplicate avatar behavior, hidden primary action, bottom-nav overlap, or a visual style that drifts away from the Option B pixel app boards.",
     requiredEvidence: [
-      "iOS screenshot of Home, Log, Plans, Health, Records, and More route tops.",
-      "Android screenshot of Home, Log, Plans, Health, Records, and More route tops.",
+      "iOS screenshot of Home route top.",
+      "Android screenshot of Home route top.",
+      "iOS screenshot of Log route top.",
+      "Android screenshot of Log route top.",
+      "iOS screenshot of Plans route top.",
+      "Android screenshot of Plans route top.",
+      "iOS screenshot of Health route top.",
+      "Android screenshot of Health route top.",
+      "iOS screenshot of Records route top.",
+      "Android screenshot of Records route top.",
+      "iOS screenshot of More route top.",
+      "Android screenshot of More route top.",
       "Note listing the first route with overlap, confusing hierarchy, or mockup drift, or confirming no route-to-route design break was found.",
     ],
     routeChecklist: [
@@ -261,36 +272,42 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         route: "/",
         expected:
           "Phoenix Room, Care Status, Today Command, Today's Missions, and Quick Log read as one planned first screen.",
+        requiredNativePlatforms: ["ios", "android"],
       },
       {
         label: "Log",
         route: "/log",
         expected:
           "Quick Log Flow leads with tap and long-press actions, then the detail dock supports richer logs without taking over the route.",
+        requiredNativePlatforms: ["ios", "android"],
       },
       {
         label: "Plans",
         route: "/calendar",
         expected:
           "Today's Missions gives the owner the next responsibility before Mission Schedule shows the full day.",
+        requiredNativePlatforms: ["ios", "android"],
       },
       {
         label: "Health",
         route: "/health",
         expected:
           "Health Watch stays calm, non-diagnostic, readable, and free of duplicate metric rails or clipped review rows.",
+        requiredNativePlatforms: ["ios", "android"],
       },
       {
         label: "Records",
         route: "/records",
         expected:
           "Vault Command gives clean exits for Dog ID, Record Vault, Care Pass, and Reports before dense record evidence.",
+        requiredNativePlatforms: ["ios", "android"],
       },
       {
         label: "More",
         route: "/more",
         expected:
           "Command Directory maps the app before launch QA, household, provider setup, roster, tools, and diet panels.",
+        requiredNativePlatforms: ["ios", "android"],
       },
     ],
     launchRisk:
@@ -735,6 +752,15 @@ function evidenceRequiresNote(value: string): boolean {
   return normalized.startsWith("note ") || normalized.startsWith("note:") || normalized.includes("note confirming");
 }
 
+export function mobileReleaseQaRouteProofLabel(routeCheck: MobileReleaseQaRouteCheck): string | null {
+  const platforms = routeCheck.requiredNativePlatforms ?? [];
+  if (!platforms.length) return routeCheck.proof ?? null;
+
+  const platformLabel = platforms.map((platform) => (platform === "ios" ? "iOS" : "Android")).join(" + ");
+  const proof = routeCheck.proof ? ` ${routeCheck.proof}` : "";
+  return `${platformLabel} native screenshot required.${proof}`;
+}
+
 function pluralLabel(value: number, label: string): string {
   return `${value} ${label}${value === 1 ? "" : "s"}`;
 }
@@ -922,6 +948,15 @@ export function buildMobileReleaseQaShareText(
     lines.push(`  Steps: ${surface.verificationSteps.join(" ")}`);
     lines.push(`  Pass criteria: ${surface.acceptanceCriteria.join(" ")}`);
     lines.push(`  Needs tune if: ${surface.failureEscalation}`);
+
+    if (surface.routeChecklist?.length) {
+      lines.push("  Route checklist:");
+      for (const routeCheck of surface.routeChecklist) {
+        const routeProof = mobileReleaseQaRouteProofLabel(routeCheck);
+        lines.push(`    - ${routeCheck.label}: ${routeCheck.route} | ${routeCheck.expected}`);
+        if (routeProof) lines.push(`      Proof: ${routeProof}`);
+      }
+    }
 
     if (missingEvidence.length && review.status === "pass") {
       lines.push(`  Missing proof: ${missingEvidence.join(" ")}`);

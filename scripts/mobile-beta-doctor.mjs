@@ -407,12 +407,12 @@ const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileRelease
 ])
   && includesAll(mobileLaunchQaEvidenceSource, [
     "Route loop:",
-    "routeCheck.proof",
+    "mobileReleaseQaRouteProofLabel",
     "Proof:",
   ])
   && includesAll(careTwinQaRouteSource, [
     "Owner route loop",
-    "Proof: {routeCheck.proof}",
+    "mobileReleaseQaRouteProofLabel(routeCheck)",
   ]);
 check(
   "owner-preview Care Pass storage proof is source-backed",

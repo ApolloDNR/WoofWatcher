@@ -552,6 +552,33 @@ test("preserves owner preview route-loop details in the capture plan and share s
   assert.match(text, /Care Pass \(\/records\): Confirm sitter\/vet\/trainer handoff/);
 });
 
+test("expands route visual consistency into route-by-route native screenshot proof", () => {
+  const surfaces = listMobileLaunchQaSurfaces();
+  const routeVisual = surfaces.find((surface) => surface.id === "route-visual-consistency");
+
+  assert.ok(routeVisual);
+
+  const plan = buildMobileLaunchQaCapturePlan(null, [routeVisual]);
+  const target = plan.nextTargets[0];
+
+  assert.equal(target?.surfaceId, "route-visual-consistency");
+  assert.deepEqual(target?.missingEvidence.slice(0, 3), [
+    "Attach 6 iOS screenshots for Route Visual Consistency.",
+    "Attach 6 Android screenshots for Route Visual Consistency.",
+    "Add QA note for Route Visual Consistency.",
+  ]);
+  assert.ok(target?.routeChecklist?.every((item) => item.requiredNativePlatforms?.join(",") === "ios,android"));
+
+  const text = buildMobileLaunchQaCaptureShareText(plan, "2026-07-03T09:30:00.000Z");
+
+  assert.match(text, /Route Visual Consistency/);
+  assert.match(text, /Missing: Attach 6 iOS screenshots for Route Visual Consistency\./);
+  assert.match(text, /Attach 6 Android screenshots for Route Visual Consistency\./);
+  assert.match(text, /Home \(\/\): Phoenix Room/);
+  assert.match(text, /Proof: iOS \+ Android native screenshot required\./);
+  assert.match(text, /More \(\/more\): Command Directory maps the app/);
+});
+
 test("keeps note-required owner preview evidence open until the QA note is written", () => {
   const surfaces = listMobileLaunchQaSurfaces();
   const ownerLoop = surfaces.find((surface) => surface.id === "owner-preview-core-loop");

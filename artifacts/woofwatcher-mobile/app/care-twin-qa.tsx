@@ -32,6 +32,7 @@ import {
   listMobileReleaseQaSurfaces,
   mobileReleaseQaMissingEvidenceForSurface,
   mobileReleaseQaReviewStatusLabel,
+  mobileReleaseQaRouteProofLabel,
   mobileReleaseQaScreenshotEvidenceComplete,
   mobileReleaseQaStatusLabel,
   summarizeMobileReleaseQaReviews,
@@ -704,6 +705,61 @@ export default function CareTwinQaScreen() {
                     }))
                   }
                 />
+                {focusedQaTarget.target.routeChecklist?.length ? (
+                  <View style={[s.betaRunRouteLoop, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.betaRunRouteLoopHeader}>
+                      <Ionicons name="phone-portrait-outline" size={16} color={colors.copper} />
+                      <View style={s.betaRunRouteLoopCopy}>
+                        <Text style={[s.betaRunRouteLoopTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                          Native route targets
+                        </Text>
+                        <Text style={[s.betaRunRouteLoopHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Open each route, capture native proof, then return here to attach it.
+                        </Text>
+                      </View>
+                    </View>
+                    {focusedQaTarget.target.routeChecklist.map((routeCheck, index) => (
+                      <Pressable
+                        key={`focused-${routeCheck.label}-${routeCheck.route}`}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Open focused route target: ${routeCheck.label}`}
+                        onPress={() => openRouteLoopCheck(routeCheck, focusedQaTarget.target)}
+                        style={({ pressed }) => [
+                          s.betaRunRouteLoopRow,
+                          {
+                            backgroundColor: pressed ? `${colors.copper}12` : colors.card,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <View style={[s.betaRunRouteLoopIndex, { backgroundColor: `${colors.copper}18` }]}>
+                          <Text style={[s.betaRunRouteLoopIndexText, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                            {index + 1}
+                          </Text>
+                        </View>
+                        <View style={s.betaRunRouteLoopBody}>
+                          <View style={s.betaRunRouteLoopNameLine}>
+                            <Text style={[s.betaRunRouteLoopName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                              {routeCheck.label}
+                            </Text>
+                            <Text style={[s.betaRunRouteLoopRoute, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                              {routeCheck.route}
+                            </Text>
+                          </View>
+                          <Text style={[s.betaRunRouteLoopExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                            {routeCheck.expected}
+                          </Text>
+                          {mobileReleaseQaRouteProofLabel(routeCheck) ? (
+                            <Text style={[s.betaRunRouteLoopProof, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                              Proof: {mobileReleaseQaRouteProofLabel(routeCheck)}
+                            </Text>
+                          ) : null}
+                        </View>
+                        <Ionicons name="open-outline" size={15} color={colors.copper} />
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
                 <VerificationStepList colors={colors} label="Setup first" steps={focusedQaTarget.target.setupSteps.slice(0, 4)} />
                 <VerificationStepList colors={colors} label="Game-feel checklist" steps={focusedQaTarget.target.verificationSteps.slice(0, 6)} />
                 <VerificationStepList colors={colors} label="Pass when" steps={focusedQaTarget.target.acceptanceCriteria.slice(0, 4)} />
@@ -1013,9 +1069,9 @@ export default function CareTwinQaScreen() {
                         <Text style={[s.betaRunRouteLoopExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                           {routeCheck.expected}
                         </Text>
-                        {routeCheck.proof ? (
+                        {mobileReleaseQaRouteProofLabel(routeCheck) ? (
                           <Text style={[s.betaRunRouteLoopProof, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-                            Proof: {routeCheck.proof}
+                            Proof: {mobileReleaseQaRouteProofLabel(routeCheck)}
                           </Text>
                         ) : null}
                       </View>
@@ -1631,9 +1687,9 @@ export default function CareTwinQaScreen() {
                         <Text style={[s.betaRunRouteLoopExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                           {routeCheck.expected}
                         </Text>
-                        {routeCheck.proof ? (
+                        {mobileReleaseQaRouteProofLabel(routeCheck) ? (
                           <Text style={[s.betaRunRouteLoopProof, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-                            Proof: {routeCheck.proof}
+                            Proof: {mobileReleaseQaRouteProofLabel(routeCheck)}
                           </Text>
                         ) : null}
                       </View>

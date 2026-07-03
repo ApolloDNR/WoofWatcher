@@ -3,6 +3,7 @@ import {
   type MobileLaunchQaCapturePlan,
   type MobileLaunchQaCaptureTarget,
 } from "./mobileLaunchQaEvidence.ts";
+import { mobileReleaseQaRouteProofLabel } from "./mobileReleaseQa.ts";
 import {
   buildMobileQaSessionProofManifestShareText,
   type MobileQaSessionProofManifest,
@@ -78,9 +79,10 @@ function formatCurrentMission(target: MobileLaunchQaCaptureTarget | undefined): 
   if (target.routeChecklist?.length) {
     lines.push("Run order:");
     target.routeChecklist.forEach((routeCheck, index) => {
+      const routeProof = mobileReleaseQaRouteProofLabel(routeCheck);
       lines.push(
         `${index + 1}. ${routeCheck.label} (${routeCheck.route}): ${routeCheck.expected}${
-          routeCheck.proof ? ` Proof: ${routeCheck.proof}` : ""
+          routeProof ? ` Proof: ${routeProof}` : ""
         }`,
       );
     });

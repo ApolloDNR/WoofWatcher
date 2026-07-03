@@ -5,6 +5,7 @@ import {
 import {
   buildStoreSubmissionScreenshotQaSurfaces,
   listMobileReleaseQaSurfaces,
+  mobileReleaseQaRouteProofLabel,
   summarizeMobileReleaseQaReviews,
   type MobileReleaseQaReview,
   type MobileReleaseQaSurface,
@@ -529,9 +530,10 @@ export function buildMobileLaunchQaFocusedTargetShareText(
   if (target.routeChecklist?.length) {
     lines.push("", "Owner route loop:");
     target.routeChecklist.forEach((routeCheck, index) => {
+      const routeProof = mobileReleaseQaRouteProofLabel(routeCheck);
       lines.push(
         `${index + 1}. ${routeCheck.label} (${routeCheck.route}): ${routeCheck.expected}${
-          routeCheck.proof ? ` Proof: ${routeCheck.proof}` : ""
+          routeProof ? ` Proof: ${routeProof}` : ""
         }`,
       );
     });
@@ -591,9 +593,10 @@ export function buildMobileLaunchQaFixBriefShareText(
   if (target.routeChecklist?.length) {
     lines.push("", "Owner route loop:");
     target.routeChecklist.forEach((routeCheck, index) => {
+      const routeProof = mobileReleaseQaRouteProofLabel(routeCheck);
       lines.push(
         `${index + 1}. ${routeCheck.label} (${routeCheck.route}): ${routeCheck.expected}${
-          routeCheck.proof ? ` Proof: ${routeCheck.proof}` : ""
+          routeProof ? ` Proof: ${routeProof}` : ""
         }`,
       );
     });
@@ -667,9 +670,10 @@ export function buildMobileLaunchQaCaptureShareText(
     if (target.routeChecklist?.length) {
       lines.push("   Route loop:");
       target.routeChecklist.forEach((routeCheck, routeIndex) => {
+        const routeProof = mobileReleaseQaRouteProofLabel(routeCheck);
         lines.push(
           `   ${routeIndex + 1}. ${routeCheck.label} (${routeCheck.route}): ${routeCheck.expected}${
-            routeCheck.proof ? ` Proof: ${routeCheck.proof}` : ""
+            routeProof ? ` Proof: ${routeProof}` : ""
           }`,
         );
       });

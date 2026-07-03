@@ -10,6 +10,7 @@ import {
   mobileReleaseQaMissingEvidenceForSurface,
   mobileReleaseQaFlexibleScreenshotSlotsSatisfied,
   mobileReleaseQaReviewStatusLabel,
+  mobileReleaseQaRouteProofLabel,
   mobileReleaseQaScreenshotEvidenceComplete,
   mobileReleaseQaStatusLabel,
   summarizeMobileReleaseQaReviews,
@@ -107,12 +108,26 @@ test("keeps route visual consistency as a launch-critical design QA gate", () =>
   ]);
   assert.match(
     surface.requiredEvidence.join("\n"),
-    /iOS screenshot of Home, Log, Plans, Health, Records, and More route tops/,
+    /iOS screenshot of Home route top/,
   );
   assert.match(
     surface.requiredEvidence.join("\n"),
-    /Android screenshot of Home, Log, Plans, Health, Records, and More route tops/,
+    /Android screenshot of More route top/,
   );
+  assert.equal(
+    surface.requiredEvidence.filter((item) => /iOS screenshot/.test(item)).length,
+    6,
+  );
+  assert.equal(
+    surface.requiredEvidence.filter((item) => /Android screenshot/.test(item)).length,
+    6,
+  );
+  assert.ok(surface.routeChecklist?.every((item) => item.requiredNativePlatforms?.join(",") === "ios,android"));
+  assert.match(mobileReleaseQaRouteProofLabel(surface.routeChecklist?.[0] ?? {
+    label: "missing",
+    route: "/missing",
+    expected: "missing",
+  }) ?? "", /iOS \+ Android native screenshot required/);
 });
 
 test("routes Incident Composer QA into the detail-first incident flow", () => {
