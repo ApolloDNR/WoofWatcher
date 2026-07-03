@@ -413,9 +413,10 @@ check(
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [
   "RECORDED_MOBILE_BETA_CI_PROOF",
-  'runId: "28661364982"',
-  'jobId: "85002511278"',
-  'commit: "38ae755"',
+  'runId: "28663442198"',
+  'jobId: "85009301034"',
+  'commit: "a392ca0"',
+  "auth/setup smoke proof",
   "Recorded branch CI proof:",
   "Rerun WoofWatcher Verify after any new commit before treating dependency proof as current.",
   "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
