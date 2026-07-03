@@ -301,6 +301,17 @@ does not create store accounts, approve screenshots or metadata, submit to App
 Review or Play review, satisfy legal/privacy approval, or replace Apollo launch
 sign-off.
 
+The push notifications proof pass turns the old push one-line proof into a
+source-backed packet. `pushNotificationsProof.ts` now defines Expo push project
+config, APNs credentials, Firebase/FCM credentials, permission prompt and
+preference copy, quiet hours and opt-out behavior, and delivery QA/fallback
+evidence required before reminder delivery can be claimed. Provider Launch
+Setup and Share Beta Handoff print those proof steps under Push notifications,
+and the JSON mobile beta doctor reports `push notifications proof packet is
+source-backed`. This does not configure Expo/APNs/FCM, deliver notifications,
+approve prompt copy, clear native notification QA, or replace Apollo launch
+sign-off.
+
 The two-day beta QA cockpit pass made device capture less fragile. `/care-twin-qa`
 now tags attached screenshot evidence explicitly as iOS, Android, or Web instead
 of relying on the runtime platform, and target routes opened from the cockpit

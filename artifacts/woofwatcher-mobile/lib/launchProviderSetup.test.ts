@@ -139,6 +139,17 @@ test("builds a truthful provider setup plan from a local launch profile", async 
         row.proofChecklist.some((item) => /Reviewer access and test credentials/i.test(item) && /test credentials/i.test(item)),
     ),
   );
+  assert.ok(plan.rows.some((row) => row.key === "push" && /Push notifications proof packet/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "push" && /Expo push project config/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "push" && /APNs credentials/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "push" && /Firebase\/FCM credentials/i.test(row.proofRequired)));
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "push" &&
+        row.proofChecklist.some((item) => /Quiet hours and opt-out behavior/i.test(item) && /opt-out behavior/i.test(item)),
+    ),
+  );
   assert.equal(plan.nextGate?.key, "database");
   assert.match(plan.nextGate?.proofRequired ?? "", /Supabase project id/);
   assert.ok(plan.nextGate?.proofChecklist.some((item) => /mobile incremental/i.test(item)));
@@ -251,6 +262,13 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /Reviewer access and test credentials: reviewer access notes/);
   assert.match(text, /Store screenshots and metadata ownership: store screenshots/);
   assert.match(text, /Release roles and submission approval: release role approval/);
+  assert.match(text, /Push notifications: Push notifications proof packet/);
+  assert.match(text, /Expo push project config: Expo push project id/);
+  assert.match(text, /Apple APNs credentials: APNs credentials/);
+  assert.match(text, /Firebase and FCM credentials: Firebase\/FCM credentials/);
+  assert.match(text, /Permission prompt and preference copy: permission prompt copy/);
+  assert.match(text, /Quiet hours and opt-out behavior: quiet hours/);
+  assert.match(text, /Reminder delivery QA and fallback: delivery QA/);
   assert.match(text, /No App Store or Play Store submission is approved by this checklist/);
 });
 

@@ -253,6 +253,7 @@ const authProviderProofPath = join(mobileRoot, "lib", "authProviderProof.ts");
 const aiProviderProofPath = join(mobileRoot, "lib", "aiProviderProof.ts");
 const accountDeletionProofPath = join(mobileRoot, "lib", "accountDeletionProof.ts");
 const storeAccountsProofPath = join(mobileRoot, "lib", "storeAccountsProof.ts");
+const pushNotificationsProofPath = join(mobileRoot, "lib", "pushNotificationsProof.ts");
 const paymentsProviderProofPath = join(mobileRoot, "lib", "paymentsProviderProof.ts");
 const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
@@ -272,6 +273,7 @@ const authProviderProofSource = existsSync(authProviderProofPath) ? readFileSync
 const aiProviderProofSource = existsSync(aiProviderProofPath) ? readFileSync(aiProviderProofPath, "utf8") : "";
 const accountDeletionProofSource = existsSync(accountDeletionProofPath) ? readFileSync(accountDeletionProofPath, "utf8") : "";
 const storeAccountsProofSource = existsSync(storeAccountsProofPath) ? readFileSync(storeAccountsProofPath, "utf8") : "";
+const pushNotificationsProofSource = existsSync(pushNotificationsProofPath) ? readFileSync(pushNotificationsProofPath, "utf8") : "";
 const paymentsProviderProofSource = existsSync(paymentsProviderProofPath) ? readFileSync(paymentsProviderProofPath, "utf8") : "";
 const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
@@ -593,6 +595,36 @@ check(
   storeAccountsProofPacketIsSourceBacked
     ? "Store submission readiness requires Apple Developer, App Store Connect, Google Play, bundle id, reviewer access, metadata, and release role proof through Provider Launch Setup and Share Beta Handoff"
     : "keep store account proof modeled in storeAccountsProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
+);
+
+const pushNotificationsProofPacketIsSourceBacked = includesAll(pushNotificationsProofSource, [
+  "PUSH_NOTIFICATIONS_PROOF_SUMMARY",
+  "PUSH_NOTIFICATIONS_PROOF_ITEMS",
+  "Push notifications proof packet",
+  "Expo push project config",
+  "APNs credentials",
+  "Firebase/FCM credentials",
+  "permission prompt copy",
+  "quiet hours",
+  "opt-out behavior",
+  "delivery QA",
+])
+  && includesAll(launchProviderSetupSource, [
+    "PUSH_NOTIFICATIONS_PROOF_SUMMARY",
+    "PUSH_NOTIFICATIONS_PROOF_ITEMS",
+    "Push notifications",
+    "pushNotificationsConfigured",
+  ])
+  && includesAll(betaHandoffPacketSource, [
+    "Provider proof needed:",
+    "formatProviderProof",
+  ]);
+check(
+  "push notifications proof packet is source-backed",
+  pushNotificationsProofPacketIsSourceBacked,
+  pushNotificationsProofPacketIsSourceBacked
+    ? "Push readiness requires Expo, APNs, FCM, permission copy, quiet hours, opt-out, and delivery QA proof through Provider Launch Setup and Share Beta Handoff"
+    : "keep push notification proof modeled in pushNotificationsProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [

@@ -229,6 +229,13 @@ Current environment note:
   approval before store submission can be claimed. Share Beta Handoff prints
   those proof steps, but this does not create store accounts, approve metadata,
   submit the app, satisfy App Review or Play review, or replace Apollo approval.
+- Provider Launch Setup's Push notifications gate now carries a `Push
+  notifications proof packet` requiring Expo push project config, APNs
+  credentials, Firebase/FCM credentials, permission prompt copy, quiet hours,
+  opt-out behavior, and delivery QA before reminder delivery can be claimed.
+  Share Beta Handoff prints those proof steps, but this does not configure push
+  providers, deliver notifications, approve permission copy, or replace native
+  iOS/Android notification QA and Apollo signoff.
 - The Release Smoke Checklist and Share Beta Handoff now name the focused
   Records handoff target at `/care-twin-qa?qaSurface=records-local-file-handoff`,
   including Care Pass local HTML, Dog ID local HTML, Dog ID SVG, share-sheet

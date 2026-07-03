@@ -27,6 +27,10 @@ import {
   PAYMENTS_PROVIDER_PROOF_ITEMS,
   PAYMENTS_PROVIDER_PROOF_SUMMARY,
 } from "./paymentsProviderProof.ts";
+import {
+  PUSH_NOTIFICATIONS_PROOF_ITEMS,
+  PUSH_NOTIFICATIONS_PROOF_SUMMARY,
+} from "./pushNotificationsProof.ts";
 
 export type LaunchProviderSetupStatus = "local-draft" | "owner-reviewed" | "provider-approved";
 
@@ -224,7 +228,8 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Reminder notifications are configured for production QA and store privacy disclosures.",
     blockedDetail: "Reminder Center can run in-app, but production push reminders are not configured.",
     nextAction: "Configure Expo push, Apple APNs, Firebase/FCM, permissions copy, quiet hours, and opt-out behavior.",
-    proofRequired: "Expo push project config, APNs/FCM credentials, permission prompt copy, quiet-hours setting, and opt-out QA evidence.",
+    proofRequired: PUSH_NOTIFICATIONS_PROOF_SUMMARY,
+    proofChecklist: PUSH_NOTIFICATIONS_PROOF_ITEMS.map((item) => `${item.label}: ${item.requiredEvidence}`),
   },
   {
     key: "storeAccounts",

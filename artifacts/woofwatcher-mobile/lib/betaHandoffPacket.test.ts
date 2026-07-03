@@ -230,6 +230,13 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Reviewer access and test credentials: reviewer access notes/);
   assert.match(text, /Store screenshots and metadata ownership: store screenshots/);
   assert.match(text, /Release roles and submission approval: release role approval/);
+  assert.match(text, /Push notifications: Push notifications proof packet/);
+  assert.match(text, /Expo push project config: Expo push project id/);
+  assert.match(text, /Apple APNs credentials: APNs credentials/);
+  assert.match(text, /Firebase and FCM credentials: Firebase\/FCM credentials/);
+  assert.match(text, /Permission prompt and preference copy: permission prompt copy/);
+  assert.match(text, /Quiet hours and opt-out behavior: quiet hours/);
+  assert.match(text, /Reminder delivery QA and fallback: delivery QA/);
   assert.match(text, /Provider proof does not approve App Store, Play Store, payment, AI, storage, or database readiness/);
   assert.match(text, /Done condition: capture required iOS\/Android proof, save the Mission note, clear Pass pending proof, then share the QA summary/);
   assert.match(text, /Truth boundaries:/);
