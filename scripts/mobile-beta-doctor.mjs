@@ -90,6 +90,7 @@ const handoffProofSections = [
   "Dependency proof commands",
   "Dependency-complete CI proof",
   "Live preview handoff proof",
+  "Recorded live preview proof",
   "Required beta proof after export",
   "Native QA Needs tune fix brief",
   "Provider proof needed",
@@ -260,6 +261,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "buildMobileReleaseSmokeChecklistShareText",
   "Dependency proof commands:",
   "Dependency-complete CI proof:",
+  "Recorded live preview proof:",
   "Dependency proof requires a real PATH pnpm at 10.24.0; do not use a bundled pnpm 11.x candidate.",
   "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
   "Required beta proof after export:",
@@ -274,6 +276,8 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   && mobileReleaseSmokeChecklistSource.includes("pnpm --filter @workspace/woofwatcher-mobile run preview:smoke")
   && /RECORDED_MOBILE_BETA_CI_PROOF/.test(moreRouteSource)
   && /ciProof:\s*RECORDED_MOBILE_BETA_CI_PROOF/.test(moreRouteSource)
+  && /RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(moreRouteSource)
+  && /livePreviewProof:\s*RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(moreRouteSource)
   && /providerSetupPlan:\s*launchProviderSetupPlan/.test(moreRouteSource)
   && /Share Beta Handoff/.test(moreRouteSource);
 check(
@@ -379,6 +383,27 @@ check(
   recordedCiProofFreshnessBoundaryIsSourceBacked
     ? "Recorded CI proof names the latest recorded branch run while requiring a rerun after new commits"
     : "keep recorded CI proof labeled as historical branch evidence with a rerun-after-new-commit boundary",
+);
+
+const recordedLivePreviewProofAttachmentIsSourceBacked = includesAll(betaHandoffPacketSource, [
+  "RECORDED_LIVE_PREVIEW_HANDOFF_PROOF",
+  'title: "WoofWatcher Live Preview Handoff Proof"',
+  'commit: "8275b66"',
+  "Recorded live preview proof:",
+  "Routes: ${passCount}/${totalCount} web-preview shell checks passed.",
+  "Attach proof: JSON route proof plus preview:smoke URL/output before claiming preview handoff.",
+  "Rerun proof:live-preview after any new commit or export before treating preview proof as current.",
+  "Live preview proof does not replace native iOS/Android proof.",
+])
+  && /RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(moreRouteSource)
+  && /livePreviewProof:\s*RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/.test(moreRouteSource)
+  && handoffProofSections.includes("Recorded live preview proof");
+check(
+  "recorded live preview proof attachment is source-backed",
+  recordedLivePreviewProofAttachmentIsSourceBacked,
+  recordedLivePreviewProofAttachmentIsSourceBacked
+    ? "Share Beta Handoff carries recorded live preview route proof with a rerun-after-new-commit boundary"
+    : "keep recorded live preview proof wired through betaHandoffPacket.ts, More, and the doctor handoff sections",
 );
 
 const ownerPreviewProofWiringIsSourceBacked = includesAll(mobileLaunchQaEvidenceSource, [

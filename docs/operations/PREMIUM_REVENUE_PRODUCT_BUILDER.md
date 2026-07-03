@@ -2769,6 +2769,22 @@ still blocks only on local pnpm `11.7.0` versus pinned `10.24.0`, with Corepack
 not on PATH. This is web preview route proof only, not native device proof,
 provider approval, store approval, public launch, or Apollo sign-off.
 
+The recorded live-preview proof attachment pass puts recorded local
+`proof:live-preview` JSON evidence directly into Share Beta Handoff. The packet
+now prints a `Recorded live preview proof` section with the `9/9` route result,
+the recorded disposable verifier URL, the foreground `http://127.0.0.1:4194/`
+`preview:smoke` URL, export index mtime, route statuses, and rerun-after-new
+commit/export boundary. More passes that proof into the one-tap packet, and the
+JSON mobile beta doctor verifies `recorded live preview proof attachment is
+source-backed`. Fresh local verification passed the red/green beta handoff and
+readiness tests `116/116`, the broader API/mobile/PWA/care-domain suite
+`523/523`, mobile TypeScript, `tsc --build`, Expo web export with 219 assets /
+223 files, runtime smoke for 11 routes, direct live preview proof for 9 routes,
+and `git diff --check` with expected Windows CRLF warnings only. Direct JSON
+doctor still blocks only on local pnpm `11.7.0` versus pinned `10.24.0`, with
+Corepack not on PATH. This is recorded web-preview proof only, not native device
+proof, provider approval, store approval, public launch, or Apollo sign-off.
+
 The recorded CI proof freshness pass keeps Share Beta Handoff from treating a
 historical branch run as current proof after later commits. The recorded proof
 now points to `WoofWatcher Verify` run `28657836139`, job `84991128098`, commit

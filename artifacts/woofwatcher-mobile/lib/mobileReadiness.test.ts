@@ -4558,6 +4558,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(more, /RECORDED_MOBILE_BETA_CI_PROOF/);
   assert.match(more, /ciProof:\s*RECORDED_MOBILE_BETA_CI_PROOF/);
+  assert.match(more, /RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/);
+  assert.match(more, /livePreviewProof:\s*RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/);
   assert.match(
     more,
     /Share\.share\(\{ message,\s*title:\s*"WoofWatcher 48-Hour Beta Handoff" \}/,
@@ -5044,6 +5046,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     "Dependency proof commands",
     "Dependency-complete CI proof",
     "Live preview handoff proof",
+    "Recorded live preview proof",
     "Required beta proof after export",
     "Native QA Needs tune fix brief",
     "Provider proof needed",
@@ -5153,6 +5156,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "recorded CI proof freshness boundary is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "recorded live preview proof attachment is source-backed" &&
         check.status === "PASS",
     ),
   );

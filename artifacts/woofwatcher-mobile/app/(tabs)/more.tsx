@@ -49,6 +49,7 @@ import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRo
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
   buildBetaHandoffPacketShareText,
+  RECORDED_LIVE_PREVIEW_HANDOFF_PROOF,
   RECORDED_MOBILE_BETA_CI_PROOF,
 } from "@/lib/betaHandoffPacket";
 import {
@@ -1095,6 +1096,7 @@ export default function MoreScreen() {
     const message = buildBetaHandoffPacketShareText(launchReleasePacket, nativeQaCapturePlan, {
       generatedAtIso,
       ciProof: RECORDED_MOBILE_BETA_CI_PROOF,
+      livePreviewProof: RECORDED_LIVE_PREVIEW_HANDOFF_PROOF,
       providerSetupPlan: launchProviderSetupPlan,
       proofManifest: savedQaProofManifest,
     });

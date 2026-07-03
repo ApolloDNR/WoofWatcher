@@ -198,6 +198,13 @@ Current environment note:
   proof, `proof:live-preview` JSON route proof, `preview:smoke` output,
   `http://127.0.0.1:4194/`, and browser-open evidence while saying live preview
   proof does not replace native iOS/Android proof.
+- Share Beta Handoff now also carries a `Recorded live preview proof` section
+  from a recorded local `proof:live-preview` run: `9/9` web-preview route shell
+  checks passed against the regenerated `.expo-smoke` export. The recorded
+  verifier URL is disposable; the review handoff URL remains
+  `http://127.0.0.1:4194/` after `preview:smoke` is running. Rerun branch CI and
+  `proof:live-preview` after new commits/exports before treating this proof as
+  current, and do not use it as native iOS/Android proof.
 - Provider Launch Setup now also shows a proof-needed checklist for every
   production provider gate in More and in the share packet: Clerk, Supabase/RLS,
   storage signed uploads, WoofGuide AI policy, payments, push, Apple/Google

@@ -30,6 +30,22 @@ export interface MobileBetaCiProof {
   coverage: string;
 }
 
+export interface MobileLivePreviewHandoffProof {
+  title: "WoofWatcher Live Preview Handoff Proof";
+  generatedAtIso: string;
+  result: "PASS" | "BLOCKED";
+  baseUrl: string;
+  commit: string;
+  exportIndexMtimeIso: string;
+  routeChecks: readonly {
+    route: string;
+    status: "PASS" | "BLOCKED";
+    detail: string;
+  }[];
+  truthBoundaries: readonly string[];
+  nextActions: readonly string[];
+}
+
 export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
   workflowName: "WoofWatcher Verify",
   runId: "28657836139",
@@ -48,11 +64,54 @@ export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
   coverage: "pinned pnpm 10.24.0, JSON mobile beta doctor, focused tests, build:ci, mobile smoke:web and smoke:runtime",
 };
 
+export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof = {
+  title: "WoofWatcher Live Preview Handoff Proof",
+  generatedAtIso: "2026-07-03T12:19:18.055Z",
+  result: "PASS",
+  baseUrl: "http://127.0.0.1:53642/",
+  commit: "8275b66",
+  exportIndexMtimeIso: "2026-07-03T12:18:55.019Z",
+  routeChecks: [
+    { route: "/", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
+    { route: "/log", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
+    { route: "/calendar", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
+    { route: "/health", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
+    { route: "/records", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
+    { route: "/more", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
+    {
+      route: "/care-twin-qa?qaSurface=records-local-file-handoff",
+      status: "PASS",
+      detail: "200 text/html; charset=utf-8; Expo web entry present",
+    },
+    {
+      route: "/care-twin-qa?qaSurface=report-binary-export-proof",
+      status: "PASS",
+      detail: "200 text/html; charset=utf-8; Expo web entry present",
+    },
+    {
+      route: "/care-twin-qa?qaSurface=route-visual-consistency",
+      status: "PASS",
+      detail: "200 text/html; charset=utf-8; Expo web entry present",
+    },
+  ],
+  truthBoundaries: [
+    "Live preview proof is web preview only and does not replace native iOS/Android proof.",
+    "Live preview proof does not approve provider-backed storage, sync, AI, payments, push, store approval, public launch, or Apollo sign-off.",
+    ".expo-smoke metadata does not prove the export was produced from the current commit; keep branch CI and export logs attached.",
+  ],
+  nextActions: [
+    "Attach this JSON, the preview URL, and the preview:smoke terminal output to Share Beta Handoff without claiming native QA.",
+    "Run WoofWatcher Verify after each new commit before treating dependency proof as current.",
+    "Run native iOS/Android proof targets separately for Records local files, route visual consistency, and generated PDF/PNG artifacts.",
+  ],
+};
+
 export type BetaHandoffPacketOptions =
   | string
   | {
       generatedAtIso?: string;
       ciProof?: MobileBetaCiProof | null;
+      livePreviewProof?: MobileLivePreviewHandoffProof | null;
       providerSetupPlan?: LaunchProviderSetupPlan;
       proofManifest?: MobileQaSessionProofManifest | null;
     };
@@ -65,6 +124,7 @@ function formatList(items: readonly string[], fallback: string): string {
 function normalizeOptions(input: BetaHandoffPacketOptions | undefined): {
   generatedAtIso: string;
   ciProof?: MobileBetaCiProof | null;
+  livePreviewProof?: MobileLivePreviewHandoffProof | null;
   providerSetupPlan?: LaunchProviderSetupPlan;
   proofManifest?: MobileQaSessionProofManifest | null;
 } {
@@ -72,6 +132,7 @@ function normalizeOptions(input: BetaHandoffPacketOptions | undefined): {
   return {
     generatedAtIso: input?.generatedAtIso ?? new Date().toISOString(),
     ciProof: input?.ciProof,
+    livePreviewProof: input?.livePreviewProof,
     providerSetupPlan: input?.providerSetupPlan,
     proofManifest: input?.proofManifest,
   };
@@ -92,6 +153,33 @@ function formatCiProof(proof: MobileBetaCiProof | null | undefined): string[] {
     `- Covers: ${proof.coverage}.`,
     "- Rerun WoofWatcher Verify after any new commit before treating dependency proof as current.",
     "- CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
+  ];
+}
+
+function formatLivePreviewProof(proof: MobileLivePreviewHandoffProof | null | undefined): string[] {
+  if (!proof) {
+    return [
+      "- No live preview route proof is attached; run pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview after smoke:web and smoke:runtime.",
+      "- Attach JSON route proof plus preview:smoke URL/output before claiming live preview handoff proof.",
+      "- Live preview proof does not replace native iOS/Android proof.",
+    ];
+  }
+
+  const passCount = proof.routeChecks.filter((check) => check.status === "PASS").length;
+  const totalCount = proof.routeChecks.length;
+
+  return [
+    `- Recorded live preview proof: ${proof.title} generated ${proof.generatedAtIso} on commit ${proof.commit}.`,
+    `- Result: ${proof.result}. Routes: ${passCount}/${totalCount} web-preview shell checks passed.`,
+    `- Recorded verifier URL: ${proof.baseUrl}`,
+    "- Preview handoff URL: http://127.0.0.1:4194/ after preview:smoke is running.",
+    `- Export index mtime: ${proof.exportIndexMtimeIso}`,
+    `- Route checks: ${proof.routeChecks.map((check) => `${check.route} ${check.status}`).join("; ")}.`,
+    "- Attach proof: JSON route proof plus preview:smoke URL/output before claiming preview handoff.",
+    "- Rerun proof:live-preview after any new commit or export before treating preview proof as current.",
+    "- Live preview proof does not replace native iOS/Android proof.",
+    ...proof.truthBoundaries.map((boundary) => `- ${boundary}`),
+    ...proof.nextActions.map((action) => `- Next: ${action}`),
   ];
 }
 
@@ -165,7 +253,8 @@ export function buildBetaHandoffPacketShareText(
   capturePlan: MobileLaunchQaCapturePlan,
   optionsOrGeneratedAt?: BetaHandoffPacketOptions,
 ): string {
-  const { generatedAtIso, ciProof, providerSetupPlan, proofManifest } = normalizeOptions(optionsOrGeneratedAt);
+  const { generatedAtIso, ciProof, livePreviewProof, providerSetupPlan, proofManifest } =
+    normalizeOptions(optionsOrGeneratedAt);
   const currentMission = capturePlan.nextTargets[0];
   const releaseSmokeChecklist = buildMobileReleaseSmokeChecklist(releasePacket, capturePlan, {
     generatedAtIso,
@@ -202,6 +291,9 @@ export function buildBetaHandoffPacketShareText(
     "",
     "Dependency-complete CI proof:",
     ...formatCiProof(ciProof),
+    "",
+    "Recorded live preview proof:",
+    ...formatLivePreviewProof(livePreviewProof),
     "",
     "Required beta proof after export:",
     "- Open /care-twin-qa on iOS and Android before sharing beta proof.",

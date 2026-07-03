@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildBetaHandoffPacketShareText,
+  RECORDED_LIVE_PREVIEW_HANDOFF_PROOF,
   RECORDED_MOBILE_BETA_CI_PROOF,
 } from "./betaHandoffPacket.ts";
 import { deriveLaunchProviderSetup } from "./launchProviderSetup.ts";
@@ -106,6 +107,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   const text = buildBetaHandoffPacketShareText(releasePacket, qaPlan, {
     generatedAtIso: "2026-06-25T12:05:00.000Z",
     ciProof: RECORDED_MOBILE_BETA_CI_PROOF,
+    livePreviewProof: RECORDED_LIVE_PREVIEW_HANDOFF_PROOF,
     providerSetupPlan,
   });
 
@@ -152,6 +154,14 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /mobile smoke:web and smoke:runtime/);
   assert.match(text, /Rerun WoofWatcher Verify after any new commit before treating dependency proof as current/);
   assert.match(text, /CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off/);
+  assert.match(text, /Recorded live preview proof:/);
+  assert.match(text, /WoofWatcher Live Preview Handoff Proof/);
+  assert.match(text, /Result: PASS/);
+  assert.match(text, /Routes: 9\/9 web-preview shell checks passed/);
+  assert.match(text, /Recorded verifier URL: http:\/\/127\.0\.0\.1:\d+\//);
+  assert.match(text, /Preview handoff URL: http:\/\/127\.0\.0\.1:4194\/ after preview:smoke is running/);
+  assert.match(text, /Attach proof: JSON route proof plus preview:smoke URL\/output/);
+  assert.match(text, /Live preview proof does not replace native iOS\/Android proof/);
   assert.match(text, /Dependency proof only counts when both doctor commands report no blockers/);
   assert.match(text, /Dependency proof requires a real PATH pnpm at 10\.24\.0; do not use a bundled pnpm 11\.x candidate/);
   assert.match(text, /Required beta proof after export:/);
