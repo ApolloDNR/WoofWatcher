@@ -74,17 +74,29 @@ test("root focused tests include API readiness so backend contracts do not drift
   );
 });
 
-test("care entries list limit query stays documented and typed", () => {
+test("care entries list query stays documented, typed, and validation-aware", () => {
   const route = read("artifacts/api-server/src/routes/care-entries.ts");
+  const queryHelper = read("artifacts/api-server/src/lib/care-entry-query.ts");
   const openapi = read("lib/api-spec/openapi.yaml");
   const reactSchemas = read("lib/api-client-react/src/generated/api.schemas.ts");
   const zodSchemas = read("lib/api-zod/src/generated/api.ts");
   const zodTypes = read("lib/api-zod/src/generated/types/listCareEntriesParams.ts");
+  const listCareEntriesBlock = section(
+    openapi,
+    "    get:\n      operationId: listCareEntries",
+    "    post:\n      operationId: createCareEntry",
+  );
 
-  assert.match(route, /req\.query\.limit/, "care-entries route should still read the limit query");
+  assert.match(route, /normalizeListCareEntriesQuery\(req\.query\)/, "care-entries route should use the shared query normalizer");
+  assert.match(queryHelper, /Invalid since query/, "care-entry list query should reject malformed incremental sync timestamps");
+  assert.match(listCareEntriesBlock, /name:\s+since/, "OpenAPI must document the care-entries since query");
   assert.match(openapi, /name:\s+limit/, "OpenAPI must document the care-entries limit query");
+  assert.match(listCareEntriesBlock, /"400":/, "OpenAPI must document invalid care-entry list query errors");
+  assert.match(reactSchemas, /since\?:\s*string/, "React API client must type the care-entries since query");
   assert.match(reactSchemas, /limit\?:\s*number/, "React API client must type the care-entries limit query");
+  assert.match(zodTypes, /since\?:\s*Date/, "Zod generated param types must type the care-entries since query");
   assert.match(zodTypes, /limit\?:\s*number/, "Zod generated param types must type the care-entries limit query");
+  assert.match(zodSchemas, /"since":\s*zod\.date\(\)\.optional\(\)/, "Zod generated validator must validate the care-entries since query");
   assert.match(zodSchemas, /"limit":\s*zod\.number\(\)/, "Zod generated validator must validate the care-entries limit query");
 });
 

@@ -21,36 +21,34 @@ import {
   applyCareEntryWritePolicy,
   assertCareEntryWriteAllowed,
 } from "../lib/care-entry-authorization";
+import { normalizeListCareEntriesQuery } from "../lib/care-entry-query";
 
 const router: IRouter = Router();
 
 router.get("/care-entries", requireAuth, async (req, res): Promise<void> => {
   const userId = getUserId(req);
   const householdId = await getActiveHouseholdId(userId);
+  const query = normalizeListCareEntriesQuery(req.query);
+  if (!query.ok) {
+    res.status(query.status).json({ error: query.error });
+    return;
+  }
 
-  const sinceRaw = Array.isArray(req.query.since)
-    ? req.query.since[0]
-    : req.query.since;
-  const since =
-    typeof sinceRaw === "string" ? new Date(sinceRaw) : undefined;
-  const hasSince = since != null && !Number.isNaN(since.getTime());
+  const since = query.since;
 
-  const where = hasSince
+  const where = since
     ? and(
         eq(careEntriesTable.householdId, householdId),
         gte(careEntriesTable.occurredAt, since),
       )
     : eq(careEntriesTable.householdId, householdId);
 
-  const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
-  const limit = Math.min(500, Math.max(1, parseInt(typeof limitRaw === "string" ? limitRaw : "250", 10) || 250));
-
   const rows = await db
     .select()
     .from(careEntriesTable)
     .where(where)
     .orderBy(desc(careEntriesTable.occurredAt))
-    .limit(limit);
+    .limit(query.limit);
 
   res.json(ListCareEntriesResponse.parse(rows));
 });

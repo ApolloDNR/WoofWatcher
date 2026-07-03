@@ -1161,3 +1161,31 @@ Latest local evidence, 2026-06-28:
   `ok=149 missing=0 invalid=0`, package-local Expo web export to `.expo-smoke`,
   preview root `HEAD 200`, focused QA route `HEAD 200`, and `git diff --check`
   with expected Windows CRLF warnings only.
+
+## Care Entries Incremental Sync Query Proof
+
+Latest local evidence, 2026-07-03:
+
+- `/care-entries` list queries now use a shared API normalizer before provider
+  sync relies on incremental pulls.
+- Valid `since` date-time strings preserve incremental household log reads, and
+  `limit` still clamps to the safe 1-500 range.
+- Malformed or blank `since` values now return a typed `400` with
+  `Invalid since query. Use an ISO date-time string.` instead of silently
+  widening to the full household care log.
+- OpenAPI documents the invalid-query response, and API readiness protects the
+  route/helper/spec/generated-client contract for `since`, `limit`, and the
+  `400` error surface.
+- Red/green proof first failed with `ERR_MODULE_NOT_FOUND` for the missing
+  `care-entry-query.ts` helper, then passed after the helper and route wiring
+  were added.
+- Focused proof passed `careEntryQuery.test.ts` plus `apiReadiness.test.ts`
+  with `19/19` tests. Broader proof passed the API/mobile/care-domain suite
+  with `489/489` tests.
+- API TypeScript passed after prepending bundled Node to `PATH`.
+- JSON mobile beta doctor source-backed checks still pass, but the result
+  remains truthfully `BLOCKED` only because local pnpm is `11.7.0` while the
+  repo is pinned to `10.24.0`.
+- API build remains locally blocked by the existing dependency layer:
+  `@esbuild/win32-x64` is missing from `node_modules`. Re-run after dependency
+  install/build proof exists in a pinned `pnpm@10.24.0` environment.

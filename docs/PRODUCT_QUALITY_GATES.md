@@ -88,10 +88,11 @@ Passing evidence:
 - API server typechecks and builds in CI.
 - API includes auth, household, care state, care entries, health, avatar, and WoofGuide-related routes.
 - Production CORS is documented and guarded.
+- Care-entry list queries now have a tested shared normalizer that preserves valid incremental `since` pulls, clamps `limit`, rejects malformed `since` values with a typed `400`, and keeps OpenAPI/generated-client readiness aligned.
 
 Current gaps:
 
-- Need integration tests for authenticated household-scoped routes.
+- Need broader integration tests for authenticated household-scoped routes.
 - Need storage for record documents and generated reports.
 - Need provider-backed role-aware permissions beyond existing care-entry and household helper APIs, broader audit trail policy for documents/accounts, provider migration/RLS/retention rules for household audit rows, scheduled or owner-facing cleanup for expired Access Pass helper memberships, and provider-backed data export/delete paths. Request-time helper expiry enforcement exists now.
 - Need deeper multi-device conflict policy, server-backed delete/edit retention rules, and native offline recovery QA.
@@ -142,11 +143,12 @@ Passing evidence:
 - GitHub Actions `WoofWatcher Verify` passes on `main`.
 - CI installs with frozen lockfile, runs focused tests, typechecks, builds API, builds web prototype, and builds mockup sandbox.
 - Local zero-dependency focused tests can run with bundled Node.
+- Local API parser/readiness proof now covers the care-entry incremental sync query contract.
 
 Current gaps:
 
-- Local environment does not currently have pnpm/node_modules installed in this Codex checkout.
-- Need API integration tests.
+- Local dependency layer still blocks API build proof in this Codex checkout because `@esbuild/win32-x64` is missing from `node_modules`, and the local pnpm CLI is `11.7.0` while the repo is pinned to `10.24.0`.
+- Need broader API integration tests.
 - Need mobile runtime smoke.
 - Critical mobile action accessibility labels are covered by focused static smoke.
 - Home avatar motion state and wiring are covered by focused tests.

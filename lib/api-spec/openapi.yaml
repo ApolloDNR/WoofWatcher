@@ -904,6 +904,12 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CareEntry"
+        "400":
+          description: Invalid care-entry list query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "401":
           description: Unauthorized
           content:
