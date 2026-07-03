@@ -36,6 +36,8 @@ test("builds preview-only handoff proof from served route results", () => {
     proof.routes,
     [
       "/",
+      "/sign-in",
+      "/setup",
       "/log",
       "/calendar",
       "/health",
@@ -55,6 +57,8 @@ test("builds preview-only handoff proof from served route results", () => {
   assert.match(text, /WoofWatcher Live Preview Handoff Proof/);
   assert.match(text, /Result: PASS/);
   assert.match(text, /http:\/\/127\.0\.0\.1:4194\//);
+  assert.match(text, /\/sign-in/);
+  assert.match(text, /\/setup/);
   assert.match(text, /route-visual-consistency/);
   assert.match(text, /care-entry-provider-sync-proof/);
   assert.match(text, /web preview only/);

@@ -114,9 +114,9 @@ Shippable for internal beta after local verification passes:
   and lists `/care-twin-qa?qaSurface=records-local-file-handoff` in next
   actions before helpers claim Records local-file proof.
 - `pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime` verifies the
-  exported `.expo-smoke` runtime for Home, Log, Plans, Health, Records, More,
-  Care Twin QA, WoofGuide, Premium, Privacy, and Avatar Studio before preview
-  handoff.
+  exported `.expo-smoke` runtime for Sign-in, Setup, Home, Log, Plans, Health,
+  Records, More, Care Twin QA, WoofGuide, Premium, Privacy, and Avatar Studio
+  before preview handoff.
 - `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` serves the
   exact `.expo-smoke` export at `http://127.0.0.1:4194/`; keep that terminal
   open while Apollo, Fable, Replit, or device QA reviews the build.
@@ -158,16 +158,23 @@ Current environment note:
   treating dependency proof as current, while keeping native screenshots,
   provider setup, store approval, and Apollo sign-off blocked.
 - The mobile package now has a `smoke:runtime` alias that starts a disposable
-  static runtime over `.expo-smoke`, verifies 11 exported mobile routes return
-  the Expo web shell, and exits without leaving a server running.
+  static runtime over `.expo-smoke`, verifies 13 exported mobile routes return
+  the Expo web shell, including `/sign-in` and `/setup`, and exits without
+  leaving a server running.
 - The mobile package now has `preview:smoke` and `preview:web` aliases for the
   no-dependency static server, both pinned to port `4194`, and the root
   `preview:mobile-beta` command points to the same handoff path.
 - The mobile package also has `proof:live-preview`, which starts a disposable
-  static preview server over `.expo-smoke`, verifies 10 launch-critical preview
-  routes return the Expo web shell, and emits JSON proof with web-preview-only
-  truth boundaries before helpers keep `preview:smoke` open for human review.
-  Root `build:ci` runs it after `smoke:web` and `smoke:runtime`.
+  static preview server over `.expo-smoke`, verifies 12 launch-critical preview
+  routes return the Expo web shell, including `/sign-in` and `/setup`, and emits
+  JSON proof with web-preview-only truth boundaries before helpers keep
+  `preview:smoke` open for human review. Root `build:ci` runs it after
+  `smoke:web` and `smoke:runtime`.
+- The Release Smoke Checklist now has an `Auth and setup route smoke` proof row,
+  and the JSON doctor reports `auth/setup runtime smoke proof is source-backed`
+  when `smoke:runtime`, `proof:live-preview`, and the checklist all cover
+  `/sign-in` plus `/setup` without claiming provider-backed auth or household
+  creation.
 - The in-app `Share Beta Handoff` packet now repeats the exact dependency proof
   commands and warns that dependency proof only counts when both doctor commands
   report no blockers.

@@ -198,6 +198,14 @@ export function buildMobileReleaseSmokeChecklist(
             status: "required",
           },
           {
+            label: "Auth and setup route smoke",
+            detail:
+              "Confirm /sign-in and /setup return the Expo web shell in smoke:runtime and proof:live-preview before account or onboarding handoff.",
+            proof:
+              "Attach smoke:runtime and proof:live-preview output showing /sign-in and /setup passing; this does not prove provider-backed auth or household creation.",
+            status: "required",
+          },
+          {
             label: "Preview truth boundary",
             detail:
               "Use preview proof for live review and visual triage only; live preview proof does not replace native iOS/Android proof.",

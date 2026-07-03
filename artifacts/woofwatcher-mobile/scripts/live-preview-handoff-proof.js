@@ -12,6 +12,8 @@ const exportIndexPath = path.join(exportRoot, "index.html");
 
 const LIVE_PREVIEW_HANDOFF_ROUTES = [
   "/",
+  "/sign-in",
+  "/setup",
   "/log",
   "/calendar",
   "/health",

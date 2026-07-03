@@ -289,6 +289,8 @@ test("keeps exported mobile runtime route smoke wired into CI", () => {
   const routes = JSON.parse(routeList.stdout) as string[];
   assert.deepEqual(routes, [
     "/",
+    "/sign-in",
+    "/setup",
     "/log",
     "/calendar",
     "/health",
@@ -5264,6 +5266,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "live preview handoff verifier is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "auth/setup runtime smoke proof is source-backed" &&
         check.status === "PASS",
     ),
   );

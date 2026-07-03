@@ -7,6 +7,8 @@ const root = path.resolve(projectRoot, ".expo-smoke");
 
 const MOBILE_RUNTIME_SMOKE_ROUTES = [
   "/",
+  "/sign-in",
+  "/setup",
   "/log",
   "/calendar",
   "/health",

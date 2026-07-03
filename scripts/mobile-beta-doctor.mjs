@@ -244,6 +244,7 @@ const betaHandoffPacketPath = join(mobileRoot, "lib", "betaHandoffPacket.ts");
 const mobileLaunchQaEvidencePath = join(mobileRoot, "lib", "mobileLaunchQaEvidence.ts");
 const mobileReleaseQaPath = join(mobileRoot, "lib", "mobileReleaseQa.ts");
 const mobileReleaseSmokeChecklistPath = join(mobileRoot, "lib", "mobileReleaseSmokeChecklist.ts");
+const runtimeSmokePreviewPath = join(mobileRoot, "scripts", "smoke-runtime-preview.js");
 const livePreviewHandoffProofPath = join(mobileRoot, "scripts", "live-preview-handoff-proof.js");
 const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
 const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts");
@@ -257,6 +258,7 @@ const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync
 const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath) ? readFileSync(mobileLaunchQaEvidencePath, "utf8") : "";
 const mobileReleaseQaSource = existsSync(mobileReleaseQaPath) ? readFileSync(mobileReleaseQaPath, "utf8") : "";
 const mobileReleaseSmokeChecklistSource = existsSync(mobileReleaseSmokeChecklistPath) ? readFileSync(mobileReleaseSmokeChecklistPath, "utf8") : "";
+const runtimeSmokePreviewSource = existsSync(runtimeSmokePreviewPath) ? readFileSync(runtimeSmokePreviewPath, "utf8") : "";
 const livePreviewHandoffProofSource = existsSync(livePreviewHandoffProofPath) ? readFileSync(livePreviewHandoffProofPath, "utf8") : "";
 const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
 const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFileSync(launchProviderSetupPath, "utf8") : "";
@@ -360,6 +362,8 @@ check(
 const livePreviewHandoffVerifierIsSourceBacked = mobilePackage.scripts?.["proof:live-preview"] === "node scripts/live-preview-handoff-proof.js --json"
   && includesAll(livePreviewHandoffProofSource, [
     "LIVE_PREVIEW_HANDOFF_ROUTES",
+    '"/sign-in"',
+    '"/setup"',
     "records-local-file-handoff",
     "report-binary-export-proof",
     "care-entry-provider-sync-proof",
@@ -380,6 +384,31 @@ check(
   livePreviewHandoffVerifierIsSourceBacked
     ? "Live preview proof can emit JSON route evidence with preview-only boundaries"
     : "keep proof:live-preview wired through the mobile script, release smoke checklist, and doctor proof commands",
+);
+
+const authSetupRuntimeSmokeProofIsSourceBacked = includesAll(runtimeSmokePreviewSource, [
+  "MOBILE_RUNTIME_SMOKE_ROUTES",
+  '"/sign-in"',
+  '"/setup"',
+  "WoofWatcher mobile runtime smoke passed",
+])
+  && includesAll(livePreviewHandoffProofSource, [
+    "LIVE_PREVIEW_HANDOFF_ROUTES",
+    '"/sign-in"',
+    '"/setup"',
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Auth and setup route smoke",
+    "/sign-in",
+    "/setup",
+    "does not prove provider-backed auth or household creation",
+  ]);
+check(
+  "auth/setup runtime smoke proof is source-backed",
+  authSetupRuntimeSmokeProofIsSourceBacked,
+  authSetupRuntimeSmokeProofIsSourceBacked
+    ? "smoke:runtime and proof:live-preview include sign-in and setup without claiming provider-backed auth"
+    : "keep /sign-in and /setup covered by smoke:runtime, proof:live-preview, and the release smoke checklist",
 );
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [
