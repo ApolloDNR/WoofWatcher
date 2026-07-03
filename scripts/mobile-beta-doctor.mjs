@@ -84,6 +84,7 @@ const proofCommands = [
   "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
 ];
 const handoffProofSections = [
+  "Release smoke checklist",
   "Dependency proof commands",
   "Required beta proof after export",
   "Native QA Needs tune fix brief",
@@ -96,6 +97,7 @@ const truthBoundaries = [
   "BLOCKED means do not claim beta export readiness until the listed issues are fixed and the proof commands pass.",
 ];
 const nextActions = [
+  "Run the Release smoke checklist from Share Beta Handoff before claiming beta proof.",
   "Run pnpm --filter @workspace/woofwatcher-mobile run smoke:web.",
   "Serve the exported beta with pnpm --filter @workspace/woofwatcher-mobile run preview:smoke, then open http://127.0.0.1:4194/.",
   "Open /care-twin-qa on a real device or simulator.",
@@ -220,6 +222,7 @@ check("PixelLab verifier exists", existsSync(pixellabVerifier), "run pnpm --filt
 const betaHandoffPacketPath = join(mobileRoot, "lib", "betaHandoffPacket.ts");
 const mobileLaunchQaEvidencePath = join(mobileRoot, "lib", "mobileLaunchQaEvidence.ts");
 const mobileReleaseQaPath = join(mobileRoot, "lib", "mobileReleaseQa.ts");
+const mobileReleaseSmokeChecklistPath = join(mobileRoot, "lib", "mobileReleaseSmokeChecklist.ts");
 const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
@@ -228,12 +231,15 @@ const carePassDomainPath = join(root, "lib", "care-domain", "src", "care-pass.ts
 const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
 const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath) ? readFileSync(mobileLaunchQaEvidencePath, "utf8") : "";
 const mobileReleaseQaSource = existsSync(mobileReleaseQaPath) ? readFileSync(mobileReleaseQaPath, "utf8") : "";
+const mobileReleaseSmokeChecklistSource = existsSync(mobileReleaseSmokeChecklistPath) ? readFileSync(mobileReleaseSmokeChecklistPath, "utf8") : "";
 const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
 const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
 const carePassDomainSource = existsSync(carePassDomainPath) ? readFileSync(carePassDomainPath, "utf8") : "";
 const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
+  "Release smoke checklist:",
+  "buildMobileReleaseSmokeChecklistShareText",
   "Dependency proof commands:",
   "Dependency proof requires a real PATH pnpm at 10.24.0; do not use a bundled pnpm 11.x candidate.",
   "Required beta proof after export:",
@@ -243,6 +249,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Provider proof needed:",
   "Truth boundaries:",
 ])
+  && mobileReleaseSmokeChecklistSource.includes("pnpm --filter @workspace/woofwatcher-mobile run preview:smoke")
   && /providerSetupPlan:\s*launchProviderSetupPlan/.test(moreRouteSource)
   && /Share Beta Handoff/.test(moreRouteSource);
 check(
@@ -251,6 +258,32 @@ check(
   betaHandoffProofSectionsPresent
     ? "handoff packet has dependency, device, provider, and truth-boundary sections"
     : "keep Share Beta Handoff wired to dependency, device, provider, and truth-boundary proof sections",
+);
+
+const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeChecklistSource, [
+  "WoofWatcher Release Smoke Checklist",
+  "MOBILE_RELEASE_SMOKE_DEPENDENCY_COMMANDS",
+  "Dependency and export proof",
+  "Route rehearsal",
+  "Records and export truth",
+  "Provider proof gates",
+  "Native and store proof",
+  "WoofWatcherReports",
+  "WoofWatcherCredentials",
+  "Generated PDF and credential image/PDF export stay pending",
+])
+  && includesAll(betaHandoffPacketSource, [
+    "buildMobileReleaseSmokeChecklist",
+    "buildMobileReleaseSmokeChecklistShareText",
+    "Release smoke checklist:",
+  ])
+  && handoffProofSections.includes("Release smoke checklist");
+check(
+  "release smoke checklist is source-backed",
+  releaseSmokeChecklistIsSourceBacked,
+  releaseSmokeChecklistIsSourceBacked
+    ? "Share Beta Handoff carries the dependency, route, Records export, provider, native/store, and truth-boundary smoke checklist"
+    : "keep Release smoke checklist wired through mobileReleaseSmokeChecklist.ts and Share Beta Handoff",
 );
 
 const ownerPreviewProofWiringIsSourceBacked = includesAll(mobileLaunchQaEvidenceSource, [

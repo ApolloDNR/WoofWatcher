@@ -111,6 +111,17 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Public launch verdict: Not ready for public launch/);
   assert.match(text, /Owner preview proof: Not reviewed/);
   assert.match(text, /Owner preview missing: Attach 1 iOS screenshot for Owner Preview Core Loop\./);
+  assert.match(text, /Release smoke checklist:/);
+  assert.match(text, /WoofWatcher Release Smoke Checklist/);
+  assert.match(text, /Dependency and export proof:/);
+  assert.match(text, /Route rehearsal:/);
+  assert.match(text, /Records and export truth:/);
+  assert.match(text, /Provider proof gates:/);
+  assert.match(text, /Native and store proof:/);
+  assert.match(text, /Open with QA return: \/care-twin-qa\?qaReturn=care-twin-qa/);
+  assert.match(text, /WoofWatcherReports/);
+  assert.match(text, /WoofWatcherCredentials/);
+  assert.match(text, /Generated PDF and credential image\/PDF export stay pending/);
   assert.match(text, /Next device mission: Owner Preview Core Loop \(\/care-twin-qa\)/);
   assert.match(text, /Status: Not reviewed/);
   assert.match(text, /Missing proof: Attach 1 iOS screenshot for Owner Preview Core Loop\. Attach 1 Android screenshot/);
@@ -122,6 +133,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /pnpm run doctor:mobile-beta/);
   assert.match(text, /pnpm run doctor:mobile-beta:json/);
   assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run smoke:web/);
+  assert.match(text, /pnpm --filter @workspace\/woofwatcher-mobile run preview:smoke/);
   assert.match(text, /Dependency proof only counts when both doctor commands report no blockers/);
   assert.match(text, /Dependency proof requires a real PATH pnpm at 10\.24\.0; do not use a bundled pnpm 11\.x candidate/);
   assert.match(text, /Required beta proof after export:/);

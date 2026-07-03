@@ -9,15 +9,14 @@ import {
   type MobileQaSessionProofManifest,
 } from "./mobileQaSession.ts";
 import type { LaunchProviderSetupPlan } from "./launchProviderSetup.ts";
+import {
+  buildMobileReleaseSmokeChecklist,
+  buildMobileReleaseSmokeChecklistShareText,
+  MOBILE_RELEASE_SMOKE_DEPENDENCY_COMMANDS,
+} from "./mobileReleaseSmokeChecklist.ts";
 import type { ReleasePacket } from "./releasePacket.ts";
 
-const dependencyProofCommands = [
-  "corepack prepare pnpm@10.24.0 --activate (if pnpm is missing and Corepack is available)",
-  "pnpm install",
-  "pnpm run doctor:mobile-beta",
-  "pnpm run doctor:mobile-beta:json",
-  "pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
-] as const;
+const dependencyProofCommands = MOBILE_RELEASE_SMOKE_DEPENDENCY_COMMANDS;
 
 export type BetaHandoffPacketOptions =
   | string
@@ -117,6 +116,10 @@ export function buildBetaHandoffPacketShareText(
 ): string {
   const { generatedAtIso, providerSetupPlan, proofManifest } = normalizeOptions(optionsOrGeneratedAt);
   const currentMission = capturePlan.nextTargets[0];
+  const releaseSmokeChecklist = buildMobileReleaseSmokeChecklist(releasePacket, capturePlan, {
+    generatedAtIso,
+    providerSetupPlan,
+  });
 
   return [
     "WoofWatcher 48-Hour Beta Handoff",
@@ -128,6 +131,9 @@ export function buildBetaHandoffPacketShareText(
     `QA progress: ${capturePlan.completeSurfaces}/${capturePlan.totalSurfaces} surfaces complete, ${capturePlan.openSurfaces} open.`,
     ...(proofManifest ? ["", buildMobileQaSessionProofManifestShareText(proofManifest)] : []),
     ...formatOwnerPreviewProof(capturePlan),
+    "",
+    "Release smoke checklist:",
+    buildMobileReleaseSmokeChecklistShareText(releaseSmokeChecklist),
     "",
     releasePacket.betaSummary,
     "",

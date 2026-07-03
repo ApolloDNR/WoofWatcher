@@ -80,7 +80,7 @@ The beta must not claim:
 - In More's Launch Readiness panel, check Native QA Next Captures before sharing: if `Proof status` says `Pass pending proof`, tap `Finish Proof`, attach proof or save the Mission note in `/care-twin-qa`, and recheck before moving on.
 - Also check the `Owner preview proof` row in More's Native QA panel. It now stays visible even when Owner Preview Core Loop is not one of the top four next captures, and `Finish Proof` remains active if the loop is marked Pass but still needs the Mission note.
 - Use `/care-twin-qa`'s `Share QA` action after writing mission notes or attaching proof; it now includes the live native capture plan before the full release QA, store packet, and care-twin state report.
-- Use More's `Share Beta Handoff` action after the saved proof state is current; it combines the beta verdict, public-launch boundary, next device mission, missing proof, route loop, dependency proof commands, provider proof checklist, and truth boundaries in one packet.
+- Use More's `Share Beta Handoff` action after the saved proof state is current; it combines the Release Smoke Checklist, beta verdict, public-launch boundary, next device mission, missing proof, route loop, dependency proof commands, provider proof checklist, and truth boundaries in one packet.
 - Mark any visual route that feels below App Store quality as Needs tune.
 - When a visual route is marked Needs tune, use More's `Share Fix Brief` action to send the exact route, QA note, proof gaps, setup/repro steps, done condition, and return-to-`/care-twin-qa` instructions before repairing it.
 - Tap `Share Beta Packet` only after local verification and owner sign-off are still truthful for an internal beta.
@@ -99,6 +99,9 @@ Shippable for internal beta after local verification passes:
 - `pnpm run doctor:mobile-beta:json` reports the same status as parseable JSON
   for Replit, native helpers, or automation, including structured
   `proofCommands` for the dependency/export proof sequence.
+- The JSON doctor reports `release smoke checklist is source-backed` and lists
+  `Release smoke checklist` as a handoff proof section before helpers claim the
+  beta packet is complete.
 - `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` serves the
   exact `.expo-smoke` export at `http://127.0.0.1:4194/`; keep that terminal
   open while Apollo, Fable, Replit, or device QA reviews the build.
@@ -130,6 +133,11 @@ Current environment note:
 - The in-app `Share Beta Handoff` packet now repeats the exact dependency proof
   commands and warns that dependency proof only counts when both doctor commands
   report no blockers.
+- The in-app `Share Beta Handoff` packet now includes the Release Smoke
+  Checklist: dependency/export proof, route rehearsal, Records local HTML export
+  truth for `WoofWatcherReports` and `WoofWatcherCredentials`, provider proof
+  gates, native/store proof, and truth boundaries. This is rehearsal proof, not
+  native QA, provider approval, store approval, or Apollo sign-off.
 - Provider Launch Setup now also shows a proof-needed checklist for every
   production provider gate in More and in the share packet: Clerk, Supabase/RLS,
   storage signed uploads, WoofGuide AI policy, payments, push, Apple/Google

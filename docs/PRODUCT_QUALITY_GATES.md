@@ -149,6 +149,7 @@ Passing evidence:
 - Local mobile readiness proof now protects the full-refresh boundary for care entries until provider migration/RLS, retention policy, and mobile incremental adoption are verified against the server cursor/delete-tombstone contract.
 - Provider Launch Setup now exposes the exact Supabase migration/backfill, active-household RLS, retention/export/deletion, and mobile full-refresh sign-off proof needed for `care_entries.updated_at`, `care_entry_tombstones`, `/care-entries?updatedSince=`, and `/care-entries/tombstones?updatedSince=` before incremental sync can be claimed.
 - The care-entry provider sync proof packet now structures that provider gate into Supabase project, migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off evidence; the checklist appears in Provider Launch Setup, More, and Share Beta Handoff.
+- The Release Smoke Checklist now gives Apollo/Replit one source-backed rehearsal for dependency/export proof, route rehearsal, Records local HTML export truth, provider proof gates, native/store proof, and launch truth boundaries inside Share Beta Handoff and the JSON mobile beta doctor.
 
 Current gaps:
 
@@ -175,7 +176,6 @@ Current gaps:
 - Full Log search derivation, normalized type filters, sticky-note/detail search, and mobile Log wiring are covered by focused tests.
 - Durable sync outbox derivation, household Sync Health derivation, conflict-safe care document refresh reconciliation, and mobile Log/More/CareContext wiring are covered by focused tests.
 - Need broader report/export tests. Owner privacy export now includes staged pet roster data.
-- Need release smoke checklist.
 
 ## Gate 8: Security, Privacy, And Compliance
 

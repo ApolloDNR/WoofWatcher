@@ -1341,3 +1341,42 @@ Latest local evidence, 2026-07-03:
 - This is a provider proof checklist, not provider approval. Mobile incremental
   care-entry sync remains blocked until actual Supabase migration/RLS/retention
   evidence and native QA proof are attached.
+
+## Release Smoke Checklist Handoff
+
+Latest local evidence, 2026-07-03:
+
+- `mobileReleaseSmokeChecklist.ts` now builds one source-backed release
+  rehearsal for Apollo/Replit helpers before Share Beta Handoff is treated as
+  current proof.
+- The checklist covers dependency/export commands, route rehearsal, Records
+  local-file export truth for `WoofWatcherReports` and
+  `WoofWatcherCredentials`, provider proof gates, native/store proof, and truth
+  boundaries.
+- Share Beta Handoff now embeds the checklist, including the static
+  `preview:smoke` proof command, the `/care-twin-qa` QA-return route, Care Pass
+  Report History `Printable HTML local file`/`PDF pending` copy, Dog ID
+  `local HTML credential file`/`image/PDF export stays pending` copy, and the
+  care-entry provider sync proof packet.
+- The JSON mobile beta doctor now checks `release smoke checklist is
+  source-backed` and includes `Release smoke checklist` in
+  `handoffProofSections`.
+- Red/green proof first failed with `ERR_MODULE_NOT_FOUND` for
+  `mobileReleaseSmokeChecklist.ts`, then passed after the helper and handoff
+  wiring were added.
+- Focused proof passed `mobileReleaseSmokeChecklist.test.ts`,
+  `betaHandoffPacket.test.ts`, and `mobileReadiness.test.ts` with `116/116`
+  tests. Broader proof passed the API/mobile/PWA/care-domain suite with
+  `515/515` tests.
+- Mobile TypeScript, `pnpm run typecheck:libs`, API TypeScript,
+  `git diff --check`, and Expo web export smoke passed after prepending bundled
+  Node and pnpm to `PATH`; the export produced `219` assets and `223` files in
+  `.expo-smoke`.
+- Static preview route smoke returned `200` for `/`, `/more`, `/care-twin-qa`,
+  `/records`, and `/woofguide`.
+- JSON mobile beta doctor source-backed checks all pass, but the result remains
+  truthfully `BLOCKED` only because local pnpm is `11.7.0` while the repo is
+  pinned to `10.24.0`; Corepack is not on PATH.
+- This checklist is rehearsal proof, not provider approval, generated PDF/image
+  export, native iOS/Android QA proof, store approval, public launch, or Apollo
+  sign-off.

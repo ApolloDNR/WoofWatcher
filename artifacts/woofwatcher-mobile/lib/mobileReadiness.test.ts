@@ -4839,6 +4839,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.checks?.some(
       (check) =>
+        check.label === "release smoke checklist is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
         check.label === "owner preview proof wiring is source-backed" &&
         check.status === "PASS",
     ),
@@ -4930,6 +4937,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
   ]);
   assert.deepEqual(payload.handoffProofSections, [
+    "Release smoke checklist",
     "Dependency proof commands",
     "Required beta proof after export",
     "Native QA Needs tune fix brief",
