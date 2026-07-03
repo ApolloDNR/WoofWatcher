@@ -16,6 +16,10 @@ import {
   ACCOUNT_DELETION_PROOF_SUMMARY,
 } from "./accountDeletionProof.ts";
 import {
+  STORE_ACCOUNTS_PROOF_ITEMS,
+  STORE_ACCOUNTS_PROOF_SUMMARY,
+} from "./storeAccountsProof.ts";
+import {
   REPORT_BINARY_EXPORT_PROOF_ITEMS,
   REPORT_BINARY_EXPORT_PROOF_SUMMARY,
 } from "./reportBinaryExportProof.ts";
@@ -230,7 +234,8 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "Apple Developer and Google Play Console access are ready for submission prep.",
     blockedDetail: "Public mobile launch cannot proceed until store accounts, bundle ids, and submission roles are confirmed.",
     nextAction: "Confirm Apple Developer, App Store Connect, Google Play Console, bundle identifiers, screenshots, and review access.",
-    proofRequired: "Apple Developer team id, App Store Connect app record, Google Play package record, bundle ids, and reviewer access notes.",
+    proofRequired: STORE_ACCOUNTS_PROOF_SUMMARY,
+    proofChecklist: STORE_ACCOUNTS_PROOF_ITEMS.map((item) => `${item.label}: ${item.requiredEvidence}`),
   },
   {
     key: "accountDeletion",

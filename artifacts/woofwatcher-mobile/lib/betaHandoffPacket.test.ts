@@ -224,6 +224,12 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Data and object deletion receipt: data\/object deletion receipt/);
   assert.match(text, /Recovery window and cancellation rules: recovery-window policy/);
   assert.match(text, /Legal and store approval: legal\/store approval/);
+  assert.match(text, /Apple and Google store accounts: Apple and Google store accounts proof packet/);
+  assert.match(text, /Apple Developer and App Store Connect access: Apple Developer team id/);
+  assert.match(text, /Google Play Console package record: Google Play package record/);
+  assert.match(text, /Reviewer access and test credentials: reviewer access notes/);
+  assert.match(text, /Store screenshots and metadata ownership: store screenshots/);
+  assert.match(text, /Release roles and submission approval: release role approval/);
   assert.match(text, /Provider proof does not approve App Store, Play Store, payment, AI, storage, or database readiness/);
   assert.match(text, /Done condition: capture required iOS\/Android proof, save the Mission note, clear Pass pending proof, then share the QA summary/);
   assert.match(text, /Truth boundaries:/);

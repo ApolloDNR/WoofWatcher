@@ -222,6 +222,13 @@ Current environment note:
   Handoff prints those proof steps, but this does not enable production
   deletion, delete provider data, satisfy store review, or replace Apollo/legal
   approval.
+- Provider Launch Setup's Apple and Google store accounts gate now carries an
+  `Apple and Google store accounts proof packet` requiring Apple Developer team
+  id, App Store Connect app record, Google Play package record, bundle ids,
+  reviewer access notes, screenshots/metadata ownership, and release role
+  approval before store submission can be claimed. Share Beta Handoff prints
+  those proof steps, but this does not create store accounts, approve metadata,
+  submit the app, satisfy App Review or Play review, or replace Apollo approval.
 - The Release Smoke Checklist and Share Beta Handoff now name the focused
   Records handoff target at `/care-twin-qa?qaSurface=records-local-file-handoff`,
   including Care Pass local HTML, Dog ID local HTML, Dog ID SVG, share-sheet

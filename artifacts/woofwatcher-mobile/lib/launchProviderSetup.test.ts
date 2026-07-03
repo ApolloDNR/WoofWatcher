@@ -129,6 +129,16 @@ test("builds a truthful provider setup plan from a local launch profile", async 
         row.proofChecklist.some((item) => /Recovery window and cancellation rules/i.test(item) && /cancel deletion/i.test(item)),
     ),
   );
+  assert.ok(plan.rows.some((row) => row.key === "storeAccounts" && /Apple and Google store accounts proof packet/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "storeAccounts" && /Apple Developer team id/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "storeAccounts" && /Google Play package record/i.test(row.proofRequired)));
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "storeAccounts" &&
+        row.proofChecklist.some((item) => /Reviewer access and test credentials/i.test(item) && /test credentials/i.test(item)),
+    ),
+  );
   assert.equal(plan.nextGate?.key, "database");
   assert.match(plan.nextGate?.proofRequired ?? "", /Supabase project id/);
   assert.ok(plan.nextGate?.proofChecklist.some((item) => /mobile incremental/i.test(item)));
@@ -235,6 +245,12 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /Data and object deletion receipt: data\/object deletion receipt/);
   assert.match(text, /Recovery window and cancellation rules: recovery-window policy/);
   assert.match(text, /Legal and store approval: legal\/store approval/);
+  assert.match(text, /Apple and Google store accounts: Apple and Google store accounts proof packet/);
+  assert.match(text, /Apple Developer and App Store Connect access: Apple Developer team id/);
+  assert.match(text, /Google Play Console package record: Google Play package record/);
+  assert.match(text, /Reviewer access and test credentials: reviewer access notes/);
+  assert.match(text, /Store screenshots and metadata ownership: store screenshots/);
+  assert.match(text, /Release roles and submission approval: release role approval/);
   assert.match(text, /No App Store or Play Store submission is approved by this checklist/);
 });
 

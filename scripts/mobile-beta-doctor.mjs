@@ -252,6 +252,7 @@ const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts"
 const authProviderProofPath = join(mobileRoot, "lib", "authProviderProof.ts");
 const aiProviderProofPath = join(mobileRoot, "lib", "aiProviderProof.ts");
 const accountDeletionProofPath = join(mobileRoot, "lib", "accountDeletionProof.ts");
+const storeAccountsProofPath = join(mobileRoot, "lib", "storeAccountsProof.ts");
 const paymentsProviderProofPath = join(mobileRoot, "lib", "paymentsProviderProof.ts");
 const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
@@ -270,6 +271,7 @@ const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFile
 const authProviderProofSource = existsSync(authProviderProofPath) ? readFileSync(authProviderProofPath, "utf8") : "";
 const aiProviderProofSource = existsSync(aiProviderProofPath) ? readFileSync(aiProviderProofPath, "utf8") : "";
 const accountDeletionProofSource = existsSync(accountDeletionProofPath) ? readFileSync(accountDeletionProofPath, "utf8") : "";
+const storeAccountsProofSource = existsSync(storeAccountsProofPath) ? readFileSync(storeAccountsProofPath, "utf8") : "";
 const paymentsProviderProofSource = existsSync(paymentsProviderProofPath) ? readFileSync(paymentsProviderProofPath, "utf8") : "";
 const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
@@ -562,6 +564,35 @@ check(
   accountDeletionProofPacketIsSourceBacked
     ? "Self-serve account deletion readiness requires deletion route, export-before-delete, data/object deletion receipt, audit trail, recovery window, and legal/store proof through Provider Launch Setup and Share Beta Handoff"
     : "keep account deletion proof modeled in accountDeletionProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
+);
+
+const storeAccountsProofPacketIsSourceBacked = includesAll(storeAccountsProofSource, [
+  "STORE_ACCOUNTS_PROOF_SUMMARY",
+  "STORE_ACCOUNTS_PROOF_ITEMS",
+  "Apple and Google store accounts proof packet",
+  "Apple Developer team id",
+  "App Store Connect app record",
+  "Google Play package record",
+  "bundle ids",
+  "reviewer access notes",
+  "release role approval",
+])
+  && includesAll(launchProviderSetupSource, [
+    "STORE_ACCOUNTS_PROOF_SUMMARY",
+    "STORE_ACCOUNTS_PROOF_ITEMS",
+    "Apple and Google store accounts",
+    "appStoreAccountsReady",
+  ])
+  && includesAll(betaHandoffPacketSource, [
+    "Provider proof needed:",
+    "formatProviderProof",
+  ]);
+check(
+  "store accounts proof packet is source-backed",
+  storeAccountsProofPacketIsSourceBacked,
+  storeAccountsProofPacketIsSourceBacked
+    ? "Store submission readiness requires Apple Developer, App Store Connect, Google Play, bundle id, reviewer access, metadata, and release role proof through Provider Launch Setup and Share Beta Handoff"
+    : "keep store account proof modeled in storeAccountsProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [

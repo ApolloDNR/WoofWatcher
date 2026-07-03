@@ -289,6 +289,18 @@ not enable provider-backed destructive deletion, delete storage objects, satisfy
 App Store or Play Store review, approve privacy/legal language, or replace
 Apollo launch sign-off.
 
+The Apple and Google store accounts proof pass turns the old store-account
+one-line proof into a source-backed packet. `storeAccountsProof.ts` now defines
+the Apple Developer team id, App Store Connect app record, Google Play package
+record, bundle ids and signing ownership, reviewer access/test credentials,
+store screenshots/metadata ownership, and release role approval required before
+store submission can be claimed. Provider Launch Setup and Share Beta Handoff
+print those proof steps under Apple and Google store accounts, and the JSON
+mobile beta doctor reports `store accounts proof packet is source-backed`. This
+does not create store accounts, approve screenshots or metadata, submit to App
+Review or Play review, satisfy legal/privacy approval, or replace Apollo launch
+sign-off.
+
 The two-day beta QA cockpit pass made device capture less fragile. `/care-twin-qa`
 now tags attached screenshot evidence explicitly as iOS, Android, or Web instead
 of relying on the runtime platform, and target routes opened from the cockpit
