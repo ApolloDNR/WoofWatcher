@@ -1359,6 +1359,12 @@ Latest local evidence, 2026-07-03:
   `local HTML credential file`/`SVG image source`/`PNG/PDF export stays pending`
   copy, and the
   care-entry provider sync proof packet.
+- `/care-twin-qa?qaSurface=records-local-file-handoff` is now the focused
+  Records local-file proof mission for Care Pass Report History local HTML, Dog
+  ID local HTML, Dog ID SVG image source, share-sheet behavior, Android content
+  URI, and fallback copy. This is a proof checklist only; real iOS/Android
+  evidence still has to be attached before treating Records handoff proof as
+  device-verified.
 - The JSON mobile beta doctor now checks `release smoke checklist is
   source-backed` and includes `Release smoke checklist` in
   `handoffProofSections`.

@@ -222,6 +222,67 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "If this loop is not proven, WoofWatcher may look polished in isolated screens while still failing the real owner beta journey.",
   },
   {
+    id: "records-local-file-handoff",
+    title: "Records Local File Handoff",
+    route: "/records",
+    priority: "launch-critical",
+    goal: "Prove the Records handoff path creates and shares Care Pass Report History local HTML plus Dog ID local HTML and SVG artifacts without claiming PDF, PNG, or provider storage.",
+    devicePrompt:
+      "On real iOS and Android, run Records share flows for Care Pass Report History and Dog ID. Capture share sheet behavior, Android content URI handoff, saved-file names, and fallback copy.",
+    setupSteps: [
+      "Use local preview household data and keep provider, payment, storage, AI, and store gates truthful.",
+      "Open Records with at least one Care Pass Report History artifact available under WoofWatcherReports.",
+      "Open Dog ID with the local HTML credential and SVG image source actions available under WoofWatcherCredentials.",
+    ],
+    verificationSteps: [
+      "Open Records and confirm Care Pass Report History storage status says Saved on this device or Ready to upload.",
+      "Share or print the Care Pass Report History artifact and confirm the Printable HTML local file, file name, file size, and PDF pending copy are visible.",
+      "Share the Dog ID local HTML credential and confirm it saves under WoofWatcherCredentials before opening the native share sheet.",
+      "Share the Dog ID SVG image source and confirm it saves under WoofWatcherCredentials with image/svg+xml behavior, not an HTML fallback filename.",
+      "On Android, confirm at least one Records local file handoff uses the Android content URI when available.",
+      "On either platform, force or note the fallback copy path if local file sharing is unavailable, and confirm it names the local-only boundary.",
+    ],
+    acceptanceCriteria: [
+      "Care Pass Report History shows Saved on this device or Ready to upload and names the Printable HTML local file with PDF pending copy.",
+      "Dog ID can share a local HTML credential file and SVG image source from WoofWatcherCredentials.",
+      "Android content URI behavior and fallback copy are captured instead of guessed.",
+      "PNG/PDF export stays pending, and Records never claims provider-backed storage, generated PDF, credential PNG/PDF, or cloud sync unless those gates are actually closed.",
+    ],
+    failureEscalation:
+      "Mark Needs tune if Records hides the saved file name, misses the Android content URI path, loses fallback copy, claims provider-backed storage, or implies PNG/PDF export is complete.",
+    requiredEvidence: [
+      "iOS screenshot of Care Pass Report History showing local HTML storage status.",
+      "Android screenshot of Dog ID local HTML or SVG share sheet.",
+      "Note confirming WoofWatcherReports saved Printable HTML local file name, file size, and PDF pending copy.",
+      "Note confirming WoofWatcherCredentials saved local HTML credential and SVG image source, Android content URI behavior, fallback copy, and PNG/PDF export stays pending.",
+    ],
+    routeChecklist: [
+      {
+        label: "Care Pass Report History local HTML",
+        route: "/records",
+        expected:
+          "Confirm WoofWatcherReports contains the printable Care Pass HTML file, file size, storage status, and PDF pending copy.",
+        proof: "iOS + Android share-sheet proof plus saved-file name or Mission note.",
+      },
+      {
+        label: "Dog ID local HTML credential",
+        route: "/records",
+        expected:
+          "Confirm WoofWatcherCredentials contains the printable Dog ID local HTML credential before the native share sheet opens.",
+        proof: "Android content URI or saved-file proof plus fallback copy note.",
+      },
+      {
+        label: "Dog ID SVG image source",
+        route: "/records",
+        expected:
+          "Confirm the SVG image source saves with image/svg+xml behavior and keeps PNG/PDF pending copy visible.",
+        proof: "SVG image source share proof and Mission note naming the PNG/PDF boundary.",
+      },
+    ],
+    launchRisk:
+      "If this proof is missing, the beta handoff cannot claim Records export proof even though the local HTML and SVG source actions exist.",
+  },
+  {
     id: "route-visual-consistency",
     title: "Route Visual Consistency",
     route: "/more",

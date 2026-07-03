@@ -188,6 +188,14 @@ export function buildMobileReleaseSmokeChecklist(
             proof: "Attach share-sheet or saved-file proof from a native runtime.",
             status: "required",
           },
+          {
+            label: "Focused Records handoff target",
+            detail:
+              "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Care Pass Report History local HTML, Dog ID local HTML, and Dog ID SVG image source proof.",
+            proof:
+              "Attach iOS/Android share sheet behavior, Android content URI or saved-file proof, and fallback copy note before claiming Records handoff proof.",
+            status: "required",
+          },
         ],
       },
       buildProviderProofSection(options.providerSetupPlan),

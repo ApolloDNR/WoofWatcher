@@ -2672,6 +2672,19 @@ This clears a source-backed checklist gap; it does not clear actual native
 iOS/Android proof, provider approvals, generated PDF/image export, store
 approval, public launch, or Apollo sign-off.
 
+The Records local-file handoff proof pass turns the current Records blocker
+into a focused native QA mission without pretending device evidence exists.
+`mobileReleaseQa.ts` now adds `records-local-file-handoff` immediately after the
+owner-preview loop, and Share Beta Handoff, the Release Smoke Checklist, and the
+JSON mobile beta doctor all point helpers to
+`/care-twin-qa?qaSurface=records-local-file-handoff`. The mission requires Care
+Pass Report History local HTML proof in `WoofWatcherReports`, Dog ID local HTML
+and SVG image-source proof in `WoofWatcherCredentials`, native share-sheet
+behavior, Android content URI or saved-file proof, fallback copy, and explicit
+`PNG/PDF export stays pending` language. This is a source-backed proof path; real
+iOS/Android screenshots/share-dialog evidence still must be attached before the
+handoff is device-verified.
+
 The mobile runtime route smoke pass makes the export proof more execution-like
 without overclaiming native QA. `scripts/smoke-runtime-preview.js` starts a
 disposable static server over `.expo-smoke`, verifies Home, Log, Plans, Health,

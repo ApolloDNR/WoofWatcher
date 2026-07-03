@@ -62,6 +62,7 @@ The beta must not claim:
 - On Health, confirm the Health/Bile tabs plus `Log health note`, `Records`, and `Share review` actions feel phone-sized, calm, useful for vet/caregiver handoff, and clearly non-diagnostic.
 - On More, confirm Launch Readiness, Native QA Next Captures, provider setup, household invite, Access Pass, profile edit, and save/share actions feel phone-sized and easy to tap.
 - On Records, confirm Dog ID share/print, medication search/filter, Care Pass preview, report resend/print, record add/delete, attachment, and sheet save/cancel controls feel phone-sized and easy to tap.
+- When the current mission is `Records Local File Handoff`, open `/care-twin-qa?qaSurface=records-local-file-handoff`, then capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG image source, native share-sheet behavior, Android content URI, and fallback copy without claiming PDF/PNG/provider storage proof.
 - On Avatar Studio, confirm Scan/Template/Customize/Emotes tabs, Gallery, Take photo, template tiles, coat swatches, face options, accessories, mood previews, Reset, and Save Avatar controls feel phone-sized and easy to tap.
 - On Adventure, confirm quest cards, private memory capture, `Save Memory`, and `Share Adventure` feel phone-sized, useful, and aligned with the real-care RPG promise instead of decorative game fluff.
 - On WoofGuide, confirm quick questions, suggested actions, the send button, and owner-review Cancel/Apply draft controls feel phone-sized, useful, and clearly non-diagnostic.
@@ -105,6 +106,9 @@ Shippable for internal beta after local verification passes:
 - The JSON doctor reports `release smoke checklist is source-backed` and lists
   `Release smoke checklist` as a handoff proof section before helpers claim the
   beta packet is complete.
+- The JSON doctor reports `records local file handoff proof is source-backed`
+  and lists `/care-twin-qa?qaSurface=records-local-file-handoff` in next
+  actions before helpers claim Records local-file proof.
 - `pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime` verifies the
   exported `.expo-smoke` runtime for Home, Log, Plans, Health, Records, More,
   Care Twin QA, WoofGuide, Premium, Privacy, and Avatar Studio before preview
@@ -155,6 +159,11 @@ Current environment note:
   truth for `WoofWatcherReports` and `WoofWatcherCredentials`, provider proof
   gates, native/store proof, and truth boundaries. This is rehearsal proof, not
   native QA, provider approval, store approval, or Apollo sign-off.
+- The Release Smoke Checklist and Share Beta Handoff now name the focused
+  Records handoff target at `/care-twin-qa?qaSurface=records-local-file-handoff`,
+  including Care Pass local HTML, Dog ID local HTML, Dog ID SVG, share-sheet
+  behavior, Android content URI, and fallback copy proof. This still does not
+  provide actual iOS/Android proof by itself.
 - Records Dog ID can now share a local SVG image-source credential file beside
   the local printable HTML credential file; PNG/PDF credential export still
   needs native/provider generation and real iOS/Android share proof.

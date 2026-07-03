@@ -138,6 +138,11 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /PDF pending/);
   assert.match(text, /WoofWatcherCredentials/);
   assert.match(text, /SVG image source while PNG\/PDF export stays pending/);
+  assert.match(text, /Focused Records handoff target/);
+  assert.match(text, /\/care-twin-qa\?qaSurface=records-local-file-handoff/);
+  assert.match(text, /Care Pass Report History local HTML, Dog ID local HTML, and Dog ID SVG image source/);
+  assert.match(text, /Android content URI/);
+  assert.match(text, /fallback copy/);
   assert.match(text, /Provider proof gates:/);
   assert.match(text, /Household database sync/);
   assert.match(text, /Care-entry provider sync proof packet/);

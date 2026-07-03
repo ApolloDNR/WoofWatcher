@@ -107,6 +107,7 @@ const nextActions = [
   "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
   "Verify Records/Care Pass Report History shows Printable HTML local file, file size, and PDF pending.",
   "Verify Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
+  "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
 ];
@@ -252,6 +253,8 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Native QA Needs tune fix brief:",
   "Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
   "Confirm Records Dog ID shares a local HTML credential file and SVG image source; PNG/PDF export stays pending.",
+  "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
+  "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
   "Provider proof needed:",
   "Truth boundaries:",
 ])
@@ -278,6 +281,10 @@ const releaseSmokeChecklistIsSourceBacked = includesAll(mobileReleaseSmokeCheckl
   "Native and store proof",
   "WoofWatcherReports",
   "WoofWatcherCredentials",
+  "Focused Records handoff target",
+  "/care-twin-qa?qaSurface=records-local-file-handoff",
+  "Android content URI",
+  "fallback copy",
   "pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime",
   "Generated PDF and credential PNG/PDF export stay pending",
 ])
@@ -465,6 +472,35 @@ check(
   ownerPreviewCarePassStorageProofIsSourceBacked
     ? "Owner Preview route loop carries Care Pass storage proof from QA matrix through share text and /care-twin-qa"
     : "keep Owner Preview Care Pass storage proof in release QA, share text, and /care-twin-qa route loop",
+);
+
+const recordsLocalFileHandoffProofIsSourceBacked = includesAll(mobileReleaseQaSource, [
+  "records-local-file-handoff",
+  "Records Local File Handoff",
+  "Care Pass Report History local HTML",
+  "Dog ID local HTML and SVG",
+  "WoofWatcherReports",
+  "WoofWatcherCredentials",
+  "Android content URI",
+  "fallback copy",
+  "PNG/PDF export stays pending",
+])
+  && includesAll(betaHandoffPacketSource, [
+    "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
+    "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
+  ])
+  && includesAll(mobileReleaseSmokeChecklistSource, [
+    "Focused Records handoff target",
+    "/care-twin-qa?qaSurface=records-local-file-handoff",
+    "Android content URI",
+    "fallback copy",
+  ]);
+check(
+  "records local file handoff proof is source-backed",
+  recordsLocalFileHandoffProofIsSourceBacked,
+  recordsLocalFileHandoffProofIsSourceBacked
+    ? "Records local HTML/SVG proof has a focused QA target, beta handoff instruction, smoke checklist item, and doctor next action"
+    : "keep Records local file handoff proof wired through release QA, Share Beta Handoff, smoke checklist, and doctor next actions",
 );
 
 const betaHandoffTruthBoundariesAreSourceBacked = includesAll(betaHandoffPacketSource, [

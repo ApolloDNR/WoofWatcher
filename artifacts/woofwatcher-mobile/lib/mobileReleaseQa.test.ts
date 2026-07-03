@@ -229,6 +229,57 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.match(surface.launchRisk, /real owner beta journey/);
 });
 
+test("adds a launch-critical Records local file handoff proof target", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const ids = surfaces.map((surface) => surface.id);
+  const surface = surfaces.find((item) => item.id === "records-local-file-handoff");
+
+  assert.ok(surface);
+  assert.ok(
+    ids.indexOf("records-local-file-handoff") > ids.indexOf("owner-preview-core-loop"),
+    "Records local file handoff should follow the owner loop in the first native QA targets",
+  );
+  assert.ok(
+    ids.indexOf("records-local-file-handoff") < ids.indexOf("route-visual-consistency"),
+    "Records local file handoff should stay visible before broad route screenshot work",
+  );
+  assert.equal(surface.title, "Records Local File Handoff");
+  assert.equal(surface.route, "/records");
+  assert.equal(surface.priority, "launch-critical");
+  assert.match(surface.goal, /Care Pass Report History local HTML/);
+  assert.match(surface.goal, /Dog ID local HTML and SVG/);
+  assert.match(surface.devicePrompt, /iOS and Android/);
+  assert.match(surface.devicePrompt, /share sheet/);
+  assert.match(surface.devicePrompt, /Android content URI/);
+  assert.match(surface.setupSteps.join("\n"), /WoofWatcherReports/);
+  assert.match(surface.setupSteps.join("\n"), /WoofWatcherCredentials/);
+  assert.match(surface.verificationSteps.join("\n"), /Care Pass Report History/);
+  assert.match(surface.verificationSteps.join("\n"), /Printable HTML local file/);
+  assert.match(surface.verificationSteps.join("\n"), /Dog ID local HTML credential/);
+  assert.match(surface.verificationSteps.join("\n"), /SVG image source/);
+  assert.match(surface.verificationSteps.join("\n"), /Android content URI/);
+  assert.match(surface.verificationSteps.join("\n"), /fallback copy/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /Saved on this device|Ready to upload/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /PNG\/PDF export stays pending/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /provider-backed storage/);
+  assert.match(surface.failureEscalation, /provider-backed/);
+  assert.match(surface.failureEscalation, /PNG\/PDF/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Care Pass Report History/);
+  assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Dog ID/);
+  assert.match(surface.requiredEvidence.join("\n"), /Note confirming WoofWatcherReports/);
+  assert.match(surface.requiredEvidence.join("\n"), /Note confirming WoofWatcherCredentials/);
+  assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
+    "Care Pass Report History local HTML",
+    "Dog ID local HTML credential",
+    "Dog ID SVG image source",
+  ]);
+  assert.ok(surface.routeChecklist?.every((item) => item.route === "/records"));
+  assert.match(surface.routeChecklist?.[0]?.proof ?? "", /iOS \+ Android share-sheet proof/);
+  assert.match(surface.routeChecklist?.[1]?.proof ?? "", /Android content URI/);
+  assert.match(surface.routeChecklist?.[2]?.proof ?? "", /SVG image source/);
+  assert.match(surface.launchRisk, /beta handoff cannot claim Records export proof/);
+});
+
 test("adds route-check proof to store screenshot QA surfaces", () => {
   const packet: StoreSubmissionPacket = {
     title: "WoofWatcher Store Submission Packet",

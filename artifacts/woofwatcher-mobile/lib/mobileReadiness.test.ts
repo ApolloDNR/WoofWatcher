@@ -4946,6 +4946,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.checks?.some(
       (check) =>
+        check.label ===
+          "records local file handoff proof is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
         check.label === "beta handoff truth boundaries are source-backed" &&
         check.status === "PASS",
     ),
@@ -5046,6 +5054,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
         action.includes("local HTML credential file") &&
         action.includes("SVG image source") &&
         action.includes("PNG/PDF export stays pending"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
+        action.includes("/care-twin-qa?qaSurface=records-local-file-handoff") &&
+        action.includes("Android content URI") &&
+        action.includes("fallback copy"),
     ),
   );
   assert.ok(
