@@ -48,12 +48,12 @@ export interface MobileLivePreviewHandoffProof {
 
 export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
   workflowName: "WoofWatcher Verify",
-  runId: "28684074927",
-  jobId: "85073288003",
+  runId: "28684865218",
+  jobId: "85075545003",
   branch: "automation/premium-revenue-product-builder",
-  commit: "ab36157",
-  duration: "3m3s",
-  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28684074927",
+  commit: "5c0a11f",
+  duration: "2m58s",
+  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28684865218",
   passedSteps: [
     "Setup pnpm",
     "Setup Node",
@@ -63,15 +63,15 @@ export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
     "Typecheck and CI-safe builds",
   ],
   coverage:
-    "pinned pnpm 10.24.0, JSON mobile beta doctor with auth/setup smoke proof, auth/setup native QA target, auth provider proof packet, provider staged-row truth boundary, support legal readiness proof target, provider-approved support/legal launch-readiness wiring, Plus checkout approval truth boundary, Records storage provider-approval clamp, Records binary proof manifest, Premium payments proof manifest, focused tests, build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview",
+    "pinned pnpm 10.24.0, JSON mobile beta doctor with auth/setup smoke proof, auth/setup native QA target, auth provider proof packet, provider staged-row truth boundary, support legal readiness proof target, provider-approved support/legal launch-readiness wiring, Plus checkout approval truth boundary, Records storage provider-approval clamp, Records binary proof manifest, Premium payments proof manifest, Auth/Setup proof manifest, focused tests, build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview",
 };
 
 export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof = {
   title: "WoofWatcher Live Preview Handoff Proof",
-  generatedAtIso: "2026-07-03T21:34:30.033Z",
+  generatedAtIso: "2026-07-03T21:55:51.285Z",
   result: "PASS",
-  baseUrl: "http://127.0.0.1:52940/",
-  commit: "ab36157",
+  baseUrl: "http://127.0.0.1:52172/",
+  commit: "5c0a11f",
   exportIndexMtimeIso: "2026-07-03T12:38:39.906Z",
   routeChecks: [
     { route: "/", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },

@@ -2946,21 +2946,25 @@ submission, or replace Apollo sign-off.
 
 The recorded CI proof freshness pass keeps Share Beta Handoff from treating a
 historical branch run as current proof after later commits. The recorded proof
-now points to `WoofWatcher Verify` run `28672842742`, job `85039818152`, commit
-`b76cb8f`, and the packet labels it `Recorded branch CI proof` while requiring a
+now points to `WoofWatcher Verify` run `28684865218`, job `85075545003`, commit
+`5c0a11f`, and the packet labels it `Recorded branch CI proof` while requiring a
 fresh workflow rerun after any new commit before dependency proof can be treated
-as current. This refresh records the branch CI that passed after the Provider
-Launch Setup staged-row truth boundary, including pinned pnpm 10.24.0, the JSON mobile beta doctor
-with `auth/setup runtime smoke proof is source-backed` and
-`auth/setup native QA target is source-backed`, `auth provider proof packet is
-source-backed`, provider staged-row truth coverage, focused behavior tests, and
-`build:ci` with `smoke:web`, `smoke:runtime`, and `proof:live-preview`. Fresh
-refresh verification covered the intended red
-beta-handoff/doctor failures for the old recorded run, then passed focused beta
-handoff plus mobile readiness tests `117/117`. Direct JSON doctor still blocks only on
-local pnpm `11.7.0` versus pinned `10.24.0`, with Corepack not on PATH. This is
-dependency-proof freshness guardrail work only, not native device proof,
-provider approval, store approval, public launch, or Apollo sign-off.
+as current. This refresh records the branch CI that passed after the Auth/Setup
+proof manifest landed, including pinned pnpm 10.24.0, the JSON mobile beta
+doctor with auth/setup smoke proof, auth/setup native QA target coverage, auth
+provider proof packet coverage, provider staged-row truth coverage, support/legal
+readiness proof coverage, Premium payments proof manifest coverage, Auth/Setup
+proof manifest coverage, focused behavior tests, and `build:ci` with
+`smoke:web`, `smoke:runtime`, and `proof:live-preview`. The recorded live
+preview proof now carries a local `proof:live-preview` run generated
+`2026-07-03T21:55:51.285Z` on commit `5c0a11f` from
+`http://127.0.0.1:52172/`, with `19/19` web-preview route shell checks and the
+web-preview-only boundary still explicit. Fresh refresh verification covered the
+stale beta-handoff/doctor assertions for the old recorded run, then passed
+focused beta handoff plus mobile readiness tests. Direct JSON doctor still
+blocks only on local pnpm `11.7.0` versus pinned `10.24.0`, with Corepack not on
+PATH. This is dependency-proof freshness guardrail work only, not native device
+proof, provider approval, store approval, public launch, or Apollo sign-off.
 
 The mobile runtime route smoke pass makes the export proof more execution-like
 without overclaiming native QA. `scripts/smoke-runtime-preview.js` starts a

@@ -1502,12 +1502,12 @@ Latest local evidence, 2026-07-03:
   dependency-complete `WoofWatcher Verify` proof instead of only listing local
   commands.
 - The handoff labels that evidence as recorded branch CI proof for run
-  `28680310602`, job `85062294806`, branch
-  `automation/premium-revenue-product-builder`, commit `0d363de`, duration
-  `3m12s`, the proof URL, and the passed Setup pnpm, install, JSON doctor,
+  `28684865218`, job `85075545003`, branch
+  `automation/premium-revenue-product-builder`, commit `5c0a11f`, duration
+  `2m58s`, the proof URL, and the passed Setup pnpm, install, JSON doctor,
   focused behavior, and `build:ci` steps with `smoke:web`, `smoke:runtime`,
-  `proof:live-preview`, and provider-approved support/legal launch-readiness
-  wiring.
+  `proof:live-preview`, provider-approved support/legal launch-readiness
+  wiring, Premium payments proof manifest, and Auth/Setup proof manifest.
 - The handoff now warns helpers to rerun `WoofWatcher Verify` after any new
   commit before treating dependency proof as current.
 - Red/green proof first failed because `RECORDED_MOBILE_BETA_CI_PROOF` was not
@@ -1525,6 +1525,11 @@ Latest local evidence, 2026-07-03:
   `117/117`. JSON mobile beta doctor source-backed checks pass, including
   `recorded CI proof freshness boundary is source-backed`, and still block only
   on the local pnpm/Corepack mismatch.
+- The 2026-07-03 Auth/Setup refresh updated `RECORDED_MOBILE_BETA_CI_PROOF`
+  to run `28684865218` and `RECORDED_LIVE_PREVIEW_HANDOFF_PROOF` to a local
+  `proof:live-preview` run generated `2026-07-03T21:55:51.285Z` on commit
+  `5c0a11f` from `http://127.0.0.1:52172/`, with `19/19` web-preview route
+  shell checks and the web-preview-only boundary still explicit.
 - This handoff proof does not approve native screenshots, provider setup,
   generated PDF/image export, app-store approval, public launch, or Apollo
   sign-off.
