@@ -26,14 +26,14 @@ import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
-import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { MIN_MOBILE_TOUCH_TARGET, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const PIXEL_DISPLAY = "PressStart2P_400Regular";
-const PREMIUM_VALUE_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.day.source;
+const PREMIUM_VALUE_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-pixellab-400x300.png");
 const PREMIUM_VALUE_STAGE_SPRITE = getCareTwinSpriteAsset("celebrate-hop");
 const PREMIUM_VALUE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["celebrate-hop"];
 
@@ -129,7 +129,7 @@ export default function PremiumScreen() {
           <BoardCard padded={false} style={s.premiumValueStageCard}>
             <ImageBackground
               source={PREMIUM_VALUE_STAGE_ROOM}
-              resizeMode="cover"
+              resizeMode="stretch"
               imageStyle={[s.premiumValueStageImage, pixelImageStyle]}
               style={s.premiumValueStage}
               testID="premium-value-pixel-stage"

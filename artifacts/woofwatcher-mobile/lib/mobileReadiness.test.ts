@@ -2418,7 +2418,8 @@ test("keeps Premium rooted in a launch-safe pixel value stage", () => {
 
   assert.match(premium, /ImageBackground/);
   assert.match(premium, /PREMIUM_VALUE_STAGE_ROOM/);
-  assert.match(premium, /CARE_TWIN_ROOM_VARIANT_ASSETS\.day/);
+  assert.match(premium, /phoenix-room-day-pixellab-400x300\.png/);
+  assert.match(premium, /resizeMode="stretch"[\s\S]*testID="premium-value-pixel-stage"/);
   assert.match(premium, /SpriteSheetPlayer/);
   assert.match(premium, /getCareTwinSpriteAsset\("celebrate-hop"\)/);
   assert.match(premium, /CARE_TWIN_SPRITE_MANIFEST\["celebrate-hop"\]/);
