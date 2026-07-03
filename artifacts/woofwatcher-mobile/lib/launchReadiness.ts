@@ -287,22 +287,43 @@ function aiTile(provider: LaunchReadinessProviderInput): LaunchReadinessTile {
       };
 }
 
+function paymentsApprovalGaps(provider: LaunchReadinessProviderInput): string[] {
+  const gaps: string[] = [];
+  if (!provider.appStoreAccountsReady) gaps.push("store-account approval");
+  if (!provider.privacyLegalApproved) gaps.push("privacy/legal approval");
+  if (!provider.supportRunbookApproved) gaps.push("support/refund policy approval");
+  return gaps;
+}
+
 function paymentsTile(provider: LaunchReadinessProviderInput): LaunchReadinessTile {
-  return provider.paymentsEnabled
-    ? {
-        key: "plus-payments",
-        label: "WoofWatcher Plus",
-        value: "Checkout ready",
-        detail: "Subscriptions can run under approved product, refund, support, and app-store terms.",
-        status: "ready",
-      }
-    : {
-        key: "plus-payments",
-        label: "WoofWatcher Plus",
-        value: "Checkout gated",
-        detail: "Premium entitlement preview is safe, but paid checkout must stay disabled until launch approvals are complete.",
-        status: "blocked",
-      };
+  if (!provider.paymentsEnabled) {
+    return {
+      key: "plus-payments",
+      label: "WoofWatcher Plus",
+      value: "Checkout gated",
+      detail: "Premium entitlement preview is safe, but paid checkout must stay disabled until launch approvals are complete.",
+      status: "blocked",
+    };
+  }
+
+  const approvalGaps = paymentsApprovalGaps(provider);
+  if (approvalGaps.length) {
+    return {
+      key: "plus-payments",
+      label: "WoofWatcher Plus",
+      value: "Checkout approval open",
+      detail: `Payment provider proof is staged, but ${approvalGaps.join(", ")} must close before paid checkout goes live.`,
+      status: "review",
+    };
+  }
+
+  return {
+    key: "plus-payments",
+    label: "WoofWatcher Plus",
+    value: "Checkout ready",
+    detail: "Subscriptions can run under approved product, refund, support, and app-store terms.",
+    status: "ready",
+  };
 }
 
 function approvalTile(provider: LaunchReadinessProviderInput): LaunchReadinessTile {

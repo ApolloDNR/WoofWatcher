@@ -1538,6 +1538,10 @@ Latest local evidence, 2026-07-03:
   mission`, and Share Beta Handoff, the Release Smoke Checklist, the JSON mobile
   beta doctor, live-preview proof, and native QA tooling doctor all name the
   same target.
+- Launch Readiness now keeps the WoofWatcher Plus tile in `Checkout approval
+  open` review when payment provider proof is staged but store-account,
+  privacy/legal, or support/refund approval is still missing. The tile does not
+  say `Checkout ready` until those obligations are closed.
 - Focused proof passed `mobileReleaseQa.test.ts`,
   `betaHandoffPacket.test.ts`, `mobileReleaseSmokeChecklist.test.ts`, and
   `mobileReadiness.test.ts` with `138/138` tests. The broader mobile/PWA/care

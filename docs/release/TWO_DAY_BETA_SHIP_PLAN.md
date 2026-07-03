@@ -442,6 +442,10 @@ Current environment note:
 - More Launch Readiness now follows the same provider proof boundary for
   production auth and database readiness. Local sign-in, local household state,
   and non-attention sync status do not count as Clerk/Supabase launch proof.
+- More Launch Readiness also keeps WoofWatcher Plus checkout in review when
+  payment provider proof is staged but store-account approval, privacy/legal
+  approval, or support/refund policy approval are still open. `Checkout ready`
+  is reserved for the moment those payment obligations are actually closed.
 - Provider Launch Setup row status now uses the same boundary. Local-draft and
   owner-reviewed toggles show as `Local staged` or `Owner staged`, stay in the
   open-provider list, keep `nextGate` active, and do not increase the

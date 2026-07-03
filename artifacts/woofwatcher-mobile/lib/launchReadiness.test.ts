@@ -181,6 +181,33 @@ test("distinguishes owner-staged support packets from final legal and store appr
   assert.ok(plan.blockers.some((blocker) => /Support runbook owner packet/i.test(blocker)));
 });
 
+test("keeps Plus checkout in review until payment approval obligations are closed", () => {
+  const plan = deriveLaunchReadiness({
+    ...fullyApprovedInput,
+    provider: {
+      ...fullyApprovedInput.provider,
+      paymentsEnabled: true,
+      appStoreAccountsReady: false,
+      privacyLegalApproved: false,
+      supportRunbookApproved: false,
+    },
+  });
+
+  assert.equal(plan.status, "approval-required");
+  assert.equal(plan.storeLaunchReady, false);
+
+  const plusTile = plan.tiles.find((tile) => tile.key === "plus-payments");
+  assert.equal(plusTile?.status, "review");
+  assert.equal(plusTile?.value, "Checkout approval open");
+  assert.match(plusTile?.detail ?? "", /refund/i);
+  assert.match(plusTile?.detail ?? "", /support/i);
+  assert.match(plusTile?.detail ?? "", /store/i);
+  assert.doesNotMatch(plusTile?.value ?? "", /ready/i);
+  assert.ok(plan.blockers.some((blocker) => /Apple and Google/i.test(blocker)));
+  assert.ok(plan.blockers.some((blocker) => /Privacy\/legal/i.test(blocker)));
+  assert.ok(plan.blockers.some((blocker) => /Support/i.test(blocker)));
+});
+
 test("points launch readiness at native QA when no device proof exists yet", () => {
   const plan = deriveLaunchReadiness({
     ...fullyApprovedInput,
