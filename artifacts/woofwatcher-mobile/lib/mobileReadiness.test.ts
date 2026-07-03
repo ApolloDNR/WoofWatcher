@@ -3297,12 +3297,19 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
 
   assert.match(records, /getCarePassArtifactPrintView/);
   assert.match(records, /describeCarePassArtifactExport/);
+  assert.match(records, /import \* as FileSystem from "expo-file-system\/legacy"/);
+  assert.match(records, /buildReportArtifactExportFilePlan/);
+  assert.match(records, /buildReportArtifactShareContent/);
+  assert.match(records, /FileSystem\.makeDirectoryAsync/);
+  assert.match(records, /FileSystem\.writeAsStringAsync/);
+  assert.match(records, /FileSystem\.getContentUriAsync/);
   assert.match(records, /const storage = exportView\.storage/);
   assert.match(
     records,
     /storageProviderConfigured: Boolean\(state\.launchProviderProfile\?\.storageProviderConfigured\)/,
   );
   assert.match(records, /exportView\.formatLabel/);
+  assert.match(records, /local file - PDF pending/);
   assert.match(records, /exportView\.pdfDetail/);
   assert.match(records, /Export manifest/);
   assert.match(records, /exportView\.manifestRows\.map/);
@@ -3318,7 +3325,7 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   );
   assert.match(
     records,
-    /accessibilityLabel=\{`Share printable report source for \$\{artifact\.title\}`\}/,
+    /accessibilityLabel=\{`Share local printable report source file for \$\{artifact\.title\}`\}/,
   );
 });
 
@@ -4919,7 +4926,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.nextActions?.some(
       (action) =>
-        action.includes("Printable HTML") && action.includes("PDF pending"),
+        action.includes("Printable HTML local file") && action.includes("PDF pending"),
     ),
   );
   assert.ok(

@@ -100,7 +100,7 @@ const nextActions = [
   "Serve the exported beta with pnpm --filter @workspace/woofwatcher-mobile run preview:smoke, then open http://127.0.0.1:4194/.",
   "Open /care-twin-qa on a real device or simulator.",
   "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
-  "Verify Records/Care Pass Report History shows Printable HTML, file size, and PDF pending.",
+  "Verify Records/Care Pass Report History shows Printable HTML local file, file size, and PDF pending.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
 ];
@@ -237,7 +237,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Dependency proof requires a real PATH pnpm at 10.24.0; do not use a bundled pnpm 11.x candidate.",
   "Required beta proof after export:",
   "Native QA Needs tune fix brief:",
-  "Confirm Care Pass export manifest shows Printable HTML, file size, and PDF pending before claiming PDF readiness.",
+  "Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
   "Provider proof needed:",
   "Truth boundaries:",
 ])
@@ -403,7 +403,7 @@ const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileRelease
 ])
   && includesAll(betaHandoffPacketSource, [
     "Confirm Care Pass Report History storage status says Saved on this device or Ready to upload.",
-    "Confirm Care Pass export manifest shows Printable HTML, file size, and PDF pending before claiming PDF readiness.",
+    "Confirm Care Pass export manifest shows Printable HTML local file, file size, and PDF pending before claiming PDF readiness.",
 ])
   && includesAll(mobileLaunchQaEvidenceSource, [
     "Route loop:",

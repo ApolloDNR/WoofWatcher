@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -77,6 +78,10 @@ import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle } from "@/lib/pixelRendering";
+import {
+  buildReportArtifactExportFilePlan,
+  buildReportArtifactShareContent,
+} from "@/lib/reportArtifactExportFile";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -564,12 +569,44 @@ export default function RecordsScreen() {
     );
   };
 
-  const sharePrintableReportArtifact = (artifact: CarePassArtifact) => {
+  const sharePrintableReportArtifact = async (artifact: CarePassArtifact) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const printable = getCarePassArtifactPrintView(artifact);
-    Share.share({ message: printable.html, title: printable.fileName }).catch(() =>
-      Alert.alert(printable.fileName, printable.html),
-    );
+    const plan = buildReportArtifactExportFilePlan(printable, {
+      documentDirectory: Platform.OS === "web" ? null : FileSystem.documentDirectory,
+      title: artifact.title,
+    });
+
+    const shareFallback = async () => {
+      const fallbackPlan = buildReportArtifactExportFilePlan(printable, {
+        documentDirectory: null,
+        title: artifact.title,
+      });
+      const fallbackContent = buildReportArtifactShareContent(fallbackPlan);
+      try {
+        await Share.share(fallbackContent);
+      } catch {
+        Alert.alert(fallbackContent.title, fallbackContent.message);
+      }
+    };
+
+    if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
+      try {
+        await FileSystem.makeDirectoryAsync(plan.directoryUri, { intermediates: true });
+        await FileSystem.writeAsStringAsync(plan.fileUri, printable.html, { encoding: FileSystem.EncodingType.UTF8 });
+        const shareUri =
+          Platform.OS === "android"
+            ? await FileSystem.getContentUriAsync(plan.fileUri).catch(() => plan.fileUri)
+            : plan.fileUri;
+        await Share.share(buildReportArtifactShareContent(plan, { shareUri }));
+        return;
+      } catch {
+        await shareFallback();
+        return;
+      }
+    }
+
+    await shareFallback();
   };
 
   // Mount animation
@@ -2117,7 +2154,7 @@ export default function RecordsScreen() {
                         {exportView.fileName}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {exportView.formatLabel} source - PDF pending
+                        {exportView.formatLabel} local file - PDF pending
                       </Text>
                       <View style={s.artifactStorageRow}>
                         <View
@@ -2192,7 +2229,7 @@ export default function RecordsScreen() {
                         <Pressable
                           onPress={() => sharePrintableReportArtifact(artifact)}
                           accessibilityRole="button"
-                          accessibilityLabel={`Share printable report source for ${artifact.title}`}
+                          accessibilityLabel={`Share local printable report source file for ${artifact.title}`}
                           hitSlop={MOBILE_INLINE_HIT_SLOP}
                           style={({ pressed }) => [
                             s.artifactIconButton,
