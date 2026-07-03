@@ -3404,6 +3404,7 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
 
   assert.match(records, /getCarePassArtifactPrintView/);
   assert.match(records, /describeCarePassArtifactExport/);
+  assert.match(records, /buildReportBinaryExportProofManifest/);
   assert.match(records, /deriveLaunchProviderSetup/);
   assert.match(records, /import \* as FileSystem from "expo-file-system\/legacy"/);
   assert.match(records, /buildReportArtifactExportFilePlan/);
@@ -3425,6 +3426,13 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   assert.match(records, /exportView\.pdfDetail/);
   assert.match(records, /Export manifest/);
   assert.match(records, /exportView\.manifestRows\.map/);
+  assert.match(records, /Binary proof manifest/);
+  assert.match(records, /const binaryProofManifest = buildReportBinaryExportProofManifest/);
+  assert.match(records, /carePassHtmlFileName: exportView\.fileName/);
+  assert.match(records, /dogIdSvgFileName: credentialImageView\.fileName/);
+  assert.match(records, /storageProviderConfigured: launchProviderSetupPlan\.providerInput\.storageProviderConfigured/);
+  assert.match(records, /binaryProofManifest\.rows\.map/);
+  assert.match(records, /binaryProofManifest\.blockers\.map/);
   assert.match(records, /artifactManifestGrid/);
   assert.match(records, /artifactManifestCell/);
   assert.match(records, /sharePrintableReportArtifact/);
@@ -5264,6 +5272,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
       (check) =>
         check.label ===
           "report binary export proof packet is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label ===
+          "records binary export proof manifest is source-backed" &&
         check.status === "PASS",
     ),
   );

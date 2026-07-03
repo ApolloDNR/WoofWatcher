@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildReportBinaryExportProofManifest,
   REPORT_BINARY_EXPORT_PROOF_ITEMS,
   REPORT_BINARY_EXPORT_PROOF_SUMMARY,
 } from "./reportBinaryExportProof.ts";
@@ -30,4 +31,35 @@ test("defines the binary report export proof packet before PDF or PNG readiness 
   assert.match(REPORT_BINARY_EXPORT_PROOF_ITEMS[2].requiredEvidence, /retention\/export\/deletion/);
   assert.match(REPORT_BINARY_EXPORT_PROOF_ITEMS[3].requiredEvidence, /iOS and Android/);
   assert.match(REPORT_BINARY_EXPORT_PROOF_ITEMS[3].requiredEvidence, /PDF and PNG/);
+});
+
+test("builds an artifact-specific binary export readiness manifest without claiming PDF or PNG generation", () => {
+  const manifest = buildReportBinaryExportProofManifest({
+    carePassHtmlFileName: "phoenix-vet-care-pass-2026-06-08.html",
+    dogIdSvgFileName: "phoenix-dog-id-2026-06-08.svg",
+    storageProviderConfigured: false,
+    pdfGeneratorApproved: false,
+    pngRendererApproved: false,
+    nativeArtifactEvidenceApproved: false,
+  });
+
+  assert.equal(manifest.status, "blocked");
+  assert.deepEqual(
+    manifest.rows.map((row) => row.label),
+    ["Care Pass PDF", "Dog ID PNG", "Provider storage", "Native artifact proof"],
+  );
+  assert.equal(manifest.rows[0]?.value, "PDF pending");
+  assert.match(manifest.rows[0]?.detail ?? "", /phoenix-vet-care-pass-2026-06-08\.html/);
+  assert.match(manifest.rows[0]?.detail ?? "", /application\/pdf/);
+  assert.match(manifest.rows[0]?.detail ?? "", /approved PDF generator/);
+  assert.equal(manifest.rows[1]?.value, "PNG pending");
+  assert.match(manifest.rows[1]?.detail ?? "", /phoenix-dog-id-2026-06-08\.svg/);
+  assert.match(manifest.rows[1]?.detail ?? "", /image\/png/);
+  assert.match(manifest.rows[1]?.detail ?? "", /approved PNG renderer/);
+  assert.equal(manifest.rows[2]?.value, "Provider storage pending");
+  assert.equal(manifest.rows[3]?.value, "iOS/Android proof pending");
+  assert.ok(manifest.blockers.some((blocker) => /Care Pass PDF generator/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /Dog ID PNG renderer/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /Provider storage/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /iOS and Android/i.test(blocker)));
 });

@@ -2824,6 +2824,15 @@ API/mobile/PWA/care-domain suite `521/521`, mobile TypeScript, and `tsc
 --build`; the JSON doctor still blocks only on local pnpm `11.7.0` versus pinned
 `10.24.0`.
 
+The Records binary proof manifest pass brings that packet back into the product
+surface. Each saved Care Pass in Report History now shows a `Binary proof
+manifest` with Care Pass PDF, Dog ID PNG, Provider storage, and Native artifact
+proof rows built from the local Care Pass HTML source and Dog ID SVG source.
+The JSON mobile beta doctor now guards `records binary export proof manifest is
+source-backed`, so generated PDF/PNG readiness stays blocked until the manifest
+has real file name, file size, MIME, share/reopen, provider storage, and
+iOS/Android evidence instead of HTML/SVG-only source proof.
+
 The Route Visual Consistency handoff target pass makes the existing route-by-route
 native screenshot mission explicit in every beta helper surface. Share Beta
 Handoff, the Release Smoke Checklist, and the JSON mobile beta doctor now point

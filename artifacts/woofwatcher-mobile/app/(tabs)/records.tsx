@@ -85,6 +85,7 @@ import {
   type ReportArtifactPrintableSource,
 } from "@/lib/reportArtifactExportFile";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
+import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -401,6 +402,7 @@ export default function RecordsScreen() {
       }),
     [state.profile, state.caregivers, state.records],
   );
+  const credentialImageView = useMemo(() => getPetCredentialImageView(credential), [credential]);
 
   const openRecordForm = (kind: RecordKind = "vaccine") => {
     setRecordType(kind);
@@ -564,14 +566,13 @@ export default function RecordsScreen() {
 
   const shareCredentialImageSource = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const image = getPetCredentialImageView(credential);
     await sharePrintableSourceFile(
       {
-        fileName: image.fileName,
-        html: image.svg,
-        mimeType: image.mimeType,
-        formatLabel: image.formatLabel,
-        boundary: image.boundary,
+        fileName: credentialImageView.fileName,
+        html: credentialImageView.svg,
+        mimeType: credentialImageView.mimeType,
+        formatLabel: credentialImageView.formatLabel,
+        boundary: credentialImageView.boundary,
       },
       {
         directoryName: "WoofWatcherCredentials",
@@ -2199,6 +2200,14 @@ export default function RecordsScreen() {
                 const exportView = describeCarePassArtifactExport(artifact, {
                   storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
                 });
+                const binaryProofManifest = buildReportBinaryExportProofManifest({
+                  carePassHtmlFileName: exportView.fileName,
+                  dogIdSvgFileName: credentialImageView.fileName,
+                  storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
+                  pdfGeneratorApproved: false,
+                  pngRendererApproved: false,
+                  nativeArtifactEvidenceApproved: false,
+                });
                 const storage = exportView.storage;
                 const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
                 return (
@@ -2275,6 +2284,42 @@ export default function RecordsScreen() {
                           </View>
                         ))}
                       </View>
+                      <Text style={[s.artifactManifestTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        Binary proof manifest
+                      </Text>
+                      <View style={s.artifactManifestGrid}>
+                        {binaryProofManifest.rows.map((row) => (
+                          <View key={row.label} style={[s.artifactManifestCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                            <Text style={[s.artifactManifestLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                              {row.label}
+                            </Text>
+                            <Text
+                              numberOfLines={1}
+                              style={[
+                                s.artifactManifestValue,
+                                {
+                                  color: row.status === "ready" ? colors.sage : colors.amber,
+                                  fontFamily: "Inter_700Bold",
+                                },
+                              ]}
+                            >
+                              {row.value}
+                            </Text>
+                            <Text numberOfLines={2} style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                              {row.detail}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                      {binaryProofManifest.blockers.map((blocker) => (
+                        <Text
+                          key={blocker}
+                          numberOfLines={2}
+                          style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                        >
+                          - {blocker}
+                        </Text>
+                      ))}
                     </View>
                     <View style={s.reportArtifactActions}>
                       <View style={[s.artifactBadge, { backgroundColor: colors.sage + "14" }]}>

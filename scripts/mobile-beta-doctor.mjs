@@ -943,6 +943,33 @@ check(
     : "keep binary PDF/PNG export proof modeled in reportBinaryExportProof.ts and wired through Provider Launch Setup",
 );
 
+const recordsBinaryExportProofManifestIsSourceBacked = includesAll(reportBinaryExportProofSource, [
+  "buildReportBinaryExportProofManifest",
+  "carePassHtmlFileName",
+  "dogIdSvgFileName",
+  "application/pdf",
+  "image/png",
+  "Provider storage pending",
+  "iOS/Android proof pending",
+])
+  && includesAll(recordsRouteSource, [
+    "buildReportBinaryExportProofManifest",
+    "Binary proof manifest",
+    "const binaryProofManifest = buildReportBinaryExportProofManifest",
+    "carePassHtmlFileName: exportView.fileName",
+    "dogIdSvgFileName: credentialImageView.fileName",
+    "storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured",
+    "binaryProofManifest.rows.map",
+    "binaryProofManifest.blockers.map",
+  ]);
+check(
+  "records binary export proof manifest is source-backed",
+  recordsBinaryExportProofManifestIsSourceBacked,
+  recordsBinaryExportProofManifestIsSourceBacked
+    ? "Records shows artifact-specific PDF/PNG proof status from local Care Pass HTML, Dog ID SVG, provider storage approval, and native evidence blockers"
+    : "keep Records Report History wired to the binary export proof manifest before claiming generated PDF/PNG readiness",
+);
+
 const reportBinaryExportProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "report-binary-export-proof",
   "Report Binary Export Proof",

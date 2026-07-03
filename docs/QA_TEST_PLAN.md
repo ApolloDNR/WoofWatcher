@@ -1401,6 +1401,10 @@ Latest local evidence, 2026-07-03:
   same requirements for Apollo/Replit handoff.
 - The Release Smoke Checklist and JSON mobile beta doctor verify the packet is
   source-backed without claiming PDF/PNG generation is implemented.
+- Records Report History now renders a `Binary proof manifest` for each saved
+  Care Pass artifact. Confirm it names the current Care Pass HTML source, Dog ID
+  SVG source, provider storage state, and iOS/Android evidence blockers before
+  any helper claims generated PDF/PNG readiness.
 - `/care-twin-qa?qaSurface=report-binary-export-proof` now gives the packet a
   focused native QA target that must collect approved generator choices,
   generated PDF/PNG file name, file size, MIME, share/reopen proof, provider
