@@ -211,6 +211,13 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Entitlement mapping: Plus and Family feature gates/);
   assert.match(text, /Refund and support policy: Public refund, support, tax, and subscription terms/);
   assert.match(text, /Checkout gate and restore behavior: checkout stays disabled/);
+  assert.match(text, /WoofGuide AI: WoofGuide AI provider proof packet/);
+  assert.match(text, /Provider key and secret storage: OpenAI key location/);
+  assert.match(text, /Approved model policy: Approved model id/);
+  assert.match(text, /Source and citation rules: Approved source labels/);
+  assert.match(text, /Owner-review write gate: owner-reviewed/);
+  assert.match(text, /Veterinary safety boundary: not veterinary advice/);
+  assert.match(text, /Fallback and incident handling: fallback copy/);
   assert.match(text, /Provider proof does not approve App Store, Play Store, payment, AI, storage, or database readiness/);
   assert.match(text, /Done condition: capture required iOS\/Android proof, save the Mission note, clear Pass pending proof, then share the QA summary/);
   assert.match(text, /Truth boundaries:/);

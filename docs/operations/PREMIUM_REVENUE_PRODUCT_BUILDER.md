@@ -266,6 +266,17 @@ WoofWatcher Plus payments, and the JSON mobile beta doctor reports `payments pro
 enable checkout, approve App Store or Play Store billing, prove receipts, or
 clear Apollo launch sign-off.
 
+The WoofGuide AI provider proof pass turns the old AI one-line proof into a
+source-backed packet. `aiProviderProof.ts` now defines the OpenAI key location,
+approved model policy, source/citation rules, owner-review write gate,
+veterinary safety boundary, and fallback/incident handling evidence required
+before live AI can be enabled. Provider Launch Setup and Share Beta Handoff
+print those proof steps under WoofGuide AI, and the JSON mobile beta doctor
+reports `ai provider proof packet is source-backed`. This does not configure an
+OpenAI key, approve a live model, enable provider-backed AI answers, allow
+automatic care-log writes, clear veterinary safety review, or replace Apollo
+launch sign-off.
+
 The two-day beta QA cockpit pass made device capture less fragile. `/care-twin-qa`
 now tags attached screenshot evidence explicitly as iOS, Android, or Web instead
 of relying on the runtime platform, and target routes opened from the cockpit

@@ -208,6 +208,12 @@ Current environment note:
   proof before paid checkout can be enabled. Share Beta Handoff prints those
   proof steps, but checkout remains disabled until Apollo and the store/provider
   evidence is attached.
+- Provider Launch Setup's WoofGuide AI gate now carries a `WoofGuide AI
+  provider proof packet` requiring OpenAI key location, approved model policy,
+  source/citation rules, owner-review write gate, veterinary safety boundary,
+  and fallback/incident handling before live AI can be enabled. Share Beta
+  Handoff prints those proof steps, but this does not configure an OpenAI key,
+  approve a model, enable live AI, or clear veterinary/safety review.
 - The Release Smoke Checklist and Share Beta Handoff now name the focused
   Records handoff target at `/care-twin-qa?qaSurface=records-local-file-handoff`,
   including Care Pass local HTML, Dog ID local HTML, Dog ID SVG, share-sheet

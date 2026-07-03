@@ -250,6 +250,7 @@ const livePreviewHandoffProofPath = join(mobileRoot, "scripts", "live-preview-ha
 const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
 const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts");
 const authProviderProofPath = join(mobileRoot, "lib", "authProviderProof.ts");
+const aiProviderProofPath = join(mobileRoot, "lib", "aiProviderProof.ts");
 const paymentsProviderProofPath = join(mobileRoot, "lib", "paymentsProviderProof.ts");
 const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
@@ -266,6 +267,7 @@ const livePreviewHandoffProofSource = existsSync(livePreviewHandoffProofPath) ? 
 const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
 const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFileSync(launchProviderSetupPath, "utf8") : "";
 const authProviderProofSource = existsSync(authProviderProofPath) ? readFileSync(authProviderProofPath, "utf8") : "";
+const aiProviderProofSource = existsSync(aiProviderProofPath) ? readFileSync(aiProviderProofPath, "utf8") : "";
 const paymentsProviderProofSource = existsSync(paymentsProviderProofPath) ? readFileSync(paymentsProviderProofPath, "utf8") : "";
 const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
@@ -501,6 +503,34 @@ check(
   paymentsProviderProofPacketIsSourceBacked
     ? "Payments readiness requires product ids, billing path, sandbox receipts, entitlements, refund/support policy, and checkout gate proof through Provider Launch Setup and Share Beta Handoff"
     : "keep payments proof modeled in paymentsProviderProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
+);
+
+const aiProviderProofPacketIsSourceBacked = includesAll(aiProviderProofSource, [
+  "AI_PROVIDER_PROOF_SUMMARY",
+  "AI_PROVIDER_PROOF_ITEMS",
+  "WoofGuide AI provider proof packet",
+  "OpenAI key location",
+  "approved model policy",
+  "source/citation rules",
+  "owner-review write gate",
+  "veterinary safety boundary",
+])
+  && includesAll(launchProviderSetupSource, [
+    "AI_PROVIDER_PROOF_SUMMARY",
+    "AI_PROVIDER_PROOF_ITEMS",
+    "WoofGuide AI",
+    "aiProviderConfigured",
+  ])
+  && includesAll(betaHandoffPacketSource, [
+    "Provider proof needed:",
+    "formatProviderProof",
+  ]);
+check(
+  "ai provider proof packet is source-backed",
+  aiProviderProofPacketIsSourceBacked,
+  aiProviderProofPacketIsSourceBacked
+    ? "WoofGuide AI readiness requires key storage, model policy, source/citation rules, owner-review write gates, veterinary boundaries, and fallback proof through Provider Launch Setup and Share Beta Handoff"
+    : "keep AI proof modeled in aiProviderProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
 const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [

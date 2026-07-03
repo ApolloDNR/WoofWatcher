@@ -8,6 +8,10 @@ import {
   AUTH_PROVIDER_PROOF_SUMMARY,
 } from "./authProviderProof.ts";
 import {
+  AI_PROVIDER_PROOF_ITEMS,
+  AI_PROVIDER_PROOF_SUMMARY,
+} from "./aiProviderProof.ts";
+import {
   REPORT_BINARY_EXPORT_PROOF_ITEMS,
   REPORT_BINARY_EXPORT_PROOF_SUMMARY,
 } from "./reportBinaryExportProof.ts";
@@ -190,7 +194,8 @@ const ROW_DEFINITIONS: Array<{
     readyDetail: "WoofGuide can call the approved AI provider with owner review and veterinary boundary copy.",
     blockedDetail: "WoofGuide must stay deterministic/fallback until keys, model policy, disclosures, and review rules are approved.",
     nextAction: "Approve OpenAI key handling, model policy, source/citation behavior, owner-review writes, and vet-boundary language.",
-    proofRequired: "AI provider key location, approved model policy, citation/source rules, owner-review write gate, and veterinary-boundary copy review.",
+    proofRequired: AI_PROVIDER_PROOF_SUMMARY,
+    proofChecklist: AI_PROVIDER_PROOF_ITEMS.map((item) => `${item.label}: ${item.requiredEvidence}`),
   },
   {
     key: "payments",

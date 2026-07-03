@@ -109,6 +109,16 @@ test("builds a truthful provider setup plan from a local launch profile", async 
         row.proofChecklist.some((item) => /Entitlement mapping/i.test(item) && /restore purchases/i.test(item)),
     ),
   );
+  assert.ok(plan.rows.some((row) => row.key === "ai" && /WoofGuide AI provider proof packet/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "ai" && /OpenAI key location/i.test(row.proofRequired)));
+  assert.ok(plan.rows.some((row) => row.key === "ai" && /owner-review write gate/i.test(row.proofRequired)));
+  assert.ok(
+    plan.rows.some(
+      (row) =>
+        row.key === "ai" &&
+        row.proofChecklist.some((item) => /Veterinary safety boundary/i.test(item) && /not veterinary advice/i.test(item)),
+    ),
+  );
   assert.equal(plan.nextGate?.key, "database");
   assert.match(plan.nextGate?.proofRequired ?? "", /Supabase project id/);
   assert.ok(plan.nextGate?.proofChecklist.some((item) => /mobile incremental/i.test(item)));
@@ -174,7 +184,7 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /Next Provider Gate/);
   assert.match(text, /WoofGuide AI/);
   assert.match(text, /Owner: Apollo \/ safety/);
-  assert.match(text, /Proof: AI provider key location/);
+  assert.match(text, /Proof: WoofGuide AI provider proof packet/);
   assert.match(text, /Proof Needed/);
   assert.match(text, /Production auth: Production auth provider proof packet/);
   assert.match(text, /Clerk production app/);
@@ -202,7 +212,13 @@ test("formats a shareable provider setup checklist without claiming launch appro
   assert.match(text, /Entitlement mapping: Plus and Family feature gates/);
   assert.match(text, /Refund and support policy: Public refund, support, tax, and subscription terms/);
   assert.match(text, /Checkout gate and restore behavior: checkout stays disabled/);
-  assert.match(text, /WoofGuide AI/);
+  assert.match(text, /WoofGuide AI: WoofGuide AI provider proof packet/);
+  assert.match(text, /Provider key and secret storage: OpenAI key location/);
+  assert.match(text, /Approved model policy: Approved model id/);
+  assert.match(text, /Source and citation rules: Approved source labels/);
+  assert.match(text, /Owner-review write gate: owner-reviewed/);
+  assert.match(text, /Veterinary safety boundary: not veterinary advice/);
+  assert.match(text, /Fallback and incident handling: fallback copy/);
   assert.match(text, /No App Store or Play Store submission is approved by this checklist/);
 });
 
