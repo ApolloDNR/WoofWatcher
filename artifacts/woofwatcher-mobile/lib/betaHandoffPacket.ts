@@ -32,12 +32,12 @@ export interface MobileBetaCiProof {
 
 export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
   workflowName: "WoofWatcher Verify",
-  runId: "28653297333",
-  jobId: "84976275755",
+  runId: "28657836139",
+  jobId: "84991128098",
   branch: "automation/premium-revenue-product-builder",
-  commit: "9a36135",
-  duration: "2m57s",
-  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28653297333",
+  commit: "5f80049",
+  duration: "2m10s",
+  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28657836139",
   passedSteps: [
     "Setup pnpm",
     "Install dependencies",
@@ -86,10 +86,11 @@ function formatCiProof(proof: MobileBetaCiProof | null | undefined): string[] {
   }
 
   return [
-    `- ${proof.workflowName} run ${proof.runId} passed on ${proof.branch} at commit ${proof.commit} (job ${proof.jobId}, ${proof.duration}).`,
+    `- Recorded branch CI proof: ${proof.workflowName} run ${proof.runId} passed on ${proof.branch} at commit ${proof.commit} (job ${proof.jobId}, ${proof.duration}).`,
     `- Proof URL: ${proof.proofUrl}`,
     `- Passed steps: ${proof.passedSteps.join("; ")}.`,
     `- Covers: ${proof.coverage}.`,
+    "- Rerun WoofWatcher Verify after any new commit before treating dependency proof as current.",
     "- CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
   ];
 }

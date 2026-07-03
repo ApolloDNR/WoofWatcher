@@ -5121,6 +5121,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     ),
   );
   assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "recorded CI proof freshness boundary is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
     payload.truthBoundaries?.some((boundary) =>
       boundary.includes("READY_FOR_EXPORT only"),
     ),

@@ -1486,27 +1486,31 @@ Latest local evidence, 2026-07-03:
   setup, generated PDF/image export, app-store approval, public launch, or
   Apollo sign-off.
 
-## Share Beta Handoff CI Proof
+## Share Beta Handoff Recorded CI Proof
 
 Latest local evidence, 2026-07-03:
 
 - More now passes `RECORDED_MOBILE_BETA_CI_PROOF` into
-  `buildBetaHandoffPacketShareText`, so the shared packet carries the green
+  `buildBetaHandoffPacketShareText`, so the shared packet carries recorded
   dependency-complete `WoofWatcher Verify` proof instead of only listing local
   commands.
-- The handoff names run `28653297333`, job `84976275755`, branch
-  `automation/premium-revenue-product-builder`, commit `9a36135`, duration
-  `2m57s`, the proof URL, and the passed Setup pnpm, install, JSON doctor,
+- The handoff labels that evidence as recorded branch CI proof for run
+  `28657836139`, job `84991128098`, branch
+  `automation/premium-revenue-product-builder`, commit `5f80049`, duration
+  `2m10s`, the proof URL, and the passed Setup pnpm, install, JSON doctor,
   focused behavior, and `build:ci` steps.
+- The handoff now warns helpers to rerun `WoofWatcher Verify` after any new
+  commit before treating dependency proof as current.
 - Red/green proof first failed because `RECORDED_MOBILE_BETA_CI_PROOF` was not
   exported from `betaHandoffPacket.ts`, then passed after the recorded proof
   model, handoff formatting, More wiring, and doctor source guard were added.
-- Focused proof passed `betaHandoffPacket.test.ts` with `3/3` tests and
-  `mobileReadiness.test.ts` with `113/113` tests.
-- Direct local JSON doctor source-backed checks pass and now list
-  `Dependency-complete CI proof` as a handoff section, but the result remains
-  truthfully `BLOCKED` only because this Windows shell exposes pnpm `11.7.0`
-  while the repo is pinned to `10.24.0`.
+- Fresh focused proof for the freshness boundary passed
+  `betaHandoffPacket.test.ts` plus `mobileReadiness.test.ts` with `116/116`
+  tests, and the broader API/mobile/PWA/care-domain suite passed `521/521`.
+- Direct local JSON doctor source-backed checks now require the recorded run,
+  job, commit, historical label, and rerun warning to stay present, but the
+  result remains truthfully `BLOCKED` only because this Windows shell exposes
+  pnpm `11.7.0` while the repo is pinned to `10.24.0`.
 - This handoff proof does not approve native screenshots, provider setup,
   generated PDF/image export, app-store approval, public launch, or Apollo
   sign-off.

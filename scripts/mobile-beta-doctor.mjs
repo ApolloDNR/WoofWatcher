@@ -332,6 +332,23 @@ check(
     : "keep live preview proof wired through the release smoke checklist, Share Beta Handoff, and doctor next actions",
 );
 
+const recordedCiProofFreshnessBoundaryIsSourceBacked = includesAll(betaHandoffPacketSource, [
+  "RECORDED_MOBILE_BETA_CI_PROOF",
+  'runId: "28657836139"',
+  'jobId: "84991128098"',
+  'commit: "5f80049"',
+  "Recorded branch CI proof:",
+  "Rerun WoofWatcher Verify after any new commit before treating dependency proof as current.",
+  "CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off.",
+]);
+check(
+  "recorded CI proof freshness boundary is source-backed",
+  recordedCiProofFreshnessBoundaryIsSourceBacked,
+  recordedCiProofFreshnessBoundaryIsSourceBacked
+    ? "Recorded CI proof names the latest recorded branch run while requiring a rerun after new commits"
+    : "keep recorded CI proof labeled as historical branch evidence with a rerun-after-new-commit boundary",
+);
+
 const ownerPreviewProofWiringIsSourceBacked = includesAll(mobileLaunchQaEvidenceSource, [
   "ownerPreviewProofStatus",
   "OWNER_PREVIEW_CORE_LOOP_ID",
