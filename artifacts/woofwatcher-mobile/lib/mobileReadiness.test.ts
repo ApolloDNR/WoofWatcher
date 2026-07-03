@@ -4558,8 +4558,12 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(more, /privacyLegalApproved,\s*privacyLegalOwnerReviewed/);
   assert.match(more, /supportRunbookApproved,\s*supportRunbookOwnerReviewed/);
+  assert.match(more, /authConfigured:\s*Boolean\(launchProviderSetupPlan\.providerInput\.authConfigured\)/);
+  assert.match(more, /databaseConfigured:\s*Boolean\(launchProviderSetupPlan\.providerInput\.databaseConfigured\)/);
   assert.doesNotMatch(more, /privacyLegalApproved: false/);
   assert.doesNotMatch(more, /supportRunbookApproved: false/);
+  assert.doesNotMatch(more, /me\.data\?\.user\?\.id && household/);
+  assert.doesNotMatch(more, /household && syncDashboard\.status !== "attention"/);
   assert.match(more, /launchReadinessPlan\.badgeLabel/);
   assert.match(more, /launchReadinessPlan\.summary/);
   assert.match(more, /launchReadinessPlan\.nextGate/);

@@ -439,6 +439,9 @@ Current environment note:
   `provider-approved` status. Owner-reviewed local rows can stage proof work,
   but they no longer make release packets or store gates behave as if real
   Clerk/Supabase/storage/AI/payments/push/store/deletion providers are approved.
+- More Launch Readiness now follows the same provider proof boundary for
+  production auth and database readiness. Local sign-in, local household state,
+  and non-attention sync status do not count as Clerk/Supabase launch proof.
 - Provider Launch Setup row status now uses the same boundary. Local-draft and
   owner-reviewed toggles show as `Local staged` or `Owner staged`, stay in the
   open-provider list, keep `nextGate` active, and do not increase the

@@ -1039,8 +1039,8 @@ export default function MoreScreen() {
           privacyExportReady: true,
         },
         provider: {
-          authConfigured: Boolean(launchProviderSetupPlan.providerInput.authConfigured || (me.data?.user?.id && household)),
-          databaseConfigured: Boolean(launchProviderSetupPlan.providerInput.databaseConfigured || (household && syncDashboard.status !== "attention")),
+          authConfigured: Boolean(launchProviderSetupPlan.providerInput.authConfigured),
+          databaseConfigured: Boolean(launchProviderSetupPlan.providerInput.databaseConfigured),
           storageProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.storageProviderConfigured),
           storageQueue: attachmentManifest.launchQueue,
           aiProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.aiProviderConfigured),
@@ -1058,8 +1058,6 @@ export default function MoreScreen() {
     [
       attachmentManifest.launchQueue,
       launchProviderSetupPlan.providerInput,
-      me.data?.user?.id,
-      household,
       privacyLegalOwnerReviewed,
       privacyLegalApproved,
       savedNativeQaSummary,
