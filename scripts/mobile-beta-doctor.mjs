@@ -274,6 +274,7 @@ const privacySafetyPath = join(mobileRoot, "lib", "privacySafety.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const setupRoutePath = join(mobileRoot, "app", "setup.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
+const careContextPath = join(mobileRoot, "context", "CareContext.tsx");
 const premiumRoutePath = join(mobileRoot, "app", "premium.tsx");
 const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
 const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
@@ -309,6 +310,7 @@ const privacySafetySource = existsSync(privacySafetyPath) ? readFileSync(privacy
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const setupRouteSource = existsSync(setupRoutePath) ? readFileSync(setupRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
+const careContextSource = existsSync(careContextPath) ? readFileSync(careContextPath, "utf8") : "";
 const premiumRouteSource = existsSync(premiumRoutePath) ? readFileSync(premiumRoutePath, "utf8") : "";
 const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRoutePath, "utf8") : "";
 const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
@@ -1007,9 +1009,10 @@ const attachmentStorageProofGuardIsSourceBacked = includesAll(attachmentManifest
   ])
   && includesAll(moreRouteSource, [
     "storageProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.storageProviderConfigured)",
-    "storageProviderProofReady: false",
+    "storageProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.storageProviderProofReady)",
     "storageQueue: attachmentManifest.launchQueue",
-  ]);
+  ])
+  && !/storageProviderProofReady:\s*false/.test(moreRouteSource);
 check(
   "attachment storage proof guard is source-backed",
   attachmentStorageProofGuardIsSourceBacked,
@@ -1038,22 +1041,53 @@ const aggregateLaunchReadinessProofGuardIsSourceBacked = includesAll(launchReadi
   "AI proof gated",
 ])
   && includesAll(moreRouteSource, [
-    "authProviderProofReady: false",
-    "databaseProviderProofReady: false",
-    "aiProviderProofReady: false",
-    "paymentsProviderProofReady: false",
-    "accountDeletionProofReady: false",
-    "pushNotificationsProofReady: false",
-    "storeAccountsProofReady: false",
-    "privacyLegalProofReady: false",
-    "supportRunbookProofReady: false",
-  ]);
+    "deriveLaunchProviderSetup(state.launchProviderProfile)",
+    "authProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.authProviderProofReady)",
+    "databaseProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.databaseProviderProofReady)",
+    "aiProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.aiProviderProofReady)",
+    "paymentsProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.paymentsProviderProofReady)",
+    "accountDeletionProofReady: Boolean(launchProviderSetupPlan.providerInput.accountDeletionProofReady)",
+    "pushNotificationsProofReady: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsProofReady)",
+    "storeAccountsProofReady: Boolean(launchProviderSetupPlan.providerInput.storeAccountsProofReady)",
+    "privacyLegalProofReady",
+    "supportRunbookProofReady",
+  ])
+  && !/authProviderProofReady:\s*false/.test(moreRouteSource)
+  && !/databaseProviderProofReady:\s*false/.test(moreRouteSource)
+  && !/storageProviderProofReady:\s*false/.test(moreRouteSource);
 check(
   "aggregate launch readiness proof guard is source-backed",
   aggregateLaunchReadinessProofGuardIsSourceBacked,
   aggregateLaunchReadinessProofGuardIsSourceBacked
     ? "Launch Readiness keeps provider/store/approval gates blocked until structured proof flags accompany the provider setup booleans"
     : "keep Launch Readiness and More wired so provider setup booleans alone cannot mark the app store-ready",
+);
+
+const careDocLaunchProofPersistenceGuardIsSourceBacked = includesAll(careContextSource, [
+  "supportLegalReadinessEvidence?: SupportLegalReadinessProofEvidence | null",
+  "authProviderProofReady: boolean",
+  "databaseProviderProofReady: boolean",
+  "storageProviderProofReady: boolean",
+  "aiProviderProofReady: boolean",
+  "paymentsProviderProofReady: boolean",
+  "pushNotificationsProofReady: boolean",
+  "storeAccountsProofReady: boolean",
+  "accountDeletionProofReady: boolean",
+  "normalizeSupportLegalReadinessEvidence",
+  "supportLegalReadinessEvidence: normalizeSupportLegalReadinessEvidence(launchSupportProfile.supportLegalReadinessEvidence)",
+  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
+])
+  && includesAll(moreRouteSource, [
+    "deriveLaunchProviderSetup(state.launchProviderProfile)",
+    "supportRunbookProofReady",
+    "privacyLegalProofReady",
+  ]);
+check(
+  "care document launch proof persistence guard is source-backed",
+  careDocLaunchProofPersistenceGuardIsSourceBacked,
+  careDocLaunchProofPersistenceGuardIsSourceBacked
+    ? "CareContext preserves structured support/legal and provider proof fields before More feeds the gated launch-readiness model"
+    : "preserve structured launch proof fields in CareContext so valid saved/imported proof can reach Launch Readiness without raw boolean bypasses",
 );
 
 const providerLaunchSetupProofGuardIsSourceBacked = includesAll(launchProviderSetupSource, [

@@ -2021,6 +2021,24 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real provider proof files for the provider rows, or WoofWatcher gains a provider-backed evidence service that can validate those files automatically.
 
+### 2026-07-04: Care Documents Preserve Launch Proof Fields
+
+Decision: The saved care document must preserve structured launch proof fields instead of treating them as transient UI-only state. `launchSupportProfile.supportLegalReadinessEvidence` and every Provider Launch Setup proof-ready flag must survive local cache hydration, server refresh, conflict merge, privacy export, and More's Launch Readiness derivation.
+
+Reason: The proof models require structured evidence, but the care-document merge path could strip those fields before `deriveSupportRunbookPlan`, `deriveLaunchProviderSetup`, or `deriveLaunchReadiness` saw them. That made real saved/imported proof impossible to use and could leave operators stuck behind stale hardcoded proof placeholders even after evidence was attached.
+
+Consequences:
+
+- `CareContext` includes and normalizes `supportLegalReadinessEvidence`.
+- `CareContext` includes all Provider Launch Setup proof-ready flags and normalizes `launchProviderProfile` through `normalizeLaunchProviderProfile`.
+- More forwards only `launchProviderSetupPlan.providerInput` proof flags plus launch-ready support/legal proof variables into Launch Readiness.
+- Raw configured/provider-approved booleans still cannot bypass structured proof gates.
+- Real provider proof files, native/store proof, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service or a richer proof attachment editor that can validate and attach proof files directly from the app.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

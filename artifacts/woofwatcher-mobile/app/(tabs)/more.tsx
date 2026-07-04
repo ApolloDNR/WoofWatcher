@@ -463,6 +463,8 @@ export default function MoreScreen() {
     state.launchSupportProfile.providerStatus === "provider-approved" && launchSupportPlan.supportRunbookApproved;
   const privacyLegalApproved =
     state.launchSupportProfile.providerStatus === "provider-approved" && launchSupportPlan.privacyLegalApproved;
+  const supportRunbookProofReady = supportRunbookApproved;
+  const privacyLegalProofReady = privacyLegalApproved;
 
   const syncTone =
     syncDashboard.status === "attention"
@@ -1061,28 +1063,28 @@ export default function MoreScreen() {
         },
         provider: {
           authConfigured: Boolean(launchProviderSetupPlan.providerInput.authConfigured),
-          authProviderProofReady: false,
+          authProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.authProviderProofReady),
           databaseConfigured: Boolean(launchProviderSetupPlan.providerInput.databaseConfigured),
-          databaseProviderProofReady: false,
+          databaseProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.databaseProviderProofReady),
           storageProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.storageProviderConfigured),
-          storageProviderProofReady: false,
+          storageProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.storageProviderProofReady),
           storageQueue: attachmentManifest.launchQueue,
           aiProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.aiProviderConfigured),
-          aiProviderProofReady: false,
+          aiProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.aiProviderProofReady),
           paymentsEnabled: Boolean(launchProviderSetupPlan.providerInput.paymentsEnabled),
-          paymentsProviderProofReady: false,
+          paymentsProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.paymentsProviderProofReady),
           accountDeletionEnabled: Boolean(launchProviderSetupPlan.providerInput.accountDeletionEnabled),
-          accountDeletionProofReady: false,
+          accountDeletionProofReady: Boolean(launchProviderSetupPlan.providerInput.accountDeletionProofReady),
           pushNotificationsConfigured: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsConfigured),
-          pushNotificationsProofReady: false,
+          pushNotificationsProofReady: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsProofReady),
           appStoreAccountsReady: Boolean(launchProviderSetupPlan.providerInput.appStoreAccountsReady),
-          storeAccountsProofReady: false,
+          storeAccountsProofReady: Boolean(launchProviderSetupPlan.providerInput.storeAccountsProofReady),
           privacyLegalApproved,
           privacyLegalOwnerReviewed,
-          privacyLegalProofReady: false,
+          privacyLegalProofReady,
           supportRunbookApproved,
           supportRunbookOwnerReviewed,
-          supportRunbookProofReady: false,
+          supportRunbookProofReady,
         },
         syncStatus: syncDashboard.status,
       }),
@@ -1091,9 +1093,11 @@ export default function MoreScreen() {
       launchProviderSetupPlan.providerInput,
       privacyLegalOwnerReviewed,
       privacyLegalApproved,
+      privacyLegalProofReady,
       savedNativeQaSummary,
       supportRunbookApproved,
       supportRunbookOwnerReviewed,
+      supportRunbookProofReady,
       syncDashboard.status,
     ],
   );

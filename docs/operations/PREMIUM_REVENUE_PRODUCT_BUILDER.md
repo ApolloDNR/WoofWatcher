@@ -3830,6 +3830,26 @@ CI is still pending because the latest visible run list only shows earlier
 `workflow_dispatch` successes through run `28705671803`, which predates this
 commit.
 
+The care-document launch proof persistence pass closes the follow-on saved-proof
+gap. `CareContext` now keeps `supportLegalReadinessEvidence` and every
+Provider Launch Setup proof-ready flag in `launchProviderProfile` during local
+cache hydration, server refresh, conflict merge, and local save normalization.
+More feeds Launch Readiness from `launchProviderSetupPlan.providerInput`
+instead of permanent false proof placeholders, so raw provider setup booleans
+still cannot unlock launch tiles, but valid structured proof can survive the
+care document and reach the top-level readiness model. Fresh local verification
+first failed because More still hardcoded `authProviderProofReady: false`; after
+implementation, mobile readiness passed `114/114`, focused
+Provider/Launch/Support/Privacy/Reminder tests passed `36/36`, direct JSON
+doctor source-backed checks passed including `care document launch proof
+persistence guard is source-backed`, the full zero-dependency
+API/mobile/PWA/care-domain suite passed with the dot reporter, root TypeScript
+passed, mobile TypeScript passed, and `git diff --check` passed with expected
+Windows line-ending warnings. Direct mobile beta doctor remains truthfully
+`BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack.
+This still does not attach real proof files, configure providers, approve
+native/store evidence, launch publicly, or replace Apollo sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

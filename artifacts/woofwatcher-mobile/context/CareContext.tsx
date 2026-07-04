@@ -38,6 +38,8 @@ import {
   normalizeReminderNotificationPreferences,
   type ReminderNotificationPreferences,
 } from "@/lib/reminderNotificationPreferences";
+import { normalizeLaunchProviderProfile } from "@/lib/launchProviderSetup";
+import type { SupportLegalReadinessProofEvidence } from "@/lib/supportRunbook";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
 
@@ -95,19 +97,28 @@ export interface LaunchSupportProfile {
   veterinaryBoundaryApproved: boolean;
   accountDeletionEscalationApproved: boolean;
   incidentResponseApproved: boolean;
+  supportLegalReadinessEvidence?: SupportLegalReadinessProofEvidence | null;
   ownerReviewedAt?: string;
   providerStatus: "local-draft" | "owner-reviewed" | "provider-approved";
 }
 
 export interface LaunchProviderProfile {
   authConfigured: boolean;
+  authProviderProofReady: boolean;
   databaseConfigured: boolean;
+  databaseProviderProofReady: boolean;
   storageProviderConfigured: boolean;
+  storageProviderProofReady: boolean;
   aiProviderConfigured: boolean;
+  aiProviderProofReady: boolean;
   paymentsEnabled: boolean;
+  paymentsProviderProofReady: boolean;
   pushNotificationsConfigured: boolean;
+  pushNotificationsProofReady: boolean;
   appStoreAccountsReady: boolean;
+  storeAccountsProofReady: boolean;
   accountDeletionEnabled: boolean;
+  accountDeletionProofReady: boolean;
   ownerReviewedAt?: string;
   providerStatus: "local-draft" | "owner-reviewed" | "provider-approved";
   notes: string;
@@ -218,6 +229,12 @@ export interface CareState extends CareDoc {
   entries: Entry[];
 }
 
+function normalizeSupportLegalReadinessEvidence(
+  value: SupportLegalReadinessProofEvidence | null | undefined,
+): SupportLegalReadinessProofEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
 function getDefaultDoc(): CareDoc {
   const now = new Date().toISOString();
   return {
@@ -259,20 +276,10 @@ function getDefaultDoc(): CareDoc {
       veterinaryBoundaryApproved: false,
       accountDeletionEscalationApproved: false,
       incidentResponseApproved: false,
+      supportLegalReadinessEvidence: null,
       providerStatus: "local-draft",
     },
-    launchProviderProfile: {
-      authConfigured: false,
-      databaseConfigured: false,
-      storageProviderConfigured: false,
-      aiProviderConfigured: false,
-      paymentsEnabled: false,
-      pushNotificationsConfigured: false,
-      appStoreAccountsReady: false,
-      accountDeletionEnabled: false,
-      providerStatus: "local-draft",
-      notes: "",
-    },
+    launchProviderProfile: normalizeLaunchProviderProfile(null),
     reminderNotificationPreferences: normalizeReminderNotificationPreferences(null),
     dietProfile: {
       primaryFood: "",
@@ -300,7 +307,6 @@ function getDefaultDoc(): CareDoc {
 function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
   const merged = { ...getDefaultDoc(), ...(partial ?? {}) };
   const launchSupportProfile = merged.launchSupportProfile ?? getDefaultDoc().launchSupportProfile;
-  const launchProviderProfile = merged.launchProviderProfile ?? getDefaultDoc().launchProviderProfile;
   return {
     ...merged,
     activePetId: typeof merged.activePetId === "string" && merged.activePetId.trim() ? merged.activePetId : "primary",
@@ -329,6 +335,7 @@ function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
       veterinaryBoundaryApproved: Boolean(launchSupportProfile.veterinaryBoundaryApproved),
       accountDeletionEscalationApproved: Boolean(launchSupportProfile.accountDeletionEscalationApproved),
       incidentResponseApproved: Boolean(launchSupportProfile.incidentResponseApproved),
+      supportLegalReadinessEvidence: normalizeSupportLegalReadinessEvidence(launchSupportProfile.supportLegalReadinessEvidence),
       ownerReviewedAt:
         typeof launchSupportProfile.ownerReviewedAt === "string" ? launchSupportProfile.ownerReviewedAt : undefined,
       providerStatus:
@@ -337,24 +344,7 @@ function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
           ? launchSupportProfile.providerStatus
           : "local-draft",
     },
-    launchProviderProfile: {
-      authConfigured: Boolean(launchProviderProfile.authConfigured),
-      databaseConfigured: Boolean(launchProviderProfile.databaseConfigured),
-      storageProviderConfigured: Boolean(launchProviderProfile.storageProviderConfigured),
-      aiProviderConfigured: Boolean(launchProviderProfile.aiProviderConfigured),
-      paymentsEnabled: Boolean(launchProviderProfile.paymentsEnabled),
-      pushNotificationsConfigured: Boolean(launchProviderProfile.pushNotificationsConfigured),
-      appStoreAccountsReady: Boolean(launchProviderProfile.appStoreAccountsReady),
-      accountDeletionEnabled: Boolean(launchProviderProfile.accountDeletionEnabled),
-      ownerReviewedAt:
-        typeof launchProviderProfile.ownerReviewedAt === "string" ? launchProviderProfile.ownerReviewedAt : undefined,
-      providerStatus:
-        launchProviderProfile.providerStatus === "owner-reviewed" ||
-        launchProviderProfile.providerStatus === "provider-approved"
-          ? launchProviderProfile.providerStatus
-          : "local-draft",
-      notes: typeof launchProviderProfile.notes === "string" ? launchProviderProfile.notes : "",
-    },
+    launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile),
     reminderNotificationPreferences: normalizeReminderNotificationPreferences(merged.reminderNotificationPreferences),
   };
 }

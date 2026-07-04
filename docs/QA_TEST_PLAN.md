@@ -44,6 +44,13 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: Care-document launch proof persistence now keeps structured support/legal proof evidence and Provider Launch Setup proof-ready flags in the saved care document instead of stripping them during `mergeDoc`.
+- PASS: More now feeds Launch Readiness from `launchProviderSetupPlan.providerInput.*ProofReady` plus launch-ready support/legal proof variables, so raw provider booleans still cannot bypass `deriveLaunchProviderSetup`, but valid structured proof can reach the top-level launch tiles.
+- PASS: Mobile readiness passed `114/114` for the care-document launch proof persistence guard.
+- PASS: Focused Provider/Launch/Support/Privacy/Reminder tests passed `36/36`.
+- PASS: Direct JSON mobile beta doctor reports `care document launch proof persistence guard is source-backed` as `PASS`; the doctor remains `BLOCKED` only on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed with the dot reporter.
+- PASS: Root TypeScript, mobile TypeScript, direct mobile beta doctor source-backed checks, and `git diff --check` passed for the care-document launch proof persistence guard.
 - PASS: Privacy owner export now clamps stale or imported `provider-approved` launch support/provider profiles through the shared structured proof models before serialization.
 - PASS: `buildPrivacyExportBundle` uses `deriveSupportRunbookPlan` for `launchSupportProfile` and `deriveLaunchProviderSetup` for `launchProviderProfile`, downgrading missing-proof statuses to `owner-reviewed` in the exported bundle.
 - PASS: `privacySafety.test.ts` passed `10/10` for the export launch-status clamp.
