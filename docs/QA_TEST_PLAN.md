@@ -50,6 +50,8 @@ Latest local evidence, 2026-07-04:
 - PASS: Mobile readiness passed `114/114` for the Privacy support/legal status clamp.
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed with the dot reporter.
 - PASS: Root TypeScript, mobile TypeScript, direct mobile beta doctor source-backed checks, and `git diff --check` passed for the Privacy support/legal status clamp.
+- PASS: Implementation commit `9f18688` (`Clamp privacy support proof status`) was pushed to `automation/premium-revenue-product-builder`.
+- BLOCKED: Fresh branch CI for `9f18688` is pending; the latest visible run list still shows only earlier `workflow_dispatch` successes through run `28705671803`, which predates this implementation commit.
 - PASS: More's Provider Launch Setup save path now clamps persisted `launchProviderProfile.providerStatus` back to `owner-reviewed` unless all eight provider rows have both configured setup and their matching structured proof-ready flag.
 - PASS: `PROVIDER_SETUP_FIELDS` now maps auth, database, storage, AI, payments, push, store accounts, and account deletion rows to explicit `proofKey` fields, and the mobile readiness guard asserts `saveProviderSetup` uses `normalized[field.key] && normalized[field.proofKey]`.
 - PASS: Mobile readiness passed `114/114` for the persisted-status proof clamp.
