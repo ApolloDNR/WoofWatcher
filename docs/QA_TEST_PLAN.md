@@ -1540,6 +1540,10 @@ Latest local evidence, 2026-07-03:
   machine-readable doctor readiness tests `114/114`, the full zero-dependency
   API/mobile/PWA/care-domain suite `559/559`, root TypeScript, mobile
   TypeScript, and `git diff --check` with expected Windows CRLF warnings only.
+- Branch CI proved the focused manifest guard in `WoofWatcher Verify` run
+  `28691498890`, job `85093511875`, on commit `822ff54`; Setup pnpm, Setup
+  Node, install, JSON mobile beta doctor, focused behavior tests, and Typecheck
+  plus CI-safe builds all passed.
 - This is a proof packet, not binary export implementation. Actual Care Pass PDF
   generation, Dog ID PNG generation, provider-backed storage, iOS/Android
   artifact proof, and launch approval remain blocked until real evidence exists.
