@@ -27,6 +27,7 @@ import {
 import { deriveCareEntryProviderSyncProof } from "@/lib/careEntryProviderSyncProof";
 import { buildAiProviderProofManifest } from "@/lib/aiProviderProof";
 import { buildPushNotificationsProofManifest } from "@/lib/pushNotificationsProof";
+import { buildPaymentsProviderProofManifest } from "@/lib/paymentsProviderProof";
 import { buildStoreAccountsProofManifest } from "@/lib/storeAccountsProof";
 import { buildAccountDeletionProofManifest } from "@/lib/accountDeletionProof";
 import { buildSupportLegalReadinessProofManifest } from "@/lib/supportRunbook";
@@ -422,6 +423,10 @@ export default function CareTwinQaScreen() {
   );
   const pushNotificationsProofManifest = useMemo(
     () => (focusedQaTarget?.surface.id === "push-notifications-proof" ? buildPushNotificationsProofManifest({}) : null),
+    [focusedQaTarget],
+  );
+  const paymentsProviderProofManifest = useMemo(
+    () => (focusedQaTarget?.surface.id === "payments-provider-proof" ? buildPaymentsProviderProofManifest({}) : null),
     [focusedQaTarget],
   );
   const storeAccountsProofManifest = useMemo(
@@ -1025,6 +1030,78 @@ export default function CareTwinQaScreen() {
                     ) : null}
                     <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       This manifest does not configure Expo push, APNs, Firebase/FCM, prove iOS or Android delivery, approve prompt/legal copy, or enable reminder notifications.
+                    </Text>
+                  </View>
+                ) : null}
+                {paymentsProviderProofManifest ? (
+                  <View style={[s.routeVisualManifest, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.routeVisualManifestHeader}>
+                      <View style={s.routeVisualManifestCopy}>
+                        <Text style={[s.routeVisualManifestTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                          Payments provider proof manifest
+                        </Text>
+                        <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Paid checkout must stay blocked until product ids, billing path, sandbox receipts, restore, refund/support, and checkout-gate proof are attached.
+                        </Text>
+                      </View>
+                      <QaBadge
+                        label={paymentsProviderProofManifest.status === "ready" ? "Ready for billing review" : "Checkout disabled"}
+                        tone={paymentsProviderProofManifest.status === "ready" ? colors.sage : colors.amber}
+                      />
+                    </View>
+                    <View style={s.routeVisualManifestStats}>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Ready
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {paymentsProviderProofManifest.rows.filter((row) => row.status === "ready").length}/{paymentsProviderProofManifest.rows.length}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Open
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {paymentsProviderProofManifest.blockers.length}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Checkout allowed
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {paymentsProviderProofManifest.status === "ready" ? "Yes" : "No"}
+                        </Text>
+                      </View>
+                    </View>
+                    {paymentsProviderProofManifest.rows.map((row) => (
+                      <View key={`payments-provider-manifest-${row.label}`} style={[s.routeVisualManifestRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={s.routeVisualManifestRouteLine}>
+                          <Text style={[s.routeVisualManifestRouteName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {row.label}
+                          </Text>
+                          <QaBadge label={row.value} tone={row.status === "ready" ? colors.sage : colors.amber} />
+                        </View>
+                        <Text style={[s.routeVisualManifestExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {row.detail}
+                        </Text>
+                      </View>
+                    ))}
+                    {paymentsProviderProofManifest.blockers.length ? (
+                      <View style={[s.routeVisualManifestBlockers, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                        {paymentsProviderProofManifest.blockers.map((blocker) => (
+                          <View key={`payments-provider-blocker-${blocker}`} style={s.betaRunStep}>
+                            <View style={[s.betaRunStepDot, { backgroundColor: colors.amber }]} />
+                            <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {blocker}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      This manifest does not configure App Store, Play Store, Stripe, sandbox receipts, restore purchases, tax terms, refund approval, money movement, or Apollo checkout sign-off.
                     </Text>
                   </View>
                 ) : null}

@@ -1355,6 +1355,32 @@ check(
     : "keep payments proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
+const paymentsProviderProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
+  "buildPaymentsProviderProofManifest",
+  "paymentsProviderProofManifest",
+  "Payments provider proof manifest",
+  "Checkout allowed",
+  "Paid checkout must stay blocked",
+  "paymentsProviderProofManifest.rows.map",
+  "paymentsProviderProofManifest.blockers.map",
+])
+  && includesAll(paymentsProviderProofSource, [
+    "buildPaymentsProviderProofManifest",
+    "Product catalog",
+    "Billing path decision",
+    "Sandbox purchase, renewal, cancel, refund, and expired receipt",
+    "restore purchases",
+    "Refund and support policy",
+    "Checkout gate",
+  ]);
+check(
+  "payments provider proof manifest is source-backed",
+  paymentsProviderProofManifestIsSourceBacked,
+  paymentsProviderProofManifestIsSourceBacked
+    ? "Payments provider proof manifest is visible on the focused QA route while keeping checkout disabled until billing, receipt, restore, refund, and Apollo approval proof is attached"
+    : "render the payments provider proof manifest on /care-twin-qa?qaSurface=payments-provider-proof with product, billing, receipt, restore, refund, and checkout boundaries",
+);
+
 const storeAccountsProofTargetIsSourceBacked = includesAll(storeAccountsProofSource, [
   "STORE_ACCOUNTS_PROOF_SUMMARY",
   "STORE_ACCOUNTS_PROOF_ITEMS",

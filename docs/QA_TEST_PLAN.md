@@ -1662,6 +1662,11 @@ Latest local evidence, 2026-07-03:
   policy, and Checkout gate rows. It keeps `Checkout disabled` visible and
   lists blockers until the real billing/provider proof and Apollo checkout
   approval are attached.
+- `/care-twin-qa?qaSurface=payments-provider-proof` now also renders a focused
+  `Payments provider proof manifest` with the same product catalog, billing
+  path, sandbox receipts, entitlements/restore, refund/support, and checkout
+  gate rows, ready/open counts, `Checkout allowed: No`, blockers, and the
+  money-movement boundary before Evidence Capture.
 - Focused proof passed `mobileReleaseQa.test.ts`,
   `betaHandoffPacket.test.ts`, `mobileReleaseSmokeChecklist.test.ts`, and
   `mobileReadiness.test.ts` with `138/138` tests. The broader mobile/PWA/care
@@ -1673,6 +1678,9 @@ Latest local evidence, 2026-07-03:
 - Direct `scripts/mobile-beta-doctor.mjs --json` also reports `premium
   payments proof manifest is source-backed` as `PASS`, proving the Premium
   route renders the manifest without enabling checkout.
+- Direct `scripts/mobile-beta-doctor.mjs --json` now reports `payments provider
+  proof manifest is source-backed` as `PASS`, proving the focused helper route
+  renders the manifest without enabling checkout.
 - Direct `scripts/native-qa-tooling-doctor.mjs --json` lists the payments proof
   route in `nativeProofTargets`, but remains `BLOCKED` in this Windows shell
   because Android adb/emulator, Java, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and

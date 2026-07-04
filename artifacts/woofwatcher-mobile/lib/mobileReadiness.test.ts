@@ -859,6 +859,13 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /pushNotificationsProofManifest\.blockers\.map/);
   assert.match(qaRoute, /Reminder delivery allowed/);
   assert.match(qaRoute, /Reminder Center must stay local/);
+  assert.match(qaRoute, /buildPaymentsProviderProofManifest/);
+  assert.match(qaRoute, /paymentsProviderProofManifest/);
+  assert.match(qaRoute, /Payments provider proof manifest/);
+  assert.match(qaRoute, /paymentsProviderProofManifest\.rows\.map/);
+  assert.match(qaRoute, /paymentsProviderProofManifest\.blockers\.map/);
+  assert.match(qaRoute, /Checkout allowed/);
+  assert.match(qaRoute, /Paid checkout must stay blocked/);
   assert.match(qaRoute, /buildStoreAccountsProofManifest/);
   assert.match(qaRoute, /storeAccountsProofManifest/);
   assert.match(qaRoute, /Store accounts proof manifest/);
@@ -5627,6 +5634,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "payments provider proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "payments provider proof manifest is source-backed" &&
         check.status === "PASS",
     ),
   );
