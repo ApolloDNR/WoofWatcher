@@ -279,6 +279,7 @@ const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
 const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
 const pwaVanillaAppEntryPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "app-entry.js");
 const pwaPrivacyCloudPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "woof-privacy-cloud.js");
+const pwaOperationsPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "woof-operations.js");
 const carePassDomainPath = join(root, "lib", "care-domain", "src", "care-pass.ts");
 const careRemindersDomainPath = join(root, "lib", "care-domain", "src", "care-reminders.ts");
 const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
@@ -313,6 +314,7 @@ const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRo
 const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
 const pwaVanillaAppEntrySource = existsSync(pwaVanillaAppEntryPath) ? readFileSync(pwaVanillaAppEntryPath, "utf8") : "";
 const pwaPrivacyCloudSource = existsSync(pwaPrivacyCloudPath) ? readFileSync(pwaPrivacyCloudPath, "utf8") : "";
+const pwaOperationsSource = existsSync(pwaOperationsPath) ? readFileSync(pwaOperationsPath, "utf8") : "";
 const carePassDomainSource = existsSync(carePassDomainPath) ? readFileSync(carePassDomainPath, "utf8") : "";
 const careRemindersDomainSource = existsSync(careRemindersDomainPath) ? readFileSync(careRemindersDomainPath, "utf8") : "";
 const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
@@ -1125,6 +1127,34 @@ check(
   pwaCloudSyncProofGuardIsSourceBacked
     ? "PWA cloud sync treats backend URL and household id as staged until structured Supabase/RLS/migration/mobile proof is attached"
     : "keep PWA cloud sync gated so backendConfigured plus householdId cannot mark cross-device sync ready without structured provider proof",
+);
+
+const pwaHostedNudgeProofGuardIsSourceBacked = includesAll(pwaOperationsSource, [
+  "HOSTED_NUDGE_PROVIDER_PROOF_REQUIREMENTS",
+  "isHostedNudgeProviderProofReady",
+  "hostedNudgeProviderEvidence",
+  "providerProofReady",
+  "provider_proof_pending",
+  "structured hosted nudge delivery proof",
+  "backend job policy",
+  "caregiver consent policy",
+  "provider delivery policy",
+  "caregiver privacy policy",
+  "quiet-hours and daily-budget policy",
+  "missed-delivery fallback policy",
+  "native delivery proof",
+  "Apollo approval",
+  "backendConfigured && pushProviderConfigured && !providerProofReady",
+  "proofReady: providerProofReady",
+  "\"ready_to_schedule\"",
+])
+  && !/status: blockers\.length \? "local_only" : remainingToday === 0 \? "budget_exhausted" : quietNow \? "quiet_hold" : "ready_to_schedule"/.test(pwaOperationsSource);
+check(
+  "PWA hosted nudge proof guard is source-backed",
+  pwaHostedNudgeProofGuardIsSourceBacked,
+  pwaHostedNudgeProofGuardIsSourceBacked
+    ? "PWA hosted nudges treat backend and push provider setup as staged until structured delivery, consent, privacy, fallback, native, and Apollo proof is attached"
+    : "keep PWA hosted nudges gated so backendConfigured plus pushProviderConfigured cannot schedule closed-app nudges without structured delivery proof",
 );
 
 const privacySafetyAccountDeletionProofGuardIsSourceBacked = includesAll(privacySafetySource, [

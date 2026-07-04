@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { buildHostedNudgePlan } from "./woof-operations.js";
 import { buildCloudSyncPlan } from "./woof-privacy-cloud.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -204,6 +205,61 @@ test("keeps PWA cloud sync gated behind structured provider proof", () => {
   assert.equal(readyPlan.status, "ready_to_connect");
   assert.equal(readyPlan.backend.proofReady, true);
   assert.deepEqual(readyPlan.blockers, []);
+});
+
+test("keeps PWA hosted nudges gated behind structured delivery proof", () => {
+  const stagedPlan = buildHostedNudgePlan(
+    {},
+    {
+      backendUrl: "https://api.example",
+      householdId: "house_123",
+      pushProvider: "expo",
+      permission: "granted"
+    },
+    "2026-07-04T15:00:00.000Z",
+  );
+
+  assert.equal(stagedPlan.status, "provider_proof_pending");
+  assert.equal(stagedPlan.delivery.backendConfigured, true);
+  assert.equal(stagedPlan.delivery.pushProviderConfigured, true);
+  assert.equal(stagedPlan.delivery.proofReady, false);
+  assert.match(stagedPlan.blockers.join(" "), /structured hosted nudge delivery proof/);
+  assert.deepEqual(stagedPlan.jobs, []);
+
+  const readyPlan = buildHostedNudgePlan(
+    {},
+    {
+      backendUrl: "https://api.example",
+      householdId: "house_123",
+      pushProvider: "expo",
+      permission: "granted",
+      providerEvidence: {
+        proofLocator: "proof/hosted-nudges/expo.json",
+        proofMimeType: "application/json",
+        proofByteSize: 4096,
+        backendJobPolicy: "Hosted jobs are idempotent, rate-limited, and household scoped.",
+        caregiverConsentPolicy: "Caregiver notification consent is recorded and revocable.",
+        providerDeliveryPolicy: "Expo/APNs/FCM delivery provider setup is documented.",
+        caregiverPrivacyPolicy: "Nudges contain only scoped routine labels and no private notes.",
+        quietHoursPolicy: "Quiet hours and daily budget enforcement are tested.",
+        fallbackPolicy: "Missed delivery falls back to in-app Reminder Center review.",
+        nativeDeliveryProof: "iOS and Android delivery proof is attached.",
+        backendJobApproved: true,
+        caregiverConsentApproved: true,
+        providerDeliveryApproved: true,
+        caregiverPrivacyApproved: true,
+        quietHoursApproved: true,
+        fallbackApproved: true,
+        nativeDeliveryApproved: true,
+        apolloApproved: true
+      }
+    },
+    "2026-07-04T15:00:00.000Z",
+  );
+
+  assert.equal(readyPlan.delivery.proofReady, true);
+  assert.doesNotMatch(readyPlan.blockers.join(" "), /structured hosted nudge delivery proof/);
+  assert.notEqual(readyPlan.status, "provider_proof_pending");
 });
 
 test("keeps records and reports tools directly routable in the PWA", () => {
