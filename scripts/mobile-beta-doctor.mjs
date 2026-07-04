@@ -533,6 +533,13 @@ const authSetupProofManifestIsSourceBacked = includesAll(authProviderProofSource
   "Redirect and deep links",
   "Native auth screenshots",
   "Setup local-preview proof",
+  "nativeEvidence",
+  "Auth gateway screenshots ready",
+  "Setup local-preview screenshots ready",
+  "iOS Auth gateway screenshot",
+  "Android Setup local-preview screenshot",
+  "capturesProviderBoundaryCopy",
+  "capturesReachableControls",
   "Native proof blocked",
   "Apollo approval",
 ])
@@ -564,7 +571,7 @@ check(
   "auth/setup proof manifest is source-backed",
   authSetupProofManifestIsSourceBacked,
   authSetupProofManifestIsSourceBacked
-    ? "Auth gateway, Setup, and the focused helper route show Clerk, redirect, native screenshot, local-preview setup, household sync, and launch blockers before native auth/setup proof can be claimed"
+    ? "Auth gateway, Setup, and the focused helper route show Clerk, redirect, platform-specific native screenshot, local-preview setup, household sync, and launch blockers before native auth/setup proof can be claimed"
     : "keep Auth gateway, Setup, and /care-twin-qa?qaSurface=auth-setup-onboarding-proof wired to buildAuthSetupProofManifest before claiming native auth/setup proof",
 );
 

@@ -5,6 +5,20 @@ export interface AuthProviderProofItem {
 
 export type AuthSetupProofStatus = "ready" | "blocked";
 
+export type AuthSetupNativeProofPlatform = "ios" | "android";
+export type AuthSetupNativeProofSurface = "auth-gateway" | "setup-local-preview";
+
+export interface AuthSetupNativeProofEvidence {
+  platform: AuthSetupNativeProofPlatform;
+  surface: AuthSetupNativeProofSurface;
+  fileName?: string | null;
+  uri?: string | null;
+  mimeType?: string | null;
+  byteSize?: number | null;
+  capturesProviderBoundaryCopy?: boolean;
+  capturesReachableControls?: boolean;
+}
+
 export interface AuthSetupProofManifestInput {
   clerkProductionApproved?: boolean;
   redirectDeepLinkApproved?: boolean;
@@ -12,6 +26,7 @@ export interface AuthSetupProofManifestInput {
   setupNativeScreensApproved?: boolean;
   householdSyncApproved?: boolean;
   launchGateApproved?: boolean;
+  nativeEvidence?: readonly AuthSetupNativeProofEvidence[];
 }
 
 export interface AuthSetupProofManifestRow {
@@ -58,6 +73,110 @@ export const AUTH_PROVIDER_PROOF_ITEMS: readonly AuthProviderProofItem[] = [
 export const AUTH_PROVIDER_PROOF_SUMMARY =
   "Production auth provider proof packet: Clerk production app id, redirect/deep-link URL list, OAuth sign-in test, session policy, and household membership policy before provider-backed account sync or household creation can be claimed.";
 
+interface AuthSetupNativeProofRequirement {
+  platform: AuthSetupNativeProofPlatform;
+  surface: AuthSetupNativeProofSurface;
+  label: string;
+  platformTokens: readonly string[];
+  surfaceTokenGroups: readonly (readonly string[])[];
+  requiresReachableControls: boolean;
+}
+
+const AUTH_SETUP_NATIVE_PROOF_REQUIREMENTS: readonly AuthSetupNativeProofRequirement[] = [
+  {
+    platform: "ios",
+    surface: "auth-gateway",
+    label: "iOS Auth gateway screenshot",
+    platformTokens: ["ios", "iphone", "ipad"],
+    surfaceTokenGroups: [["auth"], ["gateway", "sign", "signin"]],
+    requiresReachableControls: false,
+  },
+  {
+    platform: "android",
+    surface: "auth-gateway",
+    label: "Android Auth gateway screenshot",
+    platformTokens: ["android"],
+    surfaceTokenGroups: [["auth"], ["gateway", "sign", "signin"]],
+    requiresReachableControls: false,
+  },
+  {
+    platform: "ios",
+    surface: "setup-local-preview",
+    label: "iOS Setup local-preview screenshot",
+    platformTokens: ["ios", "iphone", "ipad"],
+    surfaceTokenGroups: [["setup"], ["local"], ["preview"]],
+    requiresReachableControls: true,
+  },
+  {
+    platform: "android",
+    surface: "setup-local-preview",
+    label: "Android Setup local-preview screenshot",
+    platformTokens: ["android"],
+    surfaceTokenGroups: [["setup"], ["local"], ["preview"]],
+    requiresReachableControls: true,
+  },
+];
+
+function normalizeEvidenceText(value: string | null | undefined): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function evidenceNameText(evidence: AuthSetupNativeProofEvidence): string {
+  return normalizeEvidenceText([evidence.fileName, evidence.uri].filter(Boolean).join(" "));
+}
+
+function hasAnyToken(text: string, tokens: readonly string[]): boolean {
+  return tokens.some((token) => text.includes(token));
+}
+
+function hasAllTokenGroups(text: string, groups: readonly (readonly string[])[]): boolean {
+  return groups.every((tokens) => hasAnyToken(text, tokens));
+}
+
+function hasImageMime(evidence: AuthSetupNativeProofEvidence): boolean {
+  return normalizeEvidenceText(evidence.mimeType).startsWith("image");
+}
+
+function hasPositiveByteSize(evidence: AuthSetupNativeProofEvidence): boolean {
+  return typeof evidence.byteSize === "number" && Number.isFinite(evidence.byteSize) && evidence.byteSize > 0;
+}
+
+function matchesNativeProofRequirement(
+  evidence: AuthSetupNativeProofEvidence,
+  requirement: AuthSetupNativeProofRequirement,
+): boolean {
+  const nameText = evidenceNameText(evidence);
+  return (
+    evidence.platform === requirement.platform &&
+    evidence.surface === requirement.surface &&
+    hasAnyToken(nameText, requirement.platformTokens) &&
+    hasAllTokenGroups(nameText, requirement.surfaceTokenGroups) &&
+    hasImageMime(evidence) &&
+    hasPositiveByteSize(evidence) &&
+    evidence.capturesProviderBoundaryCopy === true &&
+    (!requirement.requiresReachableControls || evidence.capturesReachableControls === true)
+  );
+}
+
+function summarizeNativeProof(
+  evidence: readonly AuthSetupNativeProofEvidence[],
+  surface: AuthSetupNativeProofSurface,
+): { ready: boolean; readyCount: number; totalCount: number; missingLabels: string[] } {
+  const requirements = AUTH_SETUP_NATIVE_PROOF_REQUIREMENTS.filter((requirement) => requirement.surface === surface);
+  const missingLabels = requirements
+    .filter((requirement) => !evidence.some((item) => matchesNativeProofRequirement(item, requirement)))
+    .map((requirement) => requirement.label);
+  return {
+    ready: missingLabels.length === 0,
+    readyCount: requirements.length - missingLabels.length,
+    totalCount: requirements.length,
+    missingLabels,
+  };
+}
+
 function manifestRow(
   label: string,
   ready: boolean,
@@ -78,10 +197,18 @@ export function buildAuthSetupProofManifest(
 ): AuthSetupProofManifest {
   const clerkProductionApproved = Boolean(input.clerkProductionApproved);
   const redirectDeepLinkApproved = Boolean(input.redirectDeepLinkApproved);
-  const nativeAuthScreensApproved = Boolean(input.nativeAuthScreensApproved);
-  const setupNativeScreensApproved = Boolean(input.setupNativeScreensApproved);
   const householdSyncApproved = Boolean(input.householdSyncApproved);
   const launchGateApproved = Boolean(input.launchGateApproved);
+  const nativeEvidence = input.nativeEvidence ?? [];
+  const authNativeProof = summarizeNativeProof(nativeEvidence, "auth-gateway");
+  const setupNativeProof = summarizeNativeProof(nativeEvidence, "setup-local-preview");
+  const launchReady =
+    launchGateApproved &&
+    clerkProductionApproved &&
+    redirectDeepLinkApproved &&
+    authNativeProof.ready &&
+    setupNativeProof.ready &&
+    householdSyncApproved;
   const rows = [
     manifestRow(
       "Clerk production app",
@@ -99,17 +226,21 @@ export function buildAuthSetupProofManifest(
     ),
     manifestRow(
       "Native auth screenshots",
-      nativeAuthScreensApproved,
-      "Screenshots approved",
-      "Screenshots pending",
-      "iOS and Android Auth gateway screenshots or recordings must prove sign-in/sign-up renders, OAuth completes, and no local-preview fallback is used.",
+      authNativeProof.ready,
+      `${authNativeProof.totalCount}/${authNativeProof.totalCount} Auth gateway screenshots ready`,
+      `${authNativeProof.readyCount}/${authNativeProof.totalCount} Auth gateway screenshots ready`,
+      authNativeProof.ready
+        ? "iOS and Android Auth gateway screenshots include platform/surface naming, image MIME, positive byte size, and provider-boundary copy."
+        : `iOS and Android Auth gateway screenshots are missing: ${authNativeProof.missingLabels.join(", ")}. Each proof must include platform/surface naming, image MIME, positive byte size, and provider-boundary copy.`,
     ),
     manifestRow(
       "Setup local-preview proof",
-      setupNativeScreensApproved,
-      "Setup proof approved",
-      "Setup proof pending",
-      "Setup local-preview path must be captured on iOS and Android, including create, join-by-invite, local preview, provider-boundary copy, and safe-area fit.",
+      setupNativeProof.ready,
+      `${setupNativeProof.totalCount}/${setupNativeProof.totalCount} Setup local-preview screenshots ready`,
+      `${setupNativeProof.readyCount}/${setupNativeProof.totalCount} Setup local-preview screenshots ready`,
+      setupNativeProof.ready
+        ? "Setup local-preview path is captured on iOS and Android with platform/surface naming, image MIME, positive byte size, provider-boundary copy, and reachable controls."
+        : `Setup local-preview path is missing native proof: ${setupNativeProof.missingLabels.join(", ")}. Each proof must include platform/surface naming, image MIME, positive byte size, provider-boundary copy, and reachable save controls.`,
     ),
     manifestRow(
       "Household sync boundary",
@@ -120,10 +251,10 @@ export function buildAuthSetupProofManifest(
     ),
     manifestRow(
       "Launch gate",
-      launchGateApproved,
+      launchReady,
       "Native proof approved",
       "Native proof blocked",
-      "Auth and Setup launch proof stays blocked until Clerk, redirects, native screenshots, household creation policy, and Apollo approval are attached.",
+      "Auth and Setup launch proof stays blocked until Clerk, redirects, platform-specific native screenshots, household creation policy, and Apollo approval are attached.",
     ),
   ];
   const blockers = rows

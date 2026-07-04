@@ -1616,6 +1616,22 @@ Owner: Codex.
 
 Revisit trigger: real iOS/Android Records file evidence is attached from configured native tooling or physical devices.
 
+### 2026-07-04: Auth Setup Native Proof Must Be Platform And Surface Specific
+
+Decision: the Auth/Setup proof manifest cannot treat generic native screen approval flags as native Auth/Setup proof. Native Auth/Setup proof requires four concrete screenshot slots: iOS Auth gateway, Android Auth gateway, iOS Setup local-preview, and Android Setup local-preview.
+
+Reason: account entry and first-run setup can fail differently across platforms and screens. A broad "native screens approved" flag could hide missing file names, MIME, byte size, provider-boundary copy, or reachable setup controls.
+
+Consequences:
+
+- Each native Auth/Setup proof slot must include platform/surface naming in the file name or URI, image MIME, positive byte size, and provider-boundary copy.
+- Setup local-preview proof also requires reachable setup controls before the row can open.
+- Provider-backed auth, household sync, store review, public launch, and Apollo sign-off remain separate gates.
+
+Owner: Codex.
+
+Revisit trigger: real iOS/Android Auth gateway and Setup local-preview evidence is attached from configured native tooling or physical devices.
+
 ### 2026-07-04: Generated Binary Export Readiness Requires Native And Provider Proof
 
 Decision: the focused Report Binary Export Proof mission renders a source-backed proof manifest, but `Generated artifacts allowed` remains `No` until Care Pass PDF, Dog ID PNG, provider storage, and native artifact proof evidence are attached from real device/provider QA.

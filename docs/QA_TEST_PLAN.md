@@ -89,7 +89,7 @@ Latest local evidence, 2026-06-23:
 - Premium plan packaging and checkout-disabled guard.
 - Premium entitlement policy for Free, Plus, and Family feature gates before checkout is enabled.
 - Premium payments proof manifest for product catalog, billing path, sandbox receipt, restore-purchase, refund/support, and checkout-gate blockers before paid checkout is enabled.
-- Auth/Setup proof manifest for Clerk production app, redirect/deep links, native Auth screenshots, Setup local-preview proof, household sync, and launch-gate blockers on Auth, Setup, and the focused Auth/Setup helper route before native Auth/Setup proof is claimed.
+- Auth/Setup proof manifest for Clerk production app, redirect/deep links, platform-specific native Auth screenshots, Setup local-preview proof, household sync, and launch-gate blockers on Auth, Setup, and the focused Auth/Setup helper route before native Auth/Setup proof is claimed.
 - Records local-file handoff proof manifest for Care Pass Report History local HTML, Dog ID local HTML credential, Dog ID SVG image source, native share sheet, Android content URI or saved-file proof, fallback copy, and generated PDF/PNG/provider boundary blockers before native Records file proof is claimed.
 - Report binary export proof manifest for Care Pass PDF, Dog ID PNG, provider storage, and native artifact proof blockers on the focused Report Binary Export Proof helper route before generated PDF/PNG readiness is claimed.
 - Route visual proof manifest for Home, Log, Plans, Health, Records, and More native iOS/Android screenshot slots, QA note blocker, and web-preview-only boundary before visual sign-off is claimed.
@@ -1699,7 +1699,7 @@ Latest local evidence, 2026-07-03:
 
 ## Focused Auth/Setup Proof Manifest
 
-Latest local evidence, 2026-07-03:
+Latest local evidence, 2026-07-04:
 
 - `/care-twin-qa?qaSurface=auth-setup-onboarding-proof` now renders the
   `Auth/Setup proof manifest` before Evidence Capture, using the same
@@ -1708,9 +1708,20 @@ Latest local evidence, 2026-07-03:
   native Auth screenshots, Setup local-preview proof, household sync boundary,
   and launch gate rows with ready/open counts, `Native proof allowed: No`,
   blockers, and the provider/native/Apollo boundary.
+- The native Auth and Setup rows now require four platform-and-surface-specific
+  image proofs before native proof can open: iOS Auth gateway, Android Auth
+  gateway, iOS Setup local-preview, and Android Setup local-preview. Generic
+  native approval flags no longer satisfy these rows without `nativeEvidence`
+  carrying platform/surface naming, image MIME, positive byte size,
+  provider-boundary copy, and reachable Setup controls.
 - Focused red/green proof first failed on the missing focused-route manifest
   and missing JSON doctor guard, then passed focused route/doctor readiness
   `114/114`.
+- Native-proof hardening verification first failed because generic native
+  approval booleans incorrectly made the manifest `ready`, then passed
+  `authProviderProof.test.ts` `4/4`, focused Auth/Setup plus machine-readable
+  doctor tests `118/118`, and direct JSON mobile beta doctor source-backed
+  checks including `auth/setup proof manifest is source-backed`.
 - The full zero-dependency API/mobile/PWA/care-domain focused suite passed
   `557/557`; root TypeScript and mobile TypeScript both passed.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `auth/setup proof

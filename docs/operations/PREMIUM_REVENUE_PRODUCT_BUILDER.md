@@ -3223,6 +3223,19 @@ handoff proof only; it does not configure Clerk, approve OAuth, prove native
 iOS/Android screenshots, enable provider-backed household creation, sync invites,
 clear store approval, launch publicly, or replace Apollo sign-off.
 
+The Auth/Setup native-proof hardening pass prevents generic native approval
+flags from opening the first account/onboarding native gate. `buildAuthSetupProofManifest`
+now requires four platform-and-surface-specific native screenshot proofs before
+the native rows can move toward ready: iOS Auth gateway, Android Auth gateway,
+iOS Setup local-preview, and Android Setup local-preview. Each proof needs
+platform/surface naming in the file name or URI, image MIME, positive byte size,
+and provider-boundary copy; Setup proof also needs reachable setup controls.
+Fresh red/green local verification first failed because generic booleans made
+the manifest ready, then passed `authProviderProof.test.ts` `4/4`, focused
+Auth/Setup plus machine-readable doctor tests `118/118`, and direct JSON mobile
+beta doctor source-backed checks. The mobile beta doctor still blocks only on
+local pnpm `11.7.0` versus pinned `10.24.0`.
+
 The care-entry provider sync proof manifest pass makes the focused database
 mission explicit instead of relying on a generic checklist. The route
 `/care-twin-qa?qaSurface=care-entry-provider-sync-proof` now shows the
