@@ -42,16 +42,25 @@ const fullyApprovedInput: LaunchReadinessInput = {
   },
   provider: {
     accountDeletionEnabled: true,
+    accountDeletionProofReady: true,
     aiProviderConfigured: true,
+    aiProviderProofReady: true,
     appStoreAccountsReady: true,
     authConfigured: true,
+    authProviderProofReady: true,
     databaseConfigured: true,
+    databaseProviderProofReady: true,
     paymentsEnabled: true,
+    paymentsProviderProofReady: true,
     privacyLegalApproved: true,
+    privacyLegalProofReady: true,
     pushNotificationsConfigured: true,
+    pushNotificationsProofReady: true,
+    storeAccountsProofReady: true,
     storageProviderConfigured: true,
     storageProviderProofReady: true,
     supportRunbookApproved: true,
+    supportRunbookProofReady: true,
   },
   syncStatus: "ready",
 };
@@ -179,6 +188,49 @@ test("keeps records storage blocked when provider setup lacks structured storage
   assert.equal(storageTile?.status, "blocked");
   assert.equal(storageTile?.value, "3 local files gated");
   assert.match(storageTile?.detail ?? "", /structured storage proof/i);
+});
+
+test("keeps provider-approved launch gates blocked without aggregate structured proof flags", () => {
+  const plan = deriveLaunchReadiness({
+    nativeQa: completeNativeQa,
+    local: {
+      careWorkflowsReady: true,
+      easProfilesReady: true,
+      pixelAssetsReady: true,
+      privacyExportReady: true,
+    },
+    provider: {
+      accountDeletionEnabled: true,
+      aiProviderConfigured: true,
+      appStoreAccountsReady: true,
+      authConfigured: true,
+      databaseConfigured: true,
+      paymentsEnabled: true,
+      privacyLegalApproved: true,
+      pushNotificationsConfigured: true,
+      storageProviderConfigured: true,
+      storageProviderProofReady: true,
+      supportRunbookApproved: true,
+    },
+    syncStatus: "ready",
+  });
+
+  assert.equal(plan.storeLaunchReady, false);
+  assert.equal(plan.status, "provider-gated");
+  assert.ok(plan.blockers.some((blocker) => /structured auth provider proof/i.test(blocker)));
+  assert.ok(plan.blockers.some((blocker) => /structured care-entry provider sync proof/i.test(blocker)));
+  assert.ok(plan.blockers.some((blocker) => /structured AI provider proof/i.test(blocker)));
+  assert.ok(plan.blockers.some((blocker) => /structured payments proof/i.test(blocker)));
+
+  const syncTile = plan.tiles.find((tile) => tile.key === "care-sync");
+  const aiTile = plan.tiles.find((tile) => tile.key === "woofguide-ai");
+  const plusTile = plan.tiles.find((tile) => tile.key === "plus-payments");
+  const approvalTile = plan.tiles.find((tile) => tile.key === "store-approval");
+
+  assert.equal(syncTile?.status, "local");
+  assert.equal(aiTile?.status, "review");
+  assert.equal(plusTile?.status, "blocked");
+  assert.equal(approvalTile?.status, "review");
 });
 
 test("distinguishes owner-staged support packets from final legal and store approval", () => {

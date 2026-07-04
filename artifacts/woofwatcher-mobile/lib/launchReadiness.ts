@@ -64,19 +64,28 @@ export interface LaunchReadinessStorageQueueInput {
 
 export interface LaunchReadinessProviderInput {
   accountDeletionEnabled?: boolean;
+  accountDeletionProofReady?: boolean;
   aiProviderConfigured?: boolean;
+  aiProviderProofReady?: boolean;
   appStoreAccountsReady?: boolean;
+  authProviderProofReady?: boolean;
   authConfigured?: boolean;
   databaseConfigured?: boolean;
+  databaseProviderProofReady?: boolean;
   paymentsEnabled?: boolean;
+  paymentsProviderProofReady?: boolean;
   privacyLegalApproved?: boolean;
   privacyLegalOwnerReviewed?: boolean;
+  privacyLegalProofReady?: boolean;
   pushNotificationsConfigured?: boolean;
+  pushNotificationsProofReady?: boolean;
+  storeAccountsProofReady?: boolean;
   storageProviderConfigured?: boolean;
   storageProviderProofReady?: boolean;
   storageQueue?: LaunchReadinessStorageQueueInput;
   supportRunbookApproved?: boolean;
   supportRunbookOwnerReviewed?: boolean;
+  supportRunbookProofReady?: boolean;
 }
 
 export interface LaunchReadinessInput {
@@ -179,6 +188,42 @@ function nativeQaTile(nativeQa: LaunchReadinessNativeQaSummary | null | undefine
   };
 }
 
+function authProviderReady(provider: LaunchReadinessProviderInput): boolean {
+  return Boolean(provider.authConfigured && provider.authProviderProofReady);
+}
+
+function databaseProviderReady(provider: LaunchReadinessProviderInput): boolean {
+  return Boolean(provider.databaseConfigured && provider.databaseProviderProofReady);
+}
+
+function aiProviderReady(provider: LaunchReadinessProviderInput): boolean {
+  return Boolean(provider.aiProviderConfigured && provider.aiProviderProofReady);
+}
+
+function paymentsProviderReady(provider: LaunchReadinessProviderInput): boolean {
+  return Boolean(provider.paymentsEnabled && provider.paymentsProviderProofReady);
+}
+
+function pushNotificationsReady(provider: LaunchReadinessProviderInput): boolean {
+  return Boolean(provider.pushNotificationsConfigured && provider.pushNotificationsProofReady);
+}
+
+function storeAccountsReady(provider: LaunchReadinessProviderInput): boolean {
+  return Boolean(provider.appStoreAccountsReady && provider.storeAccountsProofReady);
+}
+
+function accountDeletionReady(provider: LaunchReadinessProviderInput): boolean {
+  return Boolean(provider.accountDeletionEnabled && provider.accountDeletionProofReady);
+}
+
+function privacyLegalReady(provider: LaunchReadinessProviderInput): boolean {
+  return Boolean(provider.privacyLegalApproved && provider.privacyLegalProofReady);
+}
+
+function supportRunbookReady(provider: LaunchReadinessProviderInput): boolean {
+  return Boolean(provider.supportRunbookApproved && provider.supportRunbookProofReady);
+}
+
 function careSyncTile(syncStatus: string | undefined, provider: LaunchReadinessProviderInput): LaunchReadinessTile {
   if (syncStatus === "attention") {
     return {
@@ -200,7 +245,7 @@ function careSyncTile(syncStatus: string | undefined, provider: LaunchReadinessP
     };
   }
 
-  if (provider.authConfigured && provider.databaseConfigured) {
+  if (authProviderReady(provider) && databaseProviderReady(provider)) {
     return {
       key: "care-sync",
       label: "Care Sync",
@@ -278,33 +323,56 @@ function storageTile(provider: LaunchReadinessProviderInput): LaunchReadinessTil
 }
 
 function aiTile(provider: LaunchReadinessProviderInput): LaunchReadinessTile {
-  return provider.aiProviderConfigured
-    ? {
-        key: "woofguide-ai",
-        label: "WoofGuide",
-        value: "AI policy ready",
-        detail: "WoofGuide can use provider-backed AI with owner review and veterinary boundary language.",
-        status: "ready",
-      }
-    : {
-        key: "woofguide-ai",
-        label: "WoofGuide",
-        value: "Limited mode",
-        detail: "Assistant surfaces stay deterministic/fallback until provider keys, model policy, and disclosures are approved.",
-        status: "review",
-      };
+  if (aiProviderReady(provider)) {
+    return {
+      key: "woofguide-ai",
+      label: "WoofGuide",
+      value: "AI policy ready",
+      detail: "WoofGuide can use provider-backed AI with owner review and veterinary boundary language.",
+      status: "ready",
+    };
+  }
+
+  if (provider.aiProviderConfigured) {
+    return {
+      key: "woofguide-ai",
+      label: "WoofGuide",
+      value: "AI proof gated",
+      detail: "Provider AI setup is staged, but structured key, model, source, write-gate, veterinary, and fallback proof must be attached before live AI opens.",
+      status: "review",
+    };
+  }
+
+  return {
+    key: "woofguide-ai",
+    label: "WoofGuide",
+    value: "Limited mode",
+    detail: "Assistant surfaces stay deterministic/fallback until provider keys, model policy, and disclosures are approved.",
+    status: "review",
+  };
 }
 
 function paymentsApprovalGaps(provider: LaunchReadinessProviderInput): string[] {
   const gaps: string[] = [];
-  if (!provider.appStoreAccountsReady) gaps.push("store-account approval");
-  if (!provider.privacyLegalApproved) gaps.push("privacy/legal approval");
-  if (!provider.supportRunbookApproved) gaps.push("support/refund policy approval");
+  if (!storeAccountsReady(provider)) gaps.push("store-account proof");
+  if (!privacyLegalReady(provider)) gaps.push("privacy/legal proof");
+  if (!supportRunbookReady(provider)) gaps.push("support/refund policy proof");
   return gaps;
 }
 
 function paymentsTile(provider: LaunchReadinessProviderInput): LaunchReadinessTile {
-  if (!provider.paymentsEnabled) {
+  if (!paymentsProviderReady(provider)) {
+    if (provider.paymentsEnabled) {
+      return {
+        key: "plus-payments",
+        label: "WoofWatcher Plus",
+        value: "Checkout proof gated",
+        detail:
+          "Payment provider setup is staged, but structured sandbox receipt, restore, entitlement, refund/support, and checkout proof must be attached before checkout opens.",
+        status: "blocked",
+      };
+    }
+
     return {
       key: "plus-payments",
       label: "WoofWatcher Plus",
@@ -336,11 +404,11 @@ function paymentsTile(provider: LaunchReadinessProviderInput): LaunchReadinessTi
 
 function approvalTile(provider: LaunchReadinessProviderInput): LaunchReadinessTile {
   const ready =
-    provider.accountDeletionEnabled &&
-    provider.appStoreAccountsReady &&
-    provider.privacyLegalApproved &&
-    provider.pushNotificationsConfigured &&
-    provider.supportRunbookApproved;
+    accountDeletionReady(provider) &&
+    storeAccountsReady(provider) &&
+    privacyLegalReady(provider) &&
+    pushNotificationsReady(provider) &&
+    supportRunbookReady(provider);
   const ownerPacketStaged = Boolean(provider.privacyLegalOwnerReviewed || provider.supportRunbookOwnerReviewed);
 
   if (ready) {
@@ -383,8 +451,20 @@ function localBlockers(local: LaunchReadinessLocalInput): string[] {
 
 function providerBlockers(provider: LaunchReadinessProviderInput): string[] {
   const blockers: string[] = [];
-  if (!provider.authConfigured) blockers.push("Production auth is not configured.");
-  if (!provider.databaseConfigured) blockers.push("Production household database sync is not configured.");
+  if (!authProviderReady(provider)) {
+    blockers.push(
+      provider.authConfigured
+        ? "Production auth requires structured auth provider proof evidence."
+        : "Production auth is not configured.",
+    );
+  }
+  if (!databaseProviderReady(provider)) {
+    blockers.push(
+      provider.databaseConfigured
+        ? "Production household database sync requires structured care-entry provider sync proof evidence."
+        : "Production household database sync is not configured.",
+    );
+  }
   if (!storageProviderReady(provider)) {
     blockers.push(
       provider.storageProviderConfigured
@@ -395,28 +475,62 @@ function providerBlockers(provider: LaunchReadinessProviderInput): string[] {
   if (storageProviderReady(provider) && queueUploadReady(provider.storageQueue) > 0) {
     blockers.push("Local attachment upload queue needs provider migration verification.");
   }
-  if (!provider.aiProviderConfigured) blockers.push("AI provider key, model policy, and disclosure workflow are not configured.");
-  if (!provider.paymentsEnabled) blockers.push("Payments remain blocked until subscription, support, refund, and app-store obligations are approved.");
+  if (!aiProviderReady(provider)) {
+    blockers.push(
+      provider.aiProviderConfigured
+        ? "AI provider setup requires structured AI provider proof evidence."
+        : "AI provider key, model policy, and disclosure workflow are not configured.",
+    );
+  }
+  if (!paymentsProviderReady(provider)) {
+    blockers.push(
+      provider.paymentsEnabled
+        ? "Payments require structured payments proof evidence."
+        : "Payments remain blocked until subscription, support, refund, and app-store obligations are approved.",
+    );
+  }
   return blockers;
 }
 
 function approvalBlockers(provider: LaunchReadinessProviderInput): string[] {
   const blockers: string[] = [];
-  if (!provider.accountDeletionEnabled) blockers.push("Self-serve account deletion is not enabled.");
-  if (!provider.pushNotificationsConfigured) blockers.push("Push notifications are not configured.");
-  if (!provider.appStoreAccountsReady) blockers.push("Apple and Google store accounts/submission setup are not confirmed.");
-  if (!provider.privacyLegalApproved) {
+  if (!accountDeletionReady(provider)) {
     blockers.push(
-      provider.privacyLegalOwnerReviewed
-        ? "Privacy/legal owner packet still needs final legal/provider approval."
-        : "Privacy/legal approval is still open.",
+      provider.accountDeletionEnabled
+        ? "Self-serve account deletion requires structured account-deletion proof evidence."
+        : "Self-serve account deletion is not enabled.",
     );
   }
-  if (!provider.supportRunbookApproved) {
+  if (!pushNotificationsReady(provider)) {
     blockers.push(
-      provider.supportRunbookOwnerReviewed
-        ? "Support runbook owner packet still needs final support/provider approval."
-        : "Support and incident-response runbook approval is still open.",
+      provider.pushNotificationsConfigured
+        ? "Push notifications require structured APNs/FCM delivery proof evidence."
+        : "Push notifications are not configured.",
+    );
+  }
+  if (!storeAccountsReady(provider)) {
+    blockers.push(
+      provider.appStoreAccountsReady
+        ? "Apple and Google store accounts require structured store-account proof evidence."
+        : "Apple and Google store accounts/submission setup are not confirmed.",
+    );
+  }
+  if (!privacyLegalReady(provider)) {
+    blockers.push(
+      provider.privacyLegalApproved
+        ? "Privacy/legal approval requires structured privacy/legal proof evidence."
+        : provider.privacyLegalOwnerReviewed
+          ? "Privacy/legal owner packet still needs final legal/provider approval."
+          : "Privacy/legal approval is still open.",
+    );
+  }
+  if (!supportRunbookReady(provider)) {
+    blockers.push(
+      provider.supportRunbookApproved
+        ? "Support runbook approval requires structured support/refund proof evidence."
+        : provider.supportRunbookOwnerReviewed
+          ? "Support runbook owner packet still needs final support/provider approval."
+          : "Support and incident-response runbook approval is still open.",
     );
   }
   return blockers;
@@ -544,12 +658,15 @@ function providerNextGate(
     };
   }
 
-  if (!provider.authConfigured || !provider.databaseConfigured) {
+  if (!authProviderReady(provider) || !databaseProviderReady(provider)) {
+    const proofStaged = provider.authConfigured || provider.databaseConfigured;
     return {
       kind: "provider-setup",
       action: "open-provider-setup",
-      label: "Configure production care sync",
-      detail: "Production auth and household database sync must be configured before logs can be treated as release-stable.",
+      label: proofStaged ? "Attach production care sync proof" : "Configure production care sync",
+      detail: proofStaged
+        ? "Structured auth and care-entry provider sync proof must be attached before logs can be treated as release-stable."
+        : "Production auth and household database sync must be configured before logs can be treated as release-stable.",
       ctaLabel: "Edit Provider Plan",
     };
   }
@@ -574,22 +691,26 @@ function providerNextGate(
     };
   }
 
-  if (!provider.aiProviderConfigured) {
+  if (!aiProviderReady(provider)) {
     return {
       kind: "provider-setup",
       action: "open-woofguide",
-      label: "Approve WoofGuide AI policy",
-      detail: "Provider key, model behavior, owner review, and veterinary-boundary disclosures must be configured truthfully.",
+      label: provider.aiProviderConfigured ? "Attach WoofGuide AI proof" : "Approve WoofGuide AI policy",
+      detail: provider.aiProviderConfigured
+        ? "Structured AI provider proof must cover key storage, model policy, source rules, owner-review write gate, veterinary safety, and fallback handling."
+        : "Provider key, model behavior, owner review, and veterinary-boundary disclosures must be configured truthfully.",
       ctaLabel: "Open WoofGuide",
     };
   }
 
-  if (!provider.paymentsEnabled) {
+  if (!paymentsProviderReady(provider)) {
     return {
       kind: "provider-setup",
       action: "open-premium",
-      label: "Approve Plus checkout",
-      detail: "Subscriptions, refunds, support, entitlements, and app-store billing obligations must be approved before checkout goes live.",
+      label: provider.paymentsEnabled ? "Attach Plus checkout proof" : "Approve Plus checkout",
+      detail: provider.paymentsEnabled
+        ? "Structured payments proof must cover sandbox receipts, restore behavior, entitlements, refund/support, store obligations, and checkout gate approval."
+        : "Subscriptions, refunds, support, entitlements, and app-store billing obligations must be approved before checkout goes live.",
       ctaLabel: "Open Premium",
     };
   }

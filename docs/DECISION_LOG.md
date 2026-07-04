@@ -1837,6 +1837,23 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real Clerk/auth provider proof files, or WoofWatcher gains a provider-backed auth evidence service with signed app, redirect, household, and launch metadata.
 
+### 2026-07-04: Launch Readiness Requires Aggregate Structured Proof Flags
+
+Decision: the aggregate Launch Readiness dashboard, release packet, and store submission packet cannot treat provider-approved booleans as store readiness. Auth, care-entry sync, storage, AI, payments, account deletion, push delivery, store accounts, privacy/legal, and support/refund each need matching structured proof-ready flags before the top-level launch gate can close.
+
+Reason: individual proof manifests already reject generic approval notes, but the aggregate dashboard could still overstate readiness if raw provider booleans were promoted without the same proof boundary. Release and store packets inherit that dashboard state, so this is a public-claim boundary.
+
+Consequences:
+
+- `deriveLaunchReadiness` keeps provider/store/approval tiles blocked when provider booleans are true but structured proof flags are absent.
+- More passes aggregate proof flags as `false` until real evidence is attached, preventing staged provider setup from becoming `storeLaunchReady`.
+- Release packets and store submission packets cannot claim launch or submission readiness until every aggregate proof flag is present alongside native/local readiness.
+- Real provider proof files, native iOS/Android QA, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service or Apollo attaches real proof files that can populate the aggregate proof-ready flags.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

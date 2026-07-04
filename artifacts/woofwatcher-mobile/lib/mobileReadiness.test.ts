@@ -4689,9 +4689,18 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /privacyLegalApproved,\s*privacyLegalOwnerReviewed/);
   assert.match(more, /supportRunbookApproved,\s*supportRunbookOwnerReviewed/);
   assert.match(more, /authConfigured:\s*Boolean\(launchProviderSetupPlan\.providerInput\.authConfigured\)/);
+  assert.match(more, /authProviderProofReady:\s*false/);
   assert.match(more, /databaseConfigured:\s*Boolean\(launchProviderSetupPlan\.providerInput\.databaseConfigured\)/);
+  assert.match(more, /databaseProviderProofReady:\s*false/);
   assert.match(more, /storageProviderConfigured:\s*Boolean\(launchProviderSetupPlan\.providerInput\.storageProviderConfigured\)/);
   assert.match(more, /storageProviderProofReady:\s*false/);
+  assert.match(more, /aiProviderProofReady:\s*false/);
+  assert.match(more, /paymentsProviderProofReady:\s*false/);
+  assert.match(more, /accountDeletionProofReady:\s*false/);
+  assert.match(more, /pushNotificationsProofReady:\s*false/);
+  assert.match(more, /storeAccountsProofReady:\s*false/);
+  assert.match(more, /privacyLegalProofReady:\s*false/);
+  assert.match(more, /supportRunbookProofReady:\s*false/);
   assert.doesNotMatch(more, /privacyLegalApproved: false/);
   assert.doesNotMatch(more, /supportRunbookApproved: false/);
   assert.doesNotMatch(more, /me\.data\?\.user\?\.id && household/);
@@ -5860,6 +5869,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "push notifications proof manifest is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "aggregate launch readiness proof guard is source-backed" &&
         check.status === "PASS",
     ),
   );

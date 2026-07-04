@@ -44,6 +44,17 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: Aggregate Launch Readiness proof hardening now blocks `storeLaunchReady` when provider/store/approval booleans are true but structured proof flags are absent.
+- PASS: Focused launch/release/store/mobile readiness tests passed `131/131`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `582/582`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Direct JSON mobile beta doctor reports `aggregate launch readiness proof guard is source-backed` as `PASS`.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- BLOCKED: Direct JSON native QA tooling doctor still reports missing `adb`, `emulator`, `java`, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+- STILL REQUIRED: real provider proof files, real storage bucket configuration, signed upload/download policies, household scoping, retention/export/deletion approval, native iOS/Android proof, store review, public launch, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: Shared attachment storage proof hardening now blocks `storageProviderConfigured` from marking local medication proof photos, record documents, Adventure memories, Care Pass reports, and QA screenshots upload-ready unless structured attachment storage proof evidence is attached.
 - PASS: `attachmentManifest.test.ts` passed `6/6`.
 - PASS: Focused attachment/privacy/launch/release/store/mobile readiness tests passed `142/142`.

@@ -254,6 +254,16 @@ Current environment note:
   the JSON mobile beta doctor reports `attachment storage proof guard is
   source-backed` as `PASS`; real storage provider proof, native evidence, store
   review, public launch, and Apollo sign-off remain blocked.
+- Local proof also hardened aggregate Launch Readiness on 2026-07-04: complete
+  native/local inputs plus raw provider-approved booleans no longer make the
+  app `store-ready` unless structured proof flags are present for auth,
+  care-entry sync, storage, AI, payments, account deletion, push delivery, store
+  accounts, privacy/legal, and support/refund. Focused launch/release/store/
+  mobile readiness tests passed `131/131`, the full zero-dependency suite passed
+  `582/582`, and the JSON mobile beta doctor reports `aggregate launch
+  readiness proof guard is source-backed` as `PASS`; real provider proof files,
+  native evidence, store review, public launch, and Apollo sign-off remain
+  blocked.
 - Branch CI also proved the focused payments provider proof target on 2026-07-03:
   `WoofWatcher Verify` run `28676385615`, job `85050584288`, commit `3b5f4ab`,
   completed successfully in `3m3s` with Setup pnpm, Setup Node, install, JSON

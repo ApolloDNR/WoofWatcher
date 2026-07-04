@@ -1000,6 +1000,44 @@ check(
     : "keep attachment manifest, launch readiness, and More wired so storageProviderConfigured alone cannot mark local attachments upload-ready",
 );
 
+const aggregateLaunchReadinessProofGuardIsSourceBacked = includesAll(launchReadinessSource, [
+  "authProviderProofReady",
+  "databaseProviderProofReady",
+  "aiProviderProofReady",
+  "paymentsProviderProofReady",
+  "accountDeletionProofReady",
+  "pushNotificationsProofReady",
+  "storeAccountsProofReady",
+  "privacyLegalProofReady",
+  "supportRunbookProofReady",
+  "Production auth requires structured auth provider proof evidence.",
+  "Production household database sync requires structured care-entry provider sync proof evidence.",
+  "AI provider setup requires structured AI provider proof evidence.",
+  "Payments require structured payments proof evidence.",
+  "Apple and Google store accounts require structured store-account proof evidence.",
+  "Attach production care sync proof",
+  "Checkout proof gated",
+  "AI proof gated",
+])
+  && includesAll(moreRouteSource, [
+    "authProviderProofReady: false",
+    "databaseProviderProofReady: false",
+    "aiProviderProofReady: false",
+    "paymentsProviderProofReady: false",
+    "accountDeletionProofReady: false",
+    "pushNotificationsProofReady: false",
+    "storeAccountsProofReady: false",
+    "privacyLegalProofReady: false",
+    "supportRunbookProofReady: false",
+  ]);
+check(
+  "aggregate launch readiness proof guard is source-backed",
+  aggregateLaunchReadinessProofGuardIsSourceBacked,
+  aggregateLaunchReadinessProofGuardIsSourceBacked
+    ? "Launch Readiness keeps provider/store/approval gates blocked until structured proof flags accompany the provider setup booleans"
+    : "keep Launch Readiness and More wired so provider setup booleans alone cannot mark the app store-ready",
+);
+
 const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "Care Pass Report History storage status",
   "Saved on this device, or Ready to upload only after provider-approved storage",
