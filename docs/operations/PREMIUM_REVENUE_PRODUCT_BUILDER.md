@@ -3491,6 +3491,17 @@ tests, Typecheck plus CI-safe builds, post steps, and Complete job all passing.
 The proof-doc commit `58fe904` was also verified at branch head in
 `WoofWatcher Verify` run `28705426671`, job `85130189337`, with the same CI
 steps passing.
+Privacy & Safety now applies the same structured-proof verdict before displaying
+or preserving support/legal `provider-approved` status. The route only shows
+`Provider-approved packet` when `supportPlan.launchReady` is true, and
+`saveLaunchSupportProfile` re-derives the support runbook plan from the draft
+before downgrading attempted `provider-approved` saves back to `owner-reviewed`
+unless structured support/legal proof makes the draft launch-ready. Fresh
+red/green verification first failed on the missing display/save clamp, then
+passed mobile readiness `114/114`, direct JSON doctor source-backed checks
+including `privacy support status proof guard is source-backed`, the full
+zero-dependency API/mobile/PWA/care-domain suite with the dot reporter, root
+TypeScript, mobile TypeScript, and `git diff --check`.
 This is proof gating only; it does not approve legal/privacy copy, refund
 policy, support operations, veterinary-boundary language, App Store or Play
 Store review, public launch, or Apollo sign-off.

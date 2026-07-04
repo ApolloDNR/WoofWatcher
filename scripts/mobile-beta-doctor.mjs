@@ -2095,6 +2095,23 @@ check(
     : "keep deriveSupportRunbookPlan wired to the support legal proof manifest so approval booleans alone cannot mark public launch ready",
 );
 
+const privacySupportStatusProofGuardIsSourceBacked = includesAll(privacyRouteSource, [
+  "const launchProfileProviderApproved =",
+  'state.launchSupportProfile.providerStatus === "provider-approved" && supportPlan.launchReady',
+  "const requestedSupportPlan = deriveSupportRunbookPlan(launchDraft)",
+  "const savedProviderStatus =",
+  'providerStatus === "provider-approved" && !requestedSupportPlan.launchReady',
+  '"owner-reviewed"',
+  "providerStatus: savedProviderStatus",
+]);
+check(
+  "privacy support status proof guard is source-backed",
+  privacySupportStatusProofGuardIsSourceBacked,
+  privacySupportStatusProofGuardIsSourceBacked
+    ? "Privacy support/legal status display and save path require launch-ready structured support/legal proof before preserving provider-approved"
+    : "keep Privacy display and save path clamped so provider-approved support/legal status cannot persist without structured proof",
+);
+
 const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "route-visual-consistency",
   "Route Visual Consistency",

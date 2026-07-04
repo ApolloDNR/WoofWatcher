@@ -136,12 +136,15 @@ export default function PrivacyScreen() {
     bottomInset: insets.bottom,
   });
 
+  const launchProfileProviderApproved =
+    state.launchSupportProfile.providerStatus === "provider-approved" && supportPlan.launchReady;
   const launchProfileStatus =
-    state.launchSupportProfile.providerStatus === "owner-reviewed"
+    launchProfileProviderApproved
+      ? "Provider-approved packet"
+      : state.launchSupportProfile.providerStatus === "owner-reviewed" ||
+          state.launchSupportProfile.providerStatus === "provider-approved"
       ? "Owner-reviewed local packet"
-      : state.launchSupportProfile.providerStatus === "provider-approved"
-        ? "Provider-approved packet"
-        : "Local draft";
+      : "Local draft";
 
   const updateLaunchDraft = <K extends keyof LaunchSupportProfile>(
     key: K,
@@ -157,6 +160,11 @@ export default function PrivacyScreen() {
   };
 
   const saveLaunchSupportProfile = (providerStatus: LaunchSupportProfile["providerStatus"]) => {
+    const requestedSupportPlan = deriveSupportRunbookPlan(launchDraft);
+    const savedProviderStatus =
+      providerStatus === "provider-approved" && !requestedSupportPlan.launchReady
+        ? "owner-reviewed"
+        : providerStatus;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     updateCareDoc((doc) => ({
       ...doc,
@@ -165,9 +173,9 @@ export default function PrivacyScreen() {
         supportEmail: launchDraft.supportEmail.trim(),
         privacyPolicyUrl: launchDraft.privacyPolicyUrl.trim(),
         termsUrl: launchDraft.termsUrl.trim(),
-        providerStatus,
+        providerStatus: savedProviderStatus,
         ownerReviewedAt:
-          providerStatus === "owner-reviewed" || providerStatus === "provider-approved"
+          savedProviderStatus === "owner-reviewed" || savedProviderStatus === "provider-approved"
             ? new Date().toISOString()
             : doc.launchSupportProfile.ownerReviewedAt,
       },
