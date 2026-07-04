@@ -49,6 +49,7 @@ Latest local evidence, 2026-07-04:
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `583/583`.
 - PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
 - PASS: Direct JSON mobile beta doctor reports `privacy safety AI proof guard is source-backed` as `PASS`.
+- PASS: Branch CI proved implementation commit `eb7234b` in `WoofWatcher Verify` run `28703163755`, job `85124450034`, with mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds passing.
 - BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
 - STILL REQUIRED: real OpenAI key storage, approved model policy, source/citation review, owner-reviewed write-gate proof, veterinary safety approval, fallback/incident proof files, public launch, and Apollo sign-off.
 

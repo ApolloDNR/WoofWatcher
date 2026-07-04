@@ -272,8 +272,11 @@ Current environment note:
   Privacy & Safety/mobile readiness tests passed `121/121`, the full
   zero-dependency suite passed `583/583`, root/mobile TypeScript passed, and
   the JSON mobile beta doctor reports `privacy safety AI proof guard is
-  source-backed` as `PASS`; real OpenAI proof files, live AI approval,
-  veterinary safety review, public launch, and Apollo sign-off remain blocked.
+  source-backed` as `PASS`. Branch CI proved implementation commit `eb7234b`
+  in `WoofWatcher Verify` run `28703163755`, job `85124450034`, with mobile
+  beta doctor, focused behavior tests, and Typecheck plus CI-safe builds all
+  passing; real OpenAI proof files, live AI approval, veterinary safety review,
+  public launch, and Apollo sign-off remain blocked.
 - Branch CI also proved the focused payments provider proof target on 2026-07-03:
   `WoofWatcher Verify` run `28676385615`, job `85050584288`, commit `3b5f4ab`,
   completed successfully in `3m3s` with Setup pnpm, Setup Node, install, JSON

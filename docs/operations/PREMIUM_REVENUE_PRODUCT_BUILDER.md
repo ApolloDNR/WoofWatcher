@@ -3587,11 +3587,14 @@ configured AI plus complete storage/deletion/payments producing `ready`, then
 passed focused Privacy & Safety/mobile readiness tests `121/121`, the full
 zero-dependency API/mobile/PWA/care-domain suite `583/583`, root TypeScript,
 mobile TypeScript, and direct JSON doctor source-backed checks including
-`privacy safety AI proof guard is source-backed`. Direct JSON mobile beta doctor
-remains truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and
-missing Corepack. This is proof gating only; it does not configure OpenAI,
-approve a model, enable live AI, approve automatic writes, clear
-veterinary/safety review, launch publicly, or replace Apollo sign-off.
+`privacy safety AI proof guard is source-backed`. Branch CI proved
+implementation commit `eb7234b` in `WoofWatcher Verify` run `28703163755`, job
+`85124450034`, with mobile beta doctor, focused behavior tests, and Typecheck
+plus CI-safe builds all passing. Direct JSON mobile beta doctor remains
+truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing
+Corepack. This is proof gating only; it does not configure OpenAI, approve a
+model, enable live AI, approve automatic writes, clear veterinary/safety review,
+launch publicly, or replace Apollo sign-off.
 
 Next highest-impact work:
 
