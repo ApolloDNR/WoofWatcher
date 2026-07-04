@@ -1217,7 +1217,7 @@ Latest local evidence, 2026-07-04:
 
 ## Care Entries Route Integration Proof
 
-Latest local evidence, 2026-07-03:
+Latest local evidence, 2026-07-04:
 
 - Care-entry route handlers now live behind an injectable
   `createCareEntriesRouter` factory. Production still wires the real Drizzle DB,
@@ -1633,13 +1633,13 @@ Latest local evidence, 2026-07-03:
   dependency-complete `WoofWatcher Verify` proof instead of only listing local
   commands.
 - The handoff labels that evidence as recorded branch CI proof for run
-  `28685693291`, job `85077855560`, branch
-  `automation/premium-revenue-product-builder`, commit `0f60c22`, duration
-  `2m50s`, the proof URL, and the passed Setup pnpm, install, JSON doctor,
+  `28692423522`, job `85096033279`, branch
+  `automation/premium-revenue-product-builder`, commit `fd3a98f`, duration
+  `3m06s`, the proof URL, and the passed Setup pnpm, install, JSON doctor,
   focused behavior, and `build:ci` steps with `smoke:web`, `smoke:runtime`,
   `proof:live-preview`, provider-approved support/legal launch-readiness
   wiring, Premium payments proof manifest, Auth/Setup proof manifest, and Route
-  Visual proof manifest.
+  Visual proof manifest plus route-named Route Visual capture instructions.
 - The handoff now warns helpers to rerun `WoofWatcher Verify` after any new
   commit before treating dependency proof as current.
 - Red/green proof first failed because `RECORDED_MOBILE_BETA_CI_PROOF` was not
@@ -1657,9 +1657,9 @@ Latest local evidence, 2026-07-03:
   `117/117`. JSON mobile beta doctor source-backed checks pass, including
   `recorded CI proof freshness boundary is source-backed`, and still block only
   on the local pnpm/Corepack mismatch.
-- The 2026-07-03 Route Visual refresh updated
-  `RECORDED_MOBILE_BETA_CI_PROOF` to run `28685693291` and
-  `RECORDED_LIVE_PREVIEW_HANDOFF_PROOF` to a local `proof:live-preview` run
+- The 2026-07-04 Route Visual capture-instructions refresh updated
+  `RECORDED_MOBILE_BETA_CI_PROOF` to run `28692423522` and kept
+  `RECORDED_LIVE_PREVIEW_HANDOFF_PROOF` as a historical local `proof:live-preview` run
   generated `2026-07-03T22:21:21.304Z` on commit `0f60c22` from
   `http://127.0.0.1:60160/`, with `19/19` web-preview route shell checks and
   the web-preview-only boundary still explicit.

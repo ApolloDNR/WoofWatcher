@@ -3074,18 +3074,19 @@ submission, or replace Apollo sign-off.
 
 The recorded CI proof freshness pass keeps Share Beta Handoff from treating a
 historical branch run as current proof after later commits. The recorded proof
-now points to `WoofWatcher Verify` run `28685693291`, job `85077855560`, commit
-`0f60c22`, and the packet labels it `Recorded branch CI proof` while requiring a
+now points to `WoofWatcher Verify` run `28692423522`, job `85096033279`, commit
+`fd3a98f`, and the packet labels it `Recorded branch CI proof` while requiring a
 fresh workflow rerun after any new commit before dependency proof can be treated
 as current. This refresh records the branch CI that passed after the Route Visual
-proof manifest landed, including pinned pnpm 10.24.0, the JSON mobile beta
-doctor with auth/setup smoke proof, auth/setup native QA target coverage, auth
+route-named capture-instructions slice landed, including pinned pnpm 10.24.0,
+the JSON mobile beta doctor with auth/setup smoke proof, auth/setup native QA target coverage, auth
 provider proof packet coverage, provider staged-row truth coverage, support/legal
 readiness proof coverage, Premium payments proof manifest coverage, Auth/Setup
-proof manifest coverage, Route Visual proof manifest coverage, focused behavior
-tests, and `build:ci` with `smoke:web`, `smoke:runtime`, and
-`proof:live-preview`. The recorded live preview proof now carries a local
-`proof:live-preview` run generated `2026-07-03T22:21:21.304Z` on commit
+proof manifest coverage, Route Visual proof manifest coverage, route-named Route
+Visual capture instructions, focused behavior tests, and `build:ci` with
+`smoke:web`, `smoke:runtime`, and `proof:live-preview`. The recorded live preview
+proof remains historical and carries a local `proof:live-preview` run generated
+`2026-07-03T22:21:21.304Z` on commit
 `0f60c22` from `http://127.0.0.1:60160/`, with `19/19` web-preview route shell
 checks and the web-preview-only boundary still explicit. Fresh refresh
 verification covered the

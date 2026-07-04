@@ -186,16 +186,17 @@ Current environment note:
   result as dependency-complete doctor proof when local Windows still has pnpm
   `11.7.0`.
 - The in-app `Share Beta Handoff` packet now labels the recorded branch CI proof
-  for `WoofWatcher Verify` run `28685693291`, job `85077855560`, commit
-  `0f60c22`, including the passed JSON doctor with auth/setup smoke proof,
+  for `WoofWatcher Verify` run `28692423522`, job `85096033279`, commit
+  `fd3a98f`, including the passed JSON doctor with auth/setup smoke proof,
   auth/setup native QA target coverage, auth provider proof packet coverage,
   the provider staged-row truth boundary, support legal readiness proof target,
   provider-approved support/legal launch-readiness wiring, the Plus checkout
   approval truth boundary, Records storage provider-approval clamp, Records
   binary proof manifest, Premium payments proof manifest, Auth/Setup proof
-  manifest, Route Visual proof manifest, focused tests, and `build:ci` proof
-  for `smoke:web`, `smoke:runtime`, and `proof:live-preview`. The recorded
-  live-preview proof now points at a local `proof:live-preview` run generated
+  manifest, Route Visual proof manifest, route-named Route Visual capture
+  instructions, focused tests, and `build:ci` proof for `smoke:web`,
+  `smoke:runtime`, and `proof:live-preview`. The recorded live-preview proof
+  remains historical and points at a local `proof:live-preview` run generated
   `2026-07-03T22:21:21.304Z` on commit `0f60c22` from
   `http://127.0.0.1:60160/` with `19/19` web-preview route checks. It
   explicitly requires rerunning `WoofWatcher Verify` and `proof:live-preview`

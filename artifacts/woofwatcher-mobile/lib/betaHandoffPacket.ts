@@ -48,12 +48,12 @@ export interface MobileLivePreviewHandoffProof {
 
 export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
   workflowName: "WoofWatcher Verify",
-  runId: "28685693291",
-  jobId: "85077855560",
+  runId: "28692423522",
+  jobId: "85096033279",
   branch: "automation/premium-revenue-product-builder",
-  commit: "0f60c22",
-  duration: "2m50s",
-  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28685693291",
+  commit: "fd3a98f",
+  duration: "3m06s",
+  proofUrl: "https://github.com/ApolloDNR/WoofWatcher/actions/runs/28692423522",
   passedSteps: [
     "Setup pnpm",
     "Setup Node",
@@ -63,7 +63,7 @@ export const RECORDED_MOBILE_BETA_CI_PROOF: MobileBetaCiProof = {
     "Typecheck and CI-safe builds",
   ],
   coverage:
-    "pinned pnpm 10.24.0, JSON mobile beta doctor with auth/setup smoke proof, auth/setup native QA target, auth provider proof packet, provider staged-row truth boundary, support legal readiness proof target, provider-approved support/legal launch-readiness wiring, Plus checkout approval truth boundary, Records storage provider-approval clamp, Records binary proof manifest, Premium payments proof manifest, Auth/Setup proof manifest, Route Visual proof manifest, focused tests, build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview",
+    "pinned pnpm 10.24.0, JSON mobile beta doctor with auth/setup smoke proof, auth/setup native QA target, auth provider proof packet, provider staged-row truth boundary, support legal readiness proof target, provider-approved support/legal launch-readiness wiring, Plus checkout approval truth boundary, Records storage provider-approval clamp, Records binary proof manifest, Premium payments proof manifest, Auth/Setup proof manifest, Route Visual proof manifest, route-named Route Visual capture instructions, focused tests, build:ci with mobile smoke:web, smoke:runtime, and proof:live-preview",
 };
 
 export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof = {
