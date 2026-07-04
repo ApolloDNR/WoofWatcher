@@ -113,7 +113,7 @@ const nextActions = [
   "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
   "Verify Records/Care Pass Report History shows Printable HTML local file, file size, and generated PDF/native proof still blocked.",
   "Verify Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
-  "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof and capture Auth gateway plus Setup local-preview proof while provider-backed auth and household creation stay blocked.",
+  "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof and capture Auth gateway plus Setup local-preview proof while provider-backed auth and household creation stay blocked until structured Clerk, redirect/deep-link, household membership, and Apollo auth launch proof files are attached.",
   "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
   "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture local Care Pass PDF bytes, local Dog ID PNG bytes, native share/reopen proof, iOS/Android artifact proof, and a structured provider storage proof file with locator, MIME, byte size, bucket names, signed upload/download, household scope, retention/export/deletion, QA evidence storage, and approvals before claiming PDF/PNG readiness.",
   "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture structured Supabase project, migration/backfill, active-household RLS, retention/export/deletion, dependency-build, and mobile full-refresh sign-off files with MIME, byte size, route-specific denied reads, row count, CI run id, native QA reference, rollback plan, and row-specific booleans before enabling incremental sync.",
@@ -314,7 +314,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Confirm Report History Binary proof manifest shows local Care Pass PDF and Dog ID PNG rows while native/provider proof remains blocked.",
   "Confirm Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
   "Open focused auth/setup target: /care-twin-qa?qaSurface=auth-setup-onboarding-proof.",
-  "Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked.",
+  "Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked until structured Clerk, redirect/deep-link, household membership, and Apollo auth launch proof files are attached.",
   "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
   "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
   "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
@@ -476,19 +476,19 @@ check(
 const authSetupNativeQaTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "auth-setup-onboarding-proof",
   "Auth And Setup Onboarding Proof",
-  "provider-backed auth stays blocked",
-  "Clerk production credentials are not configured",
+    "provider-backed auth stays blocked",
+    "structured Clerk, redirect/deep-link, household membership, and auth launch proof files",
   "Local preview household setup",
   "provider-backed auth and household creation stay blocked",
 ])
   && includesAll(betaHandoffPacketSource, [
     "Open focused auth/setup target: /care-twin-qa?qaSurface=auth-setup-onboarding-proof.",
-    "Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked.",
+    "Capture Auth gateway and Setup local-preview proof while provider-backed auth and household creation stay blocked until structured Clerk, redirect/deep-link, household membership, and Apollo auth launch proof files are attached.",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused auth/setup onboarding proof target",
     "/care-twin-qa?qaSurface=auth-setup-onboarding-proof",
-    "provider-backed auth and household creation stay blocked",
+    "structured Clerk, redirect/deep-link, household membership, and Apollo auth launch proof files",
   ])
   && includesAll(livePreviewHandoffProofSource, [
     "auth-setup-onboarding-proof",
@@ -504,12 +504,16 @@ check(
 const authProviderProofPacketIsSourceBacked = includesAll(authProviderProofSource, [
   "AUTH_PROVIDER_PROOF_SUMMARY",
   "AUTH_PROVIDER_PROOF_ITEMS",
+  "AuthProviderStructuredProofEvidence",
   "Production auth provider proof packet",
   "Clerk production app id",
   "redirect/deep-link URL list",
   "OAuth sign-in test",
   "session policy",
   "household membership policy",
+  "structured Clerk production proof file",
+  "structured redirect/deep-link proof file",
+  "structured household membership proof file",
 ])
   && includesAll(launchProviderSetupSource, [
     "AUTH_PROVIDER_PROOF_SUMMARY",
@@ -530,20 +534,28 @@ check(
 );
 
 const authSetupProofManifestIsSourceBacked = includesAll(authProviderProofSource, [
-  "buildAuthSetupProofManifest",
-  "Clerk production app",
-  "Redirect and deep links",
-  "Native auth screenshots",
-  "Setup local-preview proof",
-  "nativeEvidence",
-  "Auth gateway screenshots ready",
-  "Setup local-preview screenshots ready",
+    "buildAuthSetupProofManifest",
+    "AuthProviderStructuredProofEvidence",
+    "providerEvidence",
+    "Clerk production app",
+    "Redirect and deep links",
+    "Native auth screenshots",
+    "Setup local-preview proof",
+    "nativeEvidence",
+    "Clerk pending structured proof",
+    "Redirects pending structured proof",
+    "Household sync pending structured proof",
+    "localPlaceholderKeysExcluded",
+    "crossHouseholdAccessDenied",
+    "apolloApproved",
+    "Auth gateway screenshots ready",
+    "Setup local-preview screenshots ready",
   "iOS Auth gateway screenshot",
   "Android Setup local-preview screenshot",
   "capturesProviderBoundaryCopy",
   "capturesReachableControls",
   "Native proof blocked",
-  "Apollo approval",
+  "Apollo launch approval",
 ])
   && includesAll(authUiSource, [
     "buildAuthSetupProofManifest",
@@ -573,7 +585,7 @@ check(
   "auth/setup proof manifest is source-backed",
   authSetupProofManifestIsSourceBacked,
   authSetupProofManifestIsSourceBacked
-    ? "Auth gateway, Setup, and the focused helper route show Clerk, redirect, platform-specific native screenshot, local-preview setup, household sync, and launch blockers before native auth/setup proof can be claimed"
+    ? "Auth gateway, Setup, and the focused helper route show structured Clerk, redirect, platform-specific native screenshot, local-preview setup, household sync, and launch blockers before native auth/setup proof can be claimed"
     : "keep Auth gateway, Setup, and /care-twin-qa?qaSurface=auth-setup-onboarding-proof wired to buildAuthSetupProofManifest before claiming native auth/setup proof",
 );
 

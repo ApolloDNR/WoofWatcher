@@ -261,7 +261,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     devicePrompt:
       "On iOS and Android, capture the Auth gateway and Setup local-preview path, confirming provider-backed auth stays blocked and local setup does not claim cross-device household creation.",
     setupSteps: [
-      "Confirm Clerk production credentials are not configured unless Apollo has provided real provider proof.",
+      "Confirm Clerk production credentials are not configured unless Apollo has provided structured Clerk, redirect/deep-link, household membership, and auth launch proof files.",
       "Use Local preview household setup data with no private household details visible.",
       "Keep provider-backed auth, household creation, invite delivery, and cross-device sync labels in their truthful blocked or local-preview state.",
     ],
@@ -273,15 +273,15 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     ],
     acceptanceCriteria: [
       "Auth gateway and Setup are readable, tappable, and clear of safe-area, keyboard, and floating navigation issues on iOS and Android.",
-      "provider-backed auth, household creation, invite delivery, and cross-device sync remain explicitly blocked or local-preview unless real provider proof exists.",
+      "provider-backed auth, household creation, invite delivery, and cross-device sync remain explicitly blocked or local-preview unless structured provider proof files exist.",
       "Local preview setup can be saved or deferred without a dead end.",
     ],
     failureEscalation:
-      "Mark Needs tune if Auth or Setup clips, blanks, traps the keyboard, hides save controls, claims cross-device account sync, or says provider-backed household creation/invite delivery is ready without provider proof.",
+      "Mark Needs tune if Auth or Setup clips, blanks, traps the keyboard, hides save controls, claims cross-device account sync, or says provider-backed household creation/invite delivery is ready without structured provider proof files.",
     requiredEvidence: [
       "iOS screenshot of Auth gateway showing local-preview/provider-boundary copy.",
       "Android screenshot of Setup showing Local preview household setup and reachable save controls.",
-      "Note confirming provider-backed auth and household creation stay blocked until Clerk/Supabase/provider proof exists.",
+      "Structured auth provider proof files for Clerk production app, redirect/deep-link URLs, household membership policy, and Apollo auth launch approval/no-launch boundary.",
     ],
     routeChecklist: [
       {

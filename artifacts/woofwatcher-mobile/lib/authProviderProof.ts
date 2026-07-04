@@ -19,6 +19,41 @@ export interface AuthSetupNativeProofEvidence {
   capturesReachableControls?: boolean;
 }
 
+export type AuthProviderStructuredProofKind =
+  | "clerk-production"
+  | "redirect-deep-links"
+  | "household-membership"
+  | "launch-approval";
+
+export interface AuthProviderStructuredProofEvidence {
+  kind: AuthProviderStructuredProofKind;
+  fileName?: string | null;
+  uri?: string | null;
+  mimeType?: string | null;
+  byteSize?: number | null;
+  productionAppId?: string | null;
+  publishableKeyEnvironment?: string | null;
+  secretStorageLocation?: string | null;
+  redirectUrls?: readonly string[] | null;
+  activeHouseholdPolicy?: string | null;
+  inviteAcceptancePolicy?: string | null;
+  joinCreatePermissionPolicy?: string | null;
+  roleEnforcementPolicy?: string | null;
+  apolloApprovalOwner?: string | null;
+  noLaunchBoundary?: string | null;
+  nativeProofReference?: string | null;
+  localPlaceholderKeysExcluded?: boolean | null;
+  secretStorageApproved?: boolean | null;
+  expoSchemeApproved?: boolean | null;
+  iosBundleApproved?: boolean | null;
+  androidBundleApproved?: boolean | null;
+  productionWebApproved?: boolean | null;
+  postAuthReturnApproved?: boolean | null;
+  crossHouseholdAccessDenied?: boolean | null;
+  householdMembershipApproved?: boolean | null;
+  apolloApproved?: boolean | null;
+}
+
 export interface AuthSetupProofManifestInput {
   clerkProductionApproved?: boolean;
   redirectDeepLinkApproved?: boolean;
@@ -27,6 +62,7 @@ export interface AuthSetupProofManifestInput {
   householdSyncApproved?: boolean;
   launchGateApproved?: boolean;
   nativeEvidence?: readonly AuthSetupNativeProofEvidence[];
+  providerEvidence?: readonly AuthProviderStructuredProofEvidence[];
 }
 
 export interface AuthSetupProofManifestRow {
@@ -46,12 +82,12 @@ export const AUTH_PROVIDER_PROOF_ITEMS: readonly AuthProviderProofItem[] = [
   {
     label: "Clerk production app",
     requiredEvidence:
-      "Clerk production app id, publishable key environment, secret storage location, and confirmation that local placeholder keys are not used for release.",
+      "structured Clerk production proof file with Clerk production app id, publishable key environment, secret storage location, local-placeholder exclusion, MIME, byte size, and approval booleans.",
   },
   {
     label: "Redirect and deep-link URLs",
     requiredEvidence:
-      "Approved redirect/deep-link URL list covering Expo scheme, iOS and Android bundle identifiers, production web URL, and post-auth return paths.",
+      "structured redirect/deep-link proof file covering Expo scheme, iOS and Android bundle identifiers, production web URL, post-auth return paths, MIME, byte size, and row-specific approvals.",
   },
   {
     label: "OAuth sign-in test",
@@ -66,7 +102,7 @@ export const AUTH_PROVIDER_PROOF_ITEMS: readonly AuthProviderProofItem[] = [
   {
     label: "Household membership policy",
     requiredEvidence:
-      "active household resolution, invite acceptance, join/create household permissions, and role enforcement notes proving auth cannot cross household boundaries.",
+      "structured household membership proof file covering active-household resolution, invite acceptance, join/create permissions, role enforcement, denied cross-household access, MIME, byte size, and row-specific approvals.",
   },
 ];
 
@@ -128,6 +164,10 @@ function evidenceNameText(evidence: AuthSetupNativeProofEvidence): string {
   return normalizeEvidenceText([evidence.fileName, evidence.uri].filter(Boolean).join(" "));
 }
 
+function providerProofNameText(evidence: AuthProviderStructuredProofEvidence): string {
+  return normalizeEvidenceText([evidence.fileName, evidence.uri].filter(Boolean).join(" "));
+}
+
 function hasAnyToken(text: string, tokens: readonly string[]): boolean {
   return tokens.some((token) => text.includes(token));
 }
@@ -142,6 +182,99 @@ function hasImageMime(evidence: AuthSetupNativeProofEvidence): boolean {
 
 function hasPositiveByteSize(evidence: AuthSetupNativeProofEvidence): boolean {
   return typeof evidence.byteSize === "number" && Number.isFinite(evidence.byteSize) && evidence.byteSize > 0;
+}
+
+function hasPositiveProofByteSize(evidence: AuthProviderStructuredProofEvidence): boolean {
+  return typeof evidence.byteSize === "number" && Number.isFinite(evidence.byteSize) && evidence.byteSize > 0;
+}
+
+function hasProofMime(evidence: AuthProviderStructuredProofEvidence): boolean {
+  const mime = normalizeEvidenceText(evidence.mimeType);
+  return (
+    mime === "application json" ||
+    mime.endsWith(" json") ||
+    mime === "text markdown" ||
+    mime === "text plain" ||
+    mime === "application pdf"
+  );
+}
+
+function hasText(value: unknown): boolean {
+  return String(value ?? "").trim().length > 0;
+}
+
+function hasEnoughRedirectUrls(evidence: AuthProviderStructuredProofEvidence): boolean {
+  return Array.isArray(evidence.redirectUrls) && evidence.redirectUrls.filter((url) => hasText(url)).length >= 5;
+}
+
+function matchesBaseProviderProof(
+  evidence: AuthProviderStructuredProofEvidence,
+  kind: AuthProviderStructuredProofKind,
+  tokenGroups: readonly (readonly string[])[],
+): boolean {
+  const nameText = providerProofNameText(evidence);
+  return (
+    evidence.kind === kind &&
+    hasAllTokenGroups(nameText, tokenGroups) &&
+    hasProofMime(evidence) &&
+    hasPositiveProofByteSize(evidence)
+  );
+}
+
+function matchesClerkProductionProof(evidence: AuthProviderStructuredProofEvidence): boolean {
+  return (
+    matchesBaseProviderProof(evidence, "clerk-production", [["clerk"], ["production", "auth"]]) &&
+    hasText(evidence.productionAppId) &&
+    hasText(evidence.publishableKeyEnvironment) &&
+    hasText(evidence.secretStorageLocation) &&
+    evidence.localPlaceholderKeysExcluded === true &&
+    evidence.secretStorageApproved === true
+  );
+}
+
+function matchesRedirectDeepLinkProof(evidence: AuthProviderStructuredProofEvidence): boolean {
+  return (
+    matchesBaseProviderProof(evidence, "redirect-deep-links", [["redirect", "deep"], ["link", "url", "oauth"]]) &&
+    hasEnoughRedirectUrls(evidence) &&
+    evidence.expoSchemeApproved === true &&
+    evidence.iosBundleApproved === true &&
+    evidence.androidBundleApproved === true &&
+    evidence.productionWebApproved === true &&
+    evidence.postAuthReturnApproved === true
+  );
+}
+
+function matchesHouseholdMembershipProof(evidence: AuthProviderStructuredProofEvidence): boolean {
+  return (
+    matchesBaseProviderProof(evidence, "household-membership", [["household"], ["membership", "policy", "auth"]]) &&
+    hasText(evidence.activeHouseholdPolicy) &&
+    hasText(evidence.inviteAcceptancePolicy) &&
+    hasText(evidence.joinCreatePermissionPolicy) &&
+    hasText(evidence.roleEnforcementPolicy) &&
+    evidence.crossHouseholdAccessDenied === true &&
+    evidence.householdMembershipApproved === true
+  );
+}
+
+function matchesLaunchApprovalProof(evidence: AuthProviderStructuredProofEvidence): boolean {
+  return (
+    matchesBaseProviderProof(evidence, "launch-approval", [["auth", "apollo"], ["launch", "approval", "no launch"]]) &&
+    hasText(evidence.apolloApprovalOwner) &&
+    hasText(evidence.noLaunchBoundary) &&
+    hasText(evidence.nativeProofReference) &&
+    evidence.apolloApproved === true
+  );
+}
+
+function summarizeProviderProof(
+  evidence: readonly AuthProviderStructuredProofEvidence[],
+  matches: (evidence: AuthProviderStructuredProofEvidence) => boolean,
+): { ready: boolean; label: string } {
+  const proof = evidence.find(matches);
+  return {
+    ready: Boolean(proof),
+    label: proof ? String(proof.fileName ?? proof.uri ?? "Structured auth provider proof") : "",
+  };
 }
 
 function matchesNativeProofRequirement(
@@ -200,29 +333,38 @@ export function buildAuthSetupProofManifest(
   const householdSyncApproved = Boolean(input.householdSyncApproved);
   const launchGateApproved = Boolean(input.launchGateApproved);
   const nativeEvidence = input.nativeEvidence ?? [];
+  const providerEvidence = input.providerEvidence ?? [];
   const authNativeProof = summarizeNativeProof(nativeEvidence, "auth-gateway");
   const setupNativeProof = summarizeNativeProof(nativeEvidence, "setup-local-preview");
+  const clerkProductionProof = summarizeProviderProof(providerEvidence, matchesClerkProductionProof);
+  const redirectDeepLinkProof = summarizeProviderProof(providerEvidence, matchesRedirectDeepLinkProof);
+  const householdMembershipProof = summarizeProviderProof(providerEvidence, matchesHouseholdMembershipProof);
+  const launchApprovalProof = summarizeProviderProof(providerEvidence, matchesLaunchApprovalProof);
   const launchReady =
-    launchGateApproved &&
-    clerkProductionApproved &&
-    redirectDeepLinkApproved &&
+    launchApprovalProof.ready &&
+    clerkProductionProof.ready &&
+    redirectDeepLinkProof.ready &&
     authNativeProof.ready &&
     setupNativeProof.ready &&
-    householdSyncApproved;
+    householdMembershipProof.ready;
   const rows = [
     manifestRow(
       "Clerk production app",
-      clerkProductionApproved,
-      "Clerk approved",
-      "Clerk pending",
-      "Clerk production app id, publishable key environment, secret storage, and non-placeholder release configuration must be attached.",
+      clerkProductionProof.ready,
+      "Clerk proof ready",
+      clerkProductionApproved ? "Clerk pending structured proof" : "Clerk pending",
+      clerkProductionProof.ready
+        ? `${clerkProductionProof.label} proves Clerk production app id, publishable key environment, secret storage, and local-placeholder exclusion.`
+        : "Clerk production app id, publishable key environment, secret storage, local-placeholder exclusion, MIME, byte size, and approval booleans must be attached in a structured proof file.",
     ),
     manifestRow(
       "Redirect and deep links",
-      redirectDeepLinkApproved,
-      "Redirects approved",
-      "Redirects pending",
-      "Expo scheme, iOS and Android bundle identifiers, production web URL, OAuth return paths, and post-auth routing must be approved.",
+      redirectDeepLinkProof.ready,
+      "Redirect proof ready",
+      redirectDeepLinkApproved ? "Redirects pending structured proof" : "Redirects pending",
+      redirectDeepLinkProof.ready
+        ? `${redirectDeepLinkProof.label} proves Expo scheme, iOS/Android bundle identifiers, production web URL, OAuth return paths, and post-auth routing.`
+        : "Expo scheme, iOS and Android bundle identifiers, production web URL, OAuth return paths, post-auth routing, MIME, byte size, and approval booleans must be attached in a structured proof file.",
     ),
     manifestRow(
       "Native auth screenshots",
@@ -244,17 +386,23 @@ export function buildAuthSetupProofManifest(
     ),
     manifestRow(
       "Household sync boundary",
-      householdSyncApproved,
-      "Household sync approved",
-      "Household sync blocked",
-      "Provider-backed household creation, invite acceptance, active household selection, and role enforcement stay blocked until real provider proof exists.",
+      householdMembershipProof.ready,
+      "Household sync proof ready",
+      householdSyncApproved ? "Household sync pending structured proof" : "Household sync blocked",
+      householdMembershipProof.ready
+        ? `${householdMembershipProof.label} proves active household selection, invite acceptance, join/create permissions, role enforcement, and denied cross-household access.`
+        : "Provider-backed household creation, invite acceptance, active household selection, role enforcement, denied cross-household access, MIME, byte size, and approval booleans must be attached in a structured proof file.",
     ),
     manifestRow(
       "Launch gate",
       launchReady,
       "Native proof approved",
       "Native proof blocked",
-      "Auth and Setup launch proof stays blocked until Clerk, redirects, platform-specific native screenshots, household creation policy, and Apollo approval are attached.",
+      launchReady
+        ? `${launchApprovalProof.label} proves Apollo auth launch approval and the no-launch boundary after provider and native proof.`
+        : launchGateApproved
+          ? "Auth and Setup launch proof is staged, but structured Apollo launch approval/no-launch-boundary proof is still required with provider and native evidence."
+          : "Auth and Setup launch proof stays blocked until Clerk, redirects, platform-specific native screenshots, household creation policy, structured Apollo launch approval, and no-launch-boundary proof are attached.",
     ),
   ];
   const blockers = rows

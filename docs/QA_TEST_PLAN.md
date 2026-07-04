@@ -44,6 +44,18 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: Auth/Setup structured provider-proof hardening now blocks legacy Clerk, redirect/deep-link, household sync, and launch approval booleans unless structured Clerk production, redirect/deep-link, household membership, and Apollo auth launch proof files are attached.
+- PASS: `authProviderProof.test.ts` passed `5/5`.
+- PASS: Focused Auth/Setup/release-QA/Share Beta Handoff/smoke/readiness tests passed `149/149`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `577/577`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Direct JSON mobile beta doctor reports `auth/setup proof manifest is source-backed` as `PASS`.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- BLOCKED: Direct JSON native QA tooling doctor still reports missing `adb`, `emulator`, `java`, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+- STILL REQUIRED: real Clerk configuration, OAuth/deep-link approval, provider-backed household creation, native Auth/Setup screenshots, store approval, public launch, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: Care-entry provider sync proof red/green coverage now blocks legacy Supabase ids, migration notes, RLS notes, policy notes, CI URLs, and mobile sign-off strings unless six structured proof files are attached.
 - PASS: Focused care-entry/provider-setup/Share Beta Handoff/release-QA/smoke/readiness tests passed `153/153`.
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `576/576`.
@@ -1751,6 +1763,11 @@ Latest local evidence, 2026-07-04:
   native approval flags no longer satisfy these rows without `nativeEvidence`
   carrying platform/surface naming, image MIME, positive byte size,
   provider-boundary copy, and reachable Setup controls.
+- The provider rows now require structured proof files for Clerk production,
+  redirect/deep-link URLs, household membership policy, and Apollo auth launch
+  approval before the Clerk, redirect, household sync, or launch rows can become
+  ready. Generic provider approval booleans only stage pending structured-proof
+  row copy.
 - Focused red/green proof first failed on the missing focused-route manifest
   and missing JSON doctor guard, then passed focused route/doctor readiness
   `114/114`.
@@ -1765,6 +1782,13 @@ Latest local evidence, 2026-07-04:
   behavior tests, and Typecheck plus CI-safe builds all passed.
 - The full zero-dependency API/mobile/PWA/care-domain focused suite passed
   `557/557`; root TypeScript and mobile TypeScript both passed.
+- Provider-proof hardening verification first failed because staged provider
+  approval booleans plus complete native evidence made the manifest ready
+  without proof files, then passed `authProviderProof.test.ts` `5/5`, focused
+  Auth/Setup/release-QA/Share Beta Handoff/smoke/readiness tests `149/149`, the
+  full zero-dependency API/mobile/PWA/care-domain suite `577/577`, root
+  TypeScript, mobile TypeScript, direct JSON doctor source-backed checks, and
+  `git diff --check`.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `auth/setup proof
   manifest is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
   only because local pnpm is `11.7.0` and the repo is pinned to `10.24.0`.

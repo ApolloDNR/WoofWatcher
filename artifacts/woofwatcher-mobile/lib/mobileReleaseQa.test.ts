@@ -331,7 +331,7 @@ test("adds a launch-critical auth and setup onboarding proof target", () => {
   assert.match(surface.goal, /first-run setup/);
   assert.match(surface.devicePrompt, /iOS and Android/);
   assert.match(surface.devicePrompt, /provider-backed auth stays blocked/);
-  assert.match(surface.setupSteps.join("\n"), /Clerk production credentials are not configured/);
+  assert.match(surface.setupSteps.join("\n"), /structured Clerk/);
   assert.match(surface.setupSteps.join("\n"), /Local preview household setup/);
   assert.match(surface.verificationSteps.join("\n"), /Open \/sign-in/);
   assert.match(surface.verificationSteps.join("\n"), /Open \/setup/);
@@ -341,7 +341,8 @@ test("adds a launch-critical auth and setup onboarding proof target", () => {
   assert.match(surface.failureEscalation, /claims cross-device account sync/);
   assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Auth gateway/);
   assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Setup/);
-  assert.match(surface.requiredEvidence.join("\n"), /provider-backed auth and household creation stay blocked/);
+  assert.match(surface.requiredEvidence.join("\n"), /Structured auth provider proof files/);
+  assert.match(surface.requiredEvidence.join("\n"), /Apollo auth launch approval/);
   assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
     "Auth gateway",
     "First-run setup",

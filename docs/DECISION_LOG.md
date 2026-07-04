@@ -1804,6 +1804,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real storage/provider proof files, or WoofWatcher gains a provider-backed report-storage evidence service with signed bucket, policy, and lifecycle metadata.
 
+### 2026-07-04: Auth Provider Readiness Requires Structured Proof Files
+
+Decision: the Auth/Setup proof manifest cannot treat `clerkProductionApproved`, `redirectDeepLinkApproved`, `householdSyncApproved`, or `launchGateApproved` as account/onboarding readiness. Legacy booleans can stage row copy only; readiness requires structured proof files for Clerk production, redirect/deep-link URLs, household membership policy, and Apollo auth launch approval.
+
+Reason: production auth is a trust, privacy, account custody, and household-boundary launch gate. Approval booleans can hide missing Clerk app ids, key custody, local placeholder key exclusion, OAuth return paths, invite permissions, role enforcement, denied cross-household access, native proof references, Apollo approval, or the no-launch boundary.
+
+Consequences:
+
+- `buildAuthSetupProofManifest` keeps provider rows blocked when only legacy approval booleans are present.
+- Each provider proof file must include a locator, acceptable MIME, positive byte size, required row fields, and row-specific approval booleans.
+- Real Clerk configuration, OAuth, provider-backed household creation, native screenshots, store approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real Clerk/auth provider proof files, or WoofWatcher gains a provider-backed auth evidence service with signed app, redirect, household, and launch metadata.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

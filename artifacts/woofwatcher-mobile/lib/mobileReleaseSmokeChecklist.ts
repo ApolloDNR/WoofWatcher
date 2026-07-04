@@ -239,7 +239,7 @@ export function buildMobileReleaseSmokeChecklist(
             detail:
               "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof and capture Auth gateway plus Setup local-preview proof on iOS and Android while provider-backed auth and household creation stay blocked.",
             proof:
-              "Attach iOS and Android screenshots plus a note confirming Clerk/Supabase/provider proof is still required before account sync, household creation, invite delivery, or cross-device sync can be claimed.",
+              "Attach iOS and Android screenshots plus structured Clerk, redirect/deep-link, household membership, and Apollo auth launch proof files before account sync, household creation, invite delivery, or cross-device sync can be claimed.",
             status: "required",
           },
           {
