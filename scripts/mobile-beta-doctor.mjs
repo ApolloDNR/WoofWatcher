@@ -1397,6 +1397,32 @@ check(
     : "keep store accounts proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
+const storeAccountsProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
+  "buildStoreAccountsProofManifest",
+  "storeAccountsProofManifest",
+  "Store accounts proof manifest",
+  "App submission allowed",
+  "Store submission must stay blocked",
+  "storeAccountsProofManifest.items.map",
+  "storeAccountsProofManifest.blockers.map",
+])
+  && includesAll(storeAccountsProofSource, [
+    "buildStoreAccountsProofManifest",
+    "appSubmissionAllowed",
+    "Apple/Google account access",
+    "bundle/signing ownership",
+    "reviewer access",
+    "privacy labels",
+    "Apollo release approval",
+  ]);
+check(
+  "store accounts proof manifest is source-backed",
+  storeAccountsProofManifestIsSourceBacked,
+  storeAccountsProofManifestIsSourceBacked
+    ? "Store accounts proof manifest is visible on the focused QA route while keeping App Review and Play review submission blocked until proof is attached"
+    : "render the store accounts proof manifest on /care-twin-qa?qaSurface=store-accounts-proof with Apple/Google, reviewer, metadata, and approval boundaries",
+);
+
 const accountDeletionProofTargetIsSourceBacked = includesAll(accountDeletionProofSource, [
   "ACCOUNT_DELETION_PROOF_SUMMARY",
   "ACCOUNT_DELETION_PROOF_ITEMS",

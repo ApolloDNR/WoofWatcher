@@ -258,6 +258,8 @@ Current evidence, 2026-06-11: Reminder Center strengthens the Plus/Family remind
 
 Current evidence, 2026-07-03: The Push notifications proof manifest strengthens the reminder-delivery launch gate by making Expo push project config, APNs credentials, Firebase/FCM credentials, permission copy, quiet-hours/opt-out behavior, and delivery QA visible on `/care-twin-qa?qaSurface=push-notifications-proof` while keeping `Reminder delivery allowed: No` until real provider proof and native delivery evidence are attached.
 
+Current evidence, 2026-07-03: The Store accounts proof manifest strengthens the app-submission launch gate by making Apple Developer/App Store Connect access, Google Play package record, bundle/signing ownership, reviewer access, screenshots/metadata ownership, privacy-label readiness, and release role approval visible on `/care-twin-qa?qaSurface=store-accounts-proof` while keeping `App submission allowed: No` until real Apple/Google account and approval proof are attached.
+
 Current evidence, 2026-06-11: Full Log search strengthens the paid history/trust wedge by making rich care evidence findable across notes, caregivers, routes, medication details, and sticky notes before server search indexes or long-history retention policy exist.
 
 Current evidence, 2026-06-11: Medication History search/filter strengthens the paid health-history wedge by making dose and adherence evidence findable inside Records before provider-backed medication reports or server search exist.

@@ -1684,3 +1684,36 @@ Latest local evidence, 2026-07-03:
   `.expo-smoke` export. This is web-preview proof only; it does not approve
   native screenshots, provider payments setup, sandbox receipts, money movement,
   store approval, public launch, or Apollo sign-off.
+
+## Store Accounts Proof Manifest
+
+Latest local evidence, 2026-07-03:
+
+- `/care-twin-qa?qaSurface=store-accounts-proof` now renders a source-backed
+  `Store accounts proof manifest` instead of only routing helpers to a generic
+  store-account capture target.
+- The manifest is built by `buildStoreAccountsProofManifest` and shows Apple
+  Developer/App Store Connect access, Google Play package record,
+  bundle/signing ownership, reviewer access/test credentials,
+  screenshots/metadata ownership, privacy-label readiness, and release role
+  approval evidence rows.
+- The focused route shows ready/open counts, `App submission allowed: No`, the
+  blocker list, and the store-submission boundary before Evidence Capture.
+- Red/green proof first failed on the missing manifest builder, then failed on
+  the missing focused-route manifest wiring, then failed on the missing JSON
+  doctor guard before the implementation was completed.
+- Focused Store Accounts proof plus release-QA proof tests passed `27/27`.
+  Focused care-twin route and machine-readable doctor readiness tests passed
+  `114/114`. The broader zero-dependency API/mobile/PWA/care-domain focused
+  suite passed `555/555`, root TypeScript passed, mobile TypeScript passed, and
+  `git diff --check` reported only expected Windows CRLF warnings.
+- Direct `scripts/mobile-beta-doctor.mjs --json` reports `store accounts proof
+  manifest is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
+  only because this Windows shell exposes pnpm `11.7.0` while the repo is pinned
+  to `10.24.0` and Corepack is not on PATH.
+- Direct `scripts/native-qa-tooling-doctor.mjs --json` remains `BLOCKED`
+  because this Windows shell lacks Android `adb`, Android `emulator`, Java,
+  `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+- This manifest does not create Apple or Google store accounts, approve
+  metadata or screenshots, submit to App Review or Play review, clear legal or
+  privacy approval, enable public launch, or replace Apollo sign-off.

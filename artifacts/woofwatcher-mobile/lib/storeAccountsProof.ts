@@ -3,6 +3,35 @@ export interface StoreAccountsProofItem {
   requiredEvidence: string;
 }
 
+export type StoreAccountsProofStatus = "blocked" | "ready-for-review";
+
+export interface StoreAccountsProofEvidence {
+  appleDeveloperAccess?: string | null;
+  googlePlayPackage?: string | null;
+  bundleSigningOwnership?: string | null;
+  reviewerAccessCredentials?: string | null;
+  screenshotsMetadataOwnership?: string | null;
+  releaseRolesApproval?: string | null;
+}
+
+export interface StoreAccountsProofManifestItem extends StoreAccountsProofItem {
+  status: "blocked" | "ready";
+  evidenceAttached: readonly string[];
+}
+
+export interface StoreAccountsProofManifest {
+  title: "Store accounts proof manifest";
+  status: StoreAccountsProofStatus;
+  statusLabel: string;
+  summary: string;
+  readyCount: number;
+  openCount: number;
+  totalCount: number;
+  appSubmissionAllowed: boolean;
+  items: StoreAccountsProofManifestItem[];
+  blockers: string[];
+}
+
 export const STORE_ACCOUNTS_PROOF_ITEMS: readonly StoreAccountsProofItem[] = [
   {
     label: "Apple Developer and App Store Connect access",
@@ -38,3 +67,49 @@ export const STORE_ACCOUNTS_PROOF_ITEMS: readonly StoreAccountsProofItem[] = [
 
 export const STORE_ACCOUNTS_PROOF_SUMMARY =
   "Apple and Google store accounts proof packet: Apple Developer team id, App Store Connect app record, Google Play package record, bundle ids, reviewer access notes, screenshots/metadata ownership, and release role approval before store submission can be claimed.";
+
+const STORE_ACCOUNTS_PROOF_EVIDENCE_KEYS: readonly (keyof StoreAccountsProofEvidence)[] = [
+  "appleDeveloperAccess",
+  "googlePlayPackage",
+  "bundleSigningOwnership",
+  "reviewerAccessCredentials",
+  "screenshotsMetadataOwnership",
+  "releaseRolesApproval",
+];
+
+function clean(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function buildStoreAccountsProofManifest(
+  input: StoreAccountsProofEvidence | null | undefined,
+): StoreAccountsProofManifest {
+  const evidence = input ?? {};
+  const items = STORE_ACCOUNTS_PROOF_ITEMS.map<StoreAccountsProofManifestItem>((item, index) => {
+    const attached = clean(evidence[STORE_ACCOUNTS_PROOF_EVIDENCE_KEYS[index]]);
+    return {
+      ...item,
+      status: attached ? "ready" : "blocked",
+      evidenceAttached: attached ? [attached] : [],
+    };
+  });
+  const readyCount = items.filter((item) => item.status === "ready").length;
+  const totalCount = items.length;
+  const openCount = totalCount - readyCount;
+  const appSubmissionAllowed = openCount === 0;
+
+  return {
+    title: "Store accounts proof manifest",
+    status: appSubmissionAllowed ? "ready-for-review" : "blocked",
+    statusLabel: appSubmissionAllowed ? "Ready for store review" : "Store submission blocked",
+    summary: appSubmissionAllowed
+      ? "All Apple and Google store account proof is attached for review before submission can be claimed."
+      : "Store submission must stay blocked until Apple/Google account access, bundle/signing ownership, reviewer access, screenshots/metadata, privacy labels, and Apollo release approval proof are attached.",
+    readyCount,
+    openCount,
+    totalCount,
+    appSubmissionAllowed,
+    items,
+    blockers: items.filter((item) => item.status === "blocked").map((item) => `${item.label}: ${item.requiredEvidence}`),
+  };
+}

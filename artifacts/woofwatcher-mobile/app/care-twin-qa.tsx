@@ -27,6 +27,7 @@ import {
 import { deriveCareEntryProviderSyncProof } from "@/lib/careEntryProviderSyncProof";
 import { buildAiProviderProofManifest } from "@/lib/aiProviderProof";
 import { buildPushNotificationsProofManifest } from "@/lib/pushNotificationsProof";
+import { buildStoreAccountsProofManifest } from "@/lib/storeAccountsProof";
 import {
   buildRouteVisualProofManifest,
   buildStoreSubmissionScreenshotQaSurfaces,
@@ -419,6 +420,10 @@ export default function CareTwinQaScreen() {
   );
   const pushNotificationsProofManifest = useMemo(
     () => (focusedQaTarget?.surface.id === "push-notifications-proof" ? buildPushNotificationsProofManifest({}) : null),
+    [focusedQaTarget],
+  );
+  const storeAccountsProofManifest = useMemo(
+    () => (focusedQaTarget?.surface.id === "store-accounts-proof" ? buildStoreAccountsProofManifest({}) : null),
     [focusedQaTarget],
   );
   const nextBetaMission = betaCapturePlan.primaryMission;
@@ -1007,6 +1012,81 @@ export default function CareTwinQaScreen() {
                     ) : null}
                     <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       This manifest does not configure Expo push, APNs, Firebase/FCM, prove iOS or Android delivery, approve prompt/legal copy, or enable reminder notifications.
+                    </Text>
+                  </View>
+                ) : null}
+                {storeAccountsProofManifest ? (
+                  <View style={[s.routeVisualManifest, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.routeVisualManifestHeader}>
+                      <View style={s.routeVisualManifestCopy}>
+                        <Text style={[s.routeVisualManifestTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                          Store accounts proof manifest
+                        </Text>
+                        <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Store submission must stay blocked until Apple and Google account, reviewer, metadata, and release approval proof are attached.
+                        </Text>
+                      </View>
+                      <QaBadge
+                        label={storeAccountsProofManifest.statusLabel}
+                        tone={storeAccountsProofManifest.appSubmissionAllowed ? colors.sage : colors.amber}
+                      />
+                    </View>
+                    <View style={s.routeVisualManifestStats}>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Ready
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {storeAccountsProofManifest.readyCount}/{storeAccountsProofManifest.totalCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Open
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {storeAccountsProofManifest.openCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          App submission allowed
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {storeAccountsProofManifest.appSubmissionAllowed ? "Yes" : "No"}
+                        </Text>
+                      </View>
+                    </View>
+                    {storeAccountsProofManifest.items.map((item) => (
+                      <View key={`store-accounts-manifest-${item.label}`} style={[s.routeVisualManifestRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={s.routeVisualManifestRouteLine}>
+                          <Text style={[s.routeVisualManifestRouteName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {item.label}
+                          </Text>
+                          <QaBadge label={item.status === "ready" ? "Ready" : "Blocked"} tone={item.status === "ready" ? colors.sage : colors.amber} />
+                        </View>
+                        <Text style={[s.routeVisualManifestExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {item.requiredEvidence}
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatusLine, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Evidence: {item.evidenceAttached.length ? item.evidenceAttached.join(", ") : "Not attached"}
+                        </Text>
+                      </View>
+                    ))}
+                    {storeAccountsProofManifest.blockers.length ? (
+                      <View style={[s.routeVisualManifestBlockers, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                        {storeAccountsProofManifest.blockers.map((blocker) => (
+                          <View key={`store-accounts-blocker-${blocker}`} style={s.betaRunStep}>
+                            <View style={[s.betaRunStepDot, { backgroundColor: colors.amber }]} />
+                            <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {blocker}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      This manifest does not create store accounts, approve metadata or screenshots, submit to App Review or Play review, clear legal/privacy approval, or enable public launch.
                     </Text>
                   </View>
                 ) : null}
