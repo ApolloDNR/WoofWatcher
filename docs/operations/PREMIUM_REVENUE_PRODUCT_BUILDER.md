@@ -3629,7 +3629,11 @@ suite `585/585`, root TypeScript, mobile TypeScript, and direct JSON doctor
 source-backed checks including `privacy safety payments proof guard is
 source-backed`. Direct JSON mobile beta doctor remains truthfully `BLOCKED` on
 local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack. This is proof
-gating only; it does not approve paid tiers, configure store billing, prove
+gating only. Branch CI proved implementation commit `5774048` in `WoofWatcher
+Verify` run `28704399568`, job `85127644483`, with Setup pnpm, Setup Node,
+install, JSON mobile beta doctor, focused behavior tests, Typecheck plus CI-safe
+builds, post steps, and Complete job all passing. This still does not approve
+paid tiers, configure store billing, prove
 receipts or restore purchases, approve refund/support policy, move money, launch
 publicly, or replace Apollo checkout sign-off.
 

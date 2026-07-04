@@ -49,6 +49,7 @@ Latest local evidence, 2026-07-04:
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `585/585`.
 - PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
 - PASS: Direct JSON mobile beta doctor reports `privacy safety payments proof guard is source-backed` as `PASS`.
+- PASS: Branch CI proved implementation commit `5774048` in `WoofWatcher Verify` run `28704399568`, job `85127644483`; Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior tests, Typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
 - STILL REQUIRED: real product ids, billing path decision, iOS App Store and Android Google Play sandbox receipt proof, restore purchases, entitlement mapping, refund/support policy, Apollo checkout approval, store approval, public launch, and Apollo sign-off.
 

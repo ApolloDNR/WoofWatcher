@@ -301,8 +301,12 @@ Current environment note:
   Payments provider proof manifest is ready. Focused Privacy & Safety/mobile
   readiness tests passed `123/123`, the full zero-dependency suite passed
   `585/585`, root/mobile TypeScript passed, and the JSON mobile beta doctor
-  reports `privacy safety payments proof guard is source-backed` as `PASS`;
-  real product ids, billing path decision, iOS App Store and Android Google
+  reports `privacy safety payments proof guard is source-backed` as `PASS`.
+  Branch CI proved implementation commit `5774048` in `WoofWatcher Verify` run
+  `28704399568`, job `85127644483`; Setup pnpm, Setup Node, install, JSON
+  mobile beta doctor, focused behavior tests, Typecheck plus CI-safe builds,
+  post steps, and Complete job all passed. Real product ids, billing path
+  decision, iOS App Store and Android Google
   Play sandbox receipts, restore purchases, refund/support approval, store
   approval, public launch, and Apollo checkout sign-off remain blocked.
 - Branch CI also proved the focused payments provider proof target on 2026-07-03:
