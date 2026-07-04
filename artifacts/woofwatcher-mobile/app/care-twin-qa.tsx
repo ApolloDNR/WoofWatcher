@@ -33,6 +33,7 @@ import { buildStoreAccountsProofManifest } from "@/lib/storeAccountsProof";
 import { buildAccountDeletionProofManifest } from "@/lib/accountDeletionProof";
 import { buildSupportLegalReadinessProofManifest } from "@/lib/supportRunbook";
 import { buildRecordsLocalFileHandoffProofManifest } from "@/lib/reportArtifactExportFile";
+import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
 import {
   buildRouteVisualProofManifest,
   buildStoreSubmissionScreenshotQaSurfaces,
@@ -412,6 +413,20 @@ export default function CareTwinQaScreen() {
     () =>
       focusedQaTarget?.surface.id === "records-local-file-handoff"
         ? buildRecordsLocalFileHandoffProofManifest({})
+        : null,
+    [focusedQaTarget],
+  );
+  const reportBinaryExportProofManifest = useMemo(
+    () =>
+      focusedQaTarget?.surface.id === "report-binary-export-proof"
+        ? buildReportBinaryExportProofManifest({
+            carePassHtmlFileName: "care-pass-report-history.html",
+            dogIdSvgFileName: "dog-id.svg",
+            storageProviderConfigured: false,
+            pdfGeneratorApproved: false,
+            pngRendererApproved: false,
+            nativeArtifactEvidenceApproved: false,
+          })
         : null,
     [focusedQaTarget],
   );
@@ -896,6 +911,78 @@ export default function CareTwinQaScreen() {
                     ) : null}
                     <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       This manifest does not prove native iOS or Android share sheets, Android content URI handoff, fallback copy, generated PDF/PNG readiness, provider-backed storage, cloud sync, public launch, or Apollo sign-off.
+                    </Text>
+                  </View>
+                ) : null}
+                {reportBinaryExportProofManifest ? (
+                  <View style={[s.routeVisualManifest, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.routeVisualManifestHeader}>
+                      <View style={s.routeVisualManifestCopy}>
+                        <Text style={[s.routeVisualManifestTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                          Report binary export proof manifest
+                        </Text>
+                        <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Generated PDF/PNG readiness must stay blocked until local bytes, file names, MIME/size proof, native share/reopen behavior, provider storage policy, iOS/Android artifact proof, and Apollo approval are attached.
+                        </Text>
+                      </View>
+                      <QaBadge
+                        label={reportBinaryExportProofManifest.status === "ready" ? "Binary proof approved" : "Binary proof blocked"}
+                        tone={reportBinaryExportProofManifest.status === "ready" ? colors.sage : colors.amber}
+                      />
+                    </View>
+                    <View style={s.routeVisualManifestStats}>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Ready
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {reportBinaryExportProofManifest.rows.filter((row) => row.status === "ready").length}/{reportBinaryExportProofManifest.rows.length}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Open
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {reportBinaryExportProofManifest.blockers.length}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Generated artifacts allowed
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {reportBinaryExportProofManifest.status === "ready" ? "Yes" : "No"}
+                        </Text>
+                      </View>
+                    </View>
+                    {reportBinaryExportProofManifest.rows.map((row) => (
+                      <View key={`report-binary-export-proof-manifest-${row.label}`} style={[s.routeVisualManifestRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={s.routeVisualManifestRouteLine}>
+                          <Text style={[s.routeVisualManifestRouteName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {row.label}
+                          </Text>
+                          <QaBadge label={row.value} tone={row.status === "ready" ? colors.sage : colors.amber} />
+                        </View>
+                        <Text style={[s.routeVisualManifestExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {row.detail}
+                        </Text>
+                      </View>
+                    ))}
+                    {reportBinaryExportProofManifest.blockers.length ? (
+                      <View style={[s.routeVisualManifestBlockers, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                        {reportBinaryExportProofManifest.blockers.map((blocker) => (
+                          <View key={`report-binary-export-proof-blocker-${blocker}`} style={s.betaRunStep}>
+                            <View style={[s.betaRunStepDot, { backgroundColor: colors.amber }]} />
+                            <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {blocker}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      This manifest does not prove native iOS or Android share/reopen behavior, approve PDF or PNG generators, configure provider storage, upload binary artifacts, satisfy App Store or Play Store review, launch publicly, or replace Apollo sign-off.
                     </Text>
                   </View>
                 ) : null}

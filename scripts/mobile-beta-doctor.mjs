@@ -1054,6 +1054,32 @@ check(
     : "keep binary PDF/PNG export proof modeled in reportBinaryExportProof.ts and wired through Provider Launch Setup",
 );
 
+const reportBinaryExportProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
+  "buildReportBinaryExportProofManifest",
+  "reportBinaryExportProofManifest",
+  "Report binary export proof manifest",
+  "Generated artifacts allowed",
+  "Generated PDF/PNG readiness must stay blocked",
+  "reportBinaryExportProofManifest.rows.map",
+  "reportBinaryExportProofManifest.blockers.map",
+])
+  && includesAll(reportBinaryExportProofSource, [
+    "buildReportBinaryExportProofManifest",
+    "generatedCarePassPdf",
+    "generatedDogIdPng",
+    "storageProviderConfigured",
+    "nativeArtifactEvidenceApproved",
+    "Provider storage pending",
+    "iOS/Android proof pending",
+  ]);
+check(
+  "report binary export proof manifest is source-backed",
+  reportBinaryExportProofManifestIsSourceBacked,
+  reportBinaryExportProofManifestIsSourceBacked
+    ? "Focused Report Binary Export Proof route renders the PDF/PNG manifest while keeping native share/reopen, provider storage, and Apollo approval blocked"
+    : "render the Report Binary Export Proof manifest on /care-twin-qa?qaSurface=report-binary-export-proof with local PDF/PNG, native share/reopen, provider storage, and Apollo sign-off boundaries",
+);
+
 const recordsBinaryExportProofManifestIsSourceBacked = includesAll(reportBinaryExportProofSource, [
   "buildReportBinaryExportProofManifest",
   "carePassHtmlFileName",

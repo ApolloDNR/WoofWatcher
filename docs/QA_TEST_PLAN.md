@@ -91,6 +91,7 @@ Latest local evidence, 2026-06-23:
 - Premium payments proof manifest for product catalog, billing path, sandbox receipt, restore-purchase, refund/support, and checkout-gate blockers before paid checkout is enabled.
 - Auth/Setup proof manifest for Clerk production app, redirect/deep links, native Auth screenshots, Setup local-preview proof, household sync, and launch-gate blockers on Auth, Setup, and the focused Auth/Setup helper route before native Auth/Setup proof is claimed.
 - Records local-file handoff proof manifest for Care Pass Report History local HTML, Dog ID local HTML credential, Dog ID SVG image source, native share sheet, Android content URI or saved-file proof, fallback copy, and generated PDF/PNG/provider boundary blockers before native Records file proof is claimed.
+- Report binary export proof manifest for Care Pass PDF, Dog ID PNG, provider storage, and native artifact proof blockers on the focused Report Binary Export Proof helper route before generated PDF/PNG readiness is claimed.
 - Route visual proof manifest for Home, Log, Plans, Health, Records, and More native iOS/Android screenshot slots, QA note blocker, and web-preview-only boundary before visual sign-off is claimed.
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
@@ -1187,7 +1188,7 @@ Latest local evidence, 2026-06-28:
 
 ## Care Entries Incremental Sync Query Proof
 
-Latest local evidence, 2026-07-03:
+Latest local evidence, 2026-07-04:
 
 - `/care-entries` list queries now use a shared API normalizer before provider
   sync relies on incremental pulls.
@@ -1517,6 +1518,10 @@ Latest local evidence, 2026-07-03:
   focused native QA target that must collect local PDF/PNG file name, file size,
   MIME, share/reopen proof, provider storage policy, and iOS/Android artifact
   evidence before binary readiness.
+- The focused route now renders the `Report binary export proof manifest`
+  before Evidence Capture, with ready/open counts, `Generated artifacts
+  allowed: No`, Care Pass PDF, Dog ID PNG, provider storage, native artifact
+  proof rows, blockers, and the native/provider/Apollo approval boundary.
 - Red/green proof first failed on the missing helper/provider/checklist/doctor
   wiring, then passed focused report/provider/smoke/readiness tests `120/120`.
 - Fresh local verification also passed the broader API/mobile/PWA/care-domain
@@ -1530,6 +1535,11 @@ Latest local evidence, 2026-07-03:
   focused mobile release/beta/smoke/readiness tests `133/133`, the broader
   API/mobile/PWA/care-domain suite `521/521`, mobile TypeScript, and `tsc
   --build`.
+- Focused manifest verification first failed on missing route manifest wiring
+  and the missing JSON doctor guard, then passed focused care-twin route and
+  machine-readable doctor readiness tests `114/114`, the full zero-dependency
+  API/mobile/PWA/care-domain suite `559/559`, root TypeScript, mobile
+  TypeScript, and `git diff --check` with expected Windows CRLF warnings only.
 - This is a proof packet, not binary export implementation. Actual Care Pass PDF
   generation, Dog ID PNG generation, provider-backed storage, iOS/Android
   artifact proof, and launch approval remain blocked until real evidence exists.

@@ -1600,6 +1600,22 @@ Owner: Codex.
 
 Revisit trigger: native Records file proof is attached, provider-backed records storage is configured, or generated PDF/PNG export readiness is ready for approval.
 
+### 2026-07-04: Generated Binary Export Readiness Requires Native And Provider Proof
+
+Decision: the focused Report Binary Export Proof mission renders a source-backed proof manifest, but `Generated artifacts allowed` remains `No` until Care Pass PDF, Dog ID PNG, provider storage, and native artifact proof evidence are attached from real device/provider QA.
+
+Reason: local PDF/PNG bytes and artifact-specific Records manifests are useful launch handoff evidence, but helpers need one focused route that prevents local generation from being mistaken for native share/reopen approval, provider-backed storage, store approval, public launch, or Apollo sign-off.
+
+Consequences:
+
+- `/care-twin-qa?qaSurface=report-binary-export-proof` renders the Report binary export proof manifest before Evidence Capture.
+- The JSON mobile beta doctor guards that the focused manifest remains source-backed.
+- Native iOS/Android share/reopen evidence, renderer approval, provider storage policy, retention/export/deletion proof, store review, and Apollo sign-off remain launch gates.
+
+Owner: Codex.
+
+Revisit trigger: native PDF/PNG share/reopen proof is attached, provider-backed artifact storage is configured, or generated binary export readiness is ready for Apollo approval.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

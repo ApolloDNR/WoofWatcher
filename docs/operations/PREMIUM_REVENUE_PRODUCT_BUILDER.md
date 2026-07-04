@@ -2876,6 +2876,23 @@ API/mobile/PWA/care-domain suite `521/521`, mobile TypeScript, and `tsc
 --build`; the JSON doctor still blocks only on local pnpm `11.7.0` versus pinned
 `10.24.0`.
 
+The focused Report Binary Export Proof manifest pass makes that native/provider
+artifact gate visible on the helper route itself. `/care-twin-qa?qaSurface=report-binary-export-proof`
+now renders the existing `Report binary export proof manifest` with Care Pass
+PDF, Dog ID PNG, Provider storage, and Native artifact proof rows, ready/open
+counts, `Generated artifacts allowed: No`, blockers, and the boundary that
+native iOS/Android share/reopen behavior, PDF/PNG renderer approval, provider
+storage, app-store review, public launch, and Apollo sign-off remain blocked.
+The JSON mobile beta doctor now guards `report binary export proof manifest is
+source-backed`. Local verification first failed on the missing route manifest
+and missing JSON doctor guard, then passed focused care-twin/doctor readiness
+`114/114`, the full zero-dependency API/mobile/PWA/care-domain suite `559/559`,
+root TypeScript, mobile TypeScript, and `git diff --check` with expected Windows
+CRLF warnings only. The direct mobile beta doctor still blocks only on local
+pnpm `11.7.0` versus pinned `10.24.0`, and native QA tooling remains blocked in
+this Windows shell because `adb`, `emulator`, `java`, Android SDK env vars, and
+`JAVA_HOME` are missing.
+
 The Records binary proof manifest pass brings that packet back into the product
 surface. Each saved Care Pass in Report History now shows a `Binary proof
 manifest` with Care Pass PDF, Dog ID PNG, Provider storage, and Native artifact

@@ -845,6 +845,13 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /recordsLocalFileHandoffProofManifest\.blockers\.map/);
   assert.match(qaRoute, /Native file proof allowed/);
   assert.match(qaRoute, /Records local files must stay device-verified/);
+  assert.match(qaRoute, /buildReportBinaryExportProofManifest/);
+  assert.match(qaRoute, /reportBinaryExportProofManifest/);
+  assert.match(qaRoute, /Report binary export proof manifest/);
+  assert.match(qaRoute, /reportBinaryExportProofManifest\.rows\.map/);
+  assert.match(qaRoute, /reportBinaryExportProofManifest\.blockers\.map/);
+  assert.match(qaRoute, /Generated artifacts allowed/);
+  assert.match(qaRoute, /Generated PDF\/PNG readiness must stay blocked/);
   assert.match(qaRoute, /buildRouteVisualProofManifest/);
   assert.match(qaRoute, /routeVisualProofManifest/);
   assert.match(qaRoute, /Route visual proof manifest/);
@@ -5390,6 +5397,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
       (check) =>
         check.label ===
           "report binary export proof packet is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label ===
+          "report binary export proof manifest is source-backed" &&
         check.status === "PASS",
     ),
   );
