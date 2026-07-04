@@ -2024,23 +2024,27 @@ Latest local evidence, 2026-07-04:
 
 ## Support Legal Readiness Proof Manifest
 
-Latest local evidence, 2026-07-03:
+Latest local evidence, 2026-07-04:
 
 - `/care-twin-qa?qaSurface=support-legal-readiness-proof` now renders a
   source-backed `Support legal readiness proof manifest` instead of only
   routing helpers to a generic support/legal capture target.
 - The manifest is built by `buildSupportLegalReadinessProofManifest` and shows
-  support inbox, privacy policy and terms links, refund/subscription policy,
-  veterinary and emergency boundary, deletion escalation, incident response
-  owner, and Apollo approval evidence rows.
+  structured proof rows for support inbox, privacy policy and terms links,
+  refund/subscription policy, veterinary and emergency boundary, deletion
+  escalation, incident response owner, and Apollo launch approval/no-launch
+  boundary.
 - The focused route shows ready/open counts, `Public launch allowed: No`, the
   blocker list, and the public-launch boundary before Evidence Capture.
-- Red/green proof first failed on the missing manifest builder, then failed on
-  the missing focused-route manifest wiring, then failed on the missing JSON
-  doctor guard before the implementation was completed.
-- Focused support runbook proof tests passed `4/4`. Focused care-twin route and
-  machine-readable doctor readiness tests passed `114/114`. The broader
-  zero-dependency API/mobile/PWA/care-domain focused suite passed `557/557`,
+- Red/green proof first showed generic support inbox/privacy-terms/refund/
+  veterinary/deletion/incident/Apollo approval strings incorrectly making the
+  manifest `ready-for-review` without proof files. After implementation, the
+  manifest stays blocked until seven structured proof files include matching
+  locator text, acceptable MIME, positive byte size, required row fields, and
+  row-specific approval booleans.
+- Focused support runbook proof tests passed `6/6`. Focused Support Legal plus
+  release-QA/handoff/smoke/readiness tests passed `150/150`. The broader
+  zero-dependency API/mobile/PWA/care-domain focused suite passed `576/576`,
   root TypeScript passed, and mobile TypeScript passed.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `support legal
   readiness proof manifest is source-backed` as `PASS`, while remaining

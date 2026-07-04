@@ -122,7 +122,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox receipt JSON proof, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
   "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, platform/store-named iOS App Store Connect developer account proof, Android Google Play package proof, shared bundle/signing proof, reviewer access, metadata/privacy, Apollo release approval, no-submit boundary, and store submission proof before claiming App Review or Play review readiness.",
   "Open /care-twin-qa?qaSurface=account-deletion-proof and capture structured self-serve deletion route/auth, export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation, and legal/store approval proof files before enabling destructive account deletion.",
-  "Open /care-twin-qa?qaSurface=support-legal-readiness-proof and capture support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
+  "Open /care-twin-qa?qaSurface=support-legal-readiness-proof and capture structured support/legal proof files for support inbox, privacy policy and terms, refund/subscription policy, veterinary boundary and emergency language, deletion escalation, incident response owner, and Apollo approval/no-launch boundary before public launch.",
   "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android with route-named evidence before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
@@ -324,7 +324,8 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",
   "Open focused account deletion target: /care-twin-qa?qaSurface=account-deletion-proof.",
   "Open focused support legal readiness target: /care-twin-qa?qaSurface=support-legal-readiness-proof.",
-  "Attach support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
+  "Attach structured support/legal proof files before public launch",
+  "Apollo launch approval/no-launch-boundary proof with MIME",
   "Provider proof needed:",
   "Truth boundaries:",
 ])
@@ -1673,7 +1674,8 @@ const supportLegalReadinessProofTargetIsSourceBacked = includesAll(mobileRelease
 ])
   && includesAll(betaHandoffPacketSource, [
     "Open focused support legal readiness target: /care-twin-qa?qaSurface=support-legal-readiness-proof.",
-    "Attach support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary",
+    "Attach structured support/legal proof files before public launch",
+    "Apollo launch approval/no-launch-boundary proof",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused support legal readiness proof target",
@@ -1708,6 +1710,17 @@ const supportLegalReadinessProofManifestIsSourceBacked = includesAll(careTwinQaR
 ])
   && includesAll(supportRunbookSource, [
     "buildSupportLegalReadinessProofManifest",
+    "supportLegalEvidence",
+    "SupportLegalEvidenceKind",
+    "support-inbox",
+    "privacy-terms-links",
+    "refund-subscription-policy",
+    "veterinary-emergency-boundary",
+    "deletion-escalation",
+    "incident-response-owner",
+    "apollo-launch-approval",
+    "Support inbox proof ready",
+    "Apollo launch approval and no-launch boundary proof ready",
     "publicLaunchAllowed",
     "support inbox",
     "privacy policy and terms links",
@@ -1720,8 +1733,8 @@ check(
   "support legal readiness proof manifest is source-backed",
   supportLegalReadinessProofManifestIsSourceBacked,
   supportLegalReadinessProofManifestIsSourceBacked
-    ? "Support legal readiness proof manifest is visible on the focused QA route while keeping public launch blocked until support, legal, refund, veterinary, incident, and Apollo approval proof is attached"
-    : "render the support legal readiness proof manifest on /care-twin-qa?qaSurface=support-legal-readiness-proof with support, policy, veterinary, incident, and Apollo approval boundaries",
+    ? "Support legal readiness proof manifest is visible on the focused QA route while keeping public launch blocked until structured support, legal, refund, veterinary, incident, and Apollo approval proof files are attached"
+    : "render the support legal readiness proof manifest on /care-twin-qa?qaSurface=support-legal-readiness-proof with structured support, policy, veterinary, incident, and Apollo approval proof-file boundaries",
 );
 
 const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [

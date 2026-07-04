@@ -1756,6 +1756,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real provider deletion and legal/store proof files, or WoofWatcher gains a provider-backed deletion evidence service with signed receipt metadata.
 
+### 2026-07-04: Public Launch Requires Structured Support Legal Proof
+
+Decision: the Support legal readiness proof manifest cannot treat generic support inbox/privacy-terms/refund/veterinary/deletion/incident/Apollo approval strings as public-launch readiness. `Public launch allowed` remains blocked until seven structured proof files satisfy support inbox, privacy policy and terms, refund/subscription policy, veterinary/emergency boundary, deletion escalation, incident response owner, and Apollo launch approval/no-launch boundary.
+
+Reason: public launch is a support, legal, refund, veterinary-safety, store-review, and Apollo sign-off boundary. Text that says support or legal approval is ready can hide missing monitored inbox proof, final privacy/terms URLs, subscription/refund workflow, emergency boundary copy, deletion escalation, incident response ownership, no-launch boundary, or Apollo approval.
+
+Consequences:
+
+- `buildSupportLegalReadinessProofManifest` keeps all seven rows blocked when only legacy approval strings are present.
+- Each proof file must include matching locator text, acceptable MIME, positive byte size, required row fields, and row-specific approval booleans.
+- Legal/privacy approval, refund/subscription approval, support operations, veterinary-boundary sign-off, App Store or Play Store support review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real support/legal/refund/veterinary-boundary approval proof files, or WoofWatcher gains a provider-backed launch-approval evidence service with signed approval metadata.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

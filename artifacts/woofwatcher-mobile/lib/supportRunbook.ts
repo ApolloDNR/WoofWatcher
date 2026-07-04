@@ -50,6 +50,7 @@ export interface SupportLegalReadinessProofEvidence {
   deletionEscalation?: string | null;
   incidentResponseOwner?: string | null;
   apolloApproval?: string | null;
+  supportLegalEvidence?: readonly SupportLegalEvidenceFile[];
 }
 
 export interface SupportLegalReadinessProofManifestItem extends SupportLegalReadinessProofItem {
@@ -70,48 +71,114 @@ export interface SupportLegalReadinessProofManifest {
   blockers: string[];
 }
 
+export type SupportLegalEvidenceKind =
+  | "support-inbox"
+  | "privacy-terms-links"
+  | "refund-subscription-policy"
+  | "veterinary-emergency-boundary"
+  | "deletion-escalation"
+  | "incident-response-owner"
+  | "apollo-launch-approval";
+
+export interface SupportLegalEvidenceFile {
+  kind: SupportLegalEvidenceKind;
+  fileName?: string | null;
+  uri?: string | null;
+  mimeType?: string | null;
+  byteSize?: number | null;
+  supportEmail?: string | null;
+  supportOwner?: string | null;
+  coverageSchedule?: string | null;
+  storeSupportUrl?: string | null;
+  escalationPath?: string | null;
+  supportInboxMonitored?: boolean | null;
+  privacyPolicyUrl?: string | null;
+  termsUrl?: string | null;
+  dataRetentionPolicy?: string | null;
+  exportDeletionPolicy?: string | null;
+  aiStoragePaymentsDisclosure?: string | null;
+  storeListingUrlOwned?: boolean | null;
+  refundPolicyReference?: string | null;
+  subscriptionCancellationLanguage?: string | null;
+  billingSupportWorkflow?: string | null;
+  restorePurchaseSupport?: string | null;
+  appStorePlaySubscriptionCompliance?: boolean | null;
+  premiumSurfaceCopyApproved?: boolean | null;
+  veterinaryBoundaryCopy?: string | null;
+  emergencyEscalationCopy?: string | null;
+  healthWatchBoundary?: string | null;
+  woofGuideBoundary?: string | null;
+  supportBoundary?: string | null;
+  storeCopyBoundary?: string | null;
+  notVeterinaryAdviceApproved?: boolean | null;
+  deletionEscalationOwner?: string | null;
+  exportFirstSupportFlow?: string | null;
+  deletionRequestReceiptTemplate?: string | null;
+  providerDelayFallback?: string | null;
+  selfServeDeletionProofReference?: string | null;
+  escalationOwnerApproved?: boolean | null;
+  incidentResponseOwner?: string | null;
+  loginBillingTriagePath?: string | null;
+  privacyRequestsTriagePath?: string | null;
+  aiSafetyComplaintsTriagePath?: string | null;
+  storeReviewFollowUpPath?: string | null;
+  incidentOwnerApproved?: boolean | null;
+  apolloApprovalOwner?: string | null;
+  launchWindow?: string | null;
+  noLaunchBoundary?: string | null;
+  publicLaunchDecision?: string | null;
+  supportLegalRefundVetApproved?: boolean | null;
+  apolloApproved?: boolean | null;
+  noLaunchBoundaryAcknowledged?: boolean | null;
+}
+
 export const SUPPORT_LEGAL_READINESS_PROOF_ITEMS: readonly SupportLegalReadinessProofItem[] = [
   {
     label: "Support inbox",
     requiredEvidence:
-      "monitored support inbox, owner/access list, response coverage, store support URL, and customer escalation path before public accounts or subscriptions.",
+      "support inbox proof file with monitored inbox, owner/access list, response coverage, store support URL, customer escalation path, MIME, and byte size before public accounts or subscriptions.",
   },
   {
     label: "Privacy policy and terms links",
     requiredEvidence:
-      "final https privacy policy and terms links, data retention/export/deletion language, AI/storage/payments disclosures, and store-listing URL ownership.",
+      "privacy/terms proof file with final https privacy policy and terms links, data retention/export/deletion language, AI/storage/payments disclosures, store-listing URL ownership, MIME, and byte size.",
   },
   {
     label: "Refund/subscription policy",
     requiredEvidence:
-      "refund/subscription policy, cancellation language, billing support workflow, restore-purchase support, App Store/Play subscription compliance, and Premium surface copy approval.",
+      "refund/subscription proof file with cancellation language, billing support workflow, restore-purchase support, App Store/Play subscription compliance, Premium surface copy approval, MIME, and byte size.",
   },
   {
     label: "Veterinary and emergency boundary",
     requiredEvidence:
-      "veterinary boundary and emergency language proving WoofWatcher is not veterinary advice, diagnosis, treatment, or emergency triage across Health Watch, WoofGuide, support, and store copy.",
+      "veterinary/emergency boundary proof file proving WoofWatcher is not veterinary advice, diagnosis, treatment, or emergency triage across Health Watch, WoofGuide, support, store copy, MIME, and byte size.",
   },
   {
     label: "Deletion escalation",
     requiredEvidence:
-      "deletion escalation owner, export-first support flow, account-deletion request receipt, provider-delay fallback, and link to the self-serve deletion proof packet.",
+      "deletion escalation proof file with escalation owner, export-first support flow, account-deletion request receipt, provider-delay fallback, self-serve deletion proof packet reference, MIME, and byte size.",
   },
   {
     label: "Incident response owner",
     requiredEvidence:
-      "incident response owner and triage path for login, billing, export, deletion, AI/veterinary-boundary, safety complaints, privacy requests, and store-review follow-up.",
+      "incident response proof file with response owner and triage paths for login, billing, export, deletion, AI/veterinary-boundary, safety complaints, privacy requests, store-review follow-up, MIME, and byte size.",
   },
   {
     label: "Apollo approval",
     requiredEvidence:
-      "Apollo approval of support operations, privacy/legal copy, refund/subscription policy, veterinary-boundary language, public launch timing, and no-launch boundary.",
+      "Apollo launch approval proof file with support operations, privacy/legal copy, refund/subscription policy, veterinary-boundary approval, public launch timing, no-launch boundary, MIME, and byte size.",
   },
 ];
 
 export const SUPPORT_LEGAL_READINESS_PROOF_SUMMARY =
-  "Support legal readiness proof packet: support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch can be claimed.";
+  "Support legal readiness proof packet: structured proof files for support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch can be claimed.";
 
-const SUPPORT_LEGAL_READINESS_PROOF_EVIDENCE_KEYS: readonly (keyof SupportLegalReadinessProofEvidence)[] = [
+type SupportLegalReadinessProofLegacyEvidenceKey = Exclude<
+  keyof SupportLegalReadinessProofEvidence,
+  "supportLegalEvidence"
+>;
+
+const SUPPORT_LEGAL_READINESS_PROOF_EVIDENCE_KEYS: readonly SupportLegalReadinessProofLegacyEvidenceKey[] = [
   "supportInbox",
   "privacyTermsLinks",
   "refundSubscriptionPolicy",
@@ -123,6 +190,176 @@ const SUPPORT_LEGAL_READINESS_PROOF_EVIDENCE_KEYS: readonly (keyof SupportLegalR
 
 function clean(value: string | null | undefined): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalize(value: unknown): string {
+  return clean(typeof value === "string" ? value : null).toLowerCase();
+}
+
+function hasPositiveByteSize(value: unknown): boolean {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function hasProofMime(value: unknown): boolean {
+  const mime = normalize(value);
+  return (
+    mime === "application/json" ||
+    mime.endsWith("+json") ||
+    mime === "text/markdown" ||
+    mime === "text/plain" ||
+    mime === "application/pdf"
+  );
+}
+
+type SupportLegalTextField = keyof Pick<
+  SupportLegalEvidenceFile,
+  | "supportEmail"
+  | "supportOwner"
+  | "coverageSchedule"
+  | "storeSupportUrl"
+  | "escalationPath"
+  | "privacyPolicyUrl"
+  | "termsUrl"
+  | "dataRetentionPolicy"
+  | "exportDeletionPolicy"
+  | "aiStoragePaymentsDisclosure"
+  | "refundPolicyReference"
+  | "subscriptionCancellationLanguage"
+  | "billingSupportWorkflow"
+  | "restorePurchaseSupport"
+  | "veterinaryBoundaryCopy"
+  | "emergencyEscalationCopy"
+  | "healthWatchBoundary"
+  | "woofGuideBoundary"
+  | "supportBoundary"
+  | "storeCopyBoundary"
+  | "deletionEscalationOwner"
+  | "exportFirstSupportFlow"
+  | "deletionRequestReceiptTemplate"
+  | "providerDelayFallback"
+  | "selfServeDeletionProofReference"
+  | "incidentResponseOwner"
+  | "loginBillingTriagePath"
+  | "privacyRequestsTriagePath"
+  | "aiSafetyComplaintsTriagePath"
+  | "storeReviewFollowUpPath"
+  | "apolloApprovalOwner"
+  | "launchWindow"
+  | "noLaunchBoundary"
+  | "publicLaunchDecision"
+>;
+
+type SupportLegalBooleanField = keyof Pick<
+  SupportLegalEvidenceFile,
+  | "supportInboxMonitored"
+  | "storeListingUrlOwned"
+  | "appStorePlaySubscriptionCompliance"
+  | "premiumSurfaceCopyApproved"
+  | "notVeterinaryAdviceApproved"
+  | "escalationOwnerApproved"
+  | "incidentOwnerApproved"
+  | "supportLegalRefundVetApproved"
+  | "apolloApproved"
+  | "noLaunchBoundaryAcknowledged"
+>;
+
+interface SupportLegalEvidenceRequirement {
+  kind: SupportLegalEvidenceKind;
+  locatorTokens: readonly string[];
+  textFields: readonly SupportLegalTextField[];
+  booleanFields: readonly SupportLegalBooleanField[];
+  readyLabel: string;
+}
+
+const SUPPORT_LEGAL_EVIDENCE_REQUIREMENTS: readonly SupportLegalEvidenceRequirement[] = [
+  {
+    kind: "support-inbox",
+    locatorTokens: ["support-inbox"],
+    textFields: ["supportEmail", "supportOwner", "coverageSchedule", "storeSupportUrl", "escalationPath"],
+    booleanFields: ["supportInboxMonitored"],
+    readyLabel: "Support inbox proof ready",
+  },
+  {
+    kind: "privacy-terms-links",
+    locatorTokens: ["privacy", "terms"],
+    textFields: ["privacyPolicyUrl", "termsUrl", "dataRetentionPolicy", "exportDeletionPolicy", "aiStoragePaymentsDisclosure"],
+    booleanFields: ["storeListingUrlOwned"],
+    readyLabel: "Privacy policy and terms proof ready",
+  },
+  {
+    kind: "refund-subscription-policy",
+    locatorTokens: ["refund", "subscription"],
+    textFields: [
+      "refundPolicyReference",
+      "subscriptionCancellationLanguage",
+      "billingSupportWorkflow",
+      "restorePurchaseSupport",
+    ],
+    booleanFields: ["appStorePlaySubscriptionCompliance", "premiumSurfaceCopyApproved"],
+    readyLabel: "Refund and subscription policy proof ready",
+  },
+  {
+    kind: "veterinary-emergency-boundary",
+    locatorTokens: ["veterinary", "emergency"],
+    textFields: [
+      "veterinaryBoundaryCopy",
+      "emergencyEscalationCopy",
+      "healthWatchBoundary",
+      "woofGuideBoundary",
+      "supportBoundary",
+      "storeCopyBoundary",
+    ],
+    booleanFields: ["notVeterinaryAdviceApproved"],
+    readyLabel: "Veterinary and emergency boundary proof ready",
+  },
+  {
+    kind: "deletion-escalation",
+    locatorTokens: ["deletion", "escalation"],
+    textFields: [
+      "deletionEscalationOwner",
+      "exportFirstSupportFlow",
+      "deletionRequestReceiptTemplate",
+      "providerDelayFallback",
+      "selfServeDeletionProofReference",
+    ],
+    booleanFields: ["escalationOwnerApproved"],
+    readyLabel: "Deletion escalation proof ready",
+  },
+  {
+    kind: "incident-response-owner",
+    locatorTokens: ["incident", "response"],
+    textFields: [
+      "incidentResponseOwner",
+      "loginBillingTriagePath",
+      "privacyRequestsTriagePath",
+      "aiSafetyComplaintsTriagePath",
+      "storeReviewFollowUpPath",
+    ],
+    booleanFields: ["incidentOwnerApproved"],
+    readyLabel: "Incident response owner proof ready",
+  },
+  {
+    kind: "apollo-launch-approval",
+    locatorTokens: ["apollo", "launch-approval"],
+    textFields: ["apolloApprovalOwner", "launchWindow", "noLaunchBoundary", "publicLaunchDecision"],
+    booleanFields: ["supportLegalRefundVetApproved", "apolloApproved", "noLaunchBoundaryAcknowledged"],
+    readyLabel: "Apollo launch approval and no-launch boundary proof ready",
+  },
+];
+
+function evidenceMatchesRequirement(
+  evidence: SupportLegalEvidenceFile,
+  requirement: SupportLegalEvidenceRequirement,
+): boolean {
+  const locator = `${normalize(evidence.fileName)} ${normalize(evidence.uri)}`;
+  return (
+    evidence.kind === requirement.kind &&
+    requirement.locatorTokens.every((token) => locator.includes(token)) &&
+    hasProofMime(evidence.mimeType) &&
+    hasPositiveByteSize(evidence.byteSize) &&
+    requirement.textFields.every((field) => clean(evidence[field]).length > 0) &&
+    requirement.booleanFields.every((field) => evidence[field] === true)
+  );
 }
 
 function hasEmail(value: string | null | undefined): boolean {
@@ -249,12 +486,17 @@ export function buildSupportLegalReadinessProofManifest(
   input: SupportLegalReadinessProofEvidence | null | undefined,
 ): SupportLegalReadinessProofManifest {
   const evidence = input ?? {};
+  const attachedEvidence = evidence.supportLegalEvidence ?? [];
   const items = SUPPORT_LEGAL_READINESS_PROOF_ITEMS.map<SupportLegalReadinessProofManifestItem>((item, index) => {
-    const attached = clean(evidence[SUPPORT_LEGAL_READINESS_PROOF_EVIDENCE_KEYS[index]]);
+    const note = clean(evidence[SUPPORT_LEGAL_READINESS_PROOF_EVIDENCE_KEYS[index]]);
+    const requirement = SUPPORT_LEGAL_EVIDENCE_REQUIREMENTS[index];
+    const matched = requirement
+      ? attachedEvidence.find((candidate) => evidenceMatchesRequirement(candidate, requirement))
+      : undefined;
     return {
       ...item,
-      status: attached ? "ready" : "blocked",
-      evidenceAttached: attached ? [attached] : [],
+      status: matched ? "ready" : "blocked",
+      evidenceAttached: matched && requirement ? [requirement.readyLabel, ...(note ? [note] : [])] : [],
     };
   });
   const readyCount = items.filter((item) => item.status === "ready").length;
@@ -267,8 +509,8 @@ export function buildSupportLegalReadinessProofManifest(
     status: publicLaunchAllowed ? "ready-for-review" : "blocked",
     statusLabel: publicLaunchAllowed ? "Ready for launch review" : "Public launch blocked",
     summary: publicLaunchAllowed
-      ? "All support, privacy, refund, veterinary-boundary, deletion escalation, incident-response, and Apollo approval proof is attached for launch review."
-      : "Public launch must stay blocked until support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval proof are attached.",
+      ? "All structured support, privacy, refund, veterinary-boundary, deletion escalation, incident-response, and Apollo approval proof files are attached for launch review."
+      : "Public launch must stay blocked until structured proof files cover support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval.",
     readyCount,
     openCount,
     totalCount,

@@ -311,7 +311,7 @@ export function buildMobileReleaseSmokeChecklist(
             detail:
               "Open /care-twin-qa?qaSurface=support-legal-readiness-proof and confirm support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
             proof:
-              "Attach support runbook share text, privacy/terms URLs, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval; public launch stays blocked until this proof exists.",
+              "Attach structured support/legal proof files for support inbox, privacy/terms, refund/subscription policy, veterinary/emergency boundary, deletion escalation, incident response owner, and Apollo launch approval/no-launch boundary with MIME, byte size, and row-specific approvals; public launch stays blocked until this proof exists.",
             status: "required",
           },
           {

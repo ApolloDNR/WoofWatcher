@@ -202,7 +202,7 @@ const payload = {
     "Open /care-twin-qa?qaSurface=payments-provider-proof for Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox receipt JSON proof, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
     "Open /care-twin-qa?qaSurface=store-accounts-proof for Apple Developer team id, App Store Connect app record, Google Play package record, platform/store-named iOS App Store Connect developer account proof, Android Google Play package proof, shared bundle/signing proof, reviewer access, metadata/privacy, Apollo release approval, no-submit boundary, and store submission proof before claiming App Review or Play review readiness.",
     "Open /care-twin-qa?qaSurface=account-deletion-proof for structured self-serve deletion route/auth, export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation, and legal/store approval proof files with MIME, byte size, and row-specific approvals before enabling destructive account deletion.",
-    "Open /care-twin-qa?qaSurface=support-legal-readiness-proof for support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before claiming public launch readiness.",
+    "Open /care-twin-qa?qaSurface=support-legal-readiness-proof for structured support/legal proof files covering support inbox, privacy policy and terms, refund/subscription policy, veterinary boundary and emergency language, deletion escalation, incident response owner, and Apollo approval/no-launch boundary before claiming public launch readiness.",
   ],
 };
 

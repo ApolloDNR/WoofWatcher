@@ -861,7 +861,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "iOS screenshot of Privacy & Safety support runbook showing support inbox, privacy policy, terms, and blockers.",
       "Android screenshot of Privacy & Safety support runbook showing refund and subscription policy plus veterinary boundary.",
       "Shared support runbook text showing not veterinary advice, emergency escalation, deletion escalation, incident response owner, and public launch blockers.",
-      "Note confirming support inbox, privacy policy and terms links, refund and subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
+      "Structured support/legal proof files for support inbox, privacy policy and terms, refund/subscription, veterinary boundary and emergency language, deletion escalation, incident response, and Apollo approval/no-launch boundary with MIME, byte size, and row-specific approvals.",
     ],
     routeChecklist: [
       {
@@ -870,7 +870,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         expected:
           "Confirm Privacy & Safety shows support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, and incident response owner before launch readiness is claimed.",
         proof:
-          "Privacy & Safety screenshot plus support runbook share text showing support inbox, policy links, refund/subscription policy, veterinary boundary, deletion escalation, and incident response owner.",
+          "Support inbox, privacy/terms, refund/subscription, veterinary/emergency boundary, deletion escalation, and incident response proof files with MIME, byte size, owner fields, and row-specific approvals.",
       },
       {
         label: "Launch support profile",
@@ -878,7 +878,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         expected:
           "Confirm Launch support profile keeps local draft, owner-reviewed, and provider-approved states distinct and does not treat staged links as legal or store approval.",
         proof:
-          "Launch support profile screenshot and note confirming whether the support inbox, privacy policy URL, terms URL, refund/subscription policy, and Apollo approval are attached.",
+          "Launch support profile screenshot plus structured Apollo launch approval/no-launch-boundary proof file; staged support links do not count without proof-file fields.",
       },
       {
         label: "Share support runbook",
@@ -886,7 +886,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         expected:
           "Confirm Share support runbook produces a packet with emergency boundaries, not-veterinary-advice language, deletion escalation, incident response owner, and public launch blockers.",
         proof:
-          "Shared support runbook text showing veterinary and emergency boundary, deletion escalation, incident response owner, and public launch stays blocked.",
+          "Shared support runbook text plus structured proof files for veterinary/emergency boundary, deletion escalation, incident response owner, Apollo approval, MIME, and byte size.",
       },
     ],
     launchRisk:

@@ -213,7 +213,8 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /deletion-route\/auth proof with self-serve route, reauthentication, active-household scope/);
   assert.match(text, /data\/object deletion receipt proof; audit\/support receipt proof; recovery\/cancellation proof; and legal\/store\/Apollo approval proof/);
   assert.match(text, /Open focused support legal readiness target: \/care-twin-qa\?qaSurface=support-legal-readiness-proof/);
-  assert.match(text, /Attach support inbox, privacy policy and terms links, refund\/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch/);
+  assert.match(text, /Attach structured support\/legal proof files before public launch/);
+  assert.match(text, /Apollo launch approval\/no-launch-boundary proof with MIME, byte size, and row-specific approvals/);
   assert.match(text, /Open focused route visual target: \/care-twin-qa\?qaSurface=route-visual-consistency/);
   assert.match(text, /Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof/);
   assert.match(text, /Name or save each Route Visual screenshot with the route label/);
