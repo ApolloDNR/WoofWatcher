@@ -52,7 +52,8 @@ Latest local evidence, 2026-07-04:
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `591/591`.
 - PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
 - PASS: `git diff --check` passed with expected Windows CRLF warnings only.
-- BLOCKED: Fresh branch CI for this Provider Launch Setup proof guard is pending until the current commit is pushed and a new `WoofWatcher Verify` run is visible; do not treat earlier green run `28705671803` as proof for this slice.
+- PASS: Implementation commit `83757f2` (`Require provider setup proof guard`) was pushed to `automation/premium-revenue-product-builder`.
+- BLOCKED: Fresh branch CI for `83757f2` is pending; the latest visible run list still showed only earlier `workflow_dispatch` successes through run `28705671803`, which predates this implementation commit.
 - BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
 - STILL REQUIRED: real structured provider proof files for auth, database sync, storage, AI, payments, push, store accounts, and account deletion; real native/store/public-launch evidence; and Apollo sign-off.
 
