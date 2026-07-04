@@ -1009,6 +1009,7 @@ const recordsLocalFileHandoffProofManifestIsSourceBacked = includesAll(careTwinQ
   && includesAll(reportArtifactExportFileSource, [
     "buildRecordsLocalFileHandoffProofManifest",
     "RECORDS_LOCAL_FILE_HANDOFF_PROOF_ITEMS",
+    "nativeFileEvidence",
     "Care Pass Report History local HTML",
     "Dog ID local HTML credential",
     "Dog ID SVG image source",
@@ -1016,6 +1017,12 @@ const recordsLocalFileHandoffProofManifestIsSourceBacked = includesAll(careTwinQ
     "Android content URI or saved-file proof",
     "Fallback copy",
     "Generated PDF/PNG and provider boundary",
+    "6/6 native file proofs ready",
+    "3/3 Android URI proofs ready",
+    "iOS Care Pass local HTML",
+    "Android Dog ID SVG image source",
+    "opened",
+    "content://",
     "nativeFileProofAllowed",
   ]);
 check(

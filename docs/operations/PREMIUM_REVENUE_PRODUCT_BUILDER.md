@@ -2850,6 +2850,22 @@ run `28691115501`, job `85092467507`, which completed successfully in `3m1s`
 with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior
 tests, and Typecheck plus CI-safe builds all passing.
 
+The Records local-file native proof hardening pass prevents generic native
+share-sheet notes from opening the native Records file gate. `buildRecordsLocalFileHandoffProofManifest`
+now requires six platform-and-file-specific native proofs before `Native file
+proof allowed` can move toward `Yes`: iOS Care Pass local HTML, Android Care
+Pass local HTML, iOS Dog ID local HTML, Android Dog ID local HTML, iOS Dog ID
+SVG image source, and Android Dog ID SVG image source. Android content URI or
+saved-file proof also requires `content://` or `file://` URI evidence for the
+three Android file slots. Fresh local verification passed
+`reportArtifactExportFile.test.ts` `8/8`, focused Records local-file plus
+machine-readable doctor tests `122/122`, direct JSON mobile beta doctor
+source-backed checks, the full zero-dependency API/mobile/PWA/care-domain suite
+`563/563`, root TypeScript, and mobile TypeScript. The mobile beta doctor still
+blocks only on local pnpm `11.7.0` versus pinned `10.24.0`, and native QA
+tooling remains blocked in this Windows shell because `adb`, `emulator`, `java`,
+Android SDK env vars, and `JAVA_HOME` are missing.
+
 The report binary export proof packet pass keeps the next export boundary
 truthful before anyone claims native/provider readiness. `reportBinaryExportProof.ts`
 now names the required proof for local Care Pass PDF and Dog ID PNG artifact

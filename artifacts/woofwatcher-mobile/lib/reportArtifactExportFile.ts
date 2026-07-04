@@ -6,10 +6,25 @@ export interface RecordsLocalFileHandoffProofEvidence {
   carePassReportHistoryLocalHtml?: string | null;
   dogIdLocalHtmlCredential?: string | null;
   dogIdSvgImageSource?: string | null;
+  nativeFileEvidence?: readonly RecordsNativeFileHandoffEvidence[];
   nativeShareSheetBehavior?: string | null;
   androidContentUriOrSavedFile?: string | null;
   fallbackCopy?: string | null;
   generatedBinaryBoundary?: string | null;
+}
+
+export type RecordsNativeFilePlatform = "ios" | "android";
+export type RecordsNativeFileArtifact = "care-pass-html" | "dog-id-html" | "dog-id-svg";
+
+export interface RecordsNativeFileHandoffEvidence {
+  platform: RecordsNativeFilePlatform;
+  artifact: RecordsNativeFileArtifact;
+  fileName?: string;
+  uri?: string;
+  mimeType: ReportArtifactExportMimeType;
+  byteSize: number;
+  shared: boolean;
+  opened: boolean;
 }
 
 export interface RecordsLocalFileHandoffProofItem {
@@ -109,7 +124,9 @@ export interface ReportArtifactShareContent {
   url?: string;
 }
 
-const RECORDS_LOCAL_FILE_HANDOFF_PROOF_EVIDENCE_KEYS: readonly (keyof RecordsLocalFileHandoffProofEvidence)[] = [
+type RecordsLocalFileHandoffStringEvidenceKey = Exclude<keyof RecordsLocalFileHandoffProofEvidence, "nativeFileEvidence">;
+
+const RECORDS_LOCAL_FILE_HANDOFF_PROOF_EVIDENCE_KEYS: readonly RecordsLocalFileHandoffStringEvidenceKey[] = [
   "carePassReportHistoryLocalHtml",
   "dogIdLocalHtmlCredential",
   "dogIdSvgImageSource",
@@ -119,12 +136,131 @@ const RECORDS_LOCAL_FILE_HANDOFF_PROOF_EVIDENCE_KEYS: readonly (keyof RecordsLoc
   "generatedBinaryBoundary",
 ];
 
+interface RequiredRecordsNativeFileEvidence {
+  platform: RecordsNativeFilePlatform;
+  artifact: RecordsNativeFileArtifact;
+  label: string;
+  mimeType: ReportArtifactExportMimeType;
+  extension: ".html" | ".svg";
+  tokens: readonly string[];
+}
+
+const REQUIRED_RECORDS_NATIVE_FILE_EVIDENCE: readonly RequiredRecordsNativeFileEvidence[] = [
+  {
+    platform: "ios",
+    artifact: "care-pass-html",
+    label: "iOS Care Pass local HTML",
+    mimeType: "text/html",
+    extension: ".html",
+    tokens: ["care", "pass"],
+  },
+  {
+    platform: "android",
+    artifact: "care-pass-html",
+    label: "Android Care Pass local HTML",
+    mimeType: "text/html",
+    extension: ".html",
+    tokens: ["care", "pass"],
+  },
+  {
+    platform: "ios",
+    artifact: "dog-id-html",
+    label: "iOS Dog ID local HTML",
+    mimeType: "text/html",
+    extension: ".html",
+    tokens: ["dog", "id"],
+  },
+  {
+    platform: "android",
+    artifact: "dog-id-html",
+    label: "Android Dog ID local HTML",
+    mimeType: "text/html",
+    extension: ".html",
+    tokens: ["dog", "id"],
+  },
+  {
+    platform: "ios",
+    artifact: "dog-id-svg",
+    label: "iOS Dog ID SVG image source",
+    mimeType: "image/svg+xml",
+    extension: ".svg",
+    tokens: ["dog", "id"],
+  },
+  {
+    platform: "android",
+    artifact: "dog-id-svg",
+    label: "Android Dog ID SVG image source",
+    mimeType: "image/svg+xml",
+    extension: ".svg",
+    tokens: ["dog", "id"],
+  },
+];
+
 function extensionForMimeType(mimeType: ReportArtifactExportMimeType): ".html" | ".svg" {
   return mimeType === "image/svg+xml" ? ".svg" : ".html";
 }
 
 function cleanRecordsProofEvidence(value: string | null | undefined): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function recordsNativeFileEvidenceText(evidence: RecordsNativeFileHandoffEvidence): string {
+  return `${cleanRecordsProofEvidence(evidence.fileName)} ${cleanRecordsProofEvidence(evidence.uri)}`.toLowerCase();
+}
+
+function recordsNativeFileEvidenceHasPlatform(text: string, platform: RecordsNativeFilePlatform): boolean {
+  if (platform === "ios") {
+    return /\bios\b|\biphone\b|\bipad\b/.test(text);
+  }
+  return /\bandroid\b/.test(text);
+}
+
+function recordsNativeFileEvidenceMatches(
+  evidence: RecordsNativeFileHandoffEvidence,
+  requirement: RequiredRecordsNativeFileEvidence,
+): boolean {
+  if (
+    evidence.platform !== requirement.platform ||
+    evidence.artifact !== requirement.artifact ||
+    evidence.mimeType !== requirement.mimeType ||
+    !Number.isFinite(evidence.byteSize) ||
+    evidence.byteSize <= 0 ||
+    !evidence.shared ||
+    !evidence.opened
+  ) {
+    return false;
+  }
+  const text = recordsNativeFileEvidenceText(evidence);
+  return (
+    text.includes(requirement.extension) &&
+    recordsNativeFileEvidenceHasPlatform(text, requirement.platform) &&
+    requirement.tokens.every((token) => text.includes(token))
+  );
+}
+
+function recordsNativeFileEvidenceHasAndroidUri(evidence: RecordsNativeFileHandoffEvidence): boolean {
+  if (evidence.platform !== "android") return false;
+  const uri = cleanRecordsProofEvidence(evidence.uri).toLowerCase();
+  return uri.startsWith("content://") || uri.startsWith("file://");
+}
+
+function summarizeRecordsNativeFileEvidence(evidence: readonly RecordsNativeFileHandoffEvidence[] | undefined) {
+  const rows = REQUIRED_RECORDS_NATIVE_FILE_EVIDENCE.map((requirement) => {
+    const matchingEvidence = evidence?.find((item) => recordsNativeFileEvidenceMatches(item, requirement));
+    return {
+      ...requirement,
+      nativeReady: Boolean(matchingEvidence),
+      androidUriReady: Boolean(matchingEvidence && recordsNativeFileEvidenceHasAndroidUri(matchingEvidence)),
+    };
+  });
+  const androidRows = rows.filter((row) => row.platform === "android");
+  return {
+    rows,
+    nativeReadyCount: rows.filter((row) => row.nativeReady).length,
+    androidUriReadyCount: androidRows.filter((row) => row.androidUriReady).length,
+    missingNativeLabels: rows.filter((row) => !row.nativeReady).map((row) => row.label),
+    missingAndroidUriLabels: androidRows.filter((row) => !row.androidUriReady).map((row) => row.label),
+  };
 }
 
 export function normalizeReportExportFileName(
@@ -217,7 +353,29 @@ export function buildRecordsLocalFileHandoffProofManifest(
   input: RecordsLocalFileHandoffProofEvidence | null | undefined = {},
 ): RecordsLocalFileHandoffProofManifest {
   const evidence = input ?? {};
+  const nativeFileEvidence = summarizeRecordsNativeFileEvidence(evidence.nativeFileEvidence);
   const items = RECORDS_LOCAL_FILE_HANDOFF_PROOF_ITEMS.map<RecordsLocalFileHandoffProofManifestItem>((item, index) => {
+    if (item.label === "Native share sheet behavior") {
+      const ready = nativeFileEvidence.missingNativeLabels.length === 0;
+      return {
+        ...item,
+        status: ready ? "ready" : "blocked",
+        evidenceAttached: ready
+          ? [`6/6 native file proofs ready: ${nativeFileEvidence.rows.map((row) => row.label).join(", ")}`]
+          : [],
+      };
+    }
+    if (item.label === "Android content URI or saved-file proof") {
+      const ready = nativeFileEvidence.missingAndroidUriLabels.length === 0;
+      const androidRows = nativeFileEvidence.rows.filter((row) => row.platform === "android");
+      return {
+        ...item,
+        status: ready ? "ready" : "blocked",
+        evidenceAttached: ready
+          ? [`3/3 Android URI proofs ready: ${androidRows.map((row) => row.label).join(", ")}`]
+          : [],
+      };
+    }
     const attached = cleanRecordsProofEvidence(evidence[RECORDS_LOCAL_FILE_HANDOFF_PROOF_EVIDENCE_KEYS[index]]);
     return {
       ...item,
@@ -242,6 +400,16 @@ export function buildRecordsLocalFileHandoffProofManifest(
     totalCount,
     nativeFileProofAllowed,
     items,
-    blockers: items.filter((item) => item.status === "blocked").map((item) => `${item.label}: ${item.requiredEvidence}`),
+    blockers: items
+      .filter((item) => item.status === "blocked")
+      .map((item) => {
+        if (item.label === "Native share sheet behavior") {
+          return `Native share sheet behavior: platform-specific local file evidence needs file name or URI, MIME, file size, share, and reopen proof for: ${nativeFileEvidence.missingNativeLabels.join(", ")}.`;
+        }
+        if (item.label === "Android content URI or saved-file proof") {
+          return `Android content URI or saved-file proof: Android Records local-file evidence needs content:// or file:// URI proof for: ${nativeFileEvidence.missingAndroidUriLabels.join(", ")}.`;
+        }
+        return `${item.label}: ${item.requiredEvidence}`;
+      }),
   };
 }

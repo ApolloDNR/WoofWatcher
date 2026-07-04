@@ -1831,6 +1831,13 @@ Latest local evidence, 2026-07-04:
   ID SVG image source, native share-sheet behavior, Android content URI or
   saved-file proof, fallback copy, and generated PDF/PNG/provider boundary
   evidence rows.
+- The native share-sheet rows now require six platform-and-file-specific proofs
+  before native file proof can open: iOS Care Pass local HTML, Android Care Pass
+  local HTML, iOS Dog ID local HTML, Android Dog ID local HTML, iOS Dog ID SVG
+  image source, and Android Dog ID SVG image source. Generic `iOS and Android
+  share sheets opened` notes stay blocked. Android content URI or saved-file
+  proof requires `content://` or `file://` URI evidence for the Android file
+  slots.
 - The focused route shows ready/open counts, `Native file proof allowed: No`,
   the blocker list, and the local-file/native-proof boundary before Evidence
   Capture.
@@ -1842,6 +1849,12 @@ Latest local evidence, 2026-07-04:
   zero-dependency API/mobile/PWA/care-domain focused suite passed `559/559`,
   root TypeScript passed, mobile TypeScript passed, and `git diff --check`
   reported only expected Windows CRLF warnings.
+- Native-proof hardening verification first failed on generic native notes
+  making the manifest `ready-for-review`, then passed
+  `reportArtifactExportFile.test.ts` `8/8`, focused Records local-file plus
+  machine-readable doctor tests `122/122`, the full zero-dependency
+  API/mobile/PWA/care-domain suite `563/563`, root TypeScript, and mobile
+  TypeScript.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `records local file
   handoff proof manifest is source-backed` as `PASS`, while remaining
   truthfully `BLOCKED` only because this Windows shell exposes pnpm `11.7.0`

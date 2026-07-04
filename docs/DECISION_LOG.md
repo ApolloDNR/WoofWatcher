@@ -1600,6 +1600,22 @@ Owner: Codex.
 
 Revisit trigger: native Records file proof is attached, provider-backed records storage is configured, or generated PDF/PNG export readiness is ready for approval.
 
+### 2026-07-04: Records Native File Proof Must Be Platform And File Specific
+
+Decision: the Records local-file handoff proof manifest cannot treat generic native share-sheet notes as native file proof. Native Records file proof requires six concrete local-file slots: iOS Care Pass local HTML, Android Care Pass local HTML, iOS Dog ID local HTML, Android Dog ID local HTML, iOS Dog ID SVG image source, and Android Dog ID SVG image source.
+
+Reason: Care Pass HTML, Dog ID HTML, and Dog ID SVG can each fail differently across iOS and Android share/open paths. A broad "iOS and Android share sheets opened" note could hide missing file names, MIME, byte size, platform path, or Android URI evidence.
+
+Consequences:
+
+- Each native Records file proof slot must include platform/file naming in the file name or URI, MIME, positive byte size, share proof, and reopen proof.
+- Android content URI or saved-file proof remains blocked until the Android Care Pass HTML, Dog ID HTML, and Dog ID SVG slots include `content://` or `file://` URI evidence.
+- Fallback copy, generated PDF/PNG proof, provider storage, cloud sync, public launch, and Apollo sign-off remain separate gates.
+
+Owner: Codex.
+
+Revisit trigger: real iOS/Android Records file evidence is attached from configured native tooling or physical devices.
+
 ### 2026-07-04: Generated Binary Export Readiness Requires Native And Provider Proof
 
 Decision: the focused Report Binary Export Proof mission renders a source-backed proof manifest, but `Generated artifacts allowed` remains `No` until Care Pass PDF, Dog ID PNG, provider storage, and native artifact proof evidence are attached from real device/provider QA.

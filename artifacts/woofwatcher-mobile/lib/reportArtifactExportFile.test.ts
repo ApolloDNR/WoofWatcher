@@ -107,6 +107,27 @@ test("builds a Records local file handoff proof manifest that stays blocked with
   assert.match(manifest.blockers.join("\n"), /generated PDF\/PNG proof remains separate/);
 });
 
+test("keeps Records local file handoff blocked when native proof uses generic notes without platform-specific files", () => {
+  const manifest = buildRecordsLocalFileHandoffProofManifest({
+    carePassReportHistoryLocalHtml: "WoofWatcherReports/Phoenix-Care-Pass.html, 12 KB, Saved on this device.",
+    dogIdLocalHtmlCredential: "WoofWatcherCredentials/Phoenix-Dog-ID.html shared from Records.",
+    dogIdSvgImageSource: "WoofWatcherCredentials/Phoenix-Dog-ID.svg shared as image/svg+xml.",
+    nativeShareSheetBehavior: "iOS and Android share sheets opened from Records without dead ends.",
+    androidContentUriOrSavedFile: "Android content URI captured from the Records share sheet.",
+    fallbackCopy: "Fallback copy names the local-only boundary when file sharing is unavailable.",
+    generatedBinaryBoundary: "Generated PDF/PNG proof remains separate until native share/reopen and provider proof exist.",
+  });
+
+  assert.equal(manifest.status, "blocked");
+  assert.equal(manifest.nativeFileProofAllowed, false);
+  assert.equal(manifest.readyCount, 5);
+  assert.equal(manifest.openCount, 2);
+  assert.equal(manifest.items[3]?.status, "blocked");
+  assert.equal(manifest.items[4]?.status, "blocked");
+  assert.match(manifest.blockers.join("\n"), /iOS Care Pass local HTML/);
+  assert.match(manifest.blockers.join("\n"), /Android Dog ID SVG image source/);
+});
+
 test("marks Records local file handoff proof ready only when every evidence row is attached", () => {
   const manifest = buildRecordsLocalFileHandoffProofManifest({
     carePassReportHistoryLocalHtml: "WoofWatcherReports/Phoenix-Care-Pass.html, 12 KB, Saved on this device.",
@@ -114,6 +135,68 @@ test("marks Records local file handoff proof ready only when every evidence row 
     dogIdSvgImageSource: "WoofWatcherCredentials/Phoenix-Dog-ID.svg shared as image/svg+xml.",
     nativeShareSheetBehavior: "iOS and Android share sheets opened from Records without dead ends.",
     androidContentUriOrSavedFile: "Android content URI captured from the Records share sheet.",
+    nativeFileEvidence: [
+      {
+        platform: "ios",
+        artifact: "care-pass-html",
+        fileName: "phoenix-care-pass-ios.html",
+        uri: "file:///ios/WoofWatcherReports/phoenix-care-pass-ios.html",
+        mimeType: "text/html",
+        byteSize: 12_288,
+        shared: true,
+        opened: true,
+      },
+      {
+        platform: "android",
+        artifact: "care-pass-html",
+        fileName: "phoenix-care-pass-android.html",
+        uri: "content://woofwatcher/android/WoofWatcherReports/phoenix-care-pass-android.html",
+        mimeType: "text/html",
+        byteSize: 12_288,
+        shared: true,
+        opened: true,
+      },
+      {
+        platform: "ios",
+        artifact: "dog-id-html",
+        fileName: "phoenix-dog-id-ios.html",
+        uri: "file:///ios/WoofWatcherCredentials/phoenix-dog-id-ios.html",
+        mimeType: "text/html",
+        byteSize: 8_192,
+        shared: true,
+        opened: true,
+      },
+      {
+        platform: "android",
+        artifact: "dog-id-html",
+        fileName: "phoenix-dog-id-android.html",
+        uri: "content://woofwatcher/android/WoofWatcherCredentials/phoenix-dog-id-android.html",
+        mimeType: "text/html",
+        byteSize: 8_192,
+        shared: true,
+        opened: true,
+      },
+      {
+        platform: "ios",
+        artifact: "dog-id-svg",
+        fileName: "phoenix-dog-id-ios.svg",
+        uri: "file:///ios/WoofWatcherCredentials/phoenix-dog-id-ios.svg",
+        mimeType: "image/svg+xml",
+        byteSize: 4_096,
+        shared: true,
+        opened: true,
+      },
+      {
+        platform: "android",
+        artifact: "dog-id-svg",
+        fileName: "phoenix-dog-id-android.svg",
+        uri: "content://woofwatcher/android/WoofWatcherCredentials/phoenix-dog-id-android.svg",
+        mimeType: "image/svg+xml",
+        byteSize: 4_096,
+        shared: true,
+        opened: true,
+      },
+    ],
     fallbackCopy: "Fallback copy names the local-only boundary when file sharing is unavailable.",
     generatedBinaryBoundary: "Generated PDF/PNG proof remains separate until native share/reopen and provider proof exist.",
   });
@@ -125,6 +208,8 @@ test("marks Records local file handoff proof ready only when every evidence row 
   assert.equal(manifest.openCount, 0);
   assert.deepEqual(manifest.blockers, []);
   assert.match(manifest.items[2]?.evidenceAttached.join("\n") ?? "", /image\/svg\+xml/);
+  assert.match(manifest.items[3]?.evidenceAttached.join("\n") ?? "", /6\/6 native file proofs ready/);
+  assert.match(manifest.items[4]?.evidenceAttached.join("\n") ?? "", /3\/3 Android URI proofs ready/);
 });
 
 test("falls back to inline printable source when a local file directory is unavailable", () => {
