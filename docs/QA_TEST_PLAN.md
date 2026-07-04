@@ -1668,6 +1668,11 @@ Latest local evidence, 2026-07-03:
   only; it still does not create actual native iOS/Android route screenshots,
   approve route visuals, satisfy store review, launch publicly, or replace Apollo
   sign-off.
+- Branch CI also proved the recorded-proof verification-note commit in
+  `WoofWatcher Verify` run `28692845687`, job `85097154144`, on commit
+  `c742905`; JSON mobile beta doctor, focused behavior tests, and Typecheck plus
+  CI-safe builds all passed. This docs proof update still requires the usual
+  rerun-after-new-commit boundary.
 - The 2026-07-04 Route Visual capture-instructions refresh updated
   `RECORDED_MOBILE_BETA_CI_PROOF` to run `28692423522` and kept
   `RECORDED_LIVE_PREVIEW_HANDOFF_PROOF` as a historical local `proof:live-preview` run
