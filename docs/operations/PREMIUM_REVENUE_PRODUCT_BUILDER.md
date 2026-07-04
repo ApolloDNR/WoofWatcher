@@ -3096,9 +3096,13 @@ After the guard update, focused beta handoff plus mobile readiness tests passed
 `560/560`, root TypeScript passed, mobile TypeScript passed, direct JSON doctor
 source-backed checks passed, and `git diff --check` passed. Direct JSON doctor
 still blocks only on local pnpm `11.7.0` versus pinned `10.24.0`, with Corepack
-not on PATH. This is dependency-proof freshness guardrail work only, not native
-device proof, provider approval, store approval, public launch, or Apollo
-sign-off.
+not on PATH. Remote branch CI then proved the proof-refresh commit itself in
+GitHub Actions `WoofWatcher Verify` run `28692782500`, job `85096979911`, on
+commit `4254e05`; Set up job, Checkout, Setup pnpm, Setup Node, install
+dependencies, JSON mobile beta doctor, focused behavior tests, Typecheck plus
+CI-safe builds, post steps, and Complete job all passed. This is
+dependency-proof freshness guardrail work only, not native device proof, provider
+approval, store approval, public launch, or Apollo sign-off.
 
 The mobile runtime route smoke pass makes the export proof more execution-like
 without overclaiming native QA. `scripts/smoke-runtime-preview.js` starts a

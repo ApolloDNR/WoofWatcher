@@ -1660,6 +1660,14 @@ Latest local evidence, 2026-07-03:
   JSON mobile beta doctor source-backed checks pass, including `recorded CI proof
   freshness boundary is source-backed`, and still block only on the local
   pnpm/Corepack mismatch.
+- Branch CI proved the recorded-proof refresh itself in `WoofWatcher Verify` run
+  `28692782500`, job `85096979911`, on commit `4254e05`; Set up job, Checkout,
+  Setup pnpm, Setup Node, install dependencies, JSON mobile beta doctor, focused
+  behavior tests, Typecheck plus CI-safe builds, post steps, and Complete job all
+  passed. This is proof of the source-backed recorded-proof refresh and guard
+  only; it still does not create actual native iOS/Android route screenshots,
+  approve route visuals, satisfy store review, launch publicly, or replace Apollo
+  sign-off.
 - The 2026-07-04 Route Visual capture-instructions refresh updated
   `RECORDED_MOBILE_BETA_CI_PROOF` to run `28692423522` and kept
   `RECORDED_LIVE_PREVIEW_HANDOFF_PROOF` as a historical local `proof:live-preview` run
