@@ -274,6 +274,8 @@ Current evidence, 2026-06-08: The owner-reviewed WoofGuide action model is cover
 
 Current evidence, 2026-06-08: Mobile now has a Privacy & Safety surface for owner care-data export, non-destructive account deletion request preparation, WoofGuide AI disclosure, document storage gates, and payment launch blockers. The model is covered by focused tests and keeps live deletion/storage disabled until provider rules are approved.
 
+Current evidence, 2026-07-03: The Account deletion proof manifest strengthens the destructive-deletion compliance gate by making deletion route/auth, export-before-delete handoff, data/object deletion receipt, audit/support receipt, recovery/cancellation policy, and legal/store approval visible on `/care-twin-qa?qaSurface=account-deletion-proof` while keeping `Destructive deletion allowed: No` until real provider, legal, store, and Apollo approval proof are attached.
+
 Current evidence, 2026-06-14: Mobile Privacy & Safety now uses shared board anatomy for Export Summary, Launch Safety Gates, and Before Public Launch blockers while preserving owner data export, deletion-request sharing, AI/document/payment gating, and provider-backed truth boundaries.
 
 Current evidence, 2026-06-19: Owner export and deletion scope now include local Adventure memories. The Adventure route labels memories as private household care evidence and creates `local-draft` memory records without claiming provider-backed photo storage, map data, or public sharing.

@@ -866,6 +866,13 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /storeAccountsProofManifest\.blockers\.map/);
   assert.match(qaRoute, /App submission allowed/);
   assert.match(qaRoute, /Store submission must stay blocked/);
+  assert.match(qaRoute, /buildAccountDeletionProofManifest/);
+  assert.match(qaRoute, /accountDeletionProofManifest/);
+  assert.match(qaRoute, /Account deletion proof manifest/);
+  assert.match(qaRoute, /accountDeletionProofManifest\.items\.map/);
+  assert.match(qaRoute, /accountDeletionProofManifest\.blockers\.map/);
+  assert.match(qaRoute, /Destructive deletion allowed/);
+  assert.match(qaRoute, /Destructive account deletion must stay blocked/);
   assert.match(qaRoute, /Mission note/);
   assert.match(qaRoute, /Mission note for \$\{nextBetaTarget\.title\}/);
   assert.match(qaRoute, /surfaceNotes\[nextBetaTarget\.surfaceId\]/);
@@ -5746,6 +5753,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "account deletion proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "account deletion proof manifest is source-backed" &&
         check.status === "PASS",
     ),
   );

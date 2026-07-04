@@ -1467,6 +1467,33 @@ check(
     : "keep account deletion proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
+const accountDeletionProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
+  "buildAccountDeletionProofManifest",
+  "accountDeletionProofManifest",
+  "Account deletion proof manifest",
+  "Destructive deletion allowed",
+  "Destructive account deletion must stay blocked",
+  "accountDeletionProofManifest.items.map",
+  "accountDeletionProofManifest.blockers.map",
+])
+  && includesAll(accountDeletionProofSource, [
+    "buildAccountDeletionProofManifest",
+    "destructiveDeletionAllowed",
+    "self-serve deletion route",
+    "export-before-delete warning",
+    "data/object deletion receipt",
+    "audit trail",
+    "recovery-window policy",
+    "legal/store approval",
+  ]);
+check(
+  "account deletion proof manifest is source-backed",
+  accountDeletionProofManifestIsSourceBacked,
+  accountDeletionProofManifestIsSourceBacked
+    ? "Account deletion proof manifest is visible on the focused QA route while keeping destructive deletion blocked until provider, legal, and store proof is attached"
+    : "render the account deletion proof manifest on /care-twin-qa?qaSurface=account-deletion-proof with route, export, receipt, audit, recovery, legal, and store boundaries",
+);
+
 const supportLegalReadinessProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "support-legal-readiness-proof",
   "Support Legal Readiness Proof",

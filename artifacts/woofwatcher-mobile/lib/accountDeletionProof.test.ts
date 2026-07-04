@@ -76,3 +76,24 @@ test("defines the self-serve account deletion proof packet before destructive de
     ),
   );
 });
+
+test("builds a blocked account deletion proof manifest before destructive deletion can be enabled", async () => {
+  const mod = await import("./accountDeletionProof.ts");
+  const manifest = mod.buildAccountDeletionProofManifest({});
+
+  assert.equal(manifest.title, "Account deletion proof manifest");
+  assert.equal(manifest.status, "blocked");
+  assert.equal(manifest.statusLabel, "Deletion blocked");
+  assert.equal(manifest.destructiveDeletionAllowed, false);
+  assert.equal(manifest.readyCount, 0);
+  assert.equal(manifest.openCount, mod.ACCOUNT_DELETION_PROOF_ITEMS.length);
+  assert.match(manifest.summary, /Destructive account deletion must stay blocked/);
+  assert.match(manifest.summary, /legal\/store approval/);
+  assert.ok(manifest.items.every((item) => item.status === "blocked"));
+  assert.ok(manifest.blockers.some((blocker) => /reauthentication/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /export-before-delete warning/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /data\/object deletion receipt/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /audit trail/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /recovery-window policy/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /legal\/store approval/i.test(blocker)));
+});

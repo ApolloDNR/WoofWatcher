@@ -3,6 +3,35 @@ export interface AccountDeletionProofItem {
   requiredEvidence: string;
 }
 
+export type AccountDeletionProofStatus = "blocked" | "ready-for-review";
+
+export interface AccountDeletionProofEvidence {
+  deletionRouteAuth?: string | null;
+  exportBeforeDeleteHandoff?: string | null;
+  dataObjectDeletionReceipt?: string | null;
+  auditSupportReceipt?: string | null;
+  recoveryCancellationPolicy?: string | null;
+  legalStoreApproval?: string | null;
+}
+
+export interface AccountDeletionProofManifestItem extends AccountDeletionProofItem {
+  status: "blocked" | "ready";
+  evidenceAttached: readonly string[];
+}
+
+export interface AccountDeletionProofManifest {
+  title: "Account deletion proof manifest";
+  status: AccountDeletionProofStatus;
+  statusLabel: string;
+  summary: string;
+  readyCount: number;
+  openCount: number;
+  totalCount: number;
+  destructiveDeletionAllowed: boolean;
+  items: AccountDeletionProofManifestItem[];
+  blockers: string[];
+}
+
 export const ACCOUNT_DELETION_PROOF_ITEMS: readonly AccountDeletionProofItem[] = [
   {
     label: "Deletion route and authentication gate",
@@ -38,3 +67,49 @@ export const ACCOUNT_DELETION_PROOF_ITEMS: readonly AccountDeletionProofItem[] =
 
 export const ACCOUNT_DELETION_PROOF_SUMMARY =
   "Self-serve account deletion proof packet: self-serve deletion route, export-before-delete warning, data/object deletion receipt, audit trail, recovery-window policy, and legal/store approval before destructive account deletion can be enabled.";
+
+const ACCOUNT_DELETION_PROOF_EVIDENCE_KEYS: readonly (keyof AccountDeletionProofEvidence)[] = [
+  "deletionRouteAuth",
+  "exportBeforeDeleteHandoff",
+  "dataObjectDeletionReceipt",
+  "auditSupportReceipt",
+  "recoveryCancellationPolicy",
+  "legalStoreApproval",
+];
+
+function clean(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function buildAccountDeletionProofManifest(
+  input: AccountDeletionProofEvidence | null | undefined,
+): AccountDeletionProofManifest {
+  const evidence = input ?? {};
+  const items = ACCOUNT_DELETION_PROOF_ITEMS.map<AccountDeletionProofManifestItem>((item, index) => {
+    const attached = clean(evidence[ACCOUNT_DELETION_PROOF_EVIDENCE_KEYS[index]]);
+    return {
+      ...item,
+      status: attached ? "ready" : "blocked",
+      evidenceAttached: attached ? [attached] : [],
+    };
+  });
+  const readyCount = items.filter((item) => item.status === "ready").length;
+  const totalCount = items.length;
+  const openCount = totalCount - readyCount;
+  const destructiveDeletionAllowed = openCount === 0;
+
+  return {
+    title: "Account deletion proof manifest",
+    status: destructiveDeletionAllowed ? "ready-for-review" : "blocked",
+    statusLabel: destructiveDeletionAllowed ? "Ready for deletion review" : "Deletion blocked",
+    summary: destructiveDeletionAllowed
+      ? "All self-serve account deletion proof is attached for review before destructive deletion can be enabled."
+      : "Destructive account deletion must stay blocked until the self-serve deletion route, export-before-delete warning, data/object deletion receipt, audit trail, recovery-window policy, and legal/store approval proof are attached.",
+    readyCount,
+    openCount,
+    totalCount,
+    destructiveDeletionAllowed,
+    items,
+    blockers: items.filter((item) => item.status === "blocked").map((item) => `${item.label}: ${item.requiredEvidence}`),
+  };
+}

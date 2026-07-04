@@ -1717,3 +1717,36 @@ Latest local evidence, 2026-07-03:
 - This manifest does not create Apple or Google store accounts, approve
   metadata or screenshots, submit to App Review or Play review, clear legal or
   privacy approval, enable public launch, or replace Apollo sign-off.
+
+## Account Deletion Proof Manifest
+
+Latest local evidence, 2026-07-03:
+
+- `/care-twin-qa?qaSurface=account-deletion-proof` now renders a source-backed
+  `Account deletion proof manifest` instead of only routing helpers to a generic
+  account-deletion capture target.
+- The manifest is built by `buildAccountDeletionProofManifest` and shows
+  deletion route/auth, export-before-delete handoff, data/object deletion
+  receipt, audit/support receipt, recovery/cancellation policy, and legal/store
+  approval evidence rows.
+- The focused route shows ready/open counts, `Destructive deletion allowed: No`,
+  the blocker list, and the destructive-deletion boundary before Evidence
+  Capture.
+- Red/green proof first failed on the missing manifest builder, then failed on
+  the missing focused-route manifest wiring, then failed on the missing JSON
+  doctor guard before the implementation was completed.
+- Focused Account Deletion proof plus release-QA proof tests passed `27/27`.
+  Focused care-twin route and machine-readable doctor readiness tests passed
+  `114/114`. The broader zero-dependency API/mobile/PWA/care-domain focused
+  suite passed `556/556`, root TypeScript passed, mobile TypeScript passed, and
+  `git diff --check` reported only expected Windows CRLF warnings.
+- Direct `scripts/mobile-beta-doctor.mjs --json` reports `account deletion
+  proof manifest is source-backed` as `PASS`, while remaining truthfully
+  `BLOCKED` only because this Windows shell exposes pnpm `11.7.0` while the repo
+  is pinned to `10.24.0`.
+- Direct `scripts/native-qa-tooling-doctor.mjs --json` remains `BLOCKED`
+  because this Windows shell lacks Android `adb`, Android `emulator`, Java,
+  `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+- This manifest does not enable destructive deletion, delete provider data or
+  storage objects, approve privacy/legal language, satisfy App Store or Play
+  Store review, enable public launch, or replace Apollo sign-off.
