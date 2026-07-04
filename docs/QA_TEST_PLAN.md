@@ -1722,6 +1722,10 @@ Latest local evidence, 2026-07-04:
   `authProviderProof.test.ts` `4/4`, focused Auth/Setup plus machine-readable
   doctor tests `118/118`, and direct JSON mobile beta doctor source-backed
   checks including `auth/setup proof manifest is source-backed`.
+- Branch CI proved the native-proof hardening implementation in `WoofWatcher
+  Verify` run `28694530592`, job `85101746726`, on commit `581b8b1`; Setup
+  pnpm, Setup Node, install dependencies, JSON mobile beta doctor, focused
+  behavior tests, and Typecheck plus CI-safe builds all passed.
 - The full zero-dependency API/mobile/PWA/care-domain focused suite passed
   `557/557`; root TypeScript and mobile TypeScript both passed.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `auth/setup proof

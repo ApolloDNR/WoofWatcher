@@ -3234,7 +3234,9 @@ Fresh red/green local verification first failed because generic booleans made
 the manifest ready, then passed `authProviderProof.test.ts` `4/4`, focused
 Auth/Setup plus machine-readable doctor tests `118/118`, and direct JSON mobile
 beta doctor source-backed checks. The mobile beta doctor still blocks only on
-local pnpm `11.7.0` versus pinned `10.24.0`.
+local pnpm `11.7.0` versus pinned `10.24.0`. Remote verification also passed
+for the implementation commit: `WoofWatcher Verify` run `28694530592`, job
+`85101746726`, completed successfully in about `3m12s` for commit `581b8b1`.
 
 The care-entry provider sync proof manifest pass makes the focused database
 mission explicit instead of relying on a generic checklist. The route
