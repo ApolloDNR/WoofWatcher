@@ -1866,6 +1866,10 @@ Latest local evidence, 2026-07-04:
   `28691115501`, job `85092467507`, in `3m1s`; Setup pnpm, Setup Node, install,
   JSON mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe
   builds all passed.
+- Branch CI also proved the native-proof hardening guard in `WoofWatcher Verify`
+  run `28693966672`, job `85100292756`, on commit `97fa65a` in about `3m7s`;
+  Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior
+  tests, Typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - This manifest does not prove native iOS or Android share sheets, Android
   content URI handoff, fallback copy, generated PDF/PNG readiness,
   provider-backed storage, cloud sync, public launch, or Apollo sign-off.
