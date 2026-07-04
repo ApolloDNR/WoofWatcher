@@ -51,6 +51,8 @@ Latest local evidence, 2026-07-04:
 - PASS: Direct JSON mobile beta doctor reports `care document launch proof persistence guard is source-backed` as `PASS`; the doctor remains `BLOCKED` only on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack.
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed with the dot reporter.
 - PASS: Root TypeScript, mobile TypeScript, direct mobile beta doctor source-backed checks, and `git diff --check` passed for the care-document launch proof persistence guard.
+- PASS: Implementation commit `79ec06b` (`Preserve launch proof fields`) was pushed to `automation/premium-revenue-product-builder`.
+- BLOCKED: Fresh branch CI for `79ec06b` is pending; the latest visible run list still shows only earlier `workflow_dispatch` successes through run `28705671803`, which predates this implementation commit.
 - PASS: Privacy owner export now clamps stale or imported `provider-approved` launch support/provider profiles through the shared structured proof models before serialization.
 - PASS: `buildPrivacyExportBundle` uses `deriveSupportRunbookPlan` for `launchSupportProfile` and `deriveLaunchProviderSetup` for `launchProviderProfile`, downgrading missing-proof statuses to `owner-reviewed` in the exported bundle.
 - PASS: `privacySafety.test.ts` passed `10/10` for the export launch-status clamp.

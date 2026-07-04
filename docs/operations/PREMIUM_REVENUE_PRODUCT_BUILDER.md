@@ -3847,6 +3847,10 @@ API/mobile/PWA/care-domain suite passed with the dot reporter, root TypeScript
 passed, mobile TypeScript passed, and `git diff --check` passed with expected
 Windows line-ending warnings. Direct mobile beta doctor remains truthfully
 `BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack.
+The implementation is pushed as `79ec06b` (`Preserve launch proof fields`),
+but fresh branch CI is still pending because the latest visible run list only
+shows earlier `workflow_dispatch` successes through run `28705671803`, which
+predates this commit.
 This still does not attach real proof files, configure providers, approve
 native/store evidence, launch publicly, or replace Apollo sign-off.
 
