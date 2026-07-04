@@ -552,6 +552,12 @@ Current environment note:
   and opt-out state into the care document and privacy export. This is still a
   local preference/readiness boundary only; it does not configure Expo/APNs/FCM,
   deliver notifications, prove native delivery, or replace Apollo approval.
+- Reminder Center now also consumes the structured Push notifications proof
+  manifest before Calendar can treat push as provider-backed. Provider-approved
+  setup plus granted permission can stage owner review, but provider-backed
+  notification status stays local/in-app until structured Expo/APNs/FCM,
+  permission, quiet-hours, opt-out, and native delivery proof files make
+  `Reminder delivery allowed` true.
 - Records Dog ID can now share a local SVG image-source credential file beside
   the local printable HTML credential file, and Records can generate a local Dog
   ID PNG plus local Care Pass PDF bytes for Report History. Native iOS/Android

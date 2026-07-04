@@ -264,6 +264,7 @@ const accountDeletionProofPath = join(mobileRoot, "lib", "accountDeletionProof.t
 const storeAccountsProofPath = join(mobileRoot, "lib", "storeAccountsProof.ts");
 const supportRunbookPath = join(mobileRoot, "lib", "supportRunbook.ts");
 const pushNotificationsProofPath = join(mobileRoot, "lib", "pushNotificationsProof.ts");
+const reminderNotificationPreferencesPath = join(mobileRoot, "lib", "reminderNotificationPreferences.ts");
 const paymentsProviderProofPath = join(mobileRoot, "lib", "paymentsProviderProof.ts");
 const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
 const reportArtifactExportFilePath = join(mobileRoot, "lib", "reportArtifactExportFile.ts");
@@ -277,6 +278,7 @@ const premiumRoutePath = join(mobileRoot, "app", "premium.tsx");
 const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
 const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
 const carePassDomainPath = join(root, "lib", "care-domain", "src", "care-pass.ts");
+const careRemindersDomainPath = join(root, "lib", "care-domain", "src", "care-reminders.ts");
 const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
 const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath) ? readFileSync(mobileLaunchQaEvidencePath, "utf8") : "";
 const mobileReleaseQaSource = existsSync(mobileReleaseQaPath) ? readFileSync(mobileReleaseQaPath, "utf8") : "";
@@ -294,6 +296,7 @@ const accountDeletionProofSource = existsSync(accountDeletionProofPath) ? readFi
 const storeAccountsProofSource = existsSync(storeAccountsProofPath) ? readFileSync(storeAccountsProofPath, "utf8") : "";
 const supportRunbookSource = existsSync(supportRunbookPath) ? readFileSync(supportRunbookPath, "utf8") : "";
 const pushNotificationsProofSource = existsSync(pushNotificationsProofPath) ? readFileSync(pushNotificationsProofPath, "utf8") : "";
+const reminderNotificationPreferencesSource = existsSync(reminderNotificationPreferencesPath) ? readFileSync(reminderNotificationPreferencesPath, "utf8") : "";
 const paymentsProviderProofSource = existsSync(paymentsProviderProofPath) ? readFileSync(paymentsProviderProofPath, "utf8") : "";
 const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
 const reportArtifactExportFileSource = existsSync(reportArtifactExportFilePath) ? readFileSync(reportArtifactExportFilePath, "utf8") : "";
@@ -307,6 +310,7 @@ const premiumRouteSource = existsSync(premiumRoutePath) ? readFileSync(premiumRo
 const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRoutePath, "utf8") : "";
 const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
 const carePassDomainSource = existsSync(carePassDomainPath) ? readFileSync(carePassDomainPath, "utf8") : "";
+const careRemindersDomainSource = existsSync(careRemindersDomainPath) ? readFileSync(careRemindersDomainPath, "utf8") : "";
 const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Release smoke checklist:",
   "buildMobileReleaseSmokeChecklistShareText",
@@ -1620,6 +1624,27 @@ check(
   pushNotificationsProofManifestIsSourceBacked
     ? "Push notifications proof manifest is visible on the focused QA route while keeping Reminder Center local until provider delivery proof is attached"
     : "render the push notifications proof manifest on /care-twin-qa?qaSurface=push-notifications-proof with Expo/APNs/FCM, permission, quiet-hours, and delivery QA boundaries",
+);
+
+const reminderCenterPushProofGuardIsSourceBacked = includesAll(reminderNotificationPreferencesSource, [
+  "buildPushNotificationsProofManifest",
+  "pushNotificationsProofEvidence",
+  "providerStaged",
+  "providerProofReady",
+  "providerConfigured: providerStaged && providerProofReady",
+])
+  && includesAll(careRemindersDomainSource, [
+    "providerStaged",
+    "providerProofReady",
+    "Push provider is staged, but Reminder Center stays in-app until structured Expo/APNs/FCM, permission, quiet-hours, opt-out, and native delivery proof is attached.",
+    "providerBackedNotifications",
+  ]);
+check(
+  "reminder center push proof guard is source-backed",
+  reminderCenterPushProofGuardIsSourceBacked,
+  reminderCenterPushProofGuardIsSourceBacked
+    ? "Reminder Center provider-backed notifications stay blocked until the structured push proof manifest is ready"
+    : "wire Reminder Center notification preferences to the push proof manifest so provider-approved booleans alone cannot enable provider-backed notifications",
 );
 
 const paymentsProviderProofTargetIsSourceBacked = includesAll(paymentsProviderProofSource, [

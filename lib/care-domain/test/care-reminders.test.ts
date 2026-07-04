@@ -14,6 +14,8 @@ async function loadReminderCenter() {
       caregivers?: readonly unknown[];
       notificationPreferences?: {
         providerConfigured?: boolean;
+        providerStaged?: boolean;
+        providerProofReady?: boolean;
         pushEnabled?: boolean;
         permissionStatus?: "unknown" | "granted" | "denied" | "unavailable";
         quietHoursStart?: string | null;
@@ -194,6 +196,22 @@ test("keeps notification permission, quiet hours, and opt-out boundaries explici
       optOut: false,
     },
   });
+  const providerStagedWithoutProof = deriveCareReminderCenter({
+    now: NOW,
+    routines: [],
+    entries: [],
+    records: [],
+    notificationPreferences: {
+      providerConfigured: false,
+      providerStaged: true,
+      providerProofReady: false,
+      pushEnabled: true,
+      permissionStatus: "granted",
+      quietHoursStart: "9:00 PM",
+      quietHoursEnd: "7:00 AM",
+      optOut: false,
+    },
+  });
   const optedOut = deriveCareReminderCenter({
     now: NOW,
     routines: [],
@@ -239,6 +257,8 @@ test("keeps notification permission, quiet hours, and opt-out boundaries explici
 
   assert.match(providerGated.notificationPreferenceSummary, /Push provider not configured/i);
   assert.equal(providerGated.providerBackedNotifications, false);
+  assert.match(providerStagedWithoutProof.notificationPreferenceSummary, /structured Expo\/APNs\/FCM/i);
+  assert.equal(providerStagedWithoutProof.providerBackedNotifications, false);
   assert.match(optedOut.notificationPreferenceSummary, /Notifications are off by your choice/i);
   assert.match(optedOut.notificationOptOut, /Opted out/i);
   assert.equal(optedOut.providerBackedNotifications, false);

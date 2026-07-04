@@ -176,7 +176,7 @@ No payment implementation should start until product scope, privacy terms, suppo
 - Medication adherence is derived from routines plus household-visible medication logs before adding notification delivery, pharmacy, or vet integration workflows.
 - Medication logs preserve taken versus skipped outcome before notification delivery is added.
 - Medication follow-ups derive missed-dose, due-now, and refill actions in shared care-domain logic before device push notifications or pharmacy/vet integrations are added.
-- Reminder Center derives routine, medication, record, and grooming reminder candidates in shared care-domain logic before device push notifications, runtime permissions, provider-backed reminder preferences, or automatic writes are added.
+- Reminder Center derives routine, medication, record, and grooming reminder candidates in shared care-domain logic before device push notifications, runtime permissions, provider-backed reminder preferences, or automatic writes are added. Calendar also consumes the Push notifications proof manifest before treating provider-approved push setup as provider-backed notification delivery, so configured/provider-approved push still stays local/in-app until structured Expo/APNs/FCM and native delivery proof is attached.
 - Full Log search lives in shared care-domain logic before adding routed long-history views, server-backed retention, or provider search indexes.
 - Medication history derives and filters recent household-visible medication evidence before adding clinical medication schedule schemas.
 - Daily hydration derives household-visible water evidence before adding configurable goals, trend history, reminder delivery, or medical hydration interpretation.

@@ -1918,6 +1918,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real payments provider proof files or the app gains a provider-backed proof evidence service that can feed Privacy & Safety.
 
+### 2026-07-04: Reminder Center Push Delivery Requires Structured Proof
+
+Decision: Reminder Center cannot treat configured/provider-approved push setup as provider-backed notification delivery. Calendar must consume the Push notifications proof manifest and keep provider-backed notification status local/in-app until structured Expo/APNs/FCM, permission, quiet-hours, opt-out, and native delivery proof makes `reminderDeliveryAllowed` true.
+
+Reason: Reminder delivery is an owner-trust and store-review boundary. If Calendar marks notifications provider-backed from setup booleans alone, it can contradict the focused Push Notifications Proof manifest and imply delivered reminder behavior before any iOS APNs or Android FCM proof exists.
+
+Consequences:
+
+- `buildReminderNotificationPreferencesForCenter` accepts `pushNotificationsProofEvidence` and calls `buildPushNotificationsProofManifest`.
+- Provider-approved push without structured proof stays staged, and shared Reminder Center copy explains that proof is still missing.
+- Real Expo/APNs/FCM configuration, native delivery evidence, prompt/legal approval, store privacy review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real push notification proof files or the app gains a provider-backed proof evidence service that can feed Calendar.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

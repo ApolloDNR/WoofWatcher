@@ -44,6 +44,16 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: Reminder Center push proof hardening now keeps provider-backed notifications local/in-app when push provider setup is configured and provider-approved but structured push proof files are absent.
+- PASS: Focused Reminder Center/push/mobile readiness tests passed `125/125`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `586/586`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Direct JSON mobile beta doctor reports `reminder center push proof guard is source-backed` as `PASS`.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt/preference proof, quiet-hours/opt-out proof, iOS APNs delivery evidence, Android FCM delivery evidence, missed-notification fallback proof, store privacy review, public launch, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: Support runbook proof hardening now keeps public launch `blocked` when support/legal approval booleans and privacy/terms links are present but structured support/legal proof files are absent.
 - PASS: Focused Support Runbook/mobile readiness tests passed `121/121`.
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `586/586`.

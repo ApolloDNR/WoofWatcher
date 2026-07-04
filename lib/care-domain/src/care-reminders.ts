@@ -43,6 +43,8 @@ export type CareReminderNotificationPermissionStatus = "unknown" | "granted" | "
 
 export interface CareReminderNotificationPreferences {
   providerConfigured?: boolean;
+  providerStaged?: boolean;
+  providerProofReady?: boolean;
   pushEnabled?: boolean;
   permissionStatus?: CareReminderNotificationPermissionStatus;
   quietHoursStart?: string | null;
@@ -150,6 +152,9 @@ function notificationPreferenceSummaryFor(preferences: CareReminderNotificationP
   const optedOut = preferences.optOut === true;
 
   if (!providerConfigured) {
+    if (preferences.providerStaged === true && preferences.providerProofReady !== true) {
+      return "Push provider is staged, but Reminder Center stays in-app until structured Expo/APNs/FCM, permission, quiet-hours, opt-out, and native delivery proof is attached.";
+    }
     return "Push provider not configured; push notifications stay in-app until Expo, APNs, and Firebase/FCM proof is attached.";
   }
   if (optedOut) {

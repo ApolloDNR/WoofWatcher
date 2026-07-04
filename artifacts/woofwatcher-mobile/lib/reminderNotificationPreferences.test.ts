@@ -6,8 +6,46 @@ import {
   buildReminderNotificationPreferencesForCenter,
   normalizeReminderNotificationPreferences,
 } from "./reminderNotificationPreferences.ts";
+import type { PushNotificationsProofEvidence } from "./pushNotificationsProof.ts";
 
 const NOW = "2026-07-03T16:00:00.000Z";
+
+function completePushNotificationsProofEvidence(): PushNotificationsProofEvidence {
+  return {
+    expoPushProjectConfig: "Expo push project config proof: production project id, channel, token registration, local preview boundary.",
+    appleApnsCredentials: "Apple APNs credentials proof: production entitlement, device token, and APNs delivery evidence.",
+    firebaseFcmCredentials: "Firebase and FCM credentials proof: google-services config, sender ownership, Android channel behavior.",
+    permissionPromptPreferenceCopy: "Permission prompt and preference copy proof: consent language, denied fallback, and caregiver copy.",
+    quietHoursOptOutBehavior: "Quiet hours and opt-out behavior proof: disabled reminders stay off and quiet hours mute non-urgent reminders.",
+    reminderDeliveryQaFallback: "Reminder delivery QA and fallback proof: iOS and Android delivered reminders plus fallback recovery.",
+    nativeDeliveryEvidence: [
+      {
+        platform: "ios",
+        provider: "apns",
+        fileName: "ios-apns-reminder-delivery-proof.png",
+        mimeType: "image/png",
+        byteSize: 320000,
+        pushTokenRegistered: true,
+        reminderDelivered: true,
+        capturesPermissionPreference: true,
+        capturesQuietHoursOrOptOut: true,
+        capturesFallbackPath: true,
+      },
+      {
+        platform: "android",
+        provider: "fcm",
+        fileName: "android-fcm-reminder-delivery-proof.png",
+        mimeType: "image/png",
+        byteSize: 300000,
+        pushTokenRegistered: true,
+        reminderDelivered: true,
+        capturesPermissionPreference: true,
+        capturesQuietHoursOrOptOut: true,
+        capturesFallbackPath: true,
+      },
+    ],
+  };
+}
 
 test("normalizes saved reminder notification preferences from older care documents", () => {
   const defaults = normalizeReminderNotificationPreferences(null);
@@ -79,7 +117,7 @@ test("applies local reminder notification preference drafts without claiming pro
   assert.equal(optedOut.reminderNotificationPreferences.optOut, true);
 });
 
-test("keeps Reminder Center provider-backed status gated by provider approval", () => {
+test("keeps Reminder Center provider-backed status gated by provider approval and structured push proof", () => {
   const preferences = {
     pushEnabled: true,
     permissionStatus: "granted" as const,
@@ -96,12 +134,24 @@ test("keeps Reminder Center provider-backed status gated by provider approval", 
     { pushNotificationsConfigured: true, providerStatus: "provider-approved" },
     preferences,
   );
+  const providerApprovedWithProof = buildReminderNotificationPreferencesForCenter(
+    {
+      pushNotificationsConfigured: true,
+      providerStatus: "provider-approved",
+      pushNotificationsProofEvidence: completePushNotificationsProofEvidence(),
+    },
+    preferences,
+  );
 
   assert.equal(ownerReviewed.providerConfigured, false);
-  assert.equal(providerApproved.providerConfigured, true);
-  assert.equal(providerApproved.pushEnabled, true);
-  assert.equal(providerApproved.permissionStatus, "granted");
-  assert.equal(providerApproved.quietHoursStart, "9:00 PM");
-  assert.equal(providerApproved.quietHoursEnd, "7:00 AM");
-  assert.equal(providerApproved.optOut, false);
+  assert.equal(providerApproved.providerConfigured, false);
+  assert.equal(providerApproved.providerStaged, true);
+  assert.equal(providerApproved.providerProofReady, false);
+  assert.equal(providerApprovedWithProof.providerConfigured, true);
+  assert.equal(providerApprovedWithProof.providerProofReady, true);
+  assert.equal(providerApprovedWithProof.pushEnabled, true);
+  assert.equal(providerApprovedWithProof.permissionStatus, "granted");
+  assert.equal(providerApprovedWithProof.quietHoursStart, "9:00 PM");
+  assert.equal(providerApprovedWithProof.quietHoursEnd, "7:00 AM");
+  assert.equal(providerApprovedWithProof.optOut, false);
 });

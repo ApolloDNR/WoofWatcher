@@ -1,3 +1,8 @@
+import {
+  buildPushNotificationsProofManifest,
+  type PushNotificationsProofEvidence,
+} from "./pushNotificationsProof.ts";
+
 export type ReminderNotificationPermissionStatus = "unknown" | "granted" | "denied" | "unavailable";
 
 export interface ReminderNotificationPreferences {
@@ -12,10 +17,13 @@ export interface ReminderNotificationPreferences {
 export interface ReminderNotificationProviderProfile {
   pushNotificationsConfigured?: unknown;
   providerStatus?: unknown;
+  pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null;
 }
 
 export interface CareReminderNotificationPreferencesForCenter {
   providerConfigured: boolean;
+  providerStaged: boolean;
+  providerProofReady: boolean;
   pushEnabled: boolean;
   permissionStatus: ReminderNotificationPermissionStatus;
   quietHoursStart: string | null;
@@ -83,10 +91,15 @@ export function buildReminderNotificationPreferencesForCenter(
   preferences: unknown,
 ): CareReminderNotificationPreferencesForCenter {
   const normalized = normalizeReminderNotificationPreferences(preferences);
+  const pushNotificationsProof = buildPushNotificationsProofManifest(providerProfile?.pushNotificationsProofEvidence);
+  const providerStaged =
+    providerProfile?.pushNotificationsConfigured === true &&
+    providerProfile.providerStatus === "provider-approved";
+  const providerProofReady = pushNotificationsProof.reminderDeliveryAllowed;
   return {
-    providerConfigured:
-      providerProfile?.pushNotificationsConfigured === true &&
-      providerProfile.providerStatus === "provider-approved",
+    providerConfigured: providerStaged && providerProofReady,
+    providerStaged,
+    providerProofReady,
     pushEnabled: normalized.pushEnabled,
     permissionStatus: normalized.permissionStatus,
     quietHoursStart: normalized.quietHoursStart || null,

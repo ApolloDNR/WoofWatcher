@@ -5875,6 +5875,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.checks?.some(
       (check) =>
+        check.label === "reminder center push proof guard is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
         check.label === "aggregate launch readiness proof guard is source-backed" &&
         check.status === "PASS",
     ),
