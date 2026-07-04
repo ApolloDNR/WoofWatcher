@@ -1857,6 +1857,9 @@ Latest local evidence, 2026-07-04:
   accounts proof packet is source-backed`, `store accounts proof target is
   source-backed`, and `store accounts proof manifest is source-backed`, while
   remaining blocked only on the local pnpm/Corepack mismatch.
+- Branch CI proved commit `0c495a1` in `WoofWatcher Verify` run `28696518769`,
+  job `85106928992`; JSON mobile beta doctor, focused behavior tests, and
+  Typecheck plus CI-safe builds all passed.
 
 Latest local evidence, 2026-07-03:
 

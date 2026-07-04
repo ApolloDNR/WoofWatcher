@@ -3334,7 +3334,9 @@ approval/no-submit boundary. Fresh local proof passed focused store/handoff/
 smoke/readiness tests `148/148`, the full zero-dependency suite `571/571`, root
 TypeScript, mobile TypeScript, direct JSON doctor source-backed checks, and
 `git diff --check`; the local doctors remain blocked only on the known pnpm and
-native Android/Java tooling gaps.
+native Android/Java tooling gaps. Branch CI proved commit `0c495a1` in
+`WoofWatcher Verify` run `28696518769`, job `85106928992`, with JSON mobile beta
+doctor, focused behavior tests, and Typecheck plus CI-safe builds all passing.
 
 The Account Deletion proof manifest pass makes the focused destructive-deletion
 compliance mission explicit instead of leaving helpers with a generic deletion
