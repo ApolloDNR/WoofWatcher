@@ -276,6 +276,8 @@ Current evidence, 2026-06-08: Mobile now has a Privacy & Safety surface for owne
 
 Current evidence, 2026-07-03: The Account deletion proof manifest strengthens the destructive-deletion compliance gate by making deletion route/auth, export-before-delete handoff, data/object deletion receipt, audit/support receipt, recovery/cancellation policy, and legal/store approval visible on `/care-twin-qa?qaSurface=account-deletion-proof` while keeping `Destructive deletion allowed: No` until real provider, legal, store, and Apollo approval proof are attached.
 
+Current evidence, 2026-07-03: The Support legal readiness proof manifest strengthens the public-launch approval gate by making support inbox, privacy policy and terms links, refund/subscription policy, veterinary and emergency boundary, deletion escalation, incident response owner, and Apollo approval visible on `/care-twin-qa?qaSurface=support-legal-readiness-proof` while keeping `Public launch allowed: No` until real support/legal, store-review, and Apollo approval proof are attached.
+
 Current evidence, 2026-06-14: Mobile Privacy & Safety now uses shared board anatomy for Export Summary, Launch Safety Gates, and Before Public Launch blockers while preserving owner data export, deletion-request sharing, AI/document/payment gating, and provider-backed truth boundaries.
 
 Current evidence, 2026-06-19: Owner export and deletion scope now include local Adventure memories. The Adventure route labels memories as private household care evidence and creates `local-draft` memory records without claiming provider-backed photo storage, map data, or public sharing.

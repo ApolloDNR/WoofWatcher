@@ -260,6 +260,7 @@ const authUiPath = join(mobileRoot, "components", "auth-ui.tsx");
 const aiProviderProofPath = join(mobileRoot, "lib", "aiProviderProof.ts");
 const accountDeletionProofPath = join(mobileRoot, "lib", "accountDeletionProof.ts");
 const storeAccountsProofPath = join(mobileRoot, "lib", "storeAccountsProof.ts");
+const supportRunbookPath = join(mobileRoot, "lib", "supportRunbook.ts");
 const pushNotificationsProofPath = join(mobileRoot, "lib", "pushNotificationsProof.ts");
 const paymentsProviderProofPath = join(mobileRoot, "lib", "paymentsProviderProof.ts");
 const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
@@ -285,6 +286,7 @@ const authUiSource = existsSync(authUiPath) ? readFileSync(authUiPath, "utf8") :
 const aiProviderProofSource = existsSync(aiProviderProofPath) ? readFileSync(aiProviderProofPath, "utf8") : "";
 const accountDeletionProofSource = existsSync(accountDeletionProofPath) ? readFileSync(accountDeletionProofPath, "utf8") : "";
 const storeAccountsProofSource = existsSync(storeAccountsProofPath) ? readFileSync(storeAccountsProofPath, "utf8") : "";
+const supportRunbookSource = existsSync(supportRunbookPath) ? readFileSync(supportRunbookPath, "utf8") : "";
 const pushNotificationsProofSource = existsSync(pushNotificationsProofPath) ? readFileSync(pushNotificationsProofPath, "utf8") : "";
 const paymentsProviderProofSource = existsSync(paymentsProviderProofPath) ? readFileSync(paymentsProviderProofPath, "utf8") : "";
 const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
@@ -1527,6 +1529,33 @@ check(
   supportLegalReadinessProofTargetIsSourceBacked
     ? "Support legal readiness proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and Privacy shortcut"
     : "keep support/legal readiness proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and Privacy & Safety",
+);
+
+const supportLegalReadinessProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
+  "buildSupportLegalReadinessProofManifest",
+  "supportLegalReadinessProofManifest",
+  "Support legal readiness proof manifest",
+  "Public launch allowed",
+  "Public launch must stay blocked",
+  "supportLegalReadinessProofManifest.items.map",
+  "supportLegalReadinessProofManifest.blockers.map",
+])
+  && includesAll(supportRunbookSource, [
+    "buildSupportLegalReadinessProofManifest",
+    "publicLaunchAllowed",
+    "support inbox",
+    "privacy policy and terms links",
+    "refund/subscription policy",
+    "veterinary boundary",
+    "incident response owner",
+    "Apollo approval",
+  ]);
+check(
+  "support legal readiness proof manifest is source-backed",
+  supportLegalReadinessProofManifestIsSourceBacked,
+  supportLegalReadinessProofManifestIsSourceBacked
+    ? "Support legal readiness proof manifest is visible on the focused QA route while keeping public launch blocked until support, legal, refund, veterinary, incident, and Apollo approval proof is attached"
+    : "render the support legal readiness proof manifest on /care-twin-qa?qaSurface=support-legal-readiness-proof with support, policy, veterinary, incident, and Apollo approval boundaries",
 );
 
 const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [

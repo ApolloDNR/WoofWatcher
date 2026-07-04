@@ -29,6 +29,7 @@ import { buildAiProviderProofManifest } from "@/lib/aiProviderProof";
 import { buildPushNotificationsProofManifest } from "@/lib/pushNotificationsProof";
 import { buildStoreAccountsProofManifest } from "@/lib/storeAccountsProof";
 import { buildAccountDeletionProofManifest } from "@/lib/accountDeletionProof";
+import { buildSupportLegalReadinessProofManifest } from "@/lib/supportRunbook";
 import {
   buildRouteVisualProofManifest,
   buildStoreSubmissionScreenshotQaSurfaces,
@@ -429,6 +430,13 @@ export default function CareTwinQaScreen() {
   );
   const accountDeletionProofManifest = useMemo(
     () => (focusedQaTarget?.surface.id === "account-deletion-proof" ? buildAccountDeletionProofManifest({}) : null),
+    [focusedQaTarget],
+  );
+  const supportLegalReadinessProofManifest = useMemo(
+    () =>
+      focusedQaTarget?.surface.id === "support-legal-readiness-proof"
+        ? buildSupportLegalReadinessProofManifest({})
+        : null,
     [focusedQaTarget],
   );
   const nextBetaMission = betaCapturePlan.primaryMission;
@@ -1167,6 +1175,81 @@ export default function CareTwinQaScreen() {
                     ) : null}
                     <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       This manifest does not enable destructive deletion, delete provider data or storage objects, approve privacy/legal language, satisfy App Store or Play Store review, or replace Apollo sign-off.
+                    </Text>
+                  </View>
+                ) : null}
+                {supportLegalReadinessProofManifest ? (
+                  <View style={[s.routeVisualManifest, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.routeVisualManifestHeader}>
+                      <View style={s.routeVisualManifestCopy}>
+                        <Text style={[s.routeVisualManifestTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                          Support legal readiness proof manifest
+                        </Text>
+                        <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Public launch must stay blocked until support, privacy, refund, veterinary-boundary, deletion escalation, incident-response, and Apollo approval proof are attached.
+                        </Text>
+                      </View>
+                      <QaBadge
+                        label={supportLegalReadinessProofManifest.statusLabel}
+                        tone={supportLegalReadinessProofManifest.publicLaunchAllowed ? colors.sage : colors.amber}
+                      />
+                    </View>
+                    <View style={s.routeVisualManifestStats}>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Ready
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {supportLegalReadinessProofManifest.readyCount}/{supportLegalReadinessProofManifest.totalCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Open
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {supportLegalReadinessProofManifest.openCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Public launch allowed
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {supportLegalReadinessProofManifest.publicLaunchAllowed ? "Yes" : "No"}
+                        </Text>
+                      </View>
+                    </View>
+                    {supportLegalReadinessProofManifest.items.map((item) => (
+                      <View key={`support-legal-readiness-manifest-${item.label}`} style={[s.routeVisualManifestRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={s.routeVisualManifestRouteLine}>
+                          <Text style={[s.routeVisualManifestRouteName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {item.label}
+                          </Text>
+                          <QaBadge label={item.status === "ready" ? "Ready" : "Blocked"} tone={item.status === "ready" ? colors.sage : colors.amber} />
+                        </View>
+                        <Text style={[s.routeVisualManifestExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {item.requiredEvidence}
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatusLine, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Evidence: {item.evidenceAttached.length ? item.evidenceAttached.join(", ") : "Not attached"}
+                        </Text>
+                      </View>
+                    ))}
+                    {supportLegalReadinessProofManifest.blockers.length ? (
+                      <View style={[s.routeVisualManifestBlockers, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                        {supportLegalReadinessProofManifest.blockers.map((blocker) => (
+                          <View key={`support-legal-readiness-blocker-${blocker}`} style={s.betaRunStep}>
+                            <View style={[s.betaRunStepDot, { backgroundColor: colors.amber }]} />
+                            <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {blocker}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      This manifest does not approve legal or privacy copy, refund policy, support operations, veterinary-boundary language, public launch, App Store or Play Store review, or Apollo sign-off.
                     </Text>
                   </View>
                 ) : null}

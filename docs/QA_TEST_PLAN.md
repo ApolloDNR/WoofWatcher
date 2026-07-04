@@ -1750,3 +1750,34 @@ Latest local evidence, 2026-07-03:
 - This manifest does not enable destructive deletion, delete provider data or
   storage objects, approve privacy/legal language, satisfy App Store or Play
   Store review, enable public launch, or replace Apollo sign-off.
+
+## Support Legal Readiness Proof Manifest
+
+Latest local evidence, 2026-07-03:
+
+- `/care-twin-qa?qaSurface=support-legal-readiness-proof` now renders a
+  source-backed `Support legal readiness proof manifest` instead of only
+  routing helpers to a generic support/legal capture target.
+- The manifest is built by `buildSupportLegalReadinessProofManifest` and shows
+  support inbox, privacy policy and terms links, refund/subscription policy,
+  veterinary and emergency boundary, deletion escalation, incident response
+  owner, and Apollo approval evidence rows.
+- The focused route shows ready/open counts, `Public launch allowed: No`, the
+  blocker list, and the public-launch boundary before Evidence Capture.
+- Red/green proof first failed on the missing manifest builder, then failed on
+  the missing focused-route manifest wiring, then failed on the missing JSON
+  doctor guard before the implementation was completed.
+- Focused support runbook proof tests passed `4/4`. Focused care-twin route and
+  machine-readable doctor readiness tests passed `114/114`. The broader
+  zero-dependency API/mobile/PWA/care-domain focused suite passed `557/557`,
+  root TypeScript passed, and mobile TypeScript passed.
+- Direct `scripts/mobile-beta-doctor.mjs --json` reports `support legal
+  readiness proof manifest is source-backed` as `PASS`, while remaining
+  truthfully `BLOCKED` only because this Windows shell exposes pnpm `11.7.0`
+  while the repo is pinned to `10.24.0`.
+- Direct `scripts/native-qa-tooling-doctor.mjs --json` remains `BLOCKED`
+  because this Windows shell lacks Android `adb`, Android `emulator`, Java,
+  `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+- This manifest does not approve legal or privacy copy, refund/subscription
+  policy, support operations, veterinary-boundary language, App Store or Play
+  Store review, public launch, or replace Apollo sign-off.

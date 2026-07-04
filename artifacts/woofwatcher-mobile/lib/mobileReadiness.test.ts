@@ -873,6 +873,13 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /accountDeletionProofManifest\.blockers\.map/);
   assert.match(qaRoute, /Destructive deletion allowed/);
   assert.match(qaRoute, /Destructive account deletion must stay blocked/);
+  assert.match(qaRoute, /buildSupportLegalReadinessProofManifest/);
+  assert.match(qaRoute, /supportLegalReadinessProofManifest/);
+  assert.match(qaRoute, /Support legal readiness proof manifest/);
+  assert.match(qaRoute, /supportLegalReadinessProofManifest\.items\.map/);
+  assert.match(qaRoute, /supportLegalReadinessProofManifest\.blockers\.map/);
+  assert.match(qaRoute, /Public launch allowed/);
+  assert.match(qaRoute, /Public launch must stay blocked/);
   assert.match(qaRoute, /Mission note/);
   assert.match(qaRoute, /Mission note for \$\{nextBetaTarget\.title\}/);
   assert.match(qaRoute, /surfaceNotes\[nextBetaTarget\.surfaceId\]/);
@@ -5767,6 +5774,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "support legal readiness proof target is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "support legal readiness proof manifest is source-backed" &&
         check.status === "PASS",
     ),
   );

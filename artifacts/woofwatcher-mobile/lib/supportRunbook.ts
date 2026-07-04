@@ -35,6 +35,92 @@ export interface SupportRunbookShareOptions {
   generatedAtIso?: string;
 }
 
+export interface SupportLegalReadinessProofItem {
+  label: string;
+  requiredEvidence: string;
+}
+
+export type SupportLegalReadinessProofStatus = "blocked" | "ready-for-review";
+
+export interface SupportLegalReadinessProofEvidence {
+  supportInbox?: string | null;
+  privacyTermsLinks?: string | null;
+  refundSubscriptionPolicy?: string | null;
+  veterinaryEmergencyBoundary?: string | null;
+  deletionEscalation?: string | null;
+  incidentResponseOwner?: string | null;
+  apolloApproval?: string | null;
+}
+
+export interface SupportLegalReadinessProofManifestItem extends SupportLegalReadinessProofItem {
+  status: "blocked" | "ready";
+  evidenceAttached: readonly string[];
+}
+
+export interface SupportLegalReadinessProofManifest {
+  title: "Support legal readiness proof manifest";
+  status: SupportLegalReadinessProofStatus;
+  statusLabel: string;
+  summary: string;
+  readyCount: number;
+  openCount: number;
+  totalCount: number;
+  publicLaunchAllowed: boolean;
+  items: SupportLegalReadinessProofManifestItem[];
+  blockers: string[];
+}
+
+export const SUPPORT_LEGAL_READINESS_PROOF_ITEMS: readonly SupportLegalReadinessProofItem[] = [
+  {
+    label: "Support inbox",
+    requiredEvidence:
+      "monitored support inbox, owner/access list, response coverage, store support URL, and customer escalation path before public accounts or subscriptions.",
+  },
+  {
+    label: "Privacy policy and terms links",
+    requiredEvidence:
+      "final https privacy policy and terms links, data retention/export/deletion language, AI/storage/payments disclosures, and store-listing URL ownership.",
+  },
+  {
+    label: "Refund/subscription policy",
+    requiredEvidence:
+      "refund/subscription policy, cancellation language, billing support workflow, restore-purchase support, App Store/Play subscription compliance, and Premium surface copy approval.",
+  },
+  {
+    label: "Veterinary and emergency boundary",
+    requiredEvidence:
+      "veterinary boundary and emergency language proving WoofWatcher is not veterinary advice, diagnosis, treatment, or emergency triage across Health Watch, WoofGuide, support, and store copy.",
+  },
+  {
+    label: "Deletion escalation",
+    requiredEvidence:
+      "deletion escalation owner, export-first support flow, account-deletion request receipt, provider-delay fallback, and link to the self-serve deletion proof packet.",
+  },
+  {
+    label: "Incident response owner",
+    requiredEvidence:
+      "incident response owner and triage path for login, billing, export, deletion, AI/veterinary-boundary, safety complaints, privacy requests, and store-review follow-up.",
+  },
+  {
+    label: "Apollo approval",
+    requiredEvidence:
+      "Apollo approval of support operations, privacy/legal copy, refund/subscription policy, veterinary-boundary language, public launch timing, and no-launch boundary.",
+  },
+];
+
+export const SUPPORT_LEGAL_READINESS_PROOF_SUMMARY =
+  "Support legal readiness proof packet: support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch can be claimed.";
+
+const SUPPORT_LEGAL_READINESS_PROOF_EVIDENCE_KEYS: readonly (keyof SupportLegalReadinessProofEvidence)[] = [
+  "supportInbox",
+  "privacyTermsLinks",
+  "refundSubscriptionPolicy",
+  "veterinaryEmergencyBoundary",
+  "deletionEscalation",
+  "incidentResponseOwner",
+  "apolloApproval",
+];
+
 function clean(value: string | null | undefined): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -156,6 +242,39 @@ export function deriveSupportRunbookPlan(input: SupportRunbookInput = {}): Suppo
     termsUrl,
     sections,
     launchBlockers,
+  };
+}
+
+export function buildSupportLegalReadinessProofManifest(
+  input: SupportLegalReadinessProofEvidence | null | undefined,
+): SupportLegalReadinessProofManifest {
+  const evidence = input ?? {};
+  const items = SUPPORT_LEGAL_READINESS_PROOF_ITEMS.map<SupportLegalReadinessProofManifestItem>((item, index) => {
+    const attached = clean(evidence[SUPPORT_LEGAL_READINESS_PROOF_EVIDENCE_KEYS[index]]);
+    return {
+      ...item,
+      status: attached ? "ready" : "blocked",
+      evidenceAttached: attached ? [attached] : [],
+    };
+  });
+  const readyCount = items.filter((item) => item.status === "ready").length;
+  const totalCount = items.length;
+  const openCount = totalCount - readyCount;
+  const publicLaunchAllowed = openCount === 0;
+
+  return {
+    title: "Support legal readiness proof manifest",
+    status: publicLaunchAllowed ? "ready-for-review" : "blocked",
+    statusLabel: publicLaunchAllowed ? "Ready for launch review" : "Public launch blocked",
+    summary: publicLaunchAllowed
+      ? "All support, privacy, refund, veterinary-boundary, deletion escalation, incident-response, and Apollo approval proof is attached for launch review."
+      : "Public launch must stay blocked until support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval proof are attached.",
+    readyCount,
+    openCount,
+    totalCount,
+    publicLaunchAllowed,
+    items,
+    blockers: items.filter((item) => item.status === "blocked").map((item) => `${item.label}: ${item.requiredEvidence}`),
   };
 }
 
