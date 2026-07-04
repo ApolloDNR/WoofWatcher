@@ -243,6 +243,12 @@ Current environment note:
   all passing. This is payments proof-target routing only; paid checkout,
   sandbox receipts, restore purchases, store billing, store approval, and Apollo
   sign-off remain blocked.
+- Branch CI proved the Payments store-receipt proof hardening on 2026-07-04:
+  `WoofWatcher Verify` run `28695703283`, job `85104771524`, commit `b579885`,
+  completed successfully in about `3m08s`. This proves the source-backed iOS App
+  Store and Android Google Play receipt/restore guard only; paid checkout,
+  store billing, real provider receipts, money movement, refund/tax/support
+  approval, store approval, and Apollo sign-off remain blocked.
 - Branch CI also proved the payments preview proof-record refresh on 2026-07-03:
   `WoofWatcher Verify` run `28676751250`, job `85051688167`, commit `00b7f15`,
   completed successfully in `3m2s` with Setup pnpm, Setup Node, install, JSON

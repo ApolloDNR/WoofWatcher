@@ -1831,6 +1831,11 @@ Latest local evidence, 2026-07-04:
   `10.24.0`; direct native QA tooling doctor remains `BLOCKED` because Android
   `adb`, Android `emulator`, Java, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and
   `JAVA_HOME` are unavailable.
+- Branch CI proved the stricter receipt gate in `WoofWatcher Verify` run
+  `28695703283`, job `85104771524`, on commit `b579885`; Setup pnpm, Setup
+  Node, install dependencies, JSON mobile beta doctor, focused behavior tests,
+  Typecheck plus CI-safe builds, post steps, and Complete job all passed in
+  about `3m08s`.
 
 ## Store Accounts Proof Manifest
 
