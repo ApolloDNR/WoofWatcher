@@ -1993,6 +1993,32 @@ Latest local evidence, 2026-07-03:
   storage objects, approve privacy/legal language, satisfy App Store or Play
   Store review, enable public launch, or replace Apollo sign-off.
 
+Latest local evidence, 2026-07-04:
+
+- The manifest now rejects generic approval strings. `Destructive deletion
+  allowed` remains `No` until six structured proof files are attached:
+  deletion-route/auth, export-before-delete, data/object deletion receipt,
+  audit/support receipt, recovery/cancellation policy, and legal/store/Apollo
+  approval.
+- Each structured proof needs matching locator text, acceptable MIME, positive
+  byte size, required row fields, and row-specific approval booleans before its
+  row can become ready.
+- Structured-proof hardening verification first failed because generic
+  deletion-route/export/receipt/audit/recovery/legal strings made the manifest
+  ready. After the fix, focused Account Deletion proof plus
+  release-QA/handoff/smoke/readiness tests passed `148/148`, the broader
+  zero-dependency API/mobile/PWA/care-domain suite passed `574/574`, root
+  TypeScript passed, mobile TypeScript passed, and direct JSON doctor
+  source-backed checks passed.
+- Direct `scripts/mobile-beta-doctor.mjs --json` remains truthfully `BLOCKED`
+  only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0` and
+  Corepack is not on PATH. Direct
+  `scripts/native-qa-tooling-doctor.mjs --json` remains `BLOCKED` because this
+  Windows shell lacks Android `adb`, Android `emulator`, Java,
+  `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+  Real provider deletion, storage/object deletion receipts, legal/privacy/store
+  approval, public launch, and Apollo sign-off remain required.
+
 ## Support Legal Readiness Proof Manifest
 
 Latest local evidence, 2026-07-03:

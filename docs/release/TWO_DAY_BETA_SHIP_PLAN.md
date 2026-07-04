@@ -81,7 +81,7 @@ The beta must not claim:
 - On Premium, confirm the `Payments proof manifest` shows Product catalog, Billing path decision, Sandbox receipts, Entitlements and restore, Refund and support policy, and Checkout gate rows. The manifest must keep `Checkout disabled` visible until real billing/provider proof, iOS App Store and Android Google Play receipt/restore evidence, refund/support policy approval, and Apollo checkout approval are attached.
 - When the current mission is `Store Accounts Proof`, open `/care-twin-qa?qaSurface=store-accounts-proof`, then capture Apple Developer team id, App Store Connect app record, Google Play package record, platform/store-named iOS App Store Connect developer account proof, Android Google Play package proof, shared bundle/signing proof, reviewer access, metadata/privacy, Apollo release approval, no-submit boundary, and store submission proof before claiming App Review or Play review readiness.
 - When reviewing Provider Launch Setup's Apple and Google store accounts row, use `Open proof mission` to jump to the same Store Accounts Proof mission. This is a shortcut only; it does not create accounts, approve metadata/screenshots, submit App Review or Play review, clear legal/privacy approval, or replace Apollo sign-off.
-- When the current mission is `Account Deletion Proof`, open `/care-twin-qa?qaSurface=account-deletion-proof`, then capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, cancellation behavior, and legal/store approval before claiming destructive deletion readiness.
+- When the current mission is `Account Deletion Proof`, open `/care-twin-qa?qaSurface=account-deletion-proof`, then capture structured deletion-route/auth, export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation, and legal/store approval proof files with MIME, byte size, and row-specific approvals before claiming destructive deletion readiness.
 - When reviewing Provider Launch Setup's Self-serve account deletion row, use `Open proof mission` to jump to the same Account Deletion Proof mission. This is a shortcut only; it does not enable destructive deletion, delete provider data/storage, approve privacy/legal copy, satisfy App Store/Play Store review, or replace Apollo sign-off.
 - When the current mission is `Route Visual Consistency`, open `/care-twin-qa?qaSurface=route-visual-consistency`, then capture Home, Log, Plans, Health, Records, and More on both iOS and Android with route-named evidence; web preview screenshots do not replace native proof.
 - On the focused Route Visual Consistency mission, confirm the `Route visual proof manifest` shows six route-named iOS slots, six route-named Android slots, the QA note blocker, and the web-preview boundary before anyone claims visual sign-off.
@@ -343,6 +343,11 @@ Current environment note:
   `/care-twin-qa?qaSurface=account-deletion-proof` for focused helper capture,
   but this does not enable production deletion, delete provider data, satisfy
   store review, or replace Apollo/legal approval.
+- The Account deletion proof manifest now rejects generic approval notes. Helpers
+  must attach structured deletion-route/auth, export-before-delete, data/object
+  deletion receipt, audit/support receipt, recovery/cancellation, and
+  legal/store/Apollo proof files with MIME, byte size, and row-specific fields
+  before destructive deletion can move to review.
 - Provider Launch Setup's Apple and Google store accounts gate now carries an
   `Apple and Google store accounts proof packet` requiring Apple Developer team
   id, App Store Connect app record, Google Play package record, bundle ids,

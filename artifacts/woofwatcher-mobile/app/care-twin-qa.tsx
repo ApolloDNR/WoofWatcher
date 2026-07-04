@@ -1435,7 +1435,7 @@ export default function CareTwinQaScreen() {
                           Account deletion proof manifest
                         </Text>
                         <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                          Destructive account deletion must stay blocked until route, export, receipt, audit, recovery, and legal/store proof are attached.
+                          Destructive account deletion must stay blocked until structured route, export, receipt, audit, recovery, and legal/store proof files are attached.
                         </Text>
                       </View>
                       <QaBadge

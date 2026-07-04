@@ -121,7 +121,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, platform/provider-named iOS APNs and Android FCM delivery QA, and missed notification fallback before claiming reminder delivery.",
   "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox receipt JSON proof, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
   "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, platform/store-named iOS App Store Connect developer account proof, Android Google Play package proof, shared bundle/signing proof, reviewer access, metadata/privacy, Apollo release approval, no-submit boundary, and store submission proof before claiming App Review or Play review readiness.",
-  "Open /care-twin-qa?qaSurface=account-deletion-proof and capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before enabling destructive account deletion.",
+  "Open /care-twin-qa?qaSurface=account-deletion-proof and capture structured self-serve deletion route/auth, export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation, and legal/store approval proof files before enabling destructive account deletion.",
   "Open /care-twin-qa?qaSurface=support-legal-readiness-proof and capture support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
   "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android with route-named evidence before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
@@ -1601,7 +1601,7 @@ const accountDeletionProofTargetIsSourceBacked = includesAll(accountDeletionProo
   ])
   && includesAll(betaHandoffPacketSource, [
     "Open focused account deletion target: /care-twin-qa?qaSurface=account-deletion-proof.",
-    "Attach self-serve deletion route, reauthentication requirement, export-before-delete warning",
+    "Attach structured account deletion proof files before enabling destructive deletion",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused account deletion proof target",
@@ -1630,12 +1630,23 @@ const accountDeletionProofManifestIsSourceBacked = includesAll(careTwinQaRouteSo
   "Account deletion proof manifest",
   "Destructive deletion allowed",
   "Destructive account deletion must stay blocked",
+  "structured route, export, receipt, audit, recovery, and legal/store proof files",
   "accountDeletionProofManifest.items.map",
   "accountDeletionProofManifest.blockers.map",
 ])
   && includesAll(accountDeletionProofSource, [
     "buildAccountDeletionProofManifest",
+    "accountDeletionEvidence",
+    "ACCOUNT_DELETION_EVIDENCE_REQUIREMENTS",
     "destructiveDeletionAllowed",
+    "deletion-route-auth",
+    "export-before-delete",
+    "data-object-deletion-receipt",
+    "audit-support-receipt",
+    "recovery-cancellation-policy",
+    "legal-store-approval",
+    "Deletion route and reauthentication proof ready",
+    "Legal, store, and Apollo approval proof ready",
     "self-serve deletion route",
     "export-before-delete warning",
     "data/object deletion receipt",
@@ -1647,7 +1658,7 @@ check(
   "account deletion proof manifest is source-backed",
   accountDeletionProofManifestIsSourceBacked,
   accountDeletionProofManifestIsSourceBacked
-    ? "Account deletion proof manifest is visible on the focused QA route while keeping destructive deletion blocked until provider, legal, and store proof is attached"
+    ? "Account deletion proof manifest is visible on the focused QA route while keeping destructive deletion blocked until structured provider, legal, and store proof files are attached"
     : "render the account deletion proof manifest on /care-twin-qa?qaSurface=account-deletion-proof with route, export, receipt, audit, recovery, legal, and store boundaries",
 );
 

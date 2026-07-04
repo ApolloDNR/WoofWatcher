@@ -770,13 +770,13 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     route: "/more",
     priority: "launch-critical",
     goal:
-      "Prove the self-serve deletion route, reauthentication gate, export-before-delete warning, data/object deletion receipt, audit trail, recovery window, and legal/store approval before destructive account deletion can be enabled.",
+      "Prove the self-serve deletion route, reauthentication gate, export-before-delete warning, data/object deletion receipt, audit trail, recovery window, and legal/store approval with structured proof files before destructive account deletion can be enabled.",
     devicePrompt:
       "In Provider Launch Setup on iOS and Android, collect the Self-serve account deletion proof packet without treating manual request copy, local preview state, or owner-staged provider rows as destructive deletion readiness.",
     setupSteps: [
       "Use local preview data and keep Self-serve account deletion marked open unless the real deletion route, provider data deletion, audit, and legal/store proof are attached.",
       "Open More, then Provider Launch Setup, and inspect the Self-serve account deletion gate.",
-      "Confirm destructive deletion stays blocked until reauthentication, export-before-delete, data/object deletion receipt, audit trail, recovery window, support escalation, and legal/store approval are proven.",
+      "Confirm destructive deletion stays blocked until reauthentication, export-before-delete, data/object deletion receipt, audit trail, recovery window, support escalation, and legal/store approval are proven with structured proof files.",
     ],
     verificationSteps: [
       "Confirm Self-serve account deletion lists the Self-serve account deletion proof packet.",
@@ -785,7 +785,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Confirm recovery-window policy, cancel deletion behavior, irreversible-deletion timestamp, post-window support limits, privacy language, and App Store or Play Store approval remain visible before marking deletion ready.",
     ],
     acceptanceCriteria: [
-      "destructive deletion stays blocked until self-serve deletion route, reauthentication, export-before-delete, data/object deletion receipt, audit trail, recovery window, support receipt, and legal/store approval proof is attached.",
+      "destructive deletion stays blocked until structured proof files are attached for self-serve deletion route/reauthentication, export-before-delete, data/object deletion receipt, audit trail/support receipt, recovery window/cancellation, and legal/store approval.",
       "Provider Launch Setup never treats manual deletion request copy, local-draft rows, owner-staged rows, or privacy copy as provider-backed deletion readiness.",
       "legal/store approval and recovery-window policy remain visible before account deletion can close.",
     ],
@@ -794,37 +794,37 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     requiredEvidence: [
       "iOS screenshot of Provider Launch Setup showing the Self-serve account deletion proof packet.",
       "Android screenshot of Provider Launch Setup showing Self-serve account deletion still blocked or fully evidenced.",
-      "Note confirming self-serve deletion route, reauthentication, active-household scope, destructive-action confirmation copy, and export-before-delete warning.",
-      "Note confirming data/object deletion receipt, audit trail, support receipt, recovery-window policy, cancellation behavior, legal/store approval, and destructive deletion stays blocked until approval.",
+      "Deletion route/auth proof file with self-serve route, reauthentication, active-household scope, destructive-action confirmation copy, local-preview boundary, MIME, and byte size.",
+      "export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation, and legal/store proof files with row-specific fields, MIME, byte size, and Apollo approval.",
     ],
     routeChecklist: [
       {
         label: "Provider Launch Setup account deletion gate",
         route: "/more",
         expected:
-          "Confirm Self-serve account deletion lists the Self-serve account deletion proof packet and stays open until provider/legal/store proof is attached.",
-        proof: "Provider Launch Setup screenshot plus Self-serve account deletion proof packet note.",
+          "Confirm Self-serve account deletion lists the Self-serve account deletion proof packet and stays open until structured provider/legal/store proof files are attached.",
+        proof: "Provider Launch Setup screenshot plus Self-serve account deletion proof packet structured proof files.",
       },
       {
         label: "Deletion route and reauthentication",
         route: "/more",
         expected:
-          "Confirm self-serve deletion route, reauthentication requirement, active-household scope, and destructive-action confirmation copy are proven before deletion readiness appears ready.",
-        proof: "self-serve deletion route, reauthentication, active-household scope, and destructive-action confirmation proof.",
+          "Confirm self-serve deletion route, reauthentication requirement, active-household scope, destructive-action confirmation copy, and local-preview boundary are proven before deletion readiness appears ready.",
+        proof: "deletion-route/auth proof file with self-serve deletion route, reauthentication, active-household scope, destructive-action confirmation, MIME, and byte size.",
       },
       {
         label: "Export, deletion receipt, and audit trail",
         route: "/more",
         expected:
           "Confirm export-before-delete warning, owner data export link, provider data/object deletion receipt, audit trail, support receipt, and request id are proven before destructive deletion appears ready.",
-        proof: "export-before-delete warning, data/object deletion receipt, audit trail, support receipt, and request id proof.",
+        proof: "export-before-delete, data/object deletion receipt, and audit/support receipt proof files with request id, deletion receipt id, provider deletion coverage, MIME, and byte size.",
       },
       {
         label: "Recovery window, support, and store approval",
         route: "/more",
         expected:
           "Confirm recovery-window policy, cancel deletion behavior, irreversible-deletion timestamp, support limits, privacy language, and legal/store approval are proven before deletion compliance is claimed.",
-        proof: "recovery-window policy, cancel deletion behavior, support limits, privacy language, and legal/store approval proof.",
+        proof: "recovery/cancellation proof file with recovery-window policy plus legal/store approval proof file with policy references, store compliance review, support terms, Apollo approval, MIME, and byte size.",
       },
     ],
     launchRisk:

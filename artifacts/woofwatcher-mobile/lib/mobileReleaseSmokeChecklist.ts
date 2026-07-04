@@ -301,9 +301,9 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Focused account deletion proof target",
             detail:
-              "Open /care-twin-qa?qaSurface=account-deletion-proof and confirm self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before destructive deletion is enabled.",
+              "Open /care-twin-qa?qaSurface=account-deletion-proof and confirm structured self-serve deletion route/auth, export-before-delete warning, data/object deletion receipt, audit/support receipt, recovery/cancellation, and legal/store approval proof files before destructive deletion is enabled.",
             proof:
-              "Attach self-serve deletion route, reauthentication requirement, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, cancellation behavior, and legal/store approval; destructive deletion stays blocked until this proof exists.",
+              "Attach deletion-route/auth proof for self-serve deletion route, export-before-delete warning proof, data/object deletion receipt, audit/support receipt, recovery/cancellation, and legal/store approval proof files with MIME, byte size, and row-specific fields; destructive deletion stays blocked until this proof exists.",
             status: "required",
           },
           {

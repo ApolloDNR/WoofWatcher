@@ -1740,6 +1740,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real OpenAI/provider proof files, or WoofGuide gains a provider-backed AI evidence service with signed policy metadata.
 
+### 2026-07-04: Destructive Account Deletion Requires Structured Compliance Proof
+
+Decision: the Account deletion proof manifest cannot treat generic deletion-route/export/receipt/audit/recovery/legal approval strings as destructive-deletion readiness. `Destructive deletion allowed` remains blocked until six structured proof files satisfy deletion-route/auth, export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation policy, and legal/store/Apollo approval.
+
+Reason: self-serve account deletion is a destructive data, privacy, and store-compliance boundary. Text that says deletion or legal approval is ready can hide missing reauthentication proof, export-before-delete handoff, provider object deletion receipts, audit/support receipts, recovery/cancellation behavior, App Store/Play Store compliance, Apollo approval, or the local-preview no-delete boundary.
+
+Consequences:
+
+- `buildAccountDeletionProofManifest` keeps all six rows blocked when only legacy approval strings are present.
+- Each proof file must include matching locator text, acceptable MIME, positive byte size, required row fields, and row-specific approval booleans.
+- Provider-backed destructive deletion, storage/object deletion, privacy/legal approval, App Store or Play Store deletion compliance, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real provider deletion and legal/store proof files, or WoofWatcher gains a provider-backed deletion evidence service with signed receipt metadata.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
