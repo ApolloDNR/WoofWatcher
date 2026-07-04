@@ -3299,6 +3299,11 @@ structured proof kinds while remaining truthfully blocked on local pnpm `11.7.0`
 versus pinned `10.24.0` and missing Corepack. This is still proof gating only;
 it does not configure OpenAI, approve live AI, authorize automatic writes, clear
 veterinary safety, or replace Apollo sign-off.
+Branch CI later proved the guard on commit `c40ac84` in `WoofWatcher Verify`
+run `28697142992`, job `85108676301`, which completed successfully in about
+`2m59s` with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused
+behavior tests, Typecheck plus CI-safe builds, post steps, and Complete job all
+passing.
 
 The Push Notifications provider proof manifest pass makes the focused reminder
 delivery mission explicit instead of leaving helpers with a generic push
