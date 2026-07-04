@@ -1092,6 +1092,31 @@ check(
     : "keep Privacy & Safety wired to the account deletion proof manifest so accountDeletionEnabled alone cannot mark deletion ready",
 );
 
+const privacySafetyPaymentsProofGuardIsSourceBacked = includesAll(privacySafetySource, [
+  "buildPaymentsProviderProofManifest",
+  "PaymentsProviderProofManifestInput",
+  "paymentsProviderEvidence",
+  "paymentsProviderProofReady",
+  "Payments proof requires structured product, billing, receipt, restore, refund/support, and checkout evidence.",
+  "structured payments proof covers product catalog, billing path, iOS App Store and Android Google Play sandbox receipts, restore purchases, refund/support policy, and Apollo checkout approval",
+])
+  && includesAll(paymentsProviderProofSource, [
+    "buildPaymentsProviderProofManifest",
+    "Product catalog",
+    "Billing path decision",
+    "Sandbox receipts",
+    "Entitlements and restore",
+    "Refund and support policy",
+    "Checkout gate",
+  ]);
+check(
+  "privacy safety payments proof guard is source-backed",
+  privacySafetyPaymentsProofGuardIsSourceBacked,
+  privacySafetyPaymentsProofGuardIsSourceBacked
+    ? "Privacy & Safety keeps paid checkout blocked until structured payments proof files accompany provider enablement"
+    : "keep Privacy & Safety wired to the payments provider proof manifest so paymentsEnabled alone cannot mark checkout ready",
+);
+
 const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "Care Pass Report History storage status",
   "Saved on this device, or Ready to upload only after provider-approved storage",

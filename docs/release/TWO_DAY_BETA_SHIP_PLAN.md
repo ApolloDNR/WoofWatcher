@@ -159,6 +159,9 @@ Shippable for internal beta after local verification passes:
   source-backed`, so Premium must display product catalog, billing path,
   platform-specific sandbox receipt, restore-purchase, refund/support, and
   checkout-gate blockers before paid checkout can be enabled.
+- The mobile beta doctor also verifies `privacy safety payments proof guard is
+  source-backed`, so Privacy & Safety must keep checkout blocked when only
+  `paymentsEnabled` is staged and structured payments proof files are absent.
 - The mobile beta doctor also verifies `auth/setup proof manifest is
   source-backed`, so Auth gateway and Setup must display structured Clerk,
   redirect/deep-link, native screenshot, setup local-preview, household sync,
@@ -293,6 +296,15 @@ Current environment note:
   Typecheck plus CI-safe builds all passing; real route/auth,
   export-before-delete, data/object receipt, audit/support, recovery/cancellation,
   legal/store approval, public launch, and Apollo sign-off remain blocked.
+- Local proof also hardened Privacy & Safety's payments gate on 2026-07-04:
+  `paymentsEnabled` no longer marks checkout ready unless the structured
+  Payments provider proof manifest is ready. Focused Privacy & Safety/mobile
+  readiness tests passed `123/123`, the full zero-dependency suite passed
+  `585/585`, root/mobile TypeScript passed, and the JSON mobile beta doctor
+  reports `privacy safety payments proof guard is source-backed` as `PASS`;
+  real product ids, billing path decision, iOS App Store and Android Google
+  Play sandbox receipts, restore purchases, refund/support approval, store
+  approval, public launch, and Apollo checkout sign-off remain blocked.
 - Branch CI also proved the focused payments provider proof target on 2026-07-03:
   `WoofWatcher Verify` run `28676385615`, job `85050584288`, commit `3b5f4ab`,
   completed successfully in `3m3s` with Setup pnpm, Setup Node, install, JSON

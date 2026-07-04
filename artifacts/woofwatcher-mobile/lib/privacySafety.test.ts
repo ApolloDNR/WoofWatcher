@@ -240,6 +240,21 @@ test("keeps account deletion blocked until structured deletion proof is attached
   assert.ok(plan.launchBlockers.some((blocker) => /account deletion proof/i.test(blocker)));
 });
 
+test("keeps payments blocked until structured payments proof is attached", () => {
+  const plan = deriveAccountSafetyPlan({
+    state,
+    aiProviderConfigured: false,
+    storageProviderConfigured: true,
+    storageProviderEvidence: completeStorageEvidence(),
+    accountDeletionEnabled: false,
+    paymentsEnabled: true,
+  });
+
+  assert.equal(plan.payments.status, "blocked");
+  assert.match(plan.payments.detail, /structured payments proof/i);
+  assert.ok(plan.launchBlockers.some((blocker) => /payments proof/i.test(blocker)));
+});
+
 test("opens document storage review only with complete structured provider proof", () => {
   const plan = deriveAccountSafetyPlan({
     state,

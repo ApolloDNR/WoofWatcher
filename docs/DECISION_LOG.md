@@ -1886,6 +1886,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real account-deletion proof files or the app gains a provider-backed proof evidence service that can feed Privacy & Safety.
 
+### 2026-07-04: Privacy & Safety Payments Requires Structured Proof
+
+Decision: Privacy & Safety cannot treat `paymentsEnabled` as enough to mark checkout ready. It must consume the Payments provider proof manifest and stay `blocked` until structured proof files cover product catalog, billing path, iOS App Store and Android Google Play sandbox receipts, restore purchases, refund/support policy, and Apollo checkout approval.
+
+Reason: Privacy & Safety is an owner-facing launch safety surface and payments are a store, money-movement, refund, and support risk. If it marks payments ready from a provider checkbox, it can contradict the focused Payments Provider Proof manifest and the aggregate Launch Readiness guard.
+
+Consequences:
+
+- `deriveAccountSafetyPlan` accepts `paymentsProviderEvidence` and calls `buildPaymentsProviderProofManifest`.
+- Enabled payments without structured proof adds a payments-proof blocker instead of showing checkout as ready.
+- Real product ids, store billing path, sandbox receipts, restore purchases, entitlement mapping, refund/support approval, store review, public launch, and Apollo checkout sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real payments provider proof files or the app gains a provider-backed proof evidence service that can feed Privacy & Safety.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

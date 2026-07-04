@@ -3616,6 +3616,23 @@ gating only; it does not configure deletion routes, prove reauthentication,
 attach export-before-delete or deletion receipts, approve legal/store policy,
 launch publicly, or replace Apollo sign-off.
 
+The Privacy & Safety payments structured-proof pass closes the money-movement
+version of that owner-facing overclaim. `deriveAccountSafetyPlan` now accepts
+`paymentsProviderEvidence`, calls `buildPaymentsProviderProofManifest`, and keeps
+payments `blocked` when only `paymentsEnabled` is true. Readiness now requires
+structured proof files for product catalog, billing path, iOS App Store and
+Android Google Play sandbox receipts, restore purchases, refund/support policy,
+and Apollo checkout approval. Fresh red/green verification first showed enabled
+payments producing `ready`, then passed focused Privacy & Safety/mobile
+readiness tests `123/123`, the full zero-dependency API/mobile/PWA/care-domain
+suite `585/585`, root TypeScript, mobile TypeScript, and direct JSON doctor
+source-backed checks including `privacy safety payments proof guard is
+source-backed`. Direct JSON mobile beta doctor remains truthfully `BLOCKED` on
+local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack. This is proof
+gating only; it does not approve paid tiers, configure store billing, prove
+receipts or restore purchases, approve refund/support policy, move money, launch
+publicly, or replace Apollo checkout sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

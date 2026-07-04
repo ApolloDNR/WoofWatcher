@@ -9,6 +9,7 @@ import {
 } from "./attachmentManifest.ts";
 import { buildAiProviderProofManifest, type AiProviderProofEvidence } from "./aiProviderProof.ts";
 import { buildAccountDeletionProofManifest, type AccountDeletionProofEvidence } from "./accountDeletionProof.ts";
+import { buildPaymentsProviderProofManifest, type PaymentsProviderProofManifestInput } from "./paymentsProviderProof.ts";
 
 export interface PrivacyExportProfile {
   name?: string;
@@ -147,6 +148,7 @@ export interface AccountSafetyPlanInput {
   accountDeletionEnabled?: boolean;
   accountDeletionEvidence?: AccountDeletionProofEvidence | null;
   paymentsEnabled?: boolean;
+  paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null;
 }
 
 export interface AccountSafetyPlan {
@@ -284,6 +286,8 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
   const aiProviderProof = buildAiProviderProofManifest(input.aiProviderEvidence);
   const aiProviderProofReady = aiProviderConfigured && aiProviderProof.liveAiAllowed;
   const paymentsEnabled = Boolean(input.paymentsEnabled);
+  const paymentsProof = buildPaymentsProviderProofManifest(input.paymentsProviderEvidence ?? {});
+  const paymentsProviderProofReady = paymentsEnabled && paymentsProof.status === "ready";
   const attachmentManifest = deriveAttachmentManifest(input.state, {
     storageProviderConfigured,
     storageProviderEvidence: input.storageProviderEvidence,
@@ -305,6 +309,8 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
   }
   if (!paymentsEnabled) {
     launchBlockers.push("Payments remain blocked until privacy, support, refund, and app-store obligations are approved.");
+  } else if (!paymentsProviderProofReady) {
+    launchBlockers.push("Payments proof requires structured product, billing, receipt, restore, refund/support, and checkout evidence.");
   }
 
   return {
@@ -345,12 +351,14 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
       action: "Review rules",
     },
     payments: {
-      status: paymentsEnabled ? "ready" : "blocked",
+      status: paymentsProviderProofReady ? "ready" : "blocked",
       title: "Payments and subscriptions",
-      detail: paymentsEnabled
+      detail: paymentsProviderProofReady
         ? "Checkout can run only under approved subscription terms."
-        : "Checkout stays disabled until privacy, support, refund, and app-store subscription obligations are approved.",
-      action: "View launch blockers",
+        : paymentsEnabled
+          ? "Checkout stays disabled until structured payments proof covers product catalog, billing path, iOS App Store and Android Google Play sandbox receipts, restore purchases, refund/support policy, and Apollo checkout approval."
+          : "Checkout stays disabled until privacy, support, refund, and app-store subscription obligations are approved.",
+      action: paymentsProviderProofReady ? "Review terms" : paymentsEnabled ? "Review payments proof" : "View launch blockers",
     },
     launchBlockers,
   };
