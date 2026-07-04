@@ -90,6 +90,7 @@ Latest local evidence, 2026-06-23:
 - Premium entitlement policy for Free, Plus, and Family feature gates before checkout is enabled.
 - Premium payments proof manifest for product catalog, billing path, sandbox receipt, restore-purchase, refund/support, and checkout-gate blockers before paid checkout is enabled.
 - Auth/Setup proof manifest for Clerk production app, redirect/deep links, native Auth screenshots, Setup local-preview proof, household sync, and launch-gate blockers on Auth, Setup, and the focused Auth/Setup helper route before native Auth/Setup proof is claimed.
+- Records local-file handoff proof manifest for Care Pass Report History local HTML, Dog ID local HTML credential, Dog ID SVG image source, native share sheet, Android content URI or saved-file proof, fallback copy, and generated PDF/PNG/provider boundary blockers before native Records file proof is claimed.
 - Route visual proof manifest for Home, Log, Plans, Health, Records, and More native iOS/Android screenshot slots, QA note blocker, and web-preview-only boundary before visual sign-off is claimed.
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
@@ -1468,6 +1469,10 @@ Latest local evidence, 2026-07-03:
   URI, and fallback copy. This is a proof checklist only; real iOS/Android
   evidence still has to be attached before treating Records handoff proof as
   device-verified.
+- The focused route now renders a source-backed `Records local file handoff
+  proof manifest` before Evidence Capture, with ready/open counts, `Native file
+  proof allowed: No`, item evidence rows, blockers, and the generated
+  PDF/PNG/provider boundary.
 - The JSON mobile beta doctor now checks `release smoke checklist is
   source-backed` and includes `Release smoke checklist` in
   `handoffProofSections`.
@@ -1758,6 +1763,40 @@ Latest local evidence, 2026-07-03:
 - This manifest does not create Apple or Google store accounts, approve
   metadata or screenshots, submit to App Review or Play review, clear legal or
   privacy approval, enable public launch, or replace Apollo sign-off.
+
+## Records Local File Handoff Proof Manifest
+
+Latest local evidence, 2026-07-04:
+
+- `/care-twin-qa?qaSurface=records-local-file-handoff` now renders a
+  source-backed `Records local file handoff proof manifest` instead of only
+  routing helpers to a generic Records local-file capture target.
+- The manifest is built by `buildRecordsLocalFileHandoffProofManifest` and
+  shows Care Pass Report History local HTML, Dog ID local HTML credential, Dog
+  ID SVG image source, native share-sheet behavior, Android content URI or
+  saved-file proof, fallback copy, and generated PDF/PNG/provider boundary
+  evidence rows.
+- The focused route shows ready/open counts, `Native file proof allowed: No`,
+  the blocker list, and the local-file/native-proof boundary before Evidence
+  Capture.
+- Red/green proof first failed on the missing manifest builder, then failed on
+  the missing focused-route manifest wiring, then failed on the missing JSON
+  doctor guard before the implementation was completed.
+- Focused report artifact export tests passed `7/7`. Focused care-twin route
+  and machine-readable doctor readiness tests passed `114/114`. The broader
+  zero-dependency API/mobile/PWA/care-domain focused suite passed `559/559`,
+  root TypeScript passed, mobile TypeScript passed, and `git diff --check`
+  reported only expected Windows CRLF warnings.
+- Direct `scripts/mobile-beta-doctor.mjs --json` reports `records local file
+  handoff proof manifest is source-backed` as `PASS`, while remaining
+  truthfully `BLOCKED` only because this Windows shell exposes pnpm `11.7.0`
+  while the repo is pinned to `10.24.0` and Corepack is not on PATH.
+- Direct `scripts/native-qa-tooling-doctor.mjs --json` remains `BLOCKED`
+  because this Windows shell lacks Android `adb`, Android `emulator`, Java,
+  `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+- This manifest does not prove native iOS or Android share sheets, Android
+  content URI handoff, fallback copy, generated PDF/PNG readiness,
+  provider-backed storage, cloud sync, public launch, or Apollo sign-off.
 
 ## Account Deletion Proof Manifest
 

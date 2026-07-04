@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildRecordsLocalFileHandoffProofManifest,
   buildReportArtifactExportFilePlan,
   buildReportArtifactShareContent,
   normalizeReportExportFileName,
@@ -75,6 +76,55 @@ test("builds a local SVG credential image source export plan without claiming PN
   assert.equal(plan.mimeType, "image/svg+xml");
   assert.match(plan.message, /local SVG image source/);
   assert.match(plan.message, /PNG and PDF export still need/);
+});
+
+test("builds a Records local file handoff proof manifest that stays blocked without native evidence", () => {
+  const manifest = buildRecordsLocalFileHandoffProofManifest({});
+
+  assert.equal(manifest.title, "Records local file handoff proof manifest");
+  assert.equal(manifest.status, "blocked");
+  assert.equal(manifest.statusLabel, "Native file proof blocked");
+  assert.equal(manifest.nativeFileProofAllowed, false);
+  assert.equal(manifest.readyCount, 0);
+  assert.equal(manifest.openCount, manifest.totalCount);
+  assert.deepEqual(
+    manifest.items.map((item) => item.label),
+    [
+      "Care Pass Report History local HTML",
+      "Dog ID local HTML credential",
+      "Dog ID SVG image source",
+      "Native share sheet behavior",
+      "Android content URI or saved-file proof",
+      "Fallback copy",
+      "Generated PDF/PNG and provider boundary",
+    ],
+  );
+  assert.match(manifest.summary, /Records local files must stay device-verified/);
+  assert.match(manifest.blockers.join("\n"), /WoofWatcherReports/);
+  assert.match(manifest.blockers.join("\n"), /WoofWatcherCredentials/);
+  assert.match(manifest.blockers.join("\n"), /Android content URI/);
+  assert.match(manifest.blockers.join("\n"), /fallback copy/);
+  assert.match(manifest.blockers.join("\n"), /generated PDF\/PNG proof remains separate/);
+});
+
+test("marks Records local file handoff proof ready only when every evidence row is attached", () => {
+  const manifest = buildRecordsLocalFileHandoffProofManifest({
+    carePassReportHistoryLocalHtml: "WoofWatcherReports/Phoenix-Care-Pass.html, 12 KB, Saved on this device.",
+    dogIdLocalHtmlCredential: "WoofWatcherCredentials/Phoenix-Dog-ID.html shared from Records.",
+    dogIdSvgImageSource: "WoofWatcherCredentials/Phoenix-Dog-ID.svg shared as image/svg+xml.",
+    nativeShareSheetBehavior: "iOS and Android share sheets opened from Records without dead ends.",
+    androidContentUriOrSavedFile: "Android content URI captured from the Records share sheet.",
+    fallbackCopy: "Fallback copy names the local-only boundary when file sharing is unavailable.",
+    generatedBinaryBoundary: "Generated PDF/PNG proof remains separate until native share/reopen and provider proof exist.",
+  });
+
+  assert.equal(manifest.status, "ready-for-review");
+  assert.equal(manifest.statusLabel, "Native file proof ready for review");
+  assert.equal(manifest.nativeFileProofAllowed, true);
+  assert.equal(manifest.readyCount, manifest.totalCount);
+  assert.equal(manifest.openCount, 0);
+  assert.deepEqual(manifest.blockers, []);
+  assert.match(manifest.items[2]?.evidenceAttached.join("\n") ?? "", /image\/svg\+xml/);
 });
 
 test("falls back to inline printable source when a local file directory is unavailable", () => {

@@ -1584,6 +1584,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo approves the billing path, App Store/Google Play/Stripe provider credentials are available, or sandbox receipt evidence is ready to attach.
 
+### 2026-07-04: Records Native File Proof Requires Device Evidence Before Approval
+
+Decision: the focused Records local-file mission gets a source-backed proof manifest, but `Native file proof allowed` remains `No` until Care Pass local HTML, Dog ID local HTML, Dog ID SVG, native share-sheet behavior, Android content URI or saved-file proof, fallback copy, and generated PDF/PNG/provider boundary evidence are attached from real device QA.
+
+Reason: Records can already create local HTML/SVG sources, and generated PDF/PNG bytes exist as separate local artifacts, but helpers need one explicit checklist that prevents local source availability from being mistaken for native file proof, provider-backed storage, cloud sync, or export readiness.
+
+Consequences:
+
+- `/care-twin-qa?qaSurface=records-local-file-handoff` renders the Records local file handoff proof manifest before Evidence Capture.
+- The JSON mobile beta doctor guards that the manifest remains source-backed.
+- Real iOS/Android share-sheet evidence, Android content URI or saved-file proof, fallback-copy proof, native share/reopen evidence for generated binaries, provider storage policy, and Apollo sign-off remain launch gates.
+
+Owner: Codex.
+
+Revisit trigger: native Records file proof is attached, provider-backed records storage is configured, or generated PDF/PNG export readiness is ready for approval.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

@@ -264,6 +264,7 @@ const supportRunbookPath = join(mobileRoot, "lib", "supportRunbook.ts");
 const pushNotificationsProofPath = join(mobileRoot, "lib", "pushNotificationsProof.ts");
 const paymentsProviderProofPath = join(mobileRoot, "lib", "paymentsProviderProof.ts");
 const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProviderSyncProof.ts");
+const reportArtifactExportFilePath = join(mobileRoot, "lib", "reportArtifactExportFile.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
 const reportGeneratedBinaryArtifactPath = join(mobileRoot, "lib", "reportGeneratedBinaryArtifact.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
@@ -290,6 +291,7 @@ const supportRunbookSource = existsSync(supportRunbookPath) ? readFileSync(suppo
 const pushNotificationsProofSource = existsSync(pushNotificationsProofPath) ? readFileSync(pushNotificationsProofPath, "utf8") : "";
 const paymentsProviderProofSource = existsSync(paymentsProviderProofPath) ? readFileSync(paymentsProviderProofPath, "utf8") : "";
 const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPath) ? readFileSync(careEntryProviderSyncProofPath, "utf8") : "";
+const reportArtifactExportFileSource = existsSync(reportArtifactExportFilePath) ? readFileSync(reportArtifactExportFilePath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
 const reportGeneratedBinaryArtifactSource = existsSync(reportGeneratedBinaryArtifactPath) ? readFileSync(reportGeneratedBinaryArtifactPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
@@ -992,6 +994,35 @@ check(
   recordsLocalFileHandoffProofIsSourceBacked
     ? "Records local HTML/SVG proof has a focused QA target, beta handoff instruction, smoke checklist item, and doctor next action"
     : "keep Records local file handoff proof wired through release QA, Share Beta Handoff, smoke checklist, and doctor next actions",
+);
+
+const recordsLocalFileHandoffProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
+  "buildRecordsLocalFileHandoffProofManifest",
+  "recordsLocalFileHandoffProofManifest",
+  "Records local file handoff proof manifest",
+  "Native file proof allowed",
+  "Records local files must stay device-verified",
+  "recordsLocalFileHandoffProofManifest.items.map",
+  "recordsLocalFileHandoffProofManifest.blockers.map",
+])
+  && includesAll(reportArtifactExportFileSource, [
+    "buildRecordsLocalFileHandoffProofManifest",
+    "RECORDS_LOCAL_FILE_HANDOFF_PROOF_ITEMS",
+    "Care Pass Report History local HTML",
+    "Dog ID local HTML credential",
+    "Dog ID SVG image source",
+    "Native share sheet behavior",
+    "Android content URI or saved-file proof",
+    "Fallback copy",
+    "Generated PDF/PNG and provider boundary",
+    "nativeFileProofAllowed",
+  ]);
+check(
+  "records local file handoff proof manifest is source-backed",
+  recordsLocalFileHandoffProofManifestIsSourceBacked,
+  recordsLocalFileHandoffProofManifestIsSourceBacked
+    ? "Records local file handoff proof manifest is visible on the focused QA route while keeping local HTML/SVG, native share sheet, Android content URI, fallback copy, and PDF/PNG/provider boundaries explicit"
+    : "render the Records local file handoff proof manifest on /care-twin-qa?qaSurface=records-local-file-handoff with local HTML/SVG, native share sheet, Android content URI, fallback copy, and PDF/PNG/provider boundaries",
 );
 
 const reportBinaryExportProofPacketIsSourceBacked = includesAll(reportBinaryExportProofSource, [

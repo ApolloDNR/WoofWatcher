@@ -838,6 +838,13 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /authSetupProofManifest\.rows\.map/);
   assert.match(qaRoute, /authSetupProofManifest\.blockers\.map/);
   assert.match(qaRoute, /Auth and Setup native proof must stay blocked/);
+  assert.match(qaRoute, /buildRecordsLocalFileHandoffProofManifest/);
+  assert.match(qaRoute, /recordsLocalFileHandoffProofManifest/);
+  assert.match(qaRoute, /Records local file handoff proof manifest/);
+  assert.match(qaRoute, /recordsLocalFileHandoffProofManifest\.items\.map/);
+  assert.match(qaRoute, /recordsLocalFileHandoffProofManifest\.blockers\.map/);
+  assert.match(qaRoute, /Native file proof allowed/);
+  assert.match(qaRoute, /Records local files must stay device-verified/);
   assert.match(qaRoute, /buildRouteVisualProofManifest/);
   assert.match(qaRoute, /routeVisualProofManifest/);
   assert.match(qaRoute, /Route visual proof manifest/);
@@ -5367,6 +5374,14 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
       (check) =>
         check.label ===
           "records local file handoff proof is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label ===
+          "records local file handoff proof manifest is source-backed" &&
         check.status === "PASS",
     ),
   );

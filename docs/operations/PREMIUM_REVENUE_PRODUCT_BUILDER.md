@@ -2834,6 +2834,18 @@ behavior, Android content URI or saved-file proof, fallback copy, and explicit
 proof path for HTML/SVG files; real iOS/Android screenshots/share-dialog
 evidence still must be attached before the handoff is device-verified.
 
+The focused Records local-file handoff proof manifest pass makes that same
+native file-proof mission explicit before Evidence Capture. The route
+`/care-twin-qa?qaSurface=records-local-file-handoff` now shows Care Pass Report
+History local HTML, Dog ID local HTML credential, Dog ID SVG image source,
+native share-sheet behavior, Android content URI or saved-file proof, fallback
+copy, and generated PDF/PNG/provider boundary rows with blockers and
+`Native file proof allowed: No`. The JSON mobile beta doctor reports `records
+local file handoff proof manifest is source-backed`, but this is visibility
+only; it does not prove native iOS or Android share sheets, Android content URI
+handoff, generated PDF/PNG readiness, provider-backed storage, cloud sync,
+public launch, or Apollo sign-off.
+
 The report binary export proof packet pass keeps the next export boundary
 truthful before anyone claims native/provider readiness. `reportBinaryExportProof.ts`
 now names the required proof for local Care Pass PDF and Dog ID PNG artifact

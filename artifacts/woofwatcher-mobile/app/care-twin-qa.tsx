@@ -32,6 +32,7 @@ import { buildPaymentsProviderProofManifest } from "@/lib/paymentsProviderProof"
 import { buildStoreAccountsProofManifest } from "@/lib/storeAccountsProof";
 import { buildAccountDeletionProofManifest } from "@/lib/accountDeletionProof";
 import { buildSupportLegalReadinessProofManifest } from "@/lib/supportRunbook";
+import { buildRecordsLocalFileHandoffProofManifest } from "@/lib/reportArtifactExportFile";
 import {
   buildRouteVisualProofManifest,
   buildStoreSubmissionScreenshotQaSurfaces,
@@ -405,6 +406,13 @@ export default function CareTwinQaScreen() {
   const focusedQaEvidence = focusedQaTarget ? surfaceEvidenceById[focusedQaTarget.target.surfaceId] ?? [] : [];
   const authSetupProofManifest = useMemo(
     () => (focusedQaTarget?.surface.id === "auth-setup-onboarding-proof" ? buildAuthSetupProofManifest({}) : null),
+    [focusedQaTarget],
+  );
+  const recordsLocalFileHandoffProofManifest = useMemo(
+    () =>
+      focusedQaTarget?.surface.id === "records-local-file-handoff"
+        ? buildRecordsLocalFileHandoffProofManifest({})
+        : null,
     [focusedQaTarget],
   );
   const routeVisualProofManifest = useMemo(
@@ -813,6 +821,81 @@ export default function CareTwinQaScreen() {
                     ) : null}
                     <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       This manifest does not configure Clerk, approve OAuth redirects, prove iOS or Android Auth/Setup screenshots, enable provider-backed household creation, sync invites, clear store approval, launch publicly, or replace Apollo sign-off.
+                    </Text>
+                  </View>
+                ) : null}
+                {recordsLocalFileHandoffProofManifest ? (
+                  <View style={[s.routeVisualManifest, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.routeVisualManifestHeader}>
+                      <View style={s.routeVisualManifestCopy}>
+                        <Text style={[s.routeVisualManifestTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                          Records local file handoff proof manifest
+                        </Text>
+                        <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Records local files must stay device-verified until Care Pass Report History local HTML, Dog ID local HTML/SVG, native share-sheet behavior, Android content URI, fallback copy, and generated PDF/PNG/provider boundaries are attached.
+                        </Text>
+                      </View>
+                      <QaBadge
+                        label={recordsLocalFileHandoffProofManifest.statusLabel}
+                        tone={recordsLocalFileHandoffProofManifest.nativeFileProofAllowed ? colors.sage : colors.amber}
+                      />
+                    </View>
+                    <View style={s.routeVisualManifestStats}>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Ready
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {recordsLocalFileHandoffProofManifest.readyCount}/{recordsLocalFileHandoffProofManifest.totalCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Open
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {recordsLocalFileHandoffProofManifest.openCount}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Native file proof allowed
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {recordsLocalFileHandoffProofManifest.nativeFileProofAllowed ? "Yes" : "No"}
+                        </Text>
+                      </View>
+                    </View>
+                    {recordsLocalFileHandoffProofManifest.items.map((item) => (
+                      <View key={`records-local-file-handoff-manifest-${item.label}`} style={[s.routeVisualManifestRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={s.routeVisualManifestRouteLine}>
+                          <Text style={[s.routeVisualManifestRouteName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {item.label}
+                          </Text>
+                          <QaBadge label={item.status === "ready" ? "Ready" : "Blocked"} tone={item.status === "ready" ? colors.sage : colors.amber} />
+                        </View>
+                        <Text style={[s.routeVisualManifestExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {item.requiredEvidence}
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatusLine, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Evidence: {item.evidenceAttached.length ? item.evidenceAttached.join(", ") : "Not attached"}
+                        </Text>
+                      </View>
+                    ))}
+                    {recordsLocalFileHandoffProofManifest.blockers.length ? (
+                      <View style={[s.routeVisualManifestBlockers, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                        {recordsLocalFileHandoffProofManifest.blockers.map((blocker) => (
+                          <View key={`records-local-file-handoff-blocker-${blocker}`} style={s.betaRunStep}>
+                            <View style={[s.betaRunStepDot, { backgroundColor: colors.amber }]} />
+                            <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {blocker}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      This manifest does not prove native iOS or Android share sheets, Android content URI handoff, fallback copy, generated PDF/PNG readiness, provider-backed storage, cloud sync, public launch, or Apollo sign-off.
                     </Text>
                   </View>
                 ) : null}
