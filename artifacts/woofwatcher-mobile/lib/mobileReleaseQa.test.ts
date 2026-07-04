@@ -648,7 +648,8 @@ test("adds a launch-critical payments provider proof target", () => {
   assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Provider Launch Setup/);
   assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Provider Launch Setup/);
   assert.match(surface.requiredEvidence.join("\n"), /Plus and Family product ids/);
-  assert.match(surface.requiredEvidence.join("\n"), /sandbox purchase, renewal, cancel, refund, and expired receipt/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS App Store and Android Google Play sandbox purchase, renewal, cancel, refund, expired receipt proof/);
+  assert.match(surface.requiredEvidence.join("\n"), /restorePurchaseConfirmed/);
   assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
     "Provider Launch Setup payments gate",
     "Product catalog and billing path",

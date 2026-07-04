@@ -202,8 +202,9 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Attach Expo push project id, APNs credentials, Firebase\/FCM credentials/);
   assert.match(text, /permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback/);
   assert.match(text, /Open focused payments provider target: \/care-twin-qa\?qaSurface=payments-provider-proof/);
-  assert.match(text, /Attach Plus and Family product ids, billing path decision, sandbox purchase\/renewal\/cancel\/refund\/expired receipt proof/);
-  assert.match(text, /restore purchases behavior, entitlement mapping, refund\/support policy, and checkout-gate proof before enabling paid checkout/);
+  assert.match(text, /Attach Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox purchase\/renewal\/cancel\/refund\/expired receipt proof/);
+  assert.match(text, /JSON receipt files or URIs with product id, transaction id, byte size, and restorePurchaseConfirmed/);
+  assert.match(text, /entitlement mapping, refund\/support policy, and checkout-gate proof before enabling paid checkout/);
   assert.match(text, /Open focused store accounts target: \/care-twin-qa\?qaSurface=store-accounts-proof/);
   assert.match(text, /Attach Apple Developer team id, App Store Connect app record, Google Play package record/);
   assert.match(text, /reviewer access\/test credentials, screenshots\/metadata ownership, and release role approval before claiming store submission/);

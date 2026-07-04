@@ -1584,6 +1584,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo approves the billing path, App Store/Google Play/Stripe provider credentials are available, or sandbox receipt evidence is ready to attach.
 
+### 2026-07-04: Payments Receipt Proof Must Be Store-Specific
+
+Decision: WoofWatcher Plus checkout cannot move from blocked to reviewable from generic payment approval flags. The payments proof manifest must require separate iOS App Store and Android Google Play sandbox receipt evidence, with platform/store naming, JSON MIME, byte size, product id, transaction id, purchase, renewal, cancellation, refund, expiration, and restore proof.
+
+Reason: billing is a money and trust boundary. A helper note that says receipts are approved is not enough to prove App Store or Google Play purchase and restore behavior, and it would let local preview state look too close to a real paid subscription.
+
+Consequences:
+
+- The Sandbox receipts, Entitlements and restore, and Checkout gate rows stay blocked until both platform/store receipt proofs are attached.
+- Share Beta Handoff, Release Smoke Checklist, native QA tooling doctor, JSON mobile beta doctor, and Payments Provider Proof QA copy all name the store-specific evidence shape.
+- Paid checkout, active paid entitlements, App Store/Google Play purchase flows, refund/tax obligations, store approval, public launch, and Apollo checkout sign-off remain blocked.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves the billing path and real App Store/Google Play sandbox receipt evidence is available for attachment.
+
 ### 2026-07-04: Records Native File Proof Requires Device Evidence Before Approval
 
 Decision: the focused Records local-file mission gets a source-backed proof manifest, but `Native file proof allowed` remains `No` until Care Pass local HTML, Dog ID local HTML, Dog ID SVG, native share-sheet behavior, Android content URI or saved-file proof, fallback copy, and generated PDF/PNG/provider boundary evidence are attached from real device QA.

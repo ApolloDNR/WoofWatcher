@@ -76,9 +76,9 @@ The beta must not claim:
 - When reviewing Provider Launch Setup's WoofGuide AI row, use `Open proof mission` to jump to the same WoofGuide AI Provider Proof mission. This is a shortcut only; it does not configure OpenAI, approve a model, enable live provider-backed AI, allow automatic care-log writes, clear source/citation review, or replace veterinary/safety approval.
 - When the current mission is `Push Notifications Proof`, open `/care-twin-qa?qaSurface=push-notifications-proof`, then capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, platform/provider-named iOS APNs and Android FCM delivery evidence, and missed-notification fallback before claiming reminder delivery.
 - When reviewing Reminder Center, use Calendar's `Open push proof` action to jump to the same Push Notifications Proof mission. This is a shortcut only; local preference intent still does not prove provider configuration or delivered reminders.
-- When the current mission is `Payments Provider Proof`, open `/care-twin-qa?qaSurface=payments-provider-proof`, then capture Plus and Family product ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired receipt proof, restore purchases, entitlement mapping, household role access, refund/support policy, and checkout-gate proof before enabling paid checkout.
+- When the current mission is `Payments Provider Proof`, open `/care-twin-qa?qaSurface=payments-provider-proof`, then capture Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox purchase/renewal/cancel/refund/expired JSON receipt proof, restore purchases, entitlement mapping, household role access, refund/support policy, and checkout-gate proof before enabling paid checkout.
 - When reviewing Provider Launch Setup's WoofWatcher Plus payments row, use `Open proof mission` to jump to the same Payments Provider Proof mission. This is a shortcut only; it does not approve tiers, configure store or Stripe billing, prove receipts, enable checkout, clear store approval, or replace Apollo sign-off.
-- On Premium, confirm the `Payments proof manifest` shows Product catalog, Billing path decision, Sandbox receipts, Entitlements and restore, Refund and support policy, and Checkout gate rows. The manifest must keep `Checkout disabled` visible until real billing/provider proof, refund/support policy approval, and Apollo checkout approval are attached.
+- On Premium, confirm the `Payments proof manifest` shows Product catalog, Billing path decision, Sandbox receipts, Entitlements and restore, Refund and support policy, and Checkout gate rows. The manifest must keep `Checkout disabled` visible until real billing/provider proof, iOS App Store and Android Google Play receipt/restore evidence, refund/support policy approval, and Apollo checkout approval are attached.
 - When the current mission is `Store Accounts Proof`, open `/care-twin-qa?qaSurface=store-accounts-proof`, then capture Apple Developer team id, App Store Connect app record, Google Play package record, bundle/signing ownership, reviewer access/test credentials, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.
 - When reviewing Provider Launch Setup's Apple and Google store accounts row, use `Open proof mission` to jump to the same Store Accounts Proof mission. This is a shortcut only; it does not create accounts, approve metadata/screenshots, submit App Review or Play review, clear legal/privacy approval, or replace Apollo sign-off.
 - When the current mission is `Account Deletion Proof`, open `/care-twin-qa?qaSurface=account-deletion-proof`, then capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, cancellation behavior, and legal/store approval before claiming destructive deletion readiness.
@@ -157,8 +157,8 @@ Shippable for internal beta after local verification passes:
   share/reopen and provider storage proof blocked until device evidence exists.
 - The mobile beta doctor also verifies `premium payments proof manifest is
   source-backed`, so Premium must display product catalog, billing path,
-  sandbox receipt, restore-purchase, refund/support, and checkout-gate blockers
-  before paid checkout can be enabled.
+  platform-specific sandbox receipt, restore-purchase, refund/support, and
+  checkout-gate blockers before paid checkout can be enabled.
 - The mobile beta doctor also verifies `auth/setup proof manifest is
   source-backed`, so Auth gateway and Setup must display Clerk, redirect,
   native screenshot, setup local-preview, household sync, and launch blockers
@@ -312,8 +312,9 @@ Current environment note:
   Clerk/provider auth.
 - Provider Launch Setup's WoofWatcher Plus payments gate now carries a
   `WoofWatcher Plus payments proof packet` requiring Plus and Family product
-  ids, the App Store/Google Play/Stripe or web checkout decision, sandbox
-  receipt tests, entitlement mapping, refund/support policy, and checkout-gate
+  ids, the App Store/Google Play/Stripe or web checkout decision, iOS App Store
+  and Android Google Play sandbox receipt tests, entitlement mapping,
+  refund/support policy, and checkout-gate
   proof before paid checkout can be enabled. Share Beta Handoff prints those
   proof steps, and the payments row now opens
   `/care-twin-qa?qaSurface=payments-provider-proof` for focused helper capture,
@@ -389,8 +390,9 @@ Current environment note:
 - The Release Smoke Checklist, Share Beta Handoff, live-preview verifier, JSON
   mobile beta doctor, and native QA tooling doctor now also name
   `/care-twin-qa?qaSurface=payments-provider-proof` for Plus and Family product
-  ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired
-  receipt proof, restore purchases, entitlement mapping, refund/support policy,
+  ids, billing path decision, iOS App Store and Android Google Play sandbox
+  purchase/renewal/cancel/refund/expired JSON receipt proof, restore purchases,
+  entitlement mapping, refund/support policy,
   and checkout-gate evidence before paid checkout can be enabled. More's Plus
   payments provider row opens the same proof mission; this is a helper shortcut,
   not payments provider configuration, sandbox receipt proof, money movement, or

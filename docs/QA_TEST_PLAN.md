@@ -1755,7 +1755,7 @@ Latest local evidence, 2026-07-04:
 
 ## Payments Provider Proof Target
 
-Latest local evidence, 2026-07-03:
+Latest local evidence, 2026-07-04:
 
 - `/care-twin-qa?qaSurface=payments-provider-proof` is now a launch-critical
   focused mission for WoofWatcher Plus payments evidence before any paid
@@ -1783,6 +1783,13 @@ Latest local evidence, 2026-07-03:
   path, sandbox receipts, entitlements/restore, refund/support, and checkout
   gate rows, ready/open counts, `Checkout allowed: No`, blockers, and the
   money-movement boundary before Evidence Capture.
+- The manifest now keeps Sandbox receipts at `0/2 sandbox receipt proofs ready`,
+  Entitlements and restore at `0/2 restore proofs ready`, and Checkout disabled
+  when the old boolean approvals are true but iOS App Store and Android Google
+  Play receipt evidence is missing. To open those rows, each JSON receipt proof
+  must name the platform/store in the file name or URI, include a positive byte
+  size, product id, transaction id, purchase, renewal, cancellation, refund,
+  expiration, and `restorePurchaseConfirmed`.
 - Focused proof passed `mobileReleaseQa.test.ts`,
   `betaHandoffPacket.test.ts`, `mobileReleaseSmokeChecklist.test.ts`, and
   `mobileReadiness.test.ts` with `138/138` tests. The broader mobile/PWA/care
@@ -1812,6 +1819,18 @@ Latest local evidence, 2026-07-03:
   `.expo-smoke` export. This is web-preview proof only; it does not approve
   native screenshots, provider payments setup, sandbox receipts, money movement,
   store approval, public launch, or Apollo sign-off.
+- Fresh local verification for the stricter receipt gate passed
+  `paymentsProviderProof.test.ts`, `mobileReleaseQa.test.ts`,
+  `betaHandoffPacket.test.ts`, `mobileReleaseSmokeChecklist.test.ts`, and
+  `mobileReadiness.test.ts` with `148/148`, direct JSON mobile beta doctor
+  source-backed checks including `payments provider proof target is
+  source-backed` and `payments provider proof manifest is source-backed`, the
+  full zero-dependency API/mobile/PWA/care-domain suite `569/569`, root
+  TypeScript, and mobile TypeScript. Direct JSON mobile beta doctor remains
+  `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to
+  `10.24.0`; direct native QA tooling doctor remains `BLOCKED` because Android
+  `adb`, Android `emulator`, Java, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and
+  `JAVA_HOME` are unavailable.
 
 ## Store Accounts Proof Manifest
 

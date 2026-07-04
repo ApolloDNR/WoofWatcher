@@ -119,7 +119,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture Supabase migration/backfill, active-household RLS, retention/export/deletion policy, and mobile full-refresh sign-off before enabling incremental sync.",
   "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and capture OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling before enabling live AI.",
   "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, platform/provider-named iOS APNs and Android FCM delivery QA, and missed notification fallback before claiming reminder delivery.",
-  "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
+  "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox receipt JSON proof, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
   "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, reviewer access, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.",
   "Open /care-twin-qa?qaSurface=account-deletion-proof and capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before enabling destructive account deletion.",
   "Open /care-twin-qa?qaSurface=support-legal-readiness-proof and capture support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
@@ -599,7 +599,7 @@ check(
   "payments provider proof packet is source-backed",
   paymentsProviderProofPacketIsSourceBacked,
   paymentsProviderProofPacketIsSourceBacked
-    ? "Payments readiness requires product ids, billing path, sandbox receipts, entitlements, refund/support policy, and checkout gate proof through Provider Launch Setup and Share Beta Handoff"
+    ? "Payments readiness requires product ids, billing path, iOS App Store and Android Google Play sandbox receipts, entitlements, refund/support policy, and checkout gate proof through Provider Launch Setup and Share Beta Handoff"
     : "keep payments proof modeled in paymentsProviderProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
@@ -624,7 +624,7 @@ check(
   "premium payments proof manifest is source-backed",
   premiumPaymentsProofManifestIsSourceBacked,
   premiumPaymentsProofManifestIsSourceBacked
-    ? "Premium shows product catalog, billing path, sandbox receipt, restore purchase, refund/support, and checkout blockers before paid checkout can be enabled"
+    ? "Premium shows product catalog, billing path, platform-specific sandbox receipt, restore purchase, refund/support, and checkout blockers before paid checkout can be enabled"
     : "keep Premium wired to buildPaymentsProviderProofManifest so checkout stays blocked until real billing proof is attached",
 );
 
@@ -1428,7 +1428,8 @@ const paymentsProviderProofTargetIsSourceBacked = includesAll(paymentsProviderPr
   ])
   && includesAll(betaHandoffPacketSource, [
     "Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
-    "Attach Plus and Family product ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired receipt proof",
+    "Attach Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox purchase/renewal/cancel/refund/expired receipt proof",
+    "restorePurchaseConfirmed",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused payments provider proof target",
@@ -1464,6 +1465,12 @@ const paymentsProviderProofManifestIsSourceBacked = includesAll(careTwinQaRouteS
     "buildPaymentsProviderProofManifest",
     "Product catalog",
     "Billing path decision",
+    "sandboxReceiptEvidence",
+    "sandbox receipt proofs ready",
+    "restore proofs ready",
+    "iOS App Store sandbox receipt proof",
+    "Android Google Play sandbox receipt proof",
+    "restorePurchaseConfirmed",
     "Sandbox purchase, renewal, cancel, refund, and expired receipt",
     "restore purchases",
     "Refund and support policy",

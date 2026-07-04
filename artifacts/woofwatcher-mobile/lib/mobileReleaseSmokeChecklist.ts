@@ -285,9 +285,9 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Focused payments provider proof target",
             detail:
-              "Open /care-twin-qa?qaSurface=payments-provider-proof and confirm Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before paid checkout is enabled.",
+              "Open /care-twin-qa?qaSurface=payments-provider-proof and confirm Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before paid checkout is enabled.",
             proof:
-              "Attach Plus and Family product ids, billing path proof, sandbox purchase/renewal/cancel/refund/expired receipt proof, restore purchases behavior, entitlement mapping, refund/support policy, and Apollo approval; checkout stays disabled until this proof exists.",
+              "Attach Plus and Family product ids, billing path proof, iOS App Store and Android Google Play sandbox purchase/renewal/cancel/refund/expired JSON receipt proof with product id, transaction id, byte size, and restorePurchaseConfirmed, entitlement mapping, refund/support policy, and Apollo approval; checkout stays disabled until this proof exists.",
             status: "required",
           },
           {

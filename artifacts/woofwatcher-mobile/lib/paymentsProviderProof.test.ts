@@ -103,7 +103,7 @@ test("builds a Premium payments proof manifest before checkout can be enabled", 
       "Checkout gate",
     ],
   );
-  assert.equal(manifest.rows[2]?.value, "Receipts pending");
+  assert.equal(manifest.rows[2]?.value, "0/2 sandbox receipt proofs ready");
   assert.match(manifest.rows[2]?.detail ?? "", /purchase, renewal, cancel, refund, and expired receipt/);
   assert.match(manifest.rows[3]?.detail ?? "", /restore purchases/);
   assert.equal(manifest.rows[5]?.value, "Checkout disabled");
@@ -113,4 +113,83 @@ test("builds a Premium payments proof manifest before checkout can be enabled", 
   assert.ok(manifest.blockers.some((blocker) => /restore purchases/i.test(blocker)));
   assert.ok(manifest.blockers.some((blocker) => /refund and support/i.test(blocker)));
   assert.ok(manifest.blockers.some((blocker) => /Apollo approval/i.test(blocker)));
+});
+
+test("keeps checkout blocked when payment approvals lack store receipt evidence", async () => {
+  const mod = await import("./paymentsProviderProof.ts").catch(() => null);
+  assert.equal(typeof mod?.buildPaymentsProviderProofManifest, "function");
+
+  const manifest = mod.buildPaymentsProviderProofManifest({
+    productCatalogApproved: true,
+    billingPathApproved: true,
+    sandboxReceiptsApproved: true,
+    entitlementMappingApproved: true,
+    refundSupportApproved: true,
+    checkoutGateApproved: true,
+  });
+
+  assert.equal(manifest.status, "blocked");
+  assert.equal(manifest.rows[2]?.status, "blocked");
+  assert.equal(manifest.rows[3]?.status, "blocked");
+  assert.equal(manifest.rows[5]?.status, "blocked");
+  assert.equal(manifest.rows[2]?.value, "0/2 sandbox receipt proofs ready");
+  assert.equal(manifest.rows[3]?.value, "0/2 restore proofs ready");
+  assert.equal(manifest.rows[5]?.value, "Checkout disabled");
+  assert.match(manifest.blockers.join("\n"), /iOS App Store sandbox receipt proof/);
+  assert.match(manifest.blockers.join("\n"), /Android Google Play sandbox receipt proof/);
+  assert.match(manifest.blockers.join("\n"), /restore purchase proof/);
+});
+
+test("allows checkout review only with platform-specific receipt and restore proof", async () => {
+  const mod = await import("./paymentsProviderProof.ts").catch(() => null);
+  assert.equal(typeof mod?.buildPaymentsProviderProofManifest, "function");
+
+  const manifest = mod.buildPaymentsProviderProofManifest({
+    productCatalogApproved: true,
+    billingPathApproved: true,
+    sandboxReceiptsApproved: true,
+    entitlementMappingApproved: true,
+    refundSupportApproved: true,
+    checkoutGateApproved: true,
+    sandboxReceiptEvidence: [
+      {
+        platform: "ios",
+        store: "app-store",
+        fileName: "ios-app-store-family-sandbox-receipt.json",
+        uri: "file:///payments/ios-app-store-family-sandbox-receipt.json",
+        mimeType: "application/json",
+        byteSize: 4096,
+        productId: "woofwatcher.family.monthly",
+        transactionId: "ios-test-transaction-123",
+        includesPurchase: true,
+        includesRenewal: true,
+        includesCancellation: true,
+        includesRefund: true,
+        includesExpiration: true,
+        restorePurchaseConfirmed: true,
+      },
+      {
+        platform: "android",
+        store: "google-play",
+        fileName: "android-google-play-family-sandbox-receipt.json",
+        uri: "file:///payments/android-google-play-family-sandbox-receipt.json",
+        mimeType: "application/json",
+        byteSize: 5120,
+        productId: "woofwatcher.family.monthly",
+        transactionId: "android-test-transaction-456",
+        includesPurchase: true,
+        includesRenewal: true,
+        includesCancellation: true,
+        includesRefund: true,
+        includesExpiration: true,
+        restorePurchaseConfirmed: true,
+      },
+    ],
+  });
+
+  assert.equal(manifest.status, "ready");
+  assert.equal(manifest.rows[2]?.value, "2/2 sandbox receipt proofs ready");
+  assert.equal(manifest.rows[3]?.value, "2/2 restore proofs ready");
+  assert.equal(manifest.rows[5]?.value, "Checkout gate approved");
+  assert.deepEqual(manifest.blockers, []);
 });

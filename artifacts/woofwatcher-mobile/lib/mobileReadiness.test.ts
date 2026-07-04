@@ -5603,7 +5603,9 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
       (action) =>
         action.includes("/care-twin-qa?qaSurface=payments-provider-proof") &&
         action.includes("Plus and Family product ids") &&
-        action.includes("sandbox receipts") &&
+        action.includes("iOS App Store") &&
+        action.includes("Android Google Play") &&
+        action.includes("sandbox receipt JSON proof") &&
         action.includes("checkout-gate proof"),
     ),
   );

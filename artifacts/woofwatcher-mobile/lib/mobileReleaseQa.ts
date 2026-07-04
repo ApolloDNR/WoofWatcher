@@ -633,36 +633,36 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     route: "/more",
     priority: "launch-critical",
     goal:
-      "Prove the Plus and Family product ids, billing path, sandbox receipt tests, entitlement mapping, refund/support policy, and checkout gate exist before paid checkout can be enabled.",
+      "Prove the Plus and Family product ids, billing path, iOS App Store and Android Google Play sandbox receipt and restore tests, entitlement mapping, refund/support policy, and checkout gate exist before paid checkout can be enabled.",
     devicePrompt:
       "In Provider Launch Setup and Premium on iOS and Android, collect the WoofWatcher Plus payments proof packet without enabling money movement or treating local preview state as paid.",
     setupSteps: [
       "Use local preview data and keep Plus payments marked open unless real store or Stripe provider proof is attached.",
       "Open More, then Provider Launch Setup, and inspect the Plus payments gate.",
-      "Open Premium and confirm checkout stays disabled until product ids, billing path, sandbox receipts, restore purchases, support/refund terms, and Apollo approval are attached.",
+      "Open Premium and confirm checkout stays disabled until product ids, billing path, iOS App Store and Android Google Play sandbox receipts, restore purchases, support/refund terms, and Apollo approval are attached.",
       "Keep every paid feature preview truthful: local entitlement previews do not count as active paid subscriptions.",
     ],
     verificationSteps: [
       "Confirm Plus payments lists the WoofWatcher Plus payments proof packet.",
       "Confirm Product catalog proof requires Plus and Family product ids, public price, currency, trial or intro offer decision, and Apollo-approved tier packaging.",
       "Confirm Billing path decision proof names App Store, Google Play, and Stripe or web checkout policy before any checkout surface is enabled.",
-      "Confirm Sandbox receipt proof requires purchase, renewal, cancel, refund, expired receipt, and restore purchases behavior for each enabled billing path.",
+      "Confirm Sandbox receipt proof requires iOS App Store and Android Google Play JSON receipt evidence with platform/store naming, product id, transaction id, byte size, purchase, renewal, cancel, refund, expired receipt, and restorePurchaseConfirmed.",
       "Confirm Entitlement mapping proof covers Plus and Family feature gates, receipt-to-entitlement mapping, household role access, cancellation, and expiration downgrade.",
       "Confirm Refund and support policy plus checkout gate proof are visible before marking Plus payments ready.",
     ],
     acceptanceCriteria: [
-      "paid checkout stays blocked until product catalog, billing path, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and Apollo approval are attached.",
+      "paid checkout stays blocked until product catalog, billing path, iOS App Store and Android Google Play sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and Apollo approval are attached.",
       "Premium and Provider Launch Setup never treat local preview state, owner-staged provider rows, or static plan copy as active paid entitlement proof.",
-      "restore purchases, cancellation, refund, expiration downgrade, and household role access rules are named before the payments gate can close.",
+      "restore purchases, cancellation, refund, expiration downgrade, household role access rules, and platform/store-specific receipt files are named before the payments gate can close.",
       "No screen initiates money movement, store checkout, Stripe checkout, or subscription enforcement until the provider proof is real.",
     ],
     failureEscalation:
-      "Mark Needs tune if the app enables money movement, hides sandbox receipt or restore-purchase proof, implies Plus or Family is active from local preview state, or closes the payments gate without refund/support and Apollo approval.",
+      "Mark Needs tune if the app enables money movement, hides iOS App Store or Android Google Play sandbox receipt or restore-purchase proof, implies Plus or Family is active from local preview state, or closes the payments gate without refund/support and Apollo approval.",
     requiredEvidence: [
       "iOS screenshot of Provider Launch Setup showing the Plus payments proof packet.",
       "Android screenshot of Provider Launch Setup showing Plus payments still blocked or fully evidenced.",
       "Note confirming Plus and Family product ids, price/currency, trial decision, App Store/Google Play/Stripe or web billing path, and Apollo tier approval.",
-      "Note confirming sandbox purchase, renewal, cancel, refund, and expired receipt proof, restore purchases behavior, entitlement mapping, refund/support policy, and checkout stays disabled until approval.",
+      "Note confirming iOS App Store and Android Google Play sandbox purchase, renewal, cancel, refund, expired receipt proof, restorePurchaseConfirmed, entitlement mapping, refund/support policy, and checkout stays disabled until approval.",
     ],
     routeChecklist: [
       {
@@ -683,8 +683,8 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         label: "Sandbox receipts and restore purchases",
         route: "/premium",
         expected:
-          "Confirm purchase, renewal, cancel, refund, expired receipt, restore purchases, and receipt-to-entitlement behavior are proven for every enabled billing path.",
-        proof: "sandbox receipt proof, restore purchases proof, and cancellation/expiration downgrade note.",
+          "Confirm purchase, renewal, cancel, refund, expired receipt, restore purchases, and receipt-to-entitlement behavior are proven with separate iOS App Store and Android Google Play JSON receipt evidence.",
+        proof: "iOS App Store and Android Google Play sandbox receipt proof, restore purchases proof, and cancellation/expiration downgrade note.",
       },
       {
         label: "Entitlements, refunds, and checkout gate",
