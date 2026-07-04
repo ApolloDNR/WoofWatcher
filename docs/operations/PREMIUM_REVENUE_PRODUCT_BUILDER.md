@@ -3727,6 +3727,27 @@ thread. This still does not configure OpenAI, approve model policy, enable live
 AI, approve automatic writes, clear source/citation review, clear
 veterinary/safety review, launch publicly, or replace Apollo sign-off.
 
+The PWA cloud sync proof pass closes the backend-url/sync-readiness overclaim.
+`buildCloudSyncPlan` now separates staged backend setup from structured
+`providerProofReady` evidence. A backend URL plus household id returns
+`provider_proof_pending`, not `ready_to_connect`, until structured proof covers
+Supabase project id, migration/backfill, active-household RLS,
+retention/export/deletion, dependency-complete build proof, mobile full-refresh
+sign-off, and Apollo approval. The mobile beta doctor now reports
+`PWA cloud sync proof guard is source-backed`. Fresh red/green verification
+first showed backend URL plus household id producing `ready_to_connect`, then
+passed PWA readiness `16/16`, mobile readiness `114/114`, direct JSON doctor
+source-backed checks, the full zero-dependency API/mobile/PWA/care-domain suite
+`589/589`, root TypeScript, mobile TypeScript, and `git diff --check`. Direct
+JSON mobile beta doctor remains truthfully `BLOCKED` on local pnpm `11.7.0`
+versus pinned `10.24.0` and missing Corepack. The implementation is pushed as
+`101fdf5` (`Require PWA cloud sync proof guard`), but fresh branch CI is still
+pending because the latest visible run list only shows earlier
+`workflow_dispatch` successes through run `28705671803`, which predates this
+commit. This still does not configure Supabase, run migrations, approve RLS,
+configure retention/export/deletion, prove dependency-complete builds, enable
+incremental sync, launch publicly, or replace Apollo sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

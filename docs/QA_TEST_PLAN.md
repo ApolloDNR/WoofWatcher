@@ -44,6 +44,20 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: PWA cloud sync proof hardening now keeps backend URL plus household id staged as `provider_proof_pending` until structured provider proof is attached.
+- PASS: `buildCloudSyncPlan` now requires Supabase project id, migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build proof, mobile full-refresh sign-off, and Apollo approval before returning `ready_to_connect`.
+- PASS: PWA readiness passed `16/16`.
+- PASS: Mobile readiness passed `114/114`.
+- PASS: Direct JSON mobile beta doctor reports `PWA cloud sync proof guard is source-backed` as `PASS`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `589/589`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Implementation commit `101fdf5` (`Require PWA cloud sync proof guard`) was pushed to `automation/premium-revenue-product-builder`.
+- BLOCKED: Fresh branch CI for `101fdf5` is pending; the latest visible run list still showed only earlier `workflow_dispatch` successes through run `28705671803`, which predates this implementation commit.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real Supabase project, migration/backfill, active-household RLS, retention/export/deletion policy, dependency-complete provider build, mobile full-refresh sign-off, public launch, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: PWA WoofGuide AI proof hardening now keeps a server OpenAI key signal staged as provider proof pending instead of presenting it as live AI.
 - PASS: The PWA no longer posts to `/api/care-helper` unless `assistantStatus.proofReady` is true from structured AI provider proof.
 - PASS: PWA readiness passed `15/15`.

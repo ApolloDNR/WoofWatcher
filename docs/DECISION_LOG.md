@@ -1968,6 +1968,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real push notification proof files or the app gains a provider-backed proof evidence service that can feed Calendar.
 
+### 2026-07-04: PWA Cloud Sync Requires Structured Provider Proof
+
+Decision: The PWA cloud sync plan cannot treat `backendConfigured`, a backend URL, or a household id as cross-device sync readiness. It must keep staged backend setup at `provider_proof_pending` until structured cloud sync provider proof covers Supabase project id, migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build proof, mobile full-refresh sign-off, and Apollo approval.
+
+Reason: Cloud sync is a privacy, data-loss, and household-trust boundary. If the PWA marks sync `ready_to_connect` from a URL and household id alone, it contradicts the focused Care-entry Provider Sync proof manifest and can imply durable provider-backed sync before migrations, RLS, retention/export/deletion, dependency build, or mobile adoption proof exists.
+
+Consequences:
+
+- `buildCloudSyncPlan` separates backend setup from `providerProofReady`.
+- Backend setup without structured proof returns `provider_proof_pending` and adds a structured cloud sync provider proof blocker.
+- Real Supabase configuration, migrations, RLS, retention/export/deletion, dependency-complete provider build, mobile full-refresh sign-off, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real care-entry/cloud sync provider proof files or the app gains a provider-backed proof evidence service that can feed PWA cloud sync planning.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
