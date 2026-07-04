@@ -1870,6 +1870,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real WoofGuide AI provider proof files or the app gains a provider-backed proof evidence service that can feed Privacy & Safety.
 
+### 2026-07-04: Privacy & Safety Account Deletion Requires Structured Proof
+
+Decision: Privacy & Safety cannot treat `accountDeletionEnabled` as enough to mark destructive account deletion ready. It must consume the Account deletion proof manifest and stay `blocked` until structured proof files cover route/auth, export-before-delete, data/object receipts, audit/support, recovery/cancellation, and legal/store approval.
+
+Reason: Privacy & Safety is the owner-facing account and data-control surface. If it shows deletion ready from a provider checkbox, it can contradict the focused Account Deletion Proof manifest and make a destructive data action look safer than it is.
+
+Consequences:
+
+- `deriveAccountSafetyPlan` accepts `accountDeletionEvidence` and calls `buildAccountDeletionProofManifest`.
+- Enabled account deletion without structured proof adds an account-deletion proof blocker instead of showing destructive deletion as ready.
+- Real deletion routes, reauthentication, export-before-delete, data/object deletion receipts, audit/support receipts, recovery/cancellation rules, legal/store approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real account-deletion proof files or the app gains a provider-backed proof evidence service that can feed Privacy & Safety.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

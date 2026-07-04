@@ -8,6 +8,7 @@ import {
   type AttachmentStorageProviderEvidence,
 } from "./attachmentManifest.ts";
 import { buildAiProviderProofManifest, type AiProviderProofEvidence } from "./aiProviderProof.ts";
+import { buildAccountDeletionProofManifest, type AccountDeletionProofEvidence } from "./accountDeletionProof.ts";
 
 export interface PrivacyExportProfile {
   name?: string;
@@ -144,6 +145,7 @@ export interface AccountSafetyPlanInput {
   storageProviderConfigured?: boolean;
   storageProviderEvidence?: AttachmentStorageProviderEvidence | null;
   accountDeletionEnabled?: boolean;
+  accountDeletionEvidence?: AccountDeletionProofEvidence | null;
   paymentsEnabled?: boolean;
 }
 
@@ -271,6 +273,8 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
   const launchBlockers: string[] = [];
 
   const accountDeletionEnabled = Boolean(input.accountDeletionEnabled);
+  const accountDeletionProof = buildAccountDeletionProofManifest(input.accountDeletionEvidence);
+  const accountDeletionReady = accountDeletionEnabled && accountDeletionProof.destructiveDeletionAllowed;
   const storageProviderConfigured = Boolean(input.storageProviderConfigured);
   const storageProviderProofReady = isAttachmentStorageProviderProofReady({
     storageProviderConfigured,
@@ -288,6 +292,8 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
 
   if (!accountDeletionEnabled) {
     launchBlockers.push("Self-serve account deletion is not enabled.");
+  } else if (!accountDeletionReady) {
+    launchBlockers.push("Self-serve account deletion requires structured account deletion proof before destructive deletion can be enabled.");
   }
   if (!storageProviderProofReady) {
     launchBlockers.push("Document storage provider requires structured storage proof evidence.");
@@ -309,12 +315,14 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
       action: "Share export",
     },
     accountDeletion: {
-      status: accountDeletionEnabled ? "ready" : "manual_required",
+      status: accountDeletionReady ? "ready" : accountDeletionEnabled ? "blocked" : "manual_required",
       title: "Account deletion",
-      detail: accountDeletionEnabled
+      detail: accountDeletionReady
         ? "Provider-backed deletion is available."
-        : "Self-serve deletion is not connected yet. Prepare a manual deletion request and export care data first.",
-      action: accountDeletionEnabled ? "Start deletion" : "Prepare request",
+        : accountDeletionEnabled
+          ? "Self-serve deletion stays blocked until structured account deletion proof covers route/auth, export-before-delete, data/object receipts, audit/support, recovery/cancellation, and legal/store approval."
+          : "Self-serve deletion is not connected yet. Prepare a manual deletion request and export care data first.",
+      action: accountDeletionReady ? "Start deletion" : accountDeletionEnabled ? "Review deletion proof" : "Prepare request",
     },
     aiDisclosure: {
       status: aiProviderProofReady ? "ready" : "limited",

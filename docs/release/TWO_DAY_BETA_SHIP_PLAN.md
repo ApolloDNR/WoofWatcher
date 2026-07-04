@@ -163,6 +163,10 @@ Shippable for internal beta after local verification passes:
   source-backed`, so Auth gateway and Setup must display structured Clerk,
   redirect/deep-link, native screenshot, setup local-preview, household sync,
   and Apollo auth launch blockers before native Auth/Setup proof can be claimed.
+- The mobile beta doctor also verifies `privacy safety account deletion proof
+  guard is source-backed`, so Privacy & Safety must keep destructive account
+  deletion blocked when only `accountDeletionEnabled` is staged and structured
+  account-deletion proof files are absent.
 
 Current environment note:
 
@@ -277,6 +281,16 @@ Current environment note:
   beta doctor, focused behavior tests, and Typecheck plus CI-safe builds all
   passing; real OpenAI proof files, live AI approval, veterinary safety review,
   public launch, and Apollo sign-off remain blocked.
+- Local proof also hardened Privacy & Safety's account deletion gate on
+  2026-07-04: `accountDeletionEnabled` no longer marks destructive account
+  deletion ready unless the structured Account deletion proof manifest allows
+  destructive deletion. Focused Privacy & Safety/mobile readiness tests passed
+  `122/122`, the full zero-dependency suite passed `584/584`, root/mobile
+  TypeScript passed, and the JSON mobile beta doctor reports `privacy safety
+  account deletion proof guard is source-backed` as `PASS`; real route/auth,
+  export-before-delete, data/object receipt, audit/support,
+  recovery/cancellation, legal/store approval, public launch, and Apollo
+  sign-off remain blocked.
 - Branch CI also proved the focused payments provider proof target on 2026-07-03:
   `WoofWatcher Verify` run `28676385615`, job `85050584288`, commit `3b5f4ab`,
   completed successfully in `3m3s` with Setup pnpm, Setup Node, install, JSON

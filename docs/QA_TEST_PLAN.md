@@ -44,6 +44,16 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: Privacy & Safety account deletion proof hardening now keeps account deletion `blocked` when `accountDeletionEnabled` is true but structured deletion proof files are absent.
+- PASS: Focused Privacy & Safety/mobile readiness tests passed `122/122`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `584/584`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Direct JSON mobile beta doctor reports `privacy safety account deletion proof guard is source-backed` as `PASS`.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real deletion route/auth proof, export-before-delete proof, data/object deletion receipt, audit/support receipt, recovery/cancellation proof, legal/store approval, public launch approval, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: Privacy & Safety AI proof hardening now keeps WoofGuide AI disclosure `limited` when `aiProviderConfigured` is true but structured provider proof files are absent.
 - PASS: Focused Privacy & Safety/mobile readiness tests passed `121/121`.
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `583/583`.

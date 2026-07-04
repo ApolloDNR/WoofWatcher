@@ -3596,6 +3596,23 @@ Corepack. This is proof gating only; it does not configure OpenAI, approve a
 model, enable live AI, approve automatic writes, clear veterinary/safety review,
 launch publicly, or replace Apollo sign-off.
 
+The Privacy & Safety account deletion structured-proof pass closes the
+destructive-action version of that owner-facing overclaim. `deriveAccountSafetyPlan`
+now accepts `accountDeletionEvidence`, calls `buildAccountDeletionProofManifest`,
+and keeps account deletion `blocked` when only `accountDeletionEnabled` is true.
+Readiness now requires structured proof files for deletion route/auth,
+export-before-delete, data/object receipts, audit/support, recovery/cancellation,
+and legal/store approval. Fresh red/green verification first showed enabled
+deletion plus complete storage/payments producing `ready`, then passed focused
+Privacy & Safety/mobile readiness tests `122/122`, the full zero-dependency
+API/mobile/PWA/care-domain suite `584/584`, root TypeScript, mobile TypeScript,
+and direct JSON doctor source-backed checks including `privacy safety account
+deletion proof guard is source-backed`. Direct JSON mobile beta doctor remains
+truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing
+Corepack. This is proof gating only; it does not configure deletion routes,
+prove reauthentication, attach export-before-delete or deletion receipts,
+approve legal/store policy, launch publicly, or replace Apollo sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

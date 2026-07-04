@@ -1066,6 +1066,32 @@ check(
     : "keep Privacy & Safety wired to the WoofGuide AI provider proof manifest so aiProviderConfigured alone cannot mark AI disclosure ready",
 );
 
+const privacySafetyAccountDeletionProofGuardIsSourceBacked = includesAll(privacySafetySource, [
+  "buildAccountDeletionProofManifest",
+  "AccountDeletionProofEvidence",
+  "accountDeletionEvidence",
+  "accountDeletionReady",
+  "Self-serve account deletion requires structured account deletion proof before destructive deletion can be enabled.",
+  "structured account deletion proof covers route/auth, export-before-delete, data/object receipts, audit/support, recovery/cancellation, and legal/store approval",
+])
+  && includesAll(accountDeletionProofSource, [
+    "buildAccountDeletionProofManifest",
+    "destructiveDeletionAllowed",
+    "deletion-route-auth",
+    "export-before-delete",
+    "data-object-deletion-receipt",
+    "audit-support-receipt",
+    "recovery-cancellation-policy",
+    "legal-store-approval",
+  ]);
+check(
+  "privacy safety account deletion proof guard is source-backed",
+  privacySafetyAccountDeletionProofGuardIsSourceBacked,
+  privacySafetyAccountDeletionProofGuardIsSourceBacked
+    ? "Privacy & Safety keeps destructive account deletion blocked until structured account-deletion proof files accompany provider enablement"
+    : "keep Privacy & Safety wired to the account deletion proof manifest so accountDeletionEnabled alone cannot mark deletion ready",
+);
+
 const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "Care Pass Report History storage status",
   "Saved on this device, or Ready to upload only after provider-approved storage",
