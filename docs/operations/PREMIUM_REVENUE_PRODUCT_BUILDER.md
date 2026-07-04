@@ -266,13 +266,15 @@ those proof steps under Production auth, and the JSON mobile beta doctor reports
 approve OAuth, enable household creation, or clear native Auth/Setup screenshots.
 
 The Auth/Setup proof manifest pass makes the first native-proof blocker visible
-on the Auth gateway and Setup route. `authProviderProof.ts` now builds rows for
-Clerk production app, Redirect and deep links, Native auth screenshots, Setup
-local-preview proof, Household sync boundary, and Launch gate; `auth-ui.tsx` and
-`setup.tsx` render those rows under `Auth/Setup proof manifest` and keep the
-visible status at `Native proof blocked` until real Clerk, native screenshot,
-household sync, and Apollo approval evidence is attached. The JSON mobile beta
-doctor reports `auth/setup proof manifest is source-backed`.
+on the Auth gateway, Setup route, and focused helper route. `authProviderProof.ts`
+now builds rows for Clerk production app, Redirect and deep links, Native auth
+screenshots, Setup local-preview proof, Household sync boundary, and Launch gate;
+`auth-ui.tsx`, `setup.tsx`, and
+`/care-twin-qa?qaSurface=auth-setup-onboarding-proof` render those rows under
+`Auth/Setup proof manifest` and keep the visible status at
+`Native proof blocked` / `Native proof allowed: No` until real Clerk, native
+screenshot, household sync, and Apollo approval evidence is attached. The JSON
+mobile beta doctor reports `auth/setup proof manifest is source-backed`.
 
 The WoofWatcher Plus payments proof pass turns the old payments one-line proof
 into a source-backed packet. `paymentsProviderProof.ts` now defines the Plus and
@@ -3068,6 +3070,16 @@ provider-backed auth, household creation, invite delivery, and cross-device sync
 blocked until real provider proof exists. This is device-capture routing and
 truth-boundary copy only, not native proof, provider approval, store approval,
 public launch, or Apollo sign-off.
+
+The focused Auth/Setup proof manifest route pass puts the same provider/native
+proof rows directly on that helper mission before Evidence Capture. The route now
+shows Clerk, redirect/deep-link, native Auth screenshot, Setup local-preview,
+household sync, and launch-gate rows with blockers and `Native proof allowed: No`;
+the JSON mobile beta doctor checks the focused route before reporting
+`auth/setup proof manifest is source-backed` as `PASS`. This is visibility and
+handoff proof only; it does not configure Clerk, approve OAuth, prove native
+iOS/Android screenshots, enable provider-backed household creation, sync invites,
+clear store approval, launch publicly, or replace Apollo sign-off.
 
 The care-entry provider sync proof manifest pass makes the focused database
 mission explicit instead of relying on a generic checklist. The route

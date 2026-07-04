@@ -89,7 +89,7 @@ Latest local evidence, 2026-06-23:
 - Premium plan packaging and checkout-disabled guard.
 - Premium entitlement policy for Free, Plus, and Family feature gates before checkout is enabled.
 - Premium payments proof manifest for product catalog, billing path, sandbox receipt, restore-purchase, refund/support, and checkout-gate blockers before paid checkout is enabled.
-- Auth/Setup proof manifest for Clerk production app, redirect/deep links, native Auth screenshots, Setup local-preview proof, household sync, and launch-gate blockers before native Auth/Setup proof is claimed.
+- Auth/Setup proof manifest for Clerk production app, redirect/deep links, native Auth screenshots, Setup local-preview proof, household sync, and launch-gate blockers on Auth, Setup, and the focused Auth/Setup helper route before native Auth/Setup proof is claimed.
 - Route visual proof manifest for Home, Log, Plans, Health, Records, and More native iOS/Android screenshot slots, QA note blocker, and web-preview-only boundary before visual sign-off is claimed.
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
@@ -1636,6 +1636,30 @@ Latest local evidence, 2026-07-03:
 - This handoff proof does not approve native screenshots, provider setup,
   generated PDF/image export, app-store approval, public launch, or Apollo
   sign-off.
+
+## Focused Auth/Setup Proof Manifest
+
+Latest local evidence, 2026-07-03:
+
+- `/care-twin-qa?qaSurface=auth-setup-onboarding-proof` now renders the
+  `Auth/Setup proof manifest` before Evidence Capture, using the same
+  source-backed manifest shown on the Auth gateway and Setup route.
+- The focused manifest shows Clerk production app, redirect and deep links,
+  native Auth screenshots, Setup local-preview proof, household sync boundary,
+  and launch gate rows with ready/open counts, `Native proof allowed: No`,
+  blockers, and the provider/native/Apollo boundary.
+- Focused red/green proof first failed on the missing focused-route manifest
+  and missing JSON doctor guard, then passed focused route/doctor readiness
+  `114/114`.
+- The full zero-dependency API/mobile/PWA/care-domain focused suite passed
+  `557/557`; root TypeScript and mobile TypeScript both passed.
+- Direct `scripts/mobile-beta-doctor.mjs --json` reports `auth/setup proof
+  manifest is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
+  only because local pnpm is `11.7.0` and the repo is pinned to `10.24.0`.
+- Direct `scripts/native-qa-tooling-doctor.mjs --json` still reports
+  `BLOCKED` because this Windows shell lacks Android `adb`, Android `emulator`,
+  Java, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`; real iOS/Android
+  Auth and Setup screenshots are still required.
 
 ## Payments Provider Proof Target
 

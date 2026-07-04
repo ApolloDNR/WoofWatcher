@@ -832,6 +832,12 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(releaseQa, /Route visual proof manifest/);
   assert.match(releaseQa, /Native proof blocked/);
   assert.match(releaseQa, /Web preview route proof can catch shell regressions/);
+  assert.match(qaRoute, /buildAuthSetupProofManifest/);
+  assert.match(qaRoute, /authSetupProofManifest/);
+  assert.match(qaRoute, /Auth\/Setup proof manifest/);
+  assert.match(qaRoute, /authSetupProofManifest\.rows\.map/);
+  assert.match(qaRoute, /authSetupProofManifest\.blockers\.map/);
+  assert.match(qaRoute, /Auth and Setup native proof must stay blocked/);
   assert.match(qaRoute, /buildRouteVisualProofManifest/);
   assert.match(qaRoute, /routeVisualProofManifest/);
   assert.match(qaRoute, /Route visual proof manifest/);

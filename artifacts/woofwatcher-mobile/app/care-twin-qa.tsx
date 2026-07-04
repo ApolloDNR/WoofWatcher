@@ -24,6 +24,7 @@ import {
   type CareTwinQaReview,
   type CareTwinQaReviewStatus,
 } from "@/lib/careTwinQaReport";
+import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import { deriveCareEntryProviderSyncProof } from "@/lib/careEntryProviderSyncProof";
 import { buildAiProviderProofManifest } from "@/lib/aiProviderProof";
 import { buildPushNotificationsProofManifest } from "@/lib/pushNotificationsProof";
@@ -402,6 +403,10 @@ export default function CareTwinQaScreen() {
         : colors.copper
     : colors.mutedForeground;
   const focusedQaEvidence = focusedQaTarget ? surfaceEvidenceById[focusedQaTarget.target.surfaceId] ?? [] : [];
+  const authSetupProofManifest = useMemo(
+    () => (focusedQaTarget?.surface.id === "auth-setup-onboarding-proof" ? buildAuthSetupProofManifest({}) : null),
+    [focusedQaTarget],
+  );
   const routeVisualProofManifest = useMemo(
     () =>
       focusedQaTarget?.surface.id === "route-visual-consistency"
@@ -739,6 +744,78 @@ export default function CareTwinQaScreen() {
                     </View>
                   ))}
                 </View>
+                {authSetupProofManifest ? (
+                  <View style={[s.routeVisualManifest, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={s.routeVisualManifestHeader}>
+                      <View style={s.routeVisualManifestCopy}>
+                        <Text style={[s.routeVisualManifestTitle, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                          Auth/Setup proof manifest
+                        </Text>
+                        <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          Auth and Setup native proof must stay blocked until Clerk, redirects, iOS/Android Auth gateway screenshots, Setup local-preview proof, household sync, and Apollo approval are attached.
+                        </Text>
+                      </View>
+                      <QaBadge
+                        label={authSetupProofManifest.status === "ready" ? "Native proof approved" : "Native proof blocked"}
+                        tone={authSetupProofManifest.status === "ready" ? colors.sage : colors.amber}
+                      />
+                    </View>
+                    <View style={s.routeVisualManifestStats}>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Ready
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {authSetupProofManifest.rows.filter((row) => row.status === "ready").length}/{authSetupProofManifest.rows.length}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Open
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {authSetupProofManifest.blockers.length}
+                        </Text>
+                      </View>
+                      <View style={[s.routeVisualManifestStat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[s.routeVisualManifestStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          Native proof allowed
+                        </Text>
+                        <Text style={[s.routeVisualManifestStatValue, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                          {authSetupProofManifest.status === "ready" ? "Yes" : "No"}
+                        </Text>
+                      </View>
+                    </View>
+                    {authSetupProofManifest.rows.map((row) => (
+                      <View key={`auth-setup-manifest-${row.label}`} style={[s.routeVisualManifestRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={s.routeVisualManifestRouteLine}>
+                          <Text style={[s.routeVisualManifestRouteName, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                            {row.label}
+                          </Text>
+                          <QaBadge label={row.value} tone={row.status === "ready" ? colors.sage : colors.amber} />
+                        </View>
+                        <Text style={[s.routeVisualManifestExpected, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                          {row.detail}
+                        </Text>
+                      </View>
+                    ))}
+                    {authSetupProofManifest.blockers.length ? (
+                      <View style={[s.routeVisualManifestBlockers, { backgroundColor: `${colors.amber}12`, borderColor: `${colors.amber}55` }]}>
+                        {authSetupProofManifest.blockers.map((blocker) => (
+                          <View key={`auth-setup-blocker-${blocker}`} style={s.betaRunStep}>
+                            <View style={[s.betaRunStepDot, { backgroundColor: colors.amber }]} />
+                            <Text style={[s.betaRunStepText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {blocker}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      This manifest does not configure Clerk, approve OAuth redirects, prove iOS or Android Auth/Setup screenshots, enable provider-backed household creation, sync invites, clear store approval, launch publicly, or replace Apollo sign-off.
+                    </Text>
+                  </View>
+                ) : null}
                 {routeVisualProofManifest ? (
                   <View style={[s.routeVisualManifest, { backgroundColor: colors.background, borderColor: colors.border }]}>
                     <View style={s.routeVisualManifestHeader}>

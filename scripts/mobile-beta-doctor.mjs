@@ -549,13 +549,21 @@ const authSetupProofManifestIsSourceBacked = includesAll(authProviderProofSource
     "authSetupProofManifest.rows.map",
     "authSetupProofManifest.blockers.map",
     "Native proof blocked",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "buildAuthSetupProofManifest",
+    "authSetupProofManifest",
+    "Auth/Setup proof manifest",
+    "authSetupProofManifest.rows.map",
+    "authSetupProofManifest.blockers.map",
+    "Auth and Setup native proof must stay blocked",
   ]);
 check(
   "auth/setup proof manifest is source-backed",
   authSetupProofManifestIsSourceBacked,
   authSetupProofManifestIsSourceBacked
-    ? "Auth gateway and Setup show Clerk, redirect, native screenshot, local-preview setup, household sync, and launch blockers before native auth/setup proof can be claimed"
-    : "keep Auth gateway and Setup wired to buildAuthSetupProofManifest before claiming native auth/setup proof",
+    ? "Auth gateway, Setup, and the focused helper route show Clerk, redirect, native screenshot, local-preview setup, household sync, and launch blockers before native auth/setup proof can be claimed"
+    : "keep Auth gateway, Setup, and /care-twin-qa?qaSurface=auth-setup-onboarding-proof wired to buildAuthSetupProofManifest before claiming native auth/setup proof",
 );
 
 const paymentsProviderProofPacketIsSourceBacked = includesAll(paymentsProviderProofSource, [
