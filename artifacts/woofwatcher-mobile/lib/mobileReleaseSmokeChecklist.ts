@@ -277,9 +277,9 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Focused push notifications proof target",
             detail:
-              "Open /care-twin-qa?qaSurface=push-notifications-proof and confirm Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, and delivery QA before reminder delivery is claimed.",
+              "Open /care-twin-qa?qaSurface=push-notifications-proof and confirm Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, and platform-specific native delivery QA before reminder delivery is claimed.",
             proof:
-              "Attach Expo push project id, APNs credential/device-token proof, Firebase/FCM delivery proof, permission preference copy, quiet hours and opt-out proof, delivery QA, and missed notification fallback.",
+              "Attach Expo push project id, APNs credential/device-token proof, Firebase/FCM delivery proof, permission preference copy, quiet hours and opt-out proof, missed notification fallback, and platform/provider-named native files or URIs such as ios-apns-reminder-delivered and android-fcm-reminder-delivered with image MIME, byte size, token registration, delivered reminder, permission, quiet-hours/opt-out, and fallback proof.",
             status: "required",
           },
           {

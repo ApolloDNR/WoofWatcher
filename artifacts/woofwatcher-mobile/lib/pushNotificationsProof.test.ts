@@ -99,3 +99,79 @@ test("builds a blocked push notifications proof manifest before reminder deliver
   assert.ok(manifest.blockers.some((blocker) => /quiet hours/.test(blocker)));
   assert.ok(manifest.blockers.some((blocker) => /missed notification fallback/.test(blocker)));
 });
+
+test("keeps reminder delivery blocked when push proof uses generic delivery strings", async () => {
+  const mod = await import("./pushNotificationsProof.ts").catch(() => null);
+  assert.ok(mod, "pushNotificationsProof module should exist");
+
+  const manifest = mod.buildPushNotificationsProofManifest({
+    expoPushProjectConfig: "Expo project id, EAS linkage, and push token registration are approved.",
+    appleApnsCredentials: "APNs credentials and iOS device registration are approved.",
+    firebaseFcmCredentials: "Firebase/FCM credentials and Android delivery are approved.",
+    permissionPromptPreferenceCopy: "Permission prompt and notification preferences approved.",
+    quietHoursOptOutBehavior: "Quiet hours and opt-out behavior approved.",
+    reminderDeliveryQaFallback: "iOS and Android reminders delivered with fallback.",
+  });
+
+  assert.equal(manifest.status, "blocked");
+  assert.equal(manifest.reminderDeliveryAllowed, false);
+  assert.equal(manifest.items[1]?.status, "blocked");
+  assert.equal(manifest.items[2]?.status, "blocked");
+  assert.equal(manifest.items[5]?.status, "blocked");
+  assert.match(manifest.items[1]?.evidenceAttached.join("\n") ?? "", /0\/1 iOS APNs delivery proof ready/);
+  assert.match(manifest.items[2]?.evidenceAttached.join("\n") ?? "", /0\/1 Android FCM delivery proof ready/);
+  assert.match(manifest.items[5]?.evidenceAttached.join("\n") ?? "", /0\/2 native delivery proofs ready/);
+  assert.match(manifest.blockers.join("\n"), /iOS APNs delivery proof/);
+  assert.match(manifest.blockers.join("\n"), /Android FCM delivery proof/);
+});
+
+test("allows reminder delivery review only with platform-specific native delivery proof", async () => {
+  const mod = await import("./pushNotificationsProof.ts").catch(() => null);
+  assert.ok(mod, "pushNotificationsProof module should exist");
+
+  const manifest = mod.buildPushNotificationsProofManifest({
+    expoPushProjectConfig: "Expo project id, EAS linkage, push token registration, and production channel are approved.",
+    appleApnsCredentials: "APNs credentials, production entitlement profile, and TestFlight registration are attached.",
+    firebaseFcmCredentials: "Firebase project, google-services config, and production sender ownership are attached.",
+    permissionPromptPreferenceCopy: "Permission prompt, denied fallback, and notification preference copy are approved.",
+    quietHoursOptOutBehavior: "Quiet hours, medication exception rules, and opt-out persistence are approved.",
+    reminderDeliveryQaFallback: "Missed notification fallback and Reminder Center recovery are approved.",
+    nativeDeliveryEvidence: [
+      {
+        platform: "ios",
+        provider: "apns",
+        fileName: "ios-apns-reminder-delivered.png",
+        uri: "file:///qa/ios-apns-reminder-delivered.png",
+        mimeType: "image/png",
+        byteSize: 18432,
+        pushTokenRegistered: true,
+        reminderDelivered: true,
+        capturesPermissionPreference: true,
+        capturesQuietHoursOrOptOut: true,
+        capturesFallbackPath: true,
+      },
+      {
+        platform: "android",
+        provider: "fcm",
+        fileName: "android-fcm-reminder-delivered.png",
+        uri: "file:///qa/android-fcm-reminder-delivered.png",
+        mimeType: "image/png",
+        byteSize: 19640,
+        pushTokenRegistered: true,
+        reminderDelivered: true,
+        capturesPermissionPreference: true,
+        capturesQuietHoursOrOptOut: true,
+        capturesFallbackPath: true,
+      },
+    ],
+  });
+
+  assert.equal(manifest.status, "ready-for-review");
+  assert.equal(manifest.reminderDeliveryAllowed, true);
+  assert.equal(manifest.readyCount, 6);
+  assert.equal(manifest.openCount, 0);
+  assert.match(manifest.items[1]?.evidenceAttached.join("\n") ?? "", /1\/1 iOS APNs delivery proof ready/);
+  assert.match(manifest.items[2]?.evidenceAttached.join("\n") ?? "", /1\/1 Android FCM delivery proof ready/);
+  assert.match(manifest.items[5]?.evidenceAttached.join("\n") ?? "", /2\/2 native delivery proofs ready/);
+  assert.deepEqual(manifest.blockers, []);
+});

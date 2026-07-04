@@ -356,7 +356,7 @@ export function buildBetaHandoffPacketShareText(
     "- Open focused WoofGuide AI provider target: /care-twin-qa?qaSurface=woofguide-ai-provider-proof.",
     "- Attach OpenAI key location, approved model policy, source/citation rules, and owner-review write gate, veterinary safety boundary and fallback/incident handling before enabling live AI.",
     "- Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
-    "- Attach Expo push project id, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before claiming reminder delivery.",
+    "- Attach Expo push project id, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before claiming reminder delivery. Native delivery evidence must include platform/provider-named files or URIs such as `ios-apns-reminder-delivered` and `android-fcm-reminder-delivered`, image MIME, byte size, token registration, delivered reminder, permission preference, quiet-hours or opt-out, and fallback proof.",
     "- Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
     "- Attach Plus and Family product ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired receipt proof, restore purchases behavior, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
     "- Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",

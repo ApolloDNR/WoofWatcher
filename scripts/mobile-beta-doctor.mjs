@@ -118,7 +118,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, native share/reopen proof, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
   "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture Supabase migration/backfill, active-household RLS, retention/export/deletion policy, and mobile full-refresh sign-off before enabling incremental sync.",
   "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and capture OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling before enabling live AI.",
-  "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before claiming reminder delivery.",
+  "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, platform/provider-named iOS APNs and Android FCM delivery QA, and missed notification fallback before claiming reminder delivery.",
   "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, sandbox receipts, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
   "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, reviewer access, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.",
   "Open /care-twin-qa?qaSurface=account-deletion-proof and capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before enabling destructive account deletion.",
@@ -1355,6 +1355,8 @@ const pushNotificationsProofTargetIsSourceBacked = includesAll(pushNotifications
   && includesAll(betaHandoffPacketSource, [
     "Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
     "Attach Expo push project id, APNs credentials, Firebase/FCM credentials",
+    "ios-apns-reminder-delivered",
+    "android-fcm-reminder-delivered",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused push notifications proof target",
@@ -1386,6 +1388,12 @@ const pushNotificationsProofManifestIsSourceBacked = includesAll(careTwinQaRoute
   && includesAll(pushNotificationsProofSource, [
     "buildPushNotificationsProofManifest",
     "reminderDeliveryAllowed",
+    "nativeDeliveryEvidence",
+    "1/1 iOS APNs delivery proof ready",
+    "1/1 Android FCM delivery proof ready",
+    "2/2 native delivery proofs ready",
+    "pushTokenRegistered",
+    "capturesFallbackPath",
     "Expo/APNs/FCM credentials",
     "permission copy",
     "quiet-hours opt-out behavior",

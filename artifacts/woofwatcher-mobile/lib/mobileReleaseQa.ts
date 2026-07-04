@@ -575,15 +575,15 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     verificationSteps: [
       "Confirm Push notifications lists the Push notifications proof packet.",
       "Confirm the packet requires Expo push project config, Expo push project id, EAS project linkage, and push token registration.",
-      "Confirm APNs credentials and iOS device token proof are required before iOS delivery is trusted.",
-      "Confirm Firebase/FCM credentials and Android delivery proof are required before Android delivery is trusted.",
-      "Confirm permission prompt copy, notification preferences, quiet hours, opt-out behavior, delivery QA, and missed notification fallback are required before reminder delivery can be claimed.",
+      "Confirm APNs credentials and iOS APNs delivery proof are required before iOS delivery is trusted.",
+      "Confirm Firebase/FCM credentials and Android FCM delivery proof are required before Android delivery is trusted.",
+      "Confirm permission prompt copy, notification preferences, quiet hours, opt-out behavior, platform/provider-named delivery QA, and missed notification fallback are required before reminder delivery can be claimed.",
       "Capture the Provider Launch Setup and Reminder Center states on iOS and Android without marking Push notifications ready unless the real proof artifacts are attached.",
     ],
     acceptanceCriteria: [
       "reminder delivery stays blocked until Expo push project id, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and fallback proof are attached.",
-      "iOS proof includes APNs credentials, production entitlement environment, device token registration, delivered notification proof, and denied-permission fallback copy.",
-      "Android proof includes Firebase/FCM credentials, notification channel behavior, token registration, delivered notification proof, and denied-permission fallback copy.",
+      "iOS proof includes APNs credentials, production entitlement environment, device token registration, a platform/provider-named delivered notification artifact, permission preference, quiet-hours or opt-out proof, and fallback copy.",
+      "Android proof includes Firebase/FCM credentials, notification channel behavior, token registration, a platform/provider-named delivered notification artifact, permission preference, quiet-hours or opt-out proof, and fallback copy.",
       "Quiet hours and opt-out behavior prove disabled notifications stay off, while missed reminders remain recoverable from Reminder Center.",
     ],
     failureEscalation:
@@ -591,8 +591,8 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     requiredEvidence: [
       "iOS screenshot of Provider Launch Setup showing the Push notifications proof packet.",
       "Android screenshot of Provider Launch Setup showing Push notifications still blocked or fully evidenced.",
-      "Note confirming Expo push project id, EAS project linkage, push token registration, APNs credentials, iOS device token proof, Firebase/FCM credentials, and Android delivery proof.",
-      "Note confirming permission prompt copy, notification preferences, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before enabling reminder delivery.",
+      "Note confirming Expo push project id, EAS project linkage, push token registration, APNs credentials, iOS APNs delivery proof, Firebase/FCM credentials, and Android FCM delivery proof.",
+      "Note confirming native delivery files or URIs include ios-apns and android-fcm naming, image MIME, byte size, token registration, delivered reminder, permission prompt copy, notification preferences, quiet hours, opt-out behavior, delivery QA, and missed notification fallback before enabling reminder delivery.",
     ],
     routeChecklist: [
       {
@@ -606,15 +606,15 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         label: "iOS APNs registration and delivery",
         route: "/calendar",
         expected:
-          "Confirm iOS reminder delivery has APNs credentials, device token registration, delivered notification proof, and denied-permission fallback copy.",
-        proof: "APNs credentials, iOS device token proof, delivered notification proof, and fallback note.",
+          "Confirm iOS reminder delivery has APNs credentials, device token registration, ios-apns-named delivered notification proof, permission preference, quiet-hours or opt-out proof, and fallback copy.",
+        proof: "APNs credentials, iOS device token proof, ios-apns delivered notification file or URI, permission/quiet-hours proof, and fallback note.",
       },
       {
         label: "Android FCM registration and delivery",
         route: "/calendar",
         expected:
-          "Confirm Android reminder delivery has Firebase/FCM credentials, notification channel behavior, token registration, delivered notification proof, and denied-permission fallback copy.",
-        proof: "Firebase/FCM credentials, Android delivery proof, notification channel note, and fallback note.",
+          "Confirm Android reminder delivery has Firebase/FCM credentials, notification channel behavior, token registration, android-fcm-named delivered notification proof, permission preference, quiet-hours or opt-out proof, and fallback copy.",
+        proof: "Firebase/FCM credentials, android-fcm delivered notification file or URI, notification channel note, permission/quiet-hours proof, and fallback note.",
       },
       {
         label: "Permission, quiet hours, and opt-out behavior",

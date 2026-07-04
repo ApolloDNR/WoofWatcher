@@ -1245,7 +1245,7 @@ Latest local evidence, 2026-07-04:
 
 ## Care Entries Refresh Cursor Boundary Proof
 
-Latest local evidence, 2026-07-03:
+Latest local evidence, 2026-07-04:
 
 - Mobile care sync now routes care-entry refreshes through
   `buildCareEntryRefreshPlan` before calling `listCareEntries`.
@@ -1431,12 +1431,20 @@ Latest local evidence, 2026-07-03:
   permission prompt/preference copy, quiet-hours/opt-out, and reminder delivery
   QA row, plus blockers and the local Reminder Center boundary before push
   reminder delivery can be claimed.
+- The APNs, FCM, and delivery QA rows now require platform/provider-specific
+  native delivery evidence before reminder delivery can open: iOS APNs and
+  Android FCM files or URIs with image MIME, positive byte size, token
+  registration, delivered reminder, permission preference, quiet-hours or
+  opt-out, and fallback capture. Generic APNs/FCM/delivery strings stay
+  blocked.
 - Red/green proof first failed because `buildPushNotificationsProofManifest`
   did not exist.
+- Native-delivery hardening proof then failed because generic APNs/FCM/delivery
+  strings incorrectly made the manifest `ready-for-review`.
 - Focused proof now passes `pushNotificationsProof.test.ts` and
-  `mobileReleaseQa.test.ts` with `27/27` tests, plus the focused care-twin QA
-  route and machine-readable doctor readiness run with `114/114` tests. The
-  broader zero-dependency API/mobile/PWA/care-domain suite passes `554/554`,
+  `mobileReleaseQa.test.ts` with `27/27` tests, and the native-delivery
+  hardening plus handoff/readiness proof passes focused `148/148` tests. The
+  broader zero-dependency API/mobile/PWA/care-domain suite passes `567/567`,
   root TypeScript passes, and mobile TypeScript passes.
 - Direct JSON mobile beta doctor reports `push notifications proof manifest is
   source-backed` as `PASS` while remaining blocked only on local

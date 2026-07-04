@@ -3273,6 +3273,23 @@ delivery evidence are attached. The JSON mobile beta doctor now reports
 visibility only; it does not configure Expo/APNs/FCM, deliver notifications,
 approve prompt/legal copy, enable reminders, or replace Apollo sign-off.
 
+The Push Notifications native delivery hardening pass prevents generic APNs,
+FCM, or delivery QA strings from opening reminder delivery. `buildPushNotificationsProofManifest`
+now requires two platform/provider-specific native delivery proofs before the
+APNs, FCM, and delivery QA rows can move toward ready: iOS APNs delivery and
+Android FCM delivery. Each proof needs platform/provider naming in the file
+name or URI, image MIME, positive byte size, token registration, delivered
+reminder, permission preference, quiet-hours or opt-out, and fallback capture.
+Share Beta Handoff, the Release Smoke Checklist, the mobile beta doctor, and
+the native QA tooling doctor now name `ios-apns` and `android-fcm` evidence in
+the handoff. Fresh red/green local verification first failed because generic
+delivery strings made the manifest ready, then passed `pushNotificationsProof.test.ts`
+`4/4`, focused push handoff/QA/readiness tests `148/148`, and direct JSON
+doctor source-backed checks, the full zero-dependency suite `567/567`, root
+TypeScript, and mobile TypeScript. The mobile beta doctor still blocks only on
+local pnpm `11.7.0` versus pinned `10.24.0`; the native QA tooling doctor
+still blocks on missing Android SDK and Java tooling in this Windows shell.
+
 The Store Accounts proof manifest pass makes the focused app-submission mission
 explicit instead of leaving helpers with a generic Apple/Google checklist. The
 route `/care-twin-qa?qaSurface=store-accounts-proof` now shows the Store

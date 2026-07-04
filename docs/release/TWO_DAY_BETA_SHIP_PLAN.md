@@ -74,7 +74,7 @@ The beta must not claim:
 - When reviewing More's Sync Health panel, use `Open sync proof` to jump to the same Care-entry Provider Sync Proof mission. This is a shortcut only; visible outbox/local sync status still does not prove Supabase migration, active-household RLS, retention policy, or incremental provider sync.
 - When the current mission is `WoofGuide AI Provider Proof`, open `/care-twin-qa?qaSurface=woofguide-ai-provider-proof`, then capture OpenAI key location, secret storage, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, fallback/incident handling, rollback plan, and support handoff before enabling live AI.
 - When reviewing Provider Launch Setup's WoofGuide AI row, use `Open proof mission` to jump to the same WoofGuide AI Provider Proof mission. This is a shortcut only; it does not configure OpenAI, approve a model, enable live provider-backed AI, allow automatic care-log writes, clear source/citation review, or replace veterinary/safety approval.
-- When the current mission is `Push Notifications Proof`, open `/care-twin-qa?qaSurface=push-notifications-proof`, then capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, delivery QA, and missed-notification fallback before claiming reminder delivery.
+- When the current mission is `Push Notifications Proof`, open `/care-twin-qa?qaSurface=push-notifications-proof`, then capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, platform/provider-named iOS APNs and Android FCM delivery evidence, and missed-notification fallback before claiming reminder delivery.
 - When reviewing Reminder Center, use Calendar's `Open push proof` action to jump to the same Push Notifications Proof mission. This is a shortcut only; local preference intent still does not prove provider configuration or delivered reminders.
 - When the current mission is `Payments Provider Proof`, open `/care-twin-qa?qaSurface=payments-provider-proof`, then capture Plus and Family product ids, billing path decision, sandbox purchase/renewal/cancel/refund/expired receipt proof, restore purchases, entitlement mapping, household role access, refund/support policy, and checkout-gate proof before enabling paid checkout.
 - When reviewing Provider Launch Setup's WoofWatcher Plus payments row, use `Open proof mission` to jump to the same Payments Provider Proof mission. This is a shortcut only; it does not approve tiers, configure store or Stripe billing, prove receipts, enable checkout, clear store approval, or replace Apollo sign-off.
@@ -348,7 +348,8 @@ Current environment note:
 - Provider Launch Setup's Push notifications gate now carries a `Push
   notifications proof packet` requiring Expo push project config, APNs
   credentials, Firebase/FCM credentials, permission prompt copy, quiet hours,
-  opt-out behavior, and delivery QA before reminder delivery can be claimed.
+  opt-out behavior, and platform/provider-named native delivery QA before
+  reminder delivery can be claimed.
   Share Beta Handoff prints those proof steps, but this does not configure push
   providers, deliver notifications, approve permission copy, or replace native
   iOS/Android notification QA and Apollo signoff.
@@ -381,8 +382,9 @@ Current environment note:
   mobile beta doctor, and native QA tooling doctor now also name
   `/care-twin-qa?qaSurface=push-notifications-proof` for Expo push project
   config, APNs credentials, Firebase/FCM credentials, permission prompt copy,
-  quiet hours, opt-out behavior, delivery QA, and missed-notification fallback
-  before reminder delivery can be claimed. This is a proof target, not provider
+  quiet hours, opt-out behavior, platform/provider-named iOS APNs and Android
+  FCM delivery evidence, and missed-notification fallback before reminder
+  delivery can be claimed. This is a proof target, not provider
   configuration or native delivery evidence by itself.
 - The Release Smoke Checklist, Share Beta Handoff, live-preview verifier, JSON
   mobile beta doctor, and native QA tooling doctor now also name

@@ -1632,6 +1632,22 @@ Owner: Codex.
 
 Revisit trigger: real iOS/Android Auth gateway and Setup local-preview evidence is attached from configured native tooling or physical devices.
 
+### 2026-07-04: Push Delivery Proof Must Be Platform And Provider Specific
+
+Decision: the Push notifications proof manifest cannot treat generic APNs, FCM, or delivery QA strings as reminder delivery proof. Reminder delivery proof requires concrete iOS APNs and Android FCM native delivery evidence.
+
+Reason: reminder delivery is a user-trust and store-review boundary. A copied note that says notifications worked is not enough to claim delivery across APNs and FCM, permission preferences, quiet-hours or opt-out behavior, and missed-notification fallback.
+
+Consequences:
+
+- The APNs, FCM, and delivery QA manifest rows remain blocked until native delivery evidence includes platform/provider naming in the file name or URI, image MIME, positive byte size, token registration, delivered reminder, permission preference, quiet-hours or opt-out, and fallback capture.
+- Share Beta Handoff, the Release Smoke Checklist, the mobile beta doctor, and the native QA tooling doctor now tell helpers to attach `ios-apns` and `android-fcm` delivery evidence instead of generic notification notes.
+- Provider setup, prompt/legal approval, store privacy review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: push delivery proof becomes signed provider telemetry instead of screenshot/file metadata, or Apollo chooses a different notification provider stack.
+
 ### 2026-07-04: Generated Binary Export Readiness Requires Native And Provider Proof
 
 Decision: the focused Report Binary Export Proof mission renders a source-backed proof manifest, but `Generated artifacts allowed` remains `No` until Care Pass PDF, Dog ID PNG, provider storage, and native artifact proof evidence are attached from real device/provider QA.
