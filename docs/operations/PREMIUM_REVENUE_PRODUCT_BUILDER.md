@@ -3458,6 +3458,24 @@ Branch CI proved the guard on commit `4082e30` in `WoofWatcher Verify` run
 with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior
 tests, Typecheck plus CI-safe builds, post steps, and Complete job all passing.
 
+The Support runbook structured-proof pass closes the matching owner-facing
+launch-readiness overclaim. `deriveSupportRunbookPlan` now accepts
+`supportLegalReadinessEvidence`, calls `buildSupportLegalReadinessProofManifest`,
+and keeps `launchReady`, `supportRunbookApproved`, and `privacyLegalApproved`
+blocked when only support/legal approval booleans, support email, privacy policy
+URL, and terms URL are staged. Staged support, refund/subscription, veterinary,
+privacy/terms, deletion escalation, and incident-response sections now show as
+blocked until the matching structured proof rows are attached. Fresh red/green
+verification first showed complete approval booleans producing `launchReady: true`,
+then passed focused Support Runbook/mobile readiness tests `121/121`, the
+full zero-dependency API/mobile/PWA/care-domain suite `586/586`, root
+TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks
+including `support runbook proof guard is source-backed`. Direct JSON mobile beta
+doctor remains truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned
+`10.24.0` and missing Corepack. This is proof gating only; it does not approve
+legal/privacy copy, refund policy, support operations, veterinary-boundary
+language, App Store or Play Store review, public launch, or Apollo sign-off.
+
 The Care-entry Provider Sync structured-proof pass closes the remaining generic
 provider-proof overclaim in the incremental sync packet. `deriveCareEntryProviderSyncProof`
 now keeps `Incremental sync allowed: No` until six structured proof files are

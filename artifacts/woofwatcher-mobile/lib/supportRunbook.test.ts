@@ -6,6 +6,7 @@ import {
   buildSupportRunbookShareText,
   deriveSupportRunbookPlan,
   SUPPORT_LEGAL_READINESS_PROOF_ITEMS,
+  type SupportLegalReadinessProofEvidence,
 } from "./supportRunbook.ts";
 
 test("keeps support runbook unapproved when launch policies are missing", () => {
@@ -57,7 +58,7 @@ test("builds share text that preserves support, legal, and veterinary boundaries
   assert.match(text, /Open blockers:/);
 });
 
-test("marks support ready only when all policy gates are explicitly approved", () => {
+test("keeps support runbook launch blocked until structured support legal proof is attached", () => {
   const plan = deriveSupportRunbookPlan({
     supportEmail: "help@woofwatcher.app",
     privacyPolicyUrl: "https://example.com/privacy",
@@ -66,6 +67,27 @@ test("marks support ready only when all policy gates are explicitly approved", (
     veterinaryBoundaryApproved: true,
     accountDeletionEscalationApproved: true,
     incidentResponseApproved: true,
+  });
+
+  assert.equal(plan.launchReady, false);
+  assert.equal(plan.supportRunbookApproved, false);
+  assert.equal(plan.privacyLegalApproved, false);
+  assert.equal(plan.verdictLabel, "Not approved for public launch");
+  assert.ok(plan.launchBlockers.some((blocker) => /structured support\/legal public-launch proof/i.test(blocker)));
+  assert.ok(plan.sections.some((section) => section.title === "Refund and subscription policy" && section.status === "blocked"));
+  assert.ok(plan.sections.some((section) => section.title === "Privacy and terms links" && section.status === "blocked"));
+});
+
+test("marks support ready only when all policy gates and structured proof files are attached", () => {
+  const plan = deriveSupportRunbookPlan({
+    supportEmail: "help@woofwatcher.app",
+    privacyPolicyUrl: "https://example.com/privacy",
+    termsUrl: "https://example.com/terms",
+    refundPolicyApproved: true,
+    veterinaryBoundaryApproved: true,
+    accountDeletionEscalationApproved: true,
+    incidentResponseApproved: true,
+    supportLegalReadinessEvidence: completeSupportLegalReadinessEvidence(),
   });
 
   assert.equal(plan.launchReady, true);
@@ -237,3 +259,104 @@ test("opens support legal launch review when all structured proof files are atta
     ],
   );
 });
+
+function completeSupportLegalReadinessEvidence(): SupportLegalReadinessProofEvidence {
+  return {
+    supportInbox: "Support inbox note retained for owner review",
+    supportLegalEvidence: [
+      {
+        kind: "support-inbox",
+        fileName: "support-inbox-proof.pdf",
+        uri: "file:///support-legal/support-inbox-proof.pdf",
+        mimeType: "application/pdf",
+        byteSize: 48291,
+        supportEmail: "help@woofwatcher.app",
+        supportOwner: "Apollo Duran",
+        coverageSchedule: "Weekday response and launch-week escalation",
+        storeSupportUrl: "https://woofwatcher.app/support",
+        escalationPath: "support to Apollo",
+        supportInboxMonitored: true,
+      },
+      {
+        kind: "privacy-terms-links",
+        fileName: "privacy-terms-links-proof.json",
+        uri: "file:///support-legal/privacy-terms-links-proof.json",
+        mimeType: "application/json",
+        byteSize: 32450,
+        privacyPolicyUrl: "https://woofwatcher.app/privacy",
+        termsUrl: "https://woofwatcher.app/terms",
+        dataRetentionPolicy: "Retention, export, and deletion policy linked",
+        exportDeletionPolicy: "Export and deletion paths documented",
+        aiStoragePaymentsDisclosure: "AI, storage, and payments disclosures approved",
+        storeListingUrlOwned: true,
+      },
+      {
+        kind: "refund-subscription-policy",
+        fileName: "refund-subscription-policy-proof.md",
+        uri: "file:///support-legal/refund-subscription-policy-proof.md",
+        mimeType: "text/markdown",
+        byteSize: 18880,
+        refundPolicyReference: "Refund policy v1",
+        subscriptionCancellationLanguage: "Cancellation language approved",
+        billingSupportWorkflow: "Billing support workflow documented",
+        restorePurchaseSupport: "Restore purchase support documented",
+        appStorePlaySubscriptionCompliance: true,
+        premiumSurfaceCopyApproved: true,
+      },
+      {
+        kind: "veterinary-emergency-boundary",
+        fileName: "veterinary-emergency-boundary-proof.pdf",
+        uri: "file:///support-legal/veterinary-emergency-boundary-proof.pdf",
+        mimeType: "application/pdf",
+        byteSize: 25210,
+        veterinaryBoundaryCopy: "Not veterinary advice",
+        emergencyEscalationCopy: "Emergency concerns go to a veterinarian",
+        healthWatchBoundary: "Health Watch boundary approved",
+        woofGuideBoundary: "WoofGuide boundary approved",
+        supportBoundary: "Support boundary approved",
+        storeCopyBoundary: "Store copy boundary approved",
+        notVeterinaryAdviceApproved: true,
+      },
+      {
+        kind: "deletion-escalation",
+        fileName: "deletion-escalation-proof.json",
+        uri: "file:///support-legal/deletion-escalation-proof.json",
+        mimeType: "application/json",
+        byteSize: 21930,
+        deletionEscalationOwner: "Apollo Duran",
+        exportFirstSupportFlow: "Export-first support flow documented",
+        deletionRequestReceiptTemplate: "Deletion request receipt template approved",
+        providerDelayFallback: "Provider delay fallback documented",
+        selfServeDeletionProofReference: "account-deletion-proof packet",
+        escalationOwnerApproved: true,
+      },
+      {
+        kind: "incident-response-owner",
+        fileName: "incident-response-owner-proof.pdf",
+        uri: "file:///support-legal/incident-response-owner-proof.pdf",
+        mimeType: "application/pdf",
+        byteSize: 39110,
+        incidentResponseOwner: "Apollo Duran",
+        loginBillingTriagePath: "Login and billing triage path",
+        privacyRequestsTriagePath: "Privacy request triage path",
+        aiSafetyComplaintsTriagePath: "AI and safety complaints triage path",
+        storeReviewFollowUpPath: "Store review follow-up path",
+        incidentOwnerApproved: true,
+      },
+      {
+        kind: "apollo-launch-approval",
+        fileName: "apollo-launch-approval-proof.pdf",
+        uri: "file:///support-legal/apollo-launch-approval-proof.pdf",
+        mimeType: "application/pdf",
+        byteSize: 41002,
+        apolloApprovalOwner: "Apollo Duran",
+        launchWindow: "Public launch window approved",
+        noLaunchBoundary: "No launch before support/legal proof boundary acknowledged",
+        publicLaunchDecision: "Ready for launch review only",
+        supportLegalRefundVetApproved: true,
+        apolloApproved: true,
+        noLaunchBoundaryAcknowledged: true,
+      },
+    ],
+  };
+}

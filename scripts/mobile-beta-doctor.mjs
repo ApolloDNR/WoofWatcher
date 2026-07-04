@@ -1938,6 +1938,27 @@ check(
     : "render the support legal readiness proof manifest on /care-twin-qa?qaSurface=support-legal-readiness-proof with structured support, policy, veterinary, incident, and Apollo approval proof-file boundaries",
 );
 
+const supportRunbookProofGuardIsSourceBacked = includesAll(supportRunbookSource, [
+  "supportLegalReadinessEvidence",
+  "buildSupportLegalReadinessProofManifest(input.supportLegalReadinessEvidence)",
+  "supportLegalProofReady",
+  "proofItemReady",
+  "Structured support/legal public-launch proof files are not attached.",
+  "Public launch stays gated until structured support/legal proof files cover support, privacy, refund, veterinary, deletion, incident, and Apollo approval.",
+  "Attach support proof",
+  "Attach policy proof",
+  "Attach boundary proof",
+  "Attach escalation proof",
+  "Attach response proof",
+]);
+check(
+  "support runbook proof guard is source-backed",
+  supportRunbookProofGuardIsSourceBacked,
+  supportRunbookProofGuardIsSourceBacked
+    ? "Support runbook launch readiness stays blocked until the structured support/legal proof manifest is ready"
+    : "keep deriveSupportRunbookPlan wired to the support legal proof manifest so approval booleans alone cannot mark public launch ready",
+);
+
 const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "route-visual-consistency",
   "Route Visual Consistency",

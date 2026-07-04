@@ -1772,6 +1772,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real support/legal/refund/veterinary-boundary approval proof files, or WoofWatcher gains a provider-backed launch-approval evidence service with signed approval metadata.
 
+### 2026-07-04: Support Runbook Requires Structured Public-Launch Proof
+
+Decision: the Support runbook cannot treat support/legal approval booleans, support email, privacy policy URL, or terms URL as enough to mark public launch ready. It must consume the Support legal readiness proof manifest and keep `launchReady`, `supportRunbookApproved`, and `privacyLegalApproved` blocked until structured support/legal proof files make the manifest ready.
+
+Reason: the Support runbook is an owner-facing launch safety surface. If it marks launch ready from local approval fields, it can contradict the focused Support Legal Readiness Proof manifest and the aggregate Launch Readiness proof guard.
+
+Consequences:
+
+- `deriveSupportRunbookPlan` accepts `supportLegalReadinessEvidence` and calls `buildSupportLegalReadinessProofManifest`.
+- Staged support/legal fields now show as blocked sections until the matching proof rows are attached.
+- Real support operations, privacy/legal copy, refund/subscription policy, veterinary-boundary sign-off, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real support/legal proof files or the app gains a provider-backed support/legal proof evidence service that can feed the Support runbook.
+
 ### 2026-07-04: Incremental Care Sync Requires Structured Provider Proof
 
 Decision: the care-entry provider sync proof packet cannot treat generic Supabase ids, migration notes, RLS text, policy notes, CI URLs, or mobile sign-off strings as incremental-sync readiness. `Incremental sync allowed` remains blocked until six structured proof files satisfy Supabase project id, migration/backfill, active-household cursor/tombstone RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off requirements.

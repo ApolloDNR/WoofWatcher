@@ -44,6 +44,16 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: Support runbook proof hardening now keeps public launch `blocked` when support/legal approval booleans and privacy/terms links are present but structured support/legal proof files are absent.
+- PASS: Focused Support Runbook/mobile readiness tests passed `121/121`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `586/586`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Direct JSON mobile beta doctor reports `support runbook proof guard is source-backed` as `PASS`.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real support inbox proof, privacy policy and terms proof, refund/subscription policy proof, veterinary/emergency boundary proof, deletion escalation proof, incident response proof, Apollo launch approval/no-launch-boundary proof, store review, public launch, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: Privacy & Safety payments proof hardening now keeps checkout `blocked` when `paymentsEnabled` is true but structured payments proof files are absent.
 - PASS: Focused Privacy & Safety/mobile readiness tests passed `123/123`.
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `585/585`.

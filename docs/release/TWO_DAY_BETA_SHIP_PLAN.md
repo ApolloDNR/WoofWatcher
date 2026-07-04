@@ -188,6 +188,9 @@ Current environment note:
   exact `corepack`, `pnpm install`, doctor, JSON doctor, `smoke:web`,
   `smoke:runtime`, `proof:live-preview`, and `preview:smoke` command order
   without parsing prose.
+- The mobile beta doctor also verifies `support runbook proof guard is
+  source-backed`, so the Support runbook must keep public launch blocked when
+  only support/legal approval booleans and policy links are staged.
 - Branch CI now runs that JSON doctor in the same workflow that installs
   `pnpm@10.24.0`, runs focused tests, and executes `build:ci`; use the workflow
   result as dependency-complete doctor proof when local Windows still has pnpm
@@ -529,6 +532,14 @@ Current environment note:
   JSON doctors name those file requirements with MIME, byte size, and
   row-specific approvals; this is proof gating, not legal/privacy approval,
   support-operation approval, public launch approval, or Apollo sign-off.
+- The Support runbook now consumes that same structured proof manifest before
+  its public-launch verdict can open. Local proof on 2026-07-04 first showed
+  support/legal approval booleans and policy links producing `launchReady: true`
+  without proof files, then passed focused Support Runbook/mobile readiness
+  tests `121/121`, the full zero-dependency suite `586/586`, root/mobile
+  TypeScript, and JSON doctor `support runbook proof guard is source-backed`.
+  Real support/legal proof files, store review, public launch, and Apollo
+  sign-off remain blocked.
 - Reminder Center now surfaces the same launch boundary in-product: provider
   configuration status, permission readiness, quiet-hours policy, and opt-out
   copy stay visible in Calendar before push delivery is enabled. Calendar can

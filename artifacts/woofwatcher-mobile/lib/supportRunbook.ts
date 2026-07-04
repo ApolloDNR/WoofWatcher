@@ -8,6 +8,7 @@ export interface SupportRunbookInput {
   veterinaryBoundaryApproved?: boolean;
   accountDeletionEscalationApproved?: boolean;
   incidentResponseApproved?: boolean;
+  supportLegalReadinessEvidence?: SupportLegalReadinessProofEvidence | null;
 }
 
 export interface SupportRunbookSection {
@@ -379,6 +380,10 @@ function statusLabel(status: SupportRunbookStatus): string {
   return "Blocked";
 }
 
+function proofItemReady(manifest: SupportLegalReadinessProofManifest, label: string): boolean {
+  return manifest.items.some((item) => item.label === label && item.status === "ready");
+}
+
 function formatDateLabel(input: string | undefined): string {
   const parsed = input ? new Date(input) : new Date();
   const safe = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
@@ -399,57 +404,106 @@ export function deriveSupportRunbookPlan(input: SupportRunbookInput = {}): Suppo
   const accountDeletionEscalationApproved = Boolean(input.accountDeletionEscalationApproved);
   const incidentResponseApproved = Boolean(input.incidentResponseApproved);
   const privacyLinksReady = Boolean(privacyPolicyUrl && termsUrl);
+  const supportLegalProofManifest = buildSupportLegalReadinessProofManifest(input.supportLegalReadinessEvidence);
+  const supportLegalProofReady = supportLegalProofManifest.publicLaunchAllowed;
+  const supportInboxProofReady = proofItemReady(supportLegalProofManifest, "Support inbox");
+  const privacyTermsProofReady = proofItemReady(supportLegalProofManifest, "Privacy policy and terms links");
+  const refundPolicyProofReady = proofItemReady(supportLegalProofManifest, "Refund/subscription policy");
+  const veterinaryBoundaryProofReady = proofItemReady(supportLegalProofManifest, "Veterinary and emergency boundary");
+  const deletionEscalationProofReady = proofItemReady(supportLegalProofManifest, "Deletion escalation");
+  const incidentResponseProofReady = proofItemReady(supportLegalProofManifest, "Incident response owner");
+  const legacyInputsReady =
+    Boolean(supportEmail) &&
+    privacyLinksReady &&
+    refundPolicyApproved &&
+    veterinaryBoundaryApproved &&
+    accountDeletionEscalationApproved &&
+    incidentResponseApproved;
 
   const sections: SupportRunbookSection[] = [
     {
       title: "Support inbox",
-      status: supportEmail ? "ready" : "manual_required",
-      detail: supportEmail
-        ? `Customer support routes to ${supportEmail}.`
-        : "Choose the monitored support inbox before public accounts, subscriptions, or store review.",
-      action: supportEmail ? "Monitor inbox" : "Add support email",
+      status: supportEmail ? (supportInboxProofReady ? "ready" : "blocked") : "manual_required",
+      detail: !supportEmail
+        ? "Choose the monitored support inbox before public accounts, subscriptions, or store review."
+        : supportInboxProofReady
+          ? `Customer support routes to ${supportEmail}.`
+          : `Customer support is staged for ${supportEmail}, but public launch needs structured support inbox proof.`,
+      action: supportEmail ? (supportInboxProofReady ? "Monitor inbox" : "Attach support proof") : "Add support email",
     },
     {
       title: "Refund and subscription policy",
-      status: refundPolicyApproved ? "ready" : "blocked",
-      detail: refundPolicyApproved
+      status: refundPolicyApproved && refundPolicyProofReady ? "ready" : "blocked",
+      detail: refundPolicyApproved && refundPolicyProofReady
         ? "Refund, cancellation, billing support, and App Store subscription language are owner-approved."
-        : "Payments stay disabled until refund, cancellation, billing support, and app-store subscription language are approved.",
-      action: refundPolicyApproved ? "Keep with store packet" : "Approve policy",
+        : refundPolicyApproved
+          ? "Refund and subscription language is staged, but public launch needs structured refund/subscription proof."
+          : "Payments stay disabled until refund, cancellation, billing support, and app-store subscription language are approved.",
+      action: refundPolicyApproved ? (refundPolicyProofReady ? "Keep with store packet" : "Attach policy proof") : "Approve policy",
     },
     {
       title: "Vet and emergency boundary",
-      status: veterinaryBoundaryApproved ? "ready" : "blocked",
-      detail: veterinaryBoundaryApproved
+      status: veterinaryBoundaryApproved && veterinaryBoundaryProofReady ? "ready" : "blocked",
+      detail: veterinaryBoundaryApproved && veterinaryBoundaryProofReady
         ? "Health copy keeps WoofWatcher as care organization and not veterinary advice, diagnosis, or emergency triage."
-        : "Approve the health boundary: WoofWatcher is not veterinary advice, diagnosis, treatment, or emergency triage.",
-      action: veterinaryBoundaryApproved ? "Use approved language" : "Approve boundary",
+        : veterinaryBoundaryApproved
+          ? "Health-boundary language is staged, but public launch needs structured veterinary/emergency boundary proof."
+          : "Approve the health boundary: WoofWatcher is not veterinary advice, diagnosis, treatment, or emergency triage.",
+      action: veterinaryBoundaryApproved
+        ? (veterinaryBoundaryProofReady ? "Use approved language" : "Attach boundary proof")
+        : "Approve boundary",
     },
     {
       title: "Privacy and terms links",
-      status: privacyLinksReady ? "ready" : "blocked",
-      detail: privacyLinksReady
+      status: privacyLinksReady && privacyTermsProofReady ? "ready" : "blocked",
+      detail: privacyLinksReady && privacyTermsProofReady
         ? `Privacy policy and terms are linked for store review: ${privacyPolicyUrl} and ${termsUrl}.`
-        : "Publish final privacy policy and terms links before public accounts, uploads, AI, payments, or app-store submission.",
-      action: privacyLinksReady ? "Attach to store packet" : "Add policy links",
+        : privacyLinksReady
+          ? `Privacy policy and terms are staged at ${privacyPolicyUrl} and ${termsUrl}, but public launch needs structured privacy/terms proof.`
+          : "Publish final privacy policy and terms links before public accounts, uploads, AI, payments, or app-store submission.",
+      action: privacyLinksReady ? (privacyTermsProofReady ? "Attach to store packet" : "Attach policy proof") : "Add policy links",
     },
     {
       title: "Deletion escalation",
-      status: accountDeletionEscalationApproved && supportEmail ? "ready" : "manual_required",
-      detail:
+      status:
         accountDeletionEscalationApproved && supportEmail
+          ? deletionEscalationProofReady
+            ? "ready"
+            : "blocked"
+          : "manual_required",
+      detail:
+        accountDeletionEscalationApproved && supportEmail && deletionEscalationProofReady
           ? "Manual deletion escalation has a support owner until provider-backed self-serve deletion is enabled."
+          : accountDeletionEscalationApproved && supportEmail
+            ? "Deletion escalation is staged, but public launch needs structured deletion escalation proof."
           : "Manual deletion requests need a support owner, export-first process, and deletion/audit escalation before launch.",
-      action: accountDeletionEscalationApproved && supportEmail ? "Escalate through support" : "Approve escalation",
+      action:
+        accountDeletionEscalationApproved && supportEmail
+          ? deletionEscalationProofReady
+            ? "Escalate through support"
+            : "Attach escalation proof"
+          : "Approve escalation",
     },
     {
       title: "Incident response",
-      status: incidentResponseApproved && supportEmail ? "ready" : "manual_required",
-      detail:
+      status:
         incidentResponseApproved && supportEmail
+          ? incidentResponseProofReady
+            ? "ready"
+            : "blocked"
+          : "manual_required",
+      detail:
+        incidentResponseApproved && supportEmail && incidentResponseProofReady
           ? "Support has a triage path for login, billing, data export, deletion, health-boundary, and safety complaints."
+          : incidentResponseApproved && supportEmail
+            ? "Incident response is staged, but public launch needs structured incident-response proof."
           : "Define who handles login, billing, export, deletion, health-boundary, and safety complaints before launch.",
-      action: incidentResponseApproved && supportEmail ? "Use support runbook" : "Assign response owner",
+      action:
+        incidentResponseApproved && supportEmail
+          ? incidentResponseProofReady
+            ? "Use support runbook"
+            : "Attach response proof"
+          : "Assign response owner",
     },
   ];
 
@@ -460,10 +514,17 @@ export function deriveSupportRunbookPlan(input: SupportRunbookInput = {}): Suppo
   if (!privacyLinksReady) launchBlockers.push("Privacy policy and terms links are not ready.");
   if (!accountDeletionEscalationApproved) launchBlockers.push("Account deletion escalation is not approved.");
   if (!incidentResponseApproved) launchBlockers.push("Support incident-response owner is not approved.");
+  if (legacyInputsReady && !supportLegalProofReady) {
+    launchBlockers.push("Structured support/legal public-launch proof files are not attached.");
+  }
 
   const supportRunbookApproved =
-    Boolean(supportEmail) && refundPolicyApproved && accountDeletionEscalationApproved && incidentResponseApproved;
-  const privacyLegalApproved = privacyLinksReady && veterinaryBoundaryApproved;
+    Boolean(supportEmail) &&
+    refundPolicyApproved &&
+    accountDeletionEscalationApproved &&
+    incidentResponseApproved &&
+    supportLegalProofReady;
+  const privacyLegalApproved = privacyLinksReady && veterinaryBoundaryApproved && supportLegalProofReady;
   const launchReady = supportRunbookApproved && privacyLegalApproved;
 
   return {
@@ -473,6 +534,8 @@ export function deriveSupportRunbookPlan(input: SupportRunbookInput = {}): Suppo
     verdictLabel: launchReady ? "Support runbook ready for owner approval" : "Not approved for public launch",
     summary: launchReady
       ? "Support, refund, legal links, deletion escalation, and health-boundary language are staged for final owner sign-off."
+      : legacyInputsReady && !supportLegalProofReady
+        ? "Public launch stays gated until structured support/legal proof files cover support, privacy, refund, veterinary, deletion, incident, and Apollo approval."
       : "Public launch, subscriptions, uploads, and AI should stay gated until the support and policy blockers are closed.",
     supportEmail,
     privacyPolicyUrl,
