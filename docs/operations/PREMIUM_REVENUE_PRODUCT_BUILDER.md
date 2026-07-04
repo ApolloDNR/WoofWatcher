@@ -3476,6 +3476,9 @@ doctor remains truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned
 `ceecc55` in `WoofWatcher Verify` run `28705194968`, job `85129614020`, with
 Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior
 tests, Typecheck plus CI-safe builds, post steps, and Complete job all passing.
+The proof-doc commit `58fe904` was also verified at branch head in
+`WoofWatcher Verify` run `28705426671`, job `85130189337`, with the same CI
+steps passing.
 This is proof gating only; it does not approve legal/privacy copy, refund
 policy, support operations, veterinary-boundary language, App Store or Play
 Store review, public launch, or Apollo sign-off.

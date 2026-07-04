@@ -541,9 +541,10 @@ Current environment note:
   Branch CI proved implementation commit `ceecc55` in `WoofWatcher Verify` run
   `28705194968`, job `85129614020`; Setup pnpm, Setup Node, install, JSON
   mobile beta doctor, focused behavior tests, Typecheck plus CI-safe builds,
-  post steps, and Complete job all passed. Real support/legal proof files,
-  store review, public launch, and Apollo
-  sign-off remain blocked.
+  post steps, and Complete job all passed. Branch-head proof-doc CI also passed
+  for commit `58fe904` in run `28705426671`, job `85130189337`. Real
+  support/legal proof files, store review, public launch, and Apollo sign-off
+  remain blocked.
 - Reminder Center now surfaces the same launch boundary in-product: provider
   configuration status, permission readiness, quiet-hours policy, and opt-out
   copy stay visible in Calendar before push delivery is enabled. Calendar can
