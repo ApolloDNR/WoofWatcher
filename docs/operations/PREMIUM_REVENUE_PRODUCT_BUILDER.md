@@ -2985,6 +2985,13 @@ route-named next action but still blocks because this Windows shell lacks
 Android `adb`, Android `emulator`, Java, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and
 `JAVA_HOME`. This is capture guidance and guard coverage only, not actual native
 screenshots or visual approval.
+Remote verification then passed for implementation commit `fd3a98f` in
+GitHub Actions `WoofWatcher Verify` run `28692423522`, job `85096033279`.
+The run completed successfully in about `3m06s`; Set up job, Checkout,
+Setup pnpm, Setup Node, install dependencies, JSON mobile beta doctor, focused
+behavior tests, Typecheck plus CI-safe builds, post steps, and Complete job all
+passed. This proves the route-named capture instructions and source guards, not
+native screenshot capture or human visual approval.
 
 The Live Preview Handoff proof pass turns the dependency-complete preview handoff
 into a first-class section instead of a hidden command. The Release Smoke
