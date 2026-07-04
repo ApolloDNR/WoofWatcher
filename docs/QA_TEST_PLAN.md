@@ -93,6 +93,7 @@ Latest local evidence, 2026-06-23:
 - Records local-file handoff proof manifest for Care Pass Report History local HTML, Dog ID local HTML credential, Dog ID SVG image source, native share sheet, Android content URI or saved-file proof, fallback copy, and generated PDF/PNG/provider boundary blockers before native Records file proof is claimed.
 - Report binary export proof manifest for Care Pass PDF, Dog ID PNG, provider storage, and native artifact proof blockers on the focused Report Binary Export Proof helper route before generated PDF/PNG readiness is claimed.
 - Route visual proof manifest for Home, Log, Plans, Health, Records, and More native iOS/Android screenshot slots, QA note blocker, and web-preview-only boundary before visual sign-off is claimed.
+- Route visual proof hardening that keeps each Home, Log, Plans, Health, Records, and More row blocked until the matching iOS/Android evidence file name or URI is route-named, even if generic platform screenshot counts are present.
 - Avatar motion state derivation for health watch, recent care logs, due routines, quiet hours, and low energy.
 - Privacy/account safety export, deletion request, AI disclosure, document storage gates, and payment launch blockers.
 - Mobile readiness static smoke for critical route registration, tab coverage, string router links, launch-blocking safety copy, CI Expo web export wiring, Records printable report and Dog ID actions, Hydration/Walk/Potty Records wiring, and screen-reader labels for critical Privacy, Premium, WoofGuide, and More actions.
@@ -1612,6 +1613,14 @@ Latest local evidence, 2026-07-03:
 - This CI doctor gate does not prove native iOS/Android screenshots, provider
   setup, generated PDF/image export, app-store approval, public launch, or
   Apollo sign-off.
+
+## Route Visual Proof Hardening
+
+Latest local evidence, 2026-07-04:
+
+- `buildRouteVisualProofManifest` now separates platform screenshot counts from per-route readiness. Generic files such as `native-ios-1.png` and `native-android-1.png` can increase attached counts, but they do not satisfy Home, Log, Plans, Health, Records, or More unless the file name or URI contains the route label.
+- Red proof first failed because six generic iOS screenshots plus six generic Android screenshots incorrectly marked the manifest `ready`. After the fix, focused Route Visual tests passed `26/26`, focused care-twin route and machine-readable doctor readiness passed `114/114`, the full zero-dependency API/mobile/PWA/care-domain suite passed `560/560`, root TypeScript passed, mobile TypeScript passed, direct JSON mobile beta doctor source-backed checks passed, and `git diff --check` produced expected Windows CRLF warnings only.
+- `scripts/native-qa-tooling-doctor.mjs --json` still reports `BLOCKED` in this Windows shell because Android `adb`, Android `emulator`, Java, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME` are missing. Route-named manifest proof does not replace native screenshots, route visual review, provider setup, generated PDF/image export proof, app-store approval, public launch, or Apollo sign-off.
 
 ## Share Beta Handoff Recorded CI Proof
 

@@ -1616,6 +1616,22 @@ Owner: Codex.
 
 Revisit trigger: native PDF/PNG share/reopen proof is attached, provider-backed artifact storage is configured, or generated binary export readiness is ready for Apollo approval.
 
+### 2026-07-04: Route Visual Proof Requires Route-Named Evidence
+
+Decision: the Route Visual proof manifest must keep each Home, Log, Plans, Health, Records, and More iOS/Android row blocked until the saved evidence file name or URI names that route; generic platform screenshot counts alone are not proof.
+
+Reason: six iOS files plus six Android files can show that screenshots were attached without proving the actual launch routes were captured. Route-named evidence keeps the helper handoff honest while native device capture and human visual approval remain pending.
+
+Consequences:
+
+- `buildRouteVisualProofManifest` reports platform counts separately from per-route readiness.
+- Generic `native-ios-*` and `native-android-*` attachments keep the manifest blocked until route-named files or URIs are attached.
+- The JSON mobile beta doctor guards the route-named source path, but actual native screenshots, visual approval, store review, and Apollo sign-off remain launch gates.
+
+Owner: Codex.
+
+Revisit trigger: automated native screenshot capture can attach route identity metadata, or Apollo approves a different route-proof naming convention.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

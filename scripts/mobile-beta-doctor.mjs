@@ -1682,11 +1682,14 @@ check(
 
 const routeVisualProofManifestIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "buildRouteVisualProofManifest",
+  "routeVisualEvidenceForRoute",
   "Route visual proof manifest",
   "Native proof blocked",
   "Native visual proof complete",
-  "iOS screenshot pending",
-  "Android screenshot pending",
+  "iOS ${routeCheck.label} screenshot pending",
+  "Android ${routeCheck.label} screenshot pending",
+  "const evidenceLabel = slugForQaId(`${item.fileName} ${item.uri}`)",
+  "return evidenceLabel.includes(routeSlug)",
   "QA note pending",
   "Web preview route proof can catch shell regressions",
 ])

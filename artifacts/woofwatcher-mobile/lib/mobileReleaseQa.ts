@@ -1449,22 +1449,40 @@ function routeVisualSurfaceForManifest(surface: MobileReleaseQaSurface | undefin
   };
 }
 
+function routeVisualEvidenceForRoute(
+  evidence: readonly QaScreenshotEvidence[],
+  routeCheck: MobileReleaseQaRouteCheck,
+  targetPlatform: "ios" | "android",
+): QaScreenshotEvidence | undefined {
+  const routeSlug = slugForQaId(routeCheck.label);
+  return evidence.find((item) => {
+    if (item.targetPlatform !== targetPlatform) return false;
+    const evidenceLabel = slugForQaId(`${item.fileName} ${item.uri}`);
+    return evidenceLabel.includes(routeSlug);
+  });
+}
+
 export function buildRouteVisualProofManifest(
   input: RouteVisualProofManifestInput = {},
 ): RouteVisualProofManifest {
   const surface = routeVisualSurfaceForManifest(input.surface);
   const routeChecks = surface.routeChecklist ?? [];
-  const attachedIosScreenshots = (input.evidence ?? []).filter((item) => item.targetPlatform === "ios").length;
-  const attachedAndroidScreenshots = (input.evidence ?? []).filter((item) => item.targetPlatform === "android").length;
-  const rows = routeChecks.map((routeCheck, index) => {
-    const iosAttached = attachedIosScreenshots > index;
-    const androidAttached = attachedAndroidScreenshots > index;
+  const evidence = input.evidence ?? [];
+  const attachedIosScreenshots = evidence.filter((item) => item.targetPlatform === "ios").length;
+  const attachedAndroidScreenshots = evidence.filter((item) => item.targetPlatform === "android").length;
+  const rows = routeChecks.map((routeCheck) => {
+    const iosEvidence = routeVisualEvidenceForRoute(evidence, routeCheck, "ios");
+    const androidEvidence = routeVisualEvidenceForRoute(evidence, routeCheck, "android");
     return {
       label: routeCheck.label,
       route: routeCheck.route,
       expected: routeCheck.expected,
-      iosStatus: iosAttached ? "iOS screenshot attached" : "iOS screenshot pending",
-      androidStatus: androidAttached ? "Android screenshot attached" : "Android screenshot pending",
+      iosStatus: iosEvidence
+        ? `iOS ${routeCheck.label} screenshot attached: ${iosEvidence.fileName}`
+        : `iOS ${routeCheck.label} screenshot pending`,
+      androidStatus: androidEvidence
+        ? `Android ${routeCheck.label} screenshot attached: ${androidEvidence.fileName}`
+        : `Android ${routeCheck.label} screenshot pending`,
       proof: mobileReleaseQaRouteProofLabel(routeCheck) ?? "Native visual proof required.",
     };
   });

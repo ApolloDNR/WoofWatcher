@@ -2942,6 +2942,26 @@ before visual proof can be marked complete. The JSON mobile beta doctor reports
 `route visual proof manifest is source-backed`; this still does not create
 native screenshots, approve route visuals, or replace Apollo sign-off.
 
+The Route Visual route-named proof hardening pass closes a remaining overclaim
+hole in that manifest. Attached iOS and Android screenshot counts are still
+shown for helper context, but a Home, Log, Plans, Health, Records, or More row
+now becomes ready only when the saved evidence file name or URI contains that
+route label for the matching platform. A red test first showed six generic iOS
+and six generic Android screenshots incorrectly marking the manifest ready; the
+green pass now keeps generic `native-ios-*` and `native-android-*` attachments
+blocked with route-specific missing-proof rows. Fresh local verification passed
+focused Route Visual tests `26/26`, focused care-twin route and machine-readable
+doctor readiness `114/114`, the full zero-dependency API/mobile/PWA/care-domain
+suite `560/560`, root TypeScript, mobile TypeScript, and `git diff --check`
+with expected Windows CRLF warnings only. Direct JSON mobile beta doctor
+source-backed checks pass, including `route visual proof manifest is
+source-backed`, while the doctor still blocks only on local pnpm `11.7.0` versus
+pinned `10.24.0` and Corepack missing from PATH; direct native QA tooling doctor
+still blocks because this Windows shell lacks Android `adb`, Android `emulator`,
+Java, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`. This is route-proof
+truth hardening only, not native screenshot evidence, visual approval, provider
+approval, store approval, public launch, or Apollo sign-off.
+
 The Live Preview Handoff proof pass turns the dependency-complete preview handoff
 into a first-class section instead of a hidden command. The Release Smoke
 Checklist now lists `Live preview handoff proof` immediately after dependency

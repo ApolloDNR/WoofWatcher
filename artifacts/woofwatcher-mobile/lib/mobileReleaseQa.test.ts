@@ -144,9 +144,9 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
   assert.equal(pending.statusLabel, "Native proof blocked");
   assert.equal(pending.rows.length, 6);
   assert.deepEqual(pending.rows.map((row) => row.label), ["Home", "Log", "Plans", "Health", "Records", "More"]);
-  assert.match(pending.rows[0]?.iosStatus ?? "", /iOS screenshot pending/);
-  assert.match(pending.rows[0]?.androidStatus ?? "", /Android screenshot pending/);
-  assert.match(pending.blockers.join("\n"), /Home: iOS screenshot pending/);
+  assert.match(pending.rows[0]?.iosStatus ?? "", /iOS Home screenshot pending/);
+  assert.match(pending.rows[0]?.androidStatus ?? "", /Android Home screenshot pending/);
+  assert.match(pending.blockers.join("\n"), /Home: iOS Home screenshot pending/);
   assert.match(pending.blockers.join("\n"), /QA note pending/);
   assert.match(pending.webPreviewBoundary, /does not replace native iOS\/Android route screenshots/);
 
@@ -173,7 +173,41 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
   assert.equal(complete.status, "ready");
   assert.equal(complete.statusLabel, "Native visual proof complete");
   assert.equal(complete.blockers.length, 0);
-  assert.match(complete.rows[5]?.androidStatus ?? "", /Android screenshot attached/);
+  assert.match(complete.rows[5]?.androidStatus ?? "", /Android More screenshot attached: more-android\.png/);
+});
+
+test("keeps route visual proof blocked until screenshots are route-named", () => {
+  const surface = listMobileReleaseQaSurfaces().find((item) => item.id === "route-visual-consistency");
+
+  assert.ok(surface);
+  const manifest = buildRouteVisualProofManifest({
+    surface,
+    note: "No route-to-route design break found.",
+    evidence: [
+      ...Array.from({ length: 6 }, (_, index) => ({
+        uri: `file:///qa/native-ios-${index + 1}.png`,
+        fileName: `native-ios-${index + 1}.png`,
+        source: "library" as const,
+        targetPlatform: "ios" as const,
+        capturedAtIso: "2026-07-03T12:00:00.000Z",
+      })),
+      ...Array.from({ length: 6 }, (_, index) => ({
+        uri: `file:///qa/native-android-${index + 1}.png`,
+        fileName: `native-android-${index + 1}.png`,
+        source: "library" as const,
+        targetPlatform: "android" as const,
+        capturedAtIso: "2026-07-03T12:00:00.000Z",
+      })),
+    ],
+  });
+
+  assert.equal(manifest.attachedIosScreenshots, 6);
+  assert.equal(manifest.attachedAndroidScreenshots, 6);
+  assert.equal(manifest.status, "blocked");
+  assert.match(manifest.rows[0]?.iosStatus ?? "", /iOS Home screenshot pending/);
+  assert.match(manifest.rows[5]?.androidStatus ?? "", /Android More screenshot pending/);
+  assert.match(manifest.blockers.join("\n"), /Home: iOS Home screenshot pending/);
+  assert.match(manifest.blockers.join("\n"), /More: Android More screenshot pending/);
 });
 
 test("routes Incident Composer QA into the detail-first incident flow", () => {
