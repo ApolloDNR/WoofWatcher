@@ -46,13 +46,21 @@ export type LaunchProviderSetupKey =
 
 export interface LaunchProviderProfile {
   authConfigured: boolean;
+  authProviderProofReady: boolean;
   databaseConfigured: boolean;
+  databaseProviderProofReady: boolean;
   storageProviderConfigured: boolean;
+  storageProviderProofReady: boolean;
   aiProviderConfigured: boolean;
+  aiProviderProofReady: boolean;
   paymentsEnabled: boolean;
+  paymentsProviderProofReady: boolean;
   pushNotificationsConfigured: boolean;
+  pushNotificationsProofReady: boolean;
   appStoreAccountsReady: boolean;
+  storeAccountsProofReady: boolean;
   accountDeletionEnabled: boolean;
+  accountDeletionProofReady: boolean;
   ownerReviewedAt?: string;
   providerStatus: LaunchProviderSetupStatus;
   notes: string;
@@ -70,6 +78,8 @@ export interface LaunchProviderSetupRow {
   nextAction: string;
   proofRequired: string;
   proofChecklist: string[];
+  providerConfigured: boolean;
+  proofReady: boolean;
 }
 
 export interface LaunchProviderSetupPlan {
@@ -91,25 +101,41 @@ export interface LaunchProviderSetupPlan {
   providerInput: Pick<
     LaunchReadinessProviderInput,
     | "authConfigured"
+    | "authProviderProofReady"
     | "databaseConfigured"
+    | "databaseProviderProofReady"
     | "storageProviderConfigured"
+    | "storageProviderProofReady"
     | "aiProviderConfigured"
+    | "aiProviderProofReady"
     | "paymentsEnabled"
+    | "paymentsProviderProofReady"
     | "pushNotificationsConfigured"
+    | "pushNotificationsProofReady"
     | "appStoreAccountsReady"
+    | "storeAccountsProofReady"
     | "accountDeletionEnabled"
+    | "accountDeletionProofReady"
   >;
 }
 
 const DEFAULT_PROFILE: LaunchProviderProfile = {
   authConfigured: false,
+  authProviderProofReady: false,
   databaseConfigured: false,
+  databaseProviderProofReady: false,
   storageProviderConfigured: false,
+  storageProviderProofReady: false,
   aiProviderConfigured: false,
+  aiProviderProofReady: false,
   paymentsEnabled: false,
+  paymentsProviderProofReady: false,
   pushNotificationsConfigured: false,
+  pushNotificationsProofReady: false,
   appStoreAccountsReady: false,
+  storeAccountsProofReady: false,
   accountDeletionEnabled: false,
+  accountDeletionProofReady: false,
   providerStatus: "local-draft",
   notes: "",
 };
@@ -129,13 +155,21 @@ export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput
   const ownerReviewedAt = cleanString(source.ownerReviewedAt);
   return {
     authConfigured: Boolean(source.authConfigured),
+    authProviderProofReady: Boolean(source.authProviderProofReady),
     databaseConfigured: Boolean(source.databaseConfigured),
+    databaseProviderProofReady: Boolean(source.databaseProviderProofReady),
     storageProviderConfigured: Boolean(source.storageProviderConfigured),
+    storageProviderProofReady: Boolean(source.storageProviderProofReady),
     aiProviderConfigured: Boolean(source.aiProviderConfigured),
+    aiProviderProofReady: Boolean(source.aiProviderProofReady),
     paymentsEnabled: Boolean(source.paymentsEnabled),
+    paymentsProviderProofReady: Boolean(source.paymentsProviderProofReady),
     pushNotificationsConfigured: Boolean(source.pushNotificationsConfigured),
+    pushNotificationsProofReady: Boolean(source.pushNotificationsProofReady),
     appStoreAccountsReady: Boolean(source.appStoreAccountsReady),
+    storeAccountsProofReady: Boolean(source.storeAccountsProofReady),
     accountDeletionEnabled: Boolean(source.accountDeletionEnabled),
+    accountDeletionProofReady: Boolean(source.accountDeletionProofReady),
     ownerReviewedAt: ownerReviewedAt || undefined,
     providerStatus: cleanStatus(source.providerStatus),
     notes: cleanString(source.notes),
@@ -157,6 +191,17 @@ const ROW_DEFINITIONS: Array<{
     | "appStoreAccountsReady"
     | "accountDeletionEnabled"
   >;
+  proofField: keyof Pick<
+    LaunchProviderProfile,
+    | "authProviderProofReady"
+    | "databaseProviderProofReady"
+    | "storageProviderProofReady"
+    | "aiProviderProofReady"
+    | "paymentsProviderProofReady"
+    | "pushNotificationsProofReady"
+    | "storeAccountsProofReady"
+    | "accountDeletionProofReady"
+  >;
   readyDetail: string;
   blockedDetail: string;
   nextAction: string;
@@ -168,6 +213,7 @@ const ROW_DEFINITIONS: Array<{
     label: "Production auth",
     owner: "Apollo / developer",
     field: "authConfigured",
+    proofField: "authProviderProofReady",
     readyDetail: "Production sign-in, household membership, and deep-link sign-in are configured for review.",
     blockedDetail: "Launch still needs production auth, sign-in URLs, household membership rules, and account session policy.",
     nextAction: "Configure Clerk production keys, redirect URLs, OAuth/deep links, and household membership policy.",
@@ -179,6 +225,7 @@ const ROW_DEFINITIONS: Array<{
     label: "Household database sync",
     owner: "Developer",
     field: "databaseConfigured",
+    proofField: "databaseProviderProofReady",
     readyDetail: "Production household care documents, logs, update cursors, delete tombstones, and sync rules are configured for review.",
     blockedDetail:
       "Household logs remain local/full-refresh or preview-only until production database sync, cursor/tombstone RLS, retention, and permissions are approved.",
@@ -192,6 +239,7 @@ const ROW_DEFINITIONS: Array<{
     label: "Records and media storage",
     owner: "Developer / privacy",
     field: "storageProviderConfigured",
+    proofField: "storageProviderProofReady",
     readyDetail: "Document, proof-photo, report, and QA evidence storage rules are ready for migration testing.",
     blockedDetail: "Receipts, proof photos, reports, and QA screenshots stay local until signed storage rules exist.",
     nextAction: "Create storage buckets, signed upload/download rules, retention, export, deletion, and household scope policy.",
@@ -204,6 +252,7 @@ const ROW_DEFINITIONS: Array<{
     label: "WoofGuide AI",
     owner: "Apollo / safety",
     field: "aiProviderConfigured",
+    proofField: "aiProviderProofReady",
     readyDetail: "WoofGuide can call the approved AI provider with owner review and veterinary boundary copy.",
     blockedDetail: "WoofGuide must stay deterministic/fallback until keys, model policy, disclosures, and review rules are approved.",
     nextAction: "Approve OpenAI key handling, model policy, source/citation behavior, owner-review writes, and vet-boundary language.",
@@ -215,6 +264,7 @@ const ROW_DEFINITIONS: Array<{
     label: "WoofWatcher Plus payments",
     owner: "Apollo / business",
     field: "paymentsEnabled",
+    proofField: "paymentsProviderProofReady",
     readyDetail: "Subscription checkout is staged under approved product, support, refund, and store obligations.",
     blockedDetail: "Paid checkout must stay disabled until subscription packaging, refund policy, and store rules are approved.",
     nextAction: "Finalize Plus tiers, App Store/Play billing path, refund/support policy, receipts, and entitlement checks.",
@@ -226,6 +276,7 @@ const ROW_DEFINITIONS: Array<{
     label: "Push notifications",
     owner: "Developer",
     field: "pushNotificationsConfigured",
+    proofField: "pushNotificationsProofReady",
     readyDetail: "Reminder notifications are configured for production QA and store privacy disclosures.",
     blockedDetail: "Reminder Center can run in-app, but production push reminders are not configured.",
     nextAction: "Configure Expo push, Apple APNs, Firebase/FCM, permissions copy, quiet hours, and opt-out behavior.",
@@ -237,6 +288,7 @@ const ROW_DEFINITIONS: Array<{
     label: "Apple and Google store accounts",
     owner: "Apollo",
     field: "appStoreAccountsReady",
+    proofField: "storeAccountsProofReady",
     readyDetail: "Apple Developer and Google Play Console access are ready for submission prep.",
     blockedDetail: "Public mobile launch cannot proceed until store accounts, bundle ids, and submission roles are confirmed.",
     nextAction: "Confirm Apple Developer, App Store Connect, Google Play Console, bundle identifiers, screenshots, and review access.",
@@ -248,6 +300,7 @@ const ROW_DEFINITIONS: Array<{
     label: "Self-serve account deletion",
     owner: "Developer / privacy",
     field: "accountDeletionEnabled",
+    proofField: "accountDeletionProofReady",
     readyDetail: "Account deletion has a provider-backed destructive path, export warning, and audit receipt.",
     blockedDetail: "Deletion is still manual/non-destructive until provider-backed deletion and audit receipts are approved.",
     nextAction: "Implement and approve account deletion, export-before-delete flow, object deletion, audit receipts, and recovery window.",
@@ -265,15 +318,24 @@ function statusLabel(status: LaunchProviderSetupStatus): string {
 export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): LaunchProviderSetupPlan {
   const profile = normalizeLaunchProviderProfile(input);
   const providerApproved = profile.providerStatus === "provider-approved";
-  const stagedStatusLabel = profile.providerStatus === "owner-reviewed" ? "Owner staged" : "Local staged";
+  const stagedStatusLabel =
+    profile.providerStatus === "provider-approved"
+      ? "Proof pending"
+      : profile.providerStatus === "owner-reviewed"
+        ? "Owner staged"
+        : "Local staged";
   const rows = ROW_DEFINITIONS.map<LaunchProviderSetupRow>((definition) => {
     const configured = Boolean(profile[definition.field]);
-    const status: LaunchProviderSetupRowStatus = configured ? (providerApproved ? "ready" : "staged") : "blocked";
+    const proofReady = Boolean(profile[definition.proofField]);
+    const rowReady = configured && providerApproved && proofReady;
+    const status: LaunchProviderSetupRowStatus = rowReady ? "ready" : configured ? "staged" : "blocked";
     const detail =
       status === "ready"
         ? definition.readyDetail
         : status === "staged"
-          ? `Proof is staged locally; provider approval and evidence are still required before this gate counts as production-ready. ${definition.readyDetail}`
+          ? providerApproved
+            ? `Provider setup is staged, but structured proof evidence is still required before this gate counts as production-ready. ${definition.readyDetail}`
+            : `Proof is staged locally; provider approval and structured proof evidence are still required before this gate counts as production-ready. ${definition.readyDetail}`
           : definition.blockedDetail;
     return {
       key: definition.key,
@@ -285,6 +347,8 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
       nextAction: definition.nextAction,
       proofRequired: definition.proofRequired,
       proofChecklist: [...(definition.proofChecklist ?? [])],
+      providerConfigured: configured,
+      proofReady,
     };
   });
 
@@ -332,14 +396,22 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
     blockers,
     nextActions,
     providerInput: {
-      authConfigured: providerApproved && profile.authConfigured,
-      databaseConfigured: providerApproved && profile.databaseConfigured,
-      storageProviderConfigured: providerApproved && profile.storageProviderConfigured,
-      aiProviderConfigured: providerApproved && profile.aiProviderConfigured,
-      paymentsEnabled: providerApproved && profile.paymentsEnabled,
-      pushNotificationsConfigured: providerApproved && profile.pushNotificationsConfigured,
-      appStoreAccountsReady: providerApproved && profile.appStoreAccountsReady,
-      accountDeletionEnabled: providerApproved && profile.accountDeletionEnabled,
+      authConfigured: rows.some((row) => row.key === "auth" && row.status === "ready"),
+      authProviderProofReady: rows.some((row) => row.key === "auth" && row.status === "ready"),
+      databaseConfigured: rows.some((row) => row.key === "database" && row.status === "ready"),
+      databaseProviderProofReady: rows.some((row) => row.key === "database" && row.status === "ready"),
+      storageProviderConfigured: rows.some((row) => row.key === "storage" && row.status === "ready"),
+      storageProviderProofReady: rows.some((row) => row.key === "storage" && row.status === "ready"),
+      aiProviderConfigured: rows.some((row) => row.key === "ai" && row.status === "ready"),
+      aiProviderProofReady: rows.some((row) => row.key === "ai" && row.status === "ready"),
+      paymentsEnabled: rows.some((row) => row.key === "payments" && row.status === "ready"),
+      paymentsProviderProofReady: rows.some((row) => row.key === "payments" && row.status === "ready"),
+      pushNotificationsConfigured: rows.some((row) => row.key === "push" && row.status === "ready"),
+      pushNotificationsProofReady: rows.some((row) => row.key === "push" && row.status === "ready"),
+      appStoreAccountsReady: rows.some((row) => row.key === "storeAccounts" && row.status === "ready"),
+      storeAccountsProofReady: rows.some((row) => row.key === "storeAccounts" && row.status === "ready"),
+      accountDeletionEnabled: rows.some((row) => row.key === "accountDeletion" && row.status === "ready"),
+      accountDeletionProofReady: rows.some((row) => row.key === "accountDeletion" && row.status === "ready"),
     },
   };
 }

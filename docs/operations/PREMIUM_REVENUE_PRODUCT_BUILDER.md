@@ -239,6 +239,18 @@ sheet, and a native Share Provider Plan action. `CareContext` persists
 consumes those saved gates while still refusing to claim public launch until
 native QA, legal/support/store approval, and Apollo sign-off are complete.
 
+The 2026-07-04 Provider Launch Setup proof pass closes a row-level overclaim in
+that operator workflow. Provider-approved auth, database, storage, AI, payments,
+push, store, and deletion booleans no longer make rows ready by themselves:
+`deriveLaunchProviderSetup` requires the matching structured proof-ready flag
+before a row can become ready or forward true provider input into Launch
+Readiness. Local verification passed `launchProviderSetup.test.ts` `7/7`,
+focused Provider Launch Setup plus mobile readiness tests `121/121`, the full
+zero-dependency API/mobile/PWA/care-domain suite `591/591`, root TypeScript,
+mobile TypeScript, direct JSON doctor source-backed checks, and `git diff --check`
+with expected Windows line-ending warnings. Real provider proof files,
+native/store evidence, public launch, and Apollo sign-off remain blockers.
+
 The Provider Launch Setup proof pass made those gates more operator-ready for
 the two-day beta handoff. Each provider row now includes a `proofRequired`
 checklist, More shows `Proof needed:` under the row detail, and the shared

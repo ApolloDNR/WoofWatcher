@@ -192,7 +192,7 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
   assert.equal(profile.notes, "");
 });
 
-test("keeps owner-reviewed provider toggles out of launch-readiness input until provider approval", async () => {
+test("keeps owner-reviewed provider toggles out of launch-readiness input until provider approval and structured proof", async () => {
   const mod = await import("./launchProviderSetup.ts").catch(() => null);
   assert.ok(mod, "launchProviderSetup module should exist");
 
@@ -229,19 +229,51 @@ test("keeps owner-reviewed provider toggles out of launch-readiness input until 
   assert.equal(ownerReviewed.nextGate?.key, "auth");
   assert.deepEqual(ownerReviewed.providerInput, {
     authConfigured: false,
+    authProviderProofReady: false,
     databaseConfigured: false,
+    databaseProviderProofReady: false,
     storageProviderConfigured: false,
+    storageProviderProofReady: false,
     aiProviderConfigured: false,
+    aiProviderProofReady: false,
     paymentsEnabled: false,
+    paymentsProviderProofReady: false,
     pushNotificationsConfigured: false,
+    pushNotificationsProofReady: false,
     appStoreAccountsReady: false,
+    storeAccountsProofReady: false,
     accountDeletionEnabled: false,
+    accountDeletionProofReady: false,
   });
-  assert.equal(providerApproved.status, "provider-approved");
-  assert.equal(providerApproved.readyCount, 8);
-  assert.equal(providerApproved.openCount, 0);
-  assert.ok(providerApproved.rows.every((row) => row.status === "ready"));
+  assert.equal(providerApproved.status, "owner-reviewed");
+  assert.equal(providerApproved.readyCount, 0);
+  assert.equal(providerApproved.openCount, 8);
+  assert.ok(providerApproved.rows.every((row) => row.status === "staged"));
   assert.deepEqual(providerApproved.providerInput, {
+    authConfigured: false,
+    authProviderProofReady: false,
+    databaseConfigured: false,
+    databaseProviderProofReady: false,
+    storageProviderConfigured: false,
+    storageProviderProofReady: false,
+    aiProviderConfigured: false,
+    aiProviderProofReady: false,
+    paymentsEnabled: false,
+    paymentsProviderProofReady: false,
+    pushNotificationsConfigured: false,
+    pushNotificationsProofReady: false,
+    appStoreAccountsReady: false,
+    storeAccountsProofReady: false,
+    accountDeletionEnabled: false,
+    accountDeletionProofReady: false,
+  });
+});
+
+test("keeps provider-approved toggles staged until row structured proof is ready", async () => {
+  const mod = await import("./launchProviderSetup.ts").catch(() => null);
+  assert.ok(mod, "launchProviderSetup module should exist");
+
+  const plan = mod.deriveLaunchProviderSetup({
     authConfigured: true,
     databaseConfigured: true,
     storageProviderConfigured: true,
@@ -250,6 +282,31 @@ test("keeps owner-reviewed provider toggles out of launch-readiness input until 
     pushNotificationsConfigured: true,
     appStoreAccountsReady: true,
     accountDeletionEnabled: true,
+    providerStatus: "provider-approved",
+  });
+
+  assert.equal(plan.status, "owner-reviewed");
+  assert.equal(plan.readyCount, 0);
+  assert.equal(plan.openCount, 8);
+  assert.ok(plan.rows.every((row) => row.status === "staged"));
+  assert.ok(plan.rows.every((row) => /structured proof/i.test(row.detail)));
+  assert.deepEqual(plan.providerInput, {
+    authConfigured: false,
+    authProviderProofReady: false,
+    databaseConfigured: false,
+    databaseProviderProofReady: false,
+    storageProviderConfigured: false,
+    storageProviderProofReady: false,
+    aiProviderConfigured: false,
+    aiProviderProofReady: false,
+    paymentsEnabled: false,
+    paymentsProviderProofReady: false,
+    pushNotificationsConfigured: false,
+    pushNotificationsProofReady: false,
+    appStoreAccountsReady: false,
+    storeAccountsProofReady: false,
+    accountDeletionEnabled: false,
+    accountDeletionProofReady: false,
   });
 });
 
@@ -355,9 +412,9 @@ test("does not show provider-approved until every provider gate is ready", async
 
   assert.equal(plan.status, "owner-reviewed");
   assert.equal(plan.statusLabel, "Owner reviewed");
-  assert.equal(plan.readyCount, 1);
-  assert.equal(plan.openCount, 7);
-  assert.equal(plan.nextGate?.key, "database");
+  assert.equal(plan.readyCount, 0);
+  assert.equal(plan.openCount, 8);
+  assert.equal(plan.nextGate?.key, "auth");
   assert.ok(plan.blockers.length > 0);
 });
 
@@ -367,13 +424,21 @@ test("clears the next provider gate only when every production provider is ready
 
   const plan = mod.deriveLaunchProviderSetup({
     authConfigured: true,
+    authProviderProofReady: true,
     databaseConfigured: true,
+    databaseProviderProofReady: true,
     storageProviderConfigured: true,
+    storageProviderProofReady: true,
     aiProviderConfigured: true,
+    aiProviderProofReady: true,
     paymentsEnabled: true,
+    paymentsProviderProofReady: true,
     pushNotificationsConfigured: true,
+    pushNotificationsProofReady: true,
     appStoreAccountsReady: true,
+    storeAccountsProofReady: true,
     accountDeletionEnabled: true,
+    accountDeletionProofReady: true,
     providerStatus: "provider-approved",
   });
 

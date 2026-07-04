@@ -1056,6 +1056,30 @@ check(
     : "keep Launch Readiness and More wired so provider setup booleans alone cannot mark the app store-ready",
 );
 
+const providerLaunchSetupProofGuardIsSourceBacked = includesAll(launchProviderSetupSource, [
+  "authProviderProofReady",
+  "databaseProviderProofReady",
+  "storageProviderProofReady",
+  "aiProviderProofReady",
+  "paymentsProviderProofReady",
+  "pushNotificationsProofReady",
+  "storeAccountsProofReady",
+  "accountDeletionProofReady",
+  "proofField",
+  "const proofReady = Boolean(profile[definition.proofField])",
+  "const rowReady = configured && providerApproved && proofReady",
+  "Provider setup is staged, but structured proof evidence is still required",
+  "authProviderProofReady: rows.some((row) => row.key === \"auth\" && row.status === \"ready\")",
+])
+  && !/const status: LaunchProviderSetupRowStatus = configured \? \(providerApproved \? "ready" : "staged"\) : "blocked"/.test(launchProviderSetupSource);
+check(
+  "provider launch setup proof guard is source-backed",
+  providerLaunchSetupProofGuardIsSourceBacked,
+  providerLaunchSetupProofGuardIsSourceBacked
+    ? "Provider Launch Setup keeps each provider row staged until provider approval and matching structured proof-ready evidence are both present"
+    : "keep Provider Launch Setup gated so provider-approved booleans alone cannot mark provider rows ready",
+);
+
 const privacySafetyAiProofGuardIsSourceBacked = includesAll(privacySafetySource, [
   "buildAiProviderProofManifest",
   "AiProviderProofEvidence",

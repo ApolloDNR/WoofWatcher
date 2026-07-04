@@ -479,6 +479,23 @@ partial "provider approved" state back to owner-reviewed until every gate is
 ready, and the share packet states that it is not App Store or Play Store
 approval.
 
+Current evidence, 2026-07-04: Provider Launch Setup row readiness now requires
+row-level structured proof flags before launch gates can become ready. A saved
+provider profile can stage configured auth, database sync, storage, AI,
+payments, push, store accounts, and self-serve deletion, but
+`deriveLaunchProviderSetup` keeps each row staged as `Proof pending` until the
+row is configured, `providerStatus` is `provider-approved`, and the matching
+proof-ready flag is true. The same row-ready verdict controls the provider
+input forwarded into Launch Readiness, so provider-approved booleans alone
+cannot make release or store-submission packets claim provider readiness.
+Local verification passed `launchProviderSetup.test.ts` `7/7`, focused
+Provider Launch Setup plus mobile readiness tests `121/121`, the full
+zero-dependency API/mobile/PWA/care-domain suite `591/591`, root TypeScript,
+mobile TypeScript, the JSON doctor source-backed guard, and `git diff --check`
+with expected Windows line-ending warnings only. Real provider proof files,
+store evidence, native proof, public launch, and Apollo sign-off remain
+required.
+
 Current evidence, 2026-06-19: The Option B living-room polish pass keeps Phoenix as one layered main sprite instead of a second-avatar illusion. Home quick-log actions now request action-specific sprite reactions, the room renderer adds ambient micro-behaviors and rest-state safeguards, Avatar Studio suppresses oversized still/accessory overlays when a live sprite pack is active, and PixelIcon paths use crisp pixel rendering on web.
 
 Current evidence, 2026-06-19: PixelLab subscription review did not promote weaker replacement candidates. The clean single still candidate is archived for reference, while the duplicate/cropped and gray identity-drift candidates are explicitly rejected in the PixelLab generation log. The current hard-pixel Option B runtime family remains the approved live source until native QA or a stronger reference-guided generation beats it.

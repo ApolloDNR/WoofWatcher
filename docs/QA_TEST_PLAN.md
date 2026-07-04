@@ -44,6 +44,20 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: Provider Launch Setup row proof hardening now keeps provider-approved auth, database, storage, AI, payments, push, store, and deletion toggles staged as `Proof pending` until each row's structured proof-ready flag is present.
+- PASS: `deriveLaunchProviderSetup` now requires configured setup, `providerStatus: "provider-approved"`, and the matching row proof flag before a row becomes `ready` or forwards true provider input into Launch Readiness.
+- PASS: `launchProviderSetup.test.ts` passed `7/7`.
+- PASS: Focused Provider Launch Setup plus mobile readiness tests passed `121/121`.
+- PASS: Direct JSON mobile beta doctor reports `provider launch setup proof guard is source-backed` as `PASS`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `591/591`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: `git diff --check` passed with expected Windows CRLF warnings only.
+- BLOCKED: Fresh branch CI for this Provider Launch Setup proof guard is pending until the current commit is pushed and a new `WoofWatcher Verify` run is visible; do not treat earlier green run `28705671803` as proof for this slice.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real structured provider proof files for auth, database sync, storage, AI, payments, push, store accounts, and account deletion; real native/store/public-launch evidence; and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: PWA hosted nudge proof hardening now keeps backend URL plus household id plus push provider staged as `provider_proof_pending` until structured delivery proof is attached.
 - PASS: `buildHostedNudgePlan` now requires backend job policy, caregiver consent, provider delivery, caregiver privacy, quiet-hours and daily-budget enforcement, missed-delivery fallback, native delivery proof, and Apollo approval before returning `ready_to_schedule`.
 - PASS: PWA readiness passed `17/17`.

@@ -2000,6 +2000,24 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real hosted nudge delivery proof files or the app gains a provider-backed proof evidence service that can feed hosted nudge planning.
 
+### 2026-07-04: Provider Launch Setup Rows Require Structured Proof Flags
+
+Decision: Provider Launch Setup cannot treat provider-approved status plus configured provider booleans as enough to mark auth, database, storage, AI, payments, push, store, or account-deletion rows ready. Each row needs its matching structured proof-ready flag before it can become ready or feed true provider input into Launch Readiness.
+
+Reason: The aggregate Launch Readiness model already requires structured proof flags, but Provider Launch Setup could still present provider-approved rows as ready from older booleans. That made the operator packet overstate readiness even though real provider files, native evidence, store proof, and Apollo sign-off were still missing.
+
+Consequences:
+
+- `deriveLaunchProviderSetup` normalizes row proof flags for auth, database, storage, AI, payments, push, store accounts, and account deletion.
+- A row is ready only when setup is configured, `providerStatus` is `provider-approved`, and the row proof flag is true.
+- Provider-approved rows without proof stay staged as `Proof pending` and say structured proof evidence is still required.
+- `providerInput` only forwards true configured/proof flags for rows that are actually ready.
+- Real provider proof files, native/store proof, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real provider proof files for the provider rows, or WoofWatcher gains a provider-backed evidence service that can validate those files automatically.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
