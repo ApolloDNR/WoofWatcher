@@ -1417,7 +1417,7 @@ Latest local evidence, 2026-07-03:
   the manifest, then failed again because the JSON mobile beta doctor did not
   report `woofguide ai provider proof manifest is source-backed`.
 - Focused proof now passes `aiProviderProof.test.ts` `3/3`, targeted AI proof
-  plus mobile readiness and release-QA tests with `143/143`, and the broader
+  plus mobile readiness and release-QA tests with `147/147`, and the broader
   zero-dependency API/mobile/PWA/care-domain suite with `572/572`. Root
   TypeScript passes, PixelLab asset verification passes with `ok=149
   missing=0 invalid=0`, and `git diff --check` passes with expected Windows
