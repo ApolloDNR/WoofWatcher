@@ -302,7 +302,10 @@ until real billing, receipt, restore, refund/support, store, and Apollo checkout
 proof are attached. The JSON mobile beta doctor now reports `payments provider
 proof manifest is source-backed`, but this is visibility only; it does not
 configure App Store, Play Store, Stripe, sandbox receipts, restore purchases,
-tax terms, refund approval, money movement, or Apollo checkout sign-off.
+tax terms, refund approval, money movement, or Apollo checkout sign-off. Branch
+CI proved the focused manifest guard in `WoofWatcher Verify` run `28690249414`,
+job `85090172228`, on commit `12c63eb`, with JSON mobile beta doctor, focused
+behavior tests, and Typecheck plus CI-safe builds passing.
 
 The WoofGuide AI provider proof pass turns the old AI one-line proof into a
 source-backed packet. `aiProviderProof.ts` now defines the OpenAI key location,

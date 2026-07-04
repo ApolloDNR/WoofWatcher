@@ -1681,6 +1681,10 @@ Latest local evidence, 2026-07-03:
 - Direct `scripts/mobile-beta-doctor.mjs --json` now reports `payments provider
   proof manifest is source-backed` as `PASS`, proving the focused helper route
   renders the manifest without enabling checkout.
+- Branch CI also passed for commit `12c63eb` in `WoofWatcher Verify` run
+  `28690249414`, job `85090172228`, in `2m56s`; Setup pnpm, Setup Node,
+  install dependencies, JSON mobile beta doctor, focused behavior tests, and
+  Typecheck plus CI-safe builds all passed for the focused manifest guard.
 - Direct `scripts/native-qa-tooling-doctor.mjs --json` lists the payments proof
   route in `nativeProofTargets`, but remains `BLOCKED` in this Windows shell
   because Android adb/emulator, Java, `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and
