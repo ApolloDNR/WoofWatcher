@@ -216,7 +216,10 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /Focused route visual consistency target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=route-visual-consistency/);
   assert.match(text, /Home, Log, Plans, Health, Records, and More on iOS and Android/);
-  assert.match(text, /web preview screenshots do not replace native proof/);
+  assert.match(text, /route-named iOS screenshots/);
+  assert.match(text, /Home-iOS/);
+  assert.match(text, /More-Android/);
+  assert.match(text, /Web preview screenshots do not replace native proof/);
   assert.match(text, /Native and store proof:/);
   assert.match(text, /iOS Quick Log\/Log proof/);
   assert.match(text, /Android Launch Readiness proof/);

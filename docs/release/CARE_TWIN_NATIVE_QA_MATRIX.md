@@ -62,6 +62,12 @@ iOS count toward iOS evidence slots; screenshots attached while running on
 Android count toward Android slots. Web/unknown attachments remain visible in
 the report but must not be used as native release proof. Do not mark the device
 pass complete until both the iOS and Android counts satisfy the required slots.
+For Route Visual Consistency, counts are not enough: save or rename each
+attachment with the route label and platform before attaching it, such as
+`Home-iOS`, `Home-Android`, `Log-iOS`, `Log-Android`, `Plans-iOS`,
+`Plans-Android`, `Health-iOS`, `Health-Android`, `Records-iOS`,
+`Records-Android`, `More-iOS`, and `More-Android`. The Route Visual proof
+manifest stays blocked until each required row has route-named native evidence.
 
 As of 2026-06-21, `/care-twin-qa` also includes Store Screenshot QA generated
 from the Store Submission packet. Use those cards to capture App Store and Play

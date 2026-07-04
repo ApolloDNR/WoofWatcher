@@ -123,7 +123,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, reviewer access, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.",
   "Open /care-twin-qa?qaSurface=account-deletion-proof and capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before enabling destructive account deletion.",
   "Open /care-twin-qa?qaSurface=support-legal-readiness-proof and capture support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
-  "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
+  "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android with route-named evidence before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
 ];
@@ -1658,19 +1658,25 @@ const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, 
   "Health",
   "Records",
   "More",
-  "iOS screenshot of Home route top.",
-  "Android screenshot of Home route top.",
-  'requiredNativePlatforms: ["ios", "android"]',
+    "iOS screenshot of Home route top.",
+    "Android screenshot of Home route top.",
+    "Route-named file names or URIs for every attachment",
+    'requiredNativePlatforms: ["ios", "android"]',
 ])
   && includesAll(betaHandoffPacketSource, [
     "Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
     "Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
+    "Name or save each Route Visual screenshot with the route label and platform before attaching it",
+    "Home-iOS",
+    "More-Android",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused route visual consistency target",
     "/care-twin-qa?qaSurface=route-visual-consistency",
     "Home, Log, Plans, Health, Records, and More",
-    "web preview screenshots do not replace native proof",
+    "route-named iOS screenshots",
+    "route-named Android screenshots",
+    "Web preview screenshots do not replace native proof",
   ]);
 check(
   "route visual proof target is source-backed",

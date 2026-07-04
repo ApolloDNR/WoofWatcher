@@ -367,6 +367,7 @@ export function buildBetaHandoffPacketShareText(
     "- Attach support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
     "- Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
     "- Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof.",
+    "- Name or save each Route Visual screenshot with the route label and platform before attaching it, for example Home-iOS, Home-Android, Log-iOS, Log-Android, Plans-iOS, Plans-Android, Health-iOS, Health-Android, Records-iOS, Records-Android, More-iOS, and More-Android.",
     "- Save the Mission note and clear Pass pending proof in both /care-twin-qa and More.",
     "",
     "Native QA Needs tune fix brief:",

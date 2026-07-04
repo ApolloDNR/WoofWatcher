@@ -5218,6 +5218,13 @@ test("keeps a native QA tooling doctor for device-proof handoff", () => {
   assert.ok(
     payload.nextActions?.some(
       (action) =>
+        action.includes("/care-twin-qa?qaSurface=route-visual-consistency") &&
+        action.includes("route-named evidence"),
+    ),
+  );
+  assert.ok(
+    payload.nextActions?.some(
+      (action) =>
         action.includes("/care-twin-qa?qaSurface=report-binary-export-proof") &&
         action.includes("Care Pass PDF") &&
         action.includes("Dog ID PNG"),
@@ -5632,7 +5639,8 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
       (action) =>
         action.includes("/care-twin-qa?qaSurface=route-visual-consistency") &&
         action.includes("Home, Log, Plans, Health, Records, and More") &&
-        action.includes("iOS and Android"),
+        action.includes("iOS and Android") &&
+        action.includes("route-named"),
     ),
   );
   assert.ok(

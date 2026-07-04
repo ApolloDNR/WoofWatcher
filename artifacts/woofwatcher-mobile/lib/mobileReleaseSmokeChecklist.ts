@@ -317,9 +317,9 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Focused route visual consistency target",
             detail:
-              "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android.",
+              "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android with route-named file names or URIs.",
             proof:
-              "Attach 6 iOS screenshots and 6 Android screenshots plus the QA note; web preview screenshots do not replace native proof.",
+              "Attach 6 route-named iOS screenshots and 6 route-named Android screenshots plus the QA note; examples include Home-iOS, Home-Android, Log-iOS, Log-Android, Plans-iOS, Plans-Android, Health-iOS, Health-Android, Records-iOS, Records-Android, More-iOS, and More-Android. Web preview screenshots do not replace native proof.",
             status: "required",
           },
         ],

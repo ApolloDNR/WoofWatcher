@@ -2966,6 +2966,26 @@ Verify` run `28691984899`, job `85094842263`, with Setup pnpm, Setup Node,
 install dependencies, JSON mobile beta doctor, focused behavior tests, Typecheck
 plus CI-safe builds, post steps, and Complete job all green.
 
+The Route Visual route-named capture-instructions pass makes that stricter gate
+actionable for a helper with devices. Share Beta Handoff, the Release Smoke
+Checklist, the Route Visual QA mission model, the mobile beta doctor, the native
+QA tooling doctor, `docs/release/TWO_DAY_BETA_SHIP_PLAN.md`, and
+`docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md` now tell testers to save or rename
+each Route Visual attachment with route label plus platform before attaching it,
+using examples from `Home-iOS` / `Home-Android` through `More-iOS` /
+`More-Android`. Fresh local verification first failed on missing handoff wording
+and a missing JSON doctor route-named next action, then passed focused
+handoff/smoke/Route Visual/readiness tests `144/144`, focused doctor readiness
+`114/114`, the full zero-dependency API/mobile/PWA/care-domain suite `560/560`,
+root TypeScript, mobile TypeScript, and `git diff --check` with expected Windows
+CRLF warnings only. Direct JSON mobile beta doctor source-backed checks pass
+while still blocking only on local pnpm `11.7.0` versus pinned `10.24.0` and
+Corepack missing from PATH; direct native QA tooling doctor now carries the
+route-named next action but still blocks because this Windows shell lacks
+Android `adb`, Android `emulator`, Java, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and
+`JAVA_HOME`. This is capture guidance and guard coverage only, not actual native
+screenshots or visual approval.
+
 The Live Preview Handoff proof pass turns the dependency-complete preview handoff
 into a first-class section instead of a hidden command. The Release Smoke
 Checklist now lists `Live preview handoff proof` immediately after dependency

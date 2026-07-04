@@ -903,6 +903,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Use the current Option B visual direction: navy shell, cream HUD panels, copper accents, pixel Phoenix, and short operational labels.",
       "Start with local preview data only and keep provider, payment, AI, storage, and native proof gates truthful.",
       "Open the route through bottom navigation or a visible command row, not through a hidden debug path.",
+      "Name or save each screenshot with the route label and platform before attaching it so the proof manifest can match Home-iOS through More-Android evidence.",
     ],
     verificationSteps: [
       "Open Home and confirm Phoenix Room, Care Status, Today Command, and Today's Missions read as one first-screen command center.",
@@ -934,6 +935,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Android screenshot of Records route top.",
       "iOS screenshot of More route top.",
       "Android screenshot of More route top.",
+      "Route-named file names or URIs for every attachment, such as Home-iOS, Home-Android, Log-iOS, Log-Android, Plans-iOS, Plans-Android, Health-iOS, Health-Android, Records-iOS, Records-Android, More-iOS, and More-Android.",
       "Note listing the first route with overlap, confusing hierarchy, or mockup drift, or confirming no route-to-route design break was found.",
     ],
     routeChecklist: [
