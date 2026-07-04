@@ -3478,6 +3478,10 @@ Android SDK env vars, and `JAVA_HOME`. This is proof gating only; it does not
 configure storage buckets, attach signed policy evidence, prove native
 iOS/Android share/reopen, satisfy store review, launch publicly, or replace
 Apollo sign-off.
+Branch CI proved the guard on commit `eaa3b2e` in `WoofWatcher Verify` run
+`28700214241`, job `85116859609`, which completed successfully in about `2m31s`
+with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior
+tests, Typecheck plus CI-safe builds, post steps, and Complete job all passing.
 
 Next highest-impact work:
 
