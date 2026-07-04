@@ -3472,9 +3472,13 @@ full zero-dependency API/mobile/PWA/care-domain suite `586/586`, root
 TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks
 including `support runbook proof guard is source-backed`. Direct JSON mobile beta
 doctor remains truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned
-`10.24.0` and missing Corepack. This is proof gating only; it does not approve
-legal/privacy copy, refund policy, support operations, veterinary-boundary
-language, App Store or Play Store review, public launch, or Apollo sign-off.
+`10.24.0` and missing Corepack. Branch CI proved implementation commit
+`ceecc55` in `WoofWatcher Verify` run `28705194968`, job `85129614020`, with
+Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior
+tests, Typecheck plus CI-safe builds, post steps, and Complete job all passing.
+This is proof gating only; it does not approve legal/privacy copy, refund
+policy, support operations, veterinary-boundary language, App Store or Play
+Store review, public launch, or Apollo sign-off.
 
 The Care-entry Provider Sync structured-proof pass closes the remaining generic
 provider-proof overclaim in the incremental sync packet. `deriveCareEntryProviderSyncProof`
