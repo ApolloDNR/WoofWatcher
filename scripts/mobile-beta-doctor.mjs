@@ -116,7 +116,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof and capture Auth gateway plus Setup local-preview proof while provider-backed auth and household creation stay blocked.",
   "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
   "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, native share/reopen proof, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
-  "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture Supabase migration/backfill, active-household RLS, retention/export/deletion policy, and mobile full-refresh sign-off before enabling incremental sync.",
+  "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture structured Supabase project, migration/backfill, active-household RLS, retention/export/deletion, dependency-build, and mobile full-refresh sign-off files with MIME, byte size, route-specific denied reads, row count, CI run id, native QA reference, rollback plan, and row-specific booleans before enabling incremental sync.",
   "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and capture structured proof files for OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling before enabling live AI.",
   "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, platform/provider-named iOS APNs and Android FCM delivery QA, and missed notification fallback before claiming reminder delivery.",
   "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox receipt JSON proof, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
@@ -318,6 +318,7 @@ const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
   "Open focused Records handoff target: /care-twin-qa?qaSurface=records-local-file-handoff.",
   "Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy.",
   "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
+  "Attach structured care-entry provider proof files before enabling incremental sync",
   "Open focused WoofGuide AI provider target: /care-twin-qa?qaSurface=woofguide-ai-provider-proof.",
   "Open focused push notifications target: /care-twin-qa?qaSurface=push-notifications-proof.",
   "Open focused payments provider target: /care-twin-qa?qaSurface=payments-provider-proof.",
@@ -1215,20 +1216,25 @@ const careEntryProviderSyncProofTargetIsSourceBacked = includesAll(careEntryProv
   && includesAll(mobileReleaseQaSource, [
     "care-entry-provider-sync-proof",
     "Care-entry Provider Sync Proof",
-    "Supabase migration",
+    "structured Supabase project",
+    "file names or URIs, MIME, byte size",
     "active-household RLS",
     "retention/export/deletion",
     "incremental sync stays blocked",
   ])
   && includesAll(betaHandoffPacketSource, [
     "Open focused care-entry provider sync target: /care-twin-qa?qaSurface=care-entry-provider-sync-proof.",
-    "Attach Supabase project id, migration/backfill for care_entries.updated_at and care_entry_tombstones",
+    "Attach structured care-entry provider proof files before enabling incremental sync",
+    "Supabase project id proof; migration/backfill proof for care_entries.updated_at and care_entry_tombstones with row count and existing-rows-backfilled",
+    "file name or URI, MIME, byte size, and row-specific booleans or approvals",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused care-entry provider sync proof target",
     "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
-    "Supabase migration/backfill",
+    "structured proof files cover Supabase project setup",
+    "migration/backfill for care_entries.updated_at and care_entry_tombstones",
     "active-household RLS",
+    "row-specific booleans or approvals",
   ])
   && includesAll(livePreviewHandoffProofSource, [
     "care-entry-provider-sync-proof",
@@ -1253,6 +1259,22 @@ const careEntryProviderSyncProofManifestIsSourceBacked = includesAll(careTwinQaR
   && includesAll(careEntryProviderSyncProofSource, [
     "deriveCareEntryProviderSyncProof",
     "incrementalSyncAllowed",
+    "careEntryProviderSyncEvidence",
+    "CareEntryProviderSyncEvidenceFile",
+    "Supabase production project proof ready",
+    "Care-entry migration and backfill proof ready",
+    "Active-household cursor and tombstone RLS proof ready",
+    "Retention, export, and deletion policy proof ready",
+    "Dependency-complete build proof ready",
+    "Mobile incremental sign-off proof ready",
+    "existingRowsBackfilled",
+    "crossHouseholdCursorReadDeniedProof",
+    "crossHouseholdTombstoneReadDeniedProof",
+    "fullRefreshRemainsDefault",
+    "nativeQaRequiredBeforeIncremental",
+    "rollbackPlanApproved",
+    "hasProofMime",
+    "hasPositiveByteSize",
     "mobile full-refresh sign-off",
     "Mobile must remain on full-refresh care-entry refresh",
   ]);

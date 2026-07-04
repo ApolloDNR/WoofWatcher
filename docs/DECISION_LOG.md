@@ -1772,6 +1772,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real support/legal/refund/veterinary-boundary approval proof files, or WoofWatcher gains a provider-backed launch-approval evidence service with signed approval metadata.
 
+### 2026-07-04: Incremental Care Sync Requires Structured Provider Proof
+
+Decision: the care-entry provider sync proof packet cannot treat generic Supabase ids, migration notes, RLS text, policy notes, CI URLs, or mobile sign-off strings as incremental-sync readiness. `Incremental sync allowed` remains blocked until six structured proof files satisfy Supabase project id, migration/backfill, active-household cursor/tombstone RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off requirements.
+
+Reason: incremental care-entry sync is a data-integrity, privacy, retention, and native-adoption boundary. Text that says provider sync is ready can hide missing production project confirmation, unapplied migrations, incomplete existing-row backfills, cross-household cursor/tombstone leaks, missing retention/export/deletion approval, stale dependency builds, missing native QA, or absent rollback approval.
+
+Consequences:
+
+- `deriveCareEntryProviderSyncProof` keeps all six rows blocked when only legacy provider strings are present.
+- Each proof file must include matching file name or URI tokens, acceptable MIME, positive byte size, required row fields, and row-specific booleans or approvals.
+- Supabase migration execution, production RLS/privacy approval, retention/export/deletion policy, native incremental QA, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real Supabase/provider, native QA, and rollback proof files, or WoofWatcher gains a provider-backed sync evidence service with signed migration, RLS, retention, and native-adoption metadata.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

@@ -226,9 +226,10 @@ Current environment note:
   2026-07-03: `WoofWatcher Verify` run `28675348598`, job `85047483945`,
   commit `e234d14`, with Setup pnpm, Setup Node, install, JSON mobile beta
   doctor, focused behavior tests, and Typecheck plus CI-safe builds all passing.
-  This is shortcut-routing proof only; Supabase migration/backfill,
-  active-household RLS, retention/export/deletion, incremental provider sync,
-  and Apollo sign-off remain blocked.
+  This is shortcut-routing proof only; structured Supabase project id,
+  migration/backfill, active-household cursor/tombstone RLS,
+  retention/export/deletion, dependency-build, and mobile sign-off proof files,
+  actual incremental provider sync, and Apollo sign-off remain blocked.
 - Branch CI also proved the Auth/Setup proof shortcut on 2026-07-03:
   `WoofWatcher Verify` run `28675785938`, job `85048784312`, commit `7d7013b`,
   with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused

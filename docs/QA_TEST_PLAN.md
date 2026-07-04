@@ -42,6 +42,17 @@ Latest local evidence, 2026-06-23:
 - PASS: `/care-twin-qa`, More Native QA Next Captures, Mobile Release QA reports, and Native QA capture-plan share text all expose pass/failure criteria before screenshot evidence.
 - STILL REQUIRED: real iOS and Android device/simulator execution, screenshot attachment, QA report sharing, and visible issue tuning.
 
+Latest local evidence, 2026-07-04:
+
+- PASS: Care-entry provider sync proof red/green coverage now blocks legacy Supabase ids, migration notes, RLS notes, policy notes, CI URLs, and mobile sign-off strings unless six structured proof files are attached.
+- PASS: Focused care-entry/provider-setup/Share Beta Handoff/release-QA/smoke/readiness tests passed `153/153`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `576/576`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Direct JSON mobile beta doctor reports `care-entry provider sync proof target is source-backed` and `care-entry provider sync proof manifest is source-backed` as `PASS`.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- BLOCKED: Direct JSON native QA tooling doctor still reports missing `adb`, `emulator`, `java`, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+- STILL REQUIRED: real Supabase migration/backfill execution, production RLS/privacy proof, retention/export/deletion approval, native incremental sync QA, rollback approval, and Apollo sign-off before incremental care-entry sync can be enabled.
+
 ## Required Automated Coverage
 
 - Event taxonomy and normalization.

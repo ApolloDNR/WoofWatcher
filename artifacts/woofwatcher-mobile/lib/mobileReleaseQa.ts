@@ -433,9 +433,9 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     route: "/more",
     priority: "launch-critical",
     goal:
-      "Prove the Supabase migration, active-household RLS, retention policy, dependency proof, and mobile sign-off exist before incremental care-entry sync is enabled.",
+      "Prove structured Supabase project, migration/backfill, active-household RLS, retention/export/deletion, dependency build, and mobile sign-off files exist before incremental care-entry sync is enabled.",
     devicePrompt:
-      "In Provider Launch Setup on iOS and Android, collect the Household database sync proof packet for Supabase migration/backfill, cursor and tombstone RLS, retention/export/deletion, and mobile full-refresh sign-off.",
+      "In Provider Launch Setup on iOS and Android, collect structured Household database sync proof files for Supabase project setup, migration/backfill, cursor and tombstone RLS, retention/export/deletion, dependency build, and mobile full-refresh sign-off.",
     setupSteps: [
       "Use local preview data and keep Household database sync marked open unless provider proof is actually attached.",
       "Open More, then Provider Launch Setup, and inspect the Household database sync gate.",
@@ -443,24 +443,25 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     ],
     verificationSteps: [
       "Confirm Household database sync lists the Care-entry provider sync proof packet.",
-      "Confirm the packet requires Supabase project id, migration/backfill for care_entries.updated_at and care_entry_tombstones, and a non-null updated_at backfill timestamp.",
-      "Confirm active-household RLS proof is required for /care-entries?updatedSince= and /care-entries/tombstones?updatedSince=.",
-      "Confirm backup, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off are required before incremental adoption.",
+      "Confirm the packet requires structured Supabase project id proof with environment, deployment target, database host, owner, production confirmation, MIME, and byte size.",
+      "Confirm migration/backfill proof for care_entries.updated_at and care_entry_tombstones includes migration ids, applied timestamp, backfill row count, backfill timestamp, existing-rows-backfilled, MIME, and byte size.",
+      "Confirm active-household RLS proof files are required for /care-entries?updatedSince= and /care-entries/tombstones?updatedSince= with policy names, active-household claim, denied cross-household reads, verified booleans, MIME, and byte size.",
+      "Confirm backup, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off are structured files with row-specific approvals before incremental adoption.",
       "Capture the Provider Launch Setup state on iOS and Android without marking the database gate ready unless the real proof artifacts are attached.",
     ],
     acceptanceCriteria: [
-      "incremental sync stays blocked until Supabase project id, migration/backfill, cursor RLS, tombstone RLS, retention/export/deletion, dependency build proof, and mobile sign-off are attached.",
+      "incremental sync stays blocked until structured Supabase project id, migration/backfill, cursor RLS, tombstone RLS, retention/export/deletion, dependency build proof, and mobile sign-off files are attached.",
       "The database gate names care_entries.updated_at, care_entry_tombstones, /care-entries?updatedSince=, and /care-entries/tombstones?updatedSince=.",
-      "Retention/export/deletion proof is listed beside the migration and RLS proof, not treated as optional follow-up.",
-      "Provider Launch Setup does not imply cross-device sync is ready from local schema or API contract coverage alone.",
+      "Retention/export/deletion proof is listed beside the migration and RLS proof with privacy and export/deletion approvals, not treated as optional follow-up.",
+      "Provider Launch Setup does not imply cross-device sync is ready from local schema, API contract coverage, generic URLs, or free-form notes alone.",
     ],
     failureEscalation:
-      "Mark Needs tune if the database gate hides migration/backfill, skips cursor or tombstone RLS proof, omits retention/export/deletion policy, allows incremental sync without native sign-off, or implies provider sync is ready from source code alone.",
+      "Mark Needs tune if the database gate hides migration/backfill, skips cursor or tombstone RLS proof, omits structured retention/export/deletion policy, allows incremental sync without structured native sign-off, or implies provider sync is ready from source code alone.",
     requiredEvidence: [
       "iOS screenshot of Provider Launch Setup showing the Household database sync proof packet.",
       "Android screenshot of Provider Launch Setup showing Household database sync still blocked or fully evidenced.",
-      "Note confirming Supabase project id, migration ids, updated_at backfill timestamp, active-household cursor RLS proof, and tombstone RLS proof.",
-      "Note confirming backup policy, retention/export/deletion policy, dependency-complete build URL, and mobile full-refresh sign-off before enabling incremental sync.",
+      "Structured Supabase project id, migration/backfill, and active-household RLS proof files with file names or URIs, MIME, byte size, backfill row count, denied cross-household reads, and verified booleans.",
+      "Structured retention/export/deletion, dependency-complete build, and mobile full-refresh sign-off files with policy references, CI URL and run id, native QA reference, rollback plan, row-specific approvals, MIME, and byte size before enabling incremental sync.",
     ],
     routeChecklist: [
       {
@@ -468,7 +469,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         route: "/more",
         expected:
           "Confirm Household database sync lists the Care-entry provider sync proof packet and stays open until proof is attached.",
-        proof: "Provider Launch Setup screenshot plus migration/backfill and retention policy note.",
+        proof: "Provider Launch Setup screenshot plus structured migration/backfill, RLS, retention, dependency-build, and mobile sign-off files.",
       },
       {
         label: "Care-entry cursor route",
@@ -482,7 +483,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         route: "/care-entries/tombstones?updatedSince=",
         expected:
           "Confirm /care-entries/tombstones?updatedSince= has tombstone RLS proof and retention/export/deletion policy before delete sync is trusted.",
-        proof: "Supabase tombstone RLS proof and retention/export/deletion note.",
+        proof: "Supabase tombstone RLS proof and structured retention/export/deletion policy file.",
       },
     ],
     launchRisk:

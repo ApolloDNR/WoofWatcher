@@ -192,9 +192,12 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Open focused binary export proof target: \/care-twin-qa\?qaSurface=report-binary-export-proof/);
   assert.match(text, /Capture local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, native share\/reopen proof, and iOS\/Android artifact proof before claiming PDF\/PNG readiness/);
   assert.match(text, /Open focused care-entry provider sync target: \/care-twin-qa\?qaSurface=care-entry-provider-sync-proof/);
-  assert.match(text, /Attach Supabase project id, migration\/backfill for care_entries\.updated_at and care_entry_tombstones/);
-  assert.match(text, /active-household RLS cursor\/tombstone proof/);
-  assert.match(text, /mobile full-refresh sign-off before enabling incremental sync/);
+  assert.match(text, /Attach structured care-entry provider proof files before enabling incremental sync/);
+  assert.match(text, /Supabase project id proof; migration\/backfill proof for care_entries\.updated_at and care_entry_tombstones with row count and existing-rows-backfilled/);
+  assert.match(text, /active-household RLS cursor\/tombstone proof for \/care-entries\?updatedSince= and \/care-entries\/tombstones\?updatedSince=/);
+  assert.match(text, /dependency-complete build proof with CI URL and run id/);
+  assert.match(text, /mobile full-refresh sign-off with native QA reference and rollback plan/);
+  assert.match(text, /file name or URI, MIME, byte size, and row-specific booleans or approvals/);
   assert.match(text, /Open focused WoofGuide AI provider target: \/care-twin-qa\?qaSurface=woofguide-ai-provider-proof/);
   assert.match(text, /Attach OpenAI key location, approved model policy, source\/citation rules, and owner-review write gate/);
   assert.match(text, /veterinary safety boundary and fallback\/incident handling before enabling live AI/);

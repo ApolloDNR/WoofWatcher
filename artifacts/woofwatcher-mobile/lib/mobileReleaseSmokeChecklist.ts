@@ -261,9 +261,9 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Focused care-entry provider sync proof target",
             detail:
-              "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and confirm Supabase migration/backfill for care_entries.updated_at and care_entry_tombstones, active-household RLS, retention/export/deletion policy, dependency proof, and mobile full-refresh sign-off before incremental sync.",
+              "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and confirm structured proof files cover Supabase project setup, migration/backfill for care_entries.updated_at and care_entry_tombstones, active-household RLS, retention/export/deletion policy, dependency proof, and mobile full-refresh sign-off before incremental sync.",
             proof:
-              "Attach Supabase project id, migration ids, updated_at backfill timestamp, cursor/tombstone RLS proof, retention/export/deletion policy, dependency-complete build URL, and mobile full-refresh sign-off.",
+              "Attach structured Supabase project id, migration/backfill, cursor/tombstone RLS, retention/export/deletion, dependency-complete build, and mobile full-refresh sign-off files with file name or URI, MIME, byte size, row count, route-specific denied reads, CI run id, native QA reference, rollback plan, and row-specific booleans or approvals.",
             status: "required",
           },
           {

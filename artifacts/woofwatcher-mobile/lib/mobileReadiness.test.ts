@@ -5576,8 +5576,11 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.nextActions?.some(
       (action) =>
         action.includes("/care-twin-qa?qaSurface=care-entry-provider-sync-proof") &&
-        action.includes("Supabase migration") &&
-        action.includes("active-household RLS"),
+        action.includes("structured Supabase project") &&
+        action.includes("migration/backfill") &&
+        action.includes("active-household RLS") &&
+        action.includes("MIME") &&
+        action.includes("byte size"),
     ),
   );
   assert.ok(

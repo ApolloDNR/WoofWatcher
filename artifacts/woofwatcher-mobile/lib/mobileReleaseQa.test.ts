@@ -476,11 +476,13 @@ test("adds a launch-critical care-entry provider sync proof target", () => {
   assert.equal(surface.title, "Care-entry Provider Sync Proof");
   assert.equal(surface.route, "/more");
   assert.equal(surface.priority, "launch-critical");
-  assert.match(surface.goal, /Supabase migration/);
+  assert.match(surface.goal, /structured Supabase project/);
+  assert.match(surface.goal, /migration\/backfill/);
   assert.match(surface.goal, /active-household RLS/);
   assert.match(surface.goal, /incremental care-entry sync/);
   assert.match(surface.devicePrompt, /Provider Launch Setup/);
   assert.match(surface.devicePrompt, /iOS and Android/);
+  assert.match(surface.devicePrompt, /structured Household database sync proof files/);
   assert.match(surface.setupSteps.join("\n"), /Household database sync/);
   assert.match(surface.setupSteps.join("\n"), /full-refresh/);
   assert.match(surface.verificationSteps.join("\n"), /care_entries\.updated_at/);
@@ -495,6 +497,8 @@ test("adds a launch-critical care-entry provider sync proof target", () => {
   assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Provider Launch Setup/);
   assert.match(surface.requiredEvidence.join("\n"), /Supabase project id/);
   assert.match(surface.requiredEvidence.join("\n"), /mobile full-refresh sign-off/);
+  assert.match(surface.requiredEvidence.join("\n"), /file names or URIs, MIME, byte size/);
+  assert.match(surface.requiredEvidence.join("\n"), /row-specific approvals/);
   assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
     "Provider Launch Setup database gate",
     "Care-entry cursor route",

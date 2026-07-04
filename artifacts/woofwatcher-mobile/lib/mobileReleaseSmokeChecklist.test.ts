@@ -169,11 +169,15 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /native share\/reopen proof/);
   assert.match(text, /Focused care-entry provider sync proof target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=care-entry-provider-sync-proof/);
-  assert.match(text, /Supabase migration\/backfill/);
+  assert.match(text, /structured proof files/);
+  assert.match(text, /Supabase project setup/);
+  assert.match(text, /migration\/backfill/);
   assert.match(text, /care_entries\.updated_at/);
   assert.match(text, /care_entry_tombstones/);
   assert.match(text, /active-household RLS/);
   assert.match(text, /mobile full-refresh sign-off/);
+  assert.match(text, /file name or URI, MIME, byte size/);
+  assert.match(text, /row-specific booleans or approvals/);
   assert.match(text, /Focused WoofGuide AI provider proof target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=woofguide-ai-provider-proof/);
   assert.match(text, /OpenAI key location/);
