@@ -3393,6 +3393,10 @@ pinned `10.24.0`, missing Corepack, and missing Android SDK/Java tooling. This
 is still proof gating only; it does not enable provider deletion, delete storage
 objects, approve privacy/legal copy, satisfy App Store/Play Store review, launch
 publicly, or replace Apollo sign-off.
+Branch CI proved the guard on commit `49b0f47` in `WoofWatcher Verify` run
+`28697969135`, job `85110888132`, which completed successfully in about `3m07s`
+with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior
+tests, Typecheck plus CI-safe builds, post steps, and Complete job all passing.
 
 The Support Legal Readiness proof manifest pass makes the focused public-launch
 approval mission explicit instead of leaving helpers with a generic support/legal

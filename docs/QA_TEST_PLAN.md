@@ -2009,7 +2009,10 @@ Latest local evidence, 2026-07-04:
   release-QA/handoff/smoke/readiness tests passed `148/148`, the broader
   zero-dependency API/mobile/PWA/care-domain suite passed `574/574`, root
   TypeScript passed, mobile TypeScript passed, and direct JSON doctor
-  source-backed checks passed.
+  source-backed checks passed. Branch CI proved the implementation commit
+  `49b0f47` in `WoofWatcher Verify` run `28697969135`, job `85110888132`, with
+  JSON mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe
+  builds all passing.
 - Direct `scripts/mobile-beta-doctor.mjs --json` remains truthfully `BLOCKED`
   only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0` and
   Corepack is not on PATH. Direct
