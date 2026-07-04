@@ -261,9 +261,11 @@ Current environment note:
   accounts, privacy/legal, and support/refund. Focused launch/release/store/
   mobile readiness tests passed `131/131`, the full zero-dependency suite passed
   `582/582`, and the JSON mobile beta doctor reports `aggregate launch
-  readiness proof guard is source-backed` as `PASS`; real provider proof files,
-  native evidence, store review, public launch, and Apollo sign-off remain
-  blocked.
+  readiness proof guard is source-backed` as `PASS`. Branch CI proved
+  implementation commit `e257e4f` in `WoofWatcher Verify` run `28702584181`,
+  job `85122931741`, with mobile beta doctor, focused behavior tests, and
+  Typecheck plus CI-safe builds all passing; real provider proof files, native
+  evidence, store review, public launch, and Apollo sign-off remain blocked.
 - Branch CI also proved the focused payments provider proof target on 2026-07-03:
   `WoofWatcher Verify` run `28676385615`, job `85050584288`, commit `3b5f4ab`,
   completed successfully in `3m3s` with Setup pnpm, Setup Node, install, JSON
