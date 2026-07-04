@@ -1724,6 +1724,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real App Store Connect and Google Play proof, or the app gains a provider-backed store-submission evidence service.
 
+### 2026-07-04: Live AI Requires Structured Provider And Safety Proof
+
+Decision: the WoofGuide AI provider proof manifest cannot treat generic OpenAI/model/source/write-gate/veterinary/fallback approval strings as live-AI readiness. `Live AI allowed` remains blocked until six structured proof files satisfy OpenAI secret storage, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling.
+
+Reason: live AI is a care-trust and veterinary-safety boundary. Text that says a model, citation policy, or safety boundary is approved can hide missing key custody, retention stance, source freshness, automatic-write prevention, diagnosis/treatment refusal examples, fallback behavior, rollback plan, or support handoff.
+
+Consequences:
+
+- `buildAiProviderProofManifest` keeps all six rows blocked when only legacy approval strings are present.
+- Each proof file must include proof naming, acceptable MIME, positive byte size, required policy fields, and row-specific safety booleans.
+- Live OpenAI configuration, model approval, provider-backed answers, automatic care-log writes, source/citation review, veterinary safety approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real OpenAI/provider proof files, or WoofGuide gains a provider-backed AI evidence service with signed policy metadata.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

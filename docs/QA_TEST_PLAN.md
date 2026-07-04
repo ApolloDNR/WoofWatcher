@@ -1401,20 +1401,33 @@ Latest local evidence, 2026-07-03:
   storage, model policy, source/citation, owner-review write gate, veterinary
   safety, and fallback/incident row, plus blockers and the deterministic
   owner-reviewed boundary before live AI can be enabled.
+- The manifest now rejects generic approval strings. `Live AI allowed` remains
+  `No` until six structured proof files are attached: OpenAI secret storage,
+  approved model policy, source/citation rules, owner-review write gate,
+  veterinary safety boundary, and fallback/incident handling. Each file needs
+  proof naming, acceptable MIME, positive byte size, required policy fields, and
+  the row-specific safety booleans.
+- Structured-proof hardening verification first failed because generic
+  provider/model/source/write-gate/veterinary/fallback approval strings made the
+  manifest `ready-for-review` without proof files. After the fix, focused AI
+  provider proof tests passed `3/3`, and targeted AI proof plus mobile readiness
+  passed `117/117`.
 - Red/green proof first failed because `buildAiProviderProofManifest` did not
   exist, then failed again because the focused QA route did not import or render
   the manifest, then failed again because the JSON mobile beta doctor did not
   report `woofguide ai provider proof manifest is source-backed`.
-- Focused proof now passes `aiProviderProof.test.ts` and
-  `mobileReleaseQa.test.ts` with `27/27` tests, plus the focused care-twin QA
-  route and machine-readable doctor readiness run with `114/114` tests. The
-  broader zero-dependency API/mobile/PWA/care-domain suite passes `553/553`,
-  root TypeScript passes, and mobile TypeScript passes.
+- Focused proof now passes `aiProviderProof.test.ts` `3/3`, targeted AI proof
+  plus mobile readiness and release-QA tests with `143/143`, and the broader
+  zero-dependency API/mobile/PWA/care-domain suite with `572/572`. Root
+  TypeScript passes, PixelLab asset verification passes with `ok=149
+  missing=0 invalid=0`, and `git diff --check` passes with expected Windows
+  CRLF warnings only.
 - Direct JSON mobile beta doctor reports `woofguide ai provider proof manifest
   is source-backed` as `PASS` while remaining blocked only on local
-  pnpm/Corepack. Direct JSON native QA tooling doctor remains blocked because
-  this Windows shell lacks Android `adb`, Android `emulator`, Java,
-  `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+  pnpm `11.7.0` versus pinned `10.24.0` plus missing Corepack. Direct JSON
+  native QA tooling doctor remains blocked because this Windows shell lacks
+  Android `adb`, Android `emulator`, Java, `ANDROID_HOME`/`ANDROID_SDK_ROOT`,
+  and `JAVA_HOME`.
 - This clears only source-backed helper visibility for the WoofGuide AI proof
   packet. It does not configure OpenAI, approve a model policy, enable live AI,
   allow automatic care-log writes, replace citation/source review, clear

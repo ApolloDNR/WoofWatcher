@@ -117,7 +117,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
   "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, native share/reopen proof, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
   "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture Supabase migration/backfill, active-household RLS, retention/export/deletion policy, and mobile full-refresh sign-off before enabling incremental sync.",
-  "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and capture OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling before enabling live AI.",
+  "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and capture structured proof files for OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling before enabling live AI.",
   "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, platform/provider-named iOS APNs and Android FCM delivery QA, and missed notification fallback before claiming reminder delivery.",
   "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox receipt JSON proof, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
   "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, platform/store-named iOS App Store Connect developer account proof, Android Google Play package proof, shared bundle/signing proof, reviewer access, metadata/privacy, Apollo release approval, no-submit boundary, and store submission proof before claiming App Review or Play review readiness.",
@@ -652,7 +652,7 @@ check(
   "ai provider proof packet is source-backed",
   aiProviderProofPacketIsSourceBacked,
   aiProviderProofPacketIsSourceBacked
-    ? "WoofGuide AI readiness requires key storage, model policy, source/citation rules, owner-review write gates, veterinary boundaries, and fallback proof through Provider Launch Setup and Share Beta Handoff"
+    ? "WoofGuide AI readiness requires structured key storage, model policy, source/citation rules, owner-review write gates, veterinary boundaries, and fallback proof files through Provider Launch Setup and Share Beta Handoff"
     : "keep AI proof modeled in aiProviderProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
@@ -1287,6 +1287,7 @@ const woofGuideAiProviderProofTargetIsSourceBacked = includesAll(aiProviderProof
   && includesAll(betaHandoffPacketSource, [
     "Open focused WoofGuide AI provider target: /care-twin-qa?qaSurface=woofguide-ai-provider-proof.",
     "Attach OpenAI key location, approved model policy, source/citation rules, and owner-review write gate",
+    "Each item must be backed by structured WoofGuide AI provider proof files",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused WoofGuide AI provider proof target",
@@ -1316,14 +1317,22 @@ const woofGuideAiProviderProofManifestIsSourceBacked = includesAll(careTwinQaRou
   "woofGuideAiProviderProofManifest",
   "WoofGuide AI provider proof manifest",
   "Live AI allowed",
-  "WoofGuide must stay deterministic and owner-reviewed",
+  "structured proof files",
   "woofGuideAiProviderProofManifest.items.map",
   "woofGuideAiProviderProofManifest.blockers.map",
 ])
   && includesAll(aiProviderProofSource, [
     "buildAiProviderProofManifest",
+    "aiProviderEvidence",
+    "AI_PROVIDER_EVIDENCE_REQUIREMENTS",
+    "provider-key-storage",
+    "model-policy",
+    "source-citation-rules",
+    "owner-review-write-gate",
+    "veterinary-safety-boundary",
+    "fallback-incident-handling",
     "liveAiAllowed",
-    "OpenAI key storage",
+    "structured proof files",
     "source/citation rules",
     "owner-reviewed",
     "veterinary safety",
@@ -1332,8 +1341,8 @@ check(
   "woofguide ai provider proof manifest is source-backed",
   woofGuideAiProviderProofManifestIsSourceBacked,
   woofGuideAiProviderProofManifestIsSourceBacked
-    ? "WoofGuide AI provider proof manifest is visible on the focused QA route while keeping deterministic, source, write-gate, and veterinary safety boundaries"
-    : "render the WoofGuide AI provider proof manifest on /care-twin-qa?qaSurface=woofguide-ai-provider-proof with deterministic, source, write-gate, and veterinary safety boundaries",
+    ? "WoofGuide AI provider proof manifest is visible on the focused QA route while requiring structured proof files for deterministic, source, write-gate, and veterinary safety boundaries"
+    : "render the WoofGuide AI provider proof manifest on /care-twin-qa?qaSurface=woofguide-ai-provider-proof with structured proof files for deterministic, source, write-gate, and veterinary safety boundaries",
 );
 
 const pushNotificationsProofTargetIsSourceBacked = includesAll(pushNotificationsProofSource, [

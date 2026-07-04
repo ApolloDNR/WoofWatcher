@@ -390,6 +390,11 @@ Current environment note:
   provider row opens the same proof mission; this is a helper shortcut, not
   OpenAI configuration, model approval, automatic-write approval, or
   veterinary/safety sign-off by itself.
+- The WoofGuide AI proof manifest rejects generic approval text. Helpers must
+  attach structured proof files for OpenAI secret storage, approved model
+  policy, source/citation rules, owner-review write gate, veterinary safety
+  boundary, and fallback/incident handling before `Live AI allowed` can become
+  `Yes`.
 - The Release Smoke Checklist, Share Beta Handoff, live-preview verifier, JSON
   mobile beta doctor, and native QA tooling doctor now also name
   `/care-twin-qa?qaSurface=push-notifications-proof` for Expo push project

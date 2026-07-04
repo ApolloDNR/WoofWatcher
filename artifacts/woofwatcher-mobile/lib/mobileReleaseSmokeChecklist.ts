@@ -269,9 +269,9 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Focused WoofGuide AI provider proof target",
             detail:
-              "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and confirm OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary and fallback/incident handling before live AI is enabled.",
+              "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and confirm structured proof files cover OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary and fallback/incident handling before live AI is enabled.",
             proof:
-              "Attach key storage, model policy, source/citation rules, owner-reviewed write gate, safety refusal examples, emergency escalation copy, fallback/incident handling, rollback plan, and support handoff; WoofGuide stays deterministic until this proof exists.",
+              "Attach structured key storage, model policy, source/citation, owner-review write-gate, veterinary-safety, and fallback/incident proof files with MIME, byte size, row-specific approvals, rollback plan, and support handoff; WoofGuide stays deterministic until this proof exists.",
             status: "required",
           },
           {

@@ -1138,7 +1138,7 @@ export default function CareTwinQaScreen() {
                           WoofGuide AI provider proof manifest
                         </Text>
                         <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                          WoofGuide must stay deterministic and owner-reviewed until provider, safety, and source proof are attached.
+                          WoofGuide must stay deterministic and owner-reviewed until provider, safety, and source structured proof files are attached.
                         </Text>
                       </View>
                       <QaBadge
