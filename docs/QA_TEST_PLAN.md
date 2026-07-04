@@ -2045,7 +2045,10 @@ Latest local evidence, 2026-07-04:
 - Focused support runbook proof tests passed `6/6`. Focused Support Legal plus
   release-QA/handoff/smoke/readiness tests passed `150/150`. The broader
   zero-dependency API/mobile/PWA/care-domain focused suite passed `576/576`,
-  root TypeScript passed, and mobile TypeScript passed.
+  root TypeScript passed, and mobile TypeScript passed. Branch CI proved the
+  implementation commit `4082e30` in `WoofWatcher Verify` run `28698684465`,
+  job `85112820340`, with JSON mobile beta doctor, focused behavior tests, and
+  Typecheck plus CI-safe builds all passing.
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `support legal
   readiness proof manifest is source-backed` as `PASS`, while remaining
   truthfully `BLOCKED` only because this Windows shell exposes pnpm `11.7.0`

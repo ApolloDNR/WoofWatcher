@@ -3433,6 +3433,10 @@ Corepack; direct native QA tooling doctor remains `BLOCKED` on missing Android
 SDK/Java environment variables. This is proof gating only; it does not approve
 legal/privacy copy, refund policy, support operations, veterinary-boundary
 language, App Store or Play Store review, public launch, or Apollo sign-off.
+Branch CI proved the guard on commit `4082e30` in `WoofWatcher Verify` run
+`28698684465`, job `85112820340`, which completed successfully in about `3m02s`
+with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior
+tests, Typecheck plus CI-safe builds, post steps, and Complete job all passing.
 
 Next highest-impact work:
 
