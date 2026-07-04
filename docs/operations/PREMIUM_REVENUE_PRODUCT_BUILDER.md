@@ -3748,6 +3748,28 @@ commit. This still does not configure Supabase, run migrations, approve RLS,
 configure retention/export/deletion, prove dependency-complete builds, enable
 incremental sync, launch publicly, or replace Apollo sign-off.
 
+The PWA hosted nudge proof pass closes the backend-provider/scheduled-delivery
+overclaim. `buildHostedNudgePlan` now separates staged backend and push provider
+setup from structured `providerProofReady` evidence. A backend URL plus household
+id plus push provider returns `provider_proof_pending`, keeps jobs empty, and
+does not return `ready_to_schedule` until structured proof covers backend jobs,
+caregiver consent, provider delivery, caregiver privacy, quiet-hours and
+daily-budget enforcement, missed-delivery fallback, native delivery, and Apollo
+approval. The mobile beta doctor now reports `PWA hosted nudge proof guard is
+source-backed`. Fresh red/green verification first showed backend URL plus
+household id plus push provider producing `ready_to_schedule`, then passed PWA
+readiness `17/17`, mobile readiness `114/114`, direct JSON doctor source-backed
+checks, the full zero-dependency API/mobile/PWA/care-domain suite `590/590`,
+root TypeScript, mobile TypeScript, and `git diff --check`. Direct JSON mobile
+beta doctor remains truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned
+`10.24.0` and missing Corepack. The implementation is pushed as `3c933a0`
+(`Require PWA hosted nudge proof guard`), but fresh branch CI is still pending
+because the latest visible run list only shows earlier `workflow_dispatch`
+successes through run `28705671803`, which predates this commit. This still does
+not configure a backend job runner, prove caregiver consent/privacy, deliver
+push/email/SMS, prove native delivery, launch publicly, or replace Apollo
+sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

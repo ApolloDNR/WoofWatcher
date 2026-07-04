@@ -44,6 +44,20 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: PWA hosted nudge proof hardening now keeps backend URL plus household id plus push provider staged as `provider_proof_pending` until structured delivery proof is attached.
+- PASS: `buildHostedNudgePlan` now requires backend job policy, caregiver consent, provider delivery, caregiver privacy, quiet-hours and daily-budget enforcement, missed-delivery fallback, native delivery proof, and Apollo approval before returning `ready_to_schedule`.
+- PASS: PWA readiness passed `17/17`.
+- PASS: Mobile readiness passed `114/114`.
+- PASS: Direct JSON mobile beta doctor reports `PWA hosted nudge proof guard is source-backed` as `PASS`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `590/590`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Implementation commit `3c933a0` (`Require PWA hosted nudge proof guard`) was pushed to `automation/premium-revenue-product-builder`.
+- BLOCKED: Fresh branch CI for `3c933a0` is pending; the latest visible run list still showed only earlier `workflow_dispatch` successes through run `28705671803`, which predates this implementation commit.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real backend job runner, caregiver consent, provider delivery setup, caregiver privacy review, quiet-hours/daily-budget enforcement proof, missed-delivery fallback proof, native delivery proof, public launch, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: PWA cloud sync proof hardening now keeps backend URL plus household id staged as `provider_proof_pending` until structured provider proof is attached.
 - PASS: `buildCloudSyncPlan` now requires Supabase project id, migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build proof, mobile full-refresh sign-off, and Apollo approval before returning `ready_to_connect`.
 - PASS: PWA readiness passed `16/16`.

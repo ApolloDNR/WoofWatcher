@@ -1984,6 +1984,22 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real care-entry/cloud sync provider proof files or the app gains a provider-backed proof evidence service that can feed PWA cloud sync planning.
 
+### 2026-07-04: PWA Hosted Nudges Require Structured Delivery Proof
+
+Decision: The PWA hosted nudge plan cannot treat `backendConfigured`, a backend URL, a household id, or push provider setup as closed-app delivery readiness. It must keep staged backend and provider setup at `provider_proof_pending` until structured hosted nudge delivery proof covers backend jobs, caregiver consent, provider delivery, caregiver privacy, quiet-hours and daily-budget enforcement, missed-delivery fallback, native delivery, and Apollo approval.
+
+Reason: Hosted nudges can interrupt caregivers outside the app and expose household care context. If the PWA marks nudges `ready_to_schedule` from provider setup alone, it contradicts the Push Notifications proof manifest and can imply closed-app push/email/SMS delivery before consent, privacy, quiet-hours, fallback, or native delivery proof exists.
+
+Consequences:
+
+- `buildHostedNudgePlan` separates backend/push setup from `providerProofReady`.
+- Staged backend and push setup without structured proof returns `provider_proof_pending`, adds a structured hosted nudge delivery proof blocker, and keeps generated jobs empty.
+- Real backend job runners, caregiver consent/privacy approval, provider delivery setup, native delivery evidence, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real hosted nudge delivery proof files or the app gains a provider-backed proof evidence service that can feed hosted nudge planning.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
