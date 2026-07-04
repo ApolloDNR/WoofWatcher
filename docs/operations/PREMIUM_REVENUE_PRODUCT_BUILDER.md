@@ -3795,7 +3795,11 @@ TypeScript, mobile TypeScript, direct mobile beta doctor source-backed checks,
 and `git diff --check`. Direct mobile beta doctor remains truthfully `BLOCKED`
 on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack. This still
 does not configure providers, attach proof files, approve native/store
-evidence, launch publicly, or replace Apollo sign-off.
+evidence, launch publicly, or replace Apollo sign-off. The implementation is
+pushed as `4406001` (`Clamp provider setup save proof status`), but fresh branch
+CI is still pending because the latest visible run list only shows earlier
+`workflow_dispatch` successes through run `28705671803`, which predates this
+commit.
 
 Next highest-impact work:
 
