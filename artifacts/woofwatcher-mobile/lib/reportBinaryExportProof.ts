@@ -10,6 +10,7 @@ export interface ReportBinaryExportProofManifestInput {
   dogIdSvgFileName: string;
   generatedCarePassPdf?: ReportGeneratedBinaryArtifactProof;
   generatedDogIdPng?: ReportGeneratedBinaryArtifactProof;
+  nativeArtifactEvidence?: readonly ReportNativeArtifactEvidence[];
   storageProviderConfigured?: boolean;
   pdfGeneratorApproved: boolean;
   pngRendererApproved: boolean;
@@ -20,6 +21,20 @@ export interface ReportGeneratedBinaryArtifactProof {
   fileName: string;
   mimeType: "application/pdf" | "image/png";
   byteSize: number;
+}
+
+export type ReportNativeArtifactPlatform = "ios" | "android";
+export type ReportNativeArtifactKind = "pdf" | "png";
+
+export interface ReportNativeArtifactEvidence {
+  platform: ReportNativeArtifactPlatform;
+  artifact: ReportNativeArtifactKind;
+  fileName?: string;
+  uri?: string;
+  mimeType: "application/pdf" | "image/png";
+  byteSize: number;
+  shared: boolean;
+  reopened: boolean;
 }
 
 export interface ReportBinaryExportProofManifestRow {
@@ -60,6 +75,89 @@ function cleanGeneratedProof(
   };
 }
 
+interface RequiredNativeArtifactEvidence {
+  platform: ReportNativeArtifactPlatform;
+  artifact: ReportNativeArtifactKind;
+  label: string;
+  mimeType: ReportNativeArtifactEvidence["mimeType"];
+  extension: ".pdf" | ".png";
+}
+
+const REQUIRED_NATIVE_ARTIFACT_EVIDENCE: readonly RequiredNativeArtifactEvidence[] = [
+  {
+    platform: "ios",
+    artifact: "pdf",
+    label: "iOS Care Pass PDF",
+    mimeType: "application/pdf",
+    extension: ".pdf",
+  },
+  {
+    platform: "android",
+    artifact: "pdf",
+    label: "Android Care Pass PDF",
+    mimeType: "application/pdf",
+    extension: ".pdf",
+  },
+  {
+    platform: "ios",
+    artifact: "png",
+    label: "iOS Dog ID PNG",
+    mimeType: "image/png",
+    extension: ".png",
+  },
+  {
+    platform: "android",
+    artifact: "png",
+    label: "Android Dog ID PNG",
+    mimeType: "image/png",
+    extension: ".png",
+  },
+];
+
+function nativeArtifactEvidenceText(evidence: ReportNativeArtifactEvidence): string {
+  return `${clean(evidence.fileName, "")} ${clean(evidence.uri, "")}`.toLowerCase();
+}
+
+function nativeArtifactEvidenceHasPlatform(text: string, platform: ReportNativeArtifactPlatform): boolean {
+  if (platform === "ios") {
+    return /\bios\b|\biphone\b|\bipad\b/.test(text);
+  }
+  return /\bandroid\b/.test(text);
+}
+
+function nativeArtifactEvidenceMatches(
+  evidence: ReportNativeArtifactEvidence,
+  requirement: RequiredNativeArtifactEvidence,
+): boolean {
+  if (
+    evidence.platform !== requirement.platform ||
+    evidence.artifact !== requirement.artifact ||
+    evidence.mimeType !== requirement.mimeType ||
+    !Number.isFinite(evidence.byteSize) ||
+    evidence.byteSize <= 0 ||
+    !evidence.shared ||
+    !evidence.reopened
+  ) {
+    return false;
+  }
+  const text = nativeArtifactEvidenceText(evidence);
+  return text.includes(requirement.extension) && nativeArtifactEvidenceHasPlatform(text, requirement.platform);
+}
+
+function summarizeNativeArtifactEvidence(evidence: readonly ReportNativeArtifactEvidence[] | undefined) {
+  const rows = REQUIRED_NATIVE_ARTIFACT_EVIDENCE.map((requirement) => ({
+    ...requirement,
+    ready: Boolean(evidence?.some((item) => nativeArtifactEvidenceMatches(item, requirement))),
+  }));
+  return {
+    rows,
+    readyCount: rows.filter((row) => row.ready).length,
+    missingLabels: rows.filter((row) => !row.ready).map((row) => row.label),
+    pdfReady: rows.filter((row) => row.artifact === "pdf").every((row) => row.ready),
+    pngReady: rows.filter((row) => row.artifact === "png").every((row) => row.ready),
+  };
+}
+
 export const REPORT_BINARY_EXPORT_PROOF_ITEMS: readonly ReportBinaryExportProofItem[] = [
   {
     label: "PDF generator",
@@ -96,6 +194,7 @@ export function buildReportBinaryExportProofManifest(
   const generatedCarePassPdf = cleanGeneratedProof(input.generatedCarePassPdf, "application/pdf");
   const generatedDogIdPng = cleanGeneratedProof(input.generatedDogIdPng, "image/png");
   const storageProviderConfigured = Boolean(input.storageProviderConfigured);
+  const nativeArtifactEvidence = summarizeNativeArtifactEvidence(input.nativeArtifactEvidence);
   const blockers: string[] = [];
 
   if (!input.pdfGeneratorApproved && !generatedCarePassPdf) {
@@ -107,12 +206,14 @@ export function buildReportBinaryExportProofManifest(
   if (!storageProviderConfigured) {
     blockers.push("Provider storage needs signed household-scoped upload/download, retention, export, and deletion proof.");
   }
-  if (!input.nativeArtifactEvidenceApproved) {
-    blockers.push("iOS and Android artifact evidence needs generated file name, file size, MIME, share, and reopen proof.");
+  if (nativeArtifactEvidence.missingLabels.length) {
+    blockers.push(
+      `Native artifact evidence needs generated file name, file size, MIME, share, and reopen proof for: ${nativeArtifactEvidence.missingLabels.join(", ")}.`,
+    );
   }
 
-  const pdfReady = (input.pdfGeneratorApproved || Boolean(generatedCarePassPdf)) && input.nativeArtifactEvidenceApproved;
-  const pngReady = (input.pngRendererApproved || Boolean(generatedDogIdPng)) && input.nativeArtifactEvidenceApproved;
+  const pdfReady = (input.pdfGeneratorApproved || Boolean(generatedCarePassPdf)) && nativeArtifactEvidence.pdfReady;
+  const pngReady = (input.pngRendererApproved || Boolean(generatedDogIdPng)) && nativeArtifactEvidence.pngReady;
   const status: ReportBinaryExportProofStatus =
     pdfReady && pngReady && storageProviderConfigured ? "ready" : "blocked";
 
@@ -149,11 +250,15 @@ export function buildReportBinaryExportProofManifest(
       },
       {
         label: "Native artifact proof",
-        value: input.nativeArtifactEvidenceApproved ? "iOS/Android proof ready" : "iOS/Android proof pending",
-        status: input.nativeArtifactEvidenceApproved ? "ready" : "blocked",
-        detail: input.nativeArtifactEvidenceApproved
-          ? "Native iOS and Android artifact evidence is attached for generated PDF and PNG files."
-          : "Capture iOS and Android evidence showing PDF and PNG artifacts generated, shared, reopened, and still bounded by provider/storage approval before launch.",
+        value:
+          nativeArtifactEvidence.readyCount === REQUIRED_NATIVE_ARTIFACT_EVIDENCE.length
+            ? "4/4 native proofs ready"
+            : `${nativeArtifactEvidence.readyCount}/4 native proofs attached`,
+        status: nativeArtifactEvidence.readyCount === REQUIRED_NATIVE_ARTIFACT_EVIDENCE.length ? "ready" : "blocked",
+        detail:
+          nativeArtifactEvidence.readyCount === REQUIRED_NATIVE_ARTIFACT_EVIDENCE.length
+            ? "Native iOS and Android artifact evidence is attached for Care Pass PDF and Dog ID PNG generated files, including file name or URI, MIME, file size, share, and reopen proof."
+            : `Capture iOS and Android artifact-named evidence showing PDF and PNG artifacts generated, shared, reopened, and still bounded by provider/storage approval before launch. Missing: ${nativeArtifactEvidence.missingLabels.join(", ")}.`,
       },
     ],
     blockers,

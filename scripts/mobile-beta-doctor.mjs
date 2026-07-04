@@ -1068,10 +1068,16 @@ const reportBinaryExportProofManifestIsSourceBacked = includesAll(careTwinQaRout
     "buildReportBinaryExportProofManifest",
     "generatedCarePassPdf",
     "generatedDogIdPng",
+    "nativeArtifactEvidence",
     "storageProviderConfigured",
     "nativeArtifactEvidenceApproved",
     "Provider storage pending",
-    "iOS/Android proof pending",
+    "native proofs attached",
+    "4/4 native proofs ready",
+    "iOS Care Pass PDF",
+    "Android Dog ID PNG",
+    "shared",
+    "reopened",
   ]);
 check(
   "report binary export proof manifest is source-backed",
@@ -1088,7 +1094,9 @@ const recordsBinaryExportProofManifestIsSourceBacked = includesAll(reportBinaryE
   "application/pdf",
   "image/png",
   "Provider storage pending",
-  "iOS/Android proof pending",
+  "native proofs attached",
+  "iOS Care Pass PDF",
+  "Android Dog ID PNG",
 ])
   && includesAll(recordsRouteSource, [
     "buildReportBinaryExportProofManifest",

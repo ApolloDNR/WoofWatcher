@@ -1523,6 +1523,11 @@ Latest local evidence, 2026-07-03:
   before Evidence Capture, with ready/open counts, `Generated artifacts
   allowed: No`, Care Pass PDF, Dog ID PNG, provider storage, native artifact
   proof rows, blockers, and the native/provider/Apollo approval boundary.
+- The manifest now requires `4/4 native proofs ready` before generated binary
+  readiness can open: iOS Care Pass PDF, Android Care Pass PDF, iOS Dog ID PNG,
+  and Android Dog ID PNG. A generic native artifact approval flag is not enough;
+  each artifact proof needs platform/artifact naming in the file name or URI,
+  expected MIME type, positive byte size, share proof, and reopen proof.
 - Red/green proof first failed on the missing helper/provider/checklist/doctor
   wiring, then passed focused report/provider/smoke/readiness tests `120/120`.
 - Fresh local verification also passed the broader API/mobile/PWA/care-domain
@@ -1541,13 +1546,18 @@ Latest local evidence, 2026-07-03:
   machine-readable doctor readiness tests `114/114`, the full zero-dependency
   API/mobile/PWA/care-domain suite `559/559`, root TypeScript, mobile
   TypeScript, and `git diff --check` with expected Windows CRLF warnings only.
+- Native-proof hardening verification passed focused report-binary plus
+  machine-readable doctor tests `119/119`, direct JSON mobile beta doctor
+  source-backed checks, the full zero-dependency API/mobile/PWA/care-domain
+  suite `562/562`, root TypeScript, and mobile TypeScript.
 - Branch CI proved the focused manifest guard in `WoofWatcher Verify` run
   `28691498890`, job `85093511875`, on commit `822ff54`; Setup pnpm, Setup
   Node, install, JSON mobile beta doctor, focused behavior tests, and Typecheck
   plus CI-safe builds all passed.
 - This is a proof packet, not binary export implementation. Actual Care Pass PDF
-  generation, Dog ID PNG generation, provider-backed storage, iOS/Android
-  artifact proof, and launch approval remain blocked until real evidence exists.
+  generation, Dog ID PNG generation, provider-backed storage, four-slot
+  iOS/Android artifact proof, and launch approval remain blocked until real
+  evidence exists.
 
 ## Mobile Runtime Route Smoke
 

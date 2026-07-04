@@ -57,11 +57,12 @@ test("builds an artifact-specific binary export readiness manifest without claim
   assert.match(manifest.rows[1]?.detail ?? "", /image\/png/);
   assert.match(manifest.rows[1]?.detail ?? "", /approved PNG renderer/);
   assert.equal(manifest.rows[2]?.value, "Provider storage pending");
-  assert.equal(manifest.rows[3]?.value, "iOS/Android proof pending");
+  assert.equal(manifest.rows[3]?.value, "0/4 native proofs attached");
   assert.ok(manifest.blockers.some((blocker) => /Care Pass PDF generator/i.test(blocker)));
   assert.ok(manifest.blockers.some((blocker) => /Dog ID PNG renderer/i.test(blocker)));
   assert.ok(manifest.blockers.some((blocker) => /Provider storage/i.test(blocker)));
-  assert.ok(manifest.blockers.some((blocker) => /iOS and Android/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /iOS Care Pass PDF/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /Android Dog ID PNG/i.test(blocker)));
 });
 
 test("shows generated local binary artifacts while keeping native and provider proof blocked", () => {
@@ -94,5 +95,101 @@ test("shows generated local binary artifacts while keeping native and provider p
   assert.ok(!manifest.blockers.some((blocker) => /PDF generator needs/i.test(blocker)));
   assert.ok(!manifest.blockers.some((blocker) => /PNG renderer needs/i.test(blocker)));
   assert.ok(manifest.blockers.some((blocker) => /Provider storage/i.test(blocker)));
-  assert.ok(manifest.blockers.some((blocker) => /iOS and Android/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /iOS Care Pass PDF/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /Android Dog ID PNG/i.test(blocker)));
+});
+
+test("keeps generated artifacts blocked when native artifact approval lacks platform-specific share and reopen evidence", () => {
+  const manifest = buildReportBinaryExportProofManifest({
+    carePassHtmlFileName: "phoenix-vet-care-pass-2026-06-08.html",
+    dogIdSvgFileName: "phoenix-dog-id-2026-06-08.svg",
+    generatedCarePassPdf: {
+      fileName: "phoenix-vet-care-pass-2026-06-08.pdf",
+      mimeType: "application/pdf",
+      byteSize: 2048,
+    },
+    generatedDogIdPng: {
+      fileName: "phoenix-dog-id-2026-06-08.png",
+      mimeType: "image/png",
+      byteSize: 4096,
+    },
+    storageProviderConfigured: true,
+    pdfGeneratorApproved: false,
+    pngRendererApproved: false,
+    nativeArtifactEvidenceApproved: true,
+  });
+
+  assert.equal(manifest.status, "blocked");
+  assert.equal(manifest.rows[0]?.value, "Local PDF generated");
+  assert.equal(manifest.rows[1]?.value, "Local PNG generated");
+  assert.equal(manifest.rows[3]?.value, "0/4 native proofs attached");
+  assert.match(manifest.rows[3]?.detail ?? "", /iOS Care Pass PDF/);
+  assert.match(manifest.rows[3]?.detail ?? "", /Android Dog ID PNG/);
+  assert.ok(manifest.blockers.some((blocker) => /iOS Care Pass PDF/i.test(blocker)));
+  assert.ok(manifest.blockers.some((blocker) => /Android Dog ID PNG/i.test(blocker)));
+});
+
+test("marks generated binary artifacts ready only with platform-specific PDF and PNG share/reopen evidence", () => {
+  const manifest = buildReportBinaryExportProofManifest({
+    carePassHtmlFileName: "phoenix-vet-care-pass-2026-06-08.html",
+    dogIdSvgFileName: "phoenix-dog-id-2026-06-08.svg",
+    generatedCarePassPdf: {
+      fileName: "phoenix-vet-care-pass-2026-06-08.pdf",
+      mimeType: "application/pdf",
+      byteSize: 2048,
+    },
+    generatedDogIdPng: {
+      fileName: "phoenix-dog-id-2026-06-08.png",
+      mimeType: "image/png",
+      byteSize: 4096,
+    },
+    storageProviderConfigured: true,
+    pdfGeneratorApproved: false,
+    pngRendererApproved: false,
+    nativeArtifactEvidenceApproved: true,
+    nativeArtifactEvidence: [
+      {
+        platform: "ios",
+        artifact: "pdf",
+        fileName: "phoenix-vet-care-pass-ios.pdf",
+        mimeType: "application/pdf",
+        byteSize: 2048,
+        shared: true,
+        reopened: true,
+      },
+      {
+        platform: "android",
+        artifact: "pdf",
+        uri: "content://woofwatcher/reports/phoenix-vet-care-pass-android.pdf",
+        mimeType: "application/pdf",
+        byteSize: 2048,
+        shared: true,
+        reopened: true,
+      },
+      {
+        platform: "ios",
+        artifact: "png",
+        fileName: "phoenix-dog-id-ios.png",
+        mimeType: "image/png",
+        byteSize: 4096,
+        shared: true,
+        reopened: true,
+      },
+      {
+        platform: "android",
+        artifact: "png",
+        uri: "content://woofwatcher/credentials/phoenix-dog-id-android.png",
+        mimeType: "image/png",
+        byteSize: 4096,
+        shared: true,
+        reopened: true,
+      },
+    ],
+  });
+
+  assert.equal(manifest.status, "ready");
+  assert.equal(manifest.rows[0]?.value, "PDF proof ready");
+  assert.equal(manifest.rows[1]?.value, "PNG proof ready");
+  assert.equal(manifest.rows[3]?.value, "4/4 native proofs ready");
+  assert.deepEqual(manifest.blockers, []);
 });

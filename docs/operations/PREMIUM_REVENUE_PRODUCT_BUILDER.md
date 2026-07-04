@@ -2898,6 +2898,22 @@ with Set up job, Checkout, Setup pnpm, Setup Node, install dependencies, JSON
 mobile beta doctor, focused behavior tests, Typecheck plus CI-safe builds, post
 steps, and Complete job all passing.
 
+The generated Report Binary Export native proof hardening pass prevents local
+PDF/PNG generation from being promoted by a generic native approval flag.
+`buildReportBinaryExportProofManifest` now requires all four platform/artifact
+proof slots before generated binary readiness can open: iOS Care Pass PDF,
+Android Care Pass PDF, iOS Dog ID PNG, and Android Dog ID PNG. Each slot must
+carry platform/artifact naming in the file name or URI, expected MIME type,
+positive byte size, share proof, and reopen proof; otherwise the native artifact
+row remains `0/4 native proofs attached` with specific blockers. Fresh local
+verification passed focused report-binary plus machine-readable doctor tests
+`119/119`, direct JSON mobile beta doctor source-backed checks, the full
+zero-dependency API/mobile/PWA/care-domain suite `562/562`, root TypeScript, and
+mobile TypeScript. The mobile beta doctor still blocks only on local pnpm
+`11.7.0` versus pinned `10.24.0`, and native QA tooling remains blocked in this
+Windows shell because `adb`, `emulator`, `java`, Android SDK env vars, and
+`JAVA_HOME` are missing.
+
 The Records binary proof manifest pass brings that packet back into the product
 surface. Each saved Care Pass in Report History now shows a `Binary proof
 manifest` with Care Pass PDF, Dog ID PNG, Provider storage, and Native artifact
