@@ -703,61 +703,62 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     route: "/more",
     priority: "launch-critical",
     goal:
-      "Prove Apple Developer team id, App Store Connect app record, Google Play package record, bundle ids, reviewer access, screenshots/metadata ownership, and release role approval before store submission can be claimed.",
+      "Prove platform/store-named Apple Developer team id, App Store Connect app record, Google Play package record, bundle ids, reviewer access, screenshots/metadata ownership, and release role approval files before store submission can be claimed.",
     devicePrompt:
-      "In Provider Launch Setup on iOS and Android, collect the Apple and Google store accounts proof packet without treating local preview state or draft metadata as App Review or Play review readiness.",
+      "In Provider Launch Setup on iOS and Android, collect the Apple and Google store accounts proof packet without treating local preview state, draft metadata, or generic approval notes as App Review or Play review readiness.",
     setupSteps: [
       "Use local preview data and keep Apple and Google store accounts marked open unless real developer account and store console proof is attached.",
       "Open More, then Provider Launch Setup, and inspect the Apple and Google store accounts gate.",
-      "Confirm store submission stays blocked until Apple Developer, App Store Connect, Google Play Console, reviewer access, screenshots/metadata ownership, and release role approval are proven.",
+      "Confirm store submission stays blocked until Apple Developer, App Store Connect, Google Play Console, reviewer access, screenshots/metadata ownership, and release role approval are proven by named proof files.",
     ],
     verificationSteps: [
       "Confirm Apple and Google store accounts lists the Apple and Google store accounts proof packet.",
-      "Confirm Apple Developer team id and App Store Connect app record proof are required before iOS submission readiness is claimed.",
-      "Confirm Google Play package record proof is required before Android submission readiness is claimed.",
-      "Confirm bundle ids, signing ownership, reviewer access notes, screenshots/metadata ownership, and release role approval are visible before marking store accounts ready.",
+      "Confirm Apple Developer team id and App Store Connect app record proof require an iOS App Store Connect proof file with MIME, byte size, role, bundle id, and paid-program status before iOS submission readiness is claimed.",
+      "Confirm Google Play package record proof requires an Android Google Play proof file with MIME, byte size, package name, Play Console app id, admin role, test track, and Play app signing before Android submission readiness is claimed.",
+      "Confirm bundle ids, signing ownership, reviewer access notes, screenshots/metadata ownership, and release role approval require platform/store-named proof files before marking store accounts ready.",
     ],
     acceptanceCriteria: [
-      "store submission stays blocked until Apple Developer, App Store Connect, Google Play package, bundle id, reviewer access, screenshots/metadata ownership, and release role approval proof is attached.",
+      "store submission stays blocked until platform/store-named Apple Developer, App Store Connect, Google Play package, bundle id/signing, reviewer access, screenshots/metadata/privacy, and Apollo release approval proof files are attached.",
       "Provider Launch Setup never treats local-draft rows, owner-staged rows, or static store copy as App Review or Play review readiness.",
-      "screenshots/metadata ownership and reviewer access remain visible before store accounts can close.",
+      "screenshots/metadata ownership and reviewer access remain visible, and generic approval notes stay blocked, before store accounts can close.",
     ],
     failureEscalation:
-      "Mark Needs tune if the app implies App Review or Play review can start without Apple Developer, App Store Connect, Google Play package, reviewer access, metadata ownership, and release role proof.",
+      "Mark Needs tune if the app implies App Review or Play review can start without platform/store-named Apple Developer, App Store Connect, Google Play package, reviewer access, metadata ownership, and release role proof files.",
     requiredEvidence: [
       "iOS screenshot of Provider Launch Setup showing the Apple and Google store accounts proof packet.",
       "Android screenshot of Provider Launch Setup showing Apple and Google store accounts still blocked or fully evidenced.",
-      "Note confirming Apple Developer team id, App Store Connect app record, bundle id/signing ownership, and reviewer access/test credentials.",
-      "Note confirming Google Play package record, screenshots/metadata ownership, release role approval, and store submission stays blocked until approval.",
+      "Note confirming iOS App Store Connect developer proof file includes Apple Developer team id, App Store Connect app record, role, bundle id, paid-program status, MIME, and byte size.",
+      "Note confirming Android Google Play package proof file includes Google Play package record, package name, Play Console app id, admin role, test track, app signing, MIME, and byte size.",
+      "Note confirming shared platform/store-named bundle/signing, reviewer access, metadata/privacy, and Apollo release approval proof files; store submission stays blocked until approval.",
     ],
     routeChecklist: [
       {
         label: "Provider Launch Setup store accounts gate",
         route: "/more",
         expected:
-          "Confirm Apple and Google store accounts lists the Apple and Google store accounts proof packet and stays open until provider proof is attached.",
-        proof: "Provider Launch Setup screenshot plus Apple and Google store accounts proof packet note.",
+          "Confirm Apple and Google store accounts lists the Apple and Google store accounts proof packet and stays open until platform/store-named provider proof files are attached.",
+        proof: "Provider Launch Setup screenshot plus Apple and Google store accounts proof packet file note.",
       },
       {
         label: "Apple Developer and App Store Connect",
         route: "/more",
         expected:
-          "Confirm Apple Developer team id, App Store Connect app record, bundle id/signing ownership, and reviewer access are approved before iOS submission appears ready.",
-        proof: "Apple Developer team id, App Store Connect app record, bundle id/signing ownership, and reviewer access proof.",
+          "Confirm Apple Developer team id, App Store Connect app record, bundle id/signing ownership, and reviewer access require named iOS/App Store Connect proof before iOS submission appears ready.",
+        proof: "iOS App Store Connect developer account proof with Apple Developer team id, App Store Connect app record, bundle/signing, reviewer access, MIME, and byte size.",
       },
       {
         label: "Google Play package and release access",
         route: "/more",
         expected:
-          "Confirm Google Play package record, Android signing ownership, test track access, and release role approval are proven before Android submission appears ready.",
-        proof: "Google Play package record, Android signing ownership, test track access, and release role approval proof.",
+          "Confirm Google Play package record, Android signing ownership, test track access, and release role approval require named Android/Google Play proof before Android submission appears ready.",
+        proof: "Android Google Play package proof with Google Play package record, package name, Play Console app id, signing, test track, release role, MIME, and byte size.",
       },
       {
         label: "Reviewer access, metadata, and release roles",
         route: "/more",
         expected:
-          "Confirm reviewer access/test credentials, screenshots/metadata ownership, and release roles are approved before store submission is claimed.",
-        proof: "reviewer access, screenshots/metadata ownership, and release role approval proof.",
+          "Confirm reviewer access/test credentials, screenshots/metadata ownership, privacy labels, support URL, age rating, release roles, Apollo approval, and no-submit boundary are proven before store submission is claimed.",
+        proof: "platform/store-named reviewer access, metadata/privacy, Apollo release approval, and no-submit boundary proof files.",
       },
     ],
     launchRisk:

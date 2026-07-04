@@ -1708,6 +1708,22 @@ Owner: Codex.
 
 Revisit trigger: automated native screenshot capture can attach route identity metadata, or Apollo approves a different route-proof naming convention.
 
+### 2026-07-04: Store Account Readiness Requires Structured Apple And Google Proof
+
+Decision: the Store accounts proof manifest cannot treat generic Apple/Google approval notes as App Review or Play review readiness. App submission remains blocked until structured proof files satisfy each Apple, Google, reviewer, metadata, and Apollo approval row.
+
+Reason: store-account readiness is a high-trust launch boundary. Text that says an account or metadata is approved can hide missing team ids, package records, signing custody, reviewer access, privacy labels, Apollo sign-off, or the no-submit boundary.
+
+Consequences:
+
+- `buildStoreAccountsProofManifest` keeps all six rows blocked when only legacy text fields are present.
+- iOS App Store Connect, Android Google Play, shared bundle/signing, reviewer access, metadata/privacy, and release approval proof must include platform/store naming, MIME, positive byte size, and the row-specific ids, roles, ownership fields, and approval booleans.
+- Store accounts, metadata/screenshots/privacy approval, App Review or Play review submission, legal/privacy approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real App Store Connect and Google Play proof, or the app gains a provider-backed store-submission evidence service.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

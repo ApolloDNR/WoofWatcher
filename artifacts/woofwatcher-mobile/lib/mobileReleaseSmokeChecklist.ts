@@ -293,9 +293,9 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Focused store accounts proof target",
             detail:
-              "Open /care-twin-qa?qaSurface=store-accounts-proof and confirm Apple Developer team id, App Store Connect app record, Google Play package record, bundle ids, reviewer access, screenshots/metadata ownership, and release role approval before store submission is claimed.",
+              "Open /care-twin-qa?qaSurface=store-accounts-proof and confirm platform/store-named Apple Developer team id, App Store Connect app record, Google Play package record, bundle ids, reviewer access, screenshots/metadata ownership, privacy labels, Apollo release approval, and no-submit boundary proof before store submission is claimed.",
             proof:
-              "Attach Apple Developer team id, App Store Connect app record, Google Play package record, bundle/signing ownership, reviewer access/test credentials, screenshots/metadata ownership, and release role approval; store submission stays blocked until this proof exists.",
+              "Attach iOS App Store Connect developer account proof with MIME, byte size, team id, app record, role, bundle id, and paid-program status; Android Google Play package proof with package name, Play Console app id, admin role, test track, app signing, MIME, and byte size; shared bundle/signing, reviewer access, metadata/privacy, Apollo release approval, and no-submit boundary proof files; store submission stays blocked until this proof exists.",
             status: "required",
           },
           {

@@ -1839,6 +1839,25 @@ Latest local evidence, 2026-07-04:
 
 ## Store Accounts Proof Manifest
 
+Latest local evidence, 2026-07-04:
+
+- `buildStoreAccountsProofManifest` now keeps app submission blocked when only
+  legacy text approvals are present.
+- The manifest requires six structured proof files: iOS App Store Connect
+  developer account proof, Android Google Play package proof, shared
+  bundle/signing ownership proof, reviewer access proof, metadata/privacy proof,
+  and Apollo release approval/no-submit-boundary proof.
+- Each proof must include the expected platform/store naming, MIME, positive
+  byte size, ids/roles/ownership fields, and approval booleans before its row
+  becomes ready.
+- Focused store/handoff/smoke/readiness tests passed `148/148`; the full
+  zero-dependency API/mobile/PWA/care-domain suite passed `571/571`; root
+  TypeScript, mobile TypeScript, and `git diff --check` passed.
+- Direct JSON mobile beta doctor source-backed checks pass, including `store
+  accounts proof packet is source-backed`, `store accounts proof target is
+  source-backed`, and `store accounts proof manifest is source-backed`, while
+  remaining blocked only on the local pnpm/Corepack mismatch.
+
 Latest local evidence, 2026-07-03:
 
 - `/care-twin-qa?qaSurface=store-accounts-proof` now renders a source-backed

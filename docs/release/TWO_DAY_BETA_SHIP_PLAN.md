@@ -79,7 +79,7 @@ The beta must not claim:
 - When the current mission is `Payments Provider Proof`, open `/care-twin-qa?qaSurface=payments-provider-proof`, then capture Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox purchase/renewal/cancel/refund/expired JSON receipt proof, restore purchases, entitlement mapping, household role access, refund/support policy, and checkout-gate proof before enabling paid checkout.
 - When reviewing Provider Launch Setup's WoofWatcher Plus payments row, use `Open proof mission` to jump to the same Payments Provider Proof mission. This is a shortcut only; it does not approve tiers, configure store or Stripe billing, prove receipts, enable checkout, clear store approval, or replace Apollo sign-off.
 - On Premium, confirm the `Payments proof manifest` shows Product catalog, Billing path decision, Sandbox receipts, Entitlements and restore, Refund and support policy, and Checkout gate rows. The manifest must keep `Checkout disabled` visible until real billing/provider proof, iOS App Store and Android Google Play receipt/restore evidence, refund/support policy approval, and Apollo checkout approval are attached.
-- When the current mission is `Store Accounts Proof`, open `/care-twin-qa?qaSurface=store-accounts-proof`, then capture Apple Developer team id, App Store Connect app record, Google Play package record, bundle/signing ownership, reviewer access/test credentials, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.
+- When the current mission is `Store Accounts Proof`, open `/care-twin-qa?qaSurface=store-accounts-proof`, then capture Apple Developer team id, App Store Connect app record, Google Play package record, platform/store-named iOS App Store Connect developer account proof, Android Google Play package proof, shared bundle/signing proof, reviewer access, metadata/privacy, Apollo release approval, no-submit boundary, and store submission proof before claiming App Review or Play review readiness.
 - When reviewing Provider Launch Setup's Apple and Google store accounts row, use `Open proof mission` to jump to the same Store Accounts Proof mission. This is a shortcut only; it does not create accounts, approve metadata/screenshots, submit App Review or Play review, clear legal/privacy approval, or replace Apollo sign-off.
 - When the current mission is `Account Deletion Proof`, open `/care-twin-qa?qaSurface=account-deletion-proof`, then capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, cancellation behavior, and legal/store approval before claiming destructive deletion readiness.
 - When reviewing Provider Launch Setup's Self-serve account deletion row, use `Open proof mission` to jump to the same Account Deletion Proof mission. This is a shortcut only; it does not enable destructive deletion, delete provider data/storage, approve privacy/legal copy, satisfy App Store/Play Store review, or replace Apollo sign-off.
@@ -352,6 +352,11 @@ Current environment note:
   `/care-twin-qa?qaSurface=store-accounts-proof` for focused helper capture, but
   this does not create store accounts, approve metadata, submit the app, satisfy
   App Review or Play review, or replace Apollo approval.
+- The Store accounts proof manifest rejects generic approval notes. Helpers must
+  attach platform/store-named iOS App Store Connect developer account proof,
+  Android Google Play package proof, shared bundle/signing proof, reviewer access
+  proof, metadata/privacy proof, and Apollo release approval/no-submit-boundary
+  proof before `App submission allowed` can become `Yes`.
 - Provider Launch Setup's Push notifications gate now carries a `Push
   notifications proof packet` requiring Expo push project config, APNs
   credentials, Firebase/FCM credentials, permission prompt copy, quiet hours,
@@ -406,10 +411,11 @@ Current environment note:
 - The Release Smoke Checklist, Share Beta Handoff, live-preview verifier, JSON
   mobile beta doctor, and native QA tooling doctor now also name
   `/care-twin-qa?qaSurface=store-accounts-proof` for Apple Developer team id,
-  App Store Connect app record, Google Play package record, bundle/signing
-  ownership, reviewer access/test credentials, screenshots/metadata ownership,
-  release role approval, and store submission proof before App Review or Play
-  review readiness can be claimed. More's Apple and Google store accounts row
+  App Store Connect app record, Google Play package record, platform/store-named
+  iOS App Store Connect developer account proof, Android Google Play package
+  proof, shared bundle/signing proof, reviewer access, metadata/privacy, Apollo
+  release approval, no-submit boundary, and store submission proof before App
+  Review or Play review readiness can be claimed. More's Apple and Google store accounts row
   opens the same proof mission; this is a helper shortcut, not account creation,
   metadata approval, store submission, or Apollo sign-off by itself.
 - The Release Smoke Checklist, Share Beta Handoff, live-preview verifier, JSON

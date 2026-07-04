@@ -120,7 +120,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and capture OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling before enabling live AI.",
   "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, platform/provider-named iOS APNs and Android FCM delivery QA, and missed notification fallback before claiming reminder delivery.",
   "Open /care-twin-qa?qaSurface=payments-provider-proof and capture Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox receipt JSON proof, restore purchases, entitlement mapping, refund/support policy, and checkout-gate proof before enabling paid checkout.",
-  "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, reviewer access, screenshots/metadata ownership, release role approval, and store submission proof before claiming App Review or Play review readiness.",
+  "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, platform/store-named iOS App Store Connect developer account proof, Android Google Play package proof, shared bundle/signing proof, reviewer access, metadata/privacy, Apollo release approval, no-submit boundary, and store submission proof before claiming App Review or Play review readiness.",
   "Open /care-twin-qa?qaSurface=account-deletion-proof and capture self-serve deletion route, reauthentication, export-before-delete warning, data/object deletion receipt, audit trail, support receipt, recovery-window policy, and legal/store approval before enabling destructive account deletion.",
   "Open /care-twin-qa?qaSurface=support-legal-readiness-proof and capture support inbox, privacy policy and terms links, refund/subscription policy, veterinary boundary, deletion escalation, incident response owner, and Apollo approval before public launch.",
   "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, Records, and More on iOS and Android with route-named evidence before claiming route visual proof.",
@@ -689,12 +689,16 @@ const storeAccountsProofPacketIsSourceBacked = includesAll(storeAccountsProofSou
   "STORE_ACCOUNTS_PROOF_SUMMARY",
   "STORE_ACCOUNTS_PROOF_ITEMS",
   "Apple and Google store accounts proof packet",
+  "platform/store-named",
+  "StoreAccountEvidence",
   "Apple Developer team id",
   "App Store Connect app record",
   "Google Play package record",
   "bundle ids",
   "reviewer access notes",
   "release role approval",
+  "iOS App Store Connect developer account proof ready",
+  "Android Google Play package proof ready",
 ])
   && includesAll(launchProviderSetupSource, [
     "STORE_ACCOUNTS_PROOF_SUMMARY",
@@ -710,7 +714,7 @@ check(
   "store accounts proof packet is source-backed",
   storeAccountsProofPacketIsSourceBacked,
   storeAccountsProofPacketIsSourceBacked
-    ? "Store submission readiness requires Apple Developer, App Store Connect, Google Play, bundle id, reviewer access, metadata, and release role proof through Provider Launch Setup and Share Beta Handoff"
+    ? "Store submission readiness requires platform/store-named Apple Developer, App Store Connect, Google Play, bundle id/signing, reviewer access, metadata/privacy, Apollo release approval, and no-submit boundary proof through Provider Launch Setup and Share Beta Handoff"
     : "keep store account proof modeled in storeAccountsProof.ts and wired through Provider Launch Setup plus Share Beta Handoff",
 );
 
@@ -1488,11 +1492,15 @@ const storeAccountsProofTargetIsSourceBacked = includesAll(storeAccountsProofSou
   "STORE_ACCOUNTS_PROOF_SUMMARY",
   "STORE_ACCOUNTS_PROOF_ITEMS",
   "Apple and Google store accounts proof packet",
+  "platform/store-named",
+  "StoreAccountEvidence",
   "Apple Developer team id",
   "App Store Connect app record",
   "Google Play package record",
   "reviewer access notes",
   "release role approval",
+  "iOS App Store Connect developer account proof ready",
+  "Android Google Play package proof ready",
 ])
   && includesAll(mobileReleaseQaSource, [
     "store-accounts-proof",
@@ -1501,16 +1509,20 @@ const storeAccountsProofTargetIsSourceBacked = includesAll(storeAccountsProofSou
     "App Store Connect app record",
     "Google Play package record",
     "store submission stays blocked",
+    "platform/store-named",
     "screenshots/metadata ownership",
   ])
   && includesAll(betaHandoffPacketSource, [
     "Open focused store accounts target: /care-twin-qa?qaSurface=store-accounts-proof.",
-    "Attach Apple Developer team id, App Store Connect app record, Google Play package record",
+    "Attach platform/store-named proof files before claiming store submission",
+    "iOS App Store Connect developer account proof",
+    "Android Google Play package proof",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused store accounts proof target",
     "/care-twin-qa?qaSurface=store-accounts-proof",
     "Apple Developer team id",
+    "iOS App Store Connect developer account proof",
     "store submission stays blocked",
   ])
   && includesAll(livePreviewHandoffProofSource, [
@@ -1524,7 +1536,7 @@ check(
   "store accounts proof target is source-backed",
   storeAccountsProofTargetIsSourceBacked,
   storeAccountsProofTargetIsSourceBacked
-    ? "Store accounts proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, and provider-row shortcut"
+    ? "Store accounts proof has a focused QA target, beta handoff instruction, smoke checklist item, live-preview route, provider-row shortcut, and platform/store-named proof instructions"
     : "keep store accounts proof wired through release QA, Share Beta Handoff, smoke checklist, live-preview proof, doctor next actions, and More provider setup",
 );
 
@@ -1540,17 +1552,22 @@ const storeAccountsProofManifestIsSourceBacked = includesAll(careTwinQaRouteSour
   && includesAll(storeAccountsProofSource, [
     "buildStoreAccountsProofManifest",
     "appSubmissionAllowed",
+    "storeAccountEvidence",
+    "platform/store-named proof file",
+    "iOS App Store Connect developer account proof",
+    "Android Google Play package proof",
     "Apple/Google account access",
     "bundle/signing ownership",
     "reviewer access",
     "privacy labels",
     "Apollo release approval",
+    "no-submit boundary",
   ]);
 check(
   "store accounts proof manifest is source-backed",
   storeAccountsProofManifestIsSourceBacked,
   storeAccountsProofManifestIsSourceBacked
-    ? "Store accounts proof manifest is visible on the focused QA route while keeping App Review and Play review submission blocked until proof is attached"
+    ? "Store accounts proof manifest is visible on the focused QA route while keeping App Review and Play review submission blocked until structured platform/store-named proof files are attached"
     : "render the store accounts proof manifest on /care-twin-qa?qaSurface=store-accounts-proof with Apple/Google, reviewer, metadata, and approval boundaries",
 );
 

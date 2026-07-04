@@ -1360,7 +1360,7 @@ export default function CareTwinQaScreen() {
                           Store accounts proof manifest
                         </Text>
                         <Text style={[s.routeVisualManifestHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                          Store submission must stay blocked until Apple and Google account, reviewer, metadata, and release approval proof are attached.
+                          Store submission must stay blocked until platform/store-named Apple and Google account, reviewer, metadata, and release approval proof files are attached.
                         </Text>
                       </View>
                       <QaBadge
@@ -1423,7 +1423,7 @@ export default function CareTwinQaScreen() {
                       </View>
                     ) : null}
                     <Text style={[s.routeVisualManifestBoundary, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      This manifest does not create store accounts, approve metadata or screenshots, submit to App Review or Play review, clear legal/privacy approval, or enable public launch.
+                      This manifest does not create store accounts, approve metadata or screenshots, submit to App Review or Play review, clear legal/privacy approval, or enable public launch; generic approval notes do not count without named proof files.
                     </Text>
                   </View>
                 ) : null}
