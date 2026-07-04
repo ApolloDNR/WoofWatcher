@@ -1778,6 +1778,10 @@ Latest local evidence, 2026-07-03:
 - Direct `scripts/native-qa-tooling-doctor.mjs --json` remains `BLOCKED`
   because this Windows shell lacks Android `adb`, Android `emulator`, Java,
   `ANDROID_HOME` or `ANDROID_SDK_ROOT`, and `JAVA_HOME`.
+- Branch CI passed for commit `0489972` in `WoofWatcher Verify` run
+  `28689927419`, job `85089300582`, in about `3m0s`; Setup pnpm, Setup Node,
+  install, JSON mobile beta doctor, focused behavior tests, and Typecheck plus
+  CI-safe builds all passed.
 - This manifest does not approve legal or privacy copy, refund/subscription
   policy, support operations, veterinary-boundary language, App Store or Play
   Store review, public launch, or replace Apollo sign-off.

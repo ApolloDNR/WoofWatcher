@@ -3129,6 +3129,10 @@ legal readiness proof manifest is source-backed` as `PASS`, but this is
 visibility only; it does not approve legal/privacy copy, refund policy, support
 operations, veterinary-boundary language, App Store or Play Store review, public
 launch, or Apollo sign-off.
+Branch CI later proved the manifest on commit `0489972` in `WoofWatcher Verify`
+run `28689927419`, job `85089300582`, which completed successfully in about
+`3m0s` with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused
+behavior tests, and Typecheck plus CI-safe builds all passing.
 
 Next highest-impact work:
 
