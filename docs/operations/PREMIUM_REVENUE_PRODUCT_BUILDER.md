@@ -3503,6 +3503,30 @@ Branch CI proved the guard on commit `eaa3b2e` in `WoofWatcher Verify` run
 with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior
 tests, Typecheck plus CI-safe builds, post steps, and Complete job all passing.
 
+The Auth/Setup structured provider-proof pass closes the remaining generic
+auth-approval overclaim in the account/onboarding manifest. `buildAuthSetupProofManifest`
+now keeps account/onboarding readiness blocked when only
+`clerkProductionApproved`, `redirectDeepLinkApproved`, `householdSyncApproved`,
+or `launchGateApproved` are staged. Clerk production, redirect/deep-link,
+household membership, and Apollo auth launch rows require structured proof files
+with locator or URI, acceptable MIME, positive byte size, required row fields,
+and row-specific approval booleans before they can become ready. Fresh local
+proof passed `authProviderProof.test.ts` `5/5`, focused Auth/Setup/release-QA/
+Share Beta Handoff/smoke/readiness tests `149/149`, the full zero-dependency
+API/mobile/PWA/care-domain suite `577/577`, root TypeScript, mobile TypeScript,
+direct JSON doctor source-backed checks, and `git diff --check`. Direct JSON
+mobile beta doctor remains truthfully `BLOCKED` on local pnpm `11.7.0` versus
+pinned `10.24.0` and missing Corepack; direct native QA tooling doctor remains
+`BLOCKED` on missing `adb`, `emulator`, `java`, Android SDK env vars, and
+`JAVA_HOME`. This is proof gating only; it does not configure Clerk, approve
+OAuth, enable provider-backed household creation, prove native iOS/Android
+Auth/Setup screenshots, satisfy store review, launch publicly, or replace
+Apollo sign-off. Branch CI proved the guard on commit `6da692b` in
+`WoofWatcher Verify` run `28701069572`, job `85119051428`, which completed
+successfully in about `3m12s` with Setup pnpm, Setup Node, install, JSON mobile
+beta doctor, focused behavior tests, Typecheck plus CI-safe builds, post steps,
+and Complete job all passing.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.
