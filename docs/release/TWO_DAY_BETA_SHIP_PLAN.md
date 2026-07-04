@@ -557,7 +557,9 @@ Current environment note:
   setup plus granted permission can stage owner review, but provider-backed
   notification status stays local/in-app until structured Expo/APNs/FCM,
   permission, quiet-hours, opt-out, and native delivery proof files make
-  `Reminder delivery allowed` true.
+  `Reminder delivery allowed` true. Implementation commit `c36e36e` is pushed;
+  fresh branch CI for that commit remains pending because manual workflow
+  dispatch was blocked before GitHub accepted it.
 - Records Dog ID can now share a local SVG image-source credential file beside
   the local printable HTML credential file, and Records can generate a local Dog
   ID PNG plus local Care Pass PDF bytes for Report History. Native iOS/Android

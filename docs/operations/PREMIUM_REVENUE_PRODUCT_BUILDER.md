@@ -3681,6 +3681,14 @@ configure Expo/APNs/FCM, deliver notifications, prove iOS/Android delivery,
 approve prompt/legal copy, clear store privacy review, launch publicly, or
 replace Apollo sign-off.
 
+The implementation is pushed as `c36e36e` (`Require reminder push proof guard`).
+Fresh branch CI for that commit is still pending: manual `WoofWatcher Verify`
+dispatch from this Codex thread was rejected by the local approval/usage gate
+before GitHub accepted it, and the latest visible run list still showed only
+earlier `workflow_dispatch` successes through run `28705671803`, which predates
+`c36e36e`. Do not reuse the prior green run as proof of this implementation
+commit; rerun branch CI when dispatch is available.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

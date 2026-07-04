@@ -49,6 +49,8 @@ Latest local evidence, 2026-07-04:
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `586/586`.
 - PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
 - PASS: Direct JSON mobile beta doctor reports `reminder center push proof guard is source-backed` as `PASS`.
+- PASS: Implementation commit `c36e36e` (`Require reminder push proof guard`) was pushed to `automation/premium-revenue-product-builder`.
+- BLOCKED: Fresh branch CI for `c36e36e` is pending because manual `WoofWatcher Verify` dispatch from this Codex thread was rejected by the local approval/usage gate before GitHub accepted it; the latest visible run list still showed only earlier `workflow_dispatch` successes through run `28705671803`, which predates `c36e36e`.
 - BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
 - STILL REQUIRED: real Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt/preference proof, quiet-hours/opt-out proof, iOS APNs delivery evidence, Android FCM delivery evidence, missed-notification fallback proof, store privacy review, public launch, and Apollo sign-off.
 

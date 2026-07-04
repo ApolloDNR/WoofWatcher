@@ -1928,6 +1928,7 @@ Consequences:
 
 - `buildReminderNotificationPreferencesForCenter` accepts `pushNotificationsProofEvidence` and calls `buildPushNotificationsProofManifest`.
 - Provider-approved push without structured proof stays staged, and shared Reminder Center copy explains that proof is still missing.
+- Implementation commit `c36e36e` is pushed with local red/green proof; fresh branch CI for that commit remains pending because manual workflow dispatch was blocked before GitHub accepted it.
 - Real Expo/APNs/FCM configuration, native delivery evidence, prompt/legal approval, store privacy review, public launch, and Apollo sign-off remain separate blockers.
 
 Owner: Codex.
