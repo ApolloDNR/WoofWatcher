@@ -2845,6 +2845,10 @@ local file handoff proof manifest is source-backed`, but this is visibility
 only; it does not prove native iOS or Android share sheets, Android content URI
 handoff, generated PDF/PNG readiness, provider-backed storage, cloud sync,
 public launch, or Apollo sign-off.
+Branch CI later proved the manifest on commit `8268809` in `WoofWatcher Verify`
+run `28691115501`, job `85092467507`, which completed successfully in `3m1s`
+with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior
+tests, and Typecheck plus CI-safe builds all passing.
 
 The report binary export proof packet pass keeps the next export boundary
 truthful before anyone claims native/provider readiness. `reportBinaryExportProof.ts`
