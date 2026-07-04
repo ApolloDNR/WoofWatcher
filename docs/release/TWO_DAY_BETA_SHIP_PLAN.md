@@ -237,6 +237,13 @@ Current environment note:
   shortcut-routing proof only; Clerk setup, provider-backed household creation,
   invite delivery, cross-device sync, native screenshots, and Apollo sign-off
   remain blocked.
+- Branch CI proved Auth/Setup structured provider-proof hardening on 2026-07-04:
+  `WoofWatcher Verify` run `28701069572`, job `85119051428`, commit `6da692b`,
+  with Setup pnpm, Setup Node, install dependencies, JSON mobile beta doctor,
+  focused behavior tests, and Typecheck plus CI-safe builds all passing. This
+  proves the structured proof guard only; real Clerk configuration, OAuth,
+  provider-backed household creation, native screenshots, store review, public
+  launch, and Apollo sign-off remain blocked.
 - Branch CI also proved the focused payments provider proof target on 2026-07-03:
   `WoofWatcher Verify` run `28676385615`, job `85050584288`, commit `3b5f4ab`,
   completed successfully in `3m3s` with Setup pnpm, Setup Node, install, JSON
