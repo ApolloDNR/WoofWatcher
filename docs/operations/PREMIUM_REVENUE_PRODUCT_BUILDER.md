@@ -3290,7 +3290,7 @@ positive byte size, required policy fields, and the row-specific safety
 booleans before `Live AI allowed` can become `Yes`. Fresh red/green local
 verification first failed because generic strings made the manifest ready, then
 passed focused AI proof tests `3/3`, targeted AI proof plus mobile
-readiness/release-QA tests `147/147`, the full zero-dependency
+readiness/release-QA tests `143/143`, the full zero-dependency
 API/mobile/PWA/care-domain suite `572/572`, root TypeScript, PixelLab asset
 verification `ok=149 missing=0 invalid=0`, and `git diff --check` with expected
 Windows CRLF warnings only. The JSON mobile beta doctor now guards
