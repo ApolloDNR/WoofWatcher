@@ -1550,6 +1550,10 @@ Latest local evidence, 2026-07-03:
   machine-readable doctor tests `119/119`, direct JSON mobile beta doctor
   source-backed checks, the full zero-dependency API/mobile/PWA/care-domain
   suite `562/562`, root TypeScript, and mobile TypeScript.
+- Branch CI proved the native-proof hardening in `WoofWatcher Verify` run
+  `28693395380`, job `85098728807`, on commit `41de898`; Setup pnpm, Setup
+  Node, install, JSON mobile beta doctor, focused behavior tests, and Typecheck
+  plus CI-safe builds all passed.
 - Branch CI proved the focused manifest guard in `WoofWatcher Verify` run
   `28691498890`, job `85093511875`, on commit `822ff54`; Setup pnpm, Setup
   Node, install, JSON mobile beta doctor, focused behavior tests, and Typecheck
