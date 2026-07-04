@@ -2012,6 +2012,7 @@ Consequences:
 - A row is ready only when setup is configured, `providerStatus` is `provider-approved`, and the row proof flag is true.
 - Provider-approved rows without proof stay staged as `Proof pending` and say structured proof evidence is still required.
 - `providerInput` only forwards true configured/proof flags for rows that are actually ready.
+- More's Provider Launch Setup save path only preserves a persisted `provider-approved` status when every provider row has both configured setup and its matching `proofKey` flag; configured-only saved profiles are downgraded to `owner-reviewed`.
 - Real provider proof files, native/store proof, public launch, and Apollo sign-off remain separate blockers.
 
 Owner: Codex.

@@ -135,48 +135,69 @@ type LaunchProviderFlagKey = keyof Pick<
   | "accountDeletionEnabled"
 >;
 
+type LaunchProviderProofFlagKey = keyof Pick<
+  LaunchProviderProfile,
+  | "authProviderProofReady"
+  | "databaseProviderProofReady"
+  | "storageProviderProofReady"
+  | "aiProviderProofReady"
+  | "paymentsProviderProofReady"
+  | "pushNotificationsProofReady"
+  | "storeAccountsProofReady"
+  | "accountDeletionProofReady"
+>;
+
 const PROVIDER_SETUP_FIELDS: Array<{
   key: LaunchProviderFlagKey;
+  proofKey: LaunchProviderProofFlagKey;
   label: string;
   detail: string;
 }> = [
   {
     key: "authConfigured",
+    proofKey: "authProviderProofReady",
     label: "Production auth",
     detail: "Clerk keys, redirects, household sign-in, and session rules.",
   },
   {
     key: "databaseConfigured",
+    proofKey: "databaseProviderProofReady",
     label: "Household database",
     detail: "Supabase/Postgres tables, RLS, backups, and migrations.",
   },
   {
     key: "storageProviderConfigured",
+    proofKey: "storageProviderProofReady",
     label: "Records storage",
     detail: "Signed uploads/downloads, retention, export, and deletion rules.",
   },
   {
     key: "aiProviderConfigured",
+    proofKey: "aiProviderProofReady",
     label: "WoofGuide AI",
     detail: "Provider key, model policy, owner review, and vet boundary.",
   },
   {
     key: "paymentsEnabled",
+    proofKey: "paymentsProviderProofReady",
     label: "Plus payments",
     detail: "Subscription tiers, app-store billing, refunds, and entitlement checks.",
   },
   {
     key: "pushNotificationsConfigured",
+    proofKey: "pushNotificationsProofReady",
     label: "Push reminders",
     detail: "Expo push, APNs/FCM, permission copy, quiet hours, and opt-out.",
   },
   {
     key: "appStoreAccountsReady",
+    proofKey: "storeAccountsProofReady",
     label: "Store accounts",
     detail: "Apple Developer, App Store Connect, Google Play Console, bundle ids.",
   },
   {
     key: "accountDeletionEnabled",
+    proofKey: "accountDeletionProofReady",
     label: "Account deletion",
     detail: "Self-serve deletion, export warning, provider deletion, and audit receipt.",
   },
@@ -1139,7 +1160,9 @@ export default function MoreScreen() {
   const saveProviderSetup = () => {
     const reviewedAt = new Date(now).toISOString();
     const normalized = normalizeLaunchProviderProfile(providerDraft);
-    const allProviderGatesReady = PROVIDER_SETUP_FIELDS.every((field) => normalized[field.key]);
+    const allProviderGatesReady = PROVIDER_SETUP_FIELDS.every(
+      (field) => normalized[field.key] && normalized[field.proofKey],
+    );
     const providerStatus =
       normalized.providerStatus === "provider-approved" && !allProviderGatesReady
         ? "owner-reviewed"

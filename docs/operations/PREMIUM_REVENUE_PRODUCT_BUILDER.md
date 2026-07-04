@@ -3782,6 +3782,21 @@ not configure a backend job runner, prove caregiver consent/privacy, deliver
 push/email/SMS, prove native delivery, launch publicly, or replace Apollo
 sign-off.
 
+The Provider Launch Setup save-path proof pass closes the persisted-status
+overclaim. More's `PROVIDER_SETUP_FIELDS` now carries each provider row's
+structured proof key, and `saveProviderSetup` only preserves a saved
+`provider-approved` status when every auth, database, storage, AI, payments,
+push, store account, and account-deletion row has both configured setup and the
+matching proof-ready flag. Configured-only profiles save back as
+`owner-reviewed`, matching the row-readiness and Launch Readiness proof
+boundary. Fresh local verification passed mobile readiness `114/114`, the full
+zero-dependency API/mobile/PWA/care-domain suite with the dot reporter, root
+TypeScript, mobile TypeScript, direct mobile beta doctor source-backed checks,
+and `git diff --check`. Direct mobile beta doctor remains truthfully `BLOCKED`
+on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack. This still
+does not configure providers, attach proof files, approve native/store
+evidence, launch publicly, or replace Apollo sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

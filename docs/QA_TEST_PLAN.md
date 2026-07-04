@@ -44,6 +44,11 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: More's Provider Launch Setup save path now clamps persisted `launchProviderProfile.providerStatus` back to `owner-reviewed` unless all eight provider rows have both configured setup and their matching structured proof-ready flag.
+- PASS: `PROVIDER_SETUP_FIELDS` now maps auth, database, storage, AI, payments, push, store accounts, and account deletion rows to explicit `proofKey` fields, and the mobile readiness guard asserts `saveProviderSetup` uses `normalized[field.key] && normalized[field.proofKey]`.
+- PASS: Mobile readiness passed `114/114` for the persisted-status proof clamp.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed with the dot reporter.
+- PASS: Root TypeScript, mobile TypeScript, direct mobile beta doctor source-backed checks, and `git diff --check` passed for the persisted-status clamp.
 - PASS: Provider Launch Setup row proof hardening now keeps provider-approved auth, database, storage, AI, payments, push, store, and deletion toggles staged as `Proof pending` until each row's structured proof-ready flag is present.
 - PASS: `deriveLaunchProviderSetup` now requires configured setup, `providerStatus: "provider-approved"`, and the matching row proof flag before a row becomes `ready` or forwards true provider input into Launch Readiness.
 - PASS: `launchProviderSetup.test.ts` passed `7/7`.

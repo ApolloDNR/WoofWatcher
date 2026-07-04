@@ -4767,9 +4767,17 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(more, /Edit Provider Plan/);
   assert.match(more, /Share Provider Plan/);
+  assert.match(more, /proofKey: "authProviderProofReady"/);
+  assert.match(more, /proofKey: "databaseProviderProofReady"/);
+  assert.match(more, /proofKey: "storageProviderProofReady"/);
+  assert.match(more, /proofKey: "aiProviderProofReady"/);
+  assert.match(more, /proofKey: "paymentsProviderProofReady"/);
+  assert.match(more, /proofKey: "pushNotificationsProofReady"/);
+  assert.match(more, /proofKey: "storeAccountsProofReady"/);
+  assert.match(more, /proofKey: "accountDeletionProofReady"/);
   assert.match(
     more,
-    /PROVIDER_SETUP_FIELDS\.every\(\(field\) => normalized\[field\.key\]\)/,
+    /PROVIDER_SETUP_FIELDS\.every\(\s*\(field\) => normalized\[field\.key\] && normalized\[field\.proofKey\],\s*\)/,
   );
   assert.match(more, /Share Store Packet/);
   assert.match(more, /Share Launch Packet/);

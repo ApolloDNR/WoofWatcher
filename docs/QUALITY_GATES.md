@@ -488,13 +488,19 @@ row is configured, `providerStatus` is `provider-approved`, and the matching
 proof-ready flag is true. The same row-ready verdict controls the provider
 input forwarded into Launch Readiness, so provider-approved booleans alone
 cannot make release or store-submission packets claim provider readiness.
+More's Provider Launch Setup save path now uses the same row proof-key mapping,
+so the persisted `launchProviderProfile.providerStatus` is saved back as
+`owner-reviewed` unless every row has both configured setup and its matching
+structured proof-ready flag.
 Local verification passed `launchProviderSetup.test.ts` `7/7`, focused
 Provider Launch Setup plus mobile readiness tests `121/121`, the full
 zero-dependency API/mobile/PWA/care-domain suite `591/591`, root TypeScript,
 mobile TypeScript, the JSON doctor source-backed guard, and `git diff --check`
-with expected Windows line-ending warnings only. Real provider proof files,
-store evidence, native proof, public launch, and Apollo sign-off remain
-required.
+with expected Windows line-ending warnings only. Additional save-path proof
+passed mobile readiness `114/114`, the full zero-dependency suite with the dot
+reporter, root TypeScript, mobile TypeScript, direct mobile beta doctor
+source-backed checks, and `git diff --check`. Real provider proof files, store
+evidence, native proof, public launch, and Apollo sign-off remain required.
 
 Current evidence, 2026-06-19: The Option B living-room polish pass keeps Phoenix as one layered main sprite instead of a second-avatar illusion. Home quick-log actions now request action-specific sprite reactions, the room renderer adds ambient micro-behaviors and rest-state safeguards, Avatar Studio suppresses oversized still/accessory overlays when a live sprite pack is active, and PixelIcon paths use crisp pixel rendering on web.
 
