@@ -34,6 +34,7 @@ import {
   type AccountSafetySection,
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
+import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import {
   buildSupportRunbookShareText,
   deriveSupportRunbookPlan,
@@ -94,16 +95,22 @@ export default function PrivacyScreen() {
     [me.data?.household?.id, me.data?.household?.name, me.data?.user?.id],
   );
 
+  const launchProviderSetupPlan = useMemo(
+    () => deriveLaunchProviderSetup(state.launchProviderProfile),
+    [state.launchProviderProfile],
+  );
+
   const plan = useMemo(
     () =>
       deriveAccountSafetyPlan({
         state,
-        aiProviderConfigured: false,
-        storageProviderConfigured: false,
-        accountDeletionEnabled: false,
-        paymentsEnabled: false,
+        aiProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.aiProviderConfigured),
+        storageProviderConfigured: Boolean(state.launchProviderProfile.storageProviderConfigured),
+        storageProviderEvidence: state.launchProviderProfile.storageProviderEvidence,
+        accountDeletionEnabled: Boolean(launchProviderSetupPlan.providerInput.accountDeletionEnabled),
+        paymentsEnabled: Boolean(launchProviderSetupPlan.providerInput.paymentsEnabled),
       }),
-    [state],
+    [launchProviderSetupPlan.providerInput, state],
   );
 
   const bundle = useMemo(() => buildPrivacyExportBundle(state, context), [state, context]);

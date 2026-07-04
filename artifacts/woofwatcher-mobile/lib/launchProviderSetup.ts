@@ -44,6 +44,33 @@ export type LaunchProviderSetupKey =
   | "storeAccounts"
   | "accountDeletion";
 
+export interface LaunchStorageProviderEvidence {
+  fileName?: string | null;
+  uri?: string | null;
+  mimeType?: string | null;
+  byteSize?: number | null;
+  bucketNames?: readonly string[] | null;
+  signedUploadPolicy?: string | null;
+  signedDownloadPolicy?: string | null;
+  householdScopePolicy?: string | null;
+  retentionPolicy?: string | null;
+  exportPolicy?: string | null;
+  deletionPolicy?: string | null;
+  qaEvidenceStoragePolicy?: string | null;
+  apolloApprovalOwner?: string | null;
+  signedAccessApproved?: boolean | null;
+  householdScopeApproved?: boolean | null;
+  retentionExportDeletionApproved?: boolean | null;
+  qaEvidenceStorageApproved?: boolean | null;
+  apolloApproved?: boolean | null;
+  householdScoped?: boolean | null;
+  signedUploadApproved?: boolean | null;
+  signedDownloadApproved?: boolean | null;
+  retentionApproved?: boolean | null;
+  exportApproved?: boolean | null;
+  deletionApproved?: boolean | null;
+}
+
 export interface LaunchProviderProfile {
   authConfigured: boolean;
   authProviderProofReady: boolean;
@@ -51,6 +78,7 @@ export interface LaunchProviderProfile {
   databaseProviderProofReady: boolean;
   storageProviderConfigured: boolean;
   storageProviderProofReady: boolean;
+  storageProviderEvidence?: LaunchStorageProviderEvidence | null;
   aiProviderConfigured: boolean;
   aiProviderProofReady: boolean;
   paymentsEnabled: boolean;
@@ -106,6 +134,7 @@ export interface LaunchProviderSetupPlan {
     | "databaseProviderProofReady"
     | "storageProviderConfigured"
     | "storageProviderProofReady"
+    | "storageProviderEvidence"
     | "aiProviderConfigured"
     | "aiProviderProofReady"
     | "paymentsEnabled"
@@ -126,6 +155,7 @@ const DEFAULT_PROFILE: LaunchProviderProfile = {
   databaseProviderProofReady: false,
   storageProviderConfigured: false,
   storageProviderProofReady: false,
+  storageProviderEvidence: null,
   aiProviderConfigured: false,
   aiProviderProofReady: false,
   paymentsEnabled: false,
@@ -150,6 +180,12 @@ function cleanStatus(value: unknown): LaunchProviderSetupStatus {
   return value === "owner-reviewed" || value === "provider-approved" ? value : "local-draft";
 }
 
+function normalizeStorageProviderEvidence(
+  value: LaunchStorageProviderEvidence | null | undefined,
+): LaunchStorageProviderEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
 export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput): LaunchProviderProfile {
   const source = input ?? {};
   const ownerReviewedAt = cleanString(source.ownerReviewedAt);
@@ -160,6 +196,7 @@ export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput
     databaseProviderProofReady: Boolean(source.databaseProviderProofReady),
     storageProviderConfigured: Boolean(source.storageProviderConfigured),
     storageProviderProofReady: Boolean(source.storageProviderProofReady),
+    storageProviderEvidence: normalizeStorageProviderEvidence(source.storageProviderEvidence),
     aiProviderConfigured: Boolean(source.aiProviderConfigured),
     aiProviderProofReady: Boolean(source.aiProviderProofReady),
     paymentsEnabled: Boolean(source.paymentsEnabled),
@@ -402,6 +439,7 @@ export function deriveLaunchProviderSetup(input: LaunchProviderProfileInput): La
       databaseProviderProofReady: rows.some((row) => row.key === "database" && row.status === "ready"),
       storageProviderConfigured: rows.some((row) => row.key === "storage" && row.status === "ready"),
       storageProviderProofReady: rows.some((row) => row.key === "storage" && row.status === "ready"),
+      storageProviderEvidence: profile.storageProviderEvidence,
       aiProviderConfigured: rows.some((row) => row.key === "ai" && row.status === "ready"),
       aiProviderProofReady: rows.some((row) => row.key === "ai" && row.status === "ready"),
       paymentsEnabled: rows.some((row) => row.key === "payments" && row.status === "ready"),

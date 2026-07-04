@@ -1,6 +1,35 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
+function completeStorageProviderEvidence() {
+  return {
+    fileName: "provider-storage-proof.json",
+    uri: "file:///provider-proof/provider-storage-proof.json",
+    mimeType: "application/json",
+    byteSize: 31_840,
+    bucketNames: ["report-pdfs", "credential-artifacts", "qa-evidence"],
+    signedUploadPolicy: "signed upload policy for household-scoped artifacts",
+    signedDownloadPolicy: "signed download policy for household-scoped artifacts",
+    householdScopePolicy: "active household id scopes every artifact path",
+    retentionPolicy: "retention policy for report and credential artifacts",
+    exportPolicy: "owner export policy for stored report and credential artifacts",
+    deletionPolicy: "owner deletion policy for report and credential artifacts",
+    qaEvidenceStoragePolicy: "QA evidence storage policy for beta proof attachments",
+    apolloApprovalOwner: "Apollo Duran",
+    householdScoped: true,
+    signedAccessApproved: true,
+    signedUploadApproved: true,
+    signedDownloadApproved: true,
+    householdScopeApproved: true,
+    retentionApproved: true,
+    exportApproved: true,
+    deletionApproved: true,
+    retentionExportDeletionApproved: true,
+    qaEvidenceStorageApproved: true,
+    apolloApproved: true,
+  };
+}
+
 test("builds a truthful provider setup plan from a local launch profile", async () => {
   const mod = await import("./launchProviderSetup.ts").catch(() => null);
   assert.ok(mod, "launchProviderSetup module should exist");
@@ -169,11 +198,13 @@ test("builds a truthful provider setup plan from a local launch profile", async 
 test("normalizes stored provider setup profiles before launch-readiness usage", async () => {
   const mod = await import("./launchProviderSetup.ts").catch(() => null);
   assert.ok(mod, "launchProviderSetup module should exist");
+  const storageProviderEvidence = completeStorageProviderEvidence();
 
   const profile = mod.normalizeLaunchProviderProfile({
     authConfigured: "yes",
     databaseConfigured: 1,
     storageProviderConfigured: false,
+    storageProviderEvidence,
     providerStatus: "unknown",
     ownerReviewedAt: 123,
     notes: 42,
@@ -190,6 +221,8 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
   assert.equal(profile.providerStatus, "local-draft");
   assert.equal(profile.ownerReviewedAt, undefined);
   assert.equal(profile.notes, "");
+  assert.deepEqual(profile.storageProviderEvidence, storageProviderEvidence);
+  assert.equal(mod.normalizeLaunchProviderProfile({ storageProviderEvidence: [] }).storageProviderEvidence, null);
 });
 
 test("keeps owner-reviewed provider toggles out of launch-readiness input until provider approval and structured proof", async () => {
@@ -234,6 +267,7 @@ test("keeps owner-reviewed provider toggles out of launch-readiness input until 
     databaseProviderProofReady: false,
     storageProviderConfigured: false,
     storageProviderProofReady: false,
+    storageProviderEvidence: null,
     aiProviderConfigured: false,
     aiProviderProofReady: false,
     paymentsEnabled: false,
@@ -256,6 +290,7 @@ test("keeps owner-reviewed provider toggles out of launch-readiness input until 
     databaseProviderProofReady: false,
     storageProviderConfigured: false,
     storageProviderProofReady: false,
+    storageProviderEvidence: null,
     aiProviderConfigured: false,
     aiProviderProofReady: false,
     paymentsEnabled: false,
@@ -297,6 +332,7 @@ test("keeps provider-approved toggles staged until row structured proof is ready
     databaseProviderProofReady: false,
     storageProviderConfigured: false,
     storageProviderProofReady: false,
+    storageProviderEvidence: null,
     aiProviderConfigured: false,
     aiProviderProofReady: false,
     paymentsEnabled: false,
@@ -421,6 +457,7 @@ test("does not show provider-approved until every provider gate is ready", async
 test("clears the next provider gate only when every production provider is ready", async () => {
   const mod = await import("./launchProviderSetup.ts").catch(() => null);
   assert.ok(mod, "launchProviderSetup module should exist");
+  const storageProviderEvidence = completeStorageProviderEvidence();
 
   const plan = mod.deriveLaunchProviderSetup({
     authConfigured: true,
@@ -429,6 +466,7 @@ test("clears the next provider gate only when every production provider is ready
     databaseProviderProofReady: true,
     storageProviderConfigured: true,
     storageProviderProofReady: true,
+    storageProviderEvidence,
     aiProviderConfigured: true,
     aiProviderProofReady: true,
     paymentsEnabled: true,
@@ -445,6 +483,7 @@ test("clears the next provider gate only when every production provider is ready
   assert.equal(plan.openCount, 0);
   assert.equal(plan.nextGate, null);
   assert.equal(plan.status, "provider-approved");
+  assert.deepEqual(plan.providerInput.storageProviderEvidence, storageProviderEvidence);
 
   const text = mod.buildLaunchProviderSetupShareText(plan, "2026-06-21T10:00:00.000Z");
   assert.match(text, /Next Provider Gate/);

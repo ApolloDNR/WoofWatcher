@@ -130,6 +130,19 @@ Earlier 2026-07-04 local evidence:
 - BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
 - STILL REQUIRED: real structured OpenAI key-storage, model-policy, source/citation, owner-review write-gate, veterinary-safety, fallback/incident proof files, live provider approval, public launch, and Apollo sign-off.
 
+Latest local evidence, 2026-07-04:
+
+- PASS: Provider Launch Setup now normalizes and preserves `storageProviderEvidence` instead of stripping valid saved/imported structured storage proof.
+- PASS: Records Report History forwards Provider Launch Setup storage evidence into both Care Pass artifact export and Report Binary Export proof manifests.
+- PASS: Privacy & Safety forwards the saved storage evidence into `deriveAccountSafetyPlan` instead of hardcoding storage provider setup to false.
+- PASS: Focused Provider Launch Setup plus mobile readiness tests passed `121/121`.
+- PASS: Focused Care Pass/report/Privacy/provider/mobile proof tests passed `161/161`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed with the dot reporter.
+- PASS: Direct JSON mobile beta doctor source-backed checks passed while still reporting the local dependency blocker.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real structured provider storage proof files, storage buckets/rules, signed upload/download, household scope, retention/export/deletion, QA evidence storage, native share/reopen proof, store review, public launch, and Apollo sign-off.
+
 Earlier 2026-07-04 local evidence:
 
 - PASS: Care Pass report artifact storage proof hardening now keeps saved printable HTML reports local-only when storage provider setup is configured but structured storage proof files are absent.

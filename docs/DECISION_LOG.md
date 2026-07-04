@@ -2039,6 +2039,25 @@ Owner: Codex.
 
 Revisit trigger: WoofWatcher gains a provider-backed proof evidence service or a richer proof attachment editor that can validate and attach proof files directly from the app.
 
+### 2026-07-04: Storage Provider Evidence Must Reach Records And Privacy
+
+Decision: Provider Launch Setup must preserve structured storage provider evidence and forward it to the Records and Privacy proof consumers. `storageProviderEvidence` is durable launch-provider profile state, not a transient UI-only field, and it must reach Care Pass artifact export, Report Binary Export proof, and Privacy & Safety storage review.
+
+Reason: Earlier storage guards correctly rejected `storageProviderConfigured` by itself, but valid saved/imported storage proof still could not satisfy the downstream validators because Provider Launch Setup and CareContext did not preserve a structured storage evidence object. That stranded real proof and made Records/Privacy behave as if no storage proof existed even after evidence was attached.
+
+Consequences:
+
+- `LaunchProviderProfile` includes normalized `storageProviderEvidence`.
+- `deriveLaunchProviderSetup` forwards the evidence through `providerInput`.
+- `CareContext` persists the typed storage evidence field with the launch provider profile.
+- Records passes the evidence into Care Pass artifact export and Report Binary Export proof manifests.
+- Privacy & Safety passes the evidence into `deriveAccountSafetyPlan`.
+- Storage readiness still requires the existing structured proof validators; raw configured booleans do not count as upload, export, deletion, native, store, public-launch, or Apollo approval.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed storage proof attachment service or Apollo attaches real storage bucket/policy proof files that should be validated from saved app state.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

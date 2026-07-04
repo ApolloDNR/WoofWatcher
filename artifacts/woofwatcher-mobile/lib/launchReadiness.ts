@@ -62,6 +62,33 @@ export interface LaunchReadinessStorageQueueInput {
   detail?: string;
 }
 
+export interface LaunchReadinessStorageProviderEvidence {
+  fileName?: string | null;
+  uri?: string | null;
+  mimeType?: string | null;
+  byteSize?: number | null;
+  bucketNames?: readonly string[] | null;
+  signedUploadPolicy?: string | null;
+  signedDownloadPolicy?: string | null;
+  householdScopePolicy?: string | null;
+  retentionPolicy?: string | null;
+  exportPolicy?: string | null;
+  deletionPolicy?: string | null;
+  qaEvidenceStoragePolicy?: string | null;
+  apolloApprovalOwner?: string | null;
+  signedAccessApproved?: boolean | null;
+  householdScopeApproved?: boolean | null;
+  retentionExportDeletionApproved?: boolean | null;
+  qaEvidenceStorageApproved?: boolean | null;
+  apolloApproved?: boolean | null;
+  householdScoped?: boolean | null;
+  signedUploadApproved?: boolean | null;
+  signedDownloadApproved?: boolean | null;
+  retentionApproved?: boolean | null;
+  exportApproved?: boolean | null;
+  deletionApproved?: boolean | null;
+}
+
 export interface LaunchReadinessProviderInput {
   accountDeletionEnabled?: boolean;
   accountDeletionProofReady?: boolean;
@@ -81,6 +108,7 @@ export interface LaunchReadinessProviderInput {
   pushNotificationsProofReady?: boolean;
   storeAccountsProofReady?: boolean;
   storageProviderConfigured?: boolean;
+  storageProviderEvidence?: LaunchReadinessStorageProviderEvidence | null;
   storageProviderProofReady?: boolean;
   storageQueue?: LaunchReadinessStorageQueueInput;
   supportRunbookApproved?: boolean;

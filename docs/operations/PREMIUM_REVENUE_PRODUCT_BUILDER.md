@@ -3854,6 +3854,21 @@ predates this commit.
 This still does not attach real proof files, configure providers, approve
 native/store evidence, launch publicly, or replace Apollo sign-off.
 
+The storage-provider evidence propagation pass closes the next durable proof
+gap for Records and Privacy. `LaunchProviderProfile` now keeps
+`storageProviderEvidence`; `deriveLaunchProviderSetup` forwards it through
+`providerInput`; `CareContext` persists the typed field; Records passes it to
+Care Pass artifact export and Report Binary Export proof manifests; and Privacy
+passes it to `deriveAccountSafetyPlan`. Fresh local verification passed
+focused Provider Launch Setup plus mobile readiness tests `121/121`, focused
+Care Pass/report/Privacy/provider/mobile proof tests `161/161`, root
+TypeScript, mobile TypeScript, the full zero-dependency API/mobile/PWA/
+care-domain suite with the dot reporter, and direct JSON mobile beta doctor
+source-backed checks. Direct mobile beta doctor remains truthfully `BLOCKED`
+on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack. This
+still does not attach real storage proof files, configure buckets, approve
+native/store evidence, launch publicly, or replace Apollo sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

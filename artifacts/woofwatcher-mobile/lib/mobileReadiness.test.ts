@@ -185,8 +185,16 @@ test("keeps launch-blocking safety copy on premium, privacy, and WoofGuide surfa
   assert.match(privacySurface, /AI disclosure/);
   assert.match(privacySurface, /document storage/i);
   assert.match(privacy, /deriveSupportRunbookPlan/);
+  assert.match(privacy, /deriveLaunchProviderSetup/);
   assert.match(privacy, /buildSupportRunbookShareText/);
   assert.match(privacy, /state\.launchSupportProfile/);
+  assert.match(
+    privacy,
+    /const launchProviderSetupPlan = useMemo\(\s*\(\) => deriveLaunchProviderSetup\(state\.launchProviderProfile\),\s*\[state\.launchProviderProfile\],\s*\)/,
+  );
+  assert.match(privacy, /storageProviderConfigured:\s*Boolean\(state\.launchProviderProfile\.storageProviderConfigured\)/);
+  assert.match(privacy, /storageProviderEvidence:\s*state\.launchProviderProfile\.storageProviderEvidence/);
+  assert.doesNotMatch(privacy, /storageProviderConfigured:\s*false/);
   assert.match(
     privacy,
     /const launchProfileProviderApproved =\s*state\.launchSupportProfile\.providerStatus === "provider-approved" && supportPlan\.launchReady/,
@@ -3538,6 +3546,11 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
     records,
     /storageProviderConfigured: launchProviderSetupPlan\.providerInput\.storageProviderConfigured/,
   );
+  assert.match(records, /storageProviderEvidence: launchProviderSetupPlan\.providerInput\.storageProviderEvidence/);
+  assert.match(
+    records,
+    /providerStorageEvidence:\s*launchProviderSetupPlan\.providerInput\.storageProviderEvidence\s*\?\s*\[launchProviderSetupPlan\.providerInput\.storageProviderEvidence\]\s*:\s*\[\]/,
+  );
   assert.match(records, /exportView\.formatLabel/);
   assert.match(records, /local file - PDF pending/);
   assert.match(records, /exportView\.pdfDetail/);
@@ -4835,6 +4848,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(careContext, /launchProviderProfile/);
   assert.match(careContext, /supportLegalReadinessEvidence\?:\s*SupportLegalReadinessProofEvidence \| null/);
+  assert.match(careContext, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
   assert.match(careContext, /authProviderProofReady:\s*boolean/);
   assert.match(careContext, /databaseProviderProofReady:\s*boolean/);
   assert.match(careContext, /storageProviderProofReady:\s*boolean/);
@@ -4851,6 +4865,9 @@ test("keeps More household, tools, and diet sections on shared board card anatom
     careContext,
     /launchProviderProfile:\s*normalizeLaunchProviderProfile\(merged\.launchProviderProfile\)/,
   );
+  assert.match(providerSetup, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
+  assert.match(providerSetup, /storageProviderEvidence:\s*normalizeStorageProviderEvidence\(source\.storageProviderEvidence\)/);
+  assert.match(providerSetup, /storageProviderEvidence:\s*profile\.storageProviderEvidence/);
   assert.match(providerSetup, /Provider Launch Setup/);
   assert.match(providerSetup, /LaunchProviderSetupRowStatus = "ready" \| "staged" \| "blocked"/);
   assert.match(providerSetup, /nextGate/);

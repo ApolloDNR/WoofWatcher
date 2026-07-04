@@ -38,7 +38,7 @@ import {
   normalizeReminderNotificationPreferences,
   type ReminderNotificationPreferences,
 } from "@/lib/reminderNotificationPreferences";
-import { normalizeLaunchProviderProfile } from "@/lib/launchProviderSetup";
+import { normalizeLaunchProviderProfile, type LaunchStorageProviderEvidence } from "@/lib/launchProviderSetup";
 import type { SupportLegalReadinessProofEvidence } from "@/lib/supportRunbook";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
@@ -109,6 +109,7 @@ export interface LaunchProviderProfile {
   databaseProviderProofReady: boolean;
   storageProviderConfigured: boolean;
   storageProviderProofReady: boolean;
+  storageProviderEvidence?: LaunchStorageProviderEvidence | null;
   aiProviderConfigured: boolean;
   aiProviderProofReady: boolean;
   paymentsEnabled: boolean;

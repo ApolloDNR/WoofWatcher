@@ -2311,6 +2311,7 @@ export default function RecordsScreen() {
               reportArtifacts.map((artifact, index) => {
                 const exportView = describeCarePassArtifactExport(artifact, {
                   storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
+                  storageProviderEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence,
                 });
                 const printable = getCarePassArtifactPrintView(artifact);
                 const generatedCarePassPdf = buildCarePassPdfArtifactSource({
@@ -2333,6 +2334,9 @@ export default function RecordsScreen() {
                     byteSize: credentialPngArtifactSource.byteSize,
                   },
                   storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
+                  providerStorageEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence
+                    ? [launchProviderSetupPlan.providerInput.storageProviderEvidence]
+                    : [],
                   pdfGeneratorApproved: false,
                   pngRendererApproved: false,
                   nativeArtifactEvidenceApproved: false,
