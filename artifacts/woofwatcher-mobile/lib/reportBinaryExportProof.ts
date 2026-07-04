@@ -11,6 +11,7 @@ export interface ReportBinaryExportProofManifestInput {
   generatedCarePassPdf?: ReportGeneratedBinaryArtifactProof;
   generatedDogIdPng?: ReportGeneratedBinaryArtifactProof;
   nativeArtifactEvidence?: readonly ReportNativeArtifactEvidence[];
+  providerStorageEvidence?: readonly ReportProviderStorageEvidence[];
   storageProviderConfigured?: boolean;
   pdfGeneratorApproved: boolean;
   pngRendererApproved: boolean;
@@ -37,6 +38,28 @@ export interface ReportNativeArtifactEvidence {
   reopened: boolean;
 }
 
+export interface ReportProviderStorageEvidence {
+  fileName?: string | null;
+  uri?: string | null;
+  mimeType?: string | null;
+  byteSize?: number | null;
+  bucketNames?: readonly string[] | null;
+  signedUploadPolicy?: string | null;
+  signedDownloadPolicy?: string | null;
+  householdScopePolicy?: string | null;
+  retentionPolicy?: string | null;
+  exportPolicy?: string | null;
+  deletionPolicy?: string | null;
+  qaEvidenceStoragePolicy?: string | null;
+  householdScoped?: boolean | null;
+  signedUploadApproved?: boolean | null;
+  signedDownloadApproved?: boolean | null;
+  retentionApproved?: boolean | null;
+  exportApproved?: boolean | null;
+  deletionApproved?: boolean | null;
+  qaEvidenceStorageApproved?: boolean | null;
+}
+
 export interface ReportBinaryExportProofManifestRow {
   label: string;
   value: string;
@@ -53,6 +76,25 @@ export interface ReportBinaryExportProofManifest {
 function clean(value: unknown, fallback: string): string {
   const text = String(value ?? "").trim();
   return text.length ? text : fallback;
+}
+
+function normalize(value: unknown): string {
+  return clean(value, "").toLowerCase();
+}
+
+function hasPositiveByteSize(value: unknown): boolean {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function hasProofMime(value: unknown): boolean {
+  const mime = normalize(value);
+  return (
+    mime === "application/json" ||
+    mime.endsWith("+json") ||
+    mime === "text/markdown" ||
+    mime === "text/plain" ||
+    mime === "application/pdf"
+  );
 }
 
 function replaceExtension(fileName: string, extension: ".pdf" | ".png"): string {
@@ -158,6 +200,42 @@ function summarizeNativeArtifactEvidence(evidence: readonly ReportNativeArtifact
   };
 }
 
+function providerStorageEvidenceMatches(evidence: ReportProviderStorageEvidence): boolean {
+  const locator = `${normalize(evidence.fileName)} ${normalize(evidence.uri)}`;
+  const bucketNames = Array.isArray(evidence.bucketNames)
+    ? evidence.bucketNames.map((item) => clean(item, "")).filter(Boolean)
+    : [];
+  return (
+    locator.includes("storage") &&
+    (locator.includes("provider") || locator.includes("bucket")) &&
+    hasProofMime(evidence.mimeType) &&
+    hasPositiveByteSize(evidence.byteSize) &&
+    bucketNames.length >= 3 &&
+    clean(evidence.signedUploadPolicy, "").length > 0 &&
+    clean(evidence.signedDownloadPolicy, "").length > 0 &&
+    clean(evidence.householdScopePolicy, "").length > 0 &&
+    clean(evidence.retentionPolicy, "").length > 0 &&
+    clean(evidence.exportPolicy, "").length > 0 &&
+    clean(evidence.deletionPolicy, "").length > 0 &&
+    clean(evidence.qaEvidenceStoragePolicy, "").length > 0 &&
+    evidence.householdScoped === true &&
+    evidence.signedUploadApproved === true &&
+    evidence.signedDownloadApproved === true &&
+    evidence.retentionApproved === true &&
+    evidence.exportApproved === true &&
+    evidence.deletionApproved === true &&
+    evidence.qaEvidenceStorageApproved === true
+  );
+}
+
+function summarizeProviderStorageEvidence(evidence: readonly ReportProviderStorageEvidence[] | undefined) {
+  const proof = evidence?.find(providerStorageEvidenceMatches);
+  return {
+    ready: Boolean(proof),
+    label: proof ? clean(proof.fileName, clean(proof.uri, "Provider storage proof")) : "",
+  };
+}
+
 export const REPORT_BINARY_EXPORT_PROOF_ITEMS: readonly ReportBinaryExportProofItem[] = [
   {
     label: "PDF generator",
@@ -172,7 +250,7 @@ export const REPORT_BINARY_EXPORT_PROOF_ITEMS: readonly ReportBinaryExportProofI
   {
     label: "Provider storage handoff",
     requiredEvidence:
-      "signed upload/download storage buckets for report PDFs, credential PNG/SVG/HTML, and QA evidence, with household scope plus retention/export/deletion policy.",
+      "structured provider storage proof file with signed upload/download buckets for report PDFs, credential PNG/SVG/HTML, and QA evidence, household scope, retention/export/deletion policy, MIME, byte size, and row-specific approval booleans.",
   },
   {
     label: "Native artifact proof",
@@ -182,7 +260,7 @@ export const REPORT_BINARY_EXPORT_PROOF_ITEMS: readonly ReportBinaryExportProofI
 ];
 
 export const REPORT_BINARY_EXPORT_PROOF_SUMMARY =
-  "Report binary export proof packet: local Care Pass PDF and Dog ID PNG artifact bytes, provider storage policy, native share/reopen proof, and iOS/Android artifact proof before PDF or PNG readiness can be claimed.";
+  "Report binary export proof packet: local Care Pass PDF and Dog ID PNG artifact bytes, structured provider storage proof, native share/reopen proof, and iOS/Android artifact proof before PDF or PNG readiness can be claimed.";
 
 export function buildReportBinaryExportProofManifest(
   input: ReportBinaryExportProofManifestInput,
@@ -195,6 +273,7 @@ export function buildReportBinaryExportProofManifest(
   const generatedDogIdPng = cleanGeneratedProof(input.generatedDogIdPng, "image/png");
   const storageProviderConfigured = Boolean(input.storageProviderConfigured);
   const nativeArtifactEvidence = summarizeNativeArtifactEvidence(input.nativeArtifactEvidence);
+  const providerStorageEvidence = summarizeProviderStorageEvidence(input.providerStorageEvidence);
   const blockers: string[] = [];
 
   if (!input.pdfGeneratorApproved && !generatedCarePassPdf) {
@@ -203,8 +282,10 @@ export function buildReportBinaryExportProofManifest(
   if (!input.pngRendererApproved && !generatedDogIdPng) {
     blockers.push("Dog ID PNG renderer needs approved react-native-view-shot or server-renderer proof.");
   }
-  if (!storageProviderConfigured) {
-    blockers.push("Provider storage needs signed household-scoped upload/download, retention, export, and deletion proof.");
+  if (!providerStorageEvidence.ready) {
+    blockers.push(
+      "Provider storage needs a structured proof file with signed household-scoped upload/download, retention, export, deletion, QA evidence storage, MIME, byte size, and approval booleans.",
+    );
   }
   if (nativeArtifactEvidence.missingLabels.length) {
     blockers.push(
@@ -215,7 +296,7 @@ export function buildReportBinaryExportProofManifest(
   const pdfReady = (input.pdfGeneratorApproved || Boolean(generatedCarePassPdf)) && nativeArtifactEvidence.pdfReady;
   const pngReady = (input.pngRendererApproved || Boolean(generatedDogIdPng)) && nativeArtifactEvidence.pngReady;
   const status: ReportBinaryExportProofStatus =
-    pdfReady && pngReady && storageProviderConfigured ? "ready" : "blocked";
+    pdfReady && pngReady && providerStorageEvidence.ready ? "ready" : "blocked";
 
   return {
     status,
@@ -242,11 +323,17 @@ export function buildReportBinaryExportProofManifest(
       },
       {
         label: "Provider storage",
-        value: storageProviderConfigured ? "Provider storage approved" : "Provider storage pending",
-        status: storageProviderConfigured ? "ready" : "blocked",
-        detail: storageProviderConfigured
-          ? "Provider storage is approved for household-scoped report and credential artifact handoff."
-          : "Signed upload/download, household scope, retention, export, and deletion rules must be approved before binary artifacts can be uploaded.",
+        value: providerStorageEvidence.ready
+          ? "Provider storage proof ready"
+          : storageProviderConfigured
+            ? "Provider storage pending structured proof"
+            : "Provider storage pending",
+        status: providerStorageEvidence.ready ? "ready" : "blocked",
+        detail: providerStorageEvidence.ready
+          ? `${providerStorageEvidence.label} covers signed upload/download, household scope, retention/export/deletion, and QA evidence storage.`
+          : storageProviderConfigured
+            ? "Provider storage is staged, but structured proof still needs file name or URI, MIME, byte size, signed upload/download, household scope, retention, export, deletion, QA evidence storage, and approval booleans."
+            : "Signed upload/download, household scope, retention, export, deletion, and QA evidence storage rules must be approved with structured proof before binary artifacts can be uploaded.",
       },
       {
         label: "Native artifact proof",

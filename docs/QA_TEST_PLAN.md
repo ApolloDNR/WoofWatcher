@@ -1554,7 +1554,7 @@ Latest local evidence, 2026-07-03:
   any helper claims generated PDF/PNG readiness.
 - `/care-twin-qa?qaSurface=report-binary-export-proof` now gives the packet a
   focused native QA target that must collect local PDF/PNG file name, file size,
-  MIME, share/reopen proof, provider storage policy, and iOS/Android artifact
+  MIME, share/reopen proof, structured provider storage proof, and iOS/Android artifact
   evidence before binary readiness.
 - The focused route now renders the `Report binary export proof manifest`
   before Evidence Capture, with ready/open counts, `Generated artifacts

@@ -7,6 +7,73 @@ import {
   REPORT_BINARY_EXPORT_PROOF_SUMMARY,
 } from "./reportBinaryExportProof.ts";
 
+function completeNativeArtifactEvidence() {
+  return [
+    {
+      platform: "ios" as const,
+      artifact: "pdf" as const,
+      fileName: "phoenix-vet-care-pass-ios.pdf",
+      mimeType: "application/pdf" as const,
+      byteSize: 2048,
+      shared: true,
+      reopened: true,
+    },
+    {
+      platform: "android" as const,
+      artifact: "pdf" as const,
+      uri: "content://woofwatcher/reports/phoenix-vet-care-pass-android.pdf",
+      mimeType: "application/pdf" as const,
+      byteSize: 2048,
+      shared: true,
+      reopened: true,
+    },
+    {
+      platform: "ios" as const,
+      artifact: "png" as const,
+      fileName: "phoenix-dog-id-ios.png",
+      mimeType: "image/png" as const,
+      byteSize: 4096,
+      shared: true,
+      reopened: true,
+    },
+    {
+      platform: "android" as const,
+      artifact: "png" as const,
+      uri: "content://woofwatcher/credentials/phoenix-dog-id-android.png",
+      mimeType: "image/png" as const,
+      byteSize: 4096,
+      shared: true,
+      reopened: true,
+    },
+  ];
+}
+
+function completeProviderStorageEvidence() {
+  return [
+    {
+      fileName: "provider-storage-proof.json",
+      uri: "file:///report-binary/provider-storage-proof.json",
+      mimeType: "application/json",
+      byteSize: 31840,
+      bucketNames: ["report-pdfs", "credential-artifacts", "qa-evidence"],
+      signedUploadPolicy: "signed upload policy for household-scoped artifacts",
+      signedDownloadPolicy: "signed download policy for household-scoped artifacts",
+      householdScopePolicy: "active household id scopes every artifact path",
+      retentionPolicy: "retention policy for report and credential artifacts",
+      exportPolicy: "owner export policy for stored report and credential artifacts",
+      deletionPolicy: "owner deletion policy for report and credential artifacts",
+      qaEvidenceStoragePolicy: "QA evidence storage policy for beta proof attachments",
+      householdScoped: true,
+      signedUploadApproved: true,
+      signedDownloadApproved: true,
+      retentionApproved: true,
+      exportApproved: true,
+      deletionApproved: true,
+      qaEvidenceStorageApproved: true,
+    },
+  ];
+}
+
 test("defines the binary report export proof packet before PDF or PNG readiness can be claimed", () => {
   assert.match(REPORT_BINARY_EXPORT_PROOF_SUMMARY, /Report binary export proof packet/);
   assert.match(REPORT_BINARY_EXPORT_PROOF_SUMMARY, /Care Pass PDF/);
@@ -29,6 +96,9 @@ test("defines the binary report export proof packet before PDF or PNG readiness 
   assert.match(REPORT_BINARY_EXPORT_PROOF_ITEMS[1].requiredEvidence, /Dog ID PNG/);
   assert.match(REPORT_BINARY_EXPORT_PROOF_ITEMS[2].requiredEvidence, /signed upload/);
   assert.match(REPORT_BINARY_EXPORT_PROOF_ITEMS[2].requiredEvidence, /retention\/export\/deletion/);
+  assert.match(REPORT_BINARY_EXPORT_PROOF_ITEMS[2].requiredEvidence, /MIME/);
+  assert.match(REPORT_BINARY_EXPORT_PROOF_ITEMS[2].requiredEvidence, /byte size/);
+  assert.match(REPORT_BINARY_EXPORT_PROOF_ITEMS[2].requiredEvidence, /approval booleans/);
   assert.match(REPORT_BINARY_EXPORT_PROOF_ITEMS[3].requiredEvidence, /iOS and Android/);
   assert.match(REPORT_BINARY_EXPORT_PROOF_ITEMS[3].requiredEvidence, /PDF and PNG/);
 });
@@ -130,6 +200,32 @@ test("keeps generated artifacts blocked when native artifact approval lacks plat
 });
 
 test("marks generated binary artifacts ready only with platform-specific PDF and PNG share/reopen evidence", () => {
+  const legacyStorageManifest = buildReportBinaryExportProofManifest({
+    carePassHtmlFileName: "phoenix-vet-care-pass-2026-06-08.html",
+    dogIdSvgFileName: "phoenix-dog-id-2026-06-08.svg",
+    generatedCarePassPdf: {
+      fileName: "phoenix-vet-care-pass-2026-06-08.pdf",
+      mimeType: "application/pdf",
+      byteSize: 2048,
+    },
+    generatedDogIdPng: {
+      fileName: "phoenix-dog-id-2026-06-08.png",
+      mimeType: "image/png",
+      byteSize: 4096,
+    },
+    storageProviderConfigured: true,
+    pdfGeneratorApproved: false,
+    pngRendererApproved: false,
+    nativeArtifactEvidenceApproved: true,
+    nativeArtifactEvidence: completeNativeArtifactEvidence(),
+  });
+
+  assert.equal(legacyStorageManifest.status, "blocked");
+  assert.equal(legacyStorageManifest.rows[0]?.value, "PDF proof ready");
+  assert.equal(legacyStorageManifest.rows[1]?.value, "PNG proof ready");
+  assert.equal(legacyStorageManifest.rows[2]?.value, "Provider storage pending structured proof");
+  assert.ok(legacyStorageManifest.blockers.some((blocker) => /structured proof file/i.test(blocker)));
+
   const manifest = buildReportBinaryExportProofManifest({
     carePassHtmlFileName: "phoenix-vet-care-pass-2026-06-08.html",
     dogIdSvgFileName: "phoenix-dog-id-2026-06-08.svg",
@@ -147,49 +243,14 @@ test("marks generated binary artifacts ready only with platform-specific PDF and
     pdfGeneratorApproved: false,
     pngRendererApproved: false,
     nativeArtifactEvidenceApproved: true,
-    nativeArtifactEvidence: [
-      {
-        platform: "ios",
-        artifact: "pdf",
-        fileName: "phoenix-vet-care-pass-ios.pdf",
-        mimeType: "application/pdf",
-        byteSize: 2048,
-        shared: true,
-        reopened: true,
-      },
-      {
-        platform: "android",
-        artifact: "pdf",
-        uri: "content://woofwatcher/reports/phoenix-vet-care-pass-android.pdf",
-        mimeType: "application/pdf",
-        byteSize: 2048,
-        shared: true,
-        reopened: true,
-      },
-      {
-        platform: "ios",
-        artifact: "png",
-        fileName: "phoenix-dog-id-ios.png",
-        mimeType: "image/png",
-        byteSize: 4096,
-        shared: true,
-        reopened: true,
-      },
-      {
-        platform: "android",
-        artifact: "png",
-        uri: "content://woofwatcher/credentials/phoenix-dog-id-android.png",
-        mimeType: "image/png",
-        byteSize: 4096,
-        shared: true,
-        reopened: true,
-      },
-    ],
+    nativeArtifactEvidence: completeNativeArtifactEvidence(),
+    providerStorageEvidence: completeProviderStorageEvidence(),
   });
 
   assert.equal(manifest.status, "ready");
   assert.equal(manifest.rows[0]?.value, "PDF proof ready");
   assert.equal(manifest.rows[1]?.value, "PNG proof ready");
+  assert.equal(manifest.rows[2]?.value, "Provider storage proof ready");
   assert.equal(manifest.rows[3]?.value, "4/4 native proofs ready");
   assert.deepEqual(manifest.blockers, []);
 });

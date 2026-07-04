@@ -190,7 +190,8 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Open focused Records handoff target: \/care-twin-qa\?qaSurface=records-local-file-handoff/);
   assert.match(text, /Capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG, share sheet behavior, Android content URI, and fallback copy/);
   assert.match(text, /Open focused binary export proof target: \/care-twin-qa\?qaSurface=report-binary-export-proof/);
-  assert.match(text, /Capture local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, native share\/reopen proof, and iOS\/Android artifact proof before claiming PDF\/PNG readiness/);
+  assert.match(text, /Capture local Care Pass PDF bytes, local Dog ID PNG bytes, native share\/reopen proof, iOS\/Android artifact proof, and a structured provider storage proof file/);
+  assert.match(text, /bucket names, signed upload\/download, household scope, retention\/export\/deletion, QA evidence storage, and approvals/);
   assert.match(text, /Open focused care-entry provider sync target: \/care-twin-qa\?qaSurface=care-entry-provider-sync-proof/);
   assert.match(text, /Attach structured care-entry provider proof files before enabling incremental sync/);
   assert.match(text, /Supabase project id proof; migration\/backfill proof for care_entries\.updated_at and care_entry_tombstones with row count and existing-rows-backfilled/);

@@ -253,9 +253,9 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Focused binary export proof target",
             detail:
-              "Open /care-twin-qa?qaSurface=report-binary-export-proof and confirm local Care Pass PDF bytes, local Dog ID PNG bytes, native share/reopen proof, provider storage policy, and iOS/Android artifact proof before binary readiness.",
+              "Open /care-twin-qa?qaSurface=report-binary-export-proof and confirm local Care Pass PDF bytes, local Dog ID PNG bytes, native share/reopen proof, iOS/Android artifact proof, and structured provider storage proof before binary readiness.",
             proof:
-              "Attach file name, file size, MIME proof, share/reopen proof, and storage policy evidence before claiming PDF/PNG readiness.",
+              "Attach file name, file size, MIME proof, share/reopen proof, bucket names, signed upload/download, household scope, retention/export/deletion, QA evidence storage, and approval booleans before claiming PDF/PNG readiness.",
             status: "required",
           },
           {

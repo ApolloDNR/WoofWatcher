@@ -167,6 +167,8 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /local Care Pass PDF bytes/);
   assert.match(text, /local Dog ID PNG bytes/);
   assert.match(text, /native share\/reopen proof/);
+  assert.match(text, /structured provider storage proof/);
+  assert.match(text, /bucket names, signed upload\/download, household scope, retention\/export\/deletion, QA evidence storage, and approval booleans/);
   assert.match(text, /Focused care-entry provider sync proof target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=care-entry-provider-sync-proof/);
   assert.match(text, /structured proof files/);

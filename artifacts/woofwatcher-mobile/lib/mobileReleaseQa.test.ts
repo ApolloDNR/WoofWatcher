@@ -426,7 +426,7 @@ test("adds a launch-critical report binary export proof target", () => {
   assert.match(surface.goal, /local Care Pass PDF/);
   assert.match(surface.goal, /Dog ID PNG bytes/);
   assert.match(surface.goal, /native share\/reopen/);
-  assert.match(surface.goal, /provider storage policy/);
+  assert.match(surface.goal, /structured provider storage evidence/);
   assert.match(surface.devicePrompt, /Provider Launch Setup/);
   assert.match(surface.devicePrompt, /iOS and Android/);
   assert.match(surface.setupSteps.join("\n"), /storage gate/);
@@ -444,7 +444,8 @@ test("adds a launch-critical report binary export proof target", () => {
   assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of generated PDF and PNG artifact proof/);
   assert.match(surface.requiredEvidence.join("\n"), /Note confirming local Care Pass PDF bytes/);
   assert.match(surface.requiredEvidence.join("\n"), /local Dog ID PNG bytes/);
-  assert.match(surface.requiredEvidence.join("\n"), /Note confirming provider storage policy/);
+  assert.match(surface.requiredEvidence.join("\n"), /Structured provider storage proof file/);
+  assert.match(surface.requiredEvidence.join("\n"), /approval booleans/);
   assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
     "Provider Launch Setup storage gate",
     "Care Pass PDF artifact proof",
@@ -453,7 +454,7 @@ test("adds a launch-critical report binary export proof target", () => {
   assert.equal(surface.routeChecklist?.[0]?.route, "/more");
   assert.equal(surface.routeChecklist?.[1]?.route, "/records");
   assert.equal(surface.routeChecklist?.[2]?.route, "/records");
-  assert.match(surface.routeChecklist?.[0]?.proof ?? "", /Provider-approved storage policy note/);
+  assert.match(surface.routeChecklist?.[0]?.proof ?? "", /Structured provider storage proof file/);
   assert.match(surface.routeChecklist?.[1]?.proof ?? "", /iOS and Android generated PDF proof/);
   assert.match(surface.routeChecklist?.[2]?.proof ?? "", /iOS and Android generated PNG proof/);
   assert.match(surface.launchRisk, /binary export readiness can be claimed/);

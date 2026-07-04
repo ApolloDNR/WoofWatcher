@@ -115,7 +115,7 @@ const nextActions = [
   "Verify Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
   "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof and capture Auth gateway plus Setup local-preview proof while provider-backed auth and household creation stay blocked.",
   "Open /care-twin-qa?qaSurface=records-local-file-handoff and capture Records share sheet behavior, Android content URI, and fallback copy.",
-  "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, native share/reopen proof, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
+  "Open /care-twin-qa?qaSurface=report-binary-export-proof and capture local Care Pass PDF bytes, local Dog ID PNG bytes, native share/reopen proof, iOS/Android artifact proof, and a structured provider storage proof file with locator, MIME, byte size, bucket names, signed upload/download, household scope, retention/export/deletion, QA evidence storage, and approvals before claiming PDF/PNG readiness.",
   "Open /care-twin-qa?qaSurface=care-entry-provider-sync-proof and capture structured Supabase project, migration/backfill, active-household RLS, retention/export/deletion, dependency-build, and mobile full-refresh sign-off files with MIME, byte size, route-specific denied reads, row count, CI run id, native QA reference, rollback plan, and row-specific booleans before enabling incremental sync.",
   "Open /care-twin-qa?qaSurface=woofguide-ai-provider-proof and capture structured proof files for OpenAI key location, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling before enabling live AI.",
   "Open /care-twin-qa?qaSurface=push-notifications-proof and capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, platform/provider-named iOS APNs and Android FCM delivery QA, and missed notification fallback before claiming reminder delivery.",
@@ -1049,9 +1049,11 @@ check(
 const reportBinaryExportProofPacketIsSourceBacked = includesAll(reportBinaryExportProofSource, [
   "REPORT_BINARY_EXPORT_PROOF_SUMMARY",
   "REPORT_BINARY_EXPORT_PROOF_ITEMS",
+  "ReportProviderStorageEvidence",
   "Report binary export proof packet",
   "Care Pass PDF",
   "Dog ID PNG",
+  "structured provider storage proof file",
   "expo-print",
   "react-native-view-shot",
   "server renderer",
@@ -1089,9 +1091,18 @@ const reportBinaryExportProofManifestIsSourceBacked = includesAll(careTwinQaRout
     "generatedCarePassPdf",
     "generatedDogIdPng",
     "nativeArtifactEvidence",
+    "providerStorageEvidence",
+    "ReportProviderStorageEvidence",
     "storageProviderConfigured",
     "nativeArtifactEvidenceApproved",
+    "hasProofMime",
+    "hasPositiveByteSize",
+    "signedUploadApproved",
+    "signedDownloadApproved",
+    "qaEvidenceStorageApproved",
     "Provider storage pending",
+    "Provider storage pending structured proof",
+    "Provider storage proof ready",
     "native proofs attached",
     "4/4 native proofs ready",
     "iOS Care Pass PDF",
@@ -1103,17 +1114,19 @@ check(
   "report binary export proof manifest is source-backed",
   reportBinaryExportProofManifestIsSourceBacked,
   reportBinaryExportProofManifestIsSourceBacked
-    ? "Focused Report Binary Export Proof route renders the PDF/PNG manifest while keeping native share/reopen, provider storage, and Apollo approval blocked"
+    ? "Focused Report Binary Export Proof route renders the PDF/PNG manifest while keeping native share/reopen, structured provider storage, and Apollo approval blocked"
     : "render the Report Binary Export Proof manifest on /care-twin-qa?qaSurface=report-binary-export-proof with local PDF/PNG, native share/reopen, provider storage, and Apollo sign-off boundaries",
 );
 
 const recordsBinaryExportProofManifestIsSourceBacked = includesAll(reportBinaryExportProofSource, [
   "buildReportBinaryExportProofManifest",
+  "providerStorageEvidence",
   "carePassHtmlFileName",
   "dogIdSvgFileName",
   "application/pdf",
   "image/png",
   "Provider storage pending",
+  "Provider storage pending structured proof",
   "native proofs attached",
   "iOS Care Pass PDF",
   "Android Dog ID PNG",
@@ -1134,7 +1147,7 @@ check(
   "records binary export proof manifest is source-backed",
   recordsBinaryExportProofManifestIsSourceBacked,
   recordsBinaryExportProofManifestIsSourceBacked
-    ? "Records shows artifact-specific PDF/PNG proof status from local Care Pass HTML, Dog ID SVG, provider storage approval, and native evidence blockers"
+    ? "Records shows artifact-specific PDF/PNG proof status from local Care Pass HTML, Dog ID SVG, structured provider storage blockers, and native evidence blockers"
     : "keep Records Report History wired to the binary export proof manifest before claiming generated PDF/PNG readiness",
 );
 
@@ -1182,19 +1195,21 @@ const reportBinaryExportProofTargetIsSourceBacked = includesAll(mobileReleaseQaS
   "Report Binary Export Proof",
   "local Care Pass PDF and Dog ID PNG bytes",
   "native share/reopen behavior",
+  "structured provider storage evidence",
   "Provider Launch Setup",
   "file name, file size, MIME proof",
   "HTML-only fallback",
 ])
   && includesAll(betaHandoffPacketSource, [
     "Open focused binary export proof target: /care-twin-qa?qaSurface=report-binary-export-proof.",
-    "Capture local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, native share/reopen proof, and iOS/Android artifact proof before claiming PDF/PNG readiness.",
+    "structured provider storage proof file with locator, MIME, byte size, bucket names, signed upload/download, household scope, retention/export/deletion, QA evidence storage, and approvals",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused binary export proof target",
     "/care-twin-qa?qaSurface=report-binary-export-proof",
     "iOS/Android artifact proof",
     "share/reopen proof",
+    "approval booleans",
   ]);
 check(
   "report binary export proof target is source-backed",

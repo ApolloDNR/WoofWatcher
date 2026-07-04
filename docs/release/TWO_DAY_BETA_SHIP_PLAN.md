@@ -69,7 +69,7 @@ The beta must not claim:
 - On Records, confirm Care Pass Report History says `Saved on this device` unless Provider Launch Setup storage is provider-approved; `Ready to upload` is not a local draft or owner-reviewed status.
 - On Records, confirm each Report History artifact shows the `Binary proof manifest` rows for Care Pass PDF, Dog ID PNG, Provider storage, and Native artifact proof. Local Records actions can now generate Care Pass PDF and Dog ID PNG bytes with file name, file size, and MIME metadata, but the rows must stay blocked until native share/reopen proof, provider storage, and iOS/Android evidence exists.
 - When the current mission is `Records Local File Handoff`, open `/care-twin-qa?qaSurface=records-local-file-handoff`, then capture Care Pass Report History local HTML, Dog ID local HTML, Dog ID SVG image source, native share-sheet behavior, Android content URI, and fallback copy without claiming PDF/PNG/provider storage proof.
-- When the current mission is `Report Binary Export Proof`, open `/care-twin-qa?qaSurface=report-binary-export-proof`, then capture the local Care Pass PDF bytes, local Dog ID PNG bytes, provider storage policy, generated file name/size/MIME/share proof, reopen proof, and iOS/Android artifact evidence before claiming PDF/PNG readiness.
+- When the current mission is `Report Binary Export Proof`, open `/care-twin-qa?qaSurface=report-binary-export-proof`, then capture the local Care Pass PDF bytes, local Dog ID PNG bytes, structured provider storage proof, generated file name/size/MIME/share proof, reopen proof, and iOS/Android artifact evidence before claiming PDF/PNG readiness.
 - When the current mission is `Care-entry Provider Sync Proof`, open `/care-twin-qa?qaSurface=care-entry-provider-sync-proof`, then capture Supabase project id, migration/backfill for `care_entries.updated_at` and `care_entry_tombstones`, active-household RLS for cursor and tombstone routes, retention/export/deletion policy, dependency-complete build proof, and mobile full-refresh sign-off before enabling incremental care-entry sync.
 - When reviewing More's Sync Health panel, use `Open sync proof` to jump to the same Care-entry Provider Sync Proof mission. This is a shortcut only; visible outbox/local sync status still does not prove Supabase migration, active-household RLS, retention policy, or incremental provider sync.
 - When the current mission is `WoofGuide AI Provider Proof`, open `/care-twin-qa?qaSurface=woofguide-ai-provider-proof`, then capture OpenAI key location, secret storage, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, fallback/incident handling, rollback plan, and support handoff before enabling live AI.
@@ -145,7 +145,7 @@ Shippable for internal beta after local verification passes:
   is exactly `10.24.0`.
 - The mobile beta doctor also verifies `report binary export proof packet is
   source-backed`, so PDF/PNG readiness stays blocked unless Provider Launch
-  Setup carries the approved generator, storage policy, and native artifact
+  Setup carries the approved generator, structured provider storage proof, and native artifact
   proof requirements.
 - The mobile beta doctor also verifies `records binary export proof manifest is
   source-backed`, so Records must display artifact-specific Care Pass PDF, Dog
@@ -378,7 +378,7 @@ Current environment note:
   provide actual iOS/Android proof by itself.
 - The Release Smoke Checklist and Share Beta Handoff now also name
   `/care-twin-qa?qaSurface=report-binary-export-proof` for the approved
-  generator, provider storage policy, and generated artifact evidence needed
+  generator, structured provider storage proof, and generated artifact evidence needed
   before binary PDF/PNG readiness can be claimed.
 - The Release Smoke Checklist and Share Beta Handoff now also name
   `/care-twin-qa?qaSurface=care-entry-provider-sync-proof` for Supabase
@@ -471,7 +471,7 @@ Current environment note:
   PDF/PNG export readiness can be claimed.
 - Provider Launch Setup's Records/media storage gate now carries the Report
   binary export proof packet for local Care Pass PDF and Dog ID PNG artifact
-  bytes, provider storage policy, native share/reopen proof, and iOS/Android
+  bytes, structured provider storage proof, native share/reopen proof, and iOS/Android
   artifact proof.
   The local Records route now implements the first PDF/PNG byte generation
   path, but the packet remains blocked until native share/reopen evidence and
@@ -523,7 +523,7 @@ Current environment note:
 - Provider Launch Setup visible rows now show up to three proof checklist steps
   plus a `More proof steps` count. Use `Share Provider Plan` for the complete
   checklist, and do not treat a single visible proof line as enough to clear
-  Supabase/RLS, PDF/PNG artifact, storage policy, or native proof blockers.
+  Supabase/RLS, PDF/PNG artifact, structured storage proof, or native proof blockers.
 - Provider Launch Setup also gives the auth, database, storage, WoofGuide AI, payments, push, store accounts, and account deletion rows an
   `Open proof mission` action to the matching focused `/care-twin-qa` surface:
   Auth/Setup onboarding proof, Care-entry provider sync proof, Report binary

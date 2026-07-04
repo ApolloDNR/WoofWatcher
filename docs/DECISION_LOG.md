@@ -1610,7 +1610,7 @@ Consequences:
 
 - `/care-twin-qa?qaSurface=records-local-file-handoff` renders the Records local file handoff proof manifest before Evidence Capture.
 - The JSON mobile beta doctor guards that the manifest remains source-backed.
-- Real iOS/Android share-sheet evidence, Android content URI or saved-file proof, fallback-copy proof, native share/reopen evidence for generated binaries, provider storage policy, and Apollo sign-off remain launch gates.
+- Real iOS/Android share-sheet evidence, Android content URI or saved-file proof, fallback-copy proof, native share/reopen evidence for generated binaries, structured provider storage proof, and Apollo sign-off remain launch gates.
 
 Owner: Codex.
 
@@ -1674,7 +1674,7 @@ Consequences:
 
 - `/care-twin-qa?qaSurface=report-binary-export-proof` renders the Report binary export proof manifest before Evidence Capture.
 - The JSON mobile beta doctor guards that the focused manifest remains source-backed.
-- Native iOS/Android share/reopen evidence, renderer approval, provider storage policy, retention/export/deletion proof, store review, and Apollo sign-off remain launch gates.
+- Native iOS/Android share/reopen evidence, renderer approval, structured provider storage proof, retention/export/deletion proof, store review, and Apollo sign-off remain launch gates.
 
 ### 2026-07-04: Native Binary Artifact Proof Must Be Platform And Artifact Specific
 
@@ -1787,6 +1787,22 @@ Consequences:
 Owner: Codex.
 
 Revisit trigger: Apollo attaches real Supabase/provider, native QA, and rollback proof files, or WoofWatcher gains a provider-backed sync evidence service with signed migration, RLS, retention, and native-adoption metadata.
+
+### 2026-07-04: Report Binary Provider Storage Requires Structured Proof
+
+Decision: the Report Binary Export proof manifest cannot treat `storageProviderConfigured` or a generic storage-policy note as provider-storage readiness. `Generated artifacts allowed` remains blocked until a structured provider storage proof file satisfies report PDFs, credential PNG/SVG/HTML, and QA evidence storage requirements.
+
+Reason: report and credential binaries are user records. A single provider-configured boolean can hide missing bucket names, signed upload/download rules, household scoping, retention/export/deletion approval, QA evidence storage, file metadata, or row-specific approvals.
+
+Consequences:
+
+- `buildReportBinaryExportProofManifest` keeps the provider storage row blocked as `Provider storage pending structured proof` when only `storageProviderConfigured` is true.
+- Provider storage proof must include a file name or URI, acceptable MIME, positive byte size, at least three bucket names, signed upload/download policy, household scope, retention, export, deletion, QA evidence storage, and approval booleans.
+- Native share/reopen proof, renderer approval, provider storage configuration, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real storage/provider proof files, or WoofWatcher gains a provider-backed report-storage evidence service with signed bucket, policy, and lifecycle metadata.
 
 ## Open Decisions For Apollo
 
