@@ -274,7 +274,9 @@ screenshots, Setup local-preview proof, Household sync boundary, and Launch gate
 `Auth/Setup proof manifest` and keep the visible status at
 `Native proof blocked` / `Native proof allowed: No` until real Clerk, native
 screenshot, household sync, and Apollo approval evidence is attached. The JSON
-mobile beta doctor reports `auth/setup proof manifest is source-backed`.
+mobile beta doctor reports `auth/setup proof manifest is source-backed`. Branch
+CI proved the focused helper-route guard in `WoofWatcher Verify` run
+`28690620657`, job `85091134806`, on commit `e8a1ea9`.
 
 The WoofWatcher Plus payments proof pass turns the old payments one-line proof
 into a source-backed packet. `paymentsProviderProof.ts` now defines the Plus and

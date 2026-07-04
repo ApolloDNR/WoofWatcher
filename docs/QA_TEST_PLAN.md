@@ -1656,6 +1656,11 @@ Latest local evidence, 2026-07-03:
 - Direct `scripts/mobile-beta-doctor.mjs --json` reports `auth/setup proof
   manifest is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
   only because local pnpm is `11.7.0` and the repo is pinned to `10.24.0`.
+- Branch CI also passed for commit `e8a1ea9` in `WoofWatcher Verify` run
+  `28690620657`, job `85091134806`, in `3m18s`; Setup pnpm, Setup Node,
+  install dependencies, JSON mobile beta doctor, focused behavior tests, and
+  Typecheck plus CI-safe builds all passed for the focused Auth/Setup manifest
+  guard.
 - Direct `scripts/native-qa-tooling-doctor.mjs --json` still reports
   `BLOCKED` because this Windows shell lacks Android `adb`, Android `emulator`,
   Java, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`; real iOS/Android
