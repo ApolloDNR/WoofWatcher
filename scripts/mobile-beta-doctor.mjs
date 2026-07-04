@@ -951,14 +951,20 @@ check(
     : "keep the first Needs tune target, fix brief builder, and More Share Fix Brief action wired",
 );
 
-const providerAwareCarePassStorageIsSourceBacked = includesAll(carePassDomainSource, [
+const carePassStorageProofGuardIsSourceBacked = includesAll(carePassDomainSource, [
   "CarePassArtifactStorageOptions",
+  "CarePassStorageProviderEvidence",
+  "isCarePassStorageProviderProofReady",
   "describeCarePassArtifactExport",
   "storageProviderConfigured?: boolean",
+  "storageProviderEvidence?: CarePassStorageProviderEvidence | null",
+  "storageProviderProofReady",
   "Ready to upload",
   "providerBacked: false",
+  "Provider storage is staged",
+  "structured storage proof",
 ])
-  && /baseStatus === "local-only" && options\.storageProviderConfigured/.test(carePassDomainSource)
+  && !/baseStatus === "local-only" && options\.storageProviderConfigured/.test(carePassDomainSource)
   && includesAll(recordsRouteSource, [
     "deriveLaunchProviderSetup",
     "describeCarePassArtifactExport(artifact",
@@ -968,11 +974,11 @@ const providerAwareCarePassStorageIsSourceBacked = includesAll(carePassDomainSou
     "storage.detail",
   ]);
 check(
-  "provider-aware Care Pass storage is source-backed",
-  providerAwareCarePassStorageIsSourceBacked,
-  providerAwareCarePassStorageIsSourceBacked
-    ? "Records report history follows provider-approved Provider Launch Setup storage readiness without claiming provider-backed upload"
-    : "keep Care Pass storage status wired through Provider Launch Setup, Records, and the shared care-domain helper",
+  "Care Pass storage proof guard is source-backed",
+  carePassStorageProofGuardIsSourceBacked,
+  carePassStorageProofGuardIsSourceBacked
+    ? "Care Pass report artifacts stay local until structured storage proof covers buckets, signed access, household scope, retention/export/deletion, QA evidence storage, and Apollo approval"
+    : "keep Care Pass storage status wired so storageProviderConfigured alone cannot mark report artifacts upload-ready",
 );
 
 const attachmentStorageProofGuardIsSourceBacked = includesAll(attachmentManifestSource, [
@@ -1123,12 +1129,12 @@ check(
 
 const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "Care Pass Report History storage status",
-  "Saved on this device, or Ready to upload only after provider-approved storage",
+  "Saved on this device, or Ready to upload only after structured provider storage proof is attached",
   "QA note confirming Care Pass Report History storage status stayed truthful.",
   'proof: "Care Pass Report History storage status note or screenshot."',
 ])
   && includesAll(betaHandoffPacketSource, [
-    "Confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after provider-approved storage.",
+    "Confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after structured provider storage proof is attached.",
     "Confirm Report History Binary proof manifest shows local Care Pass PDF and Dog ID PNG rows while native/provider proof remains blocked.",
     "Confirm Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
 ])

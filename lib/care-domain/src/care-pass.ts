@@ -131,8 +131,30 @@ export interface CarePassArtifactStorageView {
   providerBacked: boolean;
 }
 
+export interface CarePassStorageProviderEvidence {
+  fileName?: string | null;
+  uri?: string | null;
+  mimeType?: string | null;
+  byteSize?: number | null;
+  bucketNames?: readonly string[] | null;
+  signedUploadPolicy?: string | null;
+  signedDownloadPolicy?: string | null;
+  householdScopePolicy?: string | null;
+  retentionPolicy?: string | null;
+  exportPolicy?: string | null;
+  deletionPolicy?: string | null;
+  qaEvidenceStoragePolicy?: string | null;
+  apolloApprovalOwner?: string | null;
+  signedAccessApproved?: boolean | null;
+  householdScopeApproved?: boolean | null;
+  retentionExportDeletionApproved?: boolean | null;
+  qaEvidenceStorageApproved?: boolean | null;
+  apolloApproved?: boolean | null;
+}
+
 export interface CarePassArtifactStorageOptions {
   storageProviderConfigured?: boolean;
+  storageProviderEvidence?: CarePassStorageProviderEvidence | null;
 }
 
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
@@ -205,6 +227,54 @@ function utf8ByteLength(value: string): number {
     else bytes += 4;
   }
   return bytes;
+}
+
+function hasText(value: unknown): boolean {
+  return clean(value).length > 0;
+}
+
+function hasProofMime(value: unknown): boolean {
+  const mime = lower(value);
+  return mime === "application/json" || mime === "application/pdf" || mime === "text/markdown" || mime === "text/plain";
+}
+
+function hasPositiveByteSize(value: unknown): boolean {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function hasEnoughBuckets(value: unknown): boolean {
+  return Array.isArray(value) && value.map(clean).filter(Boolean).length >= 3;
+}
+
+export function isCarePassStorageProviderProofReady(options: CarePassArtifactStorageOptions = {}): boolean {
+  const evidence = options.storageProviderEvidence;
+  if (!options.storageProviderConfigured || !evidence) return false;
+
+  const locator = `${lower(evidence.fileName)} ${lower(evidence.uri)}`;
+  const namesStorageProof =
+    locator.includes("storage") &&
+    locator.includes("proof") &&
+    (locator.includes("attachment") || locator.includes("care-pass") || locator.includes("report"));
+
+  return Boolean(
+    namesStorageProof &&
+      hasProofMime(evidence.mimeType) &&
+      hasPositiveByteSize(evidence.byteSize) &&
+      hasEnoughBuckets(evidence.bucketNames) &&
+      hasText(evidence.signedUploadPolicy) &&
+      hasText(evidence.signedDownloadPolicy) &&
+      hasText(evidence.householdScopePolicy) &&
+      hasText(evidence.retentionPolicy) &&
+      hasText(evidence.exportPolicy) &&
+      hasText(evidence.deletionPolicy) &&
+      hasText(evidence.qaEvidenceStoragePolicy) &&
+      hasText(evidence.apolloApprovalOwner) &&
+      evidence.signedAccessApproved === true &&
+      evidence.householdScopeApproved === true &&
+      evidence.retentionExportDeletionApproved === true &&
+      evidence.qaEvidenceStorageApproved === true &&
+      evidence.apolloApproved === true,
+  );
 }
 
 function entryLabel(entry: CareHealthEntry): string {
@@ -642,7 +712,15 @@ export function describeCarePassArtifactStorage(
   options: CarePassArtifactStorageOptions = {},
 ): CarePassArtifactStorageView {
   const baseStatus = artifact.storageStatus ?? "local-only";
-  const status = baseStatus === "local-only" && options.storageProviderConfigured ? "upload-ready" : baseStatus;
+  const storageProviderProofReady = isCarePassStorageProviderProofReady(options);
+  const status =
+    baseStatus === "uploaded" || baseStatus === "failed"
+      ? baseStatus
+      : storageProviderProofReady
+        ? "upload-ready"
+        : "local-only";
+  const missingStructuredProof =
+    (options.storageProviderConfigured === true || baseStatus === "upload-ready") && !storageProviderProofReady;
   if (status === "uploaded") {
     return {
       status,
@@ -670,7 +748,9 @@ export function describeCarePassArtifactStorage(
   return {
     status: "local-only",
     label: "Saved locally",
-    detail: "Cloud storage pending - saved on this device as text and print-ready HTML source.",
+    detail: missingStructuredProof
+      ? "Provider storage is staged, but this report stays saved locally until structured storage proof covers buckets, signed access, household scope, retention, export, deletion, QA evidence storage, and Apollo approval."
+      : "Cloud storage pending - saved on this device as text and print-ready HTML source.",
     providerBacked: false,
   };
 }

@@ -44,6 +44,17 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: Care Pass report artifact storage proof hardening now keeps saved printable HTML reports local-only when storage provider setup is configured but structured storage proof files are absent.
+- PASS: Focused Care Pass/mobile readiness/beta handoff/release QA/smoke checklist tests passed `169/169`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `587/587`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Direct JSON mobile beta doctor reports `Care Pass storage proof guard is source-backed` as `PASS`.
+- BLOCKED: Fresh branch CI for the current branch tip is pending because manual `WoofWatcher Verify` dispatch from this Codex thread is blocked by the local approval/usage gate.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real structured provider storage proof files with bucket names, signed upload/download, household scope, retention/export/deletion, QA evidence storage, approval owner, approval booleans, native share/reopen proof, store review, public launch, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: Reminder Center push proof hardening now keeps provider-backed notifications local/in-app when push provider setup is configured and provider-approved but structured push proof files are absent.
 - PASS: Focused Reminder Center/push/mobile readiness tests passed `125/125`.
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `586/586`.
@@ -1055,7 +1066,7 @@ Latest local evidence, 2026-06-26:
 - The one-tap 48-hour Beta Handoff packet now explicitly includes the Care Pass
   Report History storage-status proof in `Required beta proof after export`.
 - The packet tells helpers to confirm Report History says `Saved on this
-  device`, or `Ready to upload` only after provider-approved storage, so the
+  device`, or `Ready to upload` only after structured provider storage proof is attached, so the
   storage truth check is visible even if a tester reads only the handoff packet
   and not the route-loop details.
 - The mobile beta doctor's source-backed Owner Preview storage-proof guard now

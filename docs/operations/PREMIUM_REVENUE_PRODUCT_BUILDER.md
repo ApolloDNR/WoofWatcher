@@ -866,7 +866,7 @@ Mission note while the dependency/export gate remains external.
 The beta handoff packet pass moved the same proof into the one-tap helper script
 itself. `buildBetaHandoffPacketShareText` now lists `Confirm Care Pass Report
 History storage status says Saved on this device, or Ready to upload only after
-provider-approved storage` under `Required beta proof after export`, and the
+structured provider storage proof is attached` under `Required beta proof after export`, and the
 doctor source-backed guard requires that line before passing the Owner Preview
 storage-proof check.
 
@@ -3688,6 +3688,26 @@ before GitHub accepted it, and the latest visible run list still showed only
 earlier `workflow_dispatch` successes through run `28705671803`, which predates
 `c36e36e`. Do not reuse the prior green run as proof of this implementation
 commit; rerun branch CI when dispatch is available.
+
+The Care Pass report artifact storage proof pass closes the saved-report storage
+overclaim. `describeCarePassArtifactStorage` now accepts
+`storageProviderEvidence`, calls `isCarePassStorageProviderProofReady`, and keeps
+printable HTML reports `Saved locally` when only `storageProviderConfigured` is
+true. Upload-ready status now requires structured storage proof for bucket
+names, signed upload/download, household scope, retention/export/deletion, QA
+evidence storage, approval owner, and approval booleans. Beta handoff, release
+smoke checklist, native QA copy, and the JSON doctor now name the structured
+provider storage proof boundary. Fresh red/green verification first showed
+provider setup alone producing `upload-ready`/`Ready to upload`, then passed
+focused Care Pass/mobile readiness/beta handoff/release QA/smoke checklist tests
+`169/169`, the full zero-dependency API/mobile/PWA/care-domain suite `587/587`,
+root TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks
+including `Care Pass storage proof guard is source-backed`. Direct JSON mobile
+beta doctor remains truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned
+`10.24.0` and missing Corepack. Fresh branch CI remains pending because manual
+workflow dispatch is blocked in this Codex thread. This still does not configure
+storage buckets, attach signed policies, prove native iOS/Android share/reopen,
+clear store review, launch publicly, or replace Apollo sign-off.
 
 Next highest-impact work:
 

@@ -224,7 +224,7 @@ export function buildMobileReleaseSmokeChecklist(
             detail:
               "Confirm WoofWatcherReports contains the Printable HTML local file and that Binary proof manifest rows show local PDF/PNG generation with native/provider proof blocked.",
             proof:
-              "Attach iOS or Android proof that Report History says Saved on this device, or Ready to upload only after provider-approved storage, before handoff.",
+              "Attach iOS or Android proof that Report History says Saved on this device, or Ready to upload only after structured provider storage proof is attached, before handoff.",
             status: "required",
           },
           {

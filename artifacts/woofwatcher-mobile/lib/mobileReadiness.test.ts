@@ -5382,7 +5382,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.checks?.some(
       (check) =>
-        check.label === "provider-aware Care Pass storage is source-backed" &&
+        check.label === "Care Pass storage proof guard is source-backed" &&
         check.status === "PASS",
     ),
   );

@@ -14,6 +14,29 @@ process.env.TZ = "America/Los_Angeles";
 
 const NOW = new Date("2026-06-06T15:00:00-07:00").getTime();
 
+function completeStorageEvidence() {
+  return {
+    fileName: "attachment-storage-provider-proof.json",
+    uri: "file:///provider-proof/attachment-storage-provider-proof.json",
+    mimeType: "application/json",
+    byteSize: 24_512,
+    bucketNames: ["care-proof-photos", "record-documents", "qa-evidence"],
+    signedUploadPolicy: "Signed upload policy covers Care Pass reports and related attachment queues.",
+    signedDownloadPolicy: "Signed downloads are household scoped with expiring links.",
+    householdScopePolicy: "Objects are keyed by household and dog id, with owner/admin access review.",
+    retentionPolicy: "Retention rules match care export, deletion, and legal hold requirements.",
+    exportPolicy: "Owner exports include attachment object ids, names, and signed export references.",
+    deletionPolicy: "Deletion receipts cover all attachment buckets and object ids.",
+    qaEvidenceStoragePolicy: "QA screenshots and native proof files are stored separately with release audit ownership.",
+    apolloApprovalOwner: "Apollo Duran",
+    signedAccessApproved: true,
+    householdScopeApproved: true,
+    retentionExportDeletionApproved: true,
+    qaEvidenceStorageApproved: true,
+    apolloApproved: true,
+  };
+}
+
 function baseInput() {
   return {
     now: NOW,
@@ -668,10 +691,24 @@ test("describes Care Pass artifact storage without claiming provider upload", ()
   assert.equal(storage.providerBacked, false);
 });
 
-test("marks local Care Pass artifacts upload-ready only after storage rules are configured", () => {
+test("keeps local Care Pass artifacts saved locally when provider setup lacks structured storage proof", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "sitter" });
   const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
   const storage = describeCarePassArtifactStorage(artifact, { storageProviderConfigured: true });
+
+  assert.equal(storage.status, "local-only");
+  assert.equal(storage.label, "Saved locally");
+  assert.match(storage.detail, /structured storage proof/i);
+  assert.equal(storage.providerBacked, false);
+});
+
+test("marks local Care Pass artifacts upload-ready only after structured storage proof is attached", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "sitter" });
+  const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
+  const storage = describeCarePassArtifactStorage(artifact, {
+    storageProviderConfigured: true,
+    storageProviderEvidence: completeStorageEvidence(),
+  });
 
   assert.equal(storage.status, "upload-ready");
   assert.equal(storage.label, "Ready to upload");
@@ -724,7 +761,7 @@ test("describes Care Pass artifact export readiness without claiming PDF generat
   assert.ok(exportView.byteSize > 500);
   assert.equal(exportView.pdfStatus, "not-generated");
   assert.match(exportView.pdfDetail, /PDF export still needs native or provider-backed generation/);
-  assert.equal(exportView.storage.label, "Ready to upload");
+  assert.equal(exportView.storage.label, "Saved locally");
   assert.equal(exportView.providerBacked, false);
   assert.deepEqual(
     exportView.manifestRows.map((row) => row.label),
@@ -733,7 +770,7 @@ test("describes Care Pass artifact export readiness without claiming PDF generat
   assert.equal(exportView.manifestRows[0]?.value, "Printable HTML");
   assert.equal(exportView.manifestRows[1]?.value, "Print-ready");
   assert.equal(exportView.manifestRows[2]?.value, "PDF pending");
-  assert.equal(exportView.manifestRows[3]?.value, "Ready to upload");
+  assert.equal(exportView.manifestRows[3]?.value, "Saved locally");
   assert.match(exportView.manifestRows[2]?.detail ?? "", /native or provider-backed generation/);
 });
 

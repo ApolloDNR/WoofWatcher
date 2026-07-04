@@ -572,6 +572,11 @@ Current environment note:
   The local Records route now implements the first PDF/PNG byte generation
   path, but the packet remains blocked until native share/reopen evidence and
   provider storage proof are attached.
+- Care Pass Report History stays on `Saved locally` when storage provider setup
+  is staged but structured provider storage proof is missing. `Ready to upload`
+  requires proof for buckets, signed access, household scope,
+  retention/export/deletion, QA evidence storage, approval owner, and approval
+  booleans.
 - The Release Smoke Checklist and JSON doctor now include the `smoke:runtime`
   route proof between `smoke:web` and preview handoff, so helpers can confirm
   exported routes load before they keep the preview server open for visual QA.

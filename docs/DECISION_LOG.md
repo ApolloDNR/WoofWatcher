@@ -1567,6 +1567,22 @@ Owner: Codex.
 
 Revisit trigger: the premium branch is ready for a dedicated conflict-resolution merge window, or main contains another high-impact care logic change that should be ported intentionally.
 
+### 2026-07-04: Care Pass Report Storage Requires Structured Proof
+
+Decision: Care Pass report artifact storage cannot treat configured/provider-approved storage setup as upload readiness. Saved printable HTML reports must stay `Saved locally` until `CarePassStorageProviderEvidence` proves buckets, signed upload/download, household scope, retention/export/deletion, QA evidence storage, approval owner, and approval booleans.
+
+Reason: Report History is an owner handoff surface. If a saved report says `Ready to upload` from setup booleans alone, it contradicts the shared attachment storage guard and can imply cloud durability before any real storage proof exists.
+
+Consequences:
+
+- `describeCarePassArtifactStorage` accepts `storageProviderEvidence` and calls `isCarePassStorageProviderProofReady`.
+- Provider storage setup without structured proof stays local and explains the missing proof requirements.
+- Real storage buckets, signed policies, native share/reopen evidence, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real provider storage proof files or the app gains a provider-backed proof evidence service that can feed Report History.
+
 ### 2026-07-03: Payments Checkout Requires Focused Provider Proof Before Money Movement
 
 Decision: WoofWatcher Plus payments get a focused `/care-twin-qa?qaSurface=payments-provider-proof` mission and a Provider Launch Setup shortcut before any checkout, entitlement enforcement, or money movement can be enabled.
