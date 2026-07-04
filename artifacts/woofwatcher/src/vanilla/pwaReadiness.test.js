@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { buildCloudSyncPlan } from "./woof-privacy-cloud.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
@@ -150,6 +151,59 @@ test("keeps PWA WoofGuide live AI gated behind structured provider proof", () =>
   assert.doesNotMatch(appEntry, /Live OpenAI/);
   assert.doesNotMatch(appEntry, /Credential found/);
   assert.doesNotMatch(appEntry, /If live OpenAI is not configured/);
+});
+
+test("keeps PWA cloud sync gated behind structured provider proof", () => {
+  const stagedPlan = buildCloudSyncPlan(
+    {},
+    {
+      provider: "supabase",
+      backendUrl: "https://supabase.example",
+      householdId: "house_123"
+    },
+    "2026-07-04T00:00:00.000Z",
+  );
+
+  assert.equal(stagedPlan.status, "provider_proof_pending");
+  assert.equal(stagedPlan.backend.configured, true);
+  assert.equal(stagedPlan.backend.proofReady, false);
+  assert.match(stagedPlan.blockers.join(" "), /structured cloud sync provider proof/);
+  assert.match(stagedPlan.providerBoundary, /structured cloud sync provider proof/);
+  assert.doesNotMatch(stagedPlan.blockers.join(" "), /Choose and configure a backend/);
+
+  const readyPlan = buildCloudSyncPlan(
+    {},
+    {
+      provider: "supabase",
+      backendUrl: "https://supabase.example",
+      householdId: "house_123",
+      providerEvidence: {
+        proofLocator: "proof/cloud-sync/supabase.json",
+        proofMimeType: "application/json",
+        proofByteSize: 4096,
+        supabaseProjectId: "supabase-prod",
+        migrationBackfillPolicy: "care_entries updated_at and tombstones are migrated with rollback.",
+        activeHouseholdRlsPolicy: "active_household_id scopes cursors, tombstones, and denied reads.",
+        retentionPolicy: "Retention is household-scoped and documented.",
+        exportPolicy: "Owners can export household data before deletion.",
+        deletionPolicy: "Deletion removes household-scoped rows and objects with audit receipt.",
+        dependencyBuildProof: "CI run proves dependency-complete sync build.",
+        mobileFullRefreshProof: "iOS and Android full-refresh sign-off is attached.",
+        supabaseProjectApproved: true,
+        migrationBackfillApproved: true,
+        rlsApproved: true,
+        retentionExportDeletionApproved: true,
+        dependencyBuildApproved: true,
+        mobileSignoffApproved: true,
+        apolloApproved: true
+      }
+    },
+    "2026-07-04T00:00:00.000Z",
+  );
+
+  assert.equal(readyPlan.status, "ready_to_connect");
+  assert.equal(readyPlan.backend.proofReady, true);
+  assert.deepEqual(readyPlan.blockers, []);
 });
 
 test("keeps records and reports tools directly routable in the PWA", () => {

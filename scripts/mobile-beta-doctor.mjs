@@ -278,6 +278,7 @@ const premiumRoutePath = join(mobileRoot, "app", "premium.tsx");
 const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
 const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
 const pwaVanillaAppEntryPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "app-entry.js");
+const pwaPrivacyCloudPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "woof-privacy-cloud.js");
 const carePassDomainPath = join(root, "lib", "care-domain", "src", "care-pass.ts");
 const careRemindersDomainPath = join(root, "lib", "care-domain", "src", "care-reminders.ts");
 const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
@@ -311,6 +312,7 @@ const premiumRouteSource = existsSync(premiumRoutePath) ? readFileSync(premiumRo
 const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRoutePath, "utf8") : "";
 const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
 const pwaVanillaAppEntrySource = existsSync(pwaVanillaAppEntryPath) ? readFileSync(pwaVanillaAppEntryPath, "utf8") : "";
+const pwaPrivacyCloudSource = existsSync(pwaPrivacyCloudPath) ? readFileSync(pwaPrivacyCloudPath, "utf8") : "";
 const carePassDomainSource = existsSync(carePassDomainPath) ? readFileSync(carePassDomainPath, "utf8") : "";
 const careRemindersDomainSource = existsSync(careRemindersDomainPath) ? readFileSync(careRemindersDomainPath, "utf8") : "";
 const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
@@ -1096,6 +1098,33 @@ check(
   pwaWoofGuideAiProofGuardIsSourceBacked
     ? "PWA WoofGuide keeps server key detection staged and blocks live helper calls until structured AI provider proof is attached"
     : "keep the PWA WoofGuide surface gated so OpenAI key detection alone cannot claim or call live AI without structured proofReady evidence",
+);
+
+const pwaCloudSyncProofGuardIsSourceBacked = includesAll(pwaPrivacyCloudSource, [
+  "CLOUD_SYNC_PROVIDER_PROOF_REQUIREMENTS",
+  "isCloudSyncProviderProofReady",
+  "providerEvidence",
+  "providerProofReady",
+  "provider_proof_pending",
+  "structured cloud sync provider proof",
+  "Supabase project id",
+  "migration/backfill",
+  "active-household RLS",
+  "retention/export/deletion",
+  "dependency-complete build proof",
+  "mobile full-refresh sign-off",
+  "Apollo approval",
+  "backendConfigured && !providerProofReady",
+  "proofReady: providerProofReady",
+  "status: !backendConfigured || !householdId ? \"local_only\" : providerProofReady ? \"ready_to_connect\" : \"provider_proof_pending\"",
+])
+  && !/status: blockers\.length \? "local_only" : "ready_to_connect"/.test(pwaPrivacyCloudSource);
+check(
+  "PWA cloud sync proof guard is source-backed",
+  pwaCloudSyncProofGuardIsSourceBacked,
+  pwaCloudSyncProofGuardIsSourceBacked
+    ? "PWA cloud sync treats backend URL and household id as staged until structured Supabase/RLS/migration/mobile proof is attached"
+    : "keep PWA cloud sync gated so backendConfigured plus householdId cannot mark cross-device sync ready without structured provider proof",
 );
 
 const privacySafetyAccountDeletionProofGuardIsSourceBacked = includesAll(privacySafetySource, [

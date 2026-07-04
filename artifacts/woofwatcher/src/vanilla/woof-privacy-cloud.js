@@ -27,6 +27,22 @@ export const ACCESS_SCOPES = [
   "settings_write"
 ];
 
+const ACCEPTED_CLOUD_SYNC_PROOF_MIME_TYPES = new Set([
+  "application/json",
+  "text/markdown",
+  "text/plain"
+]);
+
+export const CLOUD_SYNC_PROVIDER_PROOF_REQUIREMENTS = [
+  "Supabase project id",
+  "migration/backfill policy",
+  "active-household RLS policy",
+  "retention/export/deletion policy",
+  "dependency-complete build proof",
+  "mobile full-refresh sign-off",
+  "Apollo approval"
+];
+
 export const CAREGIVER_ROLES = [
   {
     id: "owner",
@@ -189,18 +205,27 @@ export function buildCloudSyncPlan(input = {}, options = {}, now = new Date().to
   const state = normalizeState(input, now);
   const householdId = cleanText(options.householdId);
   const backendConfigured = Boolean(options.backendConfigured || cleanText(options.backendUrl));
+  const providerEvidence = options.providerEvidence || options.cloudSyncProviderEvidence || null;
+  const providerProofReady = backendConfigured && isCloudSyncProviderProofReady(providerEvidence);
   const blockers = [];
   if (!backendConfigured) blockers.push("Choose and configure a backend before enabling cross-device sync.");
+  if (backendConfigured && !providerProofReady) {
+    blockers.push(
+      "Attach structured cloud sync provider proof covering Supabase project id, migration/backfill, active-household RLS, retention/export/deletion, dependency build, mobile full-refresh sign-off, and Apollo approval before enabling cross-device sync.",
+    );
+  }
   if (!householdId) blockers.push("Create a household id before writing shared Phoenix data.");
 
   return {
     generatedAt: now,
-    status: blockers.length ? "local_only" : "ready_to_connect",
+    status: !backendConfigured || !householdId ? "local_only" : providerProofReady ? "ready_to_connect" : "provider_proof_pending",
     householdId,
     backend: {
       provider: cleanText(options.provider) || "undecided",
       configured: backendConfigured,
-      urlConfigured: Boolean(cleanText(options.backendUrl))
+      urlConfigured: Boolean(cleanText(options.backendUrl)),
+      proofReady: providerProofReady,
+      proofRequirements: CLOUD_SYNC_PROVIDER_PROOF_REQUIREMENTS
     },
     localStateFingerprint: stableFingerprint({
       updatedAt: state.updatedAt,
@@ -236,8 +261,33 @@ export function buildCloudSyncPlan(input = {}, options = {}, now = new Date().to
       "Keep Care Pass scoped unless this is same-household device transfer.",
       "Log destructive changes in audit_events."
     ],
+    providerBoundary:
+      "Backend configuration is only staged until structured cloud sync provider proof covers Supabase project id, migration/backfill, active-household RLS, retention/export/deletion, dependency build, mobile full-refresh sign-off, and Apollo approval.",
     blockers
   };
+}
+
+export function isCloudSyncProviderProofReady(evidence = {}) {
+  return Boolean(
+    cleanText(evidence?.proofLocator) &&
+      ACCEPTED_CLOUD_SYNC_PROOF_MIME_TYPES.has(cleanText(evidence?.proofMimeType).toLowerCase()) &&
+      Number(evidence?.proofByteSize) > 0 &&
+      cleanText(evidence?.supabaseProjectId) &&
+      cleanText(evidence?.migrationBackfillPolicy) &&
+      cleanText(evidence?.activeHouseholdRlsPolicy) &&
+      cleanText(evidence?.retentionPolicy) &&
+      cleanText(evidence?.exportPolicy) &&
+      cleanText(evidence?.deletionPolicy) &&
+      cleanText(evidence?.dependencyBuildProof) &&
+      cleanText(evidence?.mobileFullRefreshProof) &&
+      evidence?.supabaseProjectApproved === true &&
+      evidence?.migrationBackfillApproved === true &&
+      evidence?.rlsApproved === true &&
+      evidence?.retentionExportDeletionApproved === true &&
+      evidence?.dependencyBuildApproved === true &&
+      evidence?.mobileSignoffApproved === true &&
+      evidence?.apolloApproved === true,
+  );
 }
 
 function syncResource(name, description, containsPrivateData) {
