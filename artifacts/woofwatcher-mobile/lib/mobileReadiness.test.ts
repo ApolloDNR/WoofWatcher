@@ -5896,6 +5896,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
   assert.ok(
     payload.checks?.some(
       (check) =>
+        check.label === "PWA WoofGuide AI proof guard is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
         check.label === "privacy safety account deletion proof guard is source-backed" &&
         check.status === "PASS",
     ),

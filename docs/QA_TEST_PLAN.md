@@ -44,6 +44,19 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: PWA WoofGuide AI proof hardening now keeps a server OpenAI key signal staged as provider proof pending instead of presenting it as live AI.
+- PASS: The PWA no longer posts to `/api/care-helper` unless `assistantStatus.proofReady` is true from structured AI provider proof.
+- PASS: PWA readiness passed `15/15`.
+- PASS: Mobile readiness passed `114/114`.
+- PASS: Direct JSON mobile beta doctor reports `PWA WoofGuide AI proof guard is source-backed` as `PASS`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `588/588`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- BLOCKED: Fresh branch CI for the current branch tip is pending because manual `WoofWatcher Verify` dispatch from this Codex thread is blocked by the local approval/usage gate.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real structured OpenAI key-storage, model-policy, source/citation, owner-review write-gate, veterinary-safety, fallback/incident proof files, live provider approval, public launch, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: Care Pass report artifact storage proof hardening now keeps saved printable HTML reports local-only when storage provider setup is configured but structured storage proof files are absent.
 - PASS: Focused Care Pass/mobile readiness/beta handoff/release QA/smoke checklist tests passed `169/169`.
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `587/587`.

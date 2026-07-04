@@ -3709,6 +3709,24 @@ workflow dispatch is blocked in this Codex thread. This still does not configure
 storage buckets, attach signed policies, prove native iOS/Android share/reopen,
 clear store review, launch publicly, or replace Apollo sign-off.
 
+The PWA WoofGuide AI proof pass closes the server-key/live-AI overclaim.
+`assistantStatus` now separates a server OpenAI key signal from structured
+`proofReady` evidence. The PWA shows `Provider proof pending` and
+`Structured AI proof needed` instead of `Live OpenAI` or `Credential found`,
+and `reviewAssistantQuestion` only posts to `/api/care-helper` when
+`isAssistantLiveReady()` is true. The mobile beta doctor now reports
+`PWA WoofGuide AI proof guard is source-backed`. Fresh red/green verification
+first showed the PWA still had live OpenAI copy and no `proofReady` live-call
+gate, then passed PWA readiness `15/15`, mobile readiness `114/114`, direct
+JSON doctor source-backed checks, the full zero-dependency
+API/mobile/PWA/care-domain suite `588/588`, root TypeScript, and mobile
+TypeScript. Direct JSON mobile beta doctor remains truthfully `BLOCKED` on
+local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack. Fresh branch
+CI remains pending because manual workflow dispatch is blocked in this Codex
+thread. This still does not configure OpenAI, approve model policy, enable live
+AI, approve automatic writes, clear source/citation review, clear
+veterinary/safety review, launch publicly, or replace Apollo sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

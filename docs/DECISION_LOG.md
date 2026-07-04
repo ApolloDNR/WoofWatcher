@@ -1756,6 +1756,23 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real OpenAI/provider proof files, or WoofGuide gains a provider-backed AI evidence service with signed policy metadata.
 
+### 2026-07-04: PWA WoofGuide Key Detection Is Not Live AI Approval
+
+Decision: the PWA WoofGuide surface cannot treat `/api/care-helper` reporting a server OpenAI key as live-AI approval. A key signal stays staged as `Provider proof pending` and `Structured AI proof needed`, and the PWA does not call the live helper until structured AI provider proof sets `proofReady`.
+
+Reason: the PWA is an owner-facing preview surface. If it says `Live OpenAI` or sends questions to the provider from key detection alone, it contradicts the WoofGuide AI proof manifest, Privacy & Safety AI proof guard, and public-launch truth boundaries.
+
+Consequences:
+
+- `assistantStatus` separates key signal from structured proof readiness.
+- PWA WoofGuide copy avoids `Live OpenAI` and `Credential found` until proof is attached.
+- `reviewAssistantQuestion` only posts to `/api/care-helper` when `isAssistantLiveReady()` is true.
+- Server OpenAI key storage, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, fallback/incident handling, live AI approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real WoofGuide AI provider proof files, or the API returns signed `proofReady` evidence from a provider-backed AI evidence service.
+
 ### 2026-07-04: Destructive Account Deletion Requires Structured Compliance Proof
 
 Decision: the Account deletion proof manifest cannot treat generic deletion-route/export/receipt/audit/recovery/legal approval strings as destructive-deletion readiness. `Destructive deletion allowed` remains blocked until six structured proof files satisfy deletion-route/auth, export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation policy, and legal/store/Apollo approval.

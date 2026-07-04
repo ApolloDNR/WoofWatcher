@@ -27,7 +27,7 @@ The beta must not claim:
 - App Store or Play Store approval.
 - Provider-backed household sync if Supabase/Clerk/provider gates are not configured.
 - Live payments.
-- Live AI provider behavior without keys/policy.
+- Live AI provider behavior from key detection alone, or without structured key-storage, model-policy, source/citation, owner-review write-gate, veterinary-safety, and fallback/incident proof.
 - Live document/photo storage without approved storage rules.
 - Veterinary diagnosis or treatment certainty.
 
@@ -74,6 +74,7 @@ The beta must not claim:
 - When reviewing More's Sync Health panel, use `Open sync proof` to jump to the same Care-entry Provider Sync Proof mission. This is a shortcut only; visible outbox/local sync status still does not prove Supabase migration, active-household RLS, retention policy, or incremental provider sync.
 - When the current mission is `WoofGuide AI Provider Proof`, open `/care-twin-qa?qaSurface=woofguide-ai-provider-proof`, then capture OpenAI key location, secret storage, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, fallback/incident handling, rollback plan, and support handoff before enabling live AI.
 - When reviewing Provider Launch Setup's WoofGuide AI row, use `Open proof mission` to jump to the same WoofGuide AI Provider Proof mission. This is a shortcut only; it does not configure OpenAI, approve a model, enable live provider-backed AI, allow automatic care-log writes, clear source/citation review, or replace veterinary/safety approval.
+- In the PWA WoofGuide preview, confirm any server OpenAI key signal reads as provider proof pending / structured AI proof needed. It must not say `Live OpenAI`, `Credential found`, or send questions to live AI until structured provider proof sets `proofReady`.
 - When the current mission is `Push Notifications Proof`, open `/care-twin-qa?qaSurface=push-notifications-proof`, then capture Expo push project config, APNs credentials, Firebase/FCM credentials, permission prompt copy, quiet hours, opt-out behavior, platform/provider-named iOS APNs and Android FCM delivery evidence, and missed-notification fallback before claiming reminder delivery.
 - When reviewing Reminder Center, use Calendar's `Open push proof` action to jump to the same Push Notifications Proof mission. This is a shortcut only; local preference intent still does not prove provider configuration or delivered reminders.
 - When the current mission is `Payments Provider Proof`, open `/care-twin-qa?qaSurface=payments-provider-proof`, then capture Plus and Family product ids, billing path decision, iOS App Store and Android Google Play sandbox purchase/renewal/cancel/refund/expired JSON receipt proof, restore purchases, entitlement mapping, household role access, refund/support policy, and checkout-gate proof before enabling paid checkout.

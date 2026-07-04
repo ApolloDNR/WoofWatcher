@@ -58,6 +58,7 @@ Passing evidence:
 - Shared Care Passes are stored as report-history artifacts for quick resend, with visible print-ready/restored metadata and escaped HTML payloads for future PDF/export flows.
 - Records show expired, due-soon, current, and reference status for saved record rows.
 - WoofGuide shows deterministic suggested actions tied to health watch, record attention, diet setup, routines, meal logging, and Care Pass preview.
+- PWA WoofGuide separates a server OpenAI key signal from live AI readiness: key detection shows provider proof pending, and live helper calls stay blocked until structured AI provider proof sets `proofReady`.
 - More exposes a local CareTwin Roster with the active live dog, provider-gated future pet slots, Add future dog flow, and no fake switching before scoped multi-dog care documents exist.
 - Empty, loading, error, offline, pending, synced, and failed states are visible.
 
@@ -115,6 +116,7 @@ Current gaps:
 - Need structured action execution for log drafts, reminders, vet notes, and report drafts.
 - Need assistant source/context display.
 - Need vet-note/report drafting flow.
+- Need real structured OpenAI key-storage, model-policy, source/citation, owner-review write-gate, veterinary-safety, and fallback/incident proof before enabling provider-backed live AI in mobile or PWA surfaces.
 - Need hard checks that AI does not diagnose or claim emergency certainty.
 
 ## Gate 6: Premium UI, Motion, And Accessibility

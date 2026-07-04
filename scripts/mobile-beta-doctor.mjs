@@ -277,6 +277,7 @@ const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
 const premiumRoutePath = join(mobileRoot, "app", "premium.tsx");
 const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
 const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
+const pwaVanillaAppEntryPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "app-entry.js");
 const carePassDomainPath = join(root, "lib", "care-domain", "src", "care-pass.ts");
 const careRemindersDomainPath = join(root, "lib", "care-domain", "src", "care-reminders.ts");
 const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync(betaHandoffPacketPath, "utf8") : "";
@@ -309,6 +310,7 @@ const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, 
 const premiumRouteSource = existsSync(premiumRoutePath) ? readFileSync(premiumRoutePath, "utf8") : "";
 const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRoutePath, "utf8") : "";
 const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
+const pwaVanillaAppEntrySource = existsSync(pwaVanillaAppEntryPath) ? readFileSync(pwaVanillaAppEntryPath, "utf8") : "";
 const carePassDomainSource = existsSync(carePassDomainPath) ? readFileSync(carePassDomainPath, "utf8") : "";
 const careRemindersDomainSource = existsSync(careRemindersDomainPath) ? readFileSync(careRemindersDomainPath, "utf8") : "";
 const betaHandoffProofSectionsPresent = includesAll(betaHandoffPacketSource, [
@@ -1074,6 +1076,26 @@ check(
   privacySafetyAiProofGuardIsSourceBacked
     ? "Privacy & Safety keeps WoofGuide AI disclosure limited until structured AI provider proof files accompany provider configuration"
     : "keep Privacy & Safety wired to the WoofGuide AI provider proof manifest so aiProviderConfigured alone cannot mark AI disclosure ready",
+);
+
+const pwaWoofGuideAiProofGuardIsSourceBacked = includesAll(pwaVanillaAppEntrySource, [
+  "proofReady: false",
+  "function isAssistantLiveReady",
+  "return Boolean(assistantStatus.configured && assistantStatus.proofReady)",
+  "Provider proof pending",
+  "Structured AI proof needed",
+  "structured WoofGuide AI proof",
+  "const providerProofReady = Boolean(status.aiProviderProofReady || status.providerProofReady)",
+  "const liveAnswer = isAssistantLiveReady() ? await requestLiveAssistant(question, context) : null",
+  "mode: providerProofReady && status.mode === \"openai\" ? \"openai\" : \"local\"",
+])
+  && !/Live OpenAI|Credential found|If live OpenAI is not configured|Questions use the live helper first/.test(pwaVanillaAppEntrySource);
+check(
+  "PWA WoofGuide AI proof guard is source-backed",
+  pwaWoofGuideAiProofGuardIsSourceBacked,
+  pwaWoofGuideAiProofGuardIsSourceBacked
+    ? "PWA WoofGuide keeps server key detection staged and blocks live helper calls until structured AI provider proof is attached"
+    : "keep the PWA WoofGuide surface gated so OpenAI key detection alone cannot claim or call live AI without structured proofReady evidence",
 );
 
 const privacySafetyAccountDeletionProofGuardIsSourceBacked = includesAll(privacySafetySource, [

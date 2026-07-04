@@ -138,6 +138,20 @@ test("keeps WoofGuide wired to owner-reviewed action routing", () => {
   assert.match(appEntry, /owner-reviewed/);
 });
 
+test("keeps PWA WoofGuide live AI gated behind structured provider proof", () => {
+  assert.match(appEntry, /proofReady: false/);
+  assert.match(appEntry, /function isAssistantLiveReady/);
+  assert.match(appEntry, /const liveReady = isAssistantLiveReady\(\)/);
+  assert.match(appEntry, /providerProofReady = Boolean/);
+  assert.match(appEntry, /const liveAnswer = isAssistantLiveReady\(\) \? await requestLiveAssistant/);
+  assert.match(appEntry, /Provider proof pending/);
+  assert.match(appEntry, /Structured AI proof needed/);
+  assert.match(appEntry, /structured WoofGuide AI proof/);
+  assert.doesNotMatch(appEntry, /Live OpenAI/);
+  assert.doesNotMatch(appEntry, /Credential found/);
+  assert.doesNotMatch(appEntry, /If live OpenAI is not configured/);
+});
+
 test("keeps records and reports tools directly routable in the PWA", () => {
   assert.match(appEntry, /records: "records"/);
   assert.match(appEntry, /reports: "reports"/);
