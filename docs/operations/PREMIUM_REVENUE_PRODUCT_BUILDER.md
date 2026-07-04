@@ -3456,6 +3456,10 @@ beta doctor remains truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned
 `JAVA_HOME`. This is proof gating only; it does not run Supabase migrations,
 approve active-household RLS, configure retention/export/deletion, enable
 incremental sync, prove native QA, or replace Apollo sign-off.
+Branch CI proved the guard on commit `2721de1` in `WoofWatcher Verify` run
+`28699549834`, job `85115170898`, which completed successfully in about `3m11s`
+with Setup pnpm, Setup Node, install, JSON mobile beta doctor, focused behavior
+tests, Typecheck plus CI-safe builds, post steps, and Complete job all passing.
 
 Next highest-impact work:
 

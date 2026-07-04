@@ -49,6 +49,7 @@ Latest local evidence, 2026-07-04:
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `576/576`.
 - PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
 - PASS: Direct JSON mobile beta doctor reports `care-entry provider sync proof target is source-backed` and `care-entry provider sync proof manifest is source-backed` as `PASS`.
+- PASS: Branch CI proved commit `2721de1` in `WoofWatcher Verify` run `28699549834`, job `85115170898`; Setup pnpm, Setup Node, install dependencies, JSON mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds all passed.
 - BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
 - BLOCKED: Direct JSON native QA tooling doctor still reports missing `adb`, `emulator`, `java`, `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and `JAVA_HOME`.
 - STILL REQUIRED: real Supabase migration/backfill execution, production RLS/privacy proof, retention/export/deletion approval, native incremental sync QA, rollback approval, and Apollo sign-off before incremental care-entry sync can be enabled.
